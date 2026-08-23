@@ -3,14 +3,14 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  asLang, buildPayload, bumpQuota, CHANNEL_URL, COPY, copy, DAILY_PUSH_BUDGET,
+  asLang, buildPayload, bumpSent, CHANNEL_URL, COPY, copy,
   DEFAULT_PREFS, deliveryFor, DIGEST_MIN_PCT, dueRetentionStep, evaluateMove,
   seedRefFromChange, crossedLevel, roundLevelStep,
   FEATURE_TIPS, FEATURE_TIP_GAP_MS, MAX_FEATURE_TIPS, pickFeatureTip, sanitizeSetup,
   fmtPct, fmtPrice, pickHeadline, pushTopic, RETENTION_MIN_PCT,
   isBreaking, LANGS, localDayKey, localHour, matchArticle, MAX_WATCH,
-  MOVE_REF_MAX_AGE_MS, pruneSent, RETENTION_STEPS, sanitizeAlerts, sanitizePrefs,
-  sanitizeTz, sanitizeWatch, shortHash, termsFor, withinDailyBudget,
+  MOVE_COOLDOWN_MS, MOVE_REF_MAX_AGE_MS, pruneSent, RETENTION_STEPS, sanitizeAlerts, sanitizePrefs,
+  sanitizeTz, sanitizeWatch, shortHash, termsFor,
 } from '../../push-api/notify-logic.js'
 import { parseCoinGecko, parseNews, parseYahooChart, quoteFor, quoteKey } from '../../push-api/markets.js'
 import { LANGUAGES } from './LanguageContext'
@@ -100,7 +100,7 @@ describe('preferences', () => {
   it('starts every channel on', () => {
     // The brief is included: it only fires when a holding actually moved, so
     // defaulting it on promises "tell me when something happens", not a daily
-    // buzz. The daily budget still bounds all of them.
+    // buzz. The per-channel cooldowns bound all of them.
     expect(DEFAULT_PREFS.digest).toBe(true)
     expect(DEFAULT_PREFS.moves).toBe(true)
     expect(DEFAULT_PREFS.news).toBe(true)
@@ -233,8 +233,8 @@ describe('how promptly each channel runs', () => {
   }
 
   it('checks the user\u2019s own price targets every minute', () => {
-    // One batched CoinGecko call per pass however many alerts exist, and
-    // exempt from the daily budget — nothing is saved by waiting.
+    // One batched CoinGecko call per pass however many alerts exist, so
+    // nothing is saved by waiting.
     expect(cronFor('wl-check-alerts')).toBe('* * * * *')
   })
 
@@ -278,33 +278,65 @@ describe('there are no quiet hours', () => {
     expect(DEFAULT_PUSH_PREFS.quiet).toBeUndefined()
   })
 
-  it('keeps the daily budget, which is the guard that actually matters', () => {
-    // The point was never "never suppress anything" — a volatile night must
-    // not become forty buzzes. That job belongs to the budget, which does not
-    // care what hour it is.
-    expect(withinDailyBudget({ day: localDayKey(Date.now(), 0), n: DAILY_PUSH_BUDGET }, Date.now(), 0)).toBe(false)
-    expect(withinDailyBudget({ day: localDayKey(Date.now(), 0), n: 0 }, Date.now(), 0)).toBe(true)
-  })
 })
 
-describe('daily push budget', () => {
-  it('allows a fresh day and stops at the cap', () => {
-    const day = localDayKey(NOON_UTC, 0)
-    expect(withinDailyBudget(null, NOON_UTC, 0)).toBe(true)
-    expect(withinDailyBudget({ day, n: DAILY_PUSH_BUDGET - 1 }, NOON_UTC, 0)).toBe(true)
-    expect(withinDailyBudget({ day, n: DAILY_PUSH_BUDGET }, NOON_UTC, 0)).toBe(false)
+describe('nothing is withheld for being the seventh today', () => {
+  // The daily budget capped every automated channel at six a day and dropped
+  // the rest. It silenced the app on exactly the days it had the most to say,
+  // and what it dropped was never the least important thing — only the latest.
+  // Removed, and these hold it removed: a reintroduction has to delete a test,
+  // which is a decision, not an accident.
+  const dir = join(dirname(fileURLToPath(import.meta.url)), '../../push-api')
+  const server = readFileSync(join(dir, 'main.ts'), 'utf8')
+  const logic = readFileSync(join(dir, 'notify-logic.js'), 'utf8')
+
+  it('has no cap left to check', () => {
+    expect(logic).not.toMatch(/DAILY_PUSH_BUDGET/)
+    expect(logic).not.toMatch(/export function withinDailyBudget/)
+    expect(server).not.toMatch(/withinDailyBudget|canDeliver/)
   })
 
-  it('resets when the user’s own day rolls over', () => {
-    const spent = { day: '2026-08-19', n: 99 }
-    expect(withinDailyBudget(spent, NOON_UTC, 0)).toBe(true)
+  it('puts nothing between a channel deciding to send and sendPush', () => {
+    // deliver() is the single chokepoint every channel goes through. An early
+    // return in it is a cap by another name.
+    const fn = server.slice(
+      server.indexOf('async function deliver('),
+      server.indexOf('// ── Channel: price targets'),
+    )
+    expect(fn).toContain('const res = await sendPush(sub, payload)')
+    expect(fn).not.toMatch(/return false/)
   })
 
-  it('counts up within a day and restarts on a new one', () => {
-    const first = bumpQuota(null, NOON_UTC, 0)
+  it('no longer needs to exempt price targets', () => {
+    // `urgent: true` existed only to outrank the budget. With no budget it is
+    // a flag that means nothing, and a flag that means nothing rots.
+    expect(server).not.toMatch(/urgent/)
+  })
+
+  it('still counts what it sent, because /status reports it', () => {
+    // "Notifications are on and nothing arrives" is indistinguishable from
+    // "nothing happened worth sending" without a number.
+    const first = bumpSent(null, NOON_UTC, 0)
     expect(first).toEqual({ day: '2026-08-20', n: 1 })
-    expect(bumpQuota(first, NOON_UTC, 0).n).toBe(2)
-    expect(bumpQuota(first, NOON_UTC + DAY, 0)).toEqual({ day: '2026-08-21', n: 1 })
+    expect(bumpSent(first, NOON_UTC, 0).n).toBe(2)
+    expect(bumpSent(first, NOON_UTC + DAY, 0)).toEqual({ day: '2026-08-21', n: 1 })
+    expect(server).toMatch(/sentToday,/)
+  })
+
+  it('keeps the per-channel cooldowns, which are the real guard', () => {
+    // Removing the global cap is not "never suppress anything". These are
+    // per-reason, so they cannot stack into a stream from one event — which is
+    // exactly what a global cap could never distinguish.
+    expect(MOVE_COOLDOWN_MS).toBe(3 * 60 * 60 * 1000)
+    expect(server).toMatch(/cooldownMs: MOVE_COOLDOWN_MS/)
+    expect(server).toMatch(/now - sub\.lastNewsAt < NEWS_COOLDOWN_MS/)
+    expect(FEATURE_TIP_GAP_MS).toBe(3 * 24 * 60 * 60 * 1000)
+  })
+
+  it('reads a record written before the rename without losing the day', () => {
+    // The stored field was `quota`. Subscriptions live for months and the
+    // deploy that lands must not reset every device's count to zero.
+    expect(server).toMatch(/sent: s\.sent \?\? \(s as \{ quota\?/)
   })
 })
 
@@ -622,9 +654,9 @@ describe('every notification needs a reason', () => {
 })
 
 describe('the Android shell no longer notifies on a timer', () => {
-  // A second, uncoordinated notification source defeats quiet hours and the
-  // daily budget at once: a user cannot tell two systems apart, so the Quiet
-  // Hours switch in Settings would simply appear not to work.
+  // A second, uncoordinated notification source defeats every per-channel
+  // cooldown at once: a user cannot tell two systems apart, so a cooled-down
+  // channel would simply appear to buzz anyway.
   const scheduler = readFileSync(
     '../walletlens_source/release_package/app/src/main/java/live/walletlens/twa/NotificationScheduler.java',
     'utf8',
@@ -1002,11 +1034,10 @@ describe('the status endpoint', () => {
     expect(server).toMatch(/return json\(\{ found: false, endpointOk, host: endpointHost\(endpoint\) \}/)
   })
 
-  it('reports the two states that cause silence while everything looks right', () => {
+  it('reports the state that causes silence while everything looks right', () => {
     // An empty watch list — checkMoves filters those subscriptions out
-    // entirely — and a spent daily budget.
+    // entirely.
     expect(server).toMatch(/watch: sub\.watch\.length/)
-    expect(server).toMatch(/budgetLeft:/)
   })
 
   it('echoes no ticker back', () => {
@@ -1236,7 +1267,7 @@ describe('the push service can resolve everything it calls', () => {
 })
 
 describe('the delivery step reports why it failed', () => {
-  // The last unlit stage. A device can be registered, watched, in budget and
+  // The last unlit stage. A device can be registered, watched and
   // every switch on while the push service rejects everything the server
   // signs — and sendPush returned a bare boolean, so nothing could say so.
   const dir = join(dirname(fileURLToPath(import.meta.url)), '../../push-api')
@@ -1299,13 +1330,12 @@ describe('the delivery step reports why it failed', () => {
       'status.vapid === false',       // server has no signing key
       'keyOk === false',              // client and server keys disagree
       'noWatch &&',                   // nothing watched, so nothing can fire
-      'spent &&',                     // daily budget gone
     ]) {
       const at = toggle.indexOf(warning)
       expect(at, `${warning} must still render`).toBeGreaterThan(-1)
     }
     // And a healthy device with the detail hidden renders nothing at all.
-    expect(toggle).toMatch(/if \(!detail && !noWatch && !spent && status\.vapid !== false && keyOk !== false\) return null/)
+    expect(toggle).toMatch(/if \(!detail && !noWatch && status\.vapid !== false && keyOk !== false\) return null/)
   })
 
   it('leaves every channel switched on while its row is hidden', () => {

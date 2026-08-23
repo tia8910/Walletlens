@@ -24,7 +24,7 @@
 //   • a last-seen timestamp and UTC offset, which is what makes "you have been
 //     away 7 days" and "don't buzz me at 3am" possible at all.
 //
-// Decision rules (thresholds, the daily budget, the win-back
+// Decision rules (thresholds, cooldowns, the win-back
 // ladder, news matching) live in notify-logic.js so they can be unit-tested
 // from client/src/pushLogic.test.js — none of it is reachable from a browser,
 // and getting it wrong means spamming every user at once.
@@ -41,14 +41,14 @@
 
 import webpush from "npm:web-push@3.6.7"
 import {
-  asLang, buildPayload, bumpQuota, copy, DAILY_PUSH_BUDGET, DEFAULT_PREFS,
+  asLang, buildPayload, bumpSent, copy, DEFAULT_PREFS,
   deliveryFor,
   DIGEST_MIN_PCT, dueRetentionStep, evaluateMove, FEATURE_TIP_GAP_MS, fmtPct,
   fmtPrice, pickFeatureTip,
   isBreaking, localDayKey, localHour, matchArticle,
   MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS, pickHeadline, pruneSent, pushTopic,
   RETENTION_HOUR, RETENTION_MIN_PCT, sanitizeAlerts, sanitizePrefs, sanitizeSetup,
-  sanitizeTz, sanitizeWatch, seedRefFromChange, shortHash, withinDailyBudget,
+  sanitizeTz, sanitizeWatch, seedRefFromChange, shortHash,
   crossedLevel,
 } from "./notify-logic.js"
 import { assetKey, fetchCryptoQuotes, fetchNews, fetchQuotes, quoteFor } from "./markets.js"
@@ -136,8 +136,9 @@ interface StoredSub {
   featuresSent: string[]
   /** When the last feature tip went out, so at most one lands per week. */
   lastFeatureAt: number
-  /** Shared daily budget across all automated channels. */
-  quota: { day: string; n: number }
+  /** How many notifications went out today, on this device's own clock.
+   *  A counter for /status, not a cap — see bumpSent in notify-logic.js. */
+  sent: { day: string; n: number }
 }
 
 /**
@@ -170,7 +171,10 @@ function normalize(s: Partial<StoredSub> & Pick<StoredSub, "subscription">): Sto
     setup: s.setup ?? {},
     featuresSent: Array.isArray(s.featuresSent) ? s.featuresSent : [],
     lastFeatureAt: s.lastFeatureAt ?? 0,
-    quota: s.quota ?? { day: "", n: 0 },
+    // Renamed from `quota` when the cap became a counter. Records written by
+    // an older deploy still carry the old key, and the day's count is not
+    // worth losing on the deploy that lands.
+    sent: s.sent ?? (s as { quota?: { day: string; n: number } }).quota ?? { day: "", n: 0 },
   }
 }
 
@@ -313,46 +317,39 @@ async function sendPush(sub: StoredSub, payload: Record<string, unknown>): Promi
 }
 
 /**
- * The guard that protects the notification permission itself: one shared daily
- * budget across every automated channel. Exposed separately so a cron can
- * check *before* it starts marking work as done — the news pass in particular
- * must not tick a queue of stories off as "sent" while it is silently unable
- * to send any of them.
+ * Send. Nothing global stands between a channel deciding to notify and the
+ * notification going out.
  *
- * Quiet hours used to sit here too, holding everything but price targets
- * between 22:00 and 08:00 local. It is gone, by product decision: a market
- * that does not sleep is exactly why someone installs this, and a move worth
- * telling them about at noon is worth telling them about at 2am.
+ * Two gates used to sit here and both are gone, for the same reason.
  *
- * Removed rather than defaulted off, because defaulting off could not reach
- * anyone. sanitizePrefs only falls back to a default when a subscription has
- * no stored value, and every subscription created while quiet hours defaulted
- * ON carries `quiet: true` explicitly — so flipping the default silenced
- * nothing for the people already affected. Deleting the gate reaches all of
- * them on the next deploy, with no client sync and no app update.
+ * Quiet hours held everything but price targets between 22:00 and 08:00 local.
+ * A market that does not sleep is exactly why someone installs this, and a
+ * move worth telling them about at noon is worth telling them about at 2am.
  *
- * The daily budget is untouched and still does the real work: six a day
- * across all automated channels, so a volatile night cannot become forty
- * buzzes.
- */
-function canDeliver(sub: StoredSub, now: number): boolean {
-  return withinDailyBudget(sub.quota, now, sub.tz)
-}
-
-/**
- * Send, subject to those guards. `urgent` is for price targets only — the user
- * asked for that specific notification by name, so it outranks both.
+ * The daily budget capped every automated channel at six a day and dropped the
+ * seventh. That protects the notification permission in theory; in practice it
+ * silences the app on precisely the days it has the most to say, and the thing
+ * it drops is never the least important one — just the latest. The per-channel
+ * cooldowns are the real guard and they are untouched: three hours per asset
+ * for moves and levels, four for news, once a day for the brief, days apart
+ * for retention, three days between feature tips. Those are per-reason, so
+ * they cannot stack into a stream from a single event.
  *
- * Mutates `sub.quota` on success; the caller is responsible for persisting.
+ * Both were removed rather than defaulted off. sanitizePrefs only falls back
+ * to a default when a subscription has no stored value, so flipping a default
+ * reaches nobody who already has one; deleting the gate reaches every device
+ * on the next deploy, with no client sync and no app update.
+ *
+ * Mutates `sub.sent` on success — a counter for /status now, not a cap; the
+ * caller is responsible for persisting.
  */
 async function deliver(
   sub: StoredSub,
   payload: Record<string, unknown>,
-  { urgent = false, now = Date.now() } = {},
+  { now = Date.now() } = {},
 ): Promise<boolean> {
-  if (!urgent && !canDeliver(sub, now)) return false
   const res = await sendPush(sub, payload)
-  if (res.ok && !urgent) sub.quota = bumpQuota(sub.quota, now, sub.tz)
+  if (res.ok) sub.sent = bumpSent(sub.sent, now, sub.tz)
   return res.ok
 }
 
@@ -384,7 +381,7 @@ async function checkTargets() {
           body: copy("targetBody", sub.lang)(a.coin_symbol, a.condition, a.targetPrice, p),
           tag: `price-${id}`,
           sym: a.coin_symbol,
-        }), { urgent: true })
+        }))
         sub.fired[id] = Date.now()
         changed = true
       } else if (!hit && sub.fired[id]) {
@@ -465,11 +462,11 @@ async function checkMoves({ kinds = null, refreshSeen = true }: {
         cooldownMs: MOVE_COOLDOWN_MS,
       })
 
-      // A crossing we can't send yet — asleep, or out of budget — must keep its
-      // old baseline. Rebasing here would swallow an 8% overnight move: by
-      // morning the reference would say it had already been accounted for and
-      // the user would never hear about it.
-      const deliverable = !fire || (sub.prefs.moves && canDeliver(sub, now))
+      // A crossing we can't send — the move channel is switched off — must
+      // keep its old baseline. Rebasing here would swallow an 8% overnight
+      // move: by morning the reference would say it had already been accounted
+      // for and the user would never hear about it.
+      const deliverable = !fire || sub.prefs.moves
       if (deliverable && nextRef !== sub.ref[k]) { sub.ref[k] = nextRef as PriceRef; changed = true }
 
       // — Round price levels —
@@ -540,11 +537,6 @@ async function checkNews() {
     // One story per window: a busy news day should not become a news feed on
     // the lock screen.
     if (now - sub.lastNewsAt < NEWS_COOLDOWN_MS) continue
-    // Checked before the loop, not inside it: marking stories as seen while
-    // unable to send any would quietly consume the whole queue overnight and
-    // leave nothing to show in the morning.
-    if (!canDeliver(sub, now)) continue
-
     const pruned = pruneSent(sub.newsSent, now, 48 * 60 * 60 * 1000)
     let changed = Object.keys(pruned).length !== Object.keys(sub.newsSent).length
     sub.newsSent = pruned
@@ -708,8 +700,8 @@ async function checkDaily() {
             tag: `feature-${tip.id}`,
             url: tip.url,
           }), { now })
-          // Mark it sent only on delivery — a tip suppressed by the budget or
-          // the budget should still get its turn another day.
+          // Mark it sent only on delivery. Each tip fires once ever, so one
+          // that failed to send must keep its turn rather than burning it.
           if (sent) {
             sub.featuresSent = [...sub.featuresSent, tip.id]
             sub.lastFeatureAt = now
@@ -733,8 +725,7 @@ async function checkDaily() {
 // price moves, the way an exchange does it. The pass costs exactly ONE batched
 // CoinGecko call however many subscribers or alerts exist (checkTargets
 // collects every coin id into one Set, then makes a single request), so a
-// per-minute cadence is one request a minute. It is also exempt from the daily
-// budget by design, because the user asked for that specific alert by name.
+// per-minute cadence is one request a minute.
 Deno.cron("wl-check-alerts", "* * * * *", checkTargets)
 
 // Moves used to run every five minutes for ALL kinds, and the reason was
@@ -834,7 +825,7 @@ async function handle(req: Request, info: Deno.ServeHandlerInfo): Promise<Respon
   // user's side, and from the developer's side too — the client can only
   // report what it BELIEVES it sent. Every real cause of silence lives here:
   // no stored subscription, an empty watch list (checkMoves skips those
-  // entirely), a spent daily budget, or a channel switched off.
+  // entirely), or a channel switched off.
   //
   // Counts and timestamps only. The caller supplies its own endpoint and
   // learns nothing it did not already send us, and no ticker is echoed back.
@@ -857,7 +848,7 @@ async function handle(req: Request, info: Deno.ServeHandlerInfo): Promise<Respon
     const sub = normalize(stored)
     const now = Date.now()
     const day = localDayKey(now, sub.tz)
-    const sentToday = sub.quota?.day === day ? (sub.quota.n ?? 0) : 0
+    const sentToday = sub.sent?.day === day ? (sub.sent.n ?? 0) : 0
     return json({
       found: true,
       endpointOk,
@@ -870,8 +861,6 @@ async function handle(req: Request, info: Deno.ServeHandlerInfo): Promise<Respon
       lastSeen: sub.lastSeen,
       createdAt: sub.createdAt,
       sentToday,
-      budget: DAILY_PUSH_BUDGET,
-      budgetLeft: Math.max(0, DAILY_PUSH_BUDGET - sentToday),
     }, headers)
   }
 
