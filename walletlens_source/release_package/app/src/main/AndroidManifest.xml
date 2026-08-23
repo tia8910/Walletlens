@@ -47,9 +47,19 @@
 
     
 
+    <!-- Predictive back (Android 13+) is opted into on the application below.
+         targetSdk is 36 and this was never enabled, so the back-swipe preview
+         animation never ran.
+
+         It is not a free switch: enabling it stops the framework dispatching
+         onBackPressed(). CrashLogActivity overrides that to send you back into
+         the app rather than to the home screen, so it opts out individually.
+         Everything else here either has no override or lets the Custom Tab
+         handle back. -->
     <application
         android:name="WalletLensApp"
         android:allowBackup="true"
+        android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/appName"
 
@@ -329,9 +339,14 @@
              is diagnostic detail no other app has any business reading. It is
              reached from LauncherActivity after a crash, or via
              walletlens://crashlog, both of which are in-process. -->
+        <!-- Opted out of predictive back: this activity still uses
+             onBackPressed(), which the application-level opt-in would stop the
+             framework dispatching. Back here means "return to the app", not
+             "go home". -->
         <activity
             android:name=".CrashLogActivity"
             android:exported="false"
+            android:enableOnBackInvokedCallback="false"
             android:label="WalletLens crash log"
             android:theme="@android:style/Theme.Material.NoActionBar" />
 

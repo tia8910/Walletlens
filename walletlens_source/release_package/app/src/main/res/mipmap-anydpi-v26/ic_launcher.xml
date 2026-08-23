@@ -30,4 +30,17 @@
         </layer-list>
     </background>
     <foreground android:drawable="@android:color/transparent" />
+
+    <!--
+        Android 13+ themed icons. Without this layer the launcher has nothing
+        to tint and simply falls back to the full-colour icon, so WalletLens
+        was the one icon on a themed home screen that ignored the theme.
+
+        Note the layers above are left exactly as PWABuilder generated them:
+        the mark lives in <background> and <foreground> is transparent, which
+        costs the parallax effect but is what currently ships and looks right.
+        Rearranging it is a change nobody here can see the result of, and the
+        themed icon does not depend on it.
+    -->
+    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
 </adaptive-icon>
