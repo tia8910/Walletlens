@@ -17,7 +17,7 @@ vi.mock('./pulseAudio', () => ({
 const {
   observeMarket, demoPulse, pulseSettings, setPulseSettings,
   pendingDiscovery, dismissDiscovery, noteDiscoveryShown,
-  onPulseRelease, __heldEvent, __pendingSound, __resetPulseRuntime,
+  onPulseRelease, __heldEvent, __pendingSound, __resetPulseRuntime, fireWelcome,
 } = await import('./marketPulseRuntime')
 const { marketPeriodKey } = await import('./marketPulse')
 
@@ -585,5 +585,88 @@ describe('demo events', () => {
     expect(demoPulse('dip', {}).changePct).toBeLessThan(0)
     expect(demoPulse('storm', {}).changePct).toBeLessThan(0)
     expect(demoPulse('rain', {}).changePct).toBeGreaterThan(0)
+  })
+})
+
+describe('the welcome moment', () => {
+  // Fired once ever, when a dashboard first has a value. Deliberately NOT a
+  // market event: every other pulse makes a claim about prices, and the honest
+  // set of those on a brand-new portfolio is empty — seedRecords exists
+  // precisely so nobody is told they hit an all-time high on the day they
+  // typed their holdings in. What is certainly true is that they built the
+  // thing and it is worth what it says.
+  beforeEach(() => { __resetPulseRuntime(); localStorage.clear(); audio.played.length = 0 })
+
+  it('fires once, with the portfolio value it reports', () => {
+    setPulseSettings({ enabled: true })
+    audio.unlocked = true
+    const event = fireWelcome({ totalValue: 47320, now: T0 })
+    expect(event).toMatchObject({ type: 'welcome', value: 47320 })
+    expect(audio.played).toEqual(['welcome'])
+  })
+
+  it('never fires a second time, on any later day', () => {
+    // Once ever, not once a day. Someone who finished onboarding in March
+    // should not be welcomed again in April.
+    setPulseSettings({ enabled: true })
+    audio.unlocked = true
+    expect(fireWelcome({ totalValue: 47320, now: T0 })).toMatchObject({ type: 'welcome' })
+    expect(fireWelcome({ totalValue: 51000, now: T0 + 86400000 * 30 })).toBeNull()
+    expect(audio.played).toEqual(['welcome'])
+  })
+
+  it('says nothing about a portfolio with no value', () => {
+    // "Your dashboard is live — $0" is not a celebration, it is a taunt. And
+    // it would burn the once-ever flag on the one user who has nothing yet.
+    setPulseSettings({ enabled: true })
+    audio.unlocked = true
+    expect(fireWelcome({ totalValue: 0, now: T0 })).toBeNull()
+    expect(audio.played).toEqual([])
+    // Not spent: it still fires when they add something.
+    expect(fireWelcome({ totalValue: 100, now: T0 + 1000 })).toMatchObject({ type: 'welcome' })
+  })
+
+  it('holds off any market event detected on the same pass', () => {
+    // Two overlays stacking on the first screen a user ever sees is worse than
+    // either alone.
+    setPulseSettings({ enabled: true })
+    audio.unlocked = true
+    fireWelcome({ totalValue: 47320, now: T0 })
+    observeMarket({ samples: btc(2), totalValue: 47320, now: T0 })
+    expect(observeMarket({ samples: btc(9), totalValue: 47320, now: T0 + 1000 })).toBeNull()
+  })
+
+  it('still shows the picture when sound is off', () => {
+    setPulseSettings({ enabled: false, visuals: true })
+    expect(fireWelcome({ totalValue: 47320, now: T0 })).toMatchObject({ type: 'welcome' })
+    expect(audio.played).toEqual([])
+  })
+
+  it('spends the onboarding tap on the pulse AudioContext', () => {
+    // The whole reason this lands with sound. sfx.playTriumph() on the same
+    // button unlocks a DIFFERENT context — sfx.js has its own — so without
+    // this call the one guaranteed gesture of the first-run flow leaves the
+    // pulse context asleep and the welcome arrives silent on a phone at full
+    // volume. Nothing else in the app would notice: every test above passes
+    // with audio.unlocked forced true.
+    //
+    // It must also be INSIDE finish(), synchronously: armPulseAudio() listens
+    // for the next gesture, and a listener added during a click never fires
+    // for that click.
+    const dir = dirname(fileURLToPath(import.meta.url))
+    const onboarding = readFileSync(join(dir, 'components/NativeOnboarding.jsx'), 'utf8')
+    expect(onboarding).toMatch(/import \{ primePulseAudio \} from '\.\.\/marketPulseRuntime'/)
+    const finish = onboarding.slice(onboarding.indexOf('function finish()'))
+    expect(finish.slice(0, 900)).toMatch(/primePulseAudio\(\)/)
+  })
+
+  it('is fired from the dashboard, where the value is known', () => {
+    // Not from the onboarding handler: the caption states the portfolio's
+    // value, and that is not known until prices land. A number that appears
+    // and then corrects itself is worse than waiting a beat for the right one.
+    const dashboard = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'pages/Dashboard.jsx'), 'utf8')
+    expect(dashboard).toMatch(/fireWelcome \} from '\.\.\/marketPulseRuntime'|, fireWelcome \}/)
+    expect(dashboard).toMatch(/fireWelcome\(\{ totalValue \}\)/)
   })
 })

@@ -226,6 +226,11 @@ export function comparable(prev, next) {
 // champion outranks rocket because it is the better sentence about the same
 // kind of fact: "this crossed a line" versus "this beat everything you own".
 export const PRIORITY = {
+  // Not a market event and never in contention: `welcome` is fired directly,
+  // once ever, and there is nothing else on screen the first time a dashboard
+  // exists. It sits at the top anyway so that if it ever DID meet another
+  // event, the one about the user's own setup wins over one about the market.
+  welcome: 0,
   milestone: 0, fireworks: 1, rain: 1, ath: 2,
   storm: 2, dip: 3, lock: 3, champion: 4, rocket: 5, aurora: 6, shockwave: 7,
 }
@@ -238,6 +243,9 @@ export function emptyState() {
     fired: {}, ath: 0, milestonesHit: [], surgeDay: '',
     rainDay: '', dipDay: '', stormDay: '', auroraDay: '', locksHit: [],
     championDay: '',
+    // Once ever, not once a day. Someone who finished onboarding in March
+    // should not be welcomed again in April.
+    welcomed: false,
   }
 }
 
