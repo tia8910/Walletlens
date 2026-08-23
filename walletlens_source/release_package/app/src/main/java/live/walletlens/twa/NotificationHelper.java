@@ -38,6 +38,19 @@ public final class NotificationHelper {
     public static final String CHANNEL_DIGEST_ID     = "walletlens_digest";
     public static final String CHANNEL_DIGEST_NAME   = "Daily Digest";
 
+    /**
+     * Everything WalletLens sends on its own initiative: the morning brief, a
+     * come-back nudge, a one-off feature tip.
+     *
+     * <p>IMPORTANCE_LOW, so it posts without a sound. The web layer already
+     * marks these {@code silent: true}, but on Android 8+ that is not what
+     * decides it — the CHANNEL decides it, and a silent notification on a
+     * sounding channel still sounds. This is the channel that makes the web
+     * layer's intent true on the device.
+     */
+    public static final String CHANNEL_QUIET_ID      = "walletlens_quiet";
+    public static final String CHANNEL_QUIET_NAME    = "Updates";
+
     // ── Intent extras ─────────────────────────────────────────────────────
 
     /** Extra on the notification intent: the deep-link URL to open. */
@@ -66,6 +79,8 @@ public final class NotificationHelper {
                 NotificationManager.IMPORTANCE_HIGH);
         createChannel(CHANNEL_DIGEST_ID, CHANNEL_DIGEST_NAME,
                 NotificationManager.IMPORTANCE_DEFAULT);
+        createChannel(CHANNEL_QUIET_ID, CHANNEL_QUIET_NAME,
+                NotificationManager.IMPORTANCE_LOW);
 
         Log.d(TAG, "Notification channels created");
     }
@@ -73,7 +88,12 @@ public final class NotificationHelper {
     private void createChannel(@NonNull String id, @NonNull String name, int importance) {
         NotificationChannel channel = new NotificationChannel(id, name, importance);
         channel.setDescription("Notifications from " + name);
-        channel.enableVibration(true);
+        // A channel's settings are frozen the moment it is created: later calls
+        // with the same id change nothing. So the importance passed here is the
+        // one that ships, and the only way to alter it afterwards is the user's
+        // own Settings — which is exactly where it should live. Vibration off
+        // for the quiet channel, or IMPORTANCE_LOW would still buzz.
+        channel.enableVibration(importance >= NotificationManager.IMPORTANCE_DEFAULT);
         notificationManager.createNotificationChannel(channel);
     }
 
