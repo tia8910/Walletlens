@@ -59,27 +59,54 @@ const LOGO_SVGS = {
   solana: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 9L10 5H17L13 9H6Z' fill='%239945ff'/%3E%3Cpath d='M6 15L10 11H17L13 15H6Z' fill='%239945ff'/%3E%3C/svg%3E",
 }
 
+/**
+ * The slides this context can actually deliver.
+ *
+ * App Lock is a feature of the Android app and only of the Android app — the
+ * lock is a native BiometricPrompt, and outside the app there is nothing to
+ * prompt with. On the web the security slide was therefore a step whose only
+ * content was a greyed-out box reading "Fingerprint not available on this
+ * device", which is both a dead end and a lie: the device is usually perfectly
+ * capable, it is the browser that cannot reach it.
+ *
+ * BiometricToggle already decided this for Settings, and for the same reason:
+ *
+ *   "Hidden rather than disabled. A greyed-out row invites 'why can't I turn
+ *    this on?', and the honest answer — install the Android app — is not
+ *    something a Settings row should be arguing for."
+ *
+ * Onboarding is a worse place to make that argument than Settings, so the
+ * slide is dropped rather than shown broken.
+ */
+function slidesFor(canLock) {
+  return canLock ? SLIDES : SLIDES.filter(sl => !sl.isSecurity)
+}
+
 export default function NativeOnboarding({ onDone }) {
+  const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
+  const slides = useMemo(() => slidesFor(bioAvailable), [bioAvailable])
+
   const [step, setStep] = useState(() => {
     try {
       const saved = parseInt(localStorage.getItem(ONBOARD_STEP_KEY) || '0', 10)
       // Clamp rather than trust: a stored index past the end would render
-      // SLIDES[undefined] and blank the first screen the user ever sees.
-      return Number.isFinite(saved) ? Math.min(Math.max(saved, 0), SLIDES.length - 1) : 0
+      // slides[undefined] and blank the first screen the user ever sees. The
+      // ceiling is the VISIBLE list, which is one shorter on the web.
+      const max = slidesFor(bioAvailable).length - 1
+      return Number.isFinite(saved) ? Math.min(Math.max(saved, 0), max) : 0
     } catch { return 0 }
   })
   const [bioBusy, setBioBusy] = useState(false)
   const [bioError, setBioError] = useState('')
   const { theme, setTheme, mode, setMode } = useTheme()
   const { lang, setLang, t } = useLanguage()
-  const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
   const [swiping, setSwiping] = useState(false)
   const [swipeOffset, setSwipeOffset] = useState(0)
 
-  const s = SLIDES[step]
-  const total = SLIDES.length
+  const s = slides[Math.min(step, slides.length - 1)]
+  const total = slides.length
 
   useEffect(() => {
     try { localStorage.setItem(ONBOARD_STEP_KEY, String(step)) } catch {}
@@ -261,9 +288,10 @@ export default function NativeOnboarding({ onDone }) {
 
         {s.isSecurity && (
           <div className="no-security">
-            {!bioAvailable ? (
-              <div className="no-bio-unavailable">{t('obBioUnavailable')}</div>
-            ) : bioEnabled ? (
+            {/* No "unavailable" branch: slidesFor() drops this slide entirely
+                when App Lock cannot work here, so reaching this point already
+                means it can. */}
+            {bioEnabled ? (
               <div className="no-bio-enabled">{t('obBioEnabled')}</div>
             ) : (
               <button className="no-bio-btn" onClick={enableBiometric} disabled={bioBusy}>
@@ -299,7 +327,7 @@ export default function NativeOnboarding({ onDone }) {
           <circle cx={60 + step * 65} cy={28 - step * 7} r="4" fill={s.accent} />
         </svg>
         <div className="no-trend-segs">
-          {SLIDES.map((_, i) => (
+          {slides.map((_, i) => (
             <button key={i} className="no-trend-seg" onClick={() => goTo(i)}
               aria-label={t('obSlide')(i + 1)} />
           ))}
