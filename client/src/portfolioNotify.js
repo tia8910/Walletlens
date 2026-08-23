@@ -1,4 +1,5 @@
 import { translator } from './i18n'
+import { canNotify, showLocalNotification } from './localNotify'
 
 /**
  * Smart portfolio & engagement notification system.
@@ -50,16 +51,14 @@ function getWeekNumber() {
   return d.getFullYear() + '-W' + String(1 + Math.round(((d - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7)).padStart(2, '0')
 }
 
-function canNotify() {
-  return 'Notification' in window && Notification.permission === 'granted'
-}
-
 function fireNotification(title, body, tag) {
   if (!canNotify()) return false
-  try {
-    new Notification(title, { body, icon: '/icon-192.svg', badge: '/icon-192.svg', tag: tag || 'walletlens' })
-    return true
-  } catch { return false }
+  // Fire-and-forget: the callers are synchronous streak/goal checks that have
+  // nothing to do with the result. showLocalNotification never rejects.
+  showLocalNotification(title, {
+    body, icon: '/icon-192.svg', badge: '/icon-192.svg', tag: tag || 'walletlens',
+  })
+  return true
 }
 
 // ── Streak tracking ───────────────────────────────────────────────────────

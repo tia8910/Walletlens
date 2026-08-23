@@ -3,6 +3,7 @@ import { track } from '../analytics'
 import { syncAlerts } from '../push'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
+import { showLocalNotification } from '../localNotify'
 
 const STORAGE_KEY = 'walletlens_price_alerts'
 
@@ -26,8 +27,7 @@ function requestNotificationPermission() {
 }
 
 function fireNotification(title, body) {
-  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
-  try { new Notification(title, { body, icon: '/favicon.ico', badge: '/favicon.ico' }) } catch {}
+  showLocalNotification(title, { body, icon: '/icon-192.png', badge: '/badge-96.png' })
 }
 
 // Generate an alert beep using the Web Audio API — no file needed
