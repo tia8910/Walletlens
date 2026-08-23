@@ -191,6 +191,49 @@ function releaseHeld(withSound) {
 
 function onGesture() { releaseHeld(true) }
 
+/**
+ * How long a just-shown event will still accept a gesture to add its sound.
+ *
+ * Matched to the overlay's own lifetime. After the animation is gone a sound
+ * on its own is not the same event any more — it is a noise with no cause,
+ * which is worse than silence.
+ */
+const SOUND_CATCHUP_MS = 4000
+
+let pendingSound = null
+let pendingSoundTimer = null
+
+function clearPendingSound() {
+  pendingSound = null
+  if (pendingSoundTimer) { clearTimeout(pendingSoundTimer); pendingSoundTimer = null }
+  try { document.removeEventListener('click', onSoundGesture) } catch { /* no DOM */ }
+}
+
+function onSoundGesture() {
+  const type = pendingSound
+  clearPendingSound()
+  if (!type) return
+  unlock()
+  setVolume(pulseSettings().volume)
+  if (play(type) && pulseSettings().haptics) {
+    try { navigator.vibrate?.(hapticFor(type)) } catch { /* unsupported */ }
+  }
+}
+
+/**
+ * Keep only the SOUND waiting for the first gesture. The picture has already
+ * gone out.
+ */
+function holdSoundBriefly(type) {
+  clearPendingSound()
+  pendingSound = type
+  document.addEventListener('click', onSoundGesture, { once: true })
+  pendingSoundTimer = setTimeout(clearPendingSound, SOUND_CATCHUP_MS)
+}
+
+/** Test seam. */
+export function __pendingSound() { return pendingSound }
+
 function holdForGesture(event) {
   // Only ever one in flight. A second event while one is held is not worth a
   // queue — the user wants to know something happened, not watch a playlist.
@@ -333,8 +376,36 @@ export function observeMarket({
     // it land complete instead. This is also why the old Settings test button
     // worked when nothing else did: it *was* the gesture.
     if (wantsSound && !isUnlocked() && typeof document !== 'undefined') {
-      holdForGesture(chosen)
-      return null
+      // Visuals off: there is nothing to show, so waiting for the gesture is
+      // still right. The event lands whole or not at all.
+      if (!wantsVisual) {
+        holdForGesture(chosen)
+        return null
+      }
+
+      // Visuals on: the picture goes out NOW.
+      //
+      // This used to hold the whole event — picture included — until the first
+      // tap or a full sixty seconds. The reasoning was sound for the sound:
+      // play() bails on `if (!ctx)` before the first gesture, so playing here
+      // produces a mute celebration. But it held the PICTURE hostage to the
+      // audio, and the event this matters most for is the day's champion,
+      // which by definition fires on the first open of the day — precisely
+      // when no gesture has happened yet. "Crowned on the first open" became
+      // "crowned a minute later, or when you happen to tap something".
+      //
+      // So the two are separated. The overlay renders immediately; only the
+      // sound waits, and only for as long as the animation is still on screen
+      // (SOUND_CATCHUP_MS), so a tap during it still lands both together. A
+      // tap after that gets nothing — armPulseAudio's own listener has
+      // unlocked the context by then, so the next event of the session plays
+      // normally.
+      holdSoundBriefly(chosen.type)
+      cooldown = {
+        lastAt: now,
+        lastMajorAt: chosen.priority <= PRIORITY.ath ? now : cooldown.lastMajorAt,
+      }
+      return chosen
     }
 
     // Sound off: remember this for the discovery card, which earns the opt-in
@@ -548,6 +619,7 @@ export function __resetPulseRuntime() {
   releaseCb = null
   if (heldTimer) { clearTimeout(heldTimer); heldTimer = null }
   try { document.removeEventListener('click', onGesture) } catch { /* no DOM */ }
+  clearPendingSound()
   try { localStorage.removeItem(SAMPLES_KEY) } catch { /* ignore */ }
   cooldown = { lastAt: 0, lastMajorAt: 0 }
   armed = false
