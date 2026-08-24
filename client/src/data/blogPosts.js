@@ -37,6 +37,114 @@ export function relatedPosts(slug, n = 3) {
 
 const EVERGREEN = [
   {
+    slug: 'how-to-track-investments-as-a-beginner',
+    title: 'How to Track Investments When You\'re Just Starting Out',
+    date: 'August 2026',
+    readTime: '7 min read',
+    summary: 'New to investing? Learn exactly how to track your first portfolio across crypto, stocks, and cash — without spreadsheets or expensive tools.',
+    content: `
+Starting to invest is exciting. Tracking what you own, what it's worth, and whether you're actually making progress? That part trips up almost everyone in the beginning. Most beginners either ignore tracking entirely until things get messy, or they open a spreadsheet, update it twice, and then abandon it by month two.
+
+The good news is that tracking your early portfolio doesn't have to be complicated or expensive. With the right approach — and the right tool — you can build a clear picture of your net worth from day one, even if you only own a handful of assets.
+
+## Why Beginners Need to Track From the Start
+
+It's tempting to think tracking matters only once you have "real money" invested. That's backwards. The habits you build when your portfolio is small are exactly the ones that will serve you when it grows. More importantly, tracking early teaches you things no article or YouTube video can:
+
+- **What your actual average cost basis is** — so you know whether you're up or down in real terms, not just gut-feel terms.
+- **How your allocation is shifting** — a $500 crypto position looks different when Bitcoin doubles and suddenly represents 60% of your holdings.
+- **Whether your plan is working** — without a baseline, you can't measure progress.
+
+Starting with good records also prevents a headache that catches many investors off guard: calculating taxes. If you don't know what you paid for an asset and when, you can't calculate your gain or loss when you sell. Getting this right from your first purchase is far easier than reconstructing it later.
+
+## The Four Things Every Beginner Should Track
+
+You don't need a complex system. Focus on these four data points for every asset you hold:
+
+1. **What you bought** — the asset name and quantity.
+2. **What you paid** — the purchase price per unit (your cost basis).
+3. **When you bought it** — the date, which matters for tax holding periods.
+4. **What it's worth today** — the current value, updated with live prices.
+
+From those four inputs, everything else — unrealized profit/loss, ROI, total net worth, allocation percentages — can be calculated automatically.
+
+## Stocks vs Crypto: Different Quirks, Same Principles
+
+If you're mixing stocks and crypto (which most beginners in 2026 are), it helps to understand a few differences in how they behave as trackable assets.
+
+| | Stocks & ETFs | Crypto |
+|---|---|---|
+| Market hours | Weekdays, set hours | 24/7/365 |
+| Settlement | T+1 or T+2 | Near-instant on most chains |
+| Tax treatment | Varies by country | Often treated as property |
+| Price sources | Exchange feed | Aggregated from DEX/CEX |
+| Fractional shares | Sometimes | Always |
+
+Because crypto trades around the clock and you might buy fractional amounts across multiple purchases, the average cost basis calculation becomes especially important. If you bought 0.1 ETH at $2,000, then another 0.1 ETH at $3,000, your average cost is $2,500 per ETH — not the price you last paid.
+
+## Choosing a Tracking Method: Spreadsheet vs Dedicated Tool
+
+**Spreadsheets** are free and familiar, but they have real limitations for beginners:
+
+- You have to manually update prices (or build complex API integrations).
+- Calculating average cost basis across multiple buys requires formulas many beginners don't know.
+- There's no visual breakdown of your allocation, no P&L summary, no alerts.
+
+**Exchange apps** only show you what you hold on that specific exchange. If you have stocks in one broker, crypto on another, and some cash savings, you'll never see the full picture from any single exchange app.
+
+**Dedicated portfolio trackers** solve both problems, but many require an account, ask for your email, or even request exchange API keys — which raises real privacy concerns.
+
+A genuinely beginner-friendly option is [walletlens.live](https://walletlens.live), which runs entirely in your browser with no account or login required. Your data never leaves your device. You can add your first trade in under a minute — manually, by voice (say "I bought 0.5 ETH at 3200"), or by uploading a screenshot or CSV file from your broker.
+
+## How to Add Your First Trades
+
+Here's a simple workflow for getting set up on day one:
+
+**Step 1: List every asset you own.** Write down each stock ticker, crypto symbol, and any cash or precious metals. Don't skip cash — it's part of your net worth and affects your allocation picture.
+
+**Step 2: Find your purchase records.** Check your broker confirmation emails or exchange history for the price you paid and the date of each transaction.
+
+**Step 3: Enter each position.** Whether you're using a tracker or a spreadsheet, add each asset with its quantity and purchase price. If you made multiple buys of the same asset, enter each one separately so the tool can calculate your true average cost basis.
+
+**Step 4: Check your allocation.** Once everything is in, look at your overall breakdown. Many beginners are surprised to discover their portfolio is far more concentrated than they thought — 80% in a single stock or crypto, for example.
+
+**Step 5: Set a weekly check-in.** Five minutes once a week is enough to glance at your unrealized P&L and confirm nothing has gone wildly off your intended allocation.
+
+## Reading Your First Allocation Chart
+
+An allocation donut or pie chart shows what percentage of your total portfolio each asset or category represents. For a beginner, this is one of the most useful visuals you can have — not because it tells you what to do, but because it shows you what you've already done, often without realising it.
+
+Common things beginners spot when they first see their allocation:
+
+- **Unintended concentration** — one big winner has grown to dominate the portfolio.
+- **Forgotten cash** — savings sitting idle that could be deployed or at least accounted for.
+- **Missing diversification** — everything in one sector, one geography, or one asset class.
+
+WalletLens displays a live allocation donut broken down by category (crypto, stocks, ETFs, gold, real estate, cash), which makes it easy to spot imbalances at a glance rather than staring at a list of numbers.
+
+## A Note on Taxes and Record-Keeping
+
+*(Educational note, not financial or tax advice — consult a qualified tax professional for your specific situation.)*
+
+In most jurisdictions, selling an investment triggers a taxable event. The amount of tax owed depends on your **gain** (sale price minus cost basis) and how long you held the asset. This is why accurate records from your very first purchase matter so much. A good tracker that logs your purchase price and date automatically does half the record-keeping work for you.
+
+## Setting Simple Goals From the Beginning
+
+Tracking isn't just about knowing where you are — it's about knowing where you're going. Even as a beginner, it helps to attach meaning to your numbers:
+
+- **Short-term** — "I want this portfolio to reach $5,000."
+- **Medium-term** — "I want to rebalance when crypto exceeds 50% of my holdings."
+- **Long-term** — "I want this to contribute to a house deposit in five years."
+
+Some tools let you set price targets per asset with projected proceeds, which turns abstract goals into something you can actually watch progress toward.
+
+## Conclusion
+
+The single biggest mistake beginner investors make is waiting until their portfolio is "big enough" to bother tracking properly. Starting now — even with just two or three small positions — builds the habits, the records, and the self-knowledge that separate investors who stay the course from those who make avoidable mistakes when markets get volatile. Keep it simple: know what you own, what you paid, and what it's worth today. Everything else follows from there.
+    `
+  },
+
+  {
     slug: 'how-to-track-cash-and-crypto-together',
     title: 'How to Track Investments When You Hold Cash and Crypto',
     date: 'August 2026',
