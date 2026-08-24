@@ -25,8 +25,10 @@ export const LANGUAGES = [
   { code: 'ar', label: 'Arabic',  native: 'العربية',  flag: '🇸🇦', rtl: true  },
   { code: 'fr', label: 'French',  native: 'Français', flag: '🇫🇷', rtl: false },
   { code: 'es', label: 'Spanish', native: 'Español',  flag: '🇪🇸', rtl: false },
-  // German, Italian and Simplified Chinese are next, and are deliberately not
-  // listed until their content is complete. Adding a code here is what makes a
+  { code: 'de', label: 'German',  native: 'Deutsch',  flag: '🇩🇪', rtl: false },
+  { code: 'it', label: 'Italian', native: 'Italiano', flag: '🇮🇹', rtl: false },
+  // Simplified Chinese is next, and is deliberately not
+  // listed until its content is complete. Adding a code here is what makes a
   // language real everywhere at once — the Academy, the privacy policy, the
   // terms, the lock-screen notifications — and the suite in legal.test.js and
   // academyContent.test.js fails loudly for any language in this list that is

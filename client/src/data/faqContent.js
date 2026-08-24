@@ -23,7 +23,7 @@ export const FAQ_TEXT = {
       ['Can I use WalletLens on my phone?',
        'Yes. WalletLens is a Progressive Web App (PWA) — install it to your home screen on iOS, Android, or desktop for a fast, app-like experience that works offline. There is also a Chrome browser extension for quick portfolio checks.'],
       ['Does WalletLens support languages other than English?',
-       'Yes. The interface is available in English, Arabic, French and Spanish, with full right-to-left layout in Arabic. You can switch language during onboarding or at any time in Settings → Appearance → Language.'],
+       'Yes. The interface is available in English, Arabic, French, Spanish, German and Italian, with full right-to-left layout in Arabic. You can switch language during onboarding or at any time in Settings → Appearance → Language.'],
     ]],
     ['Privacy & Data', [
       ['Where is my portfolio data stored?',
@@ -84,7 +84,7 @@ export const FAQ_TEXT = {
       ['هل يمكنني استخدام WalletLens على هاتفي؟',
        'نعم. WalletLens تطبيق ويب تقدّمي (PWA) — ثبّته على شاشتك الرئيسية على iOS أو Android أو سطح المكتب لتجربة سريعة تشبه التطبيقات الأصلية وتعمل دون اتصال. وهناك أيضاً إضافة لمتصفّح Chrome لفحص محفظتك بسرعة.'],
       ['هل يدعم WalletLens لغات غير الإنجليزية؟',
-       'نعم. الواجهة متوفّرة بالإنجليزية والعربية والفرنسية والإسبانية، مع تخطيط كامل من اليمين إلى اليسار في العربية. يمكنك تغيير اللغة أثناء الإعداد الأولي أو في أي وقت من الإعدادات ← المظهر ← اللغة.'],
+       'نعم. الواجهة متوفّرة بالإنجليزية والعربية والفرنسية والإسبانية والألمانية والإيطالية، مع تخطيط كامل من اليمين إلى اليسار في العربية. يمكنك تغيير اللغة أثناء الإعداد الأولي أو في أي وقت من الإعدادات ← المظهر ← اللغة.'],
     ]],
     ['الخصوصية والبيانات', [
       ['أين تُخزَّن بيانات محفظتي؟',
@@ -145,7 +145,7 @@ export const FAQ_TEXT = {
       ['Puis-je utiliser WalletLens sur mon téléphone ?',
        "Oui. WalletLens est une application web progressive (PWA) — installez-la sur votre écran d'accueil sous iOS, Android ou sur ordinateur pour une expérience rapide, proche d'une application native, qui fonctionne hors ligne. Il existe également une extension Chrome pour consulter rapidement votre portefeuille."],
       ["WalletLens gère-t-il d'autres langues que l'anglais ?",
-       "Oui. L'interface est disponible en anglais, arabe, français et espagnol, avec une mise en page entièrement de droite à gauche en arabe. Vous pouvez changer de langue pendant la configuration initiale ou à tout moment dans Paramètres → Apparence → Langue."],
+       "Oui. L'interface est disponible en anglais, arabe, français, espagnol, allemand et italien, avec une mise en page entièrement de droite à gauche en arabe. Vous pouvez changer de langue pendant la configuration initiale ou à tout moment dans Paramètres → Apparence → Langue."],
     ]],
     ['Confidentialité et données', [
       ['Où sont stockées les données de mon portefeuille ?',
@@ -206,7 +206,7 @@ export const FAQ_TEXT = {
       ['¿Puedo usar WalletLens en el móvil?',
        'Sí. WalletLens es una aplicación web progresiva (PWA): instálala en la pantalla de inicio en iOS, Android o escritorio para una experiencia rápida, parecida a una app nativa, que funciona sin conexión. También hay una extensión de Chrome para consultar la cartera al vuelo.'],
       ['¿WalletLens admite otros idiomas además del inglés?',
-       'Sí. La interfaz está disponible en inglés, árabe, francés y español, con diseño completo de derecha a izquierda en árabe. Puedes cambiar de idioma durante la configuración inicial o cuando quieras en Ajustes → Apariencia → Idioma.'],
+       'Sí. La interfaz está disponible en inglés, árabe, francés, español, alemán e italiano, con diseño completo de derecha a izquierda en árabe. Puedes cambiar de idioma durante la configuración inicial o cuando quieras en Ajustes → Apariencia → Idioma.'],
     ]],
     ['Privacidad y datos', [
       ['¿Dónde se guardan los datos de mi cartera?',

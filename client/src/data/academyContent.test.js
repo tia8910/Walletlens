@@ -160,9 +160,11 @@ describe('accessors', () => {
   it('fall back to English for an unknown language', () => {
     // The picker validates its input, but a stale localStorage value or a
     // half-added language must not blank the Academy.
-    expect(questions('de')[0].q).toBe(QUESTION_TEXT.en[0][0])
-    expect(hacks('de')[0].title).toBe(HACK_TEXT.en[0][0])
-    expect(guessrCoins('de')[0].clues[0]).toBe(GUESSR_CLUES.en[0][0])
+    // 'zh' rather than 'de': German is a real language here now, so using it
+    // as the stand-in for "unknown" tested nothing and then broke.
+    expect(questions('zh')[0].q).toBe(QUESTION_TEXT.en[0][0])
+    expect(hacks('zh')[0].title).toBe(HACK_TEXT.en[0][0])
+    expect(guessrCoins('zh')[0].clues[0]).toBe(GUESSR_CLUES.en[0][0])
   })
 
   it('keep coin names untranslated', () => {
