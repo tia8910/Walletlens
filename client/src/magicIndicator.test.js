@@ -1,9 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import {
   pillarTechnical, pillarVolume, pillarWhales, pillarOnchain, pillarFundamental,
   directionMeta, computeMagic, aggregateMagic,
 } from './magicIndicator'
-import { translations } from './i18n'
+import { translations, loadAllLanguages } from './i18n'
+
+// Non-English dictionaries are code-split and load on demand at runtime (see
+// src/i18n.js); the per-language checks below need them all loaded up front.
+beforeAll(loadAllLanguages)
 
 const bullishTA = { score: 60, trend: 'uptrend', rsi: 58, macd: { cross: 'bullish' } }
 const bearishTA = { score: -60, trend: 'downtrend', rsi: 32, macd: { cross: 'bearish' } }

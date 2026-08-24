@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { translations } from './i18n'
+import { describe, it, expect, beforeAll } from 'vitest'
+import { translations, loadAllLanguages } from './i18n'
 import { LANGUAGES } from './LanguageContext'
 
 // t() falls back to English when a key is missing, which is the right runtime
@@ -7,9 +7,15 @@ import { LANGUAGES } from './LanguageContext'
 // software until a user who reads Arabic opens the screen. Half the app being
 // English next to Arabic is exactly how this shipped broken once already, so
 // the parity check is a test rather than a convention.
+//
+// Non-English dictionaries are code-split and load on demand at runtime (see
+// src/i18n.js); this suite needs all of them up front to compare, hence the
+// eager load below.
 
 const OTHERS = LANGUAGES.map(l => l.code).filter(c => c !== 'en')
 const enKeys = Object.keys(translations.en)
+
+beforeAll(loadAllLanguages)
 
 describe('translation coverage', () => {
   it('ships a table for every language the picker offers', () => {

@@ -9,17 +9,22 @@
 // weaker than rendering it, but it covers the two things that would silently
 // undo the fix: the gate coming back, and the gate going without the copy that
 // made removing it safe.
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { translations } from './i18n'
+import { translations, loadAllLanguages } from './i18n'
 
 describe('the permission primer', () => {
   const src = readFileSync(
     join(dirname(fileURLToPath(import.meta.url)), 'components/NotificationPrimer.jsx'),
     'utf8',
   )
+
+  // Non-English dictionaries are code-split and load on demand at runtime
+  // (see src/i18n.js); the check below reads all four, so it needs them
+  // loaded up front.
+  beforeAll(loadAllLanguages)
 
   it('does not refuse to ask an empty portfolio', () => {
     // The specific shape of the old gate: bail out before showing anything.

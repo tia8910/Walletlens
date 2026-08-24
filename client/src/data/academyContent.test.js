@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { LANGUAGES } from '../LanguageContext'
 import {
   ACHIEVEMENT_TEXT, HACK_TEXT, HACK_META,
@@ -6,7 +6,7 @@ import {
   GUESSR_META, GUESSR_CLUES,
   achievementText, hacks, questions, guessrCoins,
 } from './academyContent'
-import { translations } from '../i18n'
+import { translations, loadAllLanguages } from '../i18n'
 
 // The failure this file exists to prevent is not a missing string — it is a
 // question whose translated options got reordered, leaving `a` pointing at the
@@ -17,6 +17,11 @@ import { translations } from '../i18n'
 // So: shape parity first, and only then the "is anything empty" checks.
 
 const LANGS = LANGUAGES.map(l => l.code)
+
+// Non-English dictionaries are code-split and load on demand at runtime
+// (see src/i18n.js); this suite checks across all four, so it needs them
+// loaded up front.
+beforeAll(loadAllLanguages)
 
 describe('shape parity across languages', () => {
   it('covers every language the picker offers', () => {

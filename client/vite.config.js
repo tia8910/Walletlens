@@ -121,7 +121,10 @@ export default defineConfig({
           if (id.includes('/src/technicals.') || id.includes('/src/magicIndicator.')) {
             return 'technicals-utils'
           }
-          // i18n: 32 KB of translation strings — isolated so a copy change only
+          // i18n: English translation strings (the only language bundled
+          // eagerly — ar/fr/es are dynamically imported per-language by
+          // src/i18n.js and chunked separately, automatically, without
+          // needing an entry here). Isolated so a copy change only
           // invalidates this chunk, not the whole app.
           if (id.includes('/src/i18n.')) {
             return 'i18n'
