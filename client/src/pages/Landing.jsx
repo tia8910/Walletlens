@@ -4,6 +4,7 @@ import Logo from '../components/Logo'
 import LandingBackground from '../components/LandingBackground'
 import InstallExtension, { EXTENSION_URL, ChromeIcon } from '../components/InstallExtension'
 import StoreBadges, { PLAY_STORE_URL, PlayMark } from '../components/StoreBadges'
+import { isAndroidTWA } from '../nativeBridge'
 import EmailOptIn from '../components/EmailOptIn'
 import { MetalBar } from '../data/assetIcons'
 import { useLanguage } from '../LanguageContext'
@@ -112,10 +113,15 @@ export default function Landing() {
   const [isApp, setIsApp] = useState(false)
 
   useEffect(() => {
+    // isAndroidTWA rather than a second copy of the referrer test. The copy
+    // that used to live here checked only the `android-app://` scheme, which
+    // Chrome sets for a Custom Tab opened by ANY app — so arriving from a link
+    // shared in WhatsApp or Telegram hid the Play badge from an Android user
+    // who did not have the app at all.
     setIsApp(
       window.matchMedia?.('(display-mode: standalone)').matches ||
       window.navigator.standalone === true ||
-      document.referrer.startsWith('android-app://')
+      isAndroidTWA()
     )
   }, [])
 

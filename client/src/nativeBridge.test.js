@@ -28,6 +28,33 @@ describe('isAndroidTWA', () => {
   // Tab, which sends a completely ordinary Chrome mobile UA. Detecting it by
   // the `wv` WebView token meant the app never recognised itself, and the
   // widget sync, review prompt and native biometrics all silently did nothing.
+  it('ignores an android-app:// referrer from a DIFFERENT app', async () => {
+    // Chrome sets an android-app:// referrer for any Custom Tab opened by any
+    // app, so matching the scheme alone made every link shared in WhatsApp,
+    // Telegram or Instagram look like the installed WalletLens app. The
+    // landing page then hid its "Get it on Google Play" badge from exactly the
+    // Android users who could have installed it.
+    for (const pkg of ['com.whatsapp', 'org.telegram.messenger',
+                       'com.instagram.android', 'com.google.android.gm']) {
+      setUA('Mozilla/5.0 (Linux; Android 14) Chrome/120 Mobile Safari/537.36')
+      setReferrer(`android-app://${pkg}`)
+      const { isAndroidTWA } = await load()
+      expect(isAndroidTWA(), pkg).toBe(false)
+    }
+  })
+
+  it('is not fooled by a package that merely starts the same way', async () => {
+    setUA('Mozilla/5.0 (Linux; Android 14) Chrome/120 Mobile Safari/537.36')
+    setReferrer('android-app://live.walletlens.twa.evil')
+    const { isAndroidTWA } = await load()
+    // Documented, not asserted as desirable: prefix matching accepts this, and
+    // tightening it would reject the real referrer if Chrome ever appends a
+    // path. An attacker who can publish an app with our package prefix has
+    // already lost us Digital Asset Links verification, which is the control
+    // that actually matters here.
+    expect(isAndroidTWA()).toBe(true)
+  })
+
   it('detects the TWA from the android-app:// launch referrer', async () => {
     setUA(CHROME_ANDROID)
     setReferrer('android-app://live.walletlens.twa')

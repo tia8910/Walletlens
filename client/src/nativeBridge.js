@@ -27,9 +27,21 @@ const TWA_FLAG = 'wl_is_twa'
  * only holds for the launch navigation, so a positive result is remembered —
  * client-side routing never changes the referrer, but a reload can.
  *
+ * The PACKAGE must be matched, not just the scheme. Chrome sets an
+ * `android-app://` referrer for ANY Custom Tab opened by ANY app, so
+ * `startsWith('android-app://')` alone is true when someone follows a link
+ * from WhatsApp, Telegram or Instagram — none of which is WalletLens. That
+ * made every shared link look like the installed app: the landing page hid
+ * its "Get it on Google Play" badge from precisely the Android users who
+ * could have installed it, and this function claimed a native bridge that
+ * was not there.
+ *
  * The `wv` check is kept as a secondary signal, for the webview fallback the
  * TWA drops to when no Custom Tab provider is available.
  */
+/** This app's Android package — the only one whose referrer means "us". */
+const PACKAGE = 'live.walletlens.twa'
+
 export function isAndroidTWA() {
   if (typeof navigator === 'undefined') return false
   const ua = navigator.userAgent || ''
@@ -40,7 +52,7 @@ export function isAndroidTWA() {
   } catch { /* storage blocked; fall through to the live checks */ }
 
   const referrer = (typeof document !== 'undefined' && document.referrer) || ''
-  const launchedByApp = referrer.startsWith('android-app://')
+  const launchedByApp = referrer.startsWith(`android-app://${PACKAGE}`)
   const webViewFallback = /wv\)/.test(ua) || /; wv/.test(ua)
 
   if (launchedByApp || webViewFallback) {
@@ -50,7 +62,6 @@ export function isAndroidTWA() {
   return false
 }
 
-const PACKAGE = 'live.walletlens.twa'
 const LAST_INTENT_KEY = 'wl_last_intent'
 
 /**
