@@ -44,7 +44,10 @@ describe('notification copy', () => {
   }
 
   it('falls back to English for an unknown language', () => {
-    expect(copy('digestTitle', 'de')).toBe(COPY.digestTitle.en)
+    // 'zh' rather than 'de': German is a supported language now, and using a
+    // real one as the stand-in for "unknown" made this pass for the wrong
+    // reason and then fail the moment it shipped.
+    expect(copy('digestTitle', 'zh')).toBe(COPY.digestTitle.en)
     expect(copy('digestTitle', undefined)).toBe(COPY.digestTitle.en)
   })
 
@@ -863,9 +866,9 @@ describe('market data parsing', () => {
 })
 
 describe('language codes', () => {
-  it('accepts the four supported codes and nothing else', () => {
-    expect(asLang('ar')).toBe('ar')
-    expect(asLang('de')).toBeUndefined()
+  it('accepts every supported code and nothing else', () => {
+    for (const code of LANGS) expect(asLang(code)).toBe(code)
+    expect(asLang('zh')).toBeUndefined()
     expect(asLang(null)).toBeUndefined()
     expect(asLang(42)).toBeUndefined()
   })

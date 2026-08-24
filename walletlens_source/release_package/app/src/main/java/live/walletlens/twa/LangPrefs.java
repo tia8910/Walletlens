@@ -39,7 +39,7 @@ public final class LangPrefs {
     public static final String KEY_LANG   = "app_lang";
 
     /** Must match LANGUAGES in client/src/LanguageContext.jsx. */
-    private static final List<String> SUPPORTED = Arrays.asList("en", "ar", "fr", "es");
+    private static final List<String> SUPPORTED = Arrays.asList("en", "ar", "fr", "es", "de", "it");
 
     private LangPrefs() { }
 

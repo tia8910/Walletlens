@@ -291,4 +291,178 @@ export const privacy = {
       ] },
     ],
   },
+  de: {
+    title: 'Datenschutzerklärung',
+    updated: 'Zuletzt aktualisiert: August 2026',
+    intro: 'WalletLens („wir“, „uns“ oder „die App“) verpflichtet sich zum Schutz Ihrer Privatsphäre. Diese Erklärung beschreibt, welche Informationen wir erheben, wie wir sie verwenden und welche Wahlmöglichkeiten Sie haben.',
+    sections: [
+      {
+        h: '1. Kein Konto erforderlich',
+        p: ['WalletLens verlangt weder ein Konto noch eine E-Mail-Adresse noch irgendeinen Identitätsnachweis. Sie können die vollständige App anonym nutzen. Einige optionale Funktionen aus Abschnitt 3 fragen nach einer E-Mail-Adresse oder einer Google-Anmeldung; keine davon ist nötig, um ein Portfolio zu verfolgen, und jede bleibt aus, bis Sie sie einschalten.'],
+      },
+      {
+        h: '2. Standardmäßig lokal',
+        p: [
+          'Ihr Portfolio — Wallets, Transaktionen, Bestände und Kursziele — wird im `localStorage` Ihres Browsers gespeichert. In der Grundeinstellung hat WalletLens weder Nutzerkonten noch eine Datenbank: Wenn Sie keine Funktion aus Abschnitt 3 aktivieren, wird Ihr Portfolio nie an uns übertragen und wir haben keine Möglichkeit, es zu sehen.',
+          'Um Ihre Daten selbst zwischen Geräten zu bewegen, können Sie im Dashboard einen WLZ-Backup-Code exportieren. Dieser Code ist eine komprimierte, base64-kodierte Abbildung Ihrer lokalen Daten. Sie bestimmen, wann und wie er weitergegeben wird.',
+        ],
+      },
+      {
+        h: '3. Optionale Funktionen, die Daten von Ihrem Gerät senden',
+        p: ['Die folgenden Funktionen sind ausdrücklich zu aktivieren und übertragen jeweils Daten an unseren Server unter `walletlens-voice-parse.tia8910.deno.net`, der E-Mails über Resend versendet und, wo angegeben, Anfragen an Anthropic weiterleitet. Wir listen genau auf, was Ihr Gerät verlässt, damit Sie Funktion für Funktion entscheiden können:'],
+        ul: [
+          '**E-Mail-Backup** — Ihre E-Mail-Adresse und Ihr vollständiger Backup-Code, der Ihr ganzes Portfolio enthält. Er wird Ihnen zugesandt und nach dem Versand nicht aufbewahrt.',
+          '**Wochenbericht** — Ihre E-Mail-Adresse, eine anonyme Gerätekennung, Ihr gesamter Portfoliowert, Ihre Veränderung gegenüber der Vorwoche und Ihre größten Positionen mit Kürzeln, Werten und Gewinn oder Verlust. Diese Momentaufnahme wird gespeichert, damit der Wochenbericht planmäßig versandt werden kann, und bei jeder Aktualisierung durch die App ersetzt.',
+          '**Portfolio-Wächter** — eine anonyme Gerätekennung, eine Zusammenfassung Ihres Portfolios sowie Namen und E-Mail-Adressen der von Ihnen benannten Erben. Gespeichert, damit wir sie erreichen können, wenn Ihre Meldungen ausbleiben.',
+          '**Kursalarme und Push-Benachrichtigungen** — der Push-Endpunkt Ihres Browsers und Ihre Alarmliste mit den beobachteten Anlagen und Ihren Zielkursen. Gespeichert, damit Alarme auch bei geschlossener App zugestellt werden können.',
+          '**KI-Funktionen** (Spracheingabe, Screenshot-Import, Assistent, Magic Indicator, Vision-Empfehlungen) — der Text, die Tonaufnahme oder das Bild, das Sie bereitstellen, samt dem Portfoliokontext, der für die Antwort nötig ist. Sofern Sie keinen eigenen API-Schlüssel hinterlegen, werden diese über unseren Server an **Anthropic** weitergeleitet und unterliegen dessen Datenschutzerklärung. Wir bewahren sie nicht auf.',
+        ],
+        after: ['Sie können jede dieser Funktionen jederzeit in den Einstellungen beenden; das Abbestellen löscht den gespeicherten Datensatz der jeweiligen Funktion. Um alles zu löschen, was mit Ihrem Gerät verbunden ist, schreiben Sie uns an die Adresse in Abschnitt 11.'],
+      },
+      {
+        h: '4. Google-Drive-Backup',
+        p: [
+          'Wenn Sie Google Drive verbinden, fordert WalletLens nur die Berechtigung `drive.file` an, die ausschließlich Zugriff auf die eine Sicherungsdatei gewährt, die die App selbst anlegt — sie kann nichts anderes in Ihrem Drive sehen. Das Backup wird vor dem Hochladen in Ihrem Browser mit einer von Ihnen gewählten Passphrase verschlüsselt, mittels AES-GCM und einem über PBKDF2 abgeleiteten Schlüssel.',
+          'Die Datei liegt in Ihrem Google Drive, nicht auf unseren Servern, und läuft auch nicht über sie. Ihr Google-Anmeldetoken bleibt im Speicher Ihres Browsers und wird nie an uns gesendet. Da die Passphrase weder gespeichert noch übertragen wird, können weder wir noch Google den Inhalt des Backups lesen — und wenn Sie die Passphrase verlieren, kann sie niemand wiederherstellen.',
+        ],
+      },
+      {
+        h: '5. Kurs-APIs Dritter',
+        p: ['WalletLens ruft aktuelle Marktkurse von den folgenden öffentlichen Schnittstellen ab. Diese Anfragen gehen von Ihrem Browser aus und unterliegen der Datenschutzerklärung des jeweiligen Anbieters:'],
+        ul: [
+          '**CoinGecko** — Kryptokurse und Marktdaten (coingecko.com)',
+          '**Binance** — Kryptokurse (binance.com)',
+          '**CoinCap** — Ausweichkurse für Krypto (coincap.io)',
+          '**Gold-API** — Spotkurse für Gold und Silber (gold-api.com)',
+          '**Stooq** — US-amerikanische und globale Aktienkurse (stooq.com)',
+          '**ExchangeRate-APIs** — Wechselkurse für Währungen',
+          '**Blockchain.info** — unbestätigte Bitcoin-Mempool-Daten für den Wal-Tracker',
+          '**Finnhub, Alpha Vantage, Yahoo Finance** — Aktienkurse und Unternehmensdaten',
+          '**CryptoCompare, CoinPaprika, Kraken, Blockchair** — weitere Kryptokurse und On-Chain-Daten',
+          '**GoPlus Labs** — Sicherheitsprüfungen für Token',
+          '**Frankfurter, exchangerate.host, open.er-api.com** — Währungskurse',
+          '**rss2json** — Nachrichten-Schlagzeilen; **wsrv.nl** — Bildgrößenanpassung für Anlagenlogos',
+        ],
+        after: [
+          'Wird eine direkte Anfrage durch die CORS-Regeln eines Anbieters blockiert, läuft sie über einen Proxy — entweder über unseren eigenen Server oder über einen der öffentlichen Dienste `corsproxy.io`, `allorigins.win`, `cors.eu.org` oder `api.codetabs.com`. Die weitergeleitete Anfrage enthält dieselbe Marktdatenabfrage und keine Portfolioinhalte.',
+          'Diese Dienste erhalten Ihre IP-Adresse, und die Abfragen verraten ihnen, welche Anlagen Sie ansehen — was bei Anlagen, die Sie halten, auf die Zusammensetzung Ihres Portfolios hindeutet. Ihre Mengen, Transaktionen, Wallet-Namen oder Bewertungen werden ihnen nie übermittelt.',
+        ],
+      },
+      {
+        h: '6. Analyse',
+        p: [
+          'Wir nutzen **Google Analytics (GA4)**, um aggregierte Nutzungsmuster wie Seitenaufrufe, Sitzungsdauer und Gerätetyp zu verstehen. Das hilft uns, die App zu verbessern. Google Analytics verwendet Cookies und kann Ihre IP-Adresse und Browserinformationen erfassen. Sie können über das [Browser-Add-on zur Deaktivierung von Google Analytics](https://tools.google.com/dlpage/gaoptout) widersprechen.',
+          'Analyse-Ereignisse halten fest, welche Funktionen genutzt werden, nie was Sie besitzen. Signale zur Anzeigenpersonalisierung sind abgeschaltet, und kein Ereignis enthält Anlagenkürzel, Beträge, Bewertungen, Gewinne oder Verluste oder etwas, das Sie eingegeben haben. Im Web lädt zusätzlich ein Werbepixel von X (Twitter), um Verweise aus unseren dortigen Beiträgen zu messen; in der Google-Play-App ist es nicht enthalten.',
+          'In der App angezeigte Nachrichten-Schlagzeilen werden auf Anfrage über unseren eigenen Server übersetzt, der den Text der Schlagzeile an Anthropic weiterreicht. Übermittelt wird nur die öffentliche Schlagzeile — nie etwas aus Ihrem Portfolio.',
+        ],
+      },
+      {
+        h: '7. Cookies',
+        p: ['WalletLens selbst setzt keine eigenen Cookies über das hinaus, was für den Betrieb der App unbedingt nötig ist. Die oben beschriebenen Dienste Dritter können eigene Cookies setzen, wie in ihren jeweiligen Datenschutzerklärungen beschrieben. WalletLens zeigt in der App keine Werbung.'],
+      },
+      {
+        h: '8. Aufbewahrung und Löschung',
+        p: ['Datensätze, die durch die optionalen Funktionen aus Abschnitt 3 entstehen, werden nur aufbewahrt, solange die jeweilige Funktion eingeschaltet ist. Das Ausschalten einer Funktion in den Einstellungen löscht ihren gespeicherten Datensatz. Backup-E-Mails und KI-Anfragen werden nach der Verarbeitung nicht aufbewahrt. Um alles zu löschen, was mit Ihrem Gerät verbunden ist, schreiben Sie an die Adresse in Abschnitt 11 — ein Konto ist dafür nicht nötig, und wir bestätigen die Löschung.'],
+      },
+      {
+        h: '9. Privatsphäre von Kindern',
+        p: ['WalletLens richtet sich nicht an Kinder unter 13 Jahren. Wir erheben wissentlich keine personenbezogenen Daten von Kindern.'],
+      },
+      {
+        h: '10. Änderungen dieser Erklärung',
+        p: ['Wir können diese Datenschutzerklärung von Zeit zu Zeit aktualisieren. Änderungen werden auf dieser Seite mit einem aktualisierten Datum veröffentlicht. Die weitere Nutzung der App nach Änderungen gilt als Zustimmung zur überarbeiteten Fassung.'],
+      },
+      {
+        h: '11. Kontakt',
+        p: ['Wenn Sie Fragen zu dieser Datenschutzerklärung haben, schreiben Sie uns bitte an [contact@walletlens.live](mailto:contact@walletlens.live).'],
+      },
+    ],
+  },
+  it: {
+    title: 'Informativa sulla privacy',
+    updated: 'Ultimo aggiornamento: agosto 2026',
+    intro: 'WalletLens («noi», «nostro» o «l’app») si impegna a proteggere la tua privacy. Questa informativa spiega quali informazioni raccogliamo, come le usiamo e quali scelte hai a disposizione.',
+    sections: [
+      {
+        h: '1. Nessun account richiesto',
+        p: ['WalletLens non richiede di creare un account, fornire un indirizzo email o presentare alcun documento di identità. Puoi usare l’app completa in forma anonima. Alcune funzioni facoltative descritte nella sezione 3 chiedono un indirizzo email o l’accesso con Google; nessuna di esse serve per monitorare un portafoglio e ciascuna resta disattivata finché non la attivi.'],
+      },
+      {
+        h: '2. Locale per impostazione predefinita',
+        p: [
+          'Il tuo portafoglio — wallet, transazioni, posizioni e prezzi obiettivo — è conservato nel `localStorage` del tuo browser. Nella configurazione predefinita WalletLens non ha account utente né database: se non attivi alcuna funzione della sezione 3, il tuo portafoglio non ci viene mai trasmesso e non abbiamo modo di vederlo.',
+          'Per spostare i tuoi dati tra dispositivi puoi esportare dalla dashboard un codice di backup WLZ. Questo codice è una rappresentazione compressa e codificata in base64 dei tuoi dati locali. Sei tu a decidere quando e come condividerlo.',
+        ],
+      },
+      {
+        h: '3. Funzioni facoltative che inviano dati fuori dal dispositivo',
+        p: ['Le funzioni seguenti sono a scelta e ciascuna trasmette dati al nostro server su `walletlens-voice-parse.tia8910.deno.net`, che invia la posta tramite Resend e, dove indicato, inoltra le richieste ad Anthropic. Elenchiamo con precisione che cosa lascia il tuo dispositivo, così puoi decidere funzione per funzione:'],
+        ul: [
+          '**Backup via email** — il tuo indirizzo email e il tuo codice di backup completo, che contiene l’intero portafoglio. Ti viene inviato per email e non viene conservato dopo l’invio.',
+          '**Report settimanale** — il tuo indirizzo email, un identificativo anonimo del dispositivo, il valore totale del portafoglio, la variazione rispetto alla settimana precedente e le tue posizioni maggiori con simboli, valori e utili o perdite. Questa istantanea viene conservata perché il report settimanale possa essere inviato con regolarità, e viene sostituita ogni volta che l’app la aggiorna.',
+          '**Guardiano del portafoglio** — un identificativo anonimo del dispositivo, un riepilogo del portafoglio e i nomi e gli indirizzi email degli eredi che designi. Conservati per poterli contattare se i tuoi controlli periodici si interrompono.',
+          '**Avvisi di prezzo e notifiche push** — l’endpoint push del tuo browser e l’elenco dei tuoi avvisi, che comprende gli asset che segui e i tuoi prezzi obiettivo. Conservati perché gli avvisi possano arrivare anche ad app chiusa.',
+          '**Funzioni con IA** (inserimento vocale, importazione da screenshot, assistente, Magic Indicator, consigli Vision) — il testo, la trascrizione audio o l’immagine che fornisci, insieme al contesto di portafoglio necessario a rispondere. Se non fornisci una tua chiave API, queste richieste passano dal nostro server ad **Anthropic** e sono soggette alla sua informativa sulla privacy. Noi non le conserviamo.',
+        ],
+        after: ['Puoi interrompere ognuna di queste funzioni in qualsiasi momento dalle Impostazioni; l’annullamento cancella il dato conservato per quella funzione. Per far rimuovere tutto ciò che è associato al tuo dispositivo, scrivici all’indirizzo indicato nella sezione 11.'],
+      },
+      {
+        h: '4. Backup su Google Drive',
+        p: [
+          'Se scegli di collegare Google Drive, WalletLens richiede soltanto l’ambito `drive.file`, che dà accesso unicamente all’unico file di backup creato dall’app: non può vedere nient’altro nel tuo Drive. Il backup viene cifrato nel tuo browser con una passphrase che scegli tu prima del caricamento, usando AES-GCM con una chiave derivata tramite PBKDF2.',
+          'Il file resta nel tuo Google Drive, non sui nostri server, e non transita da essi. Il token di accesso Google rimane nella memoria del browser e non ci viene mai inviato. Poiché la passphrase non viene né conservata né trasmessa, né noi né Google possiamo leggere il contenuto del backup — e se la perdi, nessuno può recuperarla.',
+        ],
+      },
+      {
+        h: '5. API di prezzo di terze parti',
+        p: ['WalletLens recupera i prezzi di mercato dalle seguenti API pubbliche. Queste richieste partono dal tuo browser e sono soggette all’informativa di ciascun fornitore:'],
+        ul: [
+          '**CoinGecko** — prezzi e dati di mercato delle criptovalute (coingecko.com)',
+          '**Binance** — prezzi delle criptovalute (binance.com)',
+          '**CoinCap** — prezzi cripto di riserva (coincap.io)',
+          '**Gold-API** — prezzi spot di oro e argento (gold-api.com)',
+          '**Stooq** — prezzi azionari statunitensi e globali (stooq.com)',
+          '**ExchangeRate API** — tassi di cambio delle valute',
+          '**Blockchain.info** — dati del mempool Bitcoin non confermati per il Tracker balene',
+          '**Finnhub, Alpha Vantage, Yahoo Finance** — quotazioni azionarie e dati societari',
+          '**CryptoCompare, CoinPaprika, Kraken, Blockchair** — ulteriori prezzi cripto e dati on-chain',
+          '**GoPlus Labs** — controlli di sicurezza sui token',
+          '**Frankfurter, exchangerate.host, open.er-api.com** — tassi di cambio',
+          '**rss2json** — titoli di notizie; **wsrv.nl** — ridimensionamento delle immagini dei loghi',
+        ],
+        after: [
+          'Quando una richiesta diretta viene bloccata dalle regole CORS di un fornitore, passa attraverso un proxy — il nostro server oppure uno dei servizi pubblici `corsproxy.io`, `allorigins.win`, `cors.eu.org` o `api.codetabs.com`. La richiesta inoltrata contiene la stessa interrogazione di dati di mercato e nessun contenuto del portafoglio.',
+          'Questi servizi ricevono il tuo indirizzo IP e le interrogazioni rivelano quali asset stai consultando — il che, per gli asset che possiedi, lascia intuire la composizione del portafoglio. Non ricevono mai le tue quantità, transazioni, nomi dei wallet o valutazioni.',
+        ],
+      },
+      {
+        h: '6. Analisi',
+        p: [
+          'Usiamo **Google Analytics (GA4)** per comprendere modelli d’uso aggregati come visualizzazioni di pagina, durata delle sessioni e tipo di dispositivo. Questo ci aiuta a migliorare l’app. Google Analytics usa cookie e può raccogliere il tuo indirizzo IP e informazioni sul browser. Puoi disattivarlo con il [componente aggiuntivo del browser per la disattivazione di Google Analytics](https://tools.google.com/dlpage/gaoptout).',
+          'Gli eventi di analisi registrano quali funzioni vengono usate, mai che cosa possiedi. I segnali per la personalizzazione degli annunci sono disattivati e nessun evento contiene simboli di asset, importi, valutazioni, utili o perdite né alcunché tu abbia digitato. Sul web viene caricato anche un pixel pubblicitario di X (Twitter) per misurare i rimandi dai nostri post; non è incluso nell’app di Google Play.',
+          'I titoli delle notizie mostrati nell’app vengono tradotti su richiesta dal nostro server, che inoltra il testo del titolo ad Anthropic. Viene inviato solo il titolo pubblico — mai nulla del tuo portafoglio.',
+        ],
+      },
+      {
+        h: '7. Cookie',
+        p: ['WalletLens non imposta cookie propri oltre a quanto strettamente necessario al funzionamento dell’app. I servizi di terze parti descritti sopra possono impostare cookie propri, come indicato nelle rispettive informative. WalletLens non mostra pubblicità nell’app.'],
+      },
+      {
+        h: '8. Conservazione e cancellazione',
+        p: ['I dati creati dalle funzioni facoltative della sezione 3 sono conservati solo finché quella funzione resta attiva. Disattivarla nelle Impostazioni ne cancella il dato conservato. Le email di backup e le richieste IA non vengono conservate dopo l’elaborazione. Per far cancellare tutto ciò che è associato al tuo dispositivo, scrivi all’indirizzo indicato nella sezione 11: non serve alcun account e ti confermeremo l’avvenuta cancellazione.'],
+      },
+      {
+        h: '9. Privacy dei minori',
+        p: ['WalletLens non è rivolta a minori di 13 anni. Non raccogliamo consapevolmente dati personali di minori.'],
+      },
+      {
+        h: '10. Modifiche a questa informativa',
+        p: ['Potremmo aggiornare questa informativa di tanto in tanto. Le modifiche saranno pubblicate su questa pagina con una data di aggiornamento. L’uso continuato dell’app dopo le modifiche costituisce accettazione della versione rivista.'],
+      },
+      {
+        h: '11. Contatti',
+        p: ['Per qualsiasi domanda su questa informativa scrivici a [contact@walletlens.live](mailto:contact@walletlens.live).'],
+      },
+    ],
+  },
 }
