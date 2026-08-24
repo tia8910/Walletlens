@@ -8,7 +8,15 @@ import { LANGUAGES } from './LanguageContext'
 // English next to Arabic is exactly how this shipped broken once already, so
 // the parity check is a test rather than a convention.
 
-const OTHERS = LANGUAGES.map(l => l.code).filter(c => c !== 'en')
+// Every table that exists, not only the ones the picker currently offers.
+//
+// A language is built up over several passes before it goes live, and during
+// that window it is invisible to a check driven by LANGUAGES — which is
+// exactly when a missing key is easiest to introduce and hardest to notice.
+// LanguageContext claims two other suites enforce this; neither file exists,
+// so this is the only thing standing between a half-translated table and a
+// release.
+const OTHERS = Object.keys(translations).filter(c => c !== 'en')
 const enKeys = Object.keys(translations.en)
 
 describe('translation coverage', () => {
