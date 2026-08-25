@@ -379,6 +379,14 @@ export default function PushToggle() {
               on={prefs.features}
               onToggle={() => updatePref({ features: !prefs.features }, 'push_pref_features')}
             />
+
+            <div className="settings-divider" />
+            <Row
+              label={t('npZakat')}
+              hint={t('npZakatHint')}
+              on={prefs.zakat}
+              onToggle={() => updatePref({ zakat: !prefs.zakat }, 'push_pref_zakat')}
+            />
             </>
           )}
 

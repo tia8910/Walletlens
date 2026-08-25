@@ -56,7 +56,7 @@ public class DelegationService extends
      * <p>Kept in step with LOUD_CHANNELS in client/public/sw.js and the tags
      * main.ts sends; notificationChannels.test.js fails if they drift apart.
      */
-    private static final String[] LOUD_TAG_PREFIXES = { "price-", "level-", "move-", "wl-test" };
+    private static final String[] LOUD_TAG_PREFIXES = { "price-", "level-", "move-", "zakat", "wl-test" };
 
     @Override
     public void onCreate() {

@@ -12,7 +12,7 @@ import { pulseClass, breadthOf } from '../marketPulse'
 import { observeMarket, armPulseAudio, demoPulse, onPulseRelease, fireWelcome } from '../marketPulseRuntime'
 import PulseDiscovery from '../components/PulseDiscovery'
 import PulseOverlay from '../components/PulseOverlay'
-import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass } from '../data/assets'
+import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
 import Logo from '../components/Logo'
 import Icon from '../components/Icon'
@@ -63,6 +63,7 @@ const CorrelationMatrix = lazy(() => import('../components/CorrelationMatrix'))
 const SectorHeatmap  = lazy(() => import('../components/SectorHeatmap'))
 const SmartImport    = lazy(() => import('../components/SmartImport'))
 const DriveBackup    = lazy(() => import('../components/DriveBackup'))
+const ZakatCalculator = lazy(() => import('../components/ZakatCalculator'))
 const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
 const SmartAlerts    = lazy(() => import('../components/SmartAlerts'))
 const RiskScanner    = lazy(() => import('../components/RiskScanner'))
@@ -169,17 +170,6 @@ function hasCryptoExposure(enriched) {
   } catch { return false }
 }
 
-// ── Asset category classifier ─────────────────────────────────────────────
-function categorizeAsset(h) {
-  const id = (h.coin_id || '').toLowerCase()
-  const sym = (h.coin_symbol || '').toLowerCase()
-  if (id.startsWith('metal:') || ['xau','xag','xpt','xpd'].includes(sym)) return 'metals'
-  if (id.startsWith('stock:') || id.startsWith('xstock:') || ['aapl','msft','tsla','amzn','nvda','googl','goog','meta','nflx','baba','v','jpm','wmt'].includes(sym)) return 'stocks'
-  if (id.startsWith('real:') || id.includes('appartment') || id.includes('apartment') || id.includes('property') || sym.includes('appartment') || sym.includes('property') || sym.includes('reit') || sym === 'real') return 'realestate'
-  // Only actual fiat currencies go to cash — stablecoins (USDT, USDC, DAI…) are crypto
-  if (id.startsWith('cash:') || id.startsWith('fiat:') || ['usd','eur','gbp','jpy','us'].includes(sym)) return 'cash'
-  return 'crypto'
-}
 
 
 // Risk/market-cap bucket for the rebalance recommender: safe money (cash,
@@ -5465,6 +5455,16 @@ export default function Dashboard() {
           {/* Risk Profile */}
           {!isDemo && enriched.length > 0 && (
             <RiskProfileCard enriched={enriched} totalValue={totalValue} />
+          )}
+
+          {/* Zakat — reads the same holdings as everything else on this tab.
+              Not gated on locale: someone who reads English may still owe
+              zakat, and hiding it behind a language setting would be a strange
+              thing to do to them. */}
+          {!isDemo && enriched.length > 0 && (
+            <Suspense fallback={<TabFallback />}>
+              <ZakatCalculator holdings={enriched} prices={prices} />
+            </Suspense>
           )}
 
           {/* Wallet Evaluation */}

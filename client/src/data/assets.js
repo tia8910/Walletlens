@@ -234,6 +234,22 @@ export const POPULAR_TICKERS = [
 
 // Single classifier used everywhere — instead of duplicating six
 // startsWith / equality checks across pages.
+// ── Asset category classifier ─────────────────────────────────────────────
+// Lives here rather than in Dashboard because the Zakat calculator needs the
+// same buckets, and two copies of this would drift the moment one gained a
+// ticker the other lacked — with the zakat copy quietly getting the amount
+// someone owes wrong.
+export function categorizeAsset(h) {
+  const id = (h.coin_id || '').toLowerCase()
+  const sym = (h.coin_symbol || '').toLowerCase()
+  if (id.startsWith('metal:') || ['xau','xag','xpt','xpd'].includes(sym)) return 'metals'
+  if (id.startsWith('stock:') || id.startsWith('xstock:') || ['aapl','msft','tsla','amzn','nvda','googl','goog','meta','nflx','baba','v','jpm','wmt'].includes(sym)) return 'stocks'
+  if (id.startsWith('real:') || id.includes('appartment') || id.includes('apartment') || id.includes('property') || sym.includes('appartment') || sym.includes('property') || sym.includes('reit') || sym === 'real') return 'realestate'
+  // Only actual fiat currencies go to cash — stablecoins (USDT, USDC, DAI…) are crypto
+  if (id.startsWith('cash:') || id.startsWith('fiat:') || ['usd','eur','gbp','jpy','us'].includes(sym)) return 'cash'
+  return 'crypto'
+}
+
 export function assetClass(id) {
   if (!id) return 'crypto'
   if (id === GOLD_ID) return 'gold'

@@ -105,6 +105,11 @@ const PATHS = {
   'snowflake':      'M12 2v20M2 12h20M5.5 5.5l13 13M18.5 5.5l-13 13',
   'edit':           'M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z',
   'arrow-right':    'M5 12h14M13 6l6 6-6 6',
+  // Zakat. The crescent is not decoration here: zakat's whole timing system is
+  // lunar — the hawl is one Hijri year — so the moon is the calendar the
+  // feature runs on. It is also the only Islamic mark in the set that stays
+  // legible at 16px.
+  'crescent':       'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z',
 }
 
 function Icon({ name, size = 16, className = '', style }) {

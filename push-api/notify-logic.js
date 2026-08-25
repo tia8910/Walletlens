@@ -71,6 +71,36 @@ export const COPY = {
       `${sym} è ${cond === 'above' ? 'sopra' : 'sotto'} ${target} $ — ora ${now} $.`,
   },
 
+  // — Zakat year completing —
+  zakatTitle: {
+    en: (days) => days === 0 ? 'Your zakat is due today' : 'Your zakat year is nearly complete',
+    ar: (days) => days === 0 ? 'زكاتك تحلّ اليوم' : 'اقترب تمام حولك الزكوي',
+    fr: (days) => days === 0 ? 'Votre zakat est due aujourd\u2019hui' : 'Votre année zakat touche à sa fin',
+    es: (days) => days === 0 ? 'Tu zakat vence hoy' : 'Tu año de zakat está por completarse',
+    de: (days) => days === 0 ? 'Ihre Zakat ist heute fällig' : 'Ihr Zakat-Jahr ist bald vollendet',
+    it: (days) => days === 0 ? 'La tua zakat scade oggi' : 'Il tuo anno di zakat sta per completarsi',
+  },
+  zakatBody: {
+    en: (days) => days === 0
+      ? 'Your zakat year completes today. Open WalletLens to work out what is due.'
+      : `Your zakat year completes in ${days} days. Open WalletLens to see what is due.`,
+    ar: (days) => days === 0
+      ? 'يتمّ حولك الزكوي اليوم. افتح التطبيق لحساب ما يجب عليك.'
+      : `يتمّ حولك الزكوي بعد ${days} يوماً. افتح التطبيق لمعرفة ما يجب عليك.`,
+    fr: (days) => days === 0
+      ? 'Votre année zakat s\u2019achève aujourd\u2019hui. Ouvrez WalletLens pour calculer le montant dû.'
+      : `Votre année zakat s\u2019achève dans ${days} jours. Ouvrez WalletLens pour voir le montant dû.`,
+    es: (days) => days === 0
+      ? 'Tu año de zakat se completa hoy. Abre WalletLens para calcular lo que debes.'
+      : `Tu año de zakat se completa en ${days} días. Abre WalletLens para ver lo que debes.`,
+    de: (days) => days === 0
+      ? 'Ihr Zakat-Jahr ist heute vollendet. Öffnen Sie WalletLens, um den fälligen Betrag zu ermitteln.'
+      : `Ihr Zakat-Jahr ist in ${days} Tagen vollendet. Öffnen Sie WalletLens, um den fälligen Betrag zu sehen.`,
+    it: (days) => days === 0
+      ? 'Il tuo anno di zakat si completa oggi. Apri WalletLens per calcolare quanto è dovuto.'
+      : `Il tuo anno di zakat si completa tra ${days} giorni. Apri WalletLens per vedere quanto è dovuto.`,
+  },
+
   // — Test push from Settings —
   testTitle: {
     en: () => '🔔 WalletLens notifications are on',
@@ -791,6 +821,7 @@ export const DEFAULT_PREFS = {
   digest: true,     // morning brief — only sends when something actually moved
   retention: true,  // win-back nudges while idle
   features: true,   // one-off tips, each gated on the user's own state
+  zakat: true,      // the zakat year completing — a date, never an amount
   movePct: 5,       // swing threshold, percent
 }
 
@@ -810,8 +841,81 @@ export function sanitizePrefs(raw) {
     digest: bool(p.digest, DEFAULT_PREFS.digest),
     retention: bool(p.retention, DEFAULT_PREFS.retention),
     features: bool(p.features, DEFAULT_PREFS.features),
+    zakat: bool(p.zakat, DEFAULT_PREFS.zakat),
     movePct: pct,
   }
+}
+
+// ── Zakat reminders ─────────────────────────────────────────────────────────
+// The one thing the server is told is a DATE. Not the amount, not the
+// portfolio value, not whether the user is above nisab — all of that is worked
+// out on the device and stays there. A reminder that says "your zakat year
+// completes today" needs nothing else, and asking for more would break the
+// promise the rest of this file keeps.
+//
+// Three reminders: a month out (time to arrange the money), a week out, and on
+// the day. Each fires once per due date, tracked by key.
+
+export const ZAKAT_MILESTONES = [30, 7, 0]
+
+const DAY_MS = 86400000
+
+/** 'YYYY-MM-DD' → epoch ms at UTC midnight, or NaN if malformed. */
+export function parseDayKey(s) {
+  if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return NaN
+  const [y, m, d] = s.split('-').map(Number)
+  if (m < 1 || m > 12 || d < 1 || d > 31) return NaN
+  const t = Date.UTC(y, m - 1, d)
+  // Round-trip guard: Date.UTC happily accepts 2025-02-31.
+  const back = new Date(t)
+  if (back.getUTCMonth() !== m - 1 || back.getUTCDate() !== d) return NaN
+  return t
+}
+
+export function sanitizeZakatDue(raw) {
+  if (raw == null) return null
+  const t = parseDayKey(raw)
+  if (!Number.isFinite(t)) return null
+  // A zakat year is one lunar year, so a due date more than ~14 months out or
+  // more than a year past is not a date this app produced.
+  const now = Date.now()
+  if (t > now + 430 * DAY_MS || t < now - 400 * DAY_MS) return null
+  return raw
+}
+
+/**
+ * Which zakat reminder, if any, is due today.
+ *
+ * @param dueDate 'YYYY-MM-DD' — the user's own zakat anniversary
+ * @param today   'YYYY-MM-DD' in the user's local timezone
+ * @param sent    keys already delivered
+ * @returns { days, key } or null
+ */
+export function dueZakatReminder({ dueDate, today, sent = [] }) {
+  const due = parseDayKey(dueDate)
+  const now = parseDayKey(today)
+  if (!Number.isFinite(due) || !Number.isFinite(now)) return null
+
+  const daysOut = Math.round((due - now) / DAY_MS)
+  // Past the date: the app rolls the year forward once it is paid, so a due
+  // date in the past means it has not been. Keep saying so on the day itself
+  // only — a daily nag about an obligation is not this app's place.
+  if (daysOut < 0) return null
+
+  // The largest milestone at or above today's distance, so a phone that was
+  // off for the 30-day mark still gets the 7-day one rather than nothing.
+  const hit = ZAKAT_MILESTONES.find(m => daysOut === m)
+  if (hit === undefined) return null
+
+  const key = `${dueDate}:${hit}`
+  if (sent.includes(key)) return null
+  return { days: hit, key }
+}
+
+/** Keep the sent-key list from growing without bound. */
+export function trimZakatSent(sent, max = 12) {
+  const list = Array.isArray(sent) ? sent.filter(x => typeof x === 'string') : []
+  return list.length > max ? list.slice(list.length - max) : list
 }
 
 // ── Watch list ──────────────────────────────────────────────────────────────
@@ -1161,6 +1265,7 @@ export const CHANNEL_URL = {
   digest: '/dashboard',
   retention: '/dashboard',
   feature: '/dashboard',
+  zakat: '/dashboard?tab=tools',
   test: '/settings',
 }
 
@@ -1188,6 +1293,12 @@ export const CHANNEL_DELIVERY = {
   digest:    { urgency: 'low',    ttl: 4 * 60 * 60 },   // stale after the morning
   retention: { urgency: 'low',    ttl: 12 * 60 * 60 },  // no hurry by definition
   feature:   { urgency: 'low',    ttl: 24 * 60 * 60 },  // useful whenever it lands
+  // High urgency for three notifications a year. The reminder is worth waking
+  // a dozing phone for — it is a religious obligation falling due on a date the
+  // user chose, not a price that will still be there later — and the loudness
+  // invariant is that a channel which buzzes is one that wakes the device.
+  // The long TTL is the other half: unlike a price, this stays true all day.
+  zakat:     { urgency: 'high',   ttl: 24 * 60 * 60 },
   test:      { urgency: 'high',   ttl: 60 },            // immediate or not at all
 }
 
