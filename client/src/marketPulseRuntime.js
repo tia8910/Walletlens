@@ -372,30 +372,22 @@ export function observeMarket({
       return null
     }
 
-    // First observation of a session: decide whether to play sound.
+    // Sound-once-per-day: check persisted lastSoundDay.
     //
-    // New day (first open): play sound — the user just opened the app and
-    // this is the first thing that happened since midnight.
-    //
-    // Same-day refresh: skip sound — the user already heard this event (or it
-    // was skipped because audio wasn't armed yet) and a page reload should
-    // not replay it.
-    if (!sessionStarted) {
-      sessionStarted = true
-      const todayKey = marketPeriodKey('crypto-major', now)
-      const lastDay = next.lastSoundDay || ''
-      const isNewDay = todayKey !== lastDay
-      if (!isNewDay) {
-        // Same-day refresh: skip sound, advance cooldown.
-        cooldown.lastAt = now
-        if (chosen.priority <= PRIORITY.ath) cooldown.lastMajorAt = now
-        write(STATE_KEY, next)
-        return chosen
-      }
-      // New day: stamp lastSoundDay so same-day refreshes are silent.
-      next = { ...next, lastSoundDay: todayKey }
+    // New day (first open): play sound and stamp the day.
+    // Same-day (refresh, pull-down, soft reload): skip sound.
+    const todayKey = marketPeriodKey('crypto-major', now)
+    const lastDay = next.lastSoundDay || ''
+    if (todayKey === lastDay) {
+      // Same day — sound already played today (or was skipped). Advance
+      // cooldown so a rapid pull-down cannot immediately replay.
+      cooldown.lastAt = now
+      if (chosen.priority <= PRIORITY.ath) cooldown.lastMajorAt = now
+      write(STATE_KEY, next)
+      return chosen
     }
-
+    // New day: stamp lastSoundDay so all refreshes today are silent.
+    next = { ...next, lastSoundDay: todayKey }
     write(STATE_KEY, next)
 
     // Nothing can be heard before the first gesture of the session, and an
