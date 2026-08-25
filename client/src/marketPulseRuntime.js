@@ -380,9 +380,13 @@ export function observeMarket({
     const lastDay = next.lastSoundDay || ''
     if (todayKey === lastDay) {
       // Same day — effects already played today. Skip both sound and
-      // visual on refresh / pull-down.
+      // visual on refresh / pull-down. Clear any held/pending sound from
+      // a previous observation so it cannot leak into a gesture.
       cooldown.lastAt = now
       if (chosen.priority <= PRIORITY.ath) cooldown.lastMajorAt = now
+      clearPendingSound()
+      held = null
+      if (heldTimer) { clearTimeout(heldTimer); heldTimer = null }
       write(STATE_KEY, next)
       return null
     }
