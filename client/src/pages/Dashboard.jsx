@@ -12,7 +12,7 @@ import { pulseClass, breadthOf } from '../marketPulse'
 import { observeMarket, armPulseAudio, demoPulse, onPulseRelease, fireWelcome } from '../marketPulseRuntime'
 import PulseDiscovery from '../components/PulseDiscovery'
 import PulseOverlay from '../components/PulseOverlay'
-import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset } from '../data/assets'
+import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset, GOLD_ID, SILVER_ID } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
 import Logo from '../components/Logo'
 import Icon from '../components/Icon'
@@ -3573,8 +3573,12 @@ export default function Dashboard() {
     if (p.length) {
       setPricesLoading(true)
       const ids = p.map(h => h.coin_id).join(',')
+      // Always include gold and silver so the Zakat calculator can compute
+      // nisab even when the user does not hold metals as portfolio assets.
+      const metalIds = [GOLD_ID, SILVER_ID].filter(id => !p.some(h => h.coin_id === id))
+      const allIds = metalIds.length ? ids + ',' + metalIds.join(',') : ids
       try {
-        setPrices(await api.getPrices(ids) || {})
+        setPrices(await api.getPrices(allIds) || {})
       } catch {}
       setPricesLoading(false)
 
@@ -3604,9 +3608,13 @@ export default function Dashboard() {
   async function refreshPrices() {
     const ids = portfolioRef.current.map(h => h.coin_id).join(',')
     if (!ids) return
+    // Always include gold/silver so Zakat nisab stays live even when user
+    // does not hold metals in their portfolio.
+    const extra = [GOLD_ID, SILVER_ID].filter(id => !portfolioRef.current.some(h => h.coin_id === id))
+    const allIds = extra.length ? ids + ',' + extra.join(',') : ids
     setPricesLoading(true)
     try {
-      const px = await api.getPrices(ids)
+      const px = await api.getPrices(allIds)
       if (px && Object.keys(px).length) setPrices(px)
     } catch {}
     setPricesLoading(false)
