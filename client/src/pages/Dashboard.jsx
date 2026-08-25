@@ -3630,11 +3630,13 @@ export default function Dashboard() {
     const onPull = async () => {
       if (busy) return
       busy = true
+      pulseBlocked.current = true
       try {
         await (loadAllRef.current ? loadAllRef.current() : Promise.resolve())
         await refreshPricesRef.current?.()
       } catch { /* keep the UX smooth even if a fetch fails */ }
       busy = false
+      pulseBlocked.current = false
       window.dispatchEvent(new Event('wl:pull-refresh-done'))
     }
     window.addEventListener('wl:pull-refresh', onPull)
@@ -3811,6 +3813,8 @@ export default function Dashboard() {
   }, [enriched, coinTargets])
 
   const [pulseEvent, setPulseEvent] = useState(null)
+  // Block market pulse effects during pull-to-refresh and manual refresh.
+  const pulseBlocked = useRef(false)
 
   // Market Pulse — react to meaningful market moves.
   //
@@ -3878,6 +3882,9 @@ export default function Dashboard() {
     // sound. Once ever; returns null every time after.
     const welcome = fireWelcome({ totalValue })
     if (welcome) { setPulseEvent(welcome); return }
+
+    // Skip pulse effects during pull-to-refresh / manual refresh.
+    if (pulseBlocked.current) return
 
     const event = observeMarket({ samples, totalValue, portfolioChangePct, breadth, targetsHit })
     // Set even when the audio was refused — someone on silent has not opted
@@ -4509,7 +4516,8 @@ export default function Dashboard() {
               <button className="dvx-refresh-btn" title={t('atRefreshPrices')} disabled={refreshing} onClick={async () => {
                 setRefreshing(true)
                 track('manual_refresh')
-                try { await refreshPrices() } finally { setRefreshing(false) }
+                pulseBlocked.current = true
+                try { await refreshPrices() } finally { pulseBlocked.current = false; setRefreshing(false) }
               }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                   style={{ display:'block', animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }}>
