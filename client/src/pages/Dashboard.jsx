@@ -3119,7 +3119,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
 // ── Static card config — defined at module level to avoid recreating on every render ──
 // Dashboard bottom-nav tabs — used to validate a restored tab so a pull-to-refresh
 // (full page reload) returns to the same tab instead of resetting to the dashboard.
-const DASH_TABS = new Set(['overview', 'watchlist', 'tools', 'alerts', 'targets', 'manage'])
+const DASH_TABS = new Set(['overview', 'watchlist', 'tools', 'alerts', 'targets', 'manage', 'zakat'])
 const ACTIVE_TAB_KEY = 'wl_active_tab'
 
 const CARD_CONFIG = [
@@ -5457,16 +5457,6 @@ export default function Dashboard() {
             <RiskProfileCard enriched={enriched} totalValue={totalValue} />
           )}
 
-          {/* Zakat — reads the same holdings as everything else on this tab.
-              Not gated on locale: someone who reads English may still owe
-              zakat, and hiding it behind a language setting would be a strange
-              thing to do to them. */}
-          {!isDemo && enriched.length > 0 && (
-            <Suspense fallback={<TabFallback />}>
-              <ZakatCalculator holdings={enriched} prices={prices} />
-            </Suspense>
-          )}
-
           {/* Wallet Evaluation */}
           {enriched.length > 0 && (
             <WalletEvalTab
@@ -5629,6 +5619,15 @@ export default function Dashboard() {
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ══ ZAKAT ══ */}
+      {activeTab === 'zakat' && (
+        <div className="dvx-form-page">
+          <Suspense fallback={<TabFallback />}>
+            <ZakatCalculator holdings={enriched} prices={prices} />
+          </Suspense>
         </div>
       )}
 
