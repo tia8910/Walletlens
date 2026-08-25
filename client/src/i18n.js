@@ -8,6 +8,7 @@ export const translations = {
     // ── Zakat calculator ─────────────────────────────────────────────────────
     zkTitle: 'Zakat Calculator',
     zkSubtitle: 'Works out your zakat al-mal from the assets you already track, on live gold and silver prices.',
+    zkDisplayCurrency: 'Display currency',
     zkNoNisab: 'Gold and silver prices are unavailable right now, so the nisab threshold cannot be worked out. Nothing has been changed.',
     zkStatusDue: 'Zakat is due',
     zkStatusRunning: 'Your zakat year is running',
@@ -1922,6 +1923,7 @@ export const translations = {
     // ── Zakat calculator ─────────────────────────────────────────────────────
     zkTitle: 'حاسبة الزكاة',
     zkSubtitle: 'تحسب زكاة المال من أصولك المسجّلة، بأسعار الذهب والفضة اللحظية.',
+    zkDisplayCurrency: 'عملة العرض',
     zkNoNisab: 'أسعار الذهب والفضة غير متاحة الآن، لذا تعذّر حساب النصاب. لم يتغيّر شيء.',
     zkStatusDue: 'حان وقت إخراج الزكاة',
     zkStatusRunning: 'حولك الزكوي جارٍ',
@@ -3840,6 +3842,7 @@ export const translations = {
     // ── Zakat calculator ─────────────────────────────────────────────────────
     zkTitle: 'Calculateur de Zakat',
     zkSubtitle: 'Calcule votre zakat al-mal à partir des actifs que vous suivez déjà, aux cours de l\u2019or et de l\u2019argent en direct.',
+    zkDisplayCurrency: 'Devise d\u2019affichage',
     zkNoNisab: 'Les cours de l\u2019or et de l\u2019argent sont indisponibles, le seuil du nisab ne peut donc pas être calculé. Rien n\u2019a été modifié.',
     zkStatusDue: 'La zakat est due',
     zkStatusRunning: 'Votre année zakat est en cours',
@@ -5732,6 +5735,7 @@ export const translations = {
     // ── Zakat calculator ─────────────────────────────────────────────────────
     zkTitle: 'Calculadora de Zakat',
     zkSubtitle: 'Calcula tu zakat al-mal a partir de los activos que ya sigues, con precios de oro y plata en vivo.',
+    zkDisplayCurrency: 'Moneda de visualización',
     zkNoNisab: 'Los precios del oro y la plata no están disponibles, así que no se puede calcular el nisab. No se ha modificado nada.',
     zkStatusDue: 'El zakat es exigible',
     zkStatusRunning: 'Tu año de zakat está en curso',
@@ -7624,6 +7628,7 @@ export const translations = {
     // ── Zakat calculator ─────────────────────────────────────────────────────
     zkTitle: 'Zakat-Rechner',
     zkSubtitle: 'Berechnet Ihre Zakat al-Mal aus den Werten, die Sie ohnehin verfolgen, zu aktuellen Gold- und Silberkursen.',
+    zkDisplayCurrency: 'Anzeigewährung',
     zkNoNisab: 'Gold- und Silberkurse sind derzeit nicht verfügbar, daher lässt sich der Nisab nicht bestimmen. Es wurde nichts geändert.',
     zkStatusDue: 'Zakat ist fällig',
     zkStatusRunning: 'Ihr Zakat-Jahr läuft',
@@ -9540,6 +9545,7 @@ export const translations = {
     zkNoNisab: 'I prezzi di oro e argento non sono disponibili, quindi la soglia del nisab non può essere calcolata. Nulla è stato modificato.',
     zkStatusDue: 'La zakat è dovuta',
     zkStatusRunning: 'Il tuo anno di zakat è in corso',
+    zkDisplayCurrency: 'Valuta di visualizzazione',
     zkProjected: 'Zakat previsto',
     zkStatusBelow: 'Sotto il nisab',
     zkBelowBody: (nisab, short) => `Il nisab è ${nisab}. Il tuo patrimonio netto zakatabile è ${short} al di sotto: nessuna zakat è dovuta e nessun anno è iniziato.`,
