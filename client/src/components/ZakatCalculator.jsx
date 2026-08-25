@@ -175,6 +175,17 @@ export default function ZakatCalculator({ holdings = [], prices = {} }) {
                 width: `${Math.min(100, Math.max(0, (z.daysElapsed / z.yearLength) * 100))}%`,
               }} />
             </div>
+            <div style={{ marginTop: '0.6rem', padding: '0.5rem 0.65rem', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-sub)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.2rem' }}>
+                {t('zkProjected')}
+              </div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>
+                {money(z.amount)}
+              </div>
+              <p style={{ margin: '0.15rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {t('zkDueBody')((z.rate * 100).toFixed(z.rate === 0.025 ? 1 : 3), money(z.net))}
+              </p>
+            </div>
           </>
         )}
 

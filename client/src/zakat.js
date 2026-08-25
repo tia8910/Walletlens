@@ -266,7 +266,7 @@ export function computeZakat({ holdings = [], prices = {}, settings = DEFAULT_SE
   const startedAt = next.startedAt ? new Date(next.startedAt) : null
   const due = startedAt ? dueDateFrom(startedAt, s) : null
   const rate = rateFor(s)
-  const amount = next.status === HAWL.DUE ? wealth.net * rate : 0
+  const amount = wealth.net * rate   // always show what is owed / projected
 
   return {
     settings: s,
