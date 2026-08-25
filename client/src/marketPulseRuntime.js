@@ -379,12 +379,12 @@ export function observeMarket({
     const todayKey = marketPeriodKey('crypto-major', now)
     const lastDay = next.lastSoundDay || ''
     if (todayKey === lastDay) {
-      // Same day — sound already played today (or was skipped). Advance
-      // cooldown so a rapid pull-down cannot immediately replay.
+      // Same day — effects already played today. Skip both sound and
+      // visual on refresh / pull-down.
       cooldown.lastAt = now
       if (chosen.priority <= PRIORITY.ath) cooldown.lastMajorAt = now
       write(STATE_KEY, next)
-      return chosen
+      return null
     }
     // New day: stamp lastSoundDay so all refreshes today are silent.
     next = { ...next, lastSoundDay: todayKey }
