@@ -86,7 +86,28 @@ const FRICTION_QUIET_MS = 36 * 60 * 60 * 1000
 // is our own cooldown on top of that: two months before the same person is
 // considered again.
 const REASK_AFTER_DAYS = 60
-const MAX_ASKS = 4
+
+// After this many asks the cadence slows down. It does NOT stop.
+//
+// This used to be MAX_ASKS = 4, a hard lifetime cap, and the reasoning behind
+// it does not survive contact with how the Play API actually behaves:
+// launchReviewFlow completes identically whether the card was shown, was
+// dismissed, or was silently suppressed because the user was over Google's
+// quota. The outcome is deliberately hidden from us. An "ask" is therefore an
+// ATTEMPT and nothing more — never evidence that anybody saw anything.
+//
+// So a user could spend all four attempts inside a single quota window, be
+// shown nothing at all, and then be retired for life by
+// `askCount >= MAX_ASKS`. The people most likely to hit that are exactly the
+// ones who have never rated: someone who rates on their first card stops being
+// asked anyway, because Play stops serving it.
+//
+// Nothing is lost by continuing. An attempt that lands outside the quota costs
+// nothing and shows nothing; Google, not this file, is the authority on how
+// often a card may appear. Our job is to keep offering on a cadence that is
+// not rude — which is what the longer gap below is for.
+const SETTLED_ASKS = 4
+const SETTLED_REASK_DAYS = 180
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -234,10 +255,12 @@ export function reviewDiagnostics() {
  */
 function storedGates(s, now) {
   if (s.friction && now - s.friction < FRICTION_QUIET_MS) return 'friction'
-  if (s.askCount >= MAX_ASKS) return 'max-asks'
   if (s.opens < MIN_OPENS) return 'few-opens'
   if (!s.first || now - s.first < MIN_DAYS * DAY_MS) return 'too-new'
-  if (s.asked && now - s.asked < REASK_AFTER_DAYS * DAY_MS) return 'recent-ask'
+  // Slows after SETTLED_ASKS; never stops. See the constant for why a count of
+  // attempts cannot be treated as a count of cards seen.
+  const gapDays = s.askCount >= SETTLED_ASKS ? SETTLED_REASK_DAYS : REASK_AFTER_DAYS
+  if (s.asked && now - s.asked < gapDays * DAY_MS) return 'recent-ask'
   return ''
 }
 
