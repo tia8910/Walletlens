@@ -1,5 +1,8 @@
 export const translations = {
   en: {
+    setZakat: 'Zakat',
+    setZakatNext: (g, h) => h ? `Your next zakat date: ${g} · ${h}` : `Your next zakat date: ${g}`,
+    setZakatNoDate: 'No zakat date yet — open the Zakat calculator under Analysis, and the reminder will follow the year it starts.',
     npZakat: 'Zakat reminders',
     npZakatHint: 'A month before your zakat year completes, a week before, and on the day. The reminder carries a date only — never an amount.',
     // ── Zakat calculator ─────────────────────────────────────────────────────
@@ -1910,6 +1913,9 @@ export const translations = {
   },
 
   ar: {
+    setZakat: 'الزكاة',
+    setZakatNext: (g, h) => h ? `موعد زكاتك القادم: ${g} · ${h}` : `موعد زكاتك القادم: ${g}`,
+    setZakatNoDate: 'لا يوجد موعد بعد — افتح حاسبة الزكاة من قسم التحليل، وسيتبع التذكير الحول الذي يبدأ.',
     npZakat: 'تذكير الزكاة',
     npZakatHint: 'قبل تمام حولك بشهر، وقبله بأسبوع، ويوم حلوله. التذكير يحمل تاريخاً فقط ولا يحمل مبلغاً.',
     // ── Zakat calculator ─────────────────────────────────────────────────────
@@ -3824,6 +3830,9 @@ export const translations = {
     navMarketIndex: 'مؤشّر السوق',
   },
   fr: {
+    setZakat: 'Zakat',
+    setZakatNext: (g, h) => h ? `Votre prochaine date de zakat : ${g} · ${h}` : `Votre prochaine date de zakat : ${g}`,
+    setZakatNoDate: 'Aucune date de zakat pour l\u2019instant — ouvrez le calculateur de Zakat dans Analyse, et le rappel suivra l\u2019année qui commence.',
     npZakat: 'Rappels de zakat',
     npZakatHint: 'Un mois avant la fin de votre année zakat, une semaine avant, et le jour même. Le rappel ne contient qu\u2019une date, jamais un montant.',
     // ── Zakat calculator ─────────────────────────────────────────────────────
@@ -5712,6 +5721,9 @@ export const translations = {
     navMarketIndex: 'Indice de marché',
   },
   es: {
+    setZakat: 'Zakat',
+    setZakatNext: (g, h) => h ? `Tu próxima fecha de zakat: ${g} · ${h}` : `Tu próxima fecha de zakat: ${g}`,
+    setZakatNoDate: 'Aún no hay fecha de zakat: abre la calculadora de Zakat en Análisis y el recordatorio seguirá al año que empiece.',
     npZakat: 'Recordatorios de zakat',
     npZakatHint: 'Un mes antes de que se complete tu año de zakat, una semana antes y el mismo día. El recordatorio solo lleva una fecha, nunca un importe.',
     // ── Zakat calculator ─────────────────────────────────────────────────────
@@ -7600,6 +7612,9 @@ export const translations = {
     navMarketIndex: 'Índice de mercado',
   },
   de: {
+    setZakat: 'Zakat',
+    setZakatNext: (g, h) => h ? `Ihr nächster Zakat-Termin: ${g} · ${h}` : `Ihr nächster Zakat-Termin: ${g}`,
+    setZakatNoDate: 'Noch kein Zakat-Termin — öffnen Sie den Zakat-Rechner unter Analyse, und die Erinnerung folgt dem Jahr, das dann beginnt.',
     npZakat: 'Zakat-Erinnerungen',
     npZakatHint: 'Einen Monat vor Vollendung Ihres Zakat-Jahres, eine Woche davor und am Tag selbst. Die Erinnerung enthält nur ein Datum, nie einen Betrag.',
     // ── Zakat calculator ─────────────────────────────────────────────────────
@@ -9509,6 +9524,9 @@ export const translations = {
     npPrivacy: 'Nur Ihre Kürzel verlassen das Gerät — niemals Beträge, Werte oder Ihre Identität.',
   },
   it: {
+    setZakat: 'Zakat',
+    setZakatNext: (g, h) => h ? `La tua prossima data di zakat: ${g} · ${h}` : `La tua prossima data di zakat: ${g}`,
+    setZakatNoDate: 'Nessuna data di zakat ancora — apri il calcolatore della Zakat in Analisi e il promemoria seguirà l\u2019anno che inizia.',
     npZakat: 'Promemoria zakat',
     npZakatHint: 'Un mese prima che si completi il tuo anno di zakat, una settimana prima e il giorno stesso. Il promemoria contiene solo una data, mai un importo.',
     // ── Zakat calculator ─────────────────────────────────────────────────────
