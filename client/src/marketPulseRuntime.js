@@ -6,7 +6,7 @@
 
 import {
   detectEvents, selectOne, applyFired, pruneState, seedRecords, emptyState,
-  PRIORITY,
+  PRIORITY, marketPeriodKey,
 } from './marketPulse'
 import { unlock, play, setVolume, release, isUnlocked } from './pulseAudio'
 
@@ -373,15 +373,27 @@ export function observeMarket({
     // Skip sound on the very first observation after page load / refresh.
     // The first call seeds state and detects events; real-time sounds only
     // start from the second call onward.
+    // First observation of a session: decide whether to play sound.
+    //
+    // New day (first open): play sound — the user just opened the app and
+    // this is the first thing that happened since midnight.
+    //
+    // Same-day refresh: skip sound — the user already heard this event (or it
+    // was skipped because audio wasn't armed yet) and a page reload should
+    // not replay it.
     if (!sessionStarted) {
       sessionStarted = true
-      // Still advance cooldown so the second observation cannot immediately
-      // replay the same event with sound.
-      cooldown = {
-        lastAt: now,
-        lastMajorAt: chosen.priority <= PRIORITY.ath ? now : cooldown.lastMajorAt,
+      const todayKey = marketPeriodKey('crypto-major', now)
+      const lastDay = cooldown.lastDay || ''
+      const isNewDay = todayKey !== lastDay
+      cooldown.lastDay = todayKey
+      if (!isNewDay) {
+        // Same-day refresh: skip sound, advance cooldown.
+        cooldown.lastAt = now
+        if (chosen.priority <= PRIORITY.ath) cooldown.lastMajorAt = now
+        return chosen
       }
-      return chosen
+      // New day: fall through and play sound normally.
     }
 
     // Nothing can be heard before the first gesture of the session, and an
