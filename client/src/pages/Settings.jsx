@@ -165,7 +165,7 @@ export default function Settings() {
             Android the "already welcomed" flag lives in Chrome's storage for
             walletlens.live, so reinstalling the app does not replay it. Without
             this row an existing user has no way to reach the other languages. */}
-        <div className="settings-row">
+        <div className="settings-row settings-row-stack">
           <div className="settings-label">
             <span>{t('setLanguage')}</span>
             <span className="settings-hint">{t('setLanguageHint')}</span>
