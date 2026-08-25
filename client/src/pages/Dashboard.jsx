@@ -3565,14 +3565,20 @@ export default function Dashboard() {
       setPricesLoading(true)
       const ids = p.map(h => h.coin_id).join(',')
       try {
-        const [px, imgs] = await Promise.all([
-          api.getPrices(ids),
-          api.getCoinImages(ids).catch(() => ({})),
-        ])
-        setPrices(px || {})
-        setCoinImages(imgs || {})
+        setPrices(await api.getPrices(ids) || {})
       } catch {}
       setPricesLoading(false)
+
+      // Logos are decoration and are fetched separately, NOT awaited.
+      //
+      // These used to sit in a Promise.all with the prices, so `loaded` — and
+      // therefore the first paint, and therefore the day's champion overlay,
+      // which cannot run before it — waited on the SLOWER of two independent
+      // requests. Nothing on screen needs a logo to be correct: the champion
+      // overlay falls back to the symbol on a disc, and rows to a letter
+      // badge. Trading a correct number arriving sooner for a picture arriving
+      // later is the right way round.
+      api.getCoinImages(ids).then(imgs => setCoinImages(imgs || {})).catch(() => {})
     }
     setLoaded(true)
   }

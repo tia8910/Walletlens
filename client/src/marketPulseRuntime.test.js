@@ -670,3 +670,26 @@ describe('the welcome moment', () => {
     expect(dashboard).toMatch(/fireWelcome\(\{ totalValue \}\)/)
   })
 })
+
+describe('nothing decorative delays the first pulse', () => {
+  // The champion is gated on `loaded`, and `loaded` is set after the initial
+  // data fetch. Awaiting the coin LOGOS alongside the prices made the whole
+  // dashboard wait on the slower of two independent requests — so the day's
+  // champion, which is supposed to land on the first open, landed whenever the
+  // image endpoint got round to answering.
+  //
+  // Nothing on screen needs a logo to be correct: the overlay falls back to
+  // the symbol on a disc.
+  const dashboard = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'pages/Dashboard.jsx'), 'utf8')
+
+  it('does not await coin images before the dashboard is loaded', () => {
+    const load = dashboard.slice(0, dashboard.indexOf('setLoaded(true)'))
+    expect(load).not.toMatch(/await Promise\.all\(\[[\s\S]{0,200}?getCoinImages/)
+    expect(load).not.toMatch(/await api\.getCoinImages/)
+  })
+
+  it('still fetches them, just without blocking', () => {
+    expect(dashboard).toMatch(/api\.getCoinImages\(ids\)\.then\(imgs => setCoinImages/)
+  })
+})
