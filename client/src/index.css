@@ -1075,6 +1075,22 @@ input, select, textarea {
   .settings-row:not(.settings-row-toggle) { flex-direction: column; align-items: stretch; }
   .settings-row:not(.settings-row-toggle) .settings-chips { justify-content: flex-start; }
 }
+/* The vertical-text bug came back at 561-768px once Language had six chips.
+   `.glass-card { word-break: break-word }` in the <=768px block is inherited
+   here, and it drops the label's min-content width to a single character — so
+   `flex: 1 1 0%` has no floor left to stop at and the label collapses to ~10px
+   with one letter per line. Only the label needs the reset: overflow-wrap
+   still breaks a genuinely too-long word, it just no longer reports one
+   character as an acceptable width. */
+.settings-label { word-break: normal; }
+/* Language never fits beside its label. Six chips need ~450px and the settings
+   column is 531px at every viewport above the phone breakpoint, which leaves
+   the label 70px — technically not broken, still cramped, and one more
+   language would break it. Stacking is stable however many languages ship. */
+/* Both classes on purpose: the `.settings-row` block further down this file
+   would otherwise win `align-items` on source order alone. */
+.settings-row.settings-row-stack { flex-direction: column; align-items: stretch; }
+.settings-row.settings-row-stack .settings-chips { justify-content: flex-start; }
 /* Price Ticker toggle — hide the scrolling strip when the user turns it off. */
 [data-hide-ticker] .ticker-strip { display: none !important; }
 /* Compact Mode — tighter spacing so more fits on screen. */
