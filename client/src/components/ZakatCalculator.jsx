@@ -134,7 +134,7 @@ export default function ZakatCalculator({ holdings = [], prices = {} }) {
   return (
     <div className="glass-card" style={{ marginTop: '0.75rem' }}>
       <h3 style={{ margin: '0 0 0.35rem', display: 'inline-flex', alignItems: 'center', gap: '0.45em', fontSize: '0.95rem', fontWeight: 700 }}>
-        <Icon name="crescent" size={16} />{t('zkTitle')}
+        <Icon name="zakat" size={16} />{t('zkTitle')}
       </h3>
       <p style={{ margin: '0 0 1rem', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
         {t('zkSubtitle')}

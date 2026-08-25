@@ -110,6 +110,8 @@ const PATHS = {
   // feature runs on. It is also the only Islamic mark in the set that stays
   // legible at 16px.
   'crescent':       'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z',
+  // Zakat: hand giving coins — the core meaning of zakat (obligatory charity).
+  'zakat':          'M12 21c-4 0-7-1.5-7-4V11l7-7 7 7v6c0 2.5-3 4-7 4zM9 14a2 2 0 100 4 2 2 0 000-4zM15 12a2 2 0 100 4 2 2 0 000-4z',
 }
 
 function Icon({ name, size = 16, className = '', style }) {
