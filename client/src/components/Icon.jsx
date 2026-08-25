@@ -111,7 +111,7 @@ const PATHS = {
   // legible at 16px.
   'crescent':       'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z',
   // Zakat: hand giving coins — the core meaning of zakat (obligatory charity).
-  'zakat':          'M12 21c-4 0-7-1.5-7-4V11l7-7 7 7v6c0 2.5-3 4-7 4zM9 14a2 2 0 100 4 2 2 0 000-4zM15 12a2 2 0 100 4 2 2 0 000-4z',
+  'zakat':          'M14.5 3a9 9 0 100 18c-5 0-8-4-8-9s3-9 8-9zm-1.5 4.5l-1 4.5 4.5-1-4.5 1 1-4.5z',
 }
 
 function Icon({ name, size = 16, className = '', style }) {
