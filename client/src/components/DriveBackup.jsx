@@ -59,7 +59,10 @@ function Msg({ msg }) {
   )
 }
 
-export default function DriveBackup() {
+// `embedded` drops the section's own card chrome so the panel can sit inside a
+// card that already exists — the Dashboard's Backup & Restore card. Same panel,
+// same behaviour; only the wrapper and the heading style change.
+export default function DriveBackup({ embedded = false }) {
   const { t } = useLanguage()
   const location = useLocation()
   const [state, setState] = useState(() => driveState())
@@ -206,12 +209,8 @@ export default function DriveBackup() {
   // exists for. Say so plainly rather than leaving Restore to be guessed at.
   const waiting = connected && found && empty
 
-  return (
-    <div className="settings-section glass-card">
-      <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}>
-        <Icon name="upload" size={16} />Google Drive backup
-      </h3>
-
+  const body = (
+    <>
       {/* Status, stated rather than implied by a button label. */}
       <div className="settings-row">
         <div className="settings-label">
@@ -339,6 +338,26 @@ export default function DriveBackup() {
       )}
 
       <Msg msg={msg} />
+    </>
+  )
+
+  if (embedded) {
+    return (
+      <div style={{ marginBottom: '1rem' }}>
+        <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0 0 0.5rem 0.15rem' }}>
+          Google Drive
+        </div>
+        {body}
+      </div>
+    )
+  }
+
+  return (
+    <div className="settings-section glass-card">
+      <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}>
+        <Icon name="upload" size={16} />Google Drive backup
+      </h3>
+      {body}
     </div>
   )
 }

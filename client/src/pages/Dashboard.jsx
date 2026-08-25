@@ -62,6 +62,7 @@ const ShareCard      = lazy(() => import('../components/ShareCard'))
 const CorrelationMatrix = lazy(() => import('../components/CorrelationMatrix'))
 const SectorHeatmap  = lazy(() => import('../components/SectorHeatmap'))
 const SmartImport    = lazy(() => import('../components/SmartImport'))
+const DriveBackup    = lazy(() => import('../components/DriveBackup'))
 const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
 const SmartAlerts    = lazy(() => import('../components/SmartAlerts'))
 const RiskScanner    = lazy(() => import('../components/RiskScanner'))
@@ -1588,7 +1589,12 @@ function EmailBackupPanel() {
   )
 }
 
-function DataPanel({ onRefresh, onImported }) {
+// `drive` is opt-in rather than always on: DataPanel is mounted in six places,
+// two of which (the manage tab and the import chooser modal it can open) are on
+// screen at the same time. Two live DriveBackup panels would both answer the
+// OAuth return and fire two connects, so only the Backup & Restore card asks
+// for it.
+function DataPanel({ onRefresh, onImported, drive = false }) {
   const { t } = useLanguage()
   const [code, setCode]     = useState('')
   const [copied, setCopied] = useState(false)
@@ -1681,6 +1687,12 @@ function DataPanel({ onRefresh, onImported }) {
         <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0 0 0.5rem 0.15rem' }}>{t('setSecurity')}</div>
         <BiometricToggle />
       </div>
+
+      {drive && (
+        <Suspense fallback={null}>
+          <DriveBackup embedded />
+        </Suspense>
+      )}
 
       <p className="dvx-data-hint">
         {t('dsBackupCodeHelp')}
@@ -3254,6 +3266,13 @@ export default function Dashboard() {
     }
     // An explicit deep-link (location.state.tab) always wins.
     if (location.state?.tab && DASH_TABS.has(location.state.tab)) return location.state.tab
+    // Coming back from the Google OAuth redirect, which lands on /dashboard with
+    // only { driveConnected } in router state — no tab. DriveBackup lives in the
+    // manage tab, and it is the thing that finishes the connection, so it has to
+    // be mounted. The saved-tab fallback below usually gets this right by
+    // accident; this makes it deliberate, and survives private mode where
+    // sessionStorage is gone.
+    if (location.state?.driveConnected) return 'manage'
     // ?tab= is the same deep link in URL form, which is the only form a push
     // notification can carry — router state doesn't survive a cold app launch
     // from the lock screen.
@@ -5565,7 +5584,7 @@ export default function Dashboard() {
           </div>
           <div className="glass-card dvx-form-card">
             <h3>{t('backupTitle')}</h3>
-            <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />
+            <DataPanel drive onRefresh={loadAll} onImported={() => setActiveTab('overview')} />
           </div>
           <div className="glass-card dvx-form-card">
             <h3>{t('dsBrowserExtension')}</h3>
