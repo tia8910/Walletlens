@@ -278,6 +278,10 @@ function writeSamples(samples) {
 
 let lastSamples = readSamples()
 let cooldown = { lastAt: 0, lastMajorAt: 0 }
+// Skip sound on the very first observation after a page load / refresh.
+// The first call seeds state and detects events but should never produce
+// audio — sound only starts from the second call onward (real-time updates).
+let sessionStarted = false
 
 /**
  * Feed a market snapshot in; get back the event that played, or null.
@@ -365,6 +369,20 @@ export function observeMarket({
     write(STATE_KEY, next)
 
     if (!chosen) return null
+
+    // Skip sound on the very first observation after page load / refresh.
+    // The first call seeds state and detects events; real-time sounds only
+    // start from the second call onward.
+    if (!sessionStarted) {
+      sessionStarted = true
+      // Still advance cooldown so the second observation cannot immediately
+      // replay the same event with sound.
+      cooldown = {
+        lastAt: now,
+        lastMajorAt: chosen.priority <= PRIORITY.ath ? now : cooldown.lastMajorAt,
+      }
+      return chosen
+    }
 
     // Nothing can be heard before the first gesture of the session, and an
     // event that fires on app open — now the common case, since the portfolio
