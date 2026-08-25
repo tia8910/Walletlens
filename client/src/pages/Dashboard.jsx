@@ -3636,7 +3636,8 @@ export default function Dashboard() {
         await refreshPricesRef.current?.()
       } catch { /* keep the UX smooth even if a fetch fails */ }
       busy = false
-      pulseBlocked.current = false
+      // Defer unblock so the next useEffect render still sees pulseBlocked=true
+      setTimeout(() => { pulseBlocked.current = false }, 800)
       window.dispatchEvent(new Event('wl:pull-refresh-done'))
     }
     window.addEventListener('wl:pull-refresh', onPull)
@@ -4517,7 +4518,7 @@ export default function Dashboard() {
                 setRefreshing(true)
                 track('manual_refresh')
                 pulseBlocked.current = true
-                try { await refreshPrices() } finally { pulseBlocked.current = false; setRefreshing(false) }
+                try { await refreshPrices() } finally { setTimeout(() => { pulseBlocked.current = false }, 800); setRefreshing(false) }
               }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                   style={{ display:'block', animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }}>
