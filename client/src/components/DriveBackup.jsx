@@ -3,6 +3,7 @@ import { useLanguage } from '../LanguageContext'
 import { useLocation } from 'react-router-dom'
 import Icon from './Icon'
 import { track } from '../analytics'
+import { noteFriction } from '../reviewPrompt'
 import {
   connect, backupNow, restoreNow, driveState, previouslyConnected,
   disconnectDrive, autoBackupEnabled, forgetAutoBackup,
@@ -180,6 +181,12 @@ export default function DriveBackup() {
         setTimeout(() => window.location.reload(), 1200)
       }
     } catch (e) {
+      // Both frictions were declared in reviewPrompt and reported by nobody,
+      // so a user whose restore had just failed stayed fully eligible for a
+      // "rate us" card. That is a one-star generator — and, because Play meters
+      // the review flow per user, it also spends an ask that cannot be got
+      // back. Losing a backup is the single worst moment to be asked.
+      noteFriction(which === 'backup' ? 'sync_failed' : 'restore_failed')
       say('err', explain(e) || e.message || (which === 'backup' ? 'Backup failed' : 'Restore failed'))
     } finally { setBusy(false) }
   }
