@@ -243,6 +243,7 @@ export function emptyState() {
     fired: {}, ath: 0, milestonesHit: [], surgeDay: '',
     rainDay: '', dipDay: '', stormDay: '', auroraDay: '', locksHit: [],
     championDay: '',
+    lastSoundDay: '',
     // Once ever, not once a day. Someone who finished onboarding in March
     // should not be welcomed again in April.
     welcomed: false,
@@ -482,6 +483,7 @@ export function applyFired(state = emptyState(), event, totalValue = 0) {
     stormDay: state.stormDay || '',
     auroraDay: state.auroraDay || '',
     championDay: state.championDay || '',
+    lastSoundDay: state.lastSoundDay || '',
     locksHit: [...(state.locksHit || [])],
   }
 

@@ -366,13 +366,12 @@ export function observeMarket({
     // recording them would replay them on the next refresh.
     let next = state
     for (const e of events) next = applyFired(next, e, totalValue)
-    write(STATE_KEY, next)
 
-    if (!chosen) return null
+    if (!chosen) {
+      write(STATE_KEY, next)
+      return null
+    }
 
-    // Skip sound on the very first observation after page load / refresh.
-    // The first call seeds state and detects events; real-time sounds only
-    // start from the second call onward.
     // First observation of a session: decide whether to play sound.
     //
     // New day (first open): play sound — the user just opened the app and
@@ -384,17 +383,20 @@ export function observeMarket({
     if (!sessionStarted) {
       sessionStarted = true
       const todayKey = marketPeriodKey('crypto-major', now)
-      const lastDay = cooldown.lastDay || ''
+      const lastDay = next.lastSoundDay || ''
       const isNewDay = todayKey !== lastDay
-      cooldown.lastDay = todayKey
       if (!isNewDay) {
         // Same-day refresh: skip sound, advance cooldown.
         cooldown.lastAt = now
         if (chosen.priority <= PRIORITY.ath) cooldown.lastMajorAt = now
+        write(STATE_KEY, next)
         return chosen
       }
-      // New day: fall through and play sound normally.
+      // New day: stamp lastSoundDay so same-day refreshes are silent.
+      next = { ...next, lastSoundDay: todayKey }
     }
+
+    write(STATE_KEY, next)
 
     // Nothing can be heard before the first gesture of the session, and an
     // event that fires on app open — now the common case, since the portfolio
