@@ -15,6 +15,7 @@
 // needs the ticker and nothing else.
 
 import { foldBalances } from './data/portfolio'
+import { loadDueDate as loadZakatDue } from './zakat'
 import { usedFeature } from './featureUse'
 import { isAndroidTWA } from './nativeBridge'
 
@@ -58,6 +59,7 @@ export const DEFAULT_PUSH_PREFS = {
   digest: true,
   retention: true,
   features: true,
+  zakat: true,
   movePct: 5,
 }
 
@@ -339,6 +341,7 @@ function registrationPayload(sub) {
     watch: safe(() => resolveWatch(), []),
     setup: safe(featureSetup, {}),
     prefs: safe(getPushPrefs, DEFAULT_PUSH_PREFS),
+    zakatDue: safe(loadZakatDue, null),
     lang: safe(currentLang, 'en'),
     tz: safe(currentTz, 0),
   }

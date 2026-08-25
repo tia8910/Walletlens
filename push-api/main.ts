@@ -48,6 +48,7 @@ import {
   isBreaking, localDayKey, localHour, matchArticle,
   MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS, pickHeadline, pruneSent, pushTopic,
   RETENTION_HOUR, RETENTION_MIN_PCT, sanitizeAlerts, sanitizePrefs, sanitizeSetup,
+  sanitizeZakatDue, dueZakatReminder, trimZakatSent,
   sanitizeTz, sanitizeWatch, seedRefFromChange, shortHash,
   crossedLevel,
 } from "./notify-logic.js"
@@ -93,9 +94,12 @@ const kv = await Deno.openKv()
 type Lang = "en" | "ar" | "fr" | "es"
 
 interface WatchAsset { id: string; symbol: string; kind: "crypto" | "stock" | "metal" }
+// Mirrors DEFAULT_PREFS in notify-logic.js exactly; pushClient.test.js checks
+// that table against the client's copy. `levels` was already read at the level
+// crossing below without being declared here.
 interface Prefs {
-  moves: boolean; news: boolean; digest: boolean; retention: boolean
-  features: boolean; movePct: number
+  moves: boolean; levels: boolean; news: boolean; digest: boolean
+  retention: boolean; features: boolean; zakat: boolean; movePct: number
 }
 interface PriceRef { price: number; ts: number }
 
@@ -121,6 +125,14 @@ interface StoredSub {
   lastPrice: Record<string, number>
   /** Last round level announced per asset, so oscillation does not re-alert. */
   lastLevel: Record<string, number>
+  /**
+   * The user's zakat anniversary as 'YYYY-MM-DD', and the reminders already
+   * sent for it. A DATE and nothing else: the amount owed, the portfolio value
+   * and whether the user is even above nisab are worked out on the device and
+   * never sent here. See the privacy note at the top of this file.
+   */
+  zakatDue?: string | null
+  zakatSent: string[]
   /** Prices as of the user's last visit, for "since you were away" copy. */
   seenRef: { at: number; prices: Record<string, number> } | null
   /** Story hashes already pushed, pruned on every news run. */
@@ -175,6 +187,8 @@ function normalize(s: Partial<StoredSub> & Pick<StoredSub, "subscription">): Sto
     // an older deploy still carry the old key, and the day's count is not
     // worth losing on the deploy that lands.
     sent: s.sent ?? (s as { quota?: { day: string; n: number } }).quota ?? { day: "", n: 0 },
+    zakatDue: sanitizeZakatDue(s.zakatDue) as string | null,
+    zakatSent: trimZakatSent(s.zakatSent) as string[],
   }
 }
 
@@ -570,6 +584,9 @@ async function checkNews() {
 // Runs hourly and picks out the subscriptions whose *local* clock has just
 // reached the send hour, which is how a single cron serves every timezone.
 const DIGEST_HOUR = 9
+// Its own slot. Stacking it on the 09:00 brief would mean two notifications
+// landing together, and the one that matters here is not the one about prices.
+const ZAKAT_HOUR = 11
 
 async function checkDaily() {
   const subs = await allSubs()
@@ -590,6 +607,7 @@ async function checkDaily() {
     const h = localHour(now, sub.tz)
     return (h === DIGEST_HOUR && sub.prefs.digest)
       || (h === RETENTION_HOUR && sub.prefs.retention)
+      || (h === ZAKAT_HOUR && sub.prefs.zakat && !!sub.zakatDue)
       || featureDue(sub)
   })
   if (!due.length) return
@@ -633,6 +651,28 @@ async function checkDaily() {
       // arrives in the afternoon is not a morning brief.
       sub.digestDay = today
       changed = true
+    }
+
+    // — Zakat year completing —
+    // A date the user set a year ago, reached on their own local clock. This
+    // is the only channel that fires without consulting a price, which is the
+    // point: the server has never been told what they owe.
+    if (hour === ZAKAT_HOUR && sub.prefs.zakat && sub.zakatDue) {
+      const hit = dueZakatReminder({
+        dueDate: sub.zakatDue,
+        today: localDayKey(now, sub.tz),
+        sent: sub.zakatSent,
+      })
+      if (hit) {
+        await deliver(sub, buildPayload({
+          channel: "zakat",
+          title: copy("zakatTitle", sub.lang)(hit.days),
+          body: copy("zakatBody", sub.lang)(hit.days),
+          tag: "zakat",
+        }), { now })
+        sub.zakatSent = trimZakatSent([...sub.zakatSent, hit.key]) as string[]
+        changed = true
+      }
     }
 
     // — Win-back ladder —
@@ -891,6 +931,11 @@ async function handle(req: Request, info: Deno.ServeHandlerInfo): Promise<Respon
         ? sanitizePrefs(body.prefs) as Prefs
         : existing?.prefs,
       lang: asLang(body.lang) as Lang | undefined ?? existing?.lang,
+      // Clearing is meaningful — the year lapsed, or zakat was paid — so an
+      // explicit null must be honoured rather than falling through to the
+      // stored value the way an absent field does.
+      zakatDue: body.zakatDue !== undefined ? sanitizeZakatDue(body.zakatDue) : existing?.zakatDue,
+      zakatSent: existing?.zakatSent,
       tz: body.tz !== undefined ? sanitizeTz(body.tz) : existing?.tz,
       createdAt: existing?.createdAt ?? now,
       // Subscribing happens in the app, so it is by definition a visit.
@@ -939,6 +984,13 @@ async function handle(req: Request, info: Deno.ServeHandlerInfo): Promise<Respon
     // blank out what an earlier sync established.
     if (body.setup !== undefined) sub.setup = { ...sub.setup, ...sanitizeSetup(body.setup) }
     if (body.prefs !== undefined) sub.prefs = sanitizePrefs(body.prefs) as Prefs
+    if (body.zakatDue !== undefined) {
+      const next = sanitizeZakatDue(body.zakatDue) as string | null
+      // A new anniversary is a new set of reminders. Keeping the old keys
+      // would silence the first reminder of the new year.
+      if (next !== sub.zakatDue) sub.zakatSent = []
+      sub.zakatDue = next
+    }
     if (body.tz !== undefined) sub.tz = sanitizeTz(body.tz)
     sub.lang = asLang(body.lang) as Lang | undefined ?? sub.lang
     // Reaching this endpoint means the app is open.

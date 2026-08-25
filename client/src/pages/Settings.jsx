@@ -9,6 +9,7 @@ import { useLanguage, LANGUAGES } from '../LanguageContext'
 import InstallExtension from '../components/InstallExtension'
 import InterestPicker from '../components/InterestPicker'
 import PushToggle from '../components/PushToggle'
+import ZakatNotifyToggle from '../components/ZakatNotifyToggle'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import DriveBackup from '../components/DriveBackup'
 import { isAndroidTWA } from '../nativeBridge'
@@ -234,6 +235,15 @@ export default function Settings() {
       <div className="settings-section glass-card">
         <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bell" size={16} />{t('setNotifs')}</h3>
         <PushToggle />
+      </div>
+
+      {/* ── Zakat ── Its own section rather than a row inside Notifications,
+           because the per-channel rows there are hidden behind
+           SHOW_CHANNEL_DETAIL: a zakat toggle living among them would exist
+           and be unreachable. ── */}
+      <div className="settings-section glass-card">
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="crescent" size={16} />{t('setZakat')}</h3>
+        <ZakatNotifyToggle />
       </div>
 
       {/* ── Weekly Report ── */}
