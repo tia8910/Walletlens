@@ -283,7 +283,7 @@ const Drawer = memo(function Drawer({ open, onClose, onHelp }) {
             <span>{t('riskScanner')}</span>
           </button>
           <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'zakat' })}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 3a9 9 0 100 18c-5 0-8-4-8-9s3-9 8-9z"/><path d="M13 7.5l-1 4.5 4.5-1-4.5 1 1-4.5z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21h8M12 17v4M7 12c0-3 2.2-5 5-5s5 2 5 5-2.2 5-5 5-5-2-5-5z"/><path d="M12 4v2M10 5h4"/></svg>
             <span>{t('zkTitle')}</span>
           </button>
         </div>
