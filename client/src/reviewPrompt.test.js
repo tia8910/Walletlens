@@ -152,15 +152,51 @@ describe('maybeAskForReview', () => {
     expect(maybeAskForReview(READY)).toBe(true)
     expect(readState().askCount).toBe(2)
 
-    // Four asks is the lifetime limit. Play's own quota bites long before
-    // this does; the cap only stops us firing intents that cannot be honoured.
     vi.setSystemTime(T0 + 200 * DAY)
     expect(maybeAskForReview(READY)).toBe(true)
     vi.setSystemTime(T0 + 400 * DAY)
     expect(maybeAskForReview(READY)).toBe(true)
-    vi.setSystemTime(T0 + 900 * DAY)
-    expect(maybeAskForReview(READY)).toBe(false)
     expect(firedIntents()).toHaveLength(4)
+  })
+
+  it('slows down after several asks, but never retires anyone', async () => {
+    // This replaces a lifetime cap of four, and the reason is that an "ask" is
+    // an ATTEMPT, never evidence anybody saw a card: launchReviewFlow completes
+    // identically whether the card was shown, dismissed, or silently suppressed
+    // because the user was over Google's quota.
+    //
+    // So four attempts inside one quota window could show nothing at all and
+    // still retire that user for life — and the people most likely to hit that
+    // are precisely the ones who have never rated. Someone who DOES rate stops
+    // being asked anyway, because Play stops serving the card.
+    const { maybeAskForReview } = await loadModule()
+    seed({ askCount: 4, asked: T0 })
+    vi.setSystemTime(T0 + 60 * 1000)
+
+    // Still inside the slower window: quiet, but not retired.
+    vi.setSystemTime(T0 + 100 * DAY)
+    expect(maybeAskForReview(READY)).toBe(false)
+    vi.setSystemTime(T0 + 179 * DAY)
+    expect(maybeAskForReview(READY)).toBe(false)
+
+    // The fifth ask, which the old cap made impossible.
+    vi.setSystemTime(T0 + 181 * DAY)
+    expect(maybeAskForReview(READY)).toBe(true)
+    expect(readState().askCount).toBe(5)
+
+    // And it keeps going. A great update a year later deserves its chance.
+    vi.setSystemTime(T0 + 181 * DAY + 181 * DAY)
+    expect(maybeAskForReview(READY)).toBe(true)
+    expect(readState().askCount).toBe(6)
+  })
+
+  it('keeps the tighter cadence until the user has had several chances', async () => {
+    // The backoff must not start early, or the first few asks — the ones most
+    // likely to land inside a fresh quota window — get spread over a year.
+    const { maybeAskForReview } = await loadModule()
+    seed({ askCount: 3, asked: T0 })
+    vi.setSystemTime(T0 + 61 * DAY)
+    expect(maybeAskForReview(READY)).toBe(true)
   })
 
   it('does nothing outside the Android app', async () => {
