@@ -3,9 +3,10 @@
 // emails it: once when you subscribe, then automatically whenever you open the
 // app after ~7 days have passed.
 import { generateBackupCode, makeQrDataUrl, QR_CHUNK } from './backupCore'
+import { VOICE_API } from './apiHosts.js'
 
 const SUB_KEY = 'wl_backup_sub'
-const MAIL_ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
+const MAIL_ENDPOINT = VOICE_API
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 

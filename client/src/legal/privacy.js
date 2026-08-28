@@ -1,3 +1,4 @@
+import { VOICE_HOST } from '../apiHosts.js'
 // The Privacy Policy, per language.
 //
 // Kept out of i18n.js on purpose: that file is a flat key/value table for UI
@@ -29,7 +30,7 @@ export const privacy = {
         'To move your data between devices yourself, you can export a WLZ backup code from the Dashboard. This code is a compressed, base64-encoded representation of your local data. You control when and how it is shared.',
       ] },
       { h: '3. Optional Features That Send Data Off Your Device', p: [
-        'The following features are opt-in and each one transmits data to our server at `walletlens-voice-parse.tia8910.deno.net`, which sends mail through Resend and, where noted, relays requests to Anthropic. We list exactly what leaves your device so you can decide feature by feature:',
+        `The following features are opt-in and each one transmits data to our server at \`${VOICE_HOST}\`, which sends mail through Resend and, where noted, relays requests to Anthropic. We list exactly what leaves your device so you can decide feature by feature:`,
       ], ul: [
         '**Email backup** — your email address and your complete backup code, which contains your full portfolio. It is emailed to you and not retained after sending.',
         '**Weekly report** — your email address, an anonymous device identifier, your total portfolio value, your week-on-week change, and your largest holdings with their symbols, values and profit/loss. This snapshot is stored so the weekly email can be sent on schedule, and is replaced each time the app refreshes it.',
@@ -98,7 +99,7 @@ export const privacy = {
         'ولنقل بياناتك بين أجهزتك بنفسك، يمكنك تصدير رمز نسخ احتياطي بصيغة WLZ من لوحة التحكم. وهذا الرمز تمثيل مضغوط ومشفَّر بـ base64 لبياناتك المحلية. وأنت من يتحكّم في موعد مشاركته وطريقتها.',
       ] },
       { h: '٣. ميزات اختيارية تُرسل بيانات خارج جهازك', p: [
-        'الميزات التالية اختيارية، وكلٌّ منها يرسل بيانات إلى خادمنا على `walletlens-voice-parse.tia8910.deno.net`، الذي يرسل البريد عبر Resend، ويحوّل الطلبات إلى Anthropic حيثما أُشير إلى ذلك. ونُدرج بدقة ما يغادر جهازك لتقرّر ميزةً ميزة:',
+        `الميزات التالية اختيارية، وكلٌّ منها يرسل بيانات إلى خادمنا على \`${VOICE_HOST}\`، الذي يرسل البريد عبر Resend، ويحوّل الطلبات إلى Anthropic حيثما أُشير إلى ذلك. ونُدرج بدقة ما يغادر جهازك لتقرّر ميزةً ميزة:`,
       ], ul: [
         '**النسخ الاحتياطي بالبريد** — بريدك الإلكتروني ورمز النسخ الاحتياطي الكامل، الذي يحتوي على محفظتك بأكملها. يُرسَل إليك بالبريد ولا يُحتفظ به بعد الإرسال.',
         '**التقرير الأسبوعي** — بريدك الإلكتروني، ومعرّف جهاز مجهول الهوية، وإجمالي قيمة محفظتك، وتغيّرها الأسبوعي، وأكبر أصولك برموزها وقيمها وأرباحها وخسائرها. تُخزَّن هذه اللقطة ليتسنّى إرسال البريد الأسبوعي في موعده، ويُستبدَل بها ما سبق في كل مرة يحدّثها التطبيق.',
@@ -167,7 +168,7 @@ export const privacy = {
         'Pour déplacer vous-même vos données d’un appareil à l’autre, vous pouvez exporter un code de sauvegarde WLZ depuis le tableau de bord. Ce code est une représentation compressée et encodée en base64 de vos données locales. Vous décidez quand et comment le partager.',
       ] },
       { h: '3. Fonctionnalités facultatives qui envoient des données hors de votre appareil', p: [
-        'Les fonctionnalités suivantes sont facultatives et chacune transmet des données à notre serveur `walletlens-voice-parse.tia8910.deno.net`, qui envoie les e-mails via Resend et, le cas échéant, relaie les requêtes vers Anthropic. Nous indiquons précisément ce qui quitte votre appareil afin que vous puissiez décider fonctionnalité par fonctionnalité :',
+        `Les fonctionnalités suivantes sont facultatives et chacune transmet des données à notre serveur \`${VOICE_HOST}\`, qui envoie les e-mails via Resend et, le cas échéant, relaie les requêtes vers Anthropic. Nous indiquons précisément ce qui quitte votre appareil afin que vous puissiez décider fonctionnalité par fonctionnalité :`,
       ], ul: [
         '**Sauvegarde par e-mail** — votre adresse e-mail et votre code de sauvegarde complet, qui contient l’intégralité de votre portefeuille. Il vous est envoyé par e-mail et n’est pas conservé après l’envoi.',
         '**Rapport hebdomadaire** — votre adresse e-mail, un identifiant d’appareil anonyme, la valeur totale de votre portefeuille, sa variation hebdomadaire et vos principales positions avec leurs symboles, valeurs et résultats. Cet instantané est conservé pour que l’e-mail hebdomadaire puisse partir à l’heure, et il est remplacé à chaque actualisation par l’application.',
@@ -236,7 +237,7 @@ export const privacy = {
         'Para mover tus datos entre dispositivos por tu cuenta, puedes exportar un código de copia de seguridad WLZ desde el panel. Ese código es una representación comprimida y codificada en base64 de tus datos locales. Tú controlas cuándo y cómo se comparte.',
       ] },
       { h: '3. Funciones opcionales que envían datos fuera de tu dispositivo', p: [
-        'Las siguientes funciones son opcionales y cada una transmite datos a nuestro servidor en `walletlens-voice-parse.tia8910.deno.net`, que envía el correo a través de Resend y, cuando se indica, retransmite peticiones a Anthropic. Detallamos exactamente qué sale de tu dispositivo para que decidas función por función:',
+        `Las siguientes funciones son opcionales y cada una transmite datos a nuestro servidor en \`${VOICE_HOST}\`, que envía el correo a través de Resend y, cuando se indica, retransmite peticiones a Anthropic. Detallamos exactamente qué sale de tu dispositivo para que decidas función por función:`,
       ], ul: [
         '**Copia de seguridad por correo** — tu dirección de correo y tu código de copia completo, que contiene toda tu cartera. Se te envía por correo y no se conserva después del envío.',
         '**Informe semanal** — tu correo, un identificador de dispositivo anónimo, el valor total de tu cartera, su variación semanal y tus mayores posiciones con sus símbolos, valores y resultados. Esta instantánea se almacena para poder enviar el correo semanal a su hora, y se sustituye cada vez que la aplicación la actualiza.',
@@ -309,7 +310,7 @@ export const privacy = {
       },
       {
         h: '3. Optionale Funktionen, die Daten von Ihrem Gerät senden',
-        p: ['Die folgenden Funktionen sind ausdrücklich zu aktivieren und übertragen jeweils Daten an unseren Server unter `walletlens-voice-parse.tia8910.deno.net`, der E-Mails über Resend versendet und, wo angegeben, Anfragen an Anthropic weiterleitet. Wir listen genau auf, was Ihr Gerät verlässt, damit Sie Funktion für Funktion entscheiden können:'],
+        p: [`Die folgenden Funktionen sind ausdrücklich zu aktivieren und übertragen jeweils Daten an unseren Server unter \`${VOICE_HOST}\`, der E-Mails über Resend versendet und, wo angegeben, Anfragen an Anthropic weiterleitet. Wir listen genau auf, was Ihr Gerät verlässt, damit Sie Funktion für Funktion entscheiden können:`],
         ul: [
           '**E-Mail-Backup** — Ihre E-Mail-Adresse und Ihr vollständiger Backup-Code, der Ihr ganzes Portfolio enthält. Er wird Ihnen zugesandt und nach dem Versand nicht aufbewahrt.',
           '**Wochenbericht** — Ihre E-Mail-Adresse, eine anonyme Gerätekennung, Ihr gesamter Portfoliowert, Ihre Veränderung gegenüber der Vorwoche und Ihre größten Positionen mit Kürzeln, Werten und Gewinn oder Verlust. Diese Momentaufnahme wird gespeichert, damit der Wochenbericht planmäßig versandt werden kann, und bei jeder Aktualisierung durch die App ersetzt.',
@@ -396,7 +397,7 @@ export const privacy = {
       },
       {
         h: '3. Funzioni facoltative che inviano dati fuori dal dispositivo',
-        p: ['Le funzioni seguenti sono a scelta e ciascuna trasmette dati al nostro server su `walletlens-voice-parse.tia8910.deno.net`, che invia la posta tramite Resend e, dove indicato, inoltra le richieste ad Anthropic. Elenchiamo con precisione che cosa lascia il tuo dispositivo, così puoi decidere funzione per funzione:'],
+        p: [`Le funzioni seguenti sono a scelta e ciascuna trasmette dati al nostro server su \`${VOICE_HOST}\`, che invia la posta tramite Resend e, dove indicato, inoltra le richieste ad Anthropic. Elenchiamo con precisione che cosa lascia il tuo dispositivo, così puoi decidere funzione per funzione:`],
         ul: [
           '**Backup via email** — il tuo indirizzo email e il tuo codice di backup completo, che contiene l’intero portafoglio. Ti viene inviato per email e non viene conservato dopo l’invio.',
           '**Report settimanale** — il tuo indirizzo email, un identificativo anonimo del dispositivo, il valore totale del portafoglio, la variazione rispetto alla settimana precedente e le tue posizioni maggiori con simboli, valori e utili o perdite. Questa istantanea viene conservata perché il report settimanale possa essere inviato con regolarità, e viene sostituita ogni volta che l’app la aggiorna.',

@@ -2,10 +2,11 @@ import { useEffect, useState, useRef, useMemo } from 'react'
 import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { isStablecoin } from '../stablecoins'
+import { voiceProxy } from '../apiHosts.js'
 
 const PROXIES = [
   // Our own server-side proxy first (most reliable, no geo-block), then public.
-  url => 'https://walletlens-voice-parse.tia8910.deno.net/proxy?url=' + encodeURIComponent(url),
+  url => voiceProxy(url),
   url => 'https://corsproxy.io/?url=' + encodeURIComponent(url),
   url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
   url => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),

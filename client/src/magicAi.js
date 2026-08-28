@@ -1,3 +1,4 @@
+import { VOICE_API } from './apiHosts.js'
 // Optional AI verdict for the Magic Indicator.
 //
 // Sends the already-computed numeric pillars + key stats to the owner-hosted
@@ -7,7 +8,7 @@
 // its own knowledge of the asset. Fully optional: any failure returns null and
 // the UI simply shows the deterministic indicator alone.
 
-const DEFAULT_VOICE_API = 'https://walletlens-voice-parse.tia8910.deno.net/'
+const DEFAULT_VOICE_API = VOICE_API
 
 function endpoint() {
   try {

@@ -12,8 +12,9 @@
 // was and it never did; snapshots.js stores the raw value and it is sent as
 // stored. Do not restore that wording without also making it true.
 import { loadSnapshots } from './snapshots'
+import { VOICE_API } from './apiHosts.js'
 
-const ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
+const ENDPOINT = VOICE_API
 const SUB_KEY = 'wl_weekly_email'
 // Reuse the same anonymous device id as Portfolio Guardian so a device has one
 // identity across features (it's just a random opaque key, never PII).

@@ -3,6 +3,7 @@ import { getCachedCoinImage } from '../api'
 // Shared with the landing page's asset-class cards so both render the same
 // metal badges. See client/src/data/assetIcons.js.
 import { ASSET_ICONS } from '../data/assetIcons'
+import { voiceProxy } from '../apiHosts.js'
 function isNonCrypto(coinId) {
   if (!coinId) return false
   return coinId.startsWith('stock:') || coinId.startsWith('fiat:') ||
@@ -186,7 +187,7 @@ const CoinLogo = memo(function CoinLogo({
     return <img {...common} src={`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym}.png`} onError={advance} />
   } else if (currentStage.startsWith('dproxy:')) {
     const target = currentStage.slice(7)
-    return <img {...common} src={`https://walletlens-voice-parse.tia8910.deno.net/proxy?url=${encodeURIComponent(target)}`} onError={advance} />
+    return <img {...common} src={voiceProxy(target)} onError={advance} />
   }
   return (
     <GeneratedIcon

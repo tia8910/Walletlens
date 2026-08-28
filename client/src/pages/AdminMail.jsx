@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
+import { VOICE_API } from '../apiHosts.js'
 
-const ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
+const ENDPOINT = VOICE_API
 const TOKEN_KEY = 'wl_admin_mail_token'
 
 // Lightweight admin console for sending newsletter campaigns from
