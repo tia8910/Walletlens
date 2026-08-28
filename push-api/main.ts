@@ -268,11 +268,54 @@ async function endpointKey(endpoint: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 24)
 }
 
+// ── Subscription scan, cached for one cron minute ───────────────────────────
+//
+// This is a FULL TABLE SCAN, and it was run once per job: five crons, two of
+// them every minute, each opening with its own allSubs(). That is ~3,480 scans
+// a day before a single notification is sent — the same list, re-read up to
+// five times in the same minute — and it is what exhausted the KV Reads
+// allowance and had the whole service suspended.
+//
+// The cadences themselves are not the waste and are deliberately not touched:
+// the comments on each cron below explain that they are set by what the
+// OUTBOUND call costs (one batched CoinGecko request for crypto, one per
+// symbol for stocks). Timeliness is the product. Re-reading the same rows is
+// not.
+//
+// So the scan is cached just under a minute. Every job firing in the same
+// minute shares one read, and each job still runs on its own schedule:
+// ~1,440 scans a day instead of ~3,480.
+//
+// Staleness is bounded on both ends. The TTL is under the cron interval, so a
+// new minute always re-reads; and any request that could write invalidates it
+// (see handle()), so a preference change is never overwritten by a cron
+// holding the row from before it. Crons mutate the cached objects they later
+// persist, so jobs within a minute see each other's updates rather than
+// racing over them.
+//
+// That last point fixes a pre-existing lost update. At :05 both checkTargets
+// and checkDaily fired, each with its OWN scan: whichever read first held a
+// row from before the other's write, and the later kv.set put the stale copy
+// back — a fired flag or a digestDay silently undone. Sharing one scan means
+// they mutate the same object, so the second write carries the first's
+// changes instead of erasing them.
+const SUBS_CACHE_MS = 55_000
+let subsCache: { at: number; subs: Array<{ key: Deno.KvKey; sub: StoredSub }> } | null = null
+
+/** Drop the cached scan. Called whenever a request may have written a sub. */
+function invalidateSubsCache() {
+  subsCache = null
+}
+
 async function allSubs(): Promise<Array<{ key: Deno.KvKey; sub: StoredSub }>> {
+  const now = Date.now()
+  if (subsCache && now - subsCache.at < SUBS_CACHE_MS) return subsCache.subs
+
   const out: Array<{ key: Deno.KvKey; sub: StoredSub }> = []
   for await (const e of kv.list<StoredSub>({ prefix: ["sub"] })) {
     if (e.value?.subscription?.endpoint) out.push({ key: e.key, sub: normalize(e.value) })
   }
+  subsCache = { at: now, subs: out }
   return out
 }
 
@@ -831,6 +874,12 @@ async function handle(req: Request, info: Deno.ServeHandlerInfo): Promise<Respon
   const origin = req.headers.get("origin")
   const headers = corsHeaders(origin)
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers })
+
+  // Anything that is not a read may write a subscription. Invalidating here
+  // rather than next to each kv.set covers all seven write sites and every
+  // one added later — a cache whose correctness depends on remembering to
+  // clear it is a cache that will eventually be wrong.
+  if (req.method !== "GET") invalidateSubsCache()
 
   const ip = req.headers.get("cf-connecting-ip")
     || (info as { remoteAddr?: { hostname?: string } })?.remoteAddr?.hostname
