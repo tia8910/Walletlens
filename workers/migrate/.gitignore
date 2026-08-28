@@ -1,0 +1,2 @@
+# Exported KV data: real endpoints and keys. Never commit these.
+*.sql
