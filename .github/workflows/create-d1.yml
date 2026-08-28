@@ -1,0 +1,107 @@
+name: Create D1 Database
+
+# Creates a D1 database and prints its id, so the id can be committed into the
+# matching wrangler.toml.
+#
+# This exists because that id is the one piece of the setup that cannot be
+# known ahead of time: Cloudflare mints it, and `wrangler deploy` fails until
+# it is in the file. Running it here rather than locally keeps the API token in
+# GitHub secrets, and puts the id in a job log that can be read back.
+#
+# A database id is not a secret. It names a database that is already scoped to
+# the account, and reaching it still requires credentials.
+#
+# Safe to re-run: an existing database is reported rather than recreated.
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Database to create'
+        required: true
+        type: choice
+        default: walletlens-push
+        options: [walletlens-push, walletlens-voice]
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check required secrets are present
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          missing=0
+          if [ -z "$TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is not set. Add it under Settings - Secrets and variables - Actions."
+            missing=1
+          fi
+          if [ -z "$ACCOUNT" ]; then
+            echo "::error::CLOUDFLARE_ACCOUNT_ID is not set."
+            missing=1
+          fi
+          exit $missing
+
+      - name: Create or find the database
+        id: d1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NAME: ${{ inputs.name }}
+        run: |
+          set -o pipefail
+          # Look first. `d1 create` on an existing name is an error, and
+          # failing a re-run of an idempotent-looking workflow is a bad way to
+          # find that out.
+          npx --yes wrangler@4 d1 list --json > list.json 2>/dev/null || echo '[]' > list.json
+          id=$(node -e '
+            const fs = require("fs");
+            let rows = [];
+            try { rows = JSON.parse(fs.readFileSync("list.json", "utf8")); } catch {}
+            const hit = (Array.isArray(rows) ? rows : []).find(r => r.name === process.env.NAME);
+            process.stdout.write(hit ? (hit.uuid || hit.id || "") : "");
+          ')
+
+          if [ -n "$id" ]; then
+            echo "$NAME already exists"
+          else
+            echo "creating $NAME"
+            npx --yes wrangler@4 d1 create "$NAME" | tee create.log
+            id=$(grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' create.log | head -1)
+          fi
+
+          if [ -z "$id" ]; then
+            echo "::error::Could not determine the database id. Check the log above."
+            exit 1
+          fi
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
+      - name: Report the id
+        env:
+          NAME: ${{ inputs.name }}
+          ID: ${{ steps.d1.outputs.id }}
+        run: |
+          dir=$([ "$NAME" = "walletlens-push" ] && echo push || echo voice)
+          {
+            echo "## $NAME"
+            echo
+            echo "Database id: \`$ID\`"
+            echo
+            echo "Put it in \`workers/$dir/wrangler.toml\`:"
+            echo
+            echo '```toml'
+            echo "database_id = \"$ID\""
+            echo '```'
+            echo
+            echo "Then run the **Deploy Cloudflare Workers** workflow for \`$dir\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "$NAME database id: $ID"
