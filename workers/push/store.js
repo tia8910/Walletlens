@@ -1,0 +1,109 @@
+// D1-backed subscription store.
+//
+// This replaces Deno KV, and the reason for the whole migration lives here:
+// the Deno free plan's KV Reads allowance was exhausted by the crons scanning
+// every subscription on every job, and the org was suspended. D1 measures the
+// same work in rows read, with an allowance orders of magnitude larger.
+//
+// The scan is still cached, exactly as the Deno service ended up doing, for
+// the same reason: a bigger allowance is not a licence to re-read the same
+// rows five times a minute.
+
+import { mergeSubForWrite } from '../../push-api/notify-logic.js'
+
+// Imported, not copied. The merge rule is subtle — it exists because a cron
+// holding a cached row must not overwrite a preference change or a /seen
+// heartbeat — and two copies of it would drift. It is unit-tested from
+// client/src/zakatPush.test.js.
+
+const SUBS_CACHE_MS = 5 * 60_000
+
+/** SHA-256 of the endpoint, truncated. Same derivation the Deno service used. */
+export async function endpointKey(endpoint) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(endpoint))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 24)
+}
+
+/**
+ * A Worker isolate can serve many requests and cron ticks, so the cache lives
+ * on the instance rather than in a module global — that keeps it per-isolate
+ * and makes it testable without reloading modules.
+ */
+export class SubStore {
+  constructor(db, { now = () => Date.now(), cacheMs = SUBS_CACHE_MS } = {}) {
+    this.db = db
+    this.now = now
+    this.cacheMs = cacheMs
+    this.cache = null
+  }
+
+  /** Drop the cached scan. Called whenever a request may have written. */
+  invalidate() {
+    this.cache = null
+  }
+
+  /** Every subscription, cached across cron ticks within the window. */
+  async all() {
+    const t = this.now()
+    if (this.cache && t - this.cache.at < this.cacheMs) return this.cache.rows
+
+    const { results } = await this.db.prepare('SELECT key, data FROM subs').all()
+    const rows = []
+    for (const r of results || []) {
+      const sub = parse(r.data)
+      // A row that will not parse is skipped rather than thrown on: one bad
+      // record must not stop every other user's notifications.
+      if (sub?.subscription?.endpoint) rows.push({ key: r.key, sub })
+    }
+    this.cache = { at: t, rows }
+    return rows
+  }
+
+  async get(key) {
+    const row = await this.db.prepare('SELECT data FROM subs WHERE key = ?').bind(key).first()
+    return row ? parse(row.data) : null
+  }
+
+  async getByEndpoint(endpoint) {
+    const key = await endpointKey(endpoint)
+    const sub = await this.get(key)
+    return sub ? { key, sub } : null
+  }
+
+  /** Write a record outright. Used by the request handlers, which own the row. */
+  async put(key, sub) {
+    await this.db
+      .prepare('INSERT INTO subs (key, data, updated_at) VALUES (?, ?, ?) ' +
+               'ON CONFLICT(key) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at')
+      .bind(key, JSON.stringify(sub), this.now())
+      .run()
+    this.invalidate()
+  }
+
+  /**
+   * Write a record a CRON mutated, without clobbering the user.
+   *
+   * The cached row can be minutes old, so everything the request handlers own
+   * is re-read at write time and everything the crons own is kept. One extra
+   * read, and only on the rare path where a cron actually has something to
+   * write. A row deleted mid-run is not resurrected.
+   */
+  async save(key, sub) {
+    const fresh = await this.get(key)
+    const merged = mergeSubForWrite(sub, fresh)
+    if (!merged) return
+    await this.db
+      .prepare('UPDATE subs SET data = ?, updated_at = ? WHERE key = ?')
+      .bind(JSON.stringify(merged), this.now(), key)
+      .run()
+  }
+
+  async delete(key) {
+    await this.db.prepare('DELETE FROM subs WHERE key = ?').bind(key).run()
+    this.invalidate()
+  }
+}
+
+function parse(json) {
+  try { return JSON.parse(json) } catch { return null }
+}

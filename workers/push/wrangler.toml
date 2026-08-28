@@ -1,0 +1,35 @@
+name = "walletlens-push"
+main = "index.js"
+compatibility_date = "2026-06-21"
+
+# Replaces the Deno Deploy service of the same name, which was suspended when
+# the org exhausted its KV Reads allowance. See README.md for why the storage
+# moved to D1 and what that changes.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "walletlens-push"
+# Filled in by `wrangler d1 create walletlens-push`.
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# The cadences are carried over unchanged from the Deno service. They are set
+# by what the OUTBOUND call costs, not by storage: crypto is one batched
+# CoinGecko request however many coins are held, so it can run every minute,
+# while stocks cost one request per symbol and stay on five.
+[triggers]
+crons = [
+  "* * * * *",     # price targets, and the crypto-only move pass
+  "*/5 * * * *",   # all-kinds moves, and news
+  "5 * * * *",     # hourly: morning brief, win-back ladder, zakat, feature tips
+]
+
+# VAPID_SUBJECT is not secret. The two keys are, and are set with
+#   wrangler secret put VAPID_PUBLIC_KEY
+#   wrangler secret put VAPID_PRIVATE_KEY
+#
+# They MUST be the same pair the Deno service used. Every existing subscription
+# is bound to that public key, and the client's subscriptionMatchesKey() check
+# rejects a rotated one — every user would have to re-enable notifications by
+# hand.
+[vars]
+VAPID_SUBJECT = "mailto:contact@walletlens.live"
