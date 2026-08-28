@@ -258,6 +258,28 @@ export default function Settings() {
         <BiometricToggle />
       </div>
 
+      {/* ── Portfolio Guardian ── */}
+      <div className="settings-section glass-card">
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          {t('setGuardian')}
+        </h3>
+        <div className="settings-row">
+          <div className="settings-label">
+            <span>{t('setGuardian')}</span>
+            <span className="settings-hint">{t('setGuardianDesc')}</span>
+          </div>
+          <button
+            className={`settings-toggle ${(() => { try { return !!JSON.parse(localStorage.getItem('wl_guardian') || 'null')?.email } catch { return false } })() ? 'on' : ''}`}
+            onClick={() => {
+              track('guardian_toggle_click', { source: 'settings' })
+              navigate('/guardian')
+            }}>
+            <span className="settings-toggle-thumb"/>
+          </button>
+        </div>
+      </div>
+
       {/* ── Market Pulse ── Off by default. A finance app that makes noise
            nobody asked for only gets to do it once. */}
       <div className="settings-section glass-card">

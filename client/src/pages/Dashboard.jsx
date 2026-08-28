@@ -12,7 +12,7 @@ import { pulseClass, breadthOf } from '../marketPulse'
 import { observeMarket, armPulseAudio, demoPulse, onPulseRelease, fireWelcome } from '../marketPulseRuntime'
 import PulseDiscovery from '../components/PulseDiscovery'
 import PulseOverlay from '../components/PulseOverlay'
-import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset } from '../data/assets'
+import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset, GOLD_ID, SILVER_ID } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
 import Logo from '../components/Logo'
 import Icon from '../components/Icon'
@@ -3119,7 +3119,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
 // ── Static card config — defined at module level to avoid recreating on every render ──
 // Dashboard bottom-nav tabs — used to validate a restored tab so a pull-to-refresh
 // (full page reload) returns to the same tab instead of resetting to the dashboard.
-const DASH_TABS = new Set(['overview', 'watchlist', 'tools', 'alerts', 'targets', 'manage'])
+const DASH_TABS = new Set(['overview', 'watchlist', 'tools', 'alerts', 'targets', 'manage', 'zakat'])
 const ACTIVE_TAB_KEY = 'wl_active_tab'
 
 const CARD_CONFIG = [
@@ -3573,8 +3573,12 @@ export default function Dashboard() {
     if (p.length) {
       setPricesLoading(true)
       const ids = p.map(h => h.coin_id).join(',')
+      // Always include gold and silver so the Zakat calculator can compute
+      // nisab even when the user does not hold metals as portfolio assets.
+      const metalIds = [GOLD_ID, SILVER_ID].filter(id => !p.some(h => h.coin_id === id))
+      const allIds = metalIds.length ? ids + ',' + metalIds.join(',') : ids
       try {
-        setPrices(await api.getPrices(ids) || {})
+        setPrices(await api.getPrices(allIds) || {})
       } catch {}
       setPricesLoading(false)
 
@@ -3604,9 +3608,13 @@ export default function Dashboard() {
   async function refreshPrices() {
     const ids = portfolioRef.current.map(h => h.coin_id).join(',')
     if (!ids) return
+    // Always include gold/silver so Zakat nisab stays live even when user
+    // does not hold metals in their portfolio.
+    const extra = [GOLD_ID, SILVER_ID].filter(id => !portfolioRef.current.some(h => h.coin_id === id))
+    const allIds = extra.length ? ids + ',' + extra.join(',') : ids
     setPricesLoading(true)
     try {
-      const px = await api.getPrices(ids)
+      const px = await api.getPrices(allIds)
       if (px && Object.keys(px).length) setPrices(px)
     } catch {}
     setPricesLoading(false)
@@ -3622,11 +3630,14 @@ export default function Dashboard() {
     const onPull = async () => {
       if (busy) return
       busy = true
+      pulseBlocked.current = true
       try {
         await (loadAllRef.current ? loadAllRef.current() : Promise.resolve())
         await refreshPricesRef.current?.()
       } catch { /* keep the UX smooth even if a fetch fails */ }
       busy = false
+      // Defer unblock so the next useEffect render still sees pulseBlocked=true
+      setTimeout(() => { pulseBlocked.current = false }, 800)
       window.dispatchEvent(new Event('wl:pull-refresh-done'))
     }
     window.addEventListener('wl:pull-refresh', onPull)
@@ -3803,6 +3814,8 @@ export default function Dashboard() {
   }, [enriched, coinTargets])
 
   const [pulseEvent, setPulseEvent] = useState(null)
+  // Block market pulse effects during pull-to-refresh and manual refresh.
+  const pulseBlocked = useRef(false)
 
   // Market Pulse — react to meaningful market moves.
   //
@@ -3870,6 +3883,9 @@ export default function Dashboard() {
     // sound. Once ever; returns null every time after.
     const welcome = fireWelcome({ totalValue })
     if (welcome) { setPulseEvent(welcome); return }
+
+    // Skip pulse effects during pull-to-refresh / manual refresh.
+    if (pulseBlocked.current) return
 
     const event = observeMarket({ samples, totalValue, portfolioChangePct, breadth, targetsHit })
     // Set even when the audio was refused — someone on silent has not opted
@@ -4509,7 +4525,8 @@ export default function Dashboard() {
               <button className="dvx-refresh-btn" title={t('atRefreshPrices')} disabled={refreshing} onClick={async () => {
                 setRefreshing(true)
                 track('manual_refresh')
-                try { await refreshPrices() } finally { setRefreshing(false) }
+                pulseBlocked.current = true
+                try { await refreshPrices() } finally { setTimeout(() => { pulseBlocked.current = false }, 800); setRefreshing(false) }
               }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                   style={{ display:'block', animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }}>
@@ -5465,16 +5482,6 @@ export default function Dashboard() {
             <RiskProfileCard enriched={enriched} totalValue={totalValue} />
           )}
 
-          {/* Zakat — reads the same holdings as everything else on this tab.
-              Not gated on locale: someone who reads English may still owe
-              zakat, and hiding it behind a language setting would be a strange
-              thing to do to them. */}
-          {!isDemo && enriched.length > 0 && (
-            <Suspense fallback={<TabFallback />}>
-              <ZakatCalculator holdings={enriched} prices={prices} />
-            </Suspense>
-          )}
-
           {/* Wallet Evaluation */}
           {enriched.length > 0 && (
             <WalletEvalTab
@@ -5637,6 +5644,15 @@ export default function Dashboard() {
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ══ ZAKAT ══ */}
+      {activeTab === 'zakat' && (
+        <div className="dvx-form-page">
+          <Suspense fallback={<TabFallback />}>
+            <ZakatCalculator holdings={enriched} prices={prices} />
+          </Suspense>
         </div>
       )}
 

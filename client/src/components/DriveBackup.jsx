@@ -180,8 +180,8 @@ export default function DriveBackup({ embedded = false }) {
       } else {
         const { restored } = await restoreNow(pass)
         track('drive_restore')
-        say('ok', `Restored ${restored} items. Reloading…`)
-        setTimeout(() => window.location.reload(), 1200)
+        say('ok', `Restored ${restored} items. Redirecting…`)
+        setTimeout(() => { window.location.href = "/dashboard" }, 1200)
       }
     } catch (e) {
       // Both frictions were declared in reviewPrompt and reported by nobody,

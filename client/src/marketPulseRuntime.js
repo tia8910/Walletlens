@@ -6,7 +6,7 @@
 
 import {
   detectEvents, selectOne, applyFired, pruneState, seedRecords, emptyState,
-  PRIORITY,
+  PRIORITY, marketPeriodKey,
 } from './marketPulse'
 import { unlock, play, setVolume, release, isUnlocked, DURATION_MS } from './pulseAudio'
 
@@ -301,16 +301,25 @@ let lastSamples = readSamples()
 //
 // This is the gate selectOne() uses to stop a celebration repeating. Held only
 // on the module, it reset to zero on every page load — so `if (last && ...)`
-// saw lastAt = 0, skipped the check entirely, and the same event fired again
-// on every single refresh. That is what "why does every refresh make a sound"
-// was: the cooldown was real for the length of one session and forgotten the
-// moment the app reloaded.
+// saw lastAt = 0 and skipped the check entirely, meaning the five-second gate
+// that stops two celebrations landing together did not survive a refresh.
+//
+// Stored as a timestamp, not a latch: selectOne compares it against
+// COOLDOWN_MS, so an old one expires rather than silencing the app forever.
 let cooldown = read(COOLDOWN_KEY, { lastAt: 0, lastMajorAt: 0 })
 
 function setCooldown(next) {
   cooldown = next
   write(COOLDOWN_KEY, next)
 }
+
+// There was a `sessionStarted` flag here, meant to skip sound on the first
+// observation after a load. It was declared and never read — nothing in the
+// file consulted it — so it suppressed nothing. The lastSoundDay gate below
+// does that job properly and persists across reloads, which an in-memory flag
+// could not. Removed rather than wired: a second, overlapping mechanism would
+// make the once-a-day rule harder to reason about, and a dead flag that reads
+// like a safety check is worse than no flag at all.
 
 /**
  * Feed a market snapshot in; get back the event that played, or null.
@@ -395,9 +404,35 @@ export function observeMarket({
     // recording them would replay them on the next refresh.
     let next = state
     for (const e of events) next = applyFired(next, e, totalValue)
-    write(STATE_KEY, next)
 
-    if (!chosen) return null
+    if (!chosen) {
+      write(STATE_KEY, next)
+      return null
+    }
+
+    // Sound-once-per-day: check persisted lastSoundDay.
+    //
+    // New day (first open): play sound and stamp the day.
+    // Same-day (refresh, pull-down, soft reload): skip sound.
+    const todayKey = marketPeriodKey('crypto-major', now)
+    const lastDay = next.lastSoundDay || ''
+    if (todayKey === lastDay) {
+      // Same day — effects already played today. Skip both sound and
+      // visual on refresh / pull-down. Clear any held/pending sound from
+      // a previous observation so it cannot leak into a gesture.
+      setCooldown({
+        lastAt: now,
+        lastMajorAt: chosen.priority <= PRIORITY.ath ? now : cooldown.lastMajorAt,
+      })
+      clearPendingSound()
+      held = null
+      if (heldTimer) { clearTimeout(heldTimer); heldTimer = null }
+      write(STATE_KEY, next)
+      return null
+    }
+    // New day: stamp lastSoundDay so all refreshes today are silent.
+    next = { ...next, lastSoundDay: todayKey }
+    write(STATE_KEY, next)
 
     // Nothing can be heard before the first gesture of the session, and an
     // event that fires on app open — now the common case, since the portfolio

@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useLanguage } from '../LanguageContext'
+import { POPULAR_FIAT } from '../data/assets'
+import { api } from '../api'
 import Icon from './Icon'
 import { track } from '../analytics'
 import {
@@ -31,11 +33,18 @@ const REASON_KEY = {
   [REASONS.resell]: 'zkWhyResell',
 }
 
-function money(n, currency = 'USD') {
+function money(n, targetCurrency = 'USD', rates = {}) {
   if (!Number.isFinite(n)) return '—'
+  let val = n
+  let cur = targetCurrency
+  if (cur !== 'USD' && typeof rates[cur] === 'number' && rates[cur] > 0) {
+    val = n / rates[cur]  // USD → target: divide by USD-per-unit
+  } else if (cur !== 'USD') {
+    cur = 'USD'  // fallback if rate not loaded yet
+  }
   return new Intl.NumberFormat(undefined, {
-    style: 'currency', currency, maximumFractionDigits: n < 100 ? 2 : 0,
-  }).format(n)
+    style: 'currency', currency: cur, maximumFractionDigits: cur === 'JPY' ? 0 : val < 100 ? 2 : 0,
+  }).format(val)
 }
 
 function Row({ label, value, strong, hint }) {
@@ -79,6 +88,10 @@ export default function ZakatCalculator({ holdings = [], prices = {} }) {
   const [hawl, setHawl] = useState(() => loadHawl())
   const [showSettings, setShowSettings] = useState(false)
   const [showRows, setShowRows] = useState(false)
+  const [currency, setCurrency] = useState(() => {
+    try { return localStorage.getItem('wl_zakat_currency') || 'USD' } catch { return 'USD' }
+  })
+  const [fiatRates, setFiatRates] = useState({})
   const [debtInput, setDebtInput] = useState(() => String(loadSettings().liabilities || ''))
 
   const z = useMemo(
@@ -98,6 +111,22 @@ export default function ZakatCalculator({ holdings = [], prices = {} }) {
     saveHawl(next)
     setHawl(next)
   }, [z.hawl, hawl])
+
+  // Fetch fiat exchange rates when display currency is not USD.
+  useEffect(() => {
+    if (currency === 'USD') { setFiatRates({}); return }
+    let cancelled = false
+    api.getPrices('fiat:' + currency).then(px => {
+      if (cancelled) return
+      const rate = px?.['fiat:' + currency]?.usd
+      if (typeof rate === 'number' && rate > 0) {
+        // rate is USD-per-unit (e.g. 1 EGP ≈ 0.019 USD), so to convert
+        // $X USD → target currency: X / rate
+        setFiatRates({ [currency]: rate })
+      }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [currency])
 
   // Hand the push registration the one thing it is allowed to know. A date,
   // and only when there is actually a year running — nothing about the amount,
@@ -134,11 +163,32 @@ export default function ZakatCalculator({ holdings = [], prices = {} }) {
   return (
     <div className="glass-card" style={{ marginTop: '0.75rem' }}>
       <h3 style={{ margin: '0 0 0.35rem', display: 'inline-flex', alignItems: 'center', gap: '0.45em', fontSize: '0.95rem', fontWeight: 700 }}>
-        <Icon name="crescent" size={16} />{t('zkTitle')}
+        <Icon name="zakat" size={16} />{t('zkTitle')}
       </h3>
-      <p style={{ margin: '0 0 1rem', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+      <p style={{ margin: '0 0 0.6rem', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
         {t('zkSubtitle')}
       </p>
+
+      {/* ── Currency selector ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+          {t('zkDisplayCurrency')}
+        </span>
+        <select
+          value={currency}
+          onChange={e => { const v = e.target.value; setCurrency(v); try { localStorage.setItem('wl_zakat_currency', v) } catch {} }}
+          style={{
+            flex: 1, maxWidth: 200, padding: '0.35rem 0.5rem', borderRadius: 8,
+            border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)',
+            color: 'var(--text)', fontSize: '0.82rem', fontWeight: 600,
+            outline: 'none', cursor: 'pointer', appearance: 'auto',
+          }}
+        >
+          {POPULAR_FIAT.map(f => (
+            <option key={f.code} value={f.code}>{f.symbol} {f.code} — {f.name}</option>
+          ))}
+        </select>
+      </div>
 
       {!z.nisabKnown && (
         <p style={{ margin: '0 0 0.9rem', fontSize: '0.82rem', fontWeight: 600, color: 'var(--r, #ef4444)' }}>
@@ -160,7 +210,7 @@ export default function ZakatCalculator({ holdings = [], prices = {} }) {
 
         {z.status === HAWL.BELOW && (
           <p style={{ margin: '0.4rem 0 0', fontSize: '0.85rem', lineHeight: 1.5 }}>
-            {z.nisabKnown ? t('zkBelowBody')(money(z.nisab), money(z.shortBy)) : t('zkBelowUnknown')}
+            {z.nisabKnown ? t('zkBelowBody')(money(z.nisab, currency, fiatRates), money(z.shortBy, currency, fiatRates)) : t('zkBelowUnknown')}
           </p>
         )}
 
@@ -175,16 +225,27 @@ export default function ZakatCalculator({ holdings = [], prices = {} }) {
                 width: `${Math.min(100, Math.max(0, (z.daysElapsed / z.yearLength) * 100))}%`,
               }} />
             </div>
+            <div style={{ marginTop: '0.6rem', padding: '0.5rem 0.65rem', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-sub)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.2rem' }}>
+                {t('zkProjected')}
+              </div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>
+                {money(z.amount, currency, fiatRates)}
+              </div>
+              <p style={{ margin: '0.15rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {t('zkDueBody')((z.rate * 100).toFixed(z.rate === 0.025 ? 1 : 3), money(z.net, currency, fiatRates))}
+              </p>
+            </div>
           </>
         )}
 
         {z.status === HAWL.DUE && (
           <>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, margin: '0.35rem 0 0.15rem', fontVariantNumeric: 'tabular-nums' }}>
-              {money(z.amount)}
+              {money(z.amount, currency, fiatRates)}
             </div>
             <p style={{ margin: '0 0 0.7rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              {t('zkDueBody')((z.rate * 100).toFixed(z.rate === 0.025 ? 1 : 3), money(z.net))}
+              {t('zkDueBody')((z.rate * 100).toFixed(z.rate === 0.025 ? 1 : 3), money(z.net, currency, fiatRates))}
             </p>
             <button className="settings-chip" onClick={onPaid}>
               <Icon name="check" size={14} /> {t('zkMarkPaid')}
@@ -218,12 +279,12 @@ export default function ZakatCalculator({ holdings = [], prices = {} }) {
 
       {/* ── The money ── */}
       <Row label={t('zkNisab')} hint={t('zkNisabHint')(settings.nisabStandard === 'gold' ? '85g' : '595g')}
-        value={z.nisabKnown ? money(z.nisab) : '—'} />
-      <Row label={t('zkZakatable')} value={money(z.gross)} />
-      {z.excluded > 0 && <Row label={t('zkExcluded')} value={`− ${money(z.excluded)}`} />}
-      {z.debts > 0 && <Row label={t('zkDebts')} value={`− ${money(z.debts)}`} />}
+        value={z.nisabKnown ? money(z.nisab, currency, fiatRates) : '—'} />
+      <Row label={t('zkZakatable')} value={money(z.gross, currency, fiatRates)} />
+      {z.excluded > 0 && <Row label={t('zkExcluded')} value={`− ${money(z.excluded, currency, fiatRates)}`} />}
+      {z.debts > 0 && <Row label={t('zkDebts')} value={`− ${money(z.debts, currency, fiatRates)}`} />}
       <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '0.4rem 0' }} />
-      <Row strong label={t('zkNet')} value={money(z.net)} />
+      <Row strong label={t('zkNet')} value={money(z.net, currency, fiatRates)} />
 
       {/* ── Liabilities ── the app has no model for these, so they are asked for ── */}
       <div className="settings-row" style={{ paddingTop: '0.7rem', display: 'block' }}>
@@ -251,7 +312,7 @@ export default function ZakatCalculator({ holdings = [], prices = {} }) {
             <div key={r.id} className="settings-row" style={{ paddingTop: '0.35rem' }}>
               <div className="settings-label">
                 <span>{r.name}</span>
-                <span className="settings-hint">{money(r.value)} · {t(REASON_KEY[r.reason])}</span>
+                <span className="settings-hint">{money(r.value, currency, fiatRates)} · {t(REASON_KEY[r.reason])}</span>
               </div>
               <div className="settings-chips">
                 {(r.category === 'stocks'
@@ -283,10 +344,10 @@ export default function ZakatCalculator({ holdings = [], prices = {} }) {
                 <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-sub)' }}>{t(REASON_KEY[r.reason])}</span>
               </span>
               <span style={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                {money(r.counted)}
+                {money(r.counted, currency, fiatRates)}
                 {r.portion > 0 && r.portion < 1 && (
                   <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-sub)' }}>
-                    {Math.round(r.portion * 100)}% {t('zkOf')} {money(r.value)}
+                    {Math.round(r.portion * 100)}% {t('zkOf')} {money(r.value, currency, fiatRates)}
                   </span>
                 )}
               </span>

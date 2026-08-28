@@ -140,6 +140,9 @@ export const DEVICE_ONLY_KEYS = [
   // read by the push registration. The restored hawl regenerates it on the
   // new device's first visit to the calculator.
   'wl_zakat_due',
+  // Which currency the calculator displays in. A screen preference, like the
+  // rest of the display settings that stay with the device.
+  'wl_zakat_currency',
   // Marks THIS install as running inside the Android app. Carrying it to a
   // browser would make the site think it was the app.
   'wl_native',
