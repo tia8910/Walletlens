@@ -12,6 +12,13 @@ vi.mock('./pulseAudio', () => ({
   setVolume: () => {},
   release: () => {},
   isUnlocked: () => audio.unlocked,
+  // Real durations: the sound-catchup window is measured against them, so a
+  // mock without these tests a timing rule that does not exist in the app.
+  DURATION_MS: {
+    rocket: 2500, ath: 1600, milestone: 1950, fireworks: 3600,
+    shockwave: 700, aurora: 2600, lock: 1100, rain: 2200, dip: 1700,
+    storm: 2900, champion: 2600, welcome: 2200,
+  },
 }))
 
 const {
@@ -691,5 +698,86 @@ describe('nothing decorative delays the first pulse', () => {
 
   it('still fetches them, just without blocking', () => {
     expect(dashboard).toMatch(/api\.getCoinImages\(ids\)\.then\(imgs => setCoinImages/)
+  })
+})
+
+// ── The three defects behind "every refresh makes a sound, and I never see
+//    the effect" ──────────────────────────────────────────────────────────
+
+describe('the cooldown survives a reload', () => {
+  // THE BUG: `cooldown` lived only on the module, so every reload reset it to
+  // { lastAt: 0 }. selectOne's guard is `if (last && ...)` — with last = 0 it
+  // was skipped entirely, so the 5s gate that stops two celebrations landing
+  // on top of each other did not survive a refresh.
+  it('suppresses a second celebration across a reload', async () => {
+    setPulseSettings({ enabled: true })
+    observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
+    const first = observeMarket({ samples: btc(9), totalValue: 50000, now: T0 + 20000 })
+    expect(first).toMatchObject({ type: 'rocket' })
+
+    // A reload: fresh module, same localStorage.
+    vi.resetModules()
+    const fresh = await import('./marketPulseRuntime')
+
+    // Two seconds later — inside COOLDOWN_MS (5s) — with a bigger move that
+    // would otherwise qualify on its own.
+    const second = fresh.observeMarket({ samples: btc(16), totalValue: 50000, now: T0 + 22000 })
+    expect(second, 'still inside the cooldown after a refresh').toBeNull()
+  })
+
+  it('writes the cooldown where a reload can find it', () => {
+    setPulseSettings({ enabled: true })
+    observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
+    observeMarket({ samples: btc(9), totalValue: 50000, now: T0 + 20000 })
+
+    const stored = JSON.parse(localStorage.getItem('wl_pulse_cooldown') || 'null')
+    expect(stored, 'the gate must outlive the module that set it').not.toBeNull()
+    expect(stored.lastAt).toBe(T0 + 20000)
+  })
+
+  it('is a timestamp, not a latch — an old one cannot silence the app forever', async () => {
+    // Persisting the gate wrongly would be worse than not persisting it: a
+    // user who celebrated once would never celebrate again. It stores a time,
+    // and selectOne compares it against COOLDOWN_MS.
+    localStorage.setItem('wl_pulse_cooldown', JSON.stringify({
+      lastAt: T0 - 60000, lastMajorAt: T0 - 60000,
+    }))
+    championAlreadyShown()
+    vi.resetModules()
+    const fresh = await import('./marketPulseRuntime')
+    fresh.setPulseSettings({ enabled: true })
+
+    fresh.observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
+    const event = fresh.observeMarket({ samples: btc(9), totalValue: 50000, now: T0 + 20000 })
+    expect(event, 'a cooldown from a minute ago must not still be blocking').toMatchObject({ type: 'rocket' })
+  })
+})
+
+describe('a held sound never outlives its own animation', () => {
+  // THE BUG: the window was a flat 4000ms, described as lasting "only as long
+  // as the animation is still on screen". Of twelve event types only fireworks
+  // (3600ms) runs that long, so a tap in the gap played a noise with nothing
+  // on screen.
+  it('drops a rocket once its 2500ms animation is over', () => {
+    vi.useFakeTimers()
+    try {
+      setPulseSettings({ enabled: true })
+      observeMarket({ samples: btc(2), totalValue: 50000, now: T0 })
+      audio.unlocked = false
+      observeMarket({ samples: btc(9), totalValue: 50000, now: T0 + 20000 })
+      expect(__pendingSound()).toBe('rocket')
+
+      // Still on screen at 2s: the sound may still land.
+      vi.advanceTimersByTime(2000)
+      expect(__pendingSound()).toBe('rocket')
+
+      // Gone by 2.6s. Under the old flat 4000ms this still played.
+      vi.advanceTimersByTime(600)
+      expect(__pendingSound()).toBeNull()
+      document.dispatchEvent(new MouseEvent('click'))
+      expect(audio.played).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

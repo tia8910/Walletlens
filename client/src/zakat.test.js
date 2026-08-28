@@ -297,17 +297,23 @@ describe('rate and year basis', () => {
 describe('computeZakat, end to end', () => {
   const holdings = [h('fiat:usd', 10000), h('bitcoin', 20000)]
 
-  it('reports below nisab with how far short', () => {
+  // `amount` is now always the arithmetic — 2.5% of net — and `status` is what
+  // says whether anything is actually owed. The UI relies on that split: the
+  // figure is rendered under "projected" while the year runs, and as the sum
+  // due only in the DUE branch. It is never shown below nisab, which is the
+  // case that would otherwise state an obligation that does not exist.
+  it('reports below nisab with how far short, and claims nothing', () => {
     const out = computeZakat({ holdings: [h('fiat:usd', 100)], prices: PRICES, now: U(2024, 1, 1) })
     expect(out.aboveNisab).toBe(false)
     expect(out.shortBy).toBeCloseTo(495, 6)
-    expect(out.amount).toBe(0)
+    expect(out.status).toBe(HAWL.BELOW)
   })
 
-  it('owes nothing while the year is still running', () => {
+  it('is still running mid-year, and projects what it would be', () => {
     const out = computeZakat({ holdings, prices: PRICES, hawl: { startedAt: '2024-01-10', paidFor: [] }, now: U(2024, 6, 1) })
     expect(out.status).toBe(HAWL.RUNNING)
-    expect(out.amount).toBe(0)
+    // A projection, not a debt — the status is what makes that distinction.
+    expect(out.amount).toBeCloseTo(30000 * 0.025, 6)
     expect(out.daysRemaining).toBeGreaterThan(0)
     expect(out.daysElapsed).toBeGreaterThan(100)
   })
@@ -328,11 +334,13 @@ describe('computeZakat, end to end', () => {
     expect(out.amount).toBeCloseTo(500, 6)   // 20000 * 0.025
   })
 
-  it('says the nisab is unknown rather than showing zero', () => {
+  it('says the nisab is unknown rather than guessing one', () => {
     const out = computeZakat({ holdings, prices: {}, now: U(2024, 1, 1) })
     expect(out.nisabKnown).toBe(false)
     expect(out.nisab).toBeNull()
-    expect(out.amount).toBe(0)
+    // Without a threshold there is no verdict, whatever the arithmetic says.
+    expect(out.aboveNisab).toBe(false)
+    expect(out.status).not.toBe(HAWL.DUE)
   })
 
   it('survives an empty portfolio', () => {
@@ -354,5 +362,24 @@ describe('nextRamadan', () => {
     for (const now of [U(2024, 1, 1), U(2024, 3, 20), U(2024, 12, 31), U(2025, 6, 15)]) {
       expect(daysBetween(now, nextRamadan(now))).toBeGreaterThanOrEqual(0)
     }
+  })
+})
+
+describe('zakat state survives a device migration', () => {
+  it('backs up the hawl, the settings and the intents', async () => {
+    // The hawl start date is the one thing in this feature that cannot be
+    // recomputed — it records the day wealth first reached nisab. Losing it on
+    // a restore silently restarts the zakat year and moves the date owed.
+    const { BACKUP_KEYS } = await import('./backupCore')
+    expect(BACKUP_KEYS).toContain('wl_zakat_hawl')
+    expect(BACKUP_KEYS).toContain('wl_zakat_settings')
+    expect(BACKUP_KEYS).toContain('wl_zakat_intents')
+  })
+
+  it('leaves the derived due date behind', async () => {
+    // Regenerated from the restored hawl on the first visit to the calculator.
+    const { BACKUP_KEYS, DEVICE_ONLY_KEYS } = await import('./backupCore')
+    expect(BACKUP_KEYS).not.toContain('wl_zakat_due')
+    expect(DEVICE_ONLY_KEYS).toContain('wl_zakat_due')
   })
 })

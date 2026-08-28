@@ -25,6 +25,16 @@ export const BACKUP_FIELDS = {
   // Migrations key off this. Restoring data without it can leave a newer
   // snapshot being re-migrated by an older device.
   sv: 'crypto_tracker_schema_version',
+  // ── Zakat ────────────────────────────────────────────────────────────────
+  // The hawl start date is the one piece of state in the whole feature that
+  // cannot be recomputed: it records the day this person's wealth first
+  // reached nisab. Losing it on a device migration silently restarts their
+  // zakat year, which moves the date they owe on. The madhhab choices and the
+  // per-holding intents are equally theirs — a restored device that reverts
+  // to the defaults is quietly answering a religious question for them.
+  zh: 'wl_zakat_hawl',
+  zs: 'wl_zakat_settings',
+  zi: 'wl_zakat_intents',
 
   // ── Goals and planning ───────────────────────────────────────────────────
   gl: 'wl_goals',
@@ -121,6 +131,18 @@ export const DEVICE_ONLY_KEYS = [
   // announce a stale all-time high), and the snapshot and missed-event
   // records are transient by construction.
   'wl_pulse_settings', 'wl_pulse_state', 'wl_pulse_missed', 'wl_pulse_samples',
+  // The celebration cooldown is a timestamp with a five-second life. It is
+  // persisted so a page reload cannot replay a celebration that just played,
+  // and for no longer than that — carrying one to another device would at
+  // best do nothing and at worst suppress that device's first celebration.
+  'wl_pulse_cooldown',
+  // Derived from wl_zakat_hawl and the current prices on every render, and
+  // read by the push registration. The restored hawl regenerates it on the
+  // new device's first visit to the calculator.
+  'wl_zakat_due',
+  // Which currency the calculator displays in. A screen preference, like the
+  // rest of the display settings that stay with the device.
+  'wl_zakat_currency',
   // Marks THIS install as running inside the Android app. Carrying it to a
   // browser would make the site think it was the app.
   'wl_native',

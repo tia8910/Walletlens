@@ -8,12 +8,13 @@ import {
   detectEvents, selectOne, applyFired, pruneState, seedRecords, emptyState,
   PRIORITY, marketPeriodKey,
 } from './marketPulse'
-import { unlock, play, setVolume, release, isUnlocked } from './pulseAudio'
+import { unlock, play, setVolume, release, isUnlocked, DURATION_MS } from './pulseAudio'
 
 const SETTINGS_KEY = 'wl_pulse_settings'
 const STATE_KEY    = 'wl_pulse_state'
 const MISSED_KEY   = 'wl_pulse_missed'
 const SAMPLES_KEY  = 'wl_pulse_samples'
+const COOLDOWN_KEY = 'wl_pulse_cooldown'
 
 /**
  * How stale a stored snapshot may be and still be worth comparing against.
@@ -198,7 +199,26 @@ function onGesture() { releaseHeld(true) }
  * on its own is not the same event any more — it is a noise with no cause,
  * which is worse than silence.
  */
-const SOUND_CATCHUP_MS = 4000
+// How long a held sound stays catchable, measured against the animation it
+// belongs to rather than a flat number.
+//
+// This was a flat 4000ms, described in the comment below as lasting "only for
+// as long as the animation is still on screen". It was not: of the twelve
+// event types only fireworks (3600ms) runs that long. Every other one — a
+// 700ms shockwave, a 1100ms lock, a 1600ms ath — finished well before the
+// window closed, so a tap in the gap played a bare sound with nothing on
+// screen. That is the "it just makes a noise" report.
+//
+// Tied to the real duration, the sound either lands with its picture or is
+// dropped.
+const SOUND_CATCHUP_FLOOR_MS = 600
+function soundCatchupMs(type) {
+  // Defensive on the lookup itself: this runs inside the event path, and a
+  // throw here is caught upstream and turns into "no event at all". A timing
+  // detail must never be able to delete the celebration it belongs to.
+  const d = Number(DURATION_MS?.[type])
+  return Math.max(SOUND_CATCHUP_FLOOR_MS, Number.isFinite(d) && d > 0 ? d : 2000)
+}
 
 let pendingSound = null
 let pendingSoundTimer = null
@@ -228,7 +248,7 @@ function holdSoundBriefly(type) {
   clearPendingSound()
   pendingSound = type
   document.addEventListener('click', onSoundGesture, { once: true })
-  pendingSoundTimer = setTimeout(clearPendingSound, SOUND_CATCHUP_MS)
+  pendingSoundTimer = setTimeout(clearPendingSound, soundCatchupMs(type))
 }
 
 /** Test seam. */
@@ -277,11 +297,29 @@ function writeSamples(samples) {
 }
 
 let lastSamples = readSamples()
-let cooldown = { lastAt: 0, lastMajorAt: 0 }
-// Skip sound on the very first observation after a page load / refresh.
-// The first call seeds state and detects events but should never produce
-// audio — sound only starts from the second call onward (real-time updates).
-let sessionStarted = false
+// Persisted, not just in memory.
+//
+// This is the gate selectOne() uses to stop a celebration repeating. Held only
+// on the module, it reset to zero on every page load — so `if (last && ...)`
+// saw lastAt = 0 and skipped the check entirely, meaning the five-second gate
+// that stops two celebrations landing together did not survive a refresh.
+//
+// Stored as a timestamp, not a latch: selectOne compares it against
+// COOLDOWN_MS, so an old one expires rather than silencing the app forever.
+let cooldown = read(COOLDOWN_KEY, { lastAt: 0, lastMajorAt: 0 })
+
+function setCooldown(next) {
+  cooldown = next
+  write(COOLDOWN_KEY, next)
+}
+
+// There was a `sessionStarted` flag here, meant to skip sound on the first
+// observation after a load. It was declared and never read — nothing in the
+// file consulted it — so it suppressed nothing. The lastSoundDay gate below
+// does that job properly and persists across reloads, which an in-memory flag
+// could not. Removed rather than wired: a second, overlapping mechanism would
+// make the once-a-day rule harder to reason about, and a dead flag that reads
+// like a safety check is worse than no flag at all.
 
 /**
  * Feed a market snapshot in; get back the event that played, or null.
@@ -382,8 +420,10 @@ export function observeMarket({
       // Same day — effects already played today. Skip both sound and
       // visual on refresh / pull-down. Clear any held/pending sound from
       // a previous observation so it cannot leak into a gesture.
-      cooldown.lastAt = now
-      if (chosen.priority <= PRIORITY.ath) cooldown.lastMajorAt = now
+      setCooldown({
+        lastAt: now,
+        lastMajorAt: chosen.priority <= PRIORITY.ath ? now : cooldown.lastMajorAt,
+      })
       clearPendingSound()
       held = null
       if (heldTimer) { clearTimeout(heldTimer); heldTimer = null }
@@ -423,16 +463,16 @@ export function observeMarket({
       // "crowned a minute later, or when you happen to tap something".
       //
       // So the two are separated. The overlay renders immediately; only the
-      // sound waits, and only for as long as the animation is still on screen
-      // (SOUND_CATCHUP_MS), so a tap during it still lands both together. A
+      // sound waits, and only for as long as that event's own animation is
+      // actually on screen, so a tap during it still lands both together. A
       // tap after that gets nothing — armPulseAudio's own listener has
       // unlocked the context by then, so the next event of the session plays
       // normally.
       holdSoundBriefly(chosen.type)
-      cooldown = {
+      setCooldown({
         lastAt: now,
         lastMajorAt: chosen.priority <= PRIORITY.ath ? now : cooldown.lastMajorAt,
-      }
+      })
       return chosen
     }
 
@@ -449,21 +489,21 @@ export function observeMarket({
       }
       // The cooldown still advances, so turning sound on mid-session cannot
       // immediately replay something that just went past silently.
-      cooldown = {
+      setCooldown({
         lastAt: now,
         lastMajorAt: chosen.priority <= PRIORITY.ath ? now : cooldown.lastMajorAt,
-      }
+      })
       return wantsVisual ? chosen : null
     }
 
     const played = play(chosen.type)
     if (played) {
-      cooldown = {
+      setCooldown({
         lastAt: now,
         // Was `<= 1`, a literal that silently meant something different the
         // moment a fourth event type shifted the numbering.
         lastMajorAt: chosen.priority <= PRIORITY.ath ? now : cooldown.lastMajorAt,
-      }
+      })
       if (settings.haptics) {
         try { navigator.vibrate?.(hapticFor(chosen.type)) } catch { /* unsupported */ }
       }
@@ -627,7 +667,7 @@ export function fireWelcome({ totalValue = 0, now = Date.now() } = {}) {
     }
     // The cooldown advances so a market event detected on the very same pass
     // cannot land on top of this one.
-    cooldown = { lastAt: now, lastMajorAt: now }
+    setCooldown({ lastAt: now, lastMajorAt: now })
 
     return settings.visuals === false
       ? null
@@ -649,6 +689,6 @@ export function __resetPulseRuntime() {
   try { document.removeEventListener('click', onGesture) } catch { /* no DOM */ }
   clearPendingSound()
   try { localStorage.removeItem(SAMPLES_KEY) } catch { /* ignore */ }
-  cooldown = { lastAt: 0, lastMajorAt: 0 }
+  setCooldown({ lastAt: 0, lastMajorAt: 0 })
   armed = false
 }
