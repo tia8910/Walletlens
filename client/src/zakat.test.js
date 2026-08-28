@@ -356,3 +356,22 @@ describe('nextRamadan', () => {
     }
   })
 })
+
+describe('zakat state survives a device migration', () => {
+  it('backs up the hawl, the settings and the intents', async () => {
+    // The hawl start date is the one thing in this feature that cannot be
+    // recomputed — it records the day wealth first reached nisab. Losing it on
+    // a restore silently restarts the zakat year and moves the date owed.
+    const { BACKUP_KEYS } = await import('./backupCore')
+    expect(BACKUP_KEYS).toContain('wl_zakat_hawl')
+    expect(BACKUP_KEYS).toContain('wl_zakat_settings')
+    expect(BACKUP_KEYS).toContain('wl_zakat_intents')
+  })
+
+  it('leaves the derived due date behind', async () => {
+    // Regenerated from the restored hawl on the first visit to the calculator.
+    const { BACKUP_KEYS, DEVICE_ONLY_KEYS } = await import('./backupCore')
+    expect(BACKUP_KEYS).not.toContain('wl_zakat_due')
+    expect(DEVICE_ONLY_KEYS).toContain('wl_zakat_due')
+  })
+})

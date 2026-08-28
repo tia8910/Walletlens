@@ -4323,6 +4323,15 @@ export default function Dashboard() {
 
   return (
     <div className="dvx">
+      {/* Market Pulse overlay — outside the tab blocks on purpose.
+          It used to live inside `activeTab === 'overview'`, but the event that
+          triggers it is detected from prices, not from which tab is open, and
+          the active tab is restored from sessionStorage on reload. So a user
+          whose last tab was Backup would refresh, fire a pulse, hear the held
+          sound on their next tap, and never see the animation — the effect
+          existed and was unreachable from five of the six tabs. */}
+      <PulseOverlay event={pulseEvent} onDone={() => setPulseEvent(null)} />
+
       {/* Live news ticker — above the tab navigation so it's always visible */}
       <NewsTicker />
 
@@ -4458,7 +4467,6 @@ export default function Dashboard() {
           {/* Market Pulse offer, shown only after the user has actually missed
               something worth hearing. At most twice, ever. */}
           {enriched.length > 0 && <PulseDiscovery />}
-          <PulseOverlay event={pulseEvent} onDone={() => setPulseEvent(null)} />
 
           {/* Sentiment + portfolio tips ticker */}
           {enriched.length > 0 && (
