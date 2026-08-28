@@ -1,0 +1,205 @@
+// $LENZ airdrop registration API, on Cloudflare Workers.
+//
+// A port of airdrop-api/main.ts. As with the voice worker, the body is the
+// TypeScript compiler's own output and "Deno" below is a local object, so the
+// request handling is untouched.
+//
+// One difference from voice-api, and the only hand edit in this file: this
+// service read five settings at MODULE SCOPE. Workers only exposes bindings
+// inside a handler, so at import time those would every one have captured
+// undefined and silently fallen back to their defaults — the admin token empty,
+// CORS wide open. They are assigned per invocation instead. The names and every
+// usage site are unchanged.
+
+import { KvOnD1 } from '../voice/kv.js'
+
+let ENV = {}
+let KV = null
+let HANDLER = null
+
+// Assigned in bind(), not at import. See the note above.
+let RPC, MIN_TX, ADMIN_TOKEN, IP_SALT, ALLOWED_ORIGIN
+
+const Deno = {
+  env: { get: (k) => ENV[k] },
+  openKv: async () => KV,
+  serve: (fn) => { HANDLER = fn },
+}
+
+// -- The ported service ------------------------------------------------------
+
+"use strict";
+// $LENZ airdrop registration API — Deno Deploy + Deno KV.
+//
+// Validates wallet OWNERSHIP via a signed message, gates on on-chain history,
+// de-dupes, flags IP clusters, and stores registrations in Deno KV. The final
+// token allocation is flat-per-wallet (see sui-token/), so this DB's job is a
+// clean, sybil-resistant list of eligible wallets — not to set token amounts.
+//
+// Deploy: `deno deploy` (or link this file in the Deno Deploy dashboard).
+// Env: SUI_RPC, MIN_TX, ADMIN_TOKEN, IP_SALT, ALLOWED_ORIGIN
+//
+// Routes:
+//   POST /register   { address, quests[], referredBy?, xHandle? }   (no wallet connect)
+//   GET  /status?address=0x..
+//   GET  /stats
+//   GET  /export      (header: Authorization: Bearer <ADMIN_TOKEN>) → CSV of eligible
+// No external deps — runs on Deno Deploy with zero install. (Wallet ownership is
+// enforced for free at claim time on-chain, so no signature library is needed here.)
+const kv = await Deno.openKv();
+const ADDR_RE = /^0x[0-9a-fA-F]{64}$/;
+const QUEST_PTS = {
+    portfolio: 100, track3: 100, follow_x: 50, follow_founder: 25,
+    repost: 75, youtube: 50, screenshot: 100, referral: 50,
+};
+const cors = {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...cors } });
+async function hashIp(ip) {
+    const data = new TextEncoder().encode(IP_SALT + ip);
+    const buf = await crypto.subtle.digest("SHA-256", data);
+    return [...new Uint8Array(buf)].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+// On-chain gate: does the wallet have >= MIN_TX outgoing txns?
+async function onchainOk(address) {
+    if (MIN_TX <= 0)
+        return true;
+    try {
+        const r = await fetch(RPC, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                jsonrpc: "2.0", id: 1, method: "suix_queryTransactionBlocks",
+                params: [{ filter: { FromAddress: address }, options: {} }, null, Math.max(MIN_TX, 1), false],
+            }),
+        });
+        const j = await r.json();
+        return (j?.result?.data?.length ?? 0) >= MIN_TX;
+    }
+    catch {
+        return false; // fail safe: ineligible if RPC unreachable
+    }
+}
+Deno.serve(async (req) => {
+    const url = new URL(req.url);
+    if (req.method === "OPTIONS")
+        return new Response(null, { headers: cors });
+    // ── GET /stats ────────────────────────────────────────────────────────────
+    if (req.method === "GET" && url.pathname === "/stats") {
+        let total = 0, eligible = 0;
+        for await (const e of kv.list({ prefix: ["reg"] })) {
+            total++;
+            if (e.value.eligible)
+                eligible++;
+        }
+        return json({ total, eligible });
+    }
+    // ── GET /status ───────────────────────────────────────────────────────────
+    if (req.method === "GET" && url.pathname === "/status") {
+        const address = (url.searchParams.get("address") ?? "").toLowerCase();
+        if (!ADDR_RE.test(address))
+            return json({ error: "bad address" }, 400);
+        const rec = await kv.get(["reg", address]);
+        return rec.value ? json(rec.value) : json({ registered: false });
+    }
+    // ── GET /export (admin) → CSV of eligible addresses ──────────────────────────
+    if (req.method === "GET" && url.pathname === "/export") {
+        const auth = req.headers.get("Authorization") ?? "";
+        if (!ADMIN_TOKEN || auth !== `Bearer ${ADMIN_TOKEN}`)
+            return json({ error: "unauthorized" }, 401);
+        const rows = ["address"];
+        for await (const e of kv.list({ prefix: ["reg"] })) {
+            const v = e.value;
+            if (v.eligible)
+                rows.push(v.address);
+        }
+        return new Response(rows.join("\n") + "\n", {
+            headers: { "Content-Type": "text/csv", ...cors },
+        });
+    }
+    // ── POST /register ──────────────────────────────────────────────────────────
+    if (req.method === "POST" && url.pathname === "/register") {
+        let body;
+        try {
+            body = await req.json();
+        }
+        catch {
+            return json({ error: "bad json" }, 400);
+        }
+        const address = String(body.address ?? "").toLowerCase();
+        const quests = Array.isArray(body.quests) ? body.quests.filter((q) => q in QUEST_PTS) : [];
+        const referredBy = ADDR_RE.test(String(body.referredBy ?? "").toLowerCase()) ? String(body.referredBy).toLowerCase() : null;
+        const xHandle = String(body.xHandle ?? "").replace(/[^a-zA-Z0-9_]/g, "").slice(0, 30);
+        if (!ADDR_RE.test(address))
+            return json({ error: "invalid Sui address" }, 400);
+        // No wallet connection / signature required to register — ownership is enforced
+        // for free at claim time (the on-chain Merkle claim pays ctx.sender()), so
+        // registering an unowned address gains an attacker nothing.
+        // 2) On-chain history gate (reject fresh/throwaway wallets).
+        const eligible = await onchainOk(address);
+        // 3) IP cluster flagging.
+        const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "0.0.0.0";
+        const ipHash = await hashIp(ip);
+        const ipKey = ["ipcount", ipHash];
+        const ipCount = ((await kv.get(ipKey)).value ?? 0);
+        const points = quests.reduce((a, q) => a + (QUEST_PTS[q] ?? 0), 0);
+        const existing = (await kv.get(["reg", address])).value;
+        const rec = {
+            address,
+            quests,
+            points,
+            referredBy: existing?.referredBy ?? referredBy,
+            referrals: existing?.referrals ?? 0,
+            xHandle: xHandle || existing?.xHandle || null,
+            eligible,
+            ipHash,
+            ipFlag: ipCount >= 5, // many wallets from one IP → flag for review
+            createdAt: existing?.createdAt ?? Date.now(),
+            updatedAt: Date.now(),
+        };
+        const tx = kv.atomic().set(["reg", address], rec);
+        if (!existing)
+            tx.set(ipKey, ipCount + 1);
+        await tx.commit();
+        // Credit a referrer once, on first registration.
+        if (!existing && rec.referredBy && rec.referredBy !== address) {
+            const refRec = (await kv.get(["reg", rec.referredBy])).value;
+            if (refRec)
+                await kv.set(["reg", rec.referredBy], { ...refRec, referrals: (refRec.referrals ?? 0) + 1 });
+        }
+        return json({
+            ok: true,
+            eligible,
+            points,
+            referralLink: `https://walletlens.live/airdrop?ref=${address}`,
+            note: eligible
+                ? "Registered and eligible. You'll claim with your wallet only at the end."
+                : "Registered, but this wallet has no on-chain Sui history yet — use a wallet you actually transact with to qualify.",
+        });
+    }
+    return json({ error: "not found" }, 404);
+});
+
+
+// -- Worker entry point ------------------------------------------------------
+
+export default {
+  async fetch(req, env) {
+    ENV = env
+    KV = new KvOnD1(env.DB)
+    RPC = env.SUI_RPC ?? "https://fullnode.mainnet.sui.io:443"
+    MIN_TX = Number(env.MIN_TX ?? "1")
+    ADMIN_TOKEN = env.ADMIN_TOKEN ?? ""
+    IP_SALT = env.IP_SALT ?? "lenz-salt"
+    ALLOWED_ORIGIN = env.ALLOWED_ORIGIN ?? "*"
+    if (!HANDLER) return new Response('handler not registered', { status: 500 })
+    return HANDLER(req)
+  },
+}
+
+export function __registered() {
+  return { hasHandler: !!HANDLER }
+}
