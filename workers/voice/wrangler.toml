@@ -11,8 +11,7 @@ compatibility_date = "2026-06-21"
 [[d1_databases]]
 binding = "DB"
 database_name = "walletlens-voice"
-# Filled in by `wrangler d1 create walletlens-voice`.
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "b8ad66cc-5758-4fb9-b1c0-3e6507086955"
 
 # Carried over from the Deno service unchanged.
 [triggers]
