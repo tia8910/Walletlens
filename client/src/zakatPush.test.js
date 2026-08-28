@@ -183,3 +183,95 @@ describe('the server\u2019s Prefs interface matches the table it describes', () 
     expect(declared).toEqual(Object.keys(DEFAULT_PREFS).sort())
   })
 })
+
+// ── The cron write-back merge ───────────────────────────────────────────────
+// allSubs() caches its full-table scan for minutes, so a cron's copy of a row
+// can be well out of date by the time it writes. These pin who wins on what.
+
+describe('merging a cron write over the stored row', () => {
+  const base = () => ({
+    subscription: { endpoint: 'e' },
+    alerts: [], watch: [], setup: {}, prefs: { moves: true },
+    lang: 'en', tz: 0, lastSeen: 1000,
+    fired: {}, ref: {}, retention: [], zakatDue: null, zakatSent: [],
+  })
+
+  it('keeps what the user changed while the cron was working', async () => {
+    const { mergeSubForWrite } = await import('../../push-api/notify-logic.js')
+    const mutated = { ...base(), prefs: { moves: true }, lastSeen: 1000, fired: { a: 1 } }
+    const fresh = { ...base(), prefs: { moves: false }, lastSeen: 9999, tz: 120, lang: 'ar' }
+
+    const out = mergeSubForWrite(mutated, fresh)
+    expect(out.prefs).toEqual({ moves: false })   // their toggle, not our stale copy
+    expect(out.lastSeen).toBe(9999)               // their /seen heartbeat
+    expect(out.tz).toBe(120)
+    expect(out.lang).toBe('ar')
+  })
+
+  it('keeps what the cron recorded', async () => {
+    const { mergeSubForWrite } = await import('../../push-api/notify-logic.js')
+    const mutated = { ...base(), fired: { alert1: 555 }, ref: { btc: { price: 9 } } }
+    const out = mergeSubForWrite(mutated, base())
+    expect(out.fired).toEqual({ alert1: 555 })
+    expect(out.ref).toEqual({ btc: { price: 9 } })
+  })
+
+  it('does not resurrect a subscription deleted mid-run', async () => {
+    const { mergeSubForWrite } = await import('../../push-api/notify-logic.js')
+    expect(mergeSubForWrite(base(), null)).toBeNull()
+    expect(mergeSubForWrite(base(), undefined)).toBeNull()
+  })
+
+  describe('retention, the one field both sides write', () => {
+    it('keeps the step the ladder just appended', async () => {
+      // Taking it fresh unconditionally would drop the append, and the same
+      // win-back nudge would go out again on the next run, forever.
+      const { mergeSubForWrite } = await import('../../push-api/notify-logic.js')
+      const mutated = { ...base(), retention: [1, 2] }
+      const fresh = { ...base(), retention: [1] }
+      expect(mergeSubForWrite(mutated, fresh).retention).toEqual([1, 2])
+    })
+
+    it('yields to /seen having cleared it', async () => {
+      // An empty stored list means the user came back and the ladder restarts.
+      const { mergeSubForWrite } = await import('../../push-api/notify-logic.js')
+      const mutated = { ...base(), retention: [1, 2] }
+      const fresh = { ...base(), retention: [] }
+      expect(mergeSubForWrite(mutated, fresh).retention).toEqual([])
+    })
+
+    it('survives a corrupt stored value', async () => {
+      const { mergeSubForWrite } = await import('../../push-api/notify-logic.js')
+      const out = mergeSubForWrite({ ...base(), retention: [3] }, { ...base(), retention: null })
+      expect(out.retention).toEqual([])
+    })
+  })
+
+  describe('zakatSent follows its own due date', () => {
+    it('is reset when the user moved the date mid-run', async () => {
+      const { mergeSubForWrite } = await import('../../push-api/notify-logic.js')
+      const mutated = { ...base(), zakatDue: '2026-01-01', zakatSent: ['2026-01-01:0'] }
+      const fresh = { ...base(), zakatDue: '2026-06-30', zakatSent: [] }
+      const out = mergeSubForWrite(mutated, fresh)
+      expect(out.zakatDue).toBe('2026-06-30')
+      expect(out.zakatSent).toEqual([])   // the old date's sends do not carry over
+    })
+
+    it('keeps what was sent when the date is unchanged', async () => {
+      const { mergeSubForWrite } = await import('../../push-api/notify-logic.js')
+      const mutated = { ...base(), zakatDue: '2026-01-01', zakatSent: ['2026-01-01:30'] }
+      const fresh = { ...base(), zakatDue: '2026-01-01', zakatSent: [] }
+      expect(mergeSubForWrite(mutated, fresh).zakatSent).toEqual(['2026-01-01:30'])
+    })
+  })
+
+  it('lists only fields the crons never write', async () => {
+    // If a cron ever starts writing one of these, taking it fresh silently
+    // discards that write — which is exactly the retention bug above.
+    const { USER_OWNED_FIELDS } = await import('../../push-api/notify-logic.js')
+    expect(USER_OWNED_FIELDS).not.toContain('retention')
+    for (const f of ['fired', 'ref', 'moveFired', 'digestDay', 'sent', 'seenRef']) {
+      expect(USER_OWNED_FIELDS, `${f} is cron-owned`).not.toContain(f)
+    }
+  })
+})

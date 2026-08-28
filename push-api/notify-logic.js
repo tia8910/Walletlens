@@ -846,6 +846,58 @@ export function sanitizePrefs(raw) {
   }
 }
 
+// ── Merging a cron's copy back over the stored row ──────────────────────────
+//
+// allSubs() caches its full-table scan for minutes (see main.ts), so the row a
+// cron mutated can be well out of date by the time it is written. Writing it
+// wholesale would undo whatever the user did meanwhile — a preference change,
+// a new alert, the /seen heartbeat that says they came back.
+//
+// So the write is a merge, and the rule is ownership. Every field below is
+// written ONLY by the HTTP handlers; the cron never touches them, so the
+// stored value always wins.
+export const USER_OWNED_FIELDS = [
+  'subscription', 'alerts', 'watch', 'setup', 'prefs',
+  'lang', 'tz', 'lastSeen', 'zakatDue',
+]
+
+/**
+ * Combine the row a cron mutated with the row currently in storage.
+ *
+ * @param mutated the cron's copy, carrying whatever it just recorded
+ * @param fresh   the row as stored right now, or null if it has been deleted
+ * @returns the row to write, or null when there is nothing to write to
+ */
+export function mergeSubForWrite(mutated, fresh) {
+  // Deleted mid-run. An unsubscribe must not be undone by a cron that was
+  // already holding the row.
+  if (!fresh) return null
+  if (!mutated) return fresh
+
+  const merged = { ...mutated }
+  for (const f of USER_OWNED_FIELDS) merged[f] = fresh[f]
+
+  // zakatSent is bookkeeping FOR a specific zakatDue. If the user moved the
+  // date while this run was in flight, the reminders already sent belong to
+  // the old date, and the reset that came with the new one is what counts.
+  if (fresh.zakatDue !== mutated.zakatDue) {
+    merged.zakatSent = Array.isArray(fresh.zakatSent) ? fresh.zakatSent : []
+  }
+
+  // retention is the one field both sides write: the win-back ladder APPENDS
+  // the step it just sent, and /seen CLEARS the list because the user came
+  // back. Taking it fresh unconditionally would drop the append and re-send
+  // the same nudge every run; keeping ours would ignore the return visit. An
+  // empty stored list means /seen ran, and that wins; otherwise our copy
+  // carries the append.
+  const freshRetention = Array.isArray(fresh.retention) ? fresh.retention : []
+  merged.retention = freshRetention.length === 0
+    ? []
+    : (Array.isArray(mutated.retention) ? mutated.retention : freshRetention)
+
+  return merged
+}
+
 // ── Zakat reminders ─────────────────────────────────────────────────────────
 // The one thing the server is told is a DATE. Not the amount, not the
 // portfolio value, not whether the user is above nisab — all of that is worked

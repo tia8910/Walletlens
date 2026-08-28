@@ -48,7 +48,7 @@ import {
   isBreaking, localDayKey, localHour, matchArticle,
   MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS, pickHeadline, pruneSent, pushTopic,
   RETENTION_HOUR, RETENTION_MIN_PCT, sanitizeAlerts, sanitizePrefs, sanitizeSetup,
-  sanitizeZakatDue, dueZakatReminder, trimZakatSent,
+  sanitizeZakatDue, dueZakatReminder, trimZakatSent, mergeSubForWrite,
   sanitizeTz, sanitizeWatch, seedRefFromChange, shortHash,
   crossedLevel,
 } from "./notify-logic.js"
@@ -268,38 +268,34 @@ async function endpointKey(endpoint: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 24)
 }
 
-// ── Subscription scan, cached for one cron minute ───────────────────────────
+// ── Subscription scan, cached across cron runs ──────────────────────────────
 //
 // This is a FULL TABLE SCAN, and it was run once per job: five crons, two of
 // them every minute, each opening with its own allSubs(). That is ~3,480 scans
 // a day before a single notification is sent — the same list, re-read up to
 // five times in the same minute — and it is what exhausted the KV Reads
-// allowance and had the whole service suspended.
+// allowance and had the whole org suspended.
 //
 // The cadences themselves are not the waste and are deliberately not touched:
 // the comments on each cron below explain that they are set by what the
 // OUTBOUND call costs (one batched CoinGecko request for crypto, one per
-// symbol for stocks). Timeliness is the product. Re-reading the same rows is
-// not.
+// symbol for stocks). Prices are still fetched every minute. Timeliness is the
+// product. Re-reading the same rows is not.
 //
-// So the scan is cached just under a minute. Every job firing in the same
-// minute shares one read, and each job still runs on its own schedule:
-// ~1,440 scans a day instead of ~3,480.
+// The scan is cached for five minutes: ~288 scans a day instead of ~3,480.
 //
-// Staleness is bounded on both ends. The TTL is under the cron interval, so a
-// new minute always re-reads; and any request that could write invalidates it
-// (see handle()), so a preference change is never overwritten by a cron
-// holding the row from before it. Crons mutate the cached objects they later
-// persist, so jobs within a minute see each other's updates rather than
-// racing over them.
+// What goes stale is only the SUBSCRIBER LIST, never a price. A device that
+// subscribes is picked up on the next scan, so at worst it waits a few minutes
+// for its first notification. Its own writes invalidate this isolate's cache
+// immediately (see handle()), so the wait only applies across isolates.
 //
-// That last point fixes a pre-existing lost update. At :05 both checkTargets
-// and checkDaily fired, each with its OWN scan: whichever read first held a
-// row from before the other's write, and the later kv.set put the stale copy
-// back — a fired flag or a digestDay silently undone. Sharing one scan means
-// they mutate the same object, so the second write carries the first's
-// changes instead of erasing them.
-const SUBS_CACHE_MS = 55_000
+// Writing is where a long cache gets dangerous, and that is handled separately
+// in saveSub(): a cron holding a five-minute-old row must never put it back on
+// top of a preference change or a /seen heartbeat.
+// Five minutes. Safe at this length only because saveSub() re-reads before
+// writing; without that, this would be a five-minute window for a cron to
+// undo a user's own change.
+const SUBS_CACHE_MS = 5 * 60_000
 let subsCache: { at: number; subs: Array<{ key: Deno.KvKey; sub: StoredSub }> } | null = null
 
 /** Drop the cached scan. Called whenever a request may have written a sub. */
@@ -317,6 +313,25 @@ async function allSubs(): Promise<Array<{ key: Deno.KvKey; sub: StoredSub }>> {
   }
   subsCache = { at: now, subs: out }
   return out
+}
+
+/**
+ * Persist a subscription a cron has mutated, without clobbering the user.
+ *
+ * The cached row can be minutes old. Everything the HTTP side owns is taken
+ * fresh from KV at write time; everything the crons own is taken from the copy
+ * they just mutated. Costs one extra read, but only on the rare path where a
+ * cron actually has something to write (every cron write is behind
+ * `if (changed)`), against ~3,200 full scans a day saved.
+ *
+ * A row that has since been deleted is NOT rewritten: an unsubscribe during
+ * the cron run must not be undone by it.
+ */
+async function saveSub(key: Deno.KvKey, sub: StoredSub): Promise<void> {
+  const fresh = (await kv.get<StoredSub>(key)).value
+  const merged = mergeSubForWrite(sub, fresh) as StoredSub | null
+  if (!merged) return   // unsubscribed mid-run; leave it gone
+  await kv.set(key, merged)
 }
 
 // ── Sending ─────────────────────────────────────────────────────────────────
@@ -446,7 +461,7 @@ async function checkTargets() {
         changed = true
       }
     }
-    if (changed) await kv.set(key, sub)
+    if (changed) await saveSub(key, sub)
   }
 }
 
@@ -577,7 +592,7 @@ async function checkMoves({ kinds = null, refreshSeen = true }: {
     for (const k of Object.keys(sub.lastPrice)) if (!live.has(k)) { delete sub.lastPrice[k]; changed = true }
     for (const k of Object.keys(sub.lastLevel)) if (!live.has(k)) { delete sub.lastLevel[k]; changed = true }
 
-    if (changed) await kv.set(key, sub)
+    if (changed) await saveSub(key, sub)
   }
 }
 
@@ -619,7 +634,7 @@ async function checkNews() {
       if (sent) { sub.lastNewsAt = now; break }
     }
 
-    if (changed) await kv.set(key, sub)
+    if (changed) await saveSub(key, sub)
   }
 }
 
@@ -738,7 +753,7 @@ async function checkDaily() {
           }),
           RETENTION_MIN_PCT,
         )
-        if (!mover) { if (changed) await kv.set(key, sub); continue }
+        if (!mover) { if (changed) await saveSub(key, sub); continue }
 
         const body = copy("retentionMoverBody", sub.lang)(
           mover.symbol, fmtPct(mover.pct), mover.pct > 0,
@@ -794,7 +809,7 @@ async function checkDaily() {
       }
     }
 
-    if (changed) await kv.set(key, sub)
+    if (changed) await saveSub(key, sub)
   }
 }
 
