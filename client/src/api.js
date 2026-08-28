@@ -46,6 +46,7 @@ import {
 } from './data/storage';
 import { foldBalances as _foldBalancesPure, diffHoldings } from './data/portfolio';
 import { analyzeTechnicals } from './technicals';
+import { voiceProxy } from './apiHosts.js'
 
 export {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
@@ -62,7 +63,7 @@ const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
 // not subject to the browser's CORS limits or per-region IP geo-blocks (e.g.
 // Binance). Tried FIRST everywhere because it's the most reliable; the public
 // proxies below remain as backups if the Deno service is ever unreachable.
-export const DENO_PROXY = (u) => `https://walletlens-voice-parse.tia8910.deno.net/proxy?url=${encodeURIComponent(u)}`;
+export const DENO_PROXY = (u) => voiceProxy(u);
 
 // Multiple CORS proxies — some networks/IPs get rate-limited or blocked by
 // specific proxies, so we try several before giving up.

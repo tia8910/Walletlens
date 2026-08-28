@@ -46,6 +46,7 @@ import Tip from '../components/Tip'
 import RebalancePanel from '../components/RebalancePanel'
 import { syncWidgets } from '../nativeWidgets'
 import { noteAppOpen, maybeAskForReview, noteMoment } from '../reviewPrompt'
+import { VOICE_API, voiceProxy } from '../apiHosts.js'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -2662,7 +2663,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
               {a.imgSrc || goldLogo
                 ? <img
                     src={a.imgSrc
-                      ? `https://walletlens-voice-parse.tia8910.deno.net/proxy?url=${encodeURIComponent(a.imgSrc)}`
+                      ? voiceProxy(a.imgSrc)
                       : goldLogo}
                     onError={e => { if (a.imgSrc && !e.currentTarget.dataset.fb) { e.currentTarget.dataset.fb = '1'; e.currentTarget.src = a.imgSrc } }}
                     alt={a.label} style={{ width:22, height:22, borderRadius:'50%', objectFit:'cover', flexShrink:0 }} />
@@ -2720,7 +2721,7 @@ function fmtQty(n) {
 
 // Sell-target reality check — "is this target reasonable, and how long might it
 // take?" Local heuristic (ATH + past-year pace + trend) with an optional AI take.
-const VOICE_ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
+const VOICE_ENDPOINT = VOICE_API
 function TargetRealityCheck({ coinId, coinSymbol, coinName, currentPrice, targetPrice, assetClass, compact = false }) {
   const { t } = useLanguage()
   const [data, setData] = useState(null)

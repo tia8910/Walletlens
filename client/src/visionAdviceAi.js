@@ -1,3 +1,4 @@
+import { VOICE_API } from './apiHosts.js'
 // AI advisor for the Portfolio Vision page.
 //
 // Sends a compact summary of the user's planning buckets + asset-class mix to
@@ -7,7 +8,7 @@
 // transaction data leaves the device. Fully optional: any failure returns null
 // and the UI simply hides the advisor.
 
-const DEFAULT_VOICE_API = 'https://walletlens-voice-parse.tia8910.deno.net/'
+const DEFAULT_VOICE_API = VOICE_API
 
 function endpoint() {
   try {

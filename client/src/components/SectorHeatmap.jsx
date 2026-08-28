@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
+import { voiceProxy } from '../apiHosts.js'
 
 const SECTORS = {
   'Layer 1':    ['bitcoin','ethereum','solana','avalanche-2','cardano','near','aptos','sui'],
@@ -48,7 +49,7 @@ function buildSectorResult(byId, changeKey) {
 const PROXIES = [
   // Our own Deno proxy first — reliable and allowlists CoinGecko. The public
   // proxies below are flaky/rate-limited and only used as fallbacks.
-  u => 'https://walletlens-voice-parse.tia8910.deno.net/proxy?url=' + encodeURIComponent(u),
+  u => voiceProxy(u),
   u => 'https://corsproxy.io/?' + encodeURIComponent(u),
   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
   u => 'https://cors.eu.org/' + u,

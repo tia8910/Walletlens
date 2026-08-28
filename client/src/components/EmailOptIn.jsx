@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { track } from '../analytics'
+import { VOICE_API } from '../apiHosts.js'
 
-const ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
+const ENDPOINT = VOICE_API
 
 // Reusable newsletter / waitlist opt-in form.
 // Posts to the Deno endpoint (mode: "email") which stores the address in Deno KV.

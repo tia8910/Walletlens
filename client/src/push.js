@@ -18,8 +18,8 @@ import { foldBalances } from './data/portfolio'
 import { loadDueDate as loadZakatDue } from './zakat'
 import { usedFeature } from './featureUse'
 import { isAndroidTWA } from './nativeBridge'
+import { PUSH_API } from './apiHosts.js'
 
-const PUSH_API = 'https://walletlens-push.tia8910.deno.net'
 
 // The server builds the notification text, so it has to be told which language
 // to build it in — otherwise a user reading the app in Arabic still gets an

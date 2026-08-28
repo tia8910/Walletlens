@@ -1,3 +1,4 @@
+import { VOICE_API } from './apiHosts.js'
 // WalletLens in-app assistant (client side, Claude Haiku via owner proxy).
 //
 // A lightweight chat helper that understands the app's feature map and points
@@ -9,7 +10,7 @@
 
 // Owner-hosted proxy that holds the secret. Overridable at runtime (without a
 // rebuild) via localStorage 'wl_voice_api' — shared with the voice/vision flow.
-const DEFAULT_PROXY = 'https://walletlens-voice-parse.tia8910.deno.net/'
+const DEFAULT_PROXY = VOICE_API
 function proxyEndpoint() {
   try {
     const o = localStorage.getItem('wl_voice_api')
