@@ -14,13 +14,26 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.content.ContextCompat;
 
 /**
- * Pre-launch permission gate — the app's launcher entry point.
+ * The app's launcher entry point, and the on-demand notification-permission
+ * request.
  *
- * Requests POST_NOTIFICATIONS and only then forwards to the TWA
- * {@link LauncherActivity}. A dedicated activity is used because the
- * AndroidBrowserHelper LauncherActivity finishes itself the moment it launches
- * the browser, which dismisses any permission dialog requested there before the
- * user can respond — that's why the app "never asked".
+ * <p><b>It no longer asks on launch.</b> It used to request POST_NOTIFICATIONS
+ * before forwarding to the TWA, which meant a system dialog in the first second
+ * of a cold start, before the user had seen anything to have an opinion about.
+ * Worse, it was only half the ask: the Android app permission and the web
+ * origin's own Notification permission are separate, so granting this one
+ * produced no push subscription and the switch in Settings still read Off. The
+ * user was then asked a second time when they tapped it. Two dialogs, one
+ * decision, and the first one bought nothing.
+ *
+ * <p>Now the ask happens where the intent is: the Settings toggle fires
+ * {@code walletlens://notification-permission}, this activity requests the
+ * permission with the app already on screen, and the web side subscribes
+ * immediately afterwards. On a launcher start it does nothing but forward.
+ *
+ * <p>A dedicated activity is still used because the AndroidBrowserHelper
+ * LauncherActivity finishes itself the moment it launches the browser, which
+ * would dismiss any dialog requested there before the user could respond.
  *
  * Extends {@link ComponentActivity} so it can use the modern
  * {@code registerForActivityResult} permission API (more reliable than the old
@@ -36,17 +49,31 @@ public class NotificationPermissionActivity extends ComponentActivity {
 
     private static final String TAG = "WalletLensPermGate";
 
+    /** walletlens://notification-permission — the on-demand ask from Settings. */
+    private static final String HOST_REQUEST = "notification-permission";
+
+    /** Whether this instance was started to ask, rather than to launch. */
+    private boolean askOnly = false;
+
     private final ActivityResultLauncher<String> requestPermission =
             registerForActivityResult(
                     new ActivityResultContracts.RequestPermission(),
                     granted -> {
                         Log.d(TAG, "POST_NOTIFICATIONS granted=" + granted);
-                        proceed();
+                        // Asked on demand: the TWA is already on screen behind
+                        // this activity, so finishing returns the user exactly
+                        // where they were, mid-tap on the toggle. Forwarding
+                        // instead would restart the app under them.
+                        if (askOnly) finish();
+                        else proceed();
                     });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Uri data = getIntent() != null ? getIntent().getData() : null;
+        askOnly = data != null && HOST_REQUEST.equals(data.getHost());
 
         boolean needsRequest =
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
@@ -54,14 +81,19 @@ public class NotificationPermissionActivity extends ComponentActivity {
                         Manifest.permission.POST_NOTIFICATIONS)
                         != PackageManager.PERMISSION_GRANTED;
 
-        if (needsRequest) {
-            Log.d(TAG, "Requesting POST_NOTIFICATIONS before launching TWA");
+        // A launcher start never asks — see the class comment. Only the
+        // on-demand path does, and only if the permission is actually missing.
+        if (askOnly && needsRequest) {
+            Log.d(TAG, "Requesting POST_NOTIFICATIONS on demand");
             try {
                 requestPermission.launch(Manifest.permission.POST_NOTIFICATIONS);
             } catch (Exception e) {
                 Log.w(TAG, "permission request failed: " + e.getMessage());
-                proceed();
+                finish();
             }
+        } else if (askOnly) {
+            // Already held. Nothing to show; the web side carries on.
+            finish();
         } else {
             proceed();
         }

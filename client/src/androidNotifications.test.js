@@ -87,3 +87,51 @@ describe('the timer-driven notifications stay retired', () => {
     expect(delegation).toMatch(/CHANNEL_ALERTS_ID/)
   })
 })
+
+describe('one decision, one prompt', () => {
+  // The Android app permission and this origin's web Notification permission
+  // are separate, and both are needed: the app permission without a
+  // subscription is silence, and a subscription the app cannot post is silence
+  // too. The app used to request the first on every cold start — before the
+  // user had seen anything — and the second only when they later found the
+  // switch. Two dialogs for one decision, and the first bought nothing: the
+  // switch still read Off afterwards, because nothing had subscribed.
+  const gate = readFileSync(join(JAVA, 'NotificationPermissionActivity.java'), 'utf8')
+  const manifest = readFileSync(join(ANDROID, 'AndroidManifest.xml'), 'utf8')
+  const push = readFileSync(join(SRC, 'push.js'), 'utf8')
+
+  it('does not ask on a launcher start', () => {
+    // The request is reachable only down the on-demand branch.
+    expect(gate).toMatch(/if \(askOnly && needsRequest\)/)
+    const launch = /\} else \{\s*proceed\(\);/.exec(gate)
+    expect(launch, 'a launcher start must fall through to proceed()').not.toBeNull()
+  })
+
+  it('is reachable on demand from the web side', () => {
+    expect(gate).toMatch(/HOST_REQUEST = "notification-permission"/)
+    expect(manifest).toMatch(/android:host="notification-permission"/)
+    expect(push).toMatch(/walletlens:\/\/notification-permission/)
+  })
+
+  it('returns the user to the app rather than relaunching it', () => {
+    // The TWA is already on screen behind the dialog. proceed() would restart
+    // the app under them, mid-tap.
+    expect(gate).toMatch(/if \(askOnly\) finish\(\);\s*\n\s*else proceed\(\);/)
+  })
+
+  it('never moves the top frame to fire it', () => {
+    // Navigating to intent:// takes the Custom Tab off its own origin and ends
+    // the session. Losing the app is a poor way to turn notifications on.
+    const fn = /async function askNativeNotificationPermission\(\) \{[\s\S]*?\n\}/.exec(push)[0]
+    expect(fn).toMatch(/keepSession: true/)
+  })
+
+  it('still asks the web side afterwards', () => {
+    // The native grant alone creates no subscription. Under TWA delegation
+    // this resolves without a second dialog; if it does not, the user is at
+    // least being asked at the moment they asked for it.
+    const enable = /export async function enablePush\(\) \{[\s\S]*?\n\}/.exec(push)[0]
+    expect(enable.indexOf('askNativeNotificationPermission'))
+      .toBeLessThan(enable.indexOf('Notification.requestPermission'))
+  })
+})

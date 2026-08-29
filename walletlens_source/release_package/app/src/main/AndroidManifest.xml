@@ -136,6 +136,17 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- The on-demand ask. Settings fires this when the user turns push
+                 on, so the system dialog appears at the moment they asked for
+                 it rather than in the first second of a cold start. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="walletlens"
+                    android:host="notification-permission" />
+            </intent-filter>
         </activity>
 
         <!-- singleTask, because this activity answers a VIEW intent filter.

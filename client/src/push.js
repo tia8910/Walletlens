@@ -17,7 +17,7 @@
 import { foldBalances } from './data/portfolio'
 import { loadDueDate as loadZakatDue } from './zakat'
 import { usedFeature } from './featureUse'
-import { isAndroidTWA } from './nativeBridge'
+import { isAndroidTWA, fireNativeIntent } from './nativeBridge'
 import { PUSH_API } from './apiHosts.js'
 
 
@@ -382,9 +382,50 @@ export async function isPushEnabled() {
 }
 
 // Returns { ok } or throws an Error with a user-friendly message.
+/**
+ * Ask Android for POST_NOTIFICATIONS, from inside the tap that wants it.
+ *
+ * Two permissions govern one thing the user thinks of as one thing: the
+ * Android app's own notification permission, and this origin's web
+ * Notification permission. Granting either alone gets you nothing — the app
+ * permission without a subscription is silence, and a subscription the app
+ * cannot post is silence too.
+ *
+ * The app used to request the Android one on every cold start, before the user
+ * had seen anything, and the web one only later when they found the switch.
+ * Two dialogs for one decision, and the first bought nothing: the switch still
+ * read Off afterwards, because nothing had subscribed.
+ *
+ * Now the native ask happens here, in the same gesture. keepSession because
+ * this must not move the top frame — navigating to intent:// takes the Custom
+ * Tab off its own origin and ends the TWA session, and losing the app is a
+ * spectacular way to fail at turning notifications on. The iframe route cannot
+ * report back, so the wait below is a fixed pause rather than a result: the
+ * only thing that actually decides anything is requestPermission() after it,
+ * which under TWA notification delegation resolves without a second dialog
+ * once the app holds the permission.
+ *
+ * Best-effort throughout. On the web, on Android 12 and below, or if the
+ * intent is dropped, this returns and the web prompt still runs — which is
+ * exactly the behaviour that existed before.
+ */
+async function askNativeNotificationPermission() {
+  if (!isAndroidTWA()) return
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') return
+  try {
+    if (!fireNativeIntent('walletlens://notification-permission', { keepSession: true })) return
+  } catch { return }
+  // Long enough for Android to start the activity and put the dialog up. The
+  // user's answer takes as long as it takes; requestPermission() below is what
+  // waits for the outcome.
+  await new Promise(r => setTimeout(r, 400))
+}
+
 export async function enablePush() {
   if (!isPushSupported()) throw new Error('Push notifications aren’t supported on this device.')
   if (!VAPID_PUBLIC) throw new Error('Push isn’t configured yet (missing key). Try again after the next update.')
+
+  await askNativeNotificationPermission()
 
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') throw new Error('Allow notifications for WalletLens in your browser, then try again.')
