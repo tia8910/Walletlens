@@ -15093,18 +15093,32 @@ button:not(:disabled):active,
 .wk-how strong { color: var(--text); font-weight: 700; overflow-wrap: anywhere; }
 
 /* Subscribe confirmation popup */
+/* The overlay scrolls as a last resort. A centred flex item that outgrows a
+   fixed container overflows equally in BOTH directions, and the half above the
+   top edge cannot be reached at all — which is how the badge and the "Got it"
+   button were both sliced off on a short screen. */
 .wk-modal-overlay {
   position: fixed; inset: 0; z-index: 4000;
   display: flex; align-items: center; justify-content: center; padding: 1.1rem;
   background: rgba(4,10,7,0.62); backdrop-filter: blur(6px);
+  overflow-y: auto;
   animation: wk-modal-fade 0.18s ease-out;
 }
+/* Column layout so the height can be capped and given to the one part that is
+   allowed to scroll. dvh, because on mobile the browser chrome makes vh taller
+   than the space actually visible — the exact case this broke in. */
 .wk-modal {
   width: 100%; max-width: 400px; border-radius: 20px; padding: 1.4rem 1.3rem 1.2rem;
   background: var(--bg4, #0d1f14); border: 1px solid var(--border);
   box-shadow: 0 24px 60px rgba(0,0,0,0.5); text-align: center;
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 2.2rem);
+  max-height: calc(100dvh - 2.2rem);
   animation: wk-modal-pop 0.24s cubic-bezier(0.34,1.56,0.64,1);
 }
+/* Everything except the bullet list keeps its size; the badge in particular is
+   a fixed circle and would otherwise be squashed into an oval by flex-shrink. */
+.wk-modal-badge, .wk-modal-title, .wk-modal-sub, .wk-modal-btn { flex: none; }
 .wk-modal-badge {
   width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 0.85rem;
   display: flex; align-items: center; justify-content: center; color: #fff;
@@ -15114,7 +15128,15 @@ button:not(:disabled):active,
 .wk-modal-title { margin: 0 0 0.35rem; font-size: 1.15rem; font-weight: 900; color: var(--text); }
 .wk-modal-sub { margin: 0 0 1rem; font-size: 0.85rem; line-height: 1.5; color: var(--text-muted); }
 .wk-modal-sub strong { color: var(--text); }
-.wk-modal-how { text-align: left; margin: 0 0 1.1rem; }
+/* The only part that scrolls. Keeping the button outside it means the primary
+   action is always reachable, rather than sitting below a scroll the user has
+   no reason to expect. min-height:0 is required — a flex child will not shrink
+   below its content height without it, which silently defeats the max-height
+   above. */
+.wk-modal-how {
+  text-align: left; margin: 0 0 1.1rem;
+  overflow-y: auto; min-height: 0; overscroll-behavior: contain;
+}
 .wk-modal-how .wk-how-title { margin-top: 0; }
 .wk-modal-btn {
   width: 100%; padding: 0.75rem 1rem; border-radius: 12px; border: none; cursor: pointer;
