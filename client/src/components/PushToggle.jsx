@@ -39,10 +39,17 @@ const MOVE_STEPS = [3, 5, 10, 20]
  * summary is hidden with everything else; a screen that is quiet when all is
  * well and speaks up when it is not is the point.
  *
- * The test send is not a channel control and was only ever hidden by
- * association. It is the one button that answers "is any of this actually
- * arriving?", which no amount of green status can, because a subscription
- * can be stored, valid and undeliverable all at once.
+ * The test send is gated too. It was briefly exposed to verify delivery
+ * through the move from Deno Deploy to Cloudflare Workers, where a stored,
+ * valid, completely undeliverable subscription was a real possibility and
+ * nothing on screen could tell it from a quiet market. That question is
+ * settled, and a button whose only job is answering it does not need to sit
+ * in front of every user forever.
+ *
+ * What answers it now, without the button: the warnings above, and the push
+ * worker's own GET /health, which reports whether VAPID is configured and
+ * which public key it holds — enough to catch a key mismatch, the failure
+ * that motivated exposing the button in the first place.
  */
 const SHOW_CHANNEL_DETAIL = false
 
@@ -396,7 +403,7 @@ export default function PushToggle() {
           )}
 
           {status && <PushStatusLine status={status} repair={repair} detail={SHOW_CHANNEL_DETAIL} />}
-          {status?.found && <TestSend />}
+          {SHOW_CHANNEL_DETAIL && status?.found && <TestSend />}
 
           <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>
         </>
