@@ -1576,3 +1576,57 @@ describe('round price levels', () => {
     expect(fn.slice(levelAt, moveBail)).toMatch(/sub\.moveFired\[k\] = now/)
   })
 })
+
+// The send-a-test control, and what replaced it.
+//
+// It was exposed for one job: proving delivery through the move from Deno
+// Deploy to Cloudflare Workers. A subscription can be stored, valid and
+// completely undeliverable at once — a VAPID pair that no longer matches the
+// one the browser subscribed with does exactly that, and every status field
+// still reads healthy — so "enabled but silent" was genuinely ambiguous.
+//
+// Delivery is confirmed, so the button is gated again rather than sitting in
+// front of every user forever. These tests pin the shape it settled into:
+// gated with the rest of the channel detail, with the diagnostics that do NOT
+// depend on it still in place.
+describe('the send-a-test control', () => {
+  const toggle = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'components/PushToggle.jsx'), 'utf8',
+  )
+
+  it('is gated with the rest of the channel detail', () => {
+    expect(toggle).toMatch(/SHOW_CHANNEL_DETAIL && status\?\.found && <TestSend \/>/)
+  })
+
+  it('keeps the preference rows gated too', () => {
+    expect(toggle).toMatch(/const SHOW_CHANNEL_DETAIL = false/)
+    expect(toggle).toMatch(/\{SHOW_CHANNEL_DETAIL && \(/)
+  })
+
+  it('leaves the undeliverable-subscription warnings ungated', () => {
+    // This is the part that must never follow the button behind the flag.
+    // The warnings are the only thing on screen that distinguishes a device
+    // that is registered but cannot receive from one with nothing to say, and
+    // that failure is invisible from every other angle.
+    //
+    // Asserted as the ABSENCE of a guard rather than the presence of the
+    // condition: `SHOW_CHANNEL_DETAIL && status.vapid === false &&` still
+    // contains `status.vapid === false &&`, so a presence check passes
+    // happily on exactly the regression it exists to catch.
+    for (const cond of ['status.vapid === false', 'keyOk === false']) {
+      expect(toggle).toContain(`{${cond} && (`)
+      expect(toggle).not.toContain(`SHOW_CHANNEL_DETAIL && ${cond}`)
+    }
+  })
+
+  it('describes the defaults with the threshold that is actually shipping', () => {
+    // The comment said 3% while DEFAULT_PREFS said 5, which is the kind of
+    // drift that gets read as the answer during an incident.
+    const pct = /moves at (\d+)%/.exec(toggle)
+    expect(pct).not.toBeNull()
+    const logic = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../../push-api/notify-logic.js'), 'utf8',
+    )
+    expect(logic).toMatch(new RegExp(`movePct:\\s*${pct[1]}\\b`))
+  })
+})

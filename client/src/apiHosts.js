@@ -14,8 +14,8 @@
 // To move a service: change the host here, run the tests, and do what they
 // tell you.
 
-export const VOICE_HOST = 'walletlens-voice-parse.tia8910.deno.net'
-export const PUSH_HOST = 'walletlens-push.tia8910.deno.net'
+export const VOICE_HOST = 'walletlens-voice.tarek-abdelhameed.workers.dev'
+export const PUSH_HOST = 'walletlens-push.tarek-abdelhameed.workers.dev'
 
 // The trailing slash on one and not the other is what the call sites already
 // expected; both shapes are preserved so this change stays a pure refactor.

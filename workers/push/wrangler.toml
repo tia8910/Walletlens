@@ -9,8 +9,7 @@ compatibility_date = "2026-06-21"
 [[d1_databases]]
 binding = "DB"
 database_name = "walletlens-push"
-# Filled in by `wrangler d1 create walletlens-push`.
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "d3e0f37d-bc3e-4525-9007-fd90c6cf35fa"
 
 # The cadences are carried over unchanged from the Deno service. They are set
 # by what the OUTBOUND call costs, not by storage: crypto is one batched

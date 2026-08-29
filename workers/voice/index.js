@@ -783,7 +783,7 @@ function guardianContent(opts) {
 }
 // This endpoint's own public origin — used to build the one-click "I'm still
 // here" reset link that goes in the owner-warning email.
-const SELF_ORIGIN = "https://walletlens-voice-parse.tia8910.deno.net";
+const SELF_ORIGIN = "https://walletlens-voice.tarek-abdelhameed.workers.dev";
 // Grace period between warning the owner and notifying heirs. A missed
 // check-in usually just means a lost phone, travel or illness — the owner is
 // given this long to respond to the warning email before heirs are contacted.
@@ -1518,9 +1518,24 @@ Deno.serve(async (req) => {
             }
             const prev = (entry.value.stats || {});
             const fresh = sanitizeWeeklyStats(body.stats);
-            // Keep prior holdings if this refresh didn't include any.
+            // Keep prior holdings if this refresh didn't include any, and the
+            // prior count with them. assetCount was overwritten by the spread
+            // while holdings were preserved, so a report could list real
+            // holdings above a count of zero — the two describe the same thing
+            // and have to be carried across together or not at all.
+            //
+            // The count is gated on the COUNT, not on holdings being present:
+            // the client can
+            // now count held assets from balances alone, without prices, so a
+            // refresh may legitimately carry a real count and no priced
+            // holdings. Falling back on an empty holdings array would throw
+            // that good number away.
             const stats = fresh
-                ? { ...fresh, holdings: fresh.holdings.length ? fresh.holdings : (prev.holdings || []) }
+                ? {
+                    ...fresh,
+                    holdings: fresh.holdings.length ? fresh.holdings : (prev.holdings || []),
+                    assetCount: fresh.assetCount || (prev.assetCount ?? 0),
+                }
                 : prev;
             let lastSentAt = entry.value.lastSentAt ?? null;
             let sent = false;

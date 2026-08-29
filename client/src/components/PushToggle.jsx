@@ -21,7 +21,7 @@ const MOVE_STEPS = [3, 5, 10, 20]
 /**
  * Whether Settings shows the per-channel controls.
  *
- * Off: one switch, and the channels run on their defaults — moves at 3%, round
+ * Off: one switch, and the channels run on their defaults — moves at 2%, round
  * levels, news, the morning brief, win-back nudges and feature tips all stay
  * ON, they simply are not listed. Seven rows and a sensitivity picker is a lot
  * of surface for a decision most people make once, as "yes, notify me", and the
@@ -38,6 +38,18 @@ const MOVE_STEPS = [3, 5, 10, 20]
  * outside and took a long night to find. The healthy "Watching 5 assets"
  * summary is hidden with everything else; a screen that is quiet when all is
  * well and speaks up when it is not is the point.
+ *
+ * The test send is gated too. It was briefly exposed to verify delivery
+ * through the move from Deno Deploy to Cloudflare Workers, where a stored,
+ * valid, completely undeliverable subscription was a real possibility and
+ * nothing on screen could tell it from a quiet market. That question is
+ * settled, and a button whose only job is answering it does not need to sit
+ * in front of every user forever.
+ *
+ * What answers it now, without the button: the warnings above, and the push
+ * worker's own GET /health, which reports whether VAPID is configured and
+ * which public key it holds — enough to catch a key mismatch, the failure
+ * that motivated exposing the button in the first place.
  */
 const SHOW_CHANNEL_DETAIL = false
 
@@ -304,7 +316,7 @@ export default function PushToggle() {
     <div>
       <div className="settings-row settings-row-toggle">
         <div className="settings-label">
-          <span>{t('npTitle')} {enabled && <span style={{ color: 'var(--g-ink)' }}>· {t('setPulseOn')}</span>}</span>
+          <span>{t('npTitle')} {enabled && <span style={{ color: 'var(--g-ink)' }}>· {t('commonOn')}</span>}</span>
           <span className="settings-hint">{t('npHint')}</span>
         </div>
         <button className={`settings-toggle ${enabled ? 'on' : ''}`} onClick={toggle} disabled={busy} aria-pressed={enabled}>

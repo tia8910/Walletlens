@@ -15093,18 +15093,32 @@ button:not(:disabled):active,
 .wk-how strong { color: var(--text); font-weight: 700; overflow-wrap: anywhere; }
 
 /* Subscribe confirmation popup */
+/* The overlay scrolls as a last resort. A centred flex item that outgrows a
+   fixed container overflows equally in BOTH directions, and the half above the
+   top edge cannot be reached at all — which is how the badge and the "Got it"
+   button were both sliced off on a short screen. */
 .wk-modal-overlay {
   position: fixed; inset: 0; z-index: 4000;
   display: flex; align-items: center; justify-content: center; padding: 1.1rem;
   background: rgba(4,10,7,0.62); backdrop-filter: blur(6px);
+  overflow-y: auto;
   animation: wk-modal-fade 0.18s ease-out;
 }
+/* Column layout so the height can be capped and given to the one part that is
+   allowed to scroll. dvh, because on mobile the browser chrome makes vh taller
+   than the space actually visible — the exact case this broke in. */
 .wk-modal {
   width: 100%; max-width: 400px; border-radius: 20px; padding: 1.4rem 1.3rem 1.2rem;
   background: var(--bg4, #0d1f14); border: 1px solid var(--border);
   box-shadow: 0 24px 60px rgba(0,0,0,0.5); text-align: center;
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 2.2rem);
+  max-height: calc(100dvh - 2.2rem);
   animation: wk-modal-pop 0.24s cubic-bezier(0.34,1.56,0.64,1);
 }
+/* Everything except the bullet list keeps its size; the badge in particular is
+   a fixed circle and would otherwise be squashed into an oval by flex-shrink. */
+.wk-modal-badge, .wk-modal-title, .wk-modal-sub, .wk-modal-btn { flex: none; }
 .wk-modal-badge {
   width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 0.85rem;
   display: flex; align-items: center; justify-content: center; color: #fff;
@@ -15114,7 +15128,15 @@ button:not(:disabled):active,
 .wk-modal-title { margin: 0 0 0.35rem; font-size: 1.15rem; font-weight: 900; color: var(--text); }
 .wk-modal-sub { margin: 0 0 1rem; font-size: 0.85rem; line-height: 1.5; color: var(--text-muted); }
 .wk-modal-sub strong { color: var(--text); }
-.wk-modal-how { text-align: left; margin: 0 0 1.1rem; }
+/* The only part that scrolls. Keeping the button outside it means the primary
+   action is always reachable, rather than sitting below a scroll the user has
+   no reason to expect. min-height:0 is required — a flex child will not shrink
+   below its content height without it, which silently defeats the max-height
+   above. */
+.wk-modal-how {
+  text-align: left; margin: 0 0 1.1rem;
+  overflow-y: auto; min-height: 0; overscroll-behavior: contain;
+}
 .wk-modal-how .wk-how-title { margin-top: 0; }
 .wk-modal-btn {
   width: 100%; padding: 0.75rem 1rem; border-radius: 12px; border: none; cursor: pointer;
@@ -15379,13 +15401,28 @@ button.wl-topbar .wl-topbar-x, .wl-topbar button.wl-topbar-x { background: rgba(
 /* Two-row body: symbol + value on top, full-width detail underneath so the
    price · avg · units line has room to sit on one line. */
 .dvx-holding-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
-.dvx-holding-line1 { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem; }
-/* Symbol + category badge stay on one line for every asset (unified alignment);
-   the ticker truncates before the badge ever wraps. */
+/* Wraps rather than truncating.
+   
+   This line used to be nowrap with the value block pinned at flex-shrink: 0,
+   so the whole shortfall landed on the ticker: on a 360px screen AVAX rendered
+   as "A" and USDT as "U…", next to an intact badge and an intact price. The
+   old comment described that as the ticker truncating "before the badge ever
+   wraps", which it did — it just took the ticker to one character to do it.
+   
+   The widest thing in the row is the P&L pill ("▲ $730.00 (+24.57%)"), and it
+   is not shortenable without dropping a number. So the value block moves to
+   its own line when there is not room for both, instead of everything
+   competing for one. */
+.dvx-holding-line1 { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
 .dvx-holding-meta { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap; gap: 0.4rem; }
-.dvx-holding-meta strong { font-size: 0.94rem; letter-spacing: -0.01em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A ticker is a handful of characters and is the row's identity — it does not
+   give up space. max-width is the guard for a malformed symbol, not a layout
+   mechanism: the ellipsis is unreachable for anything a real asset is called. */
+.dvx-holding-meta strong { font-size: 0.94rem; letter-spacing: -0.01em; flex: 0 0 auto; max-width: 12ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dvx-holding-meta .dvx-cat-badge, .dvx-holding-meta .dvx-stable-badge { flex-shrink: 0; }
-.dvx-holding-valblock { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; text-align: right; }
+/* margin-left keeps it hard right on the wrapped line too, where
+   space-between has nothing to push against. */
+.dvx-holding-valblock { flex-shrink: 0; margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; text-align: right; }
 .dvx-holding-val { font-size: 0.98rem; letter-spacing: -0.01em; }
 /* Full-width detail line (break-even variant). */
 .dvx-holding-detail { display: block; width: 100%; font-size: 0.75rem; opacity: 0.92; line-height: 1.3; }
@@ -16194,168 +16231,6 @@ input, select, textarea, .dvx-input {
 
 [data-cache-bust="178415073"] { display: none; }
 @keyframes ptr-spin { to { transform: rotate(360deg); } }
-
-/* ── Market Pulse overlay ───────────────────────────────────────────────────
-   Keyframe offsets mirror pulseAudio's cue points. The rocket's ignition sits
-   at 0.25s, launch at 1.00s, boom at 1.80s and fade by 2.50s, so the motion
-   below is timed against the same clock rather than eyeballed — an animation
-   that peaks after the engine sound is worse than none at all. */
-.wl-pulse {
-  position: fixed; inset: 0;
-  /* Above the bottom nav (300) and full-page views (400), below every modal
-     and the tour (900+). 60 put it under all of them: the glow occupies the
-     bottom 55vh, which is exactly where the nav sits, so most of the effect
-     was drawn and then covered up. */
-  z-index: 500;
-  pointer-events: none;                 /* never swallow a tap meant for the app */
-  display: flex; align-items: center; justify-content: center;
-}
-
-.wl-pulse-glow {
-  position: absolute; inset-inline: 0; bottom: 0; height: 55vh;
-  background: radial-gradient(60% 80% at 50% 100%, var(--accent, #12b76a) 0%, transparent 70%);
-  opacity: 0;
-}
-
-.wl-pulse-caption {
-  position: absolute; top: 22%;
-  padding: 0.45rem 0.95rem; border-radius: 999px;
-  background: color-mix(in srgb, var(--bg2, #131a11) 82%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent, #12b76a) 40%, transparent);
-  color: var(--text, #e9eee6);
-  font-weight: 600; font-size: 1rem; letter-spacing: 0.01em;
-  font-variant-numeric: tabular-nums;
-  backdrop-filter: blur(8px);
-  opacity: 0;
-}
-
-.wl-pulse-craft {
-  position: absolute; bottom: 18%; font-size: 2.6rem; line-height: 1;
-  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent, #12b76a) 55%, transparent));
-  opacity: 0;
-}
-
-/* Rocket — rumble, ignition, launch, exit, fade. */
-.wl-pulse-rocket .wl-pulse-glow    { animation: wl-pulse-ignite 2.5s ease-out forwards; }
-.wl-pulse-rocket .wl-pulse-craft   { animation: wl-pulse-launch 2.5s cubic-bezier(.4,0,.7,1) forwards; }
-.wl-pulse-rocket .wl-pulse-caption { animation: wl-pulse-cap 2.5s ease-out forwards; }
-
-@keyframes wl-pulse-ignite {
-  0%   { opacity: 0; }
-  8%   { opacity: .10; }                /* rumble, 0.2s */
-  12%  { opacity: .36; }                /* ignition hit, 0.3s */
-  40%  { opacity: .32; }                /* engine at full, launch */
-  60%  { opacity: .10; }                /* craft gone, glow falls away */
-  100% { opacity: 0; }
-}
-/* Percentages are of 2.5s, so they map straight onto the audio cue points:
-   10% = 0.25s ignition · 16% = 0.4s build starts · 40% = 1.0s launch
-   60% = 1.5s exit · 72% = 1.8s boom. An earlier version had the launch at
-   60% and the exit at 76%, which put the craft half a second behind its own
-   engine — the rocket was still hovering when the launch sound played. */
-@keyframes wl-pulse-launch {
-  0%   { opacity: 0; transform: translateY(0) scale(.9); }
-  8%   { opacity: 1; transform: translateY(0) scale(1); }
-  10%  { transform: translateY(3px) scale(1.05); }          /* recoil, ignition */
-  16%  { transform: translateY(0) scale(1.02); }            /* build begins */
-  40%  { opacity: 1; transform: translateY(-7vh) scale(1); }/* launch, 1.0s */
-  52%  { transform: translateY(-52vh) scale(.92); }
-  60%  { opacity: .85; transform: translateY(-100vh) scale(.78); }  /* exit, 1.5s */
-  66%  { opacity: 0; transform: translateY(-115vh) scale(.7); }
-  100% { opacity: 0; }
-}
-@keyframes wl-pulse-cap {
-  0%   { opacity: 0; transform: translateY(6px); }
-  20%  { opacity: 1; transform: translateY(0); }
-  78%  { opacity: 1; }
-  100% { opacity: 0; transform: translateY(-4px); }
-}
-
-/* All-time high and milestone — no flight, just arrival. Restrained on
-   purpose: this is a finance app, not a slot machine. */
-.wl-pulse-ath .wl-pulse-glow,
-.wl-pulse-milestone .wl-pulse-glow { animation: wl-pulse-swell 1.6s ease-out forwards; }
-.wl-pulse-ath .wl-pulse-caption,
-.wl-pulse-milestone .wl-pulse-caption { animation: wl-pulse-rise 1.6s cubic-bezier(.2,.8,.2,1) forwards; }
-.wl-pulse-milestone .wl-pulse-glow { animation-duration: 1.95s; }
-.wl-pulse-milestone .wl-pulse-caption { animation-duration: 1.95s; }
-
-@keyframes wl-pulse-swell {
-  0%   { opacity: 0; }
-  25%  { opacity: .26; }
-  100% { opacity: 0; }
-}
-@keyframes wl-pulse-rise {
-  0%   { opacity: 0; transform: translateY(14px) scale(.96); }
-  22%  { opacity: 1; transform: translateY(0) scale(1); }
-  75%  { opacity: 1; }
-  100% { opacity: 0; transform: translateY(-8px); }
-}
-
-/* Fireworks — the whole portfolio having a good day.
-   Four shells, timed to the audio: bursts at 0.44s, 1.06s, 1.72s and 2.30s of
-   a 3.6s timeline. Each shell is one element whose ::before is the rising
-   trail and whose ::after is the flash; the sparks are box-shadows on a single
-   pseudo-element, expanded by scale, which keeps the whole display at four
-   nodes instead of a hundred. */
-.wl-pulse-shell {
-  position: absolute; width: 9px; height: 9px; border-radius: 50%;
-  opacity: 0;
-  /* Bloom. Without it the sparks read as dust on a phone rather than as
-     light — a firework is bright before it is big. */
-  filter: drop-shadow(0 0 7px var(--spark)) drop-shadow(0 0 18px var(--spark));
-  /* Sixteen sparks around a circle, at two radii so the shell has depth
-     instead of reading as a single ring. One element, one paint. */
-  box-shadow:
-      0    -78px 0 0 var(--spark),  55px -55px 0 0 var(--spark),
-     78px    0   0 0 var(--spark),  55px  55px 0 0 var(--spark),
-      0     78px 0 0 var(--spark), -55px  55px 0 0 var(--spark),
-    -78px    0   0 0 var(--spark), -55px -55px 0 0 var(--spark),
-     28px -74px 0 0 var(--spark),  74px  28px 0 0 var(--spark),
-    -28px  74px 0 0 var(--spark), -74px -28px 0 0 var(--spark),
-     30px -30px 0 -2px var(--spark), -30px  30px 0 -2px var(--spark),
-    -30px -30px 0 -2px var(--spark),  30px  30px 0 -2px var(--spark);
-}
-.wl-pulse-shell::before {
-  content: ''; position: absolute; left: 3px; bottom: 0;
-  width: 3px; height: 0; border-radius: 3px;
-  background: linear-gradient(to top, transparent, var(--spark));
-  opacity: 0;
-}
-.wl-pulse-shell::after {
-  content: ''; position: absolute; inset: -22px; border-radius: 50%;
-  background: radial-gradient(circle, var(--spark) 0%, transparent 70%);
-  opacity: 0;
-}
-
-.wl-pulse-shell-1 { left: 22%; top: 30%; --spark: #ffd24a; animation: wl-fw-burst 3.6s linear forwards; }
-.wl-pulse-shell-2 { left: 74%; top: 22%; --spark: #56ccff; animation: wl-fw-burst 3.6s linear forwards; animation-delay: .62s; }
-.wl-pulse-shell-3 { left: 48%; top: 44%; --spark: #4ade80; animation: wl-fw-burst 3.6s linear forwards; animation-delay: 1.28s; }
-.wl-pulse-shell-4 { left: 66%; top: 58%; --spark: #ff7a59; animation: wl-fw-burst 3.6s linear forwards; animation-delay: 2.30s; }
-
-.wl-pulse-shell-1::before, .wl-pulse-shell-2::before,
-.wl-pulse-shell-3::before { animation: wl-fw-trail 3.6s ease-out forwards; }
-.wl-pulse-shell-2::before { animation-delay: .62s; }
-.wl-pulse-shell-3::before { animation-delay: 1.28s; }
-/* Shell 4 has no trail — its sound has no whistle, so the display ends on a
-   report rather than on the anticipation of one. */
-
-.wl-pulse-shell-1::after { animation: wl-fw-flash 3.6s ease-out forwards; }
-.wl-pulse-shell-2::after { animation: wl-fw-flash 3.6s ease-out forwards; animation-delay: .62s; }
-.wl-pulse-shell-3::after { animation: wl-fw-flash 3.6s ease-out forwards; animation-delay: 1.28s; }
-.wl-pulse-shell-4::after { animation: wl-fw-flash 3.6s ease-out forwards; animation-delay: 2.30s; }
-
-/* 12.2% of 3.6s = 0.44s, the burst. Sparks fly out and fall: the scale keeps
-   growing while opacity dies, and the slight translateY is gravity. */
-@keyframes wl-fw-burst {
-  0%,   12.1% { opacity: 0; transform: scale(.08) translateY(0); }
-  12.2%       { opacity: 1; transform: scale(.16) translateY(0); }
-  17%         { opacity: 1; transform: scale(.72) translateY(0); }
-  24%         { opacity: 1; transform: scale(1.00) translateY(6px); }
-  34%         { opacity: .8; transform: scale(1.28) translateY(22px); }
-  46%         { opacity: 0; transform: scale(1.5) translateY(52px); }
-  100%        { opacity: 0; transform: scale(1.5) translateY(52px); }
-}
 /* The rise: 0 to 0.44s, matching the whistle. */
 @keyframes wl-fw-trail {
   0%    { opacity: 0; height: 0; }
@@ -16371,8 +16246,6 @@ input, select, textarea, .dvx-input {
   100%        { opacity: 0; }
 }
 
-.wl-pulse-fireworks .wl-pulse-glow    { animation: wl-fw-sky 3.6s ease-out forwards; }
-.wl-pulse-fireworks .wl-pulse-caption { animation: wl-pulse-rise 3.6s cubic-bezier(.2,.8,.2,1) forwards; }
 
 @keyframes wl-fw-sky {
   0%   { opacity: 0; }
@@ -16382,215 +16255,130 @@ input, select, textarea, .dvx-input {
   100% { opacity: 0; }
 }
 
-/* Reduced motion: the caption still appears, because knowing what happened is
-   the information. Nothing travels across the screen. */
-.wl-pulse.is-still .wl-pulse-glow,
-.wl-pulse.is-still .wl-pulse-shell { display: none; }
-.wl-pulse.is-still .wl-pulse-caption {
-  animation: wl-pulse-fade 1.4s ease-out forwards;
-}
-/* ── The six added overlays ────────────────────────────────────────────────
-   Each is keyed to its own DURATION_MS entry in pulseAudio.js, the same
-   contract the rocket keeps. Transform and opacity only: anything that moves
-   here runs on the compositor, because these play over a live dashboard on a
-   mid-range phone and a dropped frame is more noticeable than the effect. */
 
-/* Shockwave — three rings, 0.7s. The smallest thing in the set, because it is
-   the one that can fire several times in a row. */
-.wl-pulse-shockwave .wl-pulse-caption { animation: wl-pulse-cap-fast .7s ease-out forwards; }
-.wl-pulse-ring {
-  position: absolute; top: 42%; left: 50%;
-  width: 16px; height: 16px; margin: -8px 0 0 -8px;
-  border-radius: 50%;
-  border: 1.5px solid color-mix(in srgb, var(--accent, #12b76a) 85%, transparent);
-  opacity: 0;
-  animation: wl-pulse-ring .7s cubic-bezier(.2,.7,.3,1) forwards;
+/* ══ Screen effects ═══════════════════════════════════════════════════════
+   Three occasions: first open of the day, a day up over 5%, and an all-time
+   high. Rendered by components/ScreenEffect.jsx.
+
+   Decorative only. pointer-events stays off on every layer here — an effect
+   that swallowed a tap would be worse than no effect, and these fire without
+   the user asking for them. */
+.fx-layer {
+  position: fixed; inset: 0; z-index: 5000;
+  display: grid; place-items: center;
+  pointer-events: none;
+  overflow: hidden;
 }
-.wl-pulse-ring-2 { animation-delay: .08s; }
-.wl-pulse-ring-3 { animation-delay: .16s; }
-@keyframes wl-pulse-ring {
-  0%   { opacity: .9; transform: scale(1); }
-  100% { opacity: 0;  transform: scale(24); }
+.fx-layer * { pointer-events: none; }
+
+/* The asset mark, shared by the explode and the rocket. */
+.fx-core, .fx-rocket-mark {
+  width: 72px; height: 72px; border-radius: 50%;
+  object-fit: cover; display: grid; place-items: center;
+  background: rgba(10,20,14,0.9);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.18), 0 10px 34px rgba(0,0,0,0.5);
 }
-@keyframes wl-pulse-cap-fast {
-  0% { opacity: 0; } 20% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; }
+.fx-mark-text {
+  font-weight: 900; font-size: 1.05rem; letter-spacing: 0.02em;
+  color: #fff; font-family: var(--mono, inherit);
 }
 
-/* Aurora — two ribbons drifting down, 2.6s. No transient in the sound and no
-   sharp edge in the picture: it should read as weather, noticed a beat late. */
-.wl-pulse-aurora .wl-pulse-caption { animation: wl-pulse-cap 2.6s ease-out forwards; }
-.wl-pulse-band {
-  position: absolute; left: -30%; right: -30%; height: 34vh; top: -36vh;
-  background: linear-gradient(180deg,
-    transparent,
-    color-mix(in srgb, var(--accent, #12b76a) 6%, transparent) 22%,
-    color-mix(in srgb, var(--accent, #12b76a) 26%, transparent) 50%,
-    color-mix(in srgb, var(--accent, #12b76a) 6%, transparent) 78%,
-    transparent);
-  filter: blur(18px);
-  transform: rotate(-7deg);
-  opacity: 0;
-  animation: wl-pulse-band 2.6s cubic-bezier(.35,0,.25,1) forwards;
+/* ── Explode ── */
+.fx-burst { position: relative; display: grid; place-items: center; }
+.fx-core { animation: fx-core-pop 1.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+@keyframes fx-core-pop {
+  0%   { transform: scale(0.3); opacity: 0; }
+  18%  { transform: scale(1.18); opacity: 1; }
+  34%  { transform: scale(0.98); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
 }
-.wl-pulse-band-2 { animation-delay: .32s; height: 26vh; }
-@keyframes wl-pulse-band {
-  0%   { opacity: 0; top: -40vh; }
-  22%  { opacity: 1; }
-  76%  { opacity: 1; }
-  100% { opacity: 0; top: 108vh; }
+.fx-bit {
+  position: absolute; width: 10px; height: 10px; border-radius: 50%;
+  background: linear-gradient(135deg, #34d399, #10b981);
+  box-shadow: 0 0 12px rgba(16,185,129,0.75);
+  animation: fx-bit-fly 1.35s cubic-bezier(0.15, 0.7, 0.25, 1) forwards;
+  animation-delay: var(--fx-delay, 0ms);
 }
-
-/* Target lock — a crosshair converging and settling, 1.1s. Mechanical on
-   purpose; the sound is a confirmation, not applause. */
-.wl-pulse-lock .wl-pulse-caption { animation: wl-pulse-cap 1.1s ease-out forwards; }
-.wl-pulse-reticle {
-  position: absolute; top: 42%; left: 50%;
-  width: 168px; height: 168px; margin: -84px 0 0 -84px;
-  opacity: 0;
-  animation: wl-pulse-reticle 1.1s cubic-bezier(.2,.8,.25,1) forwards;
-}
-@keyframes wl-pulse-reticle {
-  0%   { opacity: 0; transform: scale(2.2) rotate(-12deg); }
-  30%  { opacity: 1; transform: scale(1) rotate(0); }
-  76%  { opacity: 1; transform: scale(1) rotate(0); }
-  100% { opacity: 0; transform: scale(.94); }
-}
-.wl-pulse-reticle i {
-  position: absolute; background: var(--accent, #12b76a); border-radius: 1px;
-}
-.wl-pulse-reticle i:nth-child(1),
-.wl-pulse-reticle i:nth-child(2) { width: 2px; height: 30px; left: 50%; margin-left: -1px; }
-.wl-pulse-reticle i:nth-child(1) { top: 0; }
-.wl-pulse-reticle i:nth-child(2) { bottom: 0; }
-.wl-pulse-reticle i:nth-child(3),
-.wl-pulse-reticle i:nth-child(4) { height: 2px; width: 30px; top: 50%; margin-top: -1px; }
-.wl-pulse-reticle i:nth-child(3) { left: 0; }
-.wl-pulse-reticle i:nth-child(4) { right: 0; }
-.wl-pulse-reticle u {
-  position: absolute; inset: 18px; border-radius: 50%;
-  border: 1.5px solid color-mix(in srgb, var(--accent, #12b76a) 55%, transparent);
+/* translate() reads the per-particle custom properties the component sets, so
+   one keyframe serves every direction instead of one keyframe per particle. */
+@keyframes fx-bit-fly {
+  0%   { transform: translate(0, 0) scale(0.4); opacity: 0; }
+  12%  { opacity: 1; }
+  100% { transform: translate(var(--fx-x), var(--fx-y)) scale(0.9); opacity: 0; }
 }
 
-/* Rain, dip and storm all use the canvas; only glow and caption are CSS. */
-.wl-pulse-rain .wl-pulse-glow    { animation: wl-pulse-soft 2.2s ease-out forwards; }
-.wl-pulse-rain .wl-pulse-caption { animation: wl-pulse-cap 2.2s ease-out forwards; }
-.wl-pulse-dip .wl-pulse-caption  { animation: wl-pulse-cap 1.7s ease-out forwards; }
-.wl-pulse-storm .wl-pulse-caption{ animation: wl-pulse-cap 2.9s ease-out forwards; }
-
-/* Down days get a slate wash, never a red one, and it stays dim. The rule is
-   moodEngine's: acknowledged, not dramatised. */
-.wl-pulse-dip .wl-pulse-glow,
-.wl-pulse-storm .wl-pulse-glow {
-  background: radial-gradient(70% 90% at 50% 100%, #64748b 0%, transparent 72%);
+/* ── Rocket ── */
+.fx-rocket-track { position: relative; display: grid; place-items: center; width: 100%; height: 100%; }
+.fx-rocket {
+  position: absolute; display: grid; place-items: center;
+  animation: fx-rocket-fly 1.9s cubic-bezier(0.4, 0, 0.5, 1) forwards;
 }
-.wl-pulse-dip .wl-pulse-glow   { animation: wl-pulse-hush 1.7s ease-out forwards; }
-.wl-pulse-storm .wl-pulse-glow { animation: wl-pulse-hush 2.9s ease-out forwards; }
-
-@keyframes wl-pulse-soft {
-  0% { opacity: 0; } 18% { opacity: .26; } 62% { opacity: .20; } 100% { opacity: 0; }
+@keyframes fx-rocket-fly {
+  0%   { transform: translateY(46vh) scale(0.7); opacity: 0; }
+  14%  { opacity: 1; }
+  100% { transform: translateY(-58vh) scale(1.05); opacity: 0; }
 }
-@keyframes wl-pulse-hush {
-  0% { opacity: 0; } 26% { opacity: .16; } 70% { opacity: .12; } 100% { opacity: 0; }
+.fx-flame {
+  position: absolute; top: 62px; width: 20px; height: 46px; border-radius: 50%;
+  background: linear-gradient(180deg, #fbbf24, #f97316 55%, rgba(249,115,22,0));
+  filter: blur(2px);
+  animation: fx-flame-flicker 0.13s ease-in-out infinite alternate;
 }
-
-.wl-pulse-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-
-/* ── Champion: the day's winner, arriving and coming apart ─────────────────
-   One gesture in two halves, and the split is at 44% — the same instant the
-   sound's impact lands and the debris canvas starts. Those three numbers are
-   a set; moving one without the others is what makes an effect feel wrong
-   without anyone being able to say why.
-
-   Sized against the smaller viewport axis so it fills a phone in portrait and
-   a tablet in landscape without ever being cropped into an abstract shape. */
-.wl-pulse-champ {
-  position: absolute; top: 50%; left: 50%;
-  width: min(76vw, 76vh); height: min(76vw, 76vh);
-  margin: 0; translate: -50% -50%;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0;
-  will-change: transform, opacity;
-  animation: wl-pulse-champ-zoom 2.6s cubic-bezier(.55,0,.85,.35) forwards;
+@keyframes fx-flame-flicker {
+  from { transform: scaleY(0.82) scaleX(0.9); opacity: 0.85; }
+  to   { transform: scaleY(1.15) scaleX(1.05); opacity: 1; }
 }
-.wl-pulse-champ-img,
-.wl-pulse-champ-badge {
-  width: 100%; height: 100%;
-  border-radius: 50%;
-  /* The icon is a small PNG blown up past any sane size, so it will be soft.
-     A rim and a drop shadow give the eye an edge to hold, which reads as
-     deliberate rather than as a stretched thumbnail. */
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #12b76a) 40%, transparent),
-              0 24px 80px rgba(0, 0, 0, .45);
+.fx-rocket-label {
+  position: absolute; bottom: 16vh;
+  font-weight: 900; font-size: 1.6rem; letter-spacing: -0.02em;
+  color: #34d399; text-shadow: 0 4px 18px rgba(0,0,0,0.6);
+  animation: fx-label-in 1.9s ease-out forwards;
 }
-.wl-pulse-champ-img { object-fit: cover; }
-.wl-pulse-champ-badge {
-  display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(140deg, var(--accent, #12b76a), #047857);
-  color: #fff; font-weight: 800; letter-spacing: .02em;
-  font-size: min(19vw, 19vh);
-}
-
-/* Scale stops are dense before the impact because the motion accelerates and
-   CSS interpolates each pair linearly — too few stops and the rush reads as a
-   series of steps. */
-@keyframes wl-pulse-champ-zoom {
-  0%   { opacity: 0; transform: scale(.10) rotate(-8deg); }
-  6%   { opacity: 1; transform: scale(.16) rotate(-6deg); }
-  18%  { opacity: 1; transform: scale(.30) rotate(-4deg); }
-  30%  { opacity: 1; transform: scale(.52) rotate(-2deg); }
-  38%  { opacity: 1; transform: scale(.76) rotate(-1deg); }
-  44%  { opacity: 1; transform: scale(1)   rotate(0deg); }
-  /* Impact: a hard kick outward, then gone. Fast, because debris that lingers
-     stops being an explosion and becomes a transition. */
-  48%  { opacity: .92; transform: scale(1.26); }
-  58%  { opacity: .45; transform: scale(1.72); }
-  70%  { opacity: 0;   transform: scale(2.1); }
-  100% { opacity: 0;   transform: scale(2.1); }
-}
-
-/* The white-out at the moment of impact. Covers the whole viewport for about
-   a tenth of a second — long enough to hide the logo's own exit, short enough
-   not to read as a flashbang. */
-.wl-pulse-flash {
-  position: absolute; inset: 0;
-  background: radial-gradient(60% 60% at 50% 50%, #fff 0%, color-mix(in srgb, var(--accent, #12b76a) 70%, #fff) 45%, transparent 78%);
-  opacity: 0;
-  animation: wl-pulse-champ-flash 2.6s linear forwards;
-}
-@keyframes wl-pulse-champ-flash {
-  0%, 42%   { opacity: 0; }
-  45%       { opacity: .82; }
-  52%       { opacity: .22; }
-  62%, 100% { opacity: 0; }
-}
-
-.wl-pulse-champion .wl-pulse-glow    { animation: wl-pulse-soft 2.6s ease-out forwards; }
-.wl-pulse-champion .wl-pulse-caption {
-  /* Held back until after the impact. The caption naming the winner is the
-     payoff, and showing it during the approach spends it early. */
-  animation: wl-pulse-champ-cap 2.6s ease-out forwards;
-}
-@keyframes wl-pulse-champ-cap {
-  0%, 44%   { opacity: 0; transform: translateY(10px); }
-  52%       { opacity: 1; transform: translateY(0); }
-  84%       { opacity: 1; transform: translateY(0); }
-  100%      { opacity: 0; transform: translateY(-6px); }
-}
-
-/* Reduced motion: the still caption only, same contract as the rocket. */
-@media (prefers-reduced-motion: reduce) {
-  .wl-pulse-ring, .wl-pulse-band, .wl-pulse-reticle, .wl-pulse-canvas,
-  .wl-pulse-champ, .wl-pulse-flash { display: none; }
-}
-
-@keyframes wl-pulse-fade {
-  0%   { opacity: 0; }
-  15%  { opacity: 1; }
-  80%  { opacity: 1; }
+@keyframes fx-label-in {
+  0%   { transform: translateY(12px); opacity: 0; }
+  18%  { transform: translateY(0); opacity: 1; }
+  78%  { opacity: 1; }
   100% { opacity: 0; }
 }
 
+/* ── All-time high ── */
+.fx-celebrate { position: relative; display: grid; place-items: center; width: 100%; height: 100%; }
+.fx-confetti {
+  position: absolute; width: 9px; height: 15px; border-radius: 2px;
+  animation: fx-bit-fly 2.3s cubic-bezier(0.12, 0.7, 0.3, 1) forwards;
+  animation-delay: var(--fx-delay, 0ms);
+}
+.fx-c0 { background: #fbbf24; }
+.fx-c1 { background: #34d399; }
+.fx-c2 { background: #60a5fa; }
+.fx-c3 { background: #f472b6; }
+.fx-ath-badge {
+  position: relative;
+  padding: 0.7rem 1.5rem; border-radius: 999px;
+  background: linear-gradient(135deg, rgba(251,191,36,0.95), rgba(245,158,11,0.95));
+  box-shadow: 0 12px 40px rgba(245,158,11,0.45);
+  animation: fx-ath-in 2.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+.fx-ath-title {
+  font-weight: 900; font-size: 1.05rem; letter-spacing: 0.01em;
+  color: #1c1400; white-space: nowrap;
+}
+@keyframes fx-ath-in {
+  0%   { transform: scale(0.6); opacity: 0; }
+  14%  { transform: scale(1.08); opacity: 1; }
+  26%  { transform: scale(1); }
+  82%  { opacity: 1; }
+  100% { transform: scale(1.02); opacity: 0; }
+}
+
+/* Reduced motion still gets the moment, just without anything flying at them:
+   the mark and the badge fade, and the particles do not travel at all. */
 @media (prefers-reduced-motion: reduce) {
-  .wl-pulse-glow, .wl-pulse-craft { display: none; }
-  .wl-pulse-caption { animation: wl-pulse-fade 1.4s ease-out forwards !important; }
+  .fx-bit, .fx-confetti, .fx-flame { display: none; }
+  .fx-core, .fx-rocket, .fx-ath-badge, .fx-rocket-label {
+    animation: fx-quiet-fade 1.2s ease-out forwards;
+  }
+  @keyframes fx-quiet-fade {
+    0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
+  }
 }
