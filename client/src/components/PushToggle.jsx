@@ -129,7 +129,7 @@ function repairMessage(repair) {
  * purpose, and a test send proves the pipe works at one instant without
  * saying anything about why the real channels are quiet. This reports state.
  */
-function PushStatusLine({ status, repair, detail }) {
+function PushStatusLine({ status, repair }) {
   if (status.reachable === false) {
     return <div className="settings-hint" style={{ marginTop: '0.5rem', color: WARN }}>
       Can’t reach the notification server right now.
@@ -154,18 +154,29 @@ function PushStatusLine({ status, repair, detail }) {
   const noWatch = status.watch === 0
   const keyOk = vapidKeyMatches(status.vapidKey)
 
-  // Nothing to say: healthy, and the summary is not being shown.
-  if (!detail && !noWatch && status.vapid !== false && keyOk !== false) return null
-
+  // The summary renders whether or not anything is wrong, and `detail` no
+  // longer gates it.
+  //
+  // It used to. SHOW_CHANNEL_DETAIL is false, so the one line that says what
+  // the server actually holds for this device — how many assets it watches,
+  // how many targets, how many notifications it has sent today — was never
+  // drawn for anyone. A user whose channels were silent had nothing to read,
+  // and neither did we: diagnosing it meant asking them to check a line that
+  // does not exist.
+  //
+  // This is the third thing in this file to be lost behind that const, after
+  // the zakat toggle and the test send. The widgets panel in Settings already
+  // states the principle — "deliberately NOT gated: if detection is what's
+  // broken, hiding the panel behind it would hide the one readout that says
+  // so" — and it applies at least as strongly here, where the failure mode is
+  // silence and there is nothing else to look at.
   return (
     <div className="settings-hint" style={{ marginTop: '0.5rem', lineHeight: 1.6 }}>
-      {detail && (
-        <div>
-          Watching <strong>{status.watch}</strong> {status.watch === 1 ? 'asset' : 'assets'}
-          {status.alerts > 0 && <> · <strong>{status.alerts}</strong> price {status.alerts === 1 ? 'target' : 'targets'}</>}
-          {' · '}<strong>{status.sentToday}</strong> sent today
-        </div>
-      )}
+      <div>
+        Watching <strong>{status.watch}</strong> {status.watch === 1 ? 'asset' : 'assets'}
+        {status.alerts > 0 && <> · <strong>{status.alerts}</strong> price {status.alerts === 1 ? 'target' : 'targets'}</>}
+        {' · '}<strong>{status.sentToday}</strong> sent today
+      </div>
       {status.vapid === false && (
         <div style={{ color: BAD }}>
           The notification server has no signing key, so nothing can be delivered
@@ -402,7 +413,7 @@ export default function PushToggle() {
             </>
           )}
 
-          {status && <PushStatusLine status={status} repair={repair} detail={SHOW_CHANNEL_DETAIL} />}
+          {status && <PushStatusLine status={status} repair={repair} />}
           {SHOW_CHANNEL_DETAIL && status?.found && <TestSend />}
 
           <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>
