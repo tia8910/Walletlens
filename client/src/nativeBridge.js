@@ -44,18 +44,40 @@ const PACKAGE = 'live.walletlens.twa'
 
 export function isAndroidTWA() {
   if (typeof navigator === 'undefined') return false
-  const ua = navigator.userAgent || ''
-  if (!/android/i.test(ua)) return false
 
+  // The referrer is checked BEFORE the user-agent, and the order is the fix.
+  //
+  // This used to open with `if (!/android/i.test(ua)) return false`, which
+  // reads as a cheap early-out and is really a single point of failure: an
+  // Android token missing from the UA for any reason at all takes the whole
+  // native bridge down with it. Chrome's "Desktop site" — which persists per
+  // site and applies inside the Custom Tab — does exactly that, and so does
+  // any UA-reducing setting or extension.
+  //
+  // It went unnoticed because nothing fails loudly. isAndroidTWA() gates the
+  // widget sync, the review prompt, App Lock in Settings and the security
+  // slide in onboarding, and every one of them is *supposed* to be absent off
+  // Android, so all four simply vanished and each looked like its own bug.
+  //
+  // `android-app://<package>` in the referrer is proof the app launched this
+  // page. It cannot be produced by a browser on its own, it does not depend on
+  // the UA string, and it is the only signal here that is actually evidence.
   try {
     if (sessionStorage.getItem(TWA_FLAG) === '1') return true
   } catch { /* storage blocked; fall through to the live checks */ }
 
   const referrer = (typeof document !== 'undefined' && document.referrer) || ''
-  const launchedByApp = referrer.startsWith(`android-app://${PACKAGE}`)
-  const webViewFallback = /wv\)/.test(ua) || /; wv/.test(ua)
+  if (referrer.startsWith(`android-app://${PACKAGE}`)) {
+    try { sessionStorage.setItem(TWA_FLAG, '1') } catch { /* fine, re-detect */ }
+    return true
+  }
 
-  if (launchedByApp || webViewFallback) {
+  // The WebView fallback is genuinely a UA test — there is no referrer in that
+  // path — so it keeps the Android gate, which here is a real precondition
+  // rather than a shortcut.
+  const ua = navigator.userAgent || ''
+  if (!/android/i.test(ua)) return false
+  if (/wv\)/.test(ua) || /; wv/.test(ua)) {
     try { sessionStorage.setItem(TWA_FLAG, '1') } catch { /* fine, re-detect */ }
     return true
   }

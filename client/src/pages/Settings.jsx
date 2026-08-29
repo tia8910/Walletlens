@@ -17,7 +17,12 @@ import { requestReviewNow, reviewDiagnostics } from '../reviewPrompt'
 import { effectSettings, setEffectSettings, primeEffectAudio } from '../screenEffectsRuntime'
 import { widgetSyncDiagnostics, forceSyncWidgets } from '../nativeWidgets'
 
-const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || '')
+// Android by user-agent, OR the app told us so. The widgets panel is the one
+// readout that explains a stuck widget, and gating it on the UA alone meant it
+// disappeared in exactly the case it exists to diagnose — a UA with no Android
+// token, which is also what makes isAndroidTWA() give up.
+const isAndroid = (typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || ''))
+  || isAndroidTWA()
 
 /** Plain-English version of the last sync attempt, for the Settings row. */
 function widgetStatusText({ diag, hasPayload, lastSync }, t) {
