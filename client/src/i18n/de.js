@@ -423,6 +423,7 @@ export default {
     setReview: 'Bewertung abgeben',
     setReviewHint: 'Die Bewertungskarte von Play, oder der Store-Eintrag, falls sie nicht erscheinen kann',
     commonOn: 'An',
+    loadMoreTx: 'Mehr laden',
     commonOff: 'Aus',
     setFx: 'Bildschirmeffekte',
     fxAllTimeHigh: 'Neues Allzeithoch',

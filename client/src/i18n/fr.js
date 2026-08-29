@@ -402,6 +402,7 @@ export default {
     setReview: 'Laisser un avis',
     setReviewHint: 'La fiche de notation Play, ou la page du magasin si elle ne s\'affiche pas',
     commonOn: 'Activé',
+    loadMoreTx: 'Charger plus',
     commonOff: 'Désactivé',
     setFx: 'Effets à l’écran',
     fxAllTimeHigh: 'Nouveau record',

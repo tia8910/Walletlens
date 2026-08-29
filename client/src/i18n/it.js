@@ -423,6 +423,7 @@ export default {
     setReview: 'Lascia una recensione',
     setReviewHint: 'La scheda di valutazione di Play, oppure la pagina dello store se non può comparire',
     commonOn: 'Attivo',
+    loadMoreTx: 'Carica altro',
     commonOff: 'Spento',
     setFx: 'Effetti a schermo',
     fxAllTimeHigh: 'Nuovo massimo storico',

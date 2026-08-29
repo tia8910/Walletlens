@@ -208,6 +208,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const [tradeType, setTradeType] = useState('buy')
   const [tradePrefill, setTradePrefill] = useState(null)
   const [filterWallet, setFilterWallet] = useState('')
+  const [visibleCount, setVisibleCount] = useState(50)
   const [coinSearch, setCoinSearch] = useState('')
   const [coinResults, setCoinResults] = useState([])
   const [fetchingPrice, setFetchingPrice] = useState(false)
@@ -229,7 +230,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const [confirmNoneOpen, setConfirmNoneOpen] = useState(false)
   const searchTimeout = useRef(null)
 
-  useEffect(() => { loadData() }, [filterWallet])
+  useEffect(() => { loadData(); setVisibleCount(50) }, [filterWallet])
   useEffect(() => { track('transactions_view') }, [])
 
   useEffect(() => {
@@ -1060,7 +1061,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         </div>
       ) : (
         <div className="tx-list">
-          {transactions.map(t => {
+          {transactions.slice(0, visibleCount).map(t => {
             const sym = (t.coin_symbol || t.coin_id || '??').toUpperCase()
             const txType = t.type || 'buy'
             const isPositive = txType === 'buy'
@@ -1094,6 +1095,11 @@ export default function Transactions({ showAdd, onCloseAdd }) {
               </div>
             )
           })}
+          {transactions.length > visibleCount && (
+            <button className="tx-load-more" onClick={() => setVisibleCount(c => c + 50)}>
+              {t('loadMoreTx')}
+            </button>
+          )}
         </div>
       )}
 
