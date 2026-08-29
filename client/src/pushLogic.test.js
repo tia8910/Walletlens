@@ -1516,15 +1516,43 @@ describe('round price levels', () => {
   // than a 3% drift in the middle of a range, and the move channel is silent
   // for it by design.
 
-  it('spaces levels by a tenth of the leading magnitude', () => {
+  it('scales the level spacing with the price', () => {
     // A fixed step cannot work across four orders of magnitude: $1,000 steps
     // are silent forever on a token under a dollar, and cent steps on bitcoin
     // would fire hundreds of times an hour.
     expect(roundLevelStep(77_500)).toBe(1000)
-    expect(roundLevelStep(2515)).toBe(100)
+    expect(roundLevelStep(2515)).toBe(50)
     expect(roundLevelStep(0.66)).toBeCloseTo(0.01, 10)
     expect(roundLevelStep(0)).toBe(0)
     expect(roundLevelStep(NaN)).toBe(0)
+  })
+
+  it('keeps the spacing within 1%-2.5% of the price at every magnitude', () => {
+    // The bug this pins down: a step of 10 ** (floor(log10 p) - 1) is constant
+    // across a whole decade while the price inside it grows tenfold, so the
+    // distance to the next level slid from 1% at the top of a decade to 10% at
+    // the bottom of the next. Real consequence, not a rounding quibble — the
+    // day bitcoin crossed $100,000 the step went $1,000 -> $10,000 and the
+    // channel needed a 9.9% move to say anything, which the movement channel
+    // had already reported. It went quiet at the price everyone was watching.
+    for (let exp = -3; exp <= 6; exp++) {
+      for (let lead = 100; lead < 1000; lead += 7) {
+        const price = (lead / 100) * 10 ** exp
+        const gapPct = (roundLevelStep(price) / price) * 100
+        expect(gapPct).toBeGreaterThanOrEqual(1)
+        expect(gapPct).toBeLessThanOrEqual(2.5)
+      }
+    }
+  })
+
+  it('has no cliff at a power of ten', () => {
+    // Either side of $100,000 the channel must behave the same way.
+    const below = roundLevelStep(99_000) / 99_000
+    const above = roundLevelStep(101_000) / 101_000
+    expect(Math.abs(above - below)).toBeLessThan(0.015)
+    // And a bitcoin in six figures still has levels close enough to reach.
+    expect(crossedLevel({ price: 112_100, prev: 111_900 }))
+      .toEqual({ level: 112_000, up: true })
   })
 
   it('reports the Bybit case', () => {

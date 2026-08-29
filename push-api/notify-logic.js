@@ -1095,11 +1095,26 @@ export const MOVE_COOLDOWN_MS = 3 * 60 * 60 * 1000
 /**
  * The round-number spacing that matters at a given price.
  *
- * A tenth of the leading magnitude, which is what people actually watch:
- * $1,000 steps on a $77,000 bitcoin, $100 on a $2,500 ether, one cent on a
- * 66-cent token. A fixed step cannot work across four orders of magnitude —
- * $1,000 steps would be silent forever on a token under a dollar, and one-cent
- * steps on bitcoin would fire hundreds of times an hour.
+ * A fixed step cannot work across four orders of magnitude — $1,000 steps
+ * would be silent forever on a token under a dollar, and one-cent steps on
+ * bitcoin would fire hundreds of times an hour. So the step scales with the
+ * price. What it must ALSO do is scale smoothly, and a plain tenth-of-the-
+ * magnitude (10 ** (floor(log10 p) - 1)) does not: the step is constant across
+ * a whole decade while the price inside that decade grows tenfold, so the gap
+ * a price must travel to reach a level slides from 1% at the top of the decade
+ * to 10% at the bottom of the next one, in one jump.
+ *
+ * That jump is not theoretical. At $99,000 bitcoin was 1.0% from a level; the
+ * day it crossed $100,000 the step went from $1,000 to $10,000 and it needed
+ * 9.9%. The channel switched itself off at exactly the price everyone was
+ * watching, and worse than silently: a 9.9% move is one the movement channel
+ * has long since reported, so the level alert had nothing left to add.
+ *
+ * The leading digit therefore picks a 1-2-5 sub-step, which is the ladder
+ * chart axes and exchange price grids already use. The gap stays between 1%
+ * and 2.5% of the price everywhere, with no cliff at any power of ten, and the
+ * levels stay round: $77,000 on bitcoin at $77k, $112,000 at $110k, $2,500 on
+ * a $2.5k ether, 66 cents on a 66-cent token.
  *
  * @param {number} price
  * @returns {number} step, or 0 when the price is unusable
@@ -1107,7 +1122,11 @@ export const MOVE_COOLDOWN_MS = 3 * 60 * 60 * 1000
 export function roundLevelStep(price) {
   const p = Number(price)
   if (!Number.isFinite(p) || p <= 0) return 0
-  return Math.pow(10, Math.floor(Math.log10(p)) - 1)
+  const base = Math.pow(10, Math.floor(Math.log10(p)))
+  const lead = p / base            // leading digit, 1 <= lead < 10
+  // gap = sub / lead percent, so each band lands inside 1%-2.5%.
+  const sub = lead < 2 ? 2 : lead < 5 ? 5 : 10
+  return (base * sub) / 100
 }
 
 /**
