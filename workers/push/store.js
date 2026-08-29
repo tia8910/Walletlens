@@ -9,7 +9,7 @@
 // the same reason: a bigger allowance is not a licence to re-read the same
 // rows five times a minute.
 
-import { mergeSubForWrite } from '../../push-api/notify-logic.js'
+import { mergeSubForWrite, normalizeSub } from '../../push-api/notify-logic.js'
 
 // Imported, not copied. The merge rule is subtle — it exists because a cron
 // holding a cached row must not overwrite a preference change or a /seen
@@ -105,5 +105,12 @@ export class SubStore {
 }
 
 function parse(json) {
-  try { return JSON.parse(json) } catch { return null }
+  // Normalised on the way out, not on the way in: rows written by earlier
+  // versions are already in the table, and there is no migration step. Every
+  // consumer therefore sees a complete record with defaults filled in, rather
+  // than whatever shape the row had the last time it was saved.
+  try {
+    const sub = JSON.parse(json)
+    return sub && typeof sub === 'object' ? normalizeSub(sub) : null
+  } catch { return null }
 }

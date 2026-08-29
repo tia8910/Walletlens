@@ -15,6 +15,7 @@
 // needs the ticker and nothing else.
 
 import { foldBalances } from './data/portfolio'
+import { LANGUAGE_CODES } from './i18n'
 import { loadDueDate as loadZakatDue } from './zakat'
 import { usedFeature } from './featureUse'
 import { isAndroidTWA, fireNativeIntent } from './nativeBridge'
@@ -29,7 +30,13 @@ import { PUSH_API } from './apiHosts.js'
 function currentLang() {
   try {
     const l = localStorage.getItem('wl_lang')
-    return ['en', 'ar', 'fr', 'es'].includes(l) ? l : 'en'
+    // Checked against LANGUAGE_CODES, not a list written out here. This was a
+    // hardcoded ['en', 'ar', 'fr', 'es'] and German and Italian were added to
+    // the app afterwards — so those users picked their language, the app
+    // switched, and every notification still arrived in English, because the
+    // client refused to send a code the server had full copy for. Nothing
+    // errored; the fallback did exactly what it was written to do.
+    return LANGUAGE_CODES.includes(l) ? l : 'en'
   } catch { return 'en' }
 }
 
@@ -60,6 +67,10 @@ export const DEFAULT_PUSH_PREFS = {
   retention: true,
   features: true,
   zakat: true,
+  newsMarket: true,
+  hacks: true,
+  academy: true,
+  portfolio: true,
   movePct: 2,
 }
 

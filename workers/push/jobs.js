@@ -23,8 +23,16 @@ import {
   matchArticle, isBreaking, shortHash, dueRetentionStep, pickFeatureTip,
   FEATURE_TIP_GAP_MS, RETENTION_HOUR, RETENTION_MIN_PCT, DIGEST_MIN_PCT,
   fmtPct, fmtPrice, dueZakatReminder, trimZakatSent,
+  isMarketStory, pickHack, pickChallenge, portfolioPulse,
+  HACK_GAP_MS, HACK_HOUR, ACADEMY_HOUR, PORTFOLIO_HOUR, PULSE_MIN_PCT,
 } from '../../push-api/notify-logic.js'
 import { assetKey, fetchCryptoQuotes, fetchNews, fetchQuotes, quoteFor } from '../../push-api/markets.js'
+// The Academy's own teaching material, in the six languages the app ships.
+// Imported rather than restated: a hack is a title and a paragraph written to
+// go together, and a second copy on the server is a second thing to translate
+// and a guaranteed drift. The file is plain data with no imports of its own,
+// which is what makes it safe to pull into a Worker bundle.
+import { hacks, questions } from '../../client/src/data/academyContent.js'
 
 // Local clock slots, carried over from the Deno service. The brief goes out at
 // 09:00 on the user's own clock; zakat gets its own slot so the two do not
@@ -195,7 +203,10 @@ export function createJobs({ store, send }) {
   }
 
   async function checkNews() {
-    const subs = (await store.all()).filter(s => s.sub.prefs.news && s.sub.watch.length)
+    // A device with an empty watch list is still a candidate now: market-wide
+    // stories are about the market, not about a holding, so having none is not
+    // a reason to hear nothing.
+    const subs = (await store.all()).filter(s => s.sub.prefs.news || s.sub.prefs.newsMarket)
     if (!subs.length) return
 
     const now = Date.now()
@@ -210,18 +221,32 @@ export function createJobs({ store, send }) {
       let changed = Object.keys(pruned).length !== Object.keys(sub.newsSent).length
       sub.newsSent = pruned
 
-      for (const article of articles) {
+      // A story naming something the user holds outranks a market-wide one, so
+      // both passes run over the whole list before the weaker kind is
+      // considered — otherwise an early general story would spend the window
+      // and the "BTC" headline two items down would never be reached.
+      const held = sub.prefs.news && sub.watch.length
+        ? articles.flatMap(a => {
+            const asset = matchArticle(a, sub.watch)
+            return asset ? [{ article: a, asset }] : []
+          })
+        : []
+      const market = sub.prefs.newsMarket
+        ? articles.filter(a => isMarketStory(a)).map(a => ({ article: a, asset: null }))
+        : []
+
+      for (const { article, asset } of [...held, ...market]) {
         const h = shortHash(article.link)
         if (sub.newsSent[h]) continue
-        const asset = matchArticle(article, sub.watch)
-        if (!asset) continue
 
         const sent = await send(sub, buildPayload({
           channel: "news",
-          title: copy("newsTitle", sub.lang)(asset.symbol),
+          title: asset
+            ? copy("newsTitle", sub.lang)(asset.symbol)
+            : copy("newsMarketTitle", sub.lang)(),
           body: copy("newsBody", sub.lang)(article.title),
           tag: `news-${h}`,
-          sym: asset.symbol,
+          ...(asset ? { sym: asset.symbol } : {}),
         }), { now })
 
         // Recorded either way. A story that reached the send stage has had its
@@ -250,11 +275,21 @@ export function createJobs({ store, send }) {
       sub.prefs.features && sub.watch.length > 0 &&
       now - sub.lastFeatureAt >= FEATURE_TIP_GAP_MS
 
+    // One hack every other day, in its own slot. Unlike the feature tips this
+    // is not gated on the watch list: a hack is worth reading whether or not
+    // the server knows what you hold.
+    const hackDue = (sub) =>
+      sub.prefs.hacks && localHour(now, sub.tz) === HACK_HOUR &&
+      now - (sub.lastHackAt ?? 0) >= HACK_GAP_MS
+
     const due = subs.filter(({ sub }) => {
       const h = localHour(now, sub.tz)
       return (h === DIGEST_HOUR && sub.prefs.digest)
         || (h === RETENTION_HOUR && sub.prefs.retention)
         || (h === ZAKAT_HOUR && sub.prefs.zakat && !!sub.zakatDue)
+        || (h === PORTFOLIO_HOUR && sub.prefs.portfolio)
+        || (h === ACADEMY_HOUR && sub.prefs.academy)
+        || hackDue(sub)
         || featureDue(sub)
     })
     if (!due.length) return
@@ -358,6 +393,84 @@ export function createJobs({ store, send }) {
           // a win-back nudge is not tied to a particular day — tomorrow is a
           // perfectly good time to try it again.
           if (sent) { sub.retention = [...sub.retention, step]; changed = true }
+        }
+      }
+
+      // — Portfolio pulse —
+      // Breadth rather than a single mover, which is what makes it a different
+      // notification from the 09:00 brief and not a second copy of it: the
+      // brief says "ETH is down 4%", this says "two of your six are green".
+      // Both are built from percentages only — the server has no amounts.
+      if (hour === PORTFOLIO_HOUR && sub.prefs.portfolio && sub.pulseDay !== today) {
+        const pulse = portfolioPulse(
+          sub.watch.flatMap(a => {
+            const q = quoteFor(quotes, a)
+            return q ? [{ symbol: a.symbol, pct: q.change24h }] : []
+          }),
+          PULSE_MIN_PCT,
+        )
+        if (pulse) {
+          await send(sub, buildPayload({
+            channel: "portfolio",
+            title: copy("portfolioTitle", sub.lang)(),
+            body: copy("portfolioBody", sub.lang)(
+              pulse.up, pulse.total, pulse.leader.symbol,
+              fmtPct(pulse.leader.pct), pulse.leader.pct > 0,
+            ),
+            tag: "portfolio",
+          }), { now })
+          // Only a day that actually produced a pulse is marked done. A flat
+          // day leaves the slot unspent, but the hour has passed either way —
+          // it simply means tomorrow is evaluated fresh rather than skipped.
+          sub.pulseDay = today
+          changed = true
+        }
+      }
+
+      // — Academy daily challenge —
+      // The body is the question itself. "Your daily challenge is ready" is
+      // the app talking about itself; the actual stem is a thing you either
+      // know or want to find out, and that is what earns the tap.
+      if (hour === ACADEMY_HOUR && sub.prefs.academy && sub.academyDay !== today) {
+        const bank = questions(sub.lang || 'en')
+        const idx = pickChallenge({ dayKey: today, count: bank.length })
+        const question = idx == null ? null : bank[idx]
+        if (question?.q) {
+          await send(sub, buildPayload({
+            channel: "academy",
+            title: copy("academyTitle", sub.lang)(),
+            body: question.q,
+            tag: `academy-${today}`,
+          }), { now })
+        }
+        // Marked either way: the challenge is tied to this day, and a retry an
+        // hour later would be the same question with less of the day left.
+        sub.academyDay = today
+        changed = true
+      }
+
+      // — Investment hacks —
+      if (hackDue(sub)) {
+        const list = hacks(sub.lang || 'en')
+        const choice = pickHack({ count: list.length, sentIds: sub.hacksSent })
+        const hack = choice ? list[choice.index] : null
+        if (hack) {
+          const sent = await send(sub, buildPayload({
+            channel: "hack",
+            title: copy("hackTitle", sub.lang)(hack.title),
+            body: hack.body,
+            tag: `hack-${choice.index}`,
+          }), { now })
+          if (sent) {
+            // A wrap starts the cycle over: the list is finite, the channel is
+            // not. Recorded as strings so the bookkeeping does not depend on
+            // the list keeping its current length.
+            sub.hacksSent = choice.wrapped
+              ? [String(choice.index)]
+              : [...sub.hacksSent, String(choice.index)]
+            sub.lastHackAt = now
+            changed = true
+          }
         }
       }
 

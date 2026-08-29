@@ -1371,16 +1371,20 @@ describe('the delivery step reports why it failed', () => {
     // was a deliberate simplification — Settings shows one switch now, not
     // seven — and it made the feature undiagnosable.
     //
-    // SHOW_CHANNEL_DETAIL is false, so the one line saying what the server
-    // actually holds for this device was drawn for nobody. When the channels
-    // went quiet there was nothing to read: not for the user, and not for us.
-    // Every channel is gated on the watch list being non-empty, so "Watching
-    // 0 assets" IS the diagnosis, and it was the single fact no one could see.
+    // Behind the old build-time channel-detail flag, the one line saying what
+    // the server actually holds for this device was drawn for nobody. When the
+    // channels went quiet there was nothing to read: not for the user, and not
+    // for us. Most channels are gated on the watch list being non-empty, so
+    // "Watching 0 assets" IS the diagnosis, and it was the single fact no one
+    // could see.
     //
     // The warnings were always unconditional and stay that way. They are the
     // only thing that reports a device that is registered and undeliverable —
     // the failure that looks completely healthy from every other angle.
-    expect(toggle).toMatch(/const SHOW_CHANNEL_DETAIL = (true|false)/)
+    //
+    // The flag itself is gone: the channel rows are a runtime disclosure now.
+    // Asserted as an absence so it cannot come back and re-hide this line.
+    expect(toggle).not.toMatch(/SHOW_CHANNEL_DETAIL/)
 
     // The summary is no longer gated on anything.
     expect(toggle).toMatch(/<div>\s*\n\s*Watching <strong>\{status\.watch\}<\/strong>/)
@@ -1516,15 +1520,43 @@ describe('round price levels', () => {
   // than a 3% drift in the middle of a range, and the move channel is silent
   // for it by design.
 
-  it('spaces levels by a tenth of the leading magnitude', () => {
+  it('scales the level spacing with the price', () => {
     // A fixed step cannot work across four orders of magnitude: $1,000 steps
     // are silent forever on a token under a dollar, and cent steps on bitcoin
     // would fire hundreds of times an hour.
     expect(roundLevelStep(77_500)).toBe(1000)
-    expect(roundLevelStep(2515)).toBe(100)
+    expect(roundLevelStep(2515)).toBe(50)
     expect(roundLevelStep(0.66)).toBeCloseTo(0.01, 10)
     expect(roundLevelStep(0)).toBe(0)
     expect(roundLevelStep(NaN)).toBe(0)
+  })
+
+  it('keeps the spacing within 1%-2.5% of the price at every magnitude', () => {
+    // The bug this pins down: a step of 10 ** (floor(log10 p) - 1) is constant
+    // across a whole decade while the price inside it grows tenfold, so the
+    // distance to the next level slid from 1% at the top of a decade to 10% at
+    // the bottom of the next. Real consequence, not a rounding quibble — the
+    // day bitcoin crossed $100,000 the step went $1,000 -> $10,000 and the
+    // channel needed a 9.9% move to say anything, which the movement channel
+    // had already reported. It went quiet at the price everyone was watching.
+    for (let exp = -3; exp <= 6; exp++) {
+      for (let lead = 100; lead < 1000; lead += 7) {
+        const price = (lead / 100) * 10 ** exp
+        const gapPct = (roundLevelStep(price) / price) * 100
+        expect(gapPct).toBeGreaterThanOrEqual(1)
+        expect(gapPct).toBeLessThanOrEqual(2.5)
+      }
+    }
+  })
+
+  it('has no cliff at a power of ten', () => {
+    // Either side of $100,000 the channel must behave the same way.
+    const below = roundLevelStep(99_000) / 99_000
+    const above = roundLevelStep(101_000) / 101_000
+    expect(Math.abs(above - below)).toBeLessThan(0.015)
+    // And a bitcoin in six figures still has levels close enough to reach.
+    expect(crossedLevel({ price: 112_100, prev: 111_900 }))
+      .toEqual({ level: 112_000, up: true })
   })
 
   it('reports the Bybit case', () => {
@@ -1607,13 +1639,41 @@ describe('the send-a-test control', () => {
     join(dirname(fileURLToPath(import.meta.url)), 'components/PushToggle.jsx'), 'utf8',
   )
 
-  it('is gated with the rest of the channel detail', () => {
-    expect(toggle).toMatch(/SHOW_CHANNEL_DETAIL && status\?\.found && <TestSend \/>/)
+  it('is still gated, on a flag of its own', () => {
+    expect(toggle).toMatch(/const SHOW_TEST_SEND = false/)
+    expect(toggle).toMatch(/SHOW_TEST_SEND && status\?\.found && <TestSend \/>/)
   })
 
-  it('keeps the preference rows gated too', () => {
-    expect(toggle).toMatch(/const SHOW_CHANNEL_DETAIL = false/)
-    expect(toggle).toMatch(/\{SHOW_CHANNEL_DETAIL && \(/)
+  it('no longer drags the preference rows down with it', () => {
+    // The button and the channel list used to share one const, so hiding the
+    // button hid every switch in the app — including the move-sensitivity
+    // picker, which is the one control that answers "why so few alerts".
+    // They are separate concerns and are separated now: the rows sit behind a
+    // disclosure the user can open, the button behind a build-time flag.
+    expect(toggle).not.toMatch(/SHOW_CHANNEL_DETAIL/)
+    expect(toggle).toMatch(/channelsOpen && \(/)
+    // A disclosure is only a disclosure if something can open it.
+    expect(toggle).toMatch(/setChannelsOpen\(o => !o\)/)
+    expect(toggle).toMatch(/aria-expanded=\{channelsOpen\}/)
+  })
+
+  it('puts every channel behind that disclosure, not behind a const', () => {
+    // The failure this catches: a channel row added outside the disclosure
+    // block renders unconditionally and turns the screen back into the wall of
+    // switches the flag existed to prevent — or, added while still gated on a
+    // const, is unreachable. Each row must be inside the one block.
+    const open = toggle.indexOf('{channelsOpen && (')
+    const close = toggle.indexOf('{status && <PushStatusLine')
+    expect(open).toBeGreaterThan(-1)
+    expect(close).toBeGreaterThan(open)
+    const inside = toggle.slice(open, close)
+    for (const pref of [
+      'moves', 'levels', 'news', 'newsMarket', 'portfolio',
+      'academy', 'hacks', 'digest', 'retention', 'features', 'zakat',
+    ]) {
+      expect(inside, `${pref} row inside the disclosure`)
+        .toMatch(new RegExp(`${pref}: !prefs\\.${pref}`))
+    }
   })
 
   it('leaves the undeliverable-subscription warnings ungated', () => {
@@ -1628,7 +1688,7 @@ describe('the send-a-test control', () => {
     // happily on exactly the regression it exists to catch.
     for (const cond of ['status.vapid === false', 'keyOk === false']) {
       expect(toggle).toContain(`{${cond} && (`)
-      expect(toggle).not.toContain(`SHOW_CHANNEL_DETAIL && ${cond}`)
+      expect(toggle).not.toContain(`channelsOpen && ${cond}`)
     }
   })
 

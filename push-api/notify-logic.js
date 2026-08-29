@@ -177,6 +177,72 @@ export const COPY = {
     it: (headline) => headline,
   },
 
+  // — Market news —
+  // The same story, framed for someone who does not hold the asset it names.
+  // Without this the news channel is silent for most portfolios: a device
+  // watching two coins matches almost nothing a wire actually publishes.
+  newsMarketTitle: {
+    en: () => '📰 Market news',
+    ar: () => '📰 أخبار السوق',
+    fr: () => '📰 Actualité des marchés',
+    es: () => '📰 Noticias del mercado',
+    de: () => '📰 Marktnachrichten',
+    it: () => '📰 Notizie di mercato',
+  },
+
+  // — Academy daily challenge —
+  // The body is the question stem itself, which academyContent.js already
+  // carries in all six languages, so only the framing lives here.
+  academyTitle: {
+    en: () => '🎓 Today’s challenge',
+    ar: () => '🎓 تحدي اليوم',
+    fr: () => '🎓 Le défi du jour',
+    es: () => '🎓 El reto de hoy',
+    de: () => '🎓 Die heutige Challenge',
+    it: () => '🎓 La sfida di oggi',
+  },
+
+  // — Portfolio pulse —
+  // Breadth, not value. `up` of `total` holdings green, and the biggest mover
+  // either way. There is no amount in this sentence because there is no amount
+  // on the server.
+  portfolioTitle: {
+    en: () => '📊 Your portfolio today',
+    ar: () => '📊 محفظتك اليوم',
+    fr: () => '📊 Votre portefeuille aujourd’hui',
+    es: () => '📊 Tu cartera hoy',
+    de: () => '📊 Ihr Portfolio heute',
+    it: () => '📊 Il tuo portafoglio oggi',
+  },
+  portfolioBody: {
+    en: (up, total, sym, pct, isUp) =>
+      `${up} of your ${total} holdings ${up === 1 ? 'is' : 'are'} up. ${sym} leads at ${isUp ? '+' : '−'}${pct}%.`,
+    ar: (up, total, sym, pct, isUp) =>
+      `${up} من أصولك الـ${total} في ارتفاع. ${sym} في المقدمة بنسبة ${isUp ? '+' : '−'}${pct}%.`,
+    fr: (up, total, sym, pct, isUp) =>
+      `${up} de vos ${total} actifs ${up === 1 ? 'est' : 'sont'} en hausse. ${sym} mène avec ${isUp ? '+' : '−'}${pct} %.`,
+    es: (up, total, sym, pct, isUp) =>
+      `${up} de tus ${total} activos ${up === 1 ? 'está' : 'están'} en verde. ${sym} lidera con ${isUp ? '+' : '−'}${pct} %.`,
+    de: (up, total, sym, pct, isUp) =>
+      `${up} von ${total} Werten ${up === 1 ? 'liegt' : 'liegen'} im Plus. ${sym} führt mit ${isUp ? '+' : '−'}${pct} %.`,
+    it: (up, total, sym, pct, isUp) =>
+      `${up} dei tuoi ${total} asset ${up === 1 ? 'è' : 'sono'} in rialzo. ${sym} guida con ${isUp ? '+' : '−'}${pct} %.`,
+  },
+
+  // — Investment hacks —
+  // Only the framing label. The hack's own title and body come from
+  // academyContent.js, already written in all six languages by the same hand
+  // that wrote the Academy; re-stating them here would be a second copy to
+  // keep in sync and a worse translation.
+  hackTitle: {
+    en: (title) => `💡 ${title}`,
+    ar: (title) => `💡 ${title}`,
+    fr: (title) => `💡 ${title}`,
+    es: (title) => `💡 ${title}`,
+    de: (title) => `💡 ${title}`,
+    it: (title) => `💡 ${title}`,
+  },
+
   // — Daily brief, sent once each morning in the user's own timezone —
   digestTitle: {
     en: () => '☀️ Your market brief',
@@ -767,6 +833,124 @@ export function pickFeatureTip(state, sentIds) {
   return null
 }
 
+// ── Rotating content channels ───────────────────────────────────────────────
+//
+// The channels above all answer "did something happen?" — and on a two-asset
+// portfolio in a calm week the honest answer is no, repeatedly. That is correct
+// for a price alert and wrong for the app as a whole: the Academy, the hacks
+// and the portfolio read are worth something on exactly the days the market is
+// not.
+//
+// So these three are *scheduled* rather than triggered, and the rule that keeps
+// them from becoming noise is different: not "wait for a reason" but "never
+// repeat yourself". Each rotates through a finite body of real content, in a
+// stable order, and each has its own hour and its own gap.
+
+/** One investment hack every other day. */
+export const HACK_GAP_MS = 2 * 24 * 60 * 60 * 1000
+
+/** Local clock slots, spread so two scheduled channels never land together. */
+export const HACK_HOUR = 13
+export const ACADEMY_HOUR = 18
+export const PORTFOLIO_HOUR = 17
+
+/**
+ * The next hack to send, as an index into the hack list.
+ *
+ * Rotation, not a queue with an end. `pickFeatureTip` caps out at eight and
+ * then goes silent forever, which is right for setup nudges — a ninth ask to
+ * configure Guardian is nagging. A hack is not an ask, it is a thing worth
+ * knowing, and "you have read all eighteen, so nothing more, ever" is how a
+ * channel quietly dies. When the list is exhausted it starts again: two days
+ * apart, eighteen deep, that is a five-week cycle.
+ *
+ * `sentIds` are indices as strings, so the same bookkeeping survives the list
+ * being reordered without silently re-sending everything.
+ *
+ * @param {{count:number, sentIds:string[]}} args
+ * @returns {{index:number, wrapped:boolean}|null}
+ */
+export function pickHack({ count, sentIds }) {
+  const n = Math.floor(Number(count))
+  if (!Number.isFinite(n) || n <= 0) return null
+  const sent = new Set((sentIds || []).map(String))
+  for (let i = 0; i < n; i++) if (!sent.has(String(i))) return { index: i, wrapped: false }
+  // Every one has been sent. Start the cycle over rather than going silent.
+  return { index: 0, wrapped: true }
+}
+
+/**
+ * The daily Academy challenge teaser, as an index into the question bank.
+ *
+ * Deterministic from the local day rather than random, for two reasons: every
+ * device on the same day gets the same question, which makes the channel
+ * reproducible when someone reports one; and a device that somehow evaluates
+ * the same day twice cannot draw two different questions and send both.
+ *
+ * The index walks by a stride coprime with the bank size, so consecutive days
+ * are never adjacent questions from the same category.
+ *
+ * @param {{dayKey:string, count:number}} args
+ * @returns {number|null}
+ */
+export function pickChallenge({ dayKey, count }) {
+  const n = Math.floor(Number(count))
+  if (!Number.isFinite(n) || n <= 0) return null
+  const day = String(dayKey || '')
+  if (!day) return null
+  // Days since the epoch, from the YYYY-MM-DD key the rest of the file uses.
+  const ms = Date.parse(`${day}T00:00:00Z`)
+  if (!Number.isFinite(ms)) return null
+  const dayNo = Math.floor(ms / 86_400_000)
+  const stride = coprimeStride(n)
+  return ((dayNo * stride) % n + n) % n
+}
+
+/** The largest stride below n that shares no factor with it (1 when n <= 2). */
+function coprimeStride(n) {
+  const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b))
+  for (let s = Math.floor(n / 2) + 1; s > 1; s--) if (gcd(s, n) === 1) return s
+  return 1
+}
+
+/** A daily portfolio read needs at least one asset that actually did something. */
+export const PULSE_MIN_PCT = 1
+
+/**
+ * The breadth read behind the portfolio channel: how many holdings are up,
+ * how many down, and which one leads.
+ *
+ * Deliberately built from percentages alone. The server knows which symbols a
+ * device watches — it has to, to price them — and it knows nothing else. No
+ * amount, no cost basis, no total. "Four of your six are up, BTC leads at
+ * +4.2%" is the most portfolio-shaped sentence that can be written from that,
+ * and writing a more useful one would mean asking for data this service has
+ * spent its whole design not holding.
+ *
+ * Returns null when there is nothing worth saying: fewer than two priced
+ * holdings, or a day where nothing moved as much as PULSE_MIN_PCT.
+ *
+ * @param {Array<{symbol:string, pct:number}>} moves
+ * @param {number} minPct
+ */
+export function portfolioPulse(moves, minPct = PULSE_MIN_PCT) {
+  const clean = (moves || []).filter(m => Number.isFinite(Number(m?.pct)))
+  if (clean.length < 2) return null
+
+  let up = 0, down = 0, leader = null
+  for (const m of clean) {
+    const pct = Number(m.pct)
+    if (pct > 0) up++
+    else if (pct < 0) down++
+    if (!leader || Math.abs(pct) > Math.abs(leader.pct)) leader = { symbol: m.symbol, pct }
+  }
+  // A day where every holding drifted a few basis points is a day with no
+  // portfolio news, and saying so daily is how a channel gets switched off.
+  if (!leader || Math.abs(leader.pct) < minPct) return null
+
+  return { up, down, total: clean.length, leader }
+}
+
 /** A holding that moved this much in 24h is worth a line in the brief. */
 export const DIGEST_MIN_PCT = 3
 
@@ -822,6 +1006,12 @@ export const DEFAULT_PREFS = {
   retention: true,  // win-back nudges while idle
   features: true,   // one-off tips, each gated on the user's own state
   zakat: true,      // the zakat year completing — a date, never an amount
+  // Scheduled content, rather than a reaction to a price. These are what make
+  // the app worth a notification on a week when the market does nothing.
+  newsMarket: true, // a breaking story that names no holding of yours
+  hacks: true,      // one investment hack every other day
+  academy: true,    // the daily Academy challenge
+  portfolio: true,  // a daily breadth read on the holdings, no amounts
   movePct: 2,       // swing threshold, percent
 }
 
@@ -842,7 +1032,62 @@ export function sanitizePrefs(raw) {
     retention: bool(p.retention, DEFAULT_PREFS.retention),
     features: bool(p.features, DEFAULT_PREFS.features),
     zakat: bool(p.zakat, DEFAULT_PREFS.zakat),
+    newsMarket: bool(p.newsMarket, DEFAULT_PREFS.newsMarket),
+    hacks: bool(p.hacks, DEFAULT_PREFS.hacks),
+    academy: bool(p.academy, DEFAULT_PREFS.academy),
+    portfolio: bool(p.portfolio, DEFAULT_PREFS.portfolio),
     movePct: pct,
+  }
+}
+
+/**
+ * Fill in whatever a record predating a field would be missing.
+ *
+ * Lives here, and is applied by the STORE rather than by each caller, because
+ * the alternative has already bitten: a stored row is whatever shape it had
+ * when it was last written, and a cron reading it raw sees `undefined` for
+ * every field added since. For a preference that reads as "off", so a channel
+ * shipped to everyone silently runs for nobody until they happen to reopen the
+ * app; for a list it is a TypeError inside the loop, which takes out the run
+ * for every other user too. Neither failure announces itself.
+ *
+ * Normalising at the storage boundary means no consumer has to remember. It is
+ * idempotent, so the handlers that already call it explicitly are unaffected.
+ */
+export function normalizeSub(s = {}) {
+  return {
+    subscription: s.subscription,
+    alerts: s.alerts ?? [],
+    fired: s.fired ?? {},
+    createdAt: s.createdAt ?? Date.now(),
+    lang: s.lang,
+    watch: s.watch ?? [],
+    prefs: { ...DEFAULT_PREFS, ...(s.prefs ?? {}) },
+    tz: sanitizeTz(s.tz),
+    lastSeen: s.lastSeen ?? s.createdAt ?? Date.now(),
+    ref: s.ref ?? {},
+    moveFired: s.moveFired ?? {},
+    lastPrice: s.lastPrice ?? {},
+    lastLevel: s.lastLevel ?? {},
+    zakatDue: sanitizeZakatDue(s.zakatDue),
+    zakatSent: trimZakatSent(s.zakatSent),
+    seenRef: s.seenRef ?? null,
+    newsSent: s.newsSent ?? {},
+    lastNewsAt: s.lastNewsAt ?? 0,
+    digestDay: s.digestDay ?? '',
+    retention: Array.isArray(s.retention) ? s.retention : [],
+    setup: s.setup ?? {},
+    featuresSent: Array.isArray(s.featuresSent) ? s.featuresSent : [],
+    lastFeatureAt: s.lastFeatureAt ?? 0,
+    // Scheduled-content bookkeeping. All cron-owned, so mergeSubForWrite keeps
+    // the cron's copy — see USER_OWNED_FIELDS for the ones that go the other
+    // way. A row predating these fields reads as "nothing sent yet", which is
+    // the right answer: the rotation starts at the beginning.
+    hacksSent: Array.isArray(s.hacksSent) ? s.hacksSent.map(String) : [],
+    lastHackAt: s.lastHackAt ?? 0,
+    academyDay: s.academyDay ?? '',
+    pulseDay: s.pulseDay ?? '',
+    sent: s.sent ?? { day: '', n: 0 },
   }
 }
 
@@ -1095,11 +1340,26 @@ export const MOVE_COOLDOWN_MS = 3 * 60 * 60 * 1000
 /**
  * The round-number spacing that matters at a given price.
  *
- * A tenth of the leading magnitude, which is what people actually watch:
- * $1,000 steps on a $77,000 bitcoin, $100 on a $2,500 ether, one cent on a
- * 66-cent token. A fixed step cannot work across four orders of magnitude —
- * $1,000 steps would be silent forever on a token under a dollar, and one-cent
- * steps on bitcoin would fire hundreds of times an hour.
+ * A fixed step cannot work across four orders of magnitude — $1,000 steps
+ * would be silent forever on a token under a dollar, and one-cent steps on
+ * bitcoin would fire hundreds of times an hour. So the step scales with the
+ * price. What it must ALSO do is scale smoothly, and a plain tenth-of-the-
+ * magnitude (10 ** (floor(log10 p) - 1)) does not: the step is constant across
+ * a whole decade while the price inside that decade grows tenfold, so the gap
+ * a price must travel to reach a level slides from 1% at the top of the decade
+ * to 10% at the bottom of the next one, in one jump.
+ *
+ * That jump is not theoretical. At $99,000 bitcoin was 1.0% from a level; the
+ * day it crossed $100,000 the step went from $1,000 to $10,000 and it needed
+ * 9.9%. The channel switched itself off at exactly the price everyone was
+ * watching, and worse than silently: a 9.9% move is one the movement channel
+ * has long since reported, so the level alert had nothing left to add.
+ *
+ * The leading digit therefore picks a 1-2-5 sub-step, which is the ladder
+ * chart axes and exchange price grids already use. The gap stays between 1%
+ * and 2.5% of the price everywhere, with no cliff at any power of ten, and the
+ * levels stay round: $77,000 on bitcoin at $77k, $112,000 at $110k, $2,500 on
+ * a $2.5k ether, 66 cents on a 66-cent token.
  *
  * @param {number} price
  * @returns {number} step, or 0 when the price is unusable
@@ -1107,7 +1367,11 @@ export const MOVE_COOLDOWN_MS = 3 * 60 * 60 * 1000
 export function roundLevelStep(price) {
   const p = Number(price)
   if (!Number.isFinite(p) || p <= 0) return 0
-  return Math.pow(10, Math.floor(Math.log10(p)) - 1)
+  const base = Math.pow(10, Math.floor(Math.log10(p)))
+  const lead = p / base            // leading digit, 1 <= lead < 10
+  // gap = sub / lead percent, so each band lands inside 1%-2.5%.
+  const sub = lead < 2 ? 2 : lead < 5 ? 5 : 10
+  return (base * sub) / 100
 }
 
 /**
@@ -1235,6 +1499,54 @@ export function matchArticle(article, watch) {
   return null
 }
 
+/**
+ * Terms that make a story market-wide rather than about one coin.
+ *
+ * The news channel matches articles against the user's own watch list, which
+ * is correct and also why it almost never fires: a device watching two assets
+ * matches a handful of the stories a wire publishes in a day. The fix is not
+ * to loosen the per-asset match — "GAS prices" pushing an alert to a GAS
+ * holder is exactly the failure AMBIGUOUS_SYMBOLS exists to prevent — but to
+ * admit a second, clearly-labelled kind of story: the ones that move every
+ * portfolio regardless of what is in it.
+ *
+ * Curated rather than inferred. A frequency heuristic would drift with
+ * whatever the feed happens to be publishing; this list says, in one place,
+ * what counts as market-wide, and a story that matches none of it stays out.
+ */
+const MARKET_TERMS = [
+  'bitcoin', 'ethereum',
+  // Central banks. "fed" alone is not here on purpose — \bfed\b matches "fed
+  // up" and "fed the dog", and a channel that fires on those is finished. The
+  // phrasings a wire actually uses are listed instead.
+  'federal reserve', 'the fed', 'fed cuts', 'fed raises', 'fed hikes',
+  'fed holds', 'fed chair', 'fomc', 'powell', 'rate decision',
+  'cuts rates', 'raises rates', 'hikes rates', 'basis points',
+  'interest rate', 'interest rates', 'rate cut', 'rate hike',
+  // Macro prints that move everything on the day they land.
+  'inflation', 'cpi', 'jobs report', 'unemployment', 'gdp', 'recession',
+  'tariff', 'treasury yield', 'bond yields',
+  // Whole-market conditions and the events that reprice a sector at once.
+  'stock market', 's&p 500', 'nasdaq', 'dow jones',
+  'bear market', 'bull market', 'market crash', 'all-time high',
+  'sec approves', 'spot etf', 'etf approval', 'halving',
+]
+
+/**
+ * Whether a story is about the market as a whole.
+ *
+ * Phrase matching, not word matching: "the fed" and "rate cut" are two-word
+ * signals whose individual halves are worthless, and `\bgdp\b` on a title
+ * containing "GDPR" is the sort of thing that makes a channel untrustworthy.
+ *
+ * @param {{title?:string, description?:string}} article
+ */
+export function isMarketStory(article) {
+  const hay = `${article?.title || ''} ${article?.description || ''}`.toLowerCase()
+  if (!hay.trim()) return false
+  return MARKET_TERMS.some(term => new RegExp(`\\b${escapeRe(term)}\\b`).test(hay))
+}
+
 /** Only genuinely fresh stories are worth a lock-screen interrupt. */
 export const NEWS_MAX_AGE_MS = 2 * 60 * 60 * 1000
 
@@ -1318,6 +1630,12 @@ export const CHANNEL_URL = {
   retention: '/dashboard',
   feature: '/dashboard',
   zakat: '/dashboard?tab=tools',
+  // The three scheduled channels each land on the page they are about, not on
+  // the dashboard. A hack that opens a portfolio screen has thrown away the
+  // one thing the tap was for.
+  hack: '/academy',
+  academy: '/academy',
+  portfolio: '/dashboard',
   test: '/settings',
 }
 
@@ -1345,6 +1663,15 @@ export const CHANNEL_DELIVERY = {
   digest:    { urgency: 'low',    ttl: 4 * 60 * 60 },   // stale after the morning
   retention: { urgency: 'low',    ttl: 12 * 60 * 60 },  // no hurry by definition
   feature:   { urgency: 'low',    ttl: 24 * 60 * 60 },  // useful whenever it lands
+  // Scheduled content is never urgent — none of it is about a number that is
+  // about to change. Low urgency lets the phone batch them with whatever else
+  // is pending, which is also why they can share a day with a price alert
+  // without feeling like two interruptions.
+  hack:      { urgency: 'low',    ttl: 24 * 60 * 60 },  // true tomorrow too
+  portfolio: { urgency: 'low',    ttl: 6 * 60 * 60 },   // a read on today
+  // The challenge is the one that expires: it IS today's, and arriving after
+  // midnight would point at a question that is no longer the one on screen.
+  academy:   { urgency: 'low',    ttl: 5 * 60 * 60 },
   // High urgency for three notifications a year. The reminder is worth waking
   // a dozing phone for — it is a religious obligation falling due on a date the
   // user chose, not a price that will still be there later — and the loudness

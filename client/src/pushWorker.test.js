@@ -1,6 +1,14 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { runSchedule } from '../../workers/push/index.js'
 import { createJobs } from '../../workers/push/jobs.js'
+import {
+  DEFAULT_PREFS, HACK_HOUR, ACADEMY_HOUR, PORTFOLIO_HOUR, HACK_GAP_MS, LANGS,
+} from '../../push-api/notify-logic.js'
+import { LANGUAGE_CODES } from './i18n'
+import { readFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { hacks, questions } from './data/academyContent.js'
 
 // The jobs were extracted from the Deno service mechanically, so what needs
 // proving is the WIRING: that the adapter is shaped the way the job bodies
@@ -23,13 +31,29 @@ function fakeStore(rows = []) {
 const sub = (over = {}) => ({
   subscription: { endpoint: 'https://fcm.googleapis.com/x', keys: { p256dh: 'p', auth: 'a' } },
   alerts: [], watch: [], setup: {}, lang: 'en', tz: 0,
-  prefs: { moves: true, levels: true, news: true, digest: true, retention: true, features: true, zakat: true, movePct: 5 },
+  // Spread from the real defaults rather than restated. A hand-written copy
+  // silently omits every pref added later, and a channel gated on a missing
+  // pref reads as "off" — so the tests would go on passing while the feature
+  // they were meant to cover never ran.
+  prefs: { ...DEFAULT_PREFS, movePct: 5 },
   lastSeen: Date.now(), fired: {}, ref: {}, moveFired: {}, lastPrice: {}, lastLevel: {},
   seenRef: null, newsSent: {}, lastNewsAt: 0, digestDay: '', retention: [],
   featuresSent: [], lastFeatureAt: 0, sent: { day: '', n: 0 },
+  hacksSent: [], lastHackAt: 0, academyDay: '', pulseDay: '',
   zakatDue: null, zakatSent: [], createdAt: Date.now(),
   ...over,
 })
+
+// checkDaily branches on the LOCAL hour, so a test that wants a given slot has
+// to place the clock there. Pinning tz to 0 and moving fake time to the UTC
+// hour is the least fragile way: the alternative, computing a tz offset from
+// whatever hour the suite happens to run at, breaks twice a year.
+function atHour(hour) {
+  const d = new Date('2026-03-11T00:00:00Z')
+  d.setUTCHours(hour, 5, 0, 0)
+  vi.setSystemTime(d)
+  return d.getTime()
+}
 
 describe('cron dispatch', () => {
   const spyJobs = () => ({
@@ -161,6 +185,371 @@ describe('a price target, end to end through the real job', () => {
 
     await jobs.checkTargets()
     expect(spy, 'no alerts means no upstream call').not.toHaveBeenCalled()
+    vi.restoreAllMocks()
+  })
+})
+
+// ── The scheduled content channels ──────────────────────────────────────────
+//
+// These exist because the reactive channels are, correctly, silent on a quiet
+// week: a two-asset portfolio at a 2% threshold can go days without clearing
+// any bar. That is the right answer to "did a price do something" and the
+// wrong answer to "is this app worth having notifications on". So three
+// channels send on a schedule and rotate through real content instead.
+//
+// What needs proving is that each one actually reaches the sender in its own
+// slot, and — the failure that would matter most — that none of them repeats
+// itself.
+
+describe('scheduled content channels', () => {
+  const quoteFixture = {
+    'crypto:bitcoin':  { price: 100000, change24h: 4.2 },
+    'crypto:ethereum': { price: 3000,   change24h: -1.4 },
+    'crypto:solana':   { price: 200,    change24h: 0.3 },
+  }
+  const watch3 = [
+    { id: 'bitcoin',  symbol: 'BTC', kind: 'crypto' },
+    { id: 'ethereum', symbol: 'ETH', kind: 'crypto' },
+    { id: 'solana',   symbol: 'SOL', kind: 'crypto' },
+  ]
+
+  async function stubQuotes(quotes = quoteFixture) {
+    vi.spyOn(await import('../../push-api/markets.js'), 'fetchQuotes')
+      .mockResolvedValue(quotes)
+  }
+
+  beforeEach(() => { vi.useFakeTimers() })
+  afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks() })
+
+  it('sends a portfolio pulse in its own hour, with breadth and a leader', async () => {
+    atHour(PORTFOLIO_HOUR)
+    await stubQuotes()
+    const store = fakeStore([{ key: 'k1', sub: sub({ watch: watch3, tz: 0 }) }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+    await jobs.checkDaily()
+
+    const pulse = sent.find(p => p.channel === 'portfolio')
+    expect(pulse, 'the pulse reached the sender').toBeTruthy()
+    // Two of three green, BTC the biggest mover either way.
+    expect(pulse.body).toContain('2 of your 3')
+    expect(pulse.body).toContain('BTC')
+    expect(pulse.body).toContain('4.2')
+    // No amount, no total, no currency figure — the server has none to leak.
+    expect(pulse.body).not.toMatch(/\$/)
+  })
+
+  it('says nothing on a day when no holding moved', async () => {
+    atHour(PORTFOLIO_HOUR)
+    await stubQuotes({
+      'crypto:bitcoin':  { price: 100000, change24h: 0.2 },
+      'crypto:ethereum': { price: 3000,   change24h: -0.3 },
+    })
+    const store = fakeStore([{ key: 'k1', sub: sub({ watch: watch3.slice(0, 2), tz: 0 }) }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+    await jobs.checkDaily()
+    expect(sent.filter(p => p.channel === 'portfolio')).toHaveLength(0)
+  })
+
+  it('sends the pulse once a day, not once an hour', async () => {
+    atHour(PORTFOLIO_HOUR)
+    await stubQuotes()
+    const store = fakeStore([{ key: 'k1', sub: sub({ watch: watch3, tz: 0 }) }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+    await jobs.checkDaily()
+    await jobs.checkDaily()
+    expect(sent.filter(p => p.channel === 'portfolio')).toHaveLength(1)
+  })
+
+  it('sends the day’s Academy question as the notification body', async () => {
+    atHour(ACADEMY_HOUR)
+    await stubQuotes()
+    const store = fakeStore([{ key: 'k1', sub: sub({ watch: watch3, tz: 0 }) }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+    await jobs.checkDaily()
+
+    const q = sent.find(p => p.channel === 'academy')
+    expect(q, 'the challenge reached the sender').toBeTruthy()
+    // The body is a real stem from the bank, not a "your challenge is ready".
+    expect(questions('en').map(x => x.q)).toContain(q.body)
+    expect(q.url).toBe('/academy')
+  })
+
+  it('does not repeat the challenge later the same day', async () => {
+    atHour(ACADEMY_HOUR)
+    await stubQuotes()
+    const store = fakeStore([{ key: 'k1', sub: sub({ watch: watch3, tz: 0 }) }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+    await jobs.checkDaily()
+    await jobs.checkDaily()
+    expect(sent.filter(p => p.channel === 'academy')).toHaveLength(1)
+  })
+
+  it('sends an investment hack, and a different one next time', async () => {
+    atHour(HACK_HOUR)
+    await stubQuotes()
+    const store = fakeStore([{ key: 'k1', sub: sub({ watch: watch3, tz: 0 }) }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+    await jobs.checkDaily()
+    const first = sent.find(p => p.channel === 'hack')
+    expect(first, 'the hack reached the sender').toBeTruthy()
+    expect(first.body).toBe(hacks('en')[0].body)
+    expect(first.url).toBe('/academy')
+
+    // Same hour two days later: the gap has elapsed, so the next one is due —
+    // and it must not be the one already read.
+    vi.setSystemTime(new Date(Date.now() + HACK_GAP_MS))
+    await jobs.checkDaily()
+    const all = sent.filter(p => p.channel === 'hack')
+    expect(all).toHaveLength(2)
+    expect(all[1].body).toBe(hacks('en')[1].body)
+  })
+
+  it('holds the hack until the gap has actually elapsed', async () => {
+    atHour(HACK_HOUR)
+    await stubQuotes()
+    const store = fakeStore([{ key: 'k1', sub: sub({ watch: watch3, tz: 0 }) }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+    await jobs.checkDaily()
+    vi.setSystemTime(new Date(Date.now() + 24 * 60 * 60 * 1000))  // one day, not two
+    await jobs.checkDaily()
+    expect(sent.filter(p => p.channel === 'hack')).toHaveLength(1)
+  })
+
+  it('starts the hack rotation over rather than going silent for ever', async () => {
+    atHour(HACK_HOUR)
+    await stubQuotes()
+    const list = hacks('en')
+    // Every hack already read.
+    const store = fakeStore([{
+      key: 'k1',
+      sub: sub({ watch: watch3, tz: 0, hacksSent: list.map((_, i) => String(i)) }),
+    }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+    await jobs.checkDaily()
+    const hack = sent.find(p => p.channel === 'hack')
+    expect(hack, 'an exhausted list restarts instead of ending the channel').toBeTruthy()
+    expect(hack.body).toBe(list[0].body)
+    // And the bookkeeping is reset, not appended to, or the next pass would
+    // read "all sent" again and wrap on every single run.
+    expect(store.map.get('k1').hacksSent).toEqual(['0'])
+  })
+
+  it('keeps each channel to its own hour', async () => {
+    await stubQuotes()
+    const store = fakeStore([{ key: 'k1', sub: sub({ watch: watch3, tz: 0 }) }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+    atHour(PORTFOLIO_HOUR)
+    await jobs.checkDaily()
+    expect(sent.map(p => p.channel)).not.toContain('academy')
+
+    sent.length = 0
+    atHour(ACADEMY_HOUR)
+    await jobs.checkDaily()
+    expect(sent.map(p => p.channel)).not.toContain('portfolio')
+  })
+
+  it('respects each channel’s own switch', async () => {
+    atHour(PORTFOLIO_HOUR)
+    await stubQuotes()
+    const store = fakeStore([{
+      key: 'k1',
+      sub: sub({ watch: watch3, tz: 0, prefs: { ...DEFAULT_PREFS, portfolio: false } }),
+    }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+    await jobs.checkDaily()
+    expect(sent.filter(p => p.channel === 'portfolio')).toHaveLength(0)
+  })
+})
+
+// ── Market-wide news ────────────────────────────────────────────────────────
+//
+// The per-asset match is right and is also why the channel was near-silent: a
+// device watching two coins matches almost nothing a wire publishes in a day.
+// A second, clearly-labelled kind of story fixes that without loosening the
+// match that keeps "GAS prices" from pushing to a GAS holder.
+
+describe('news reaches a small watch list', () => {
+  const story = (title, link) => ({
+    title, link, description: '', pubDate: new Date().toISOString(),
+  })
+
+  async function stubNews(articles) {
+    vi.spyOn(await import('../../push-api/markets.js'), 'fetchNews')
+      .mockResolvedValue(articles)
+  }
+
+  afterEach(() => { vi.restoreAllMocks() })
+
+  it('sends a market-wide story to someone who holds none of what it names', async () => {
+    await stubNews([story('Fed cuts rates by 25bps as inflation cools', 'https://x/1')])
+    const store = fakeStore([{
+      key: 'k1',
+      sub: sub({ watch: [{ id: 'solana', symbol: 'SOL', kind: 'crypto' }] }),
+    }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+    await jobs.checkNews()
+    expect(sent, 'the old code required a watch-list match and sent nothing').toHaveLength(1)
+    expect(sent[0].channel).toBe('news')
+    // Framed as market news — it does not claim to be about a holding.
+    expect(sent[0].sym).toBeUndefined()
+    expect(sent[0].title).toMatch(/market|marché|mercado|Markt|mercato/i)
+  })
+
+  it('still prefers a story that names something the user actually holds', async () => {
+    await stubNews([
+      story('Fed cuts rates by 25bps', 'https://x/1'),
+      story('Solana network upgrade ships this week', 'https://x/2'),
+    ])
+    const store = fakeStore([{
+      key: 'k1',
+      sub: sub({ watch: [{ id: 'solana', symbol: 'SOL', kind: 'crypto' }] }),
+    }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+    await jobs.checkNews()
+    // The general story is FIRST in the feed. Ranking it ahead of the held one
+    // would spend the four-hour window on the weaker of the two.
+    expect(sent).toHaveLength(1)
+    expect(sent[0].sym).toBe('SOL')
+  })
+
+  it('does not turn every story into a notification', async () => {
+    await stubNews([story('Pudgy Penguins launches a new NFT drop', 'https://x/1')])
+    const store = fakeStore([{
+      key: 'k1',
+      sub: sub({ watch: [{ id: 'solana', symbol: 'SOL', kind: 'crypto' }] }),
+    }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+    await jobs.checkNews()
+    expect(sent, 'neither held nor market-wide').toHaveLength(0)
+  })
+
+  it('leaves the market channel switchable on its own', async () => {
+    await stubNews([story('Fed cuts rates by 25bps', 'https://x/1')])
+    const store = fakeStore([{
+      key: 'k1',
+      sub: sub({ watch: [], prefs: { ...DEFAULT_PREFS, newsMarket: false } }),
+    }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+    await jobs.checkNews()
+    expect(sent).toHaveLength(0)
+  })
+})
+
+// ── The user's chosen language ──────────────────────────────────────────────
+//
+// The server writes the notification text, so it can only be as multilingual
+// as the code the client sends it. Both halves have failed independently:
+// the client had a hardcoded four-language allowlist while the app shipped
+// six, and content added later can easily arrive English-only.
+
+describe('notifications are written in the language the user picked', () => {
+  it('sends every language the app offers, not a hardcoded subset', () => {
+    // The regression: ['en', 'ar', 'fr', 'es'] was written out by hand, then
+    // German and Italian were added to the app. Those users picked their
+    // language and still got English lock screens — the client would not send
+    // a code the server had full copy for, and nothing errored.
+    const src = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'push.js'), 'utf8',
+    )
+    // Comments stripped first. The prose right above the fix quotes the old
+    // list verbatim to explain it, so a raw match finds the very string it is
+    // meant to prove absent — this assertion failed on its own explanation.
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
+    const fn = code.slice(code.indexOf('function currentLang'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    expect(body).toMatch(/LANGUAGE_CODES/)
+    // A literal list inside the function is the shape of the bug, whatever
+    // codes it happens to contain today.
+    expect(body).not.toMatch(/\[\s*'en'\s*,/)
+  })
+
+  it('reaches every language the server can write', () => {
+    // The client's list and the server's copy tables have to agree, or one
+    // side silently falls back for a language the other supports.
+    expect([...LANGUAGE_CODES].sort()).toEqual([...LANGS].sort())
+  })
+
+  for (const lang of ['ar', 'de', 'it', 'fr', 'es']) {
+    it(`writes the ${lang} hack and challenge in ${lang}`, async () => {
+      vi.useFakeTimers()
+      atHour(HACK_HOUR)
+      vi.spyOn(await import('../../push-api/markets.js'), 'fetchQuotes').mockResolvedValue({})
+      const store = fakeStore([{ key: 'k1', sub: sub({ lang, tz: 0 }) }])
+      const sent = []
+      const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+
+      await jobs.checkDaily()
+      const hack = sent.find(p => p.channel === 'hack')
+      expect(hack, `a hack for ${lang}`).toBeTruthy()
+      expect(hack.body).toBe(hacks(lang)[0].body)
+      expect(hack.body, `${lang} must not fall back to English`)
+        .not.toBe(hacks('en')[0].body)
+
+      sent.length = 0
+      atHour(ACADEMY_HOUR)
+      await jobs.checkDaily()
+      const q = sent.find(p => p.channel === 'academy')
+      expect(q, `a challenge for ${lang}`).toBeTruthy()
+      expect(questions(lang).map(x => x.q)).toContain(q.body)
+      expect(questions('en').map(x => x.q), `${lang} stem must not be English`)
+        .not.toContain(q.body)
+
+      vi.useRealTimers()
+      vi.restoreAllMocks()
+    })
+  }
+
+  it('writes the portfolio line in the chosen language too', async () => {
+    vi.useFakeTimers()
+    atHour(PORTFOLIO_HOUR)
+    vi.spyOn(await import('../../push-api/markets.js'), 'fetchQuotes').mockResolvedValue({
+      'crypto:bitcoin':  { price: 100000, change24h: 4.2 },
+      'crypto:ethereum': { price: 3000,   change24h: -1.4 },
+    })
+    const watch = [
+      { id: 'bitcoin',  symbol: 'BTC', kind: 'crypto' },
+      { id: 'ethereum', symbol: 'ETH', kind: 'crypto' },
+    ]
+    const seen = {}
+    for (const lang of ['en', 'de', 'ar']) {
+      const store = fakeStore([{ key: 'k1', sub: sub({ lang, tz: 0, watch }) }])
+      const sent = []
+      const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
+      await jobs.checkDaily()
+      const pulse = sent.find(p => p.channel === 'portfolio')
+      expect(pulse, `a pulse for ${lang}`).toBeTruthy()
+      seen[lang] = pulse.title + '|' + pulse.body
+    }
+    expect(new Set(Object.values(seen)).size, 'three languages, three strings').toBe(3)
+    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 })

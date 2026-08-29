@@ -10950,6 +10950,34 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .settings-row-toggle {
   align-items: center;
 }
+
+/* The channel-list disclosure in Settings → Notifications.
+   It is a <button> so it is reachable by keyboard and announces its expanded
+   state, but it has to sit flush in a column of <div> rows — hence resetting
+   the button chrome rather than styling a div and bolting a role onto it. */
+.np-channels-summary {
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+.np-channels-summary:hover .settings-label > span:first-child {
+  color: var(--g-ink, inherit);
+}
+.np-channels-chevron {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  padding-inline-start: 0.5rem;
+  transition: opacity 0.15s ease;
+}
+.np-channels-summary:hover .np-channels-chevron { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .np-channels-chevron { transition: none; }
+}
 .settings-label {
   display: flex;
   flex-direction: column;

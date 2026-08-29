@@ -20,6 +20,7 @@ import {
   asLang, bumpSent, DEFAULT_PREFS, deliveryFor, localDayKey,
   pushTopic, sanitizeAlerts, sanitizePrefs, sanitizeSetup, sanitizeTz,
   sanitizeWatch, sanitizeZakatDue, trimZakatSent,
+  normalizeSub as normalize,
 } from '../../push-api/notify-logic.js'
 import { SubStore, endpointKey } from './store.js'
 import { createJobs } from './jobs.js'
@@ -66,35 +67,6 @@ function isRealPushEndpoint(endpoint) {
   return !!host && PUSH_HOSTS.some(re => re.test(host))
 }
 
-/** Fill in whatever a record predating a field would be missing. */
-function normalize(s = {}) {
-  return {
-    subscription: s.subscription,
-    alerts: s.alerts ?? [],
-    fired: s.fired ?? {},
-    createdAt: s.createdAt ?? Date.now(),
-    lang: s.lang,
-    watch: s.watch ?? [],
-    prefs: { ...DEFAULT_PREFS, ...(s.prefs ?? {}) },
-    tz: sanitizeTz(s.tz),
-    lastSeen: s.lastSeen ?? s.createdAt ?? Date.now(),
-    ref: s.ref ?? {},
-    moveFired: s.moveFired ?? {},
-    lastPrice: s.lastPrice ?? {},
-    lastLevel: s.lastLevel ?? {},
-    zakatDue: sanitizeZakatDue(s.zakatDue),
-    zakatSent: trimZakatSent(s.zakatSent),
-    seenRef: s.seenRef ?? null,
-    newsSent: s.newsSent ?? {},
-    lastNewsAt: s.lastNewsAt ?? 0,
-    digestDay: s.digestDay ?? '',
-    retention: Array.isArray(s.retention) ? s.retention : [],
-    setup: s.setup ?? {},
-    featuresSent: Array.isArray(s.featuresSent) ? s.featuresSent : [],
-    lastFeatureAt: s.lastFeatureAt ?? 0,
-    sent: s.sent ?? { day: '', n: 0 },
-  }
-}
 
 // ── Delivery ────────────────────────────────────────────────────────────────
 /**

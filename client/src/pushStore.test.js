@@ -171,8 +171,39 @@ describe('save() — the cron write path', () => {
     await store.save('k1', stale)
 
     const out = await store.get('k1')
-    expect(out.prefs).toEqual({ moves: false })   // theirs
+    // Asserted field by field rather than as a whole object: reads are
+    // normalised now, so `prefs` comes back complete with every default filled
+    // in. What this test is about is WHOSE value wins for a field both sides
+    // touched, and an exact-object match answered that question only by
+    // accident — it broke on the next preference added, which is not the same
+    // thing as the merge rule breaking.
+    expect(out.prefs.moves, 'the user’s change survives the cron write').toBe(false)
     expect(out.fired).toEqual({ a: 1 })           // ours
+  })
+
+  it('fills in fields a row predating them never had', async () => {
+    // A record written before a channel existed has no preference for it and
+    // no bookkeeping. Read raw, that preference is `undefined` — which every
+    // gate reads as "off", so a channel shipped to everyone would quietly run
+    // for nobody — and the bookkeeping is `undefined`, which is a TypeError
+    // the first time a job spreads it. Neither announces itself.
+    const db = fakeD1()
+    const store = new SubStore(db, { now: () => 0 })
+    // Straight into storage, bypassing put(), exactly as an older build left it.
+    db.rows.set('k1', {
+      key: 'k1',
+      data: JSON.stringify({
+        subscription: { endpoint: 'https://fcm.googleapis.com/x' },
+        prefs: { moves: true },
+      }),
+      updated_at: 0,
+    })
+
+    const out = await store.get('k1')
+    expect(out.prefs.hacks, 'a channel added later defaults ON, not undefined').toBe(true)
+    expect(out.prefs.moves, 'and an explicit choice is still respected').toBe(true)
+    expect(out.hacksSent).toEqual([])
+    expect(out.watch).toEqual([])
   })
 
   it('does not resurrect a subscription deleted mid-run', async () => {
