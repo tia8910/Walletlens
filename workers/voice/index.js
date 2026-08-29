@@ -783,7 +783,7 @@ function guardianContent(opts) {
 }
 // This endpoint's own public origin — used to build the one-click "I'm still
 // here" reset link that goes in the owner-warning email.
-const SELF_ORIGIN = "https://walletlens-voice-parse.tia8910.deno.net";
+const SELF_ORIGIN = "https://walletlens-voice.tarek-abdelhameed.workers.dev";
 // Grace period between warning the owner and notifying heirs. A missed
 // check-in usually just means a lost phone, travel or illness — the owner is
 // given this long to respond to the warning email before heirs are contacted.

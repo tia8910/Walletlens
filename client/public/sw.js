@@ -52,7 +52,7 @@ const PRICE_API_PATTERNS = [
   // Deno proxy — first CORS proxy tried for every external price fetch;
   // caching its responses means the SW serves repeat requests from cache
   // rather than round-tripping through the proxy on every price poll.
-  'walletlens-voice-parse.tia8910.deno.net',
+  'walletlens-voice.tarek-abdelhameed.workers.dev',
 ]
 
 // Static CDN assets (coin icons, images) — cached indefinitely in version-independent
