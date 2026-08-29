@@ -111,8 +111,34 @@ const SETTLED_REASK_DAYS = 180
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-// When this page instance started, for the dwell check.
-const startedAt = Date.now()
+// When the app last became usable, for the dwell check.
+//
+// NOT module-load time, which is what this was. With App Lock on, this module
+// evaluates behind the lock screen while the user is still at the fingerprint
+// prompt — so the dwell had already elapsed by the time they got in, and the
+// rating card fired the instant they unlocked, on top of the biometric prompt.
+// The clock starts when the app is actually in front of the user.
+let startedAt = Date.now()
+
+// Whether the user can currently see and use the app.
+//
+// False while the App Lock screen is up. Asking for a rating over a
+// fingerprint prompt is the worst possible moment: the user is not looking at
+// anything the app did well, they are being challenged for a credential.
+let interactive = true
+
+/**
+ * Tell the review prompt whether the app is in front of the user.
+ *
+ * Called from App.jsx as the lock state changes. Becoming interactive restarts
+ * the dwell clock, so the wait is measured from when they got in rather than
+ * from when the bundle happened to load.
+ */
+export function setAppInteractive(value) {
+  const next = !!value
+  if (next && !interactive) startedAt = Date.now()
+  interactive = next
+}
 
 /**
  * Moments worth asking after. Each is a thing the user just saw work.
@@ -317,6 +343,10 @@ function readSnapshot() {
 }
 
 function evaluate(snap) {
+  // Behind the App Lock screen. Nothing else is worth checking: there is no
+  // app on screen to have an opinion about.
+  if (!interactive) return { ok: false, blocked: 'locked' }
+
   if (snap.busy) return { ok: false, blocked: 'busy' }
 
   // Only checked when MIN_HOLDINGS is above zero. It is deliberately not, so

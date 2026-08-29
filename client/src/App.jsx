@@ -31,6 +31,7 @@ import { useLanguage } from './LanguageContext'
 import { useTheme, THEMES } from './ThemeContext'
 import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
+import { setAppInteractive } from './reviewPrompt'
 import { applySettings } from './settingsUtils'
 import { initMood } from './moodEngine'
 
@@ -409,6 +410,15 @@ export default function App() {
       track('pwa_session', { installed: true })
     }
   }, [])
+
+  // The rating card must never land on top of the App Lock prompt.
+  //
+  // reviewPrompt's dwell used to run from module load, which happens behind
+  // the lock screen — so by the time the user had passed the fingerprint
+  // check the wait was already spent, and the card appeared on the unlock
+  // itself. Telling it when the app is actually in front of the user both
+  // blocks the ask while locked and restarts the dwell on the way in.
+  useEffect(() => { setAppInteractive(!locked) }, [locked])
 
   // Automatic Portfolio Guardian check-in on sign-in. "Signing in" to WalletLens
   // means opening the app and, if App Lock is on, passing the fingerprint/face
