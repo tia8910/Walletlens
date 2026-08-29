@@ -27,7 +27,16 @@
 /stock-prices.json
   Cache-Control: public, max-age=1800, stale-while-revalidate=3600
 
+/stocks.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
 /news.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
+/economic-calendar.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
+/economy.json
   Cache-Control: public, max-age=1800, stale-while-revalidate=3600
 
 /rss.xml
