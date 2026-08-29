@@ -3767,6 +3767,19 @@ export default function Dashboard() {
     syncWidgets({ enriched, totalValue, categoryOf: categorizeAsset })
   }, [loaded, enriched, totalValue])
 
+  // Stable refs so WalletEvalTab's memo() (and its internal useMemo over
+  // computeWalletEval, a non-trivial multi-category scoring pass) actually
+  // skips recomputation instead of re-running on every render — including
+  // the ~90 animation frames of the ticker count-up on each price refresh.
+  const walletEvalTargets = useMemo(
+    () => Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v })),
+    [coinTargets]
+  )
+  const handleWalletEvalAction = useCallback(
+    kind => kind === 'targets' ? setActiveTab('targets') : openSheet('buy', 'wallet_eval'),
+    [openSheet]
+  )
+
   // ── Sell-targets analysis ────────────────────────────────────────────────
   //
   // Sits here rather than with the rest of the derived numbers because the
@@ -4183,6 +4196,24 @@ export default function Dashboard() {
   }, [filteredHoldings, selectedAssets])
 
   const displayHoldings = (showAllHoldings || isHoldingsFiltered) ? filteredHoldings : filteredHoldings.slice(0, 6)
+
+  // Holdings grouped by category for the holdings list — memoized so this
+  // grouping pass doesn't re-run on every render (e.g. the ticker count-up
+  // animation firing on every price refresh), only when the underlying
+  // holdings actually change.
+  const groupedHoldings = useMemo(() => {
+    const grouped = {}
+    displayHoldings.forEach(h => {
+      const cat = categorizeAsset(h)
+      if (!grouped[cat]) grouped[cat] = []
+      grouped[cat].push(h)
+    })
+    return grouped
+  }, [displayHoldings])
+  const visibleHoldingCategories = useMemo(
+    () => CATEGORY_ORDER.filter(cat => groupedHoldings[cat]?.length > 0),
+    [groupedHoldings]
+  )
 
   // Stale manual price check — warn if any non-crypto asset price is >7 days old
   const staleAssets = useMemo(() => {
@@ -5052,13 +5083,8 @@ export default function Dashboard() {
                   : <>
                     <div>
                       {(() => {
-                        const grouped = {}
-                        displayHoldings.forEach(h => {
-                          const cat = categorizeAsset(h)
-                          if (!grouped[cat]) grouped[cat] = []
-                          grouped[cat].push(h)
-                        })
-                        return CATEGORY_ORDER.filter(cat => grouped[cat]?.length > 0).map(cat => {
+                        const grouped = groupedHoldings
+                        return visibleHoldingCategories.map(cat => {
                           const ci = catBreakdown.find(c => c.cat === cat)
                           return (
                           <div key={cat}>
@@ -5360,11 +5386,7 @@ export default function Dashboard() {
             <div className="glass-card dvx-movers-card">
               <h3 style={{ margin:'0 0 0.75rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="trend-up" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('dsTodaysMovers')}</h3>
               <div className="dvx-movers-row">
-                {[...enriched]
-                  .filter(h => prices[h.coin_id]?.usd_24h_change != null)
-                  .sort((a, b) => (prices[b.coin_id]?.usd_24h_change ?? 0) - (prices[a.coin_id]?.usd_24h_change ?? 0))
-                  .slice(0, 3)
-                  .map(h => {
+                {topGainers.map(h => {
                     const chg = prices[h.coin_id]?.usd_24h_change ?? 0
                     return (
                       <div key={h.coin_id} className="dvx-mover-item dvx-mover-up">
@@ -5422,8 +5444,8 @@ export default function Dashboard() {
             <WalletEvalTab
               enriched={enriched}
               totalValue={totalValue}
-              targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))}
-              onAction={kind => kind === 'targets' ? setActiveTab('targets') : openSheet('buy', 'wallet_eval')}
+              targets={walletEvalTargets}
+              onAction={handleWalletEvalAction}
             />
           )}
 

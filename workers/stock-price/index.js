@@ -10,8 +10,10 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 }
 
+const CACHE_SECONDS = 60
+
 export default {
-  async fetch(request) {
+  async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS })
     }
@@ -25,6 +27,14 @@ export default {
       })
     }
 
+    // Edge cache keyed on the symbol, so every visitor asking about the same
+    // ticker within the TTL shares one upstream fetch instead of each one
+    // hitting Yahoo/Stooq (which rate-limit/IP-block aggressive callers).
+    const cache = caches.default
+    const cacheKey = new Request(`https://stock-price.cache/${symbol}`, { method: 'GET' })
+    const cached = await cache.match(cacheKey)
+    if (cached) return cached
+
     // Try Yahoo Finance v8 chart (most reliable)
     try {
       const res = await fetch(
@@ -35,13 +45,15 @@ export default {
         const data = await res.json()
         const meta = data?.chart?.result?.[0]?.meta
         if (meta && typeof meta.regularMarketPrice === 'number') {
-          return new Response(JSON.stringify({
+          const response = new Response(JSON.stringify({
             symbol,
             price: meta.regularMarketPrice,
             change_pct: meta.regularMarketChangePercent || 0,
             name: meta.longName || meta.shortName || symbol,
             source: 'yahoo_v8',
-          }), { headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } })
+          }), { headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${CACHE_SECONDS}` } })
+          ctx.waitUntil(cache.put(cacheKey, response.clone()))
+          return response
         }
       }
     } catch { /* fall through */ }
@@ -62,13 +74,15 @@ export default {
           const price = parseFloat(row.Close)
           const open = parseFloat(row.Open)
           if (isFinite(price) && price > 0) {
-            return new Response(JSON.stringify({
+            const response = new Response(JSON.stringify({
               symbol,
               price,
               change_pct: isFinite(open) && open > 0 ? ((price - open) / open) * 100 : 0,
               name: row.Name || symbol,
               source: 'stooq',
-            }), { headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } })
+            }), { headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${CACHE_SECONDS}` } })
+            ctx.waitUntil(cache.put(cacheKey, response.clone()))
+            return response
           }
         }
       }
