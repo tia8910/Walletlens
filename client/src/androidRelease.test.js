@@ -111,6 +111,42 @@ describe('the Android release is uploadable', () => {
     expect(decl).not.toMatch(/android:excludeFromRecents/)
   })
 
+  it('never runs R8 without the keep rules', () => {
+    // THE BUG THIS EXISTS FOR: 6ff0b43 dropped the proguardFiles line and left
+    // minifyEnabled true. R8 kept shrinking and obfuscating with none of the
+    // rules in proguard-rules.pro applied, so nothing protected what Android
+    // resolves by name — WorkManager loading a worker from a class name in its
+    // database, androidbrowserhelper reading class names out of manifest
+    // meta-data, the Play review library's callbacks crossing a binder.
+    //
+    // That combination is worse than either extreme, and it is invisible: the
+    // build succeeds, the APK installs, and it fails at runtime. Worse still,
+    // -keepattributes SourceFile,LineNumberTable lives in the same unapplied
+    // file, so the crash it caused arrived with no line numbers.
+    //
+    // Minify may be on or off. What must never happen again is on WITHOUT the
+    // rules.
+    const release = gradle.slice(gradle.indexOf('release {'))
+    const decl = release.slice(0, release.indexOf('\n        }'))
+    const code = decl.replace(/^\s*\/\/.*$/gm, '')
+    if (/minifyEnabled\s+true/.test(code)) {
+      expect(code, 'R8 is on, so the keep rules must be applied')
+        .toMatch(/proguardFiles[^\n]*'proguard-rules\.pro'/)
+    }
+  })
+
+  it('keeps the rules that cover what R8 cannot see', () => {
+    // Each of these is a class Android resolves by name. Losing any one is a
+    // runtime failure the build cannot detect.
+    const rules = readFileSync(join(nativeRoot, '..', '..', 'proguard-rules.pro'), 'utf8')
+    expect(rules).toMatch(/-keep class live\.walletlens\.twa\.PeriodicUpdateWorker/)
+    expect(rules).toMatch(/-keep class com\.google\.androidbrowserhelper\.\*\*/)
+    expect(rules).toMatch(/-keep class com\.google\.android\.play\.core\.review\.\*\*/)
+    // Without this the mapping file cannot turn a Play Console trace back into
+    // line numbers, which is half the point of shipping a mapping at all.
+    expect(rules).toMatch(/-keepattributes SourceFile,LineNumberTable/)
+  })
+
   it('keeps notification delegation switched on', () => {
     // The whole channel-routing fix hangs off DelegationService being bound by
     // Chrome. enableNotifications false silently disables the service in the

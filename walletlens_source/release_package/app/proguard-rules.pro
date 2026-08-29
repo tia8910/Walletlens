@@ -1,9 +1,14 @@
 # WalletLens TWA — R8 keep rules.
 #
-# The release build runs R8 with proguard-android-optimize.txt, so the
-# optimisation passes are on. Everything Android instantiates by *name* rather
-# than by a compile-time reference has to be kept explicitly, or it gets removed
-# and the app crashes at runtime with ClassNotFoundException.
+# The release build runs R8 with proguard-android.txt — the NON-optimising
+# default config. The optimisation passes were implicated in an earlier launch
+# crash and are a separate decision from having keep rules at all; see the
+# comment on the release buildType in build.gradle.
+#
+# Shrinking and obfuscation are still on, so everything Android instantiates by
+# *name* rather than by a compile-time reference has to be kept explicitly, or
+# it gets removed or renamed and the app fails at runtime — usually with a
+# ClassNotFoundException, occasionally with something far more confusing.
 #
 # Classes declared in AndroidManifest.xml (activities, services, receivers,
 # providers) are kept automatically by AGP — they are deliberately not repeated
