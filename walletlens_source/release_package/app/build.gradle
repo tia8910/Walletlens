@@ -184,47 +184,52 @@ android {
     }
     buildTypes {
         release {
-            // R8 optimisation and resource shrinking are OFF pending a device-
-            // verified build.
+            // R8 is ON, with the keep rules genuinely applied.
             //
-            // v2.7 (versionCode 48) was the first artifact to actually install on
-            // a phone, and it crashes on launch. Four untested changes landed
-            // between it and the release Play is serving: R8 optimisation
-            // (proguard-android-optimize.txt + proguard-rules.pro), resource
-            // shrinking, optimized resource shrinking, and the AGP 9 migration.
-            // This puts the R8 layer back to exactly what production runs and
-            // leaves AGP 9 plus all the new features in place, so the next build
-            // isolates which half is at fault.
-            //
-            // R8 is OFF while a launch crash is unexplained. This is a bisect
-            // step, not a preference.
+            // ── The history, because it is the reason for every choice here ──
             //
             // 6ff0b43 dropped the proguardFiles line but left minifyEnabled
             // true. That combination is worse than either extreme: R8 kept
-            // shrinking AND obfuscating, with none of the keep rules in
-            // proguard-rules.pro applied. Every build from v2.8 onward has
-            // renamed classes with no rule protecting anything resolved by
-            // name, and — because -keepattributes SourceFile,LineNumberTable
-            // lives in that same unapplied file — has produced stack traces
-            // with no line numbers, which is a large part of why the crash has
-            // been hard to place.
+            // shrinking AND obfuscating, with none of the rules in
+            // proguard-rules.pro applied. Every build from v2.8 onward shipped
+            // renamed classes with nothing protecting what Android resolves by
+            // name — and, because -keepattributes SourceFile,LineNumberTable
+            // lives in that same unapplied file, with stack traces that had no
+            // line numbers, which is most of why the resulting crash was so
+            // hard to place.
             //
-            // Turning R8 off answers the question outright. If the crash stops,
-            // it was R8 stripping or renaming something; the next build turns
-            // minify back on with the keep rules genuinely applied and narrows
-            // down which. If the crash persists, R8 is exonerated and the trace
-            // — now with line numbers — says where to look instead.
+            // Minification was then turned off outright as a bisect step. That
+            // answered the question and has been the state ever since, at the
+            // cost of roughly a megabyte and of shipping unoptimised code.
             //
-            // Cost is roughly a megabyte of APK. That is nothing against an app
-            // that will not open.
-            minifyEnabled false
+            // ── Why it is back on now ────────────────────────────────────────
+            //
+            // Play's new quality bar names code optimization explicitly, and
+            // the mapping file R8 produces is what makes a Play Console stack
+            // trace readable — the build's "Upload ProGuard mapping" step has
+            // been finding no file to upload this whole time.
+            //
+            // The difference from the build that crashed is that proguardFiles
+            // is present, so proguard-rules.pro is actually applied. Those
+            // rules cover exactly what R8 cannot see: WorkManager instantiating
+            // a worker from a class name in its database, androidbrowserhelper
+            // reading class names out of manifest meta-data, the Play review
+            // library's callbacks crossing a binder boundary.
+            //
+            // ── What is deliberately still off ───────────────────────────────
+            //
+            // shrinkResources, and the -optimize variant of the default config.
+            // Both were among the four untested changes that landed together
+            // before the v2.7 launch crash, and turning three things on at once
+            // is how that became impossible to diagnose. Minification alone is
+            // the change; the other two are separate decisions with their own
+            // evidence to gather.
+            //
+            // This build is not for Play until it has opened on a device. The
+            // failure mode of getting a keep rule wrong is a launch crash, and
+            // no test here can catch it.
+            minifyEnabled true
             shrinkResources false
-            // Restored deliberately. It is inert while minifyEnabled is false,
-            // and it means switching minify back on cannot silently ship
-            // without the keep rules a second time. proguard-android.txt rather
-            // than -optimize.txt: the optimising passes were implicated in an
-            // earlier crash and are a separate decision from having keep rules
-            // at all.
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
