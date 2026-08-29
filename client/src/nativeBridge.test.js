@@ -92,12 +92,40 @@ describe('isAndroidTWA', () => {
     expect(isAndroidTWA()).toBe(false)
   })
 
-  it('is false off Android, referrer notwithstanding', async () => {
+  it('trusts the app referrer over the user-agent', async () => {
+    // THIS TEST USED TO ASSERT THE OPPOSITE — false off Android, referrer
+    // notwithstanding — and that rule was the bug.
+    //
+    // The user-agent gate ran first, so any UA without an Android token took
+    // the whole native bridge down: widget sync, review prompt, App Lock and
+    // the security slide in onboarding all gate on this one function, all four
+    // are supposed to be absent off Android, and so all four silently vanished
+    // and each looked like a separate bug. Chrome's "Desktop site" does
+    // exactly that, persists per site, and applies inside the TWA's Custom Tab.
+    //
+    // The referrer is the stronger signal and it is checked first now. A
+    // browser cannot mint `android-app://<our package>` for itself; only the
+    // app launching the page produces it. A UA string, by contrast, is a
+    // display preference the user can toggle.
     for (const ua of [DESKTOP, IPHONE]) {
       setUA(ua)
       setReferrer('android-app://live.walletlens.twa')
       const { isAndroidTWA } = await load()
-      expect(isAndroidTWA()).toBe(false)
+      expect(isAndroidTWA(), `${ua.slice(0, 24)}… with the app referrer`).toBe(true)
+      sessionStorage.clear()
+    }
+  })
+
+  it('still needs OUR package in the referrer, on any user-agent', async () => {
+    // The protection the old rule was really providing. Chrome sets an
+    // android-app:// referrer for ANY Custom Tab opened by ANY app, so
+    // matching the scheme alone made every link shared from WhatsApp or
+    // Telegram look like the installed app.
+    for (const ua of [DESKTOP, IPHONE, CHROME_ANDROID]) {
+      setUA(ua)
+      setReferrer('android-app://com.whatsapp')
+      const { isAndroidTWA } = await load()
+      expect(isAndroidTWA(), `${ua.slice(0, 24)}… with a foreign referrer`).toBe(false)
       sessionStorage.clear()
     }
   })
