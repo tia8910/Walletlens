@@ -4195,7 +4195,13 @@ export default function Dashboard() {
     return { value, invested, pnl, pnlPct, count: sel.size || selectedAssets.size }
   }, [filteredHoldings, selectedAssets])
 
-  const displayHoldings = (showAllHoldings || isHoldingsFiltered) ? filteredHoldings : filteredHoldings.slice(0, 6)
+  // Memoized because .slice() returns a fresh array identity on every render
+  // even when filteredHoldings has not changed — which silently defeated the
+  // groupedHoldings memo below, whose only dependency this is.
+  const displayHoldings = useMemo(
+    () => (showAllHoldings || isHoldingsFiltered) ? filteredHoldings : filteredHoldings.slice(0, 6),
+    [filteredHoldings, showAllHoldings, isHoldingsFiltered]
+  )
 
   // Holdings grouped by category for the holdings list — memoized so this
   // grouping pass doesn't re-run on every render (e.g. the ticker count-up

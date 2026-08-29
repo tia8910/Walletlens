@@ -108,6 +108,7 @@ symbols exactly as specified, in English.`
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
+      signal: AbortSignal.timeout(15000),
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
@@ -219,6 +220,7 @@ Respond with a JSON object ONLY:
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      signal: AbortSignal.timeout(15000),
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 900,
