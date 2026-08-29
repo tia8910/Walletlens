@@ -1365,15 +1365,27 @@ describe('the delivery step reports why it failed', () => {
     expect(toggle).toContain('status?.found && <TestSend />')
   })
 
-  it('keeps the failure warnings visible when the detail rows are hidden', () => {
-    // Settings shows one switch now, not seven. The healthy "Watching 5 assets"
-    // summary goes with the rest — but the WARNINGS must not, because they are
-    // the only thing that reports a device that is registered and
-    // undeliverable, which is the failure that looks completely healthy from
-    // every other angle.
+  it('always shows what the server holds, and every failure warning', () => {
+    // THIS TEST USED TO ASSERT THE OPPOSITE: the "Watching 5 assets" summary
+    // sat behind `detail`, and a healthy device rendered nothing at all. That
+    // was a deliberate simplification — Settings shows one switch now, not
+    // seven — and it made the feature undiagnosable.
+    //
+    // SHOW_CHANNEL_DETAIL is false, so the one line saying what the server
+    // actually holds for this device was drawn for nobody. When the channels
+    // went quiet there was nothing to read: not for the user, and not for us.
+    // Every channel is gated on the watch list being non-empty, so "Watching
+    // 0 assets" IS the diagnosis, and it was the single fact no one could see.
+    //
+    // The warnings were always unconditional and stay that way. They are the
+    // only thing that reports a device that is registered and undeliverable —
+    // the failure that looks completely healthy from every other angle.
     expect(toggle).toMatch(/const SHOW_CHANNEL_DETAIL = (true|false)/)
-    // The summary is behind `detail`; the warnings are not.
-    expect(toggle).toMatch(/\{detail && \(\s*\n\s*<div>\s*\n\s*Watching/)
+
+    // The summary is no longer gated on anything.
+    expect(toggle).toMatch(/<div>\s*\n\s*Watching <strong>\{status\.watch\}<\/strong>/)
+    expect(toggle).not.toMatch(/\{detail && \(/)
+
     for (const warning of [
       'status.vapid === false',       // server has no signing key
       'keyOk === false',              // client and server keys disagree
@@ -1382,8 +1394,9 @@ describe('the delivery step reports why it failed', () => {
       const at = toggle.indexOf(warning)
       expect(at, `${warning} must still render`).toBeGreaterThan(-1)
     }
-    // And a healthy device with the detail hidden renders nothing at all.
-    expect(toggle).toMatch(/if \(!detail && !noWatch && status\.vapid !== false && keyOk !== false\) return null/)
+
+    // And the early-out that hid a healthy device is gone with it.
+    expect(toggle).not.toMatch(/if \(!detail && !noWatch/)
   })
 
   it('leaves every channel switched on while its row is hidden', () => {
