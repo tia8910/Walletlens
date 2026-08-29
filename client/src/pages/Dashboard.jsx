@@ -3826,6 +3826,18 @@ export default function Dashboard() {
     return { rows, totalPotentialProceeds, totalReached, chartData, totalTargets: rows.reduce((s, r) => s + r.targets.length, 0), rowsWithTargets: rows.filter(r => r.targets.length > 0).length }
   }, [enriched, coinTargets])
 
+  // The day's P&L in currency, weighted by holding size.
+  //
+  // Six places needed this and each ran its own reduce over the whole
+  // portfolio — on every render, including the ~90 animation frames of the
+  // hero count-up on each price refresh. One memo, and everything that asks
+  // "how is today going?" now agrees by construction rather than by four
+  // copies of the same expression staying in step.
+  const todayPnLVal = useMemo(
+    () => enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0),
+    [enriched],
+  )
+
   const [effect, setEffect] = useState(null)
   // Screen effects — three occasions and no others.
   //
@@ -3840,11 +3852,10 @@ export default function Dashboard() {
   useEffect(() => {
     if (!loaded || !enriched.length || !(totalValue > 0)) return
     // The portfolio's own day, weighted by holding size — the same figure the
-    // brand tint already uses, rather than a second definition of "up today"
-    // that could disagree with what is on screen.
-    const dayPnL = enriched.reduce((sum, h) => sum + (h.value * (h.pct24h || 0) / 100), 0)
-    const dayBase = totalValue - dayPnL
-    const changePct = dayBase > 0 ? (dayPnL / dayBase) * 100 : 0
+    // brand tint and the hero greeting read, rather than a second definition
+    // of "up today" that could disagree with what is on screen.
+    const dayBase = totalValue - todayPnLVal
+    const changePct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
     const fired = observe({ totalValue, changePct, holdings: enriched })
     if (fired) setEffect(fired)
   }, [loaded, enriched, totalValue])
@@ -3961,7 +3972,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (!loaded || totalValue === 0 || milestone) return
     // Use actual 24h coin price changes, not the chart timeframe % which can be all-time
-    const todayPnLVal = enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)
     const dayBase = totalValue - todayPnLVal
     const dayChangePct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
     const m = detectMilestone({ totalValue, totalPnL, prevTotalPnL: prevPnLRef.current, dayChangePct })
@@ -3972,10 +3982,9 @@ export default function Dashboard() {
   // ── Generative brand reactivity: let the day's P&L tint the whole app ──
   useEffect(() => {
     if (!loaded) return
-    const todayVal = enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)
-    const prevVal = totalValue - todayVal
-    applyMood(prevVal > 0 ? (todayVal / prevVal) * 100 : 0)
-  }, [loaded, totalValue, enriched])
+    const prevVal = totalValue - todayPnLVal
+    applyMood(prevVal > 0 ? (todayPnLVal / prevVal) * 100 : 0)
+  }, [loaded, totalValue, todayPnLVal])
 
   useEffect(() => {
     if (!loaded || !enriched.length) return
@@ -4467,9 +4476,8 @@ export default function Dashboard() {
           {/* Hero + stats — only shown when portfolio has holdings */}
           {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse" {...bindLongPress((x, y) => showLp(x, y, heroLpItems))}>
             {!hidden && !isDemo && (() => {
-              const dayPnLVal = enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)
-              const dayBase = totalValue - dayPnLVal
-              const dayChangePct = dayBase > 0 ? (dayPnLVal / dayBase) * 100 : 0
+              const dayBase = totalValue - todayPnLVal
+              const dayChangePct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
               const soul = getSoulGreeting({ dayChangePct, lang })
               return (
                 <p className="dvx-soul" data-tone={soul.tone}>
@@ -5761,7 +5769,7 @@ export default function Dashboard() {
             totalPnL={totalPnL}
             totalPnLPct={totalPnLPct}
             topHoldings={enriched.slice(0, 4)}
-            todayPnL={enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)}
+            todayPnL={todayPnLVal}
             perfSeries={perfSeries}
             onClose={() => setShareOpen(false)}
           />
@@ -5774,7 +5782,7 @@ export default function Dashboard() {
           totalPnL={totalPnL}
           totalPnLPct={totalPnLPct}
           topHoldings={enriched.slice(0, 4)}
-          todayPnL={enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0)}
+          todayPnL={todayPnLVal}
           onShare={() => { setMilestone(null); setShareOpen(true) }}
           onDismiss={() => setMilestone(null)}
           onCta={milestone.type === 'first_buy' ? () => { setActiveTab('targets'); track('first_buy_cta_targets') } : undefined}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, memo, lazy, Suspense } from 'react'
 import { noteMoment } from '../reviewPrompt'
 import Icon from '../components/Icon'
 import { useLocation } from 'react-router-dom'
@@ -229,6 +229,14 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const [manualAsset, setManualAsset] = useState({ symbol: '', name: '' })
   const [confirmNoneOpen, setConfirmNoneOpen] = useState(false)
   const searchTimeout = useRef(null)
+  // Refs so handleDelete can stay referentially stable (see below) without
+  // closing over stale `transactions`/`loadData` from an earlier render —
+  // that stability lets the memoized TxRow list skip re-rendering rows on
+  // every unrelated state change (form input, search, filter toggle, etc).
+  const transactionsRef = useRef(transactions)
+  transactionsRef.current = transactions
+  const loadDataRef = useRef(loadData)
+  loadDataRef.current = loadData
 
   useEffect(() => { loadData(); setVisibleCount(50) }, [filterWallet])
   useEffect(() => { track('transactions_view') }, [])
@@ -565,9 +573,9 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     loadData()
   }
 
-  async function handleDelete(id) {
+  const handleDelete = useCallback(async (id) => {
     if (!window.confirm('Delete this transaction? This cannot be undone.')) return
-    const tx = transactions.find(t => t.id === id)
+    const tx = transactionsRef.current.find(t => t.id === id)
     await api.deleteTransaction(id)
     track('trade_deleted', {
       trade_type:     tx?.type,
@@ -575,8 +583,8 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       asset_category: tx?.category || 'crypto',
       value_usd:      tx ? Math.round((tx.amount || 0) * (tx.price_per_unit || 0)) : undefined,
     })
-    loadData()
-  }
+    loadDataRef.current()
+  }, [])
 
   const totalCalc = form.amount && form.price_per_unit
     ? (parseFloat(form.amount) * parseFloat(form.price_per_unit))
@@ -649,7 +657,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
                     <div className="dropdown">
                       {coinResults.map(c => (
                         <div key={c.id} className="dropdown-item" onClick={() => selectCoin(c)}>
-                          {c.thumb && <img src={c.thumb} alt={(c.symbol || "coin") + " logo"} width={24} height={24} style={{ borderRadius: '50%' }} />}
+                          {c.thumb && <img src={c.thumb} alt={(c.symbol || "coin") + " logo"} width={24} height={24} style={{ borderRadius: '50%' }} loading="lazy" decoding="async" />}
                           <span>{c.name}</span>
                           <small>{c.symbol.toUpperCase()}</small>
                         </div>
@@ -1061,40 +1069,9 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         </div>
       ) : (
         <div className="tx-list">
-          {transactions.slice(0, visibleCount).map(t => {
-            const sym = (t.coin_symbol || t.coin_id || '??').toUpperCase()
-            const txType = t.type || 'buy'
-            const isPositive = txType === 'buy'
-            const badgeClass = isPositive ? 'buy' : 'sell'
-            return (
-              <div key={t.id} className="tx-card">
-                <div className="tx-left">
-                  <CoinLogo image={t.coin_image} symbol={sym} coinId={t.coin_id} size={36} className="tx-coin-img" />
-                  <div className="tx-info">
-                    <div className="tx-title">
-                      <strong>{sym}</strong>
-                      <span className={`tx-badge ${badgeClass}`}>{txType.toUpperCase()}</span>
-                    </div>
-                    <div className="tx-meta">
-                      {t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' }) : '\u2014'}
-                      {t.exchange && ` \u00B7 ${t.exchange}`}
-                      {t.notes && <span className="tx-notes"> \u00B7 {t.notes}</span>}
-                    </div>
-                  </div>
-                </div>
-                <div className="tx-right">
-                  <div className="tx-amount">{t.amount || 0} {sym}</div>
-                  <div className="tx-cost muted">
-                    ${parseFloat(t.total_cost || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    <span> @ ${parseFloat(t.price_per_unit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  </div>
-                </div>
-                <button className="tx-delete" onClick={() => handleDelete(t.id)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
-              </div>
-            )
-          })}
+          {transactions.slice(0, visibleCount).map(t => (
+            <TxRow key={t.id} tx={t} onDelete={handleDelete} />
+          ))}
           {transactions.length > visibleCount && (
             <button className="tx-load-more" onClick={() => setVisibleCount(c => c + 50)}>
               {t('loadMoreTx')}
@@ -1120,6 +1097,44 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   )
 }
 
+// A single transaction row. Memoized so editing the form, searching, or
+// toggling a wallet filter — none of which change any individual tx — don't
+// re-render every row in a long history.
+const TxRow = memo(function TxRow({ tx: t, onDelete }) {
+  const sym = (t.coin_symbol || t.coin_id || '??').toUpperCase()
+  const txType = t.type || 'buy'
+  const isPositive = txType === 'buy'
+  const badgeClass = isPositive ? 'buy' : 'sell'
+  return (
+    <div className="tx-card">
+      <div className="tx-left">
+        <CoinLogo image={t.coin_image} symbol={sym} coinId={t.coin_id} size={36} className="tx-coin-img" />
+        <div className="tx-info">
+          <div className="tx-title">
+            <strong>{sym}</strong>
+            <span className={`tx-badge ${badgeClass}`}>{txType.toUpperCase()}</span>
+          </div>
+          <div className="tx-meta">
+            {t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+            {t.exchange && ` · ${t.exchange}`}
+            {t.notes && <span className="tx-notes"> · {t.notes}</span>}
+          </div>
+        </div>
+      </div>
+      <div className="tx-right">
+        <div className="tx-amount">{t.amount || 0} {sym}</div>
+        <div className="tx-cost muted">
+          ${parseFloat(t.total_cost || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          <span> @ ${parseFloat(t.price_per_unit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+        </div>
+      </div>
+      <button className="tx-delete" onClick={() => onDelete(t.id)}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+    </div>
+  )
+})
+
 // Transaction-row logo with onError-driven fallback chain:
 // 1) stored coin_image  →  2) CoinCap symbol icon  →  3) +/- type badge.
 // Fixes the broken-image placeholders on rows whose coin_image is missing
@@ -1135,6 +1150,8 @@ function TxLogo({ image, symbol, type, isPositive, badgeClass }) {
         width={36}
         height={36}
         className="tx-coin-img"
+        loading="lazy"
+        decoding="async"
         onError={() => setStage(sym ? 1 : 2)}
       />
     )
@@ -1147,6 +1164,8 @@ function TxLogo({ image, symbol, type, isPositive, badgeClass }) {
         width={36}
         height={36}
         className="tx-coin-img"
+        loading="lazy"
+        decoding="async"
         onError={() => setStage(2)}
       />
     )
