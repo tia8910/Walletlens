@@ -1576,3 +1576,44 @@ describe('round price levels', () => {
     expect(fn.slice(levelAt, moveBail)).toMatch(/sub\.moveFired\[k\] = now/)
   })
 })
+
+// The test send survives the channel-detail flag.
+//
+// SHOW_CHANNEL_DETAIL exists to hide seven preference rows and a sensitivity
+// picker — a deliberate call, and not this test's business. But the send-a-test
+// button was hidden by the same condition, and it is not a preference: it is
+// the only control that answers "is any of this actually arriving?".
+//
+// That mattered more than it looks. A subscription can be stored, valid, and
+// completely undeliverable — a VAPID pair that no longer matches what the
+// browser subscribed with does exactly that, and every status field still
+// reads healthy. With no test send, the first evidence is a notification that
+// never comes, days later, with nothing to attribute it to.
+describe('the send-a-test control', () => {
+  const toggle = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'components/PushToggle.jsx'), 'utf8',
+  )
+
+  it('renders whenever a subscription is found, not only with channel detail', () => {
+    expect(toggle).toMatch(/\{status\?\.found && <TestSend \/>\}/)
+    expect(toggle).not.toMatch(/SHOW_CHANNEL_DETAIL && status\?\.found && <TestSend \/>/)
+  })
+
+  it('leaves the preference rows gated, which is what the flag is for', () => {
+    // Narrow fix: this must fail if someone "fixes" it by turning the whole
+    // panel on, which would undo a considered design decision.
+    expect(toggle).toMatch(/const SHOW_CHANNEL_DETAIL = false/)
+    expect(toggle).toMatch(/\{SHOW_CHANNEL_DETAIL && \(/)
+  })
+
+  it('describes the defaults with the threshold that is actually shipping', () => {
+    // The comment said 3% while DEFAULT_PREFS said 5, which is the kind of
+    // drift that gets read as the answer during an incident.
+    const pct = /moves at (\d+)%/.exec(toggle)
+    expect(pct).not.toBeNull()
+    const logic = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../../push-api/notify-logic.js'), 'utf8',
+    )
+    expect(logic).toMatch(new RegExp(`movePct:\\s*${pct[1]}\\b`))
+  })
+})
