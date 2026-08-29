@@ -86,6 +86,31 @@ describe('the Android release is uploadable', () => {
     expect(crashLog.slice(0, 400)).toMatch(/android:enableOnBackInvokedCallback="false"/)
   })
 
+  it('keeps the launcher gate out of the app\'s own task', () => {
+    // Two bugs, one cause. The gate is excludeFromRecents, which is right for
+    // a throwaway activity — but excludeFromRecents belongs to the TASK, taken
+    // from whichever activity created it. Sharing the default affinity with
+    // LauncherActivity meant the gate's FLAG_ACTIVITY_NEW_TASK found the
+    // gate's own task and reused it, so the app never appeared in recents AND
+    // LauncherActivity was not a clean task root — which is the one thing
+    // androidbrowserhelper needs to run a TWA rather than fall back to a
+    // Custom Tab with walletlens.live in an address bar.
+    const gate = manifest.slice(manifest.indexOf('android:name=".NotificationPermissionActivity"'))
+    const decl = gate.slice(0, gate.indexOf('>'))
+    expect(decl, 'the launcher gate must not share the app task\'s affinity')
+      .toMatch(/android:taskAffinity=""/)
+    expect(decl).toMatch(/android:excludeFromRecents="true"/)
+  })
+
+  it('leaves LauncherActivity with the app\'s own affinity', () => {
+    // The other half: the gate is moved aside, the TWA is not. Giving this one
+    // an empty affinity too would put them back in the same boat.
+    const launcher = manifest.slice(manifest.indexOf('android:name="LauncherActivity"'))
+    const decl = launcher.slice(0, launcher.indexOf('>'))
+    expect(decl).not.toMatch(/android:taskAffinity/)
+    expect(decl).not.toMatch(/android:excludeFromRecents/)
+  })
+
   it('keeps notification delegation switched on', () => {
     // The whole channel-routing fix hangs off DelegationService being bound by
     // Chrome. enableNotifications false silently disables the service in the
