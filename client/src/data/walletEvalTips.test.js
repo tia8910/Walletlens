@@ -1,10 +1,15 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { LANGUAGES } from '../LanguageContext'
-import { translations } from '../i18n'
+import { translations, loadAllLanguages } from '../i18n'
 import { CLASS_LABEL_KEYS, renderTip } from './walletEvalTips'
+
+// Non-English dictionaries are code-split and load on demand at runtime
+// (see src/i18n.js); this suite checks across all four, so it needs them
+// loaded up front.
+beforeAll(loadAllLanguages)
 
 // Two wallet evaluations exist — Coach's and the Dashboard's — with
 // overlapping pillars and, until now, two copies of the same English tips.

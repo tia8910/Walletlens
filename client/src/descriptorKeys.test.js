@@ -1,8 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { translations } from './i18n'
+import { translations, loadAllLanguages } from './i18n'
+
+// Non-English dictionaries are code-split and load on demand at runtime (see
+// src/i18n.js); this suite compares across all four, so it needs them all
+// loaded up front.
+beforeAll(loadAllLanguages)
 
 // Three producers now emit `[key, ...args]` descriptors instead of sentences,
 // because they run at module scope where there is no hook to translate from:

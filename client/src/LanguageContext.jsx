@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { translations } from './i18n'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, useReducer } from 'react'
+import { translations, loadLanguage } from './i18n'
 
 /**
  * The languages the picker offers.
@@ -58,6 +58,20 @@ export function LanguageProvider({ children }) {
     return match ? match.code : 'en'
   })
 
+  // Non-English dictionaries are code-split and fetched on demand (see
+  // src/i18n.js). `t` below reads straight from the shared `translations`
+  // cache, so once the fetch resolves and populates it, this bump is fed
+  // into `t`'s own deps below — giving it a new identity is what actually
+  // propagates through context and forces consumers to re-render with the
+  // real strings; until then, `t` transparently falls back to English.
+  const [langVersion, bumpAfterLangLoad] = useReducer(n => n + 1, 0)
+  useEffect(() => {
+    if (translations[lang]) return
+    let cancelled = false
+    loadLanguage(lang).then(() => { if (!cancelled) bumpAfterLangLoad() })
+    return () => { cancelled = true }
+  }, [lang])
+
   useEffect(() => {
     localStorage.setItem('wl_lang', lang)
     document.documentElement.lang = lang
@@ -78,7 +92,7 @@ export function LanguageProvider({ children }) {
 
   const t = useCallback((key) => {
     return translations[lang]?.[key] ?? translations.en[key] ?? key
-  }, [lang])
+  }, [lang, langVersion])
 
   const value = useMemo(() => ({ lang, setLang, t, isRtl: RTL.has(lang) }), [lang, t])
 

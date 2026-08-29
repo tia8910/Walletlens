@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { translations } from './i18n'
+import { translations, loadAllLanguages } from './i18n'
 import { LANGUAGES } from './LanguageContext'
 
 // The zakat channel toggle was first added as a Row inside PushToggle, next to
@@ -83,6 +83,11 @@ describe('it says what date it is pinned to', () => {
 })
 
 describe('translation', () => {
+  // Non-English dictionaries are code-split and fetched on demand, so
+  // `translations` holds English alone until something loads the rest. The app
+  // only ever needs the current language; a parity check needs all of them.
+  beforeAll(loadAllLanguages)
+
   const keys = ['setZakat', 'setZakatNext', 'setZakatNoDate', 'npZakat', 'npZakatHint']
 
   it.each(LANGUAGES.map(l => l.code))('%s has every zakat settings string', (code) => {

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { translations } from './i18n'
+import { describe, it, expect, beforeAll } from 'vitest'
+import { translations, loadAllLanguages, LANGUAGE_CODES } from './i18n'
 import { LANGUAGES } from './LanguageContext'
 
 // t() falls back to English when a key is missing, which is the right runtime
@@ -7,6 +7,10 @@ import { LANGUAGES } from './LanguageContext'
 // software until a user who reads Arabic opens the screen. Half the app being
 // English next to Arabic is exactly how this shipped broken once already, so
 // the parity check is a test rather than a convention.
+//
+// Non-English dictionaries are code-split and load on demand at runtime (see
+// src/i18n.js); this suite needs all of them up front to compare, hence the
+// eager load below.
 
 // Every table that exists, not only the ones the picker currently offers.
 //
@@ -16,10 +20,30 @@ import { LANGUAGES } from './LanguageContext'
 // LanguageContext claims two other suites enforce this; neither file exists,
 // so this is the only thing standing between a half-translated table and a
 // release.
-const OTHERS = Object.keys(translations).filter(c => c !== 'en')
-const enKeys = Object.keys(translations.en)
+//
+// Taken from LANGUAGE_CODES, not from `translations`: the latter holds only
+// what has been loaded, and at module-evaluation time — when it.each() reads
+// this — that is English alone. Deriving it that way made every case below
+// vanish silently, which is a worse failure than the one they exist to catch.
+const OTHERS = LANGUAGE_CODES.filter(c => c !== 'en')
+
+beforeAll(loadAllLanguages)
+
+// Read inside the tests rather than at module scope, for the same reason.
+const enKeys = () => Object.keys(translations.en)
 
 describe('translation coverage', () => {
+  it('is actually checking languages', () => {
+    // The suite below is built from it.each(OTHERS). An empty OTHERS produces
+    // no cases at all and reports green, which is exactly what happened when
+    // the list was derived from the loaded-dictionary cache. Assert the list
+    // is populated so that failure is loud.
+    expect(OTHERS.length).toBeGreaterThan(3)
+    for (const { code } of LANGUAGES) {
+      expect(LANGUAGE_CODES, `${code} has no dictionary loader`).toContain(code)
+    }
+  })
+
   it('ships a table for every language the picker offers', () => {
     for (const { code } of LANGUAGES) {
       expect(translations[code], `no translations for ${code}`).toBeTruthy()
@@ -27,7 +51,7 @@ describe('translation coverage', () => {
   })
 
   it.each(OTHERS)('%s defines every English key', (lang) => {
-    const missing = enKeys.filter(k => !(k in translations[lang]))
+    const missing = enKeys().filter(k => !(k in translations[lang]))
     expect(missing, `${lang} is missing ${missing.length} keys`).toEqual([])
   })
 
@@ -41,12 +65,12 @@ describe('translation coverage', () => {
   it.each(OTHERS)('%s keeps the same value shape as English', (lang) => {
     // A plural helper in English against a bare string elsewhere renders
     // "function (n) {…}" into the page.
-    const wrong = enKeys.filter(k => typeof translations.en[k] !== typeof translations[lang][k])
+    const wrong = enKeys().filter(k => typeof translations.en[k] !== typeof translations[lang][k])
     expect(wrong).toEqual([])
   })
 
   it.each(OTHERS)('%s leaves no value empty', (lang) => {
-    const blank = enKeys.filter(k =>
+    const blank = enKeys().filter(k =>
       typeof translations[lang][k] === 'string' && !translations[lang][k].trim())
     expect(blank).toEqual([])
   })
@@ -54,7 +78,7 @@ describe('translation coverage', () => {
   it.each(OTHERS)('%s plural helpers return a non-empty string for 0, 1, 2 and 11', (lang) => {
     // Arabic alone has singular, dual, a 3–10 plural and an 11+ form, so the
     // helpers carry real branching that a typo can drop through.
-    const fns = enKeys.filter(k => typeof translations.en[k] === 'function')
+    const fns = enKeys().filter(k => typeof translations.en[k] === 'function')
     expect(fns.length).toBeGreaterThan(0)
     for (const k of fns) {
       for (const n of [0, 1, 2, 11]) {
