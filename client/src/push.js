@@ -60,7 +60,7 @@ export const DEFAULT_PUSH_PREFS = {
   retention: true,
   features: true,
   zakat: true,
-  movePct: 5,
+  movePct: 2,
 }
 
 export function isPushSupported() {

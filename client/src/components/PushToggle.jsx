@@ -21,7 +21,7 @@ const MOVE_STEPS = [3, 5, 10, 20]
 /**
  * Whether Settings shows the per-channel controls.
  *
- * Off: one switch, and the channels run on their defaults — moves at 5%, round
+ * Off: one switch, and the channels run on their defaults — moves at 2%, round
  * levels, news, the morning brief, win-back nudges and feature tips all stay
  * ON, they simply are not listed. Seven rows and a sensitivity picker is a lot
  * of surface for a decision most people make once, as "yes, notify me", and the
