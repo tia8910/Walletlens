@@ -14,7 +14,7 @@ import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import DriveBackup from '../components/DriveBackup'
 import { isAndroidTWA } from '../nativeBridge'
 import { requestReviewNow, reviewDiagnostics } from '../reviewPrompt'
-import { pulseSettings, setPulseSettings } from '../marketPulseRuntime'
+import { effectSettings, setEffectSettings, primeEffectAudio } from '../screenEffectsRuntime'
 import { widgetSyncDiagnostics, forceSyncWidgets } from '../nativeWidgets'
 
 const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || '')
@@ -88,7 +88,7 @@ export default function Settings() {
   const hideValues  = settings.hideValues  ?? false
   const [editInterests, setEditInterests] = useState(false)
   const [wdiag, setWdiag] = useState(() => widgetSyncDiagnostics())
-  const [pulse, setPulse] = useState(() => pulseSettings())
+  const [fx, setFx] = useState(() => effectSettings())
   const [rdiag] = useState(() => reviewDiagnostics())
 
   return (
@@ -280,37 +280,46 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* ── Market Pulse ── Off by default. A finance app that makes noise
-           nobody asked for only gets to do it once. */}
+      {/* ── Screen effects ── On by default, unlike the sound-only feature
+           this replaced. Three occasions a day at most, and the picture is the
+           point; the sound is the part that gets its own switch. */}
       <div className="settings-section glass-card">
-        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bell" size={16} />{t('setPulse')}</h3>
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bell" size={16} />{t('setFx')}</h3>
         <div className="settings-row">
           <div className="settings-label">
-            <span>{t('setPulseSound')}</span>
-            <span className="settings-hint">{t('setPulseHint')}</span>
+            <span>{t('setFx')}</span>
+            <span className="settings-hint">{t('setFxHint')}</span>
           </div>
-          <button className={`settings-chip ${pulse.enabled ? 'active' : ''}`}
+          <button className={`settings-chip ${fx.enabled ? 'active' : ''}`}
             onClick={() => {
-              const next = setPulseSettings({ enabled: !pulse.enabled })
-              setPulse(next)
-              track('market_pulse_toggle', { on: next.enabled })
+              const next = setEffectSettings({ enabled: !fx.enabled })
+              setFx(next)
+              track('screen_effects_toggle', { on: next.enabled })
             }}
             style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
-            {pulse.enabled ? t('setPulseOn') : t('setPulseOff')}
+            {fx.enabled ? t('commonOn') : t('commonOff')}
           </button>
         </div>
 
-        {pulse.enabled && (
+        {fx.enabled && (
           <>
             <div className="settings-divider"/>
             <div className="settings-row">
               <div className="settings-label">
-                <span>{t('setPulseHaptics')}</span>
-                <span className="settings-hint">{t('setPulseHapticsHint')}</span>
+                <span>{t('setFxSound')}</span>
+                <span className="settings-hint">{t('setFxSoundHint')}</span>
               </div>
-              <button className={`settings-chip ${pulse.haptics ? 'active' : ''}`}
-                onClick={() => setPulse(setPulseSettings({ haptics: !pulse.haptics }))}>
-                {pulse.haptics ? t('setPulseOn') : t('setPulseOff')}
+              <button className={`settings-chip ${fx.sound ? 'active' : ''}`}
+                onClick={() => {
+                  const next = setEffectSettings({ sound: !fx.sound })
+                  setFx(next)
+                  // Turning sound ON is a tap, which is the only moment a
+                  // browser will let the audio context start. Doing it here
+                  // means the next effect is audible instead of held.
+                  if (next.sound) { try { primeEffectAudio() } catch {} }
+                  track('screen_effects_sound', { on: next.sound })
+                }}>
+                {fx.sound ? t('commonOn') : t('commonOff')}
               </button>
             </div>
           </>

@@ -8,10 +8,9 @@ import {
 import { api } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
-import { pulseClass, breadthOf } from '../marketPulse'
-import { observeMarket, armPulseAudio, demoPulse, onPulseRelease, fireWelcome } from '../marketPulseRuntime'
-import PulseDiscovery from '../components/PulseDiscovery'
-import PulseOverlay from '../components/PulseOverlay'
+import { observe, primeEffectAudio } from '../screenEffectsRuntime'
+import { EXPLODE, ROCKET, ATH } from '../screenEffects'
+import ScreenEffect from '../components/ScreenEffect'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset, GOLD_ID, SILVER_ID } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
 import Logo from '../components/Logo'
@@ -3631,14 +3630,11 @@ export default function Dashboard() {
     const onPull = async () => {
       if (busy) return
       busy = true
-      pulseBlocked.current = true
       try {
         await (loadAllRef.current ? loadAllRef.current() : Promise.resolve())
         await refreshPricesRef.current?.()
       } catch { /* keep the UX smooth even if a fetch fails */ }
       busy = false
-      // Defer unblock so the next useEffect render still sees pulseBlocked=true
-      setTimeout(() => { pulseBlocked.current = false }, 800)
       window.dispatchEvent(new Event('wl:pull-refresh-done'))
     }
     window.addEventListener('wl:pull-refresh', onPull)
@@ -3774,7 +3770,7 @@ export default function Dashboard() {
   // ── Sell-targets analysis ────────────────────────────────────────────────
   //
   // Sits here rather than with the rest of the derived numbers because the
-  // Market Pulse effect just below reads it: a hook cannot depend on a const
+  // hook just below reads it: a hook cannot depend on a const
   // declared after it without tripping over the temporal dead zone when React
   // evaluates the dependency array during render.
   const targetsAnalysis = useMemo(() => {
@@ -3814,115 +3810,52 @@ export default function Dashboard() {
     return { rows, totalPotentialProceeds, totalReached, chartData, totalTargets: rows.reduce((s, r) => s + r.targets.length, 0), rowsWithTargets: rows.filter(r => r.targets.length > 0).length }
   }, [enriched, coinTargets])
 
-  const [pulseEvent, setPulseEvent] = useState(null)
-  // Block market pulse effects during pull-to-refresh and manual refresh.
-  const pulseBlocked = useRef(false)
-
-  // Market Pulse — react to meaningful market moves.
+  const [effect, setEffect] = useState(null)
+  // Screen effects — three occasions and no others.
   //
-  // All this does is assemble a snapshot and hand it over. Whether anything is
-  // worth reacting to is marketPulse.js's decision, and that decision is pure,
-  // so the interesting rules are covered by tests rather than by whatever this
-  // component happens to re-render.
+  // Which one, if any, is screenEffects.js's decision and that decision is
+  // pure: it takes the numbers and the stored state and returns an effect. So
+  // the awkward rules — a day boundary in the user's own timezone, an
+  // all-time high on a device that has never recorded one — are answered in a
+  // test rather than by opening the app on the right morning.
   //
-  // Runs on every price refresh on purpose: a crossing is only visible by
-  // comparing consecutive samples, so a skipped refresh is a missed event.
+  // Runs when prices settle rather than on mount, because every trigger needs
+  // a portfolio value and that is not known until they land.
   useEffect(() => {
-    if (!loaded || !enriched.length) return
-    armPulseAudio()
-
-    const samples = {}
-    for (const h of enriched) {
-      const pct = prices[h.coin_id]?.usd_24h_change
-      if (!Number.isFinite(pct)) continue
-      samples[h.coin_id] = {
-        changePct: pct,
-        symbol: (h.coin_symbol || '').toUpperCase(),
-        // Carried so the champion overlay has a logo to blow up. Empty is a
-        // valid value — the overlay falls back to the symbol on a disc.
-        image: h.coin_image || '',
-        cls: pulseClass({
-          category: categorizeAsset(h),
-          isStable: isStablecoin(h.coin_id, h.coin_symbol),
-          mcTier: classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id,
-        }),
-      }
-    }
+    if (!loaded || !enriched.length || !(totalValue > 0)) return
     // The portfolio's own day, weighted by holding size — the same figure the
-    // milestone detector and the brand tint already use, rather than a second
-    // definition of "up today" that could disagree with what is on screen.
+    // brand tint already uses, rather than a second definition of "up today"
+    // that could disagree with what is on screen.
     const dayPnL = enriched.reduce((sum, h) => sum + (h.value * (h.pct24h || 0) / 100), 0)
     const dayBase = totalValue - dayPnL
-    const portfolioChangePct = dayBase > 0 ? (dayPnL / dayBase) * 100 : 0
+    const changePct = dayBase > 0 ? (dayPnL / dayBase) * 100 : 0
+    const fired = observe({ totalValue, changePct, holdings: enriched })
+    if (fired) setEffect(fired)
+  }, [loaded, enriched, totalValue])
 
-    // How much of the portfolio is green, regardless of what it is worth.
-    // Cash and stablecoins are excluded: they never move, so counting them
-    // would drag every breadth figure toward the middle.
-    const breadth = breadthOf(
-      enriched
-        .filter(h => categorizeAsset(h) !== 'cash' && !isStablecoin(h.coin_id, h.coin_symbol))
-        .map(h => prices[h.coin_id]?.usd_24h_change)
-    )
-
-    // Sell targets the user set that the price has now met. Read from the same
-    // analysis the Targets tab renders, so the overlay and the tab can never
-    // disagree about what "reached" means. Each one is announced once ever —
-    // the state keyed by target id lives in marketPulse.
-    const targetsHit = targetsAnalysis.rows.flatMap(r =>
-      r.targets
-        .filter(tg => tg.reached)
-        .map(tg => ({ id: String(tg.id), symbol: r.coinSymbol, price: tg.price }))
-    )
-
-    // The welcome moment, before anything about the market.
-    //
-    // Fired here rather than in the onboarding handler because the caption
-    // states the portfolio's value, and that is not known until prices have
-    // landed — a number that appears and then corrects itself is worse than
-    // waiting a beat for the right one. The tap has already unlocked audio by
-    // now (primePulseAudio in NativeOnboarding.finish), so it lands with
-    // sound. Once ever; returns null every time after.
-    const welcome = fireWelcome({ totalValue })
-    if (welcome) { setPulseEvent(welcome); return }
-
-    // Skip pulse effects during pull-to-refresh / manual refresh.
-    if (pulseBlocked.current) return
-
-    const event = observeMarket({ samples, totalValue, portfolioChangePct, breadth, targetsHit })
-    // Set even when the audio was refused — someone on silent has not opted
-    // out of seeing it, and the caption is the part that carries the fact.
-    if (event) setPulseEvent(event)
-  }, [loaded, enriched, prices, totalValue, targetsAnalysis])
-
-  // An event that landed before audio could be unlocked is held by the
-  // runtime and released on the first tap. It has to reach the overlay by
-  // this path rather than by observeMarket's return value, because by then
-  // that call has long since returned.
-  useEffect(() => {
-    onPulseRelease(setPulseEvent)
-    return () => onPulseRelease(null)
-  }, [])
-
-  // ?pulse=rocket — fire one event on demand, to check the feature works.
+  // ?fx=explode|rocket|ath — play one on demand.
   //
-  // A real rocket needs an asset to cross its threshold between two price
-  // refreshes, so a short session shows nothing whether the code works or not.
-  // That makes "I saw no effects" and "it is broken" indistinguishable, which
-  // is no way to verify anything on a phone.
+  // Kept from the old system because the reasoning survives it: the explode
+  // fires once a day and the other two need the market to cooperate, so a
+  // short session shows nothing whether the code works or not. That makes "I
+  // saw no effect" and "it is broken" indistinguishable, which is no way to
+  // check anything on a phone.
   //
-  // Waits for a tap rather than firing on load, because unlock() only works
-  // inside a user gesture — firing immediately would show the animation in
-  // silence and look like the audio was broken.
+  // Waits for a tap rather than firing on load: audio only unlocks inside a
+  // gesture, and an animation in silence looks like the sound is broken.
   useEffect(() => {
-    const type = new URLSearchParams(location.search).get('pulse')
-    if (!type) return
+    const want = new URLSearchParams(location.search).get('fx')
+    if (![EXPLODE, ROCKET, ATH].includes(want)) return undefined
     const once = () => {
-      const event = demoPulse(type, { totalValue })
-      if (event) setPulseEvent(event)
+      primeEffectAudio()
+      const leader = enriched[0]
+        ? { symbol: (enriched[0].coin_symbol || '').toUpperCase(), image: enriched[0].coin_image || '' }
+        : null
+      setEffect({ effect: want, payload: { leader, changePct: 7.4, totalValue } })
     }
     document.addEventListener('click', once, { once: true })
     return () => document.removeEventListener('click', once)
-  }, [location.search, totalValue])
+  }, [location.search, enriched, totalValue])
 
   // Play in-app review. reviewPrompt owns the "has this person used WalletLens
   // enough to have an opinion?" rules; all this does is count the launch and
@@ -4340,14 +4273,15 @@ export default function Dashboard() {
 
   return (
     <div className="dvx">
-      {/* Market Pulse overlay — outside the tab blocks on purpose.
-          It used to live inside `activeTab === 'overview'`, but the event that
-          triggers it is detected from prices, not from which tab is open, and
-          the active tab is restored from sessionStorage on reload. So a user
-          whose last tab was Backup would refresh, fire a pulse, hear the held
-          sound on their next tap, and never see the animation — the effect
-          existed and was unreachable from five of the six tabs. */}
-      <PulseOverlay event={pulseEvent} onDone={() => setPulseEvent(null)} />
+      {/* Screen effects — outside the tab blocks on purpose.
+          The overlay this replaced lived inside `activeTab === 'overview'`,
+          but the occasions that trigger an effect are read from prices, not
+          from which tab is open, and the active tab is restored from
+          sessionStorage on reload. So a user whose last tab was Backup would
+          refresh, spend the day's effect, hear the held sound on their next
+          tap, and never see the animation — it was unreachable from five of
+          the six tabs. */}
+      <ScreenEffect effect={effect?.effect} payload={effect?.payload} onDone={() => setEffect(null)} />
 
       {/* Live news ticker — above the tab navigation so it's always visible */}
       <NewsTicker />
@@ -4481,10 +4415,6 @@ export default function Dashboard() {
             )
           })()}
 
-          {/* Market Pulse offer, shown only after the user has actually missed
-              something worth hearing. At most twice, ever. */}
-          {enriched.length > 0 && <PulseDiscovery />}
-
           {/* Sentiment + portfolio tips ticker */}
           {enriched.length > 0 && (
             <SentimentTicker
@@ -4526,8 +4456,12 @@ export default function Dashboard() {
               <button className="dvx-refresh-btn" title={t('atRefreshPrices')} disabled={refreshing} onClick={async () => {
                 setRefreshing(true)
                 track('manual_refresh')
-                pulseBlocked.current = true
-                try { await refreshPrices() } finally { setTimeout(() => { pulseBlocked.current = false }, 800); setRefreshing(false) }
+                // No effect suppression here any more. The old system could
+                // fire on any market move, so a manual refresh was a good way
+                // to provoke one by accident; these three fire at most once a
+                // day each, and a refresh that reveals a genuine new high has
+                // earned its celebration.
+                try { await refreshPrices() } finally { setRefreshing(false) }
               }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                   style={{ display:'block', animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }}>

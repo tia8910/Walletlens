@@ -316,7 +316,7 @@ export default function PushToggle() {
     <div>
       <div className="settings-row settings-row-toggle">
         <div className="settings-label">
-          <span>{t('npTitle')} {enabled && <span style={{ color: 'var(--g-ink)' }}>· {t('setPulseOn')}</span>}</span>
+          <span>{t('npTitle')} {enabled && <span style={{ color: 'var(--g-ink)' }}>· {t('commonOn')}</span>}</span>
           <span className="settings-hint">{t('npHint')}</span>
         </div>
         <button className={`settings-toggle ${enabled ? 'on' : ''}`} onClick={toggle} disabled={busy} aria-pressed={enabled}>
