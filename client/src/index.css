@@ -16306,22 +16306,19 @@ input, select, textarea, .dvx-input {
   will-change: transform, opacity;
   animation: fx-champ-zoom 2.6s cubic-bezier(.55,0,.85,.35) forwards;
 }
-.fx-champ-img,
-.fx-champ-badge {
-  width: 100%; height: 100%;
+/* CoinLogo renders either an <img> or a generated <svg>, and both land here.
+   !important because the <svg> carries its own width/height attributes, which
+   would otherwise leave the mark at icon size in the middle of a full-screen
+   effect. */
+.fx-champ-img {
+  width: 100% !important; height: 100% !important;
   border-radius: 50%;
-  /* The icon is a small PNG blown up past any sane size, so it will be soft.
-     A rim and a drop shadow give the eye an edge to hold, which reads as
-     deliberate rather than as a stretched thumbnail. */
+  object-fit: cover;
+  /* A coin icon blown up past any sane size will be soft. A rim and a drop
+     shadow give the eye an edge to hold, which reads as deliberate rather
+     than as a stretched thumbnail. */
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #12b76a) 40%, transparent),
               0 24px 80px rgba(0, 0, 0, .45);
-}
-.fx-champ-img { object-fit: cover; }
-.fx-champ-badge {
-  display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(140deg, var(--accent, #12b76a), #047857);
-  color: #fff; font-weight: 800; letter-spacing: .02em;
-  font-size: min(19vw, 19vh);
 }
 
 /* Scale stops are dense before the impact because the motion accelerates and
@@ -16373,7 +16370,7 @@ input, select, textarea, .dvx-input {
   animation: fx-rocket-fly 1.9s cubic-bezier(0.4, 0, 0.5, 1) forwards;
 }
 .fx-rocket-mark {
-  width: 72px; height: 72px; border-radius: 50%;
+  width: 72px !important; height: 72px !important; border-radius: 50%;
   object-fit: cover; display: grid; place-items: center;
   background: rgba(10,20,14,0.9);
   box-shadow: 0 0 0 2px rgba(255,255,255,0.18), 0 10px 34px rgba(0,0,0,0.5);
