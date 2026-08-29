@@ -104,3 +104,37 @@ describe('every declared review hook is actually reported', () => {
     expect(goals).toMatch(/const fresh = met\.filter\(id => !seen\.includes\(id\)\)/)
   })
 })
+
+describe('the ask waits for the app to be in front of the user', () => {
+  // THE BUG: the dwell clock started at module load. With App Lock on, this
+  // module evaluates behind the lock screen, so the wait was already spent by
+  // the time the user passed the fingerprint check — and the rating card
+  // arrived on the unlock itself, over a credential prompt, which is the one
+  // moment the user is certainly not admiring the app.
+  const prompt = readFileSync(join(src, 'reviewPrompt.js'), 'utf8')
+  const app = readFileSync(join(src, 'App.jsx'), 'utf8')
+
+  it('does not fix the dwell clock at module load', () => {
+    expect(prompt).not.toMatch(/const startedAt = Date\.now\(\)/)
+    expect(prompt).toMatch(/let startedAt = Date\.now\(\)/)
+  })
+
+  it('refuses outright while the app is locked', () => {
+    // Before every other gate: there is no app on screen to have an opinion
+    // about, so nothing else is worth evaluating.
+    const evaluate = /function evaluate\(snap\) \{[\s\S]*?\n\}/.exec(prompt)[0]
+    expect(evaluate).toMatch(/blocked: 'locked'/)
+    expect(evaluate.indexOf("'locked'")).toBeLessThan(evaluate.indexOf("'busy'"))
+  })
+
+  it('restarts the dwell when the app becomes usable', () => {
+    // Not just unblocking: coming back in has to reset the wait, or the ask
+    // fires the moment the lock clears anyway.
+    expect(prompt).toMatch(/if \(next && !interactive\) startedAt = Date\.now\(\)/)
+  })
+
+  it('is told about the lock state from App', () => {
+    expect(app).toMatch(/import \{ setAppInteractive \} from '\.\/reviewPrompt'/)
+    expect(app).toMatch(/setAppInteractive\(!locked\)/)
+  })
+})

@@ -104,10 +104,33 @@
 
         <!-- Permission gate: the launcher entry point. Requests notification
              permission, then forwards to LauncherActivity (the TWA). See
-             NotificationPermissionActivity for why this is a separate activity. -->
+             NotificationPermissionActivity for why this is a separate activity.
+
+             taskAffinity="" is load-bearing, and its absence caused two
+             separate bugs that looked unrelated.
+
+             This activity is excludeFromRecents, which is right for a
+             throwaway gate — but excludeFromRecents is a property of the TASK,
+             taken from whichever activity created it. With the default
+             affinity, this gate and LauncherActivity want the same task, so
+             the gate's FLAG_ACTIVITY_NEW_TASK found the gate's own task and
+             reused it rather than creating one. The consequences:
+
+               • the app never appeared in the recents switcher, because the
+                 task it ran in was the gate's, and that task is excluded;
+               • LauncherActivity was not a clean task root, which is the one
+                 thing androidbrowserhelper requires — see the class comment
+                 on NotificationPermissionActivity — and without it the TWA
+                 falls back to a plain Custom Tab, showing walletlens.live in
+                 a browser address bar instead of running full-screen.
+
+             An empty affinity puts the gate in a task of its own, so NEW_TASK
+             genuinely creates the app's task with LauncherActivity at its
+             root. Same pattern as WidgetSyncActivity below. -->
         <activity android:name=".NotificationPermissionActivity"
             android:exported="true"
             android:excludeFromRecents="true"
+            android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

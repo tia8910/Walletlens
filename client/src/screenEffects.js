@@ -135,8 +135,19 @@ export function pickLeader(holdings) {
     const pct = Number(h?.pct24h)
     if (!Number.isFinite(pct)) continue
     if (!best || pct > best.pct) {
-      best = { pct, symbol: String(h.coin_symbol || '').toUpperCase(), image: h.coin_image || '' }
+      best = {
+        pct,
+        symbol: String(h.coin_symbol || '').toUpperCase(),
+        image: h.coin_image || '',
+        // Carried so the overlay has a second source for the logo. A holding
+        // added before its icon resolved has no coin_image, but the app's own
+        // image cache usually has one by the time an effect fires, and a blank
+        // centre would leave the whole explode looking broken.
+        assetId: h.coin_id || '',
+      }
     }
   }
-  return best && best.symbol ? { symbol: best.symbol, image: best.image } : null
+  return best && best.symbol
+    ? { symbol: best.symbol, image: best.image, assetId: best.assetId }
+    : null
 }

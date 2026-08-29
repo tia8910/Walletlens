@@ -35,6 +35,7 @@ const dashboard = code(read('pages', 'Dashboard.jsx'))
 const overlay = read('components', 'ScreenEffect.jsx')
 const overlayCode = code(overlay)
 const audio = read('screenEffectsAudio.js')
+const audioCode = code(audio)
 const runtime = read('screenEffectsRuntime.js')
 const css = read('index.css')
 
@@ -70,7 +71,7 @@ describe('an effect cannot get in the way', () => {
   })
 
   it('is hidden from assistive technology', () => {
-    expect(overlayCode).toMatch(/className=\{`fx-layer fx-\$\{effect\}`\} aria-hidden="true"/)
+    expect(overlayCode).toMatch(/className=\{`fx-layer fx-\$\{effect\}[^`]*`\} aria-hidden="true"/)
   })
 
   it('clears itself after a bounded time', () => {
@@ -82,12 +83,20 @@ describe('an effect cannot get in the way', () => {
 })
 
 describe('the particles hold still', () => {
-  it('derives their spread from the index, never from Math.random', () => {
-    // Math.random() in the render path re-rolls on every re-render, and the
+  it('keeps randomness out of the React render path', () => {
+    // Math.random() called during render re-rolls on every re-render, and the
     // dashboard re-renders on every price poll — so the particles would jump
-    // mid-flight. The audio module may use randomness (its noise buffer is
-    // built once, outside React); the component may not.
-    expect(overlayCode).not.toMatch(/Math\.random/)
+    // mid-flight. The burst canvas is allowed it: its field is seeded once
+    // inside a useEffect and animated imperatively, so React never touches it
+    // again. The distinction is where the call sits, not whether it exists.
+    const effects = [...overlayCode.matchAll(/useEffect\(\(\) => \{[\s\S]*?\n  \}, \[[^\]]*\]\)/g)]
+      .map(m => m[0]).join('\n')
+    const outsideEffects = overlayCode.split('\n')
+      .filter(line => /Math\.random/.test(line) && !effects.includes(line))
+    expect(outsideEffects).toEqual([])
+    // …and the DOM-particle helper is still index-derived, with no RNG at all.
+    const helper = /function particle\(i, total\) \{[\s\S]*?\n\}/.exec(overlayCode)[0]
+    expect(helper).not.toMatch(/Math\.random/)
   })
 })
 
@@ -96,8 +105,8 @@ describe('the sound', () => {
     // resume() is asynchronous. Reading ctx.state on the following line
     // returns 'suspended' every time, and caching that read as "locked"
     // disabled audio permanently once already.
-    expect(audio).toMatch(/c\.state === 'running'/)
-    expect(audio).not.toMatch(/let\s+unlocked/)
+    expect(audioCode).toMatch(/ctx\.state === 'running'/)
+    expect(audioCode).not.toMatch(/\bunlocked\b/)
   })
 
   it('holds a cue it cannot play instead of dropping it', () => {
@@ -108,9 +117,14 @@ describe('the sound', () => {
     expect(audio).toMatch(/addEventListener\('pointerdown', releaseHeld, true\)/)
   })
 
-  it('waits after unlocking before playing a held cue', () => {
-    // Same asynchrony: playing in the same tick as resume() is silent.
-    expect(audio).toMatch(/setTimeout\(\(\) => \{ if \(canPlay\(\)\) render\(cue\) \}, \d+\)/)
+  it('waits for the resume to settle before playing, rather than dropping the cue', () => {
+    // Same asynchrony one level up: a caller that unlocks and plays inside a
+    // single handler finds the context still 'suspended'. That is not an edge
+    // case — it is the first tap of every session. Playing from the resume's
+    // own promise is what makes it audible; a few milliseconds late is
+    // imperceptible, not playing at all is the entire bug.
+    expect(audioCode).toMatch(/ctx\.resume\?\.\(\)\.then\(\(\) => \{/)
+    expect(audioCode).toMatch(/if \(ctx && ctx\.state === 'running'\) emit\(voice, effect\)/)
   })
 
   it('gives up on a cue that has gone stale', () => {
@@ -146,7 +160,7 @@ describe('settings', () => {
 describe('reduced motion', () => {
   it('stops the particles travelling rather than removing the moment', () => {
     const reduced = css.slice(css.lastIndexOf('@media (prefers-reduced-motion: reduce)'))
-    expect(reduced).toMatch(/\.fx-bit, \.fx-confetti, \.fx-flame \{ display: none; \}/)
+    expect(reduced).toMatch(/\.fx-champ, \.fx-flash, \.fx-canvas, \.fx-rocket-track, \.fx-celebrate \{ display: none; \}/)
     expect(reduced).toMatch(/fx-quiet-fade/)
   })
 })

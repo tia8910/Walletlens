@@ -16271,15 +16271,108 @@ input, select, textarea, .dvx-input {
    that swallowed a tap would be worse than no effect, and these fire without
    the user asking for them. */
 .fx-layer {
-  position: fixed; inset: 0; z-index: 5000;
-  display: grid; place-items: center;
+  position: fixed; inset: 0;
+  /* Above the bottom nav (300) and full-page views (400), below every modal
+     and the tour (900+). A lower value put the glow under the nav, which is
+     exactly where it sits — most of the effect was drawn and then covered. */
+  z-index: 500;
+  display: flex; align-items: center; justify-content: center;
   pointer-events: none;
   overflow: hidden;
 }
 .fx-layer * { pointer-events: none; }
 
-/* The asset mark, shared by the explode and the rocket. */
-.fx-core, .fx-rocket-mark {
+.fx-glow {
+  position: absolute; inset-inline: 0; bottom: 0; height: 55vh;
+  background: radial-gradient(60% 80% at 50% 100%, var(--accent, #12b76a) 0%, transparent 70%);
+  opacity: 0;
+}
+.fx-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ── Explode: the day's asset, arriving and coming apart ───────────────────
+   One gesture in two halves, and the split is at 44% — the same instant the
+   sound's impact lands and the debris canvas starts. Those three numbers are
+   a set; moving one without the others is what makes an effect feel wrong
+   without anyone being able to say why.
+
+   Sized against the smaller viewport axis so it fills a phone in portrait and
+   a tablet in landscape without ever being cropped into an abstract shape. */
+.fx-champ {
+  position: absolute; top: 50%; left: 50%;
+  width: min(76vw, 76vh); height: min(76vw, 76vh);
+  margin: 0; translate: -50% -50%;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: fx-champ-zoom 2.6s cubic-bezier(.55,0,.85,.35) forwards;
+}
+.fx-champ-img,
+.fx-champ-badge {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  /* The icon is a small PNG blown up past any sane size, so it will be soft.
+     A rim and a drop shadow give the eye an edge to hold, which reads as
+     deliberate rather than as a stretched thumbnail. */
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #12b76a) 40%, transparent),
+              0 24px 80px rgba(0, 0, 0, .45);
+}
+.fx-champ-img { object-fit: cover; }
+.fx-champ-badge {
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(140deg, var(--accent, #12b76a), #047857);
+  color: #fff; font-weight: 800; letter-spacing: .02em;
+  font-size: min(19vw, 19vh);
+}
+
+/* Scale stops are dense before the impact because the motion accelerates and
+   CSS interpolates each pair linearly — too few stops and the rush reads as a
+   series of steps. */
+@keyframes fx-champ-zoom {
+  0%   { opacity: 0; transform: scale(.10) rotate(-8deg); }
+  6%   { opacity: 1; transform: scale(.16) rotate(-6deg); }
+  18%  { opacity: 1; transform: scale(.30) rotate(-4deg); }
+  30%  { opacity: 1; transform: scale(.52) rotate(-2deg); }
+  38%  { opacity: 1; transform: scale(.76) rotate(-1deg); }
+  44%  { opacity: 1; transform: scale(1)   rotate(0deg); }
+  /* Impact: a hard kick outward, then gone. Fast, because debris that lingers
+     stops being an explosion and becomes a transition. */
+  48%  { opacity: .92; transform: scale(1.26); }
+  58%  { opacity: .45; transform: scale(1.72); }
+  70%  { opacity: 0;   transform: scale(2.1); }
+  100% { opacity: 0;   transform: scale(2.1); }
+}
+
+/* The white-out at the moment of impact. Covers the whole viewport for about
+   a tenth of a second — long enough to hide the logo's own exit, short enough
+   not to read as a flashbang. */
+.fx-flash {
+  position: absolute; inset: 0;
+  background: radial-gradient(60% 60% at 50% 50%, #fff 0%, color-mix(in srgb, var(--accent, #12b76a) 70%, #fff) 45%, transparent 78%);
+  opacity: 0;
+  animation: fx-champ-flash 2.6s linear forwards;
+}
+@keyframes fx-champ-flash {
+  0%, 42%   { opacity: 0; }
+  45%       { opacity: .82; }
+  52%       { opacity: .22; }
+  62%, 100% { opacity: 0; }
+}
+
+.fx-explode .fx-glow { animation: fx-soft 2.6s ease-out forwards; }
+@keyframes fx-soft {
+  0%   { opacity: 0; }
+  30%  { opacity: .5; }
+  70%  { opacity: .34; }
+  100% { opacity: 0; }
+}
+
+/* ── Rocket ── */
+.fx-rocket-track { position: absolute; inset: 0; display: grid; place-items: center; }
+.fx-rocket {
+  position: absolute; display: grid; place-items: center;
+  animation: fx-rocket-fly 1.9s cubic-bezier(0.4, 0, 0.5, 1) forwards;
+}
+.fx-rocket-mark {
   width: 72px; height: 72px; border-radius: 50%;
   object-fit: cover; display: grid; place-items: center;
   background: rgba(10,20,14,0.9);
@@ -16288,37 +16381,6 @@ input, select, textarea, .dvx-input {
 .fx-mark-text {
   font-weight: 900; font-size: 1.05rem; letter-spacing: 0.02em;
   color: #fff; font-family: var(--mono, inherit);
-}
-
-/* ── Explode ── */
-.fx-burst { position: relative; display: grid; place-items: center; }
-.fx-core { animation: fx-core-pop 1.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
-@keyframes fx-core-pop {
-  0%   { transform: scale(0.3); opacity: 0; }
-  18%  { transform: scale(1.18); opacity: 1; }
-  34%  { transform: scale(0.98); opacity: 1; }
-  100% { transform: scale(1.5); opacity: 0; }
-}
-.fx-bit {
-  position: absolute; width: 10px; height: 10px; border-radius: 50%;
-  background: linear-gradient(135deg, #34d399, #10b981);
-  box-shadow: 0 0 12px rgba(16,185,129,0.75);
-  animation: fx-bit-fly 1.35s cubic-bezier(0.15, 0.7, 0.25, 1) forwards;
-  animation-delay: var(--fx-delay, 0ms);
-}
-/* translate() reads the per-particle custom properties the component sets, so
-   one keyframe serves every direction instead of one keyframe per particle. */
-@keyframes fx-bit-fly {
-  0%   { transform: translate(0, 0) scale(0.4); opacity: 0; }
-  12%  { opacity: 1; }
-  100% { transform: translate(var(--fx-x), var(--fx-y)) scale(0.9); opacity: 0; }
-}
-
-/* ── Rocket ── */
-.fx-rocket-track { position: relative; display: grid; place-items: center; width: 100%; height: 100%; }
-.fx-rocket {
-  position: absolute; display: grid; place-items: center;
-  animation: fx-rocket-fly 1.9s cubic-bezier(0.4, 0, 0.5, 1) forwards;
 }
 @keyframes fx-rocket-fly {
   0%   { transform: translateY(46vh) scale(0.7); opacity: 0; }
@@ -16347,13 +16409,21 @@ input, select, textarea, .dvx-input {
   78%  { opacity: 1; }
   100% { opacity: 0; }
 }
+.fx-rocket .fx-glow { animation: fx-soft 2.5s ease-out forwards; }
 
 /* ── All-time high ── */
-.fx-celebrate { position: relative; display: grid; place-items: center; width: 100%; height: 100%; }
+.fx-celebrate { position: absolute; inset: 0; display: grid; place-items: center; }
 .fx-confetti {
   position: absolute; width: 9px; height: 15px; border-radius: 2px;
   animation: fx-bit-fly 2.3s cubic-bezier(0.12, 0.7, 0.3, 1) forwards;
   animation-delay: var(--fx-delay, 0ms);
+}
+/* translate() reads the per-particle custom properties the component sets, so
+   one keyframe serves every direction instead of one keyframe per particle. */
+@keyframes fx-bit-fly {
+  0%   { transform: translate(0, 0) scale(0.4); opacity: 0; }
+  12%  { opacity: 1; }
+  100% { transform: translate(var(--fx-x), var(--fx-y)) scale(0.9); opacity: 0; }
 }
 .fx-c0 { background: #fbbf24; }
 .fx-c1 { background: #34d399; }
@@ -16377,12 +16447,14 @@ input, select, textarea, .dvx-input {
   82%  { opacity: 1; }
   100% { transform: scale(1.02); opacity: 0; }
 }
+.fx-ath .fx-glow { animation: fx-soft 2.6s ease-out forwards; }
 
-/* Reduced motion still gets the moment, just without anything flying at them:
-   the mark and the badge fade, and the particles do not travel at all. */
+/* Reduced motion keeps the moment and drops the travel: the component renders
+   no logo, rocket or debris at all, so only the badge and the glow remain and
+   they simply fade. */
 @media (prefers-reduced-motion: reduce) {
-  .fx-bit, .fx-confetti, .fx-flame { display: none; }
-  .fx-core, .fx-rocket, .fx-ath-badge, .fx-rocket-label {
+  .fx-champ, .fx-flash, .fx-canvas, .fx-rocket-track, .fx-celebrate { display: none; }
+  .fx-ath-badge, .fx-glow {
     animation: fx-quiet-fade 1.2s ease-out forwards;
   }
   @keyframes fx-quiet-fade {
