@@ -15401,13 +15401,28 @@ button.wl-topbar .wl-topbar-x, .wl-topbar button.wl-topbar-x { background: rgba(
 /* Two-row body: symbol + value on top, full-width detail underneath so the
    price · avg · units line has room to sit on one line. */
 .dvx-holding-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
-.dvx-holding-line1 { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem; }
-/* Symbol + category badge stay on one line for every asset (unified alignment);
-   the ticker truncates before the badge ever wraps. */
+/* Wraps rather than truncating.
+   
+   This line used to be nowrap with the value block pinned at flex-shrink: 0,
+   so the whole shortfall landed on the ticker: on a 360px screen AVAX rendered
+   as "A" and USDT as "U…", next to an intact badge and an intact price. The
+   old comment described that as the ticker truncating "before the badge ever
+   wraps", which it did — it just took the ticker to one character to do it.
+   
+   The widest thing in the row is the P&L pill ("▲ $730.00 (+24.57%)"), and it
+   is not shortenable without dropping a number. So the value block moves to
+   its own line when there is not room for both, instead of everything
+   competing for one. */
+.dvx-holding-line1 { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
 .dvx-holding-meta { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap; gap: 0.4rem; }
-.dvx-holding-meta strong { font-size: 0.94rem; letter-spacing: -0.01em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A ticker is a handful of characters and is the row's identity — it does not
+   give up space. max-width is the guard for a malformed symbol, not a layout
+   mechanism: the ellipsis is unreachable for anything a real asset is called. */
+.dvx-holding-meta strong { font-size: 0.94rem; letter-spacing: -0.01em; flex: 0 0 auto; max-width: 12ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dvx-holding-meta .dvx-cat-badge, .dvx-holding-meta .dvx-stable-badge { flex-shrink: 0; }
-.dvx-holding-valblock { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; text-align: right; }
+/* margin-left keeps it hard right on the wrapped line too, where
+   space-between has nothing to push against. */
+.dvx-holding-valblock { flex-shrink: 0; margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; text-align: right; }
 .dvx-holding-val { font-size: 0.98rem; letter-spacing: -0.01em; }
 /* Full-width detail line (break-even variant). */
 .dvx-holding-detail { display: block; width: 100%; font-size: 0.75rem; opacity: 0.92; line-height: 1.3; }
