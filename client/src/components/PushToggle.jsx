@@ -21,7 +21,7 @@ const MOVE_STEPS = [3, 5, 10, 20]
 /**
  * Whether Settings shows the per-channel controls.
  *
- * Off: one switch, and the channels run on their defaults — moves at 3%, round
+ * Off: one switch, and the channels run on their defaults — moves at 5%, round
  * levels, news, the morning brief, win-back nudges and feature tips all stay
  * ON, they simply are not listed. Seven rows and a sensitivity picker is a lot
  * of surface for a decision most people make once, as "yes, notify me", and the
@@ -38,6 +38,11 @@ const MOVE_STEPS = [3, 5, 10, 20]
  * outside and took a long night to find. The healthy "Watching 5 assets"
  * summary is hidden with everything else; a screen that is quiet when all is
  * well and speaks up when it is not is the point.
+ *
+ * The test send is not a channel control and was only ever hidden by
+ * association. It is the one button that answers "is any of this actually
+ * arriving?", which no amount of green status can, because a subscription
+ * can be stored, valid and undeliverable all at once.
  */
 const SHOW_CHANNEL_DETAIL = false
 
@@ -391,7 +396,7 @@ export default function PushToggle() {
           )}
 
           {status && <PushStatusLine status={status} repair={repair} detail={SHOW_CHANNEL_DETAIL} />}
-          {SHOW_CHANNEL_DETAIL && status?.found && <TestSend />}
+          {status?.found && <TestSend />}
 
           <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>
         </>
