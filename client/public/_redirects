@@ -7,4 +7,18 @@ https://www.walletlens.live/* https://walletlens.live/:splat 301
 /airdrop /    301
 /airdrop/ /   301
 
+# Digital Asset Links, served from a path without a leading dot.
+#
+# Cloudflare Pages does not reliably publish dot-directories, so a request for
+# /.well-known/assetlinks.json can fall through to the SPA catch-all below and
+# return index.html with Content-Type: text/html. Chrome then fails to verify
+# the app against the site, and the TWA silently degrades to a Custom Tab —
+# walletlens.live in an address bar, no entry in recents, and isAndroidTWA()
+# false, which also hides App Lock from Settings and from onboarding.
+#
+# A 200 rewrite keeps the canonical URL that Android asks for while reading the
+# file from a path Pages certainly serves. Static assets take precedence over
+# these rules, so if the dot path IS published this never fires.
+/.well-known/assetlinks.json  /well-known/assetlinks.json  200
+
 /* /index.html 200

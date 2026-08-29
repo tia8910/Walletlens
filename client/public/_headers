@@ -24,6 +24,13 @@
   Content-Type: application/json
   Cache-Control: no-cache, must-revalidate
 
+# The rewrite target. Android reads the dot path; this is where the bytes
+# actually come from, and it needs the same JSON content type — a Content-Type
+# of text/plain fails Digital Asset Links verification just as surely as HTML.
+/well-known/assetlinks.json
+  Content-Type: application/json
+  Cache-Control: no-cache, must-revalidate
+
 /stock-prices.json
   Cache-Control: public, max-age=1800, stale-while-revalidate=3600
 

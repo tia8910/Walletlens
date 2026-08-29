@@ -136,3 +136,55 @@ describe('the places that cannot import apiHosts.js', () => {
     for (const h of hinted) expect([VOICE_HOST, PUSH_HOST]).toContain(h)
   })
 })
+
+// ── Digital Asset Links reachability ────────────────────────────────────────
+//
+// Having the right fingerprints in assetlinks.json is not the same as Android
+// being able to READ it, and the difference is invisible from the repo. The
+// file was correct all along while the app still opened in a Custom Tab with
+// walletlens.live in an address bar.
+//
+// The suspect is the SPA catch-all. Cloudflare Pages does not reliably publish
+// dot-directories, so /.well-known/assetlinks.json can fall through to
+// `/* /index.html 200` and return HTML. Chrome then fails verification and the
+// TWA degrades to a Custom Tab — which also takes the recents entry with it,
+// and makes isAndroidTWA() false, which hides App Lock from Settings and drops
+// the security slide from onboarding. One unreachable file, four symptoms.
+
+describe('Android can actually fetch assetlinks.json', () => {
+  const pub = join(here, '..', 'public')
+  const redirects = readFileSync(join(pub, '_redirects'), 'utf8')
+  const headers = readFileSync(join(pub, '_headers'), 'utf8')
+
+  it('serves the file from a path with no leading dot', () => {
+    const dotted = JSON.parse(readFileSync(join(pub, '.well-known', 'assetlinks.json'), 'utf8'))
+    const plain = JSON.parse(readFileSync(join(pub, 'well-known', 'assetlinks.json'), 'utf8'))
+    expect(plain, 'the two copies must not drift').toEqual(dotted)
+  })
+
+  it('rewrites the canonical path Android asks for', () => {
+    // 200, not 301: Android reads /.well-known/assetlinks.json and a redirect
+    // is not followed for verification.
+    expect(redirects).toMatch(
+      /^\/\.well-known\/assetlinks\.json\s+\/well-known\/assetlinks\.json\s+200$/m,
+    )
+  })
+
+  it('puts that rule ahead of the SPA catch-all', () => {
+    // Order is the whole point. Below the catch-all it never runs, and the
+    // request keeps returning index.html.
+    const rule = redirects.indexOf('/.well-known/assetlinks.json  /well-known')
+    const spa = redirects.indexOf('/* /index.html')
+    expect(rule).toBeGreaterThan(-1)
+    expect(rule).toBeLessThan(spa)
+  })
+
+  it('sends JSON for the rewrite target too', () => {
+    // text/plain fails verification exactly as HTML does. Anchored on the
+    // non-dot rule specifically: the dotted one sits above it and would
+    // otherwise satisfy this by itself.
+    const m = /^\/well-known\/assetlinks\.json$\n((?:^ +.*$\n)+)/m.exec(headers)
+    expect(m, 'no _headers block for /well-known/assetlinks.json').not.toBeNull()
+    expect(m[1]).toMatch(/Content-Type:\s*application\/json/)
+  })
+})
