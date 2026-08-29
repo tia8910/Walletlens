@@ -2,132 +2,88 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { LANGUAGES } from './LanguageContext'
 
-// The notifications the Android shell sends are the only WalletLens text a
-// user reads without opening the app, and they were English no matter which
-// language they had chosen — the copy was string literals inside
-// PeriodicUpdateWorker.java.
+// The Android shell used to send its own notifications on a timer: every 30
+// minutes, cycling price → hack tip → academy tip → feature tip, from a
+// hard-coded list of twelve coins, with no quiet hours and no daily cap. A
+// user was interrupted about assets they might not even hold.
 //
-// It now reads res/values*/notification_copy.xml, three pairs of parallel
-// string-arrays, with the URLs left in Java so there is one copy of each
-// rather than four. Nothing in the toolchain checks that those arrays stay the
-// same length: Android silently returns a shorter array, and the worker would
-// pair a title with the wrong body and deep link. There is no Java test
-// harness here, so this reads the XML directly.
+// That was retired. Notifications now come from the push worker, which sends
+// only when something has happened to something the user owns, honours quiet
+// hours on the user's own clock, and shares one daily budget. This suite used
+// to check the parallel copy arrays that fed the timer; the copy is gone, so
+// what is worth guarding now is that the retirement cannot be half-undone.
+//
+// THE TRAP: WorkManager persists enqueued work across app updates, and the old
+// registration used ExistingPeriodicWorkPolicy.KEEP. Deleting the scheduling
+// code was never enough — a device that last ran a pre-retirement build still
+// has the work queued, and only an explicit cancel stops it. So two things
+// have to stay true until no meaningful number of installs predates the
+// retirement: the cancel must run on every entry point, and the worker class
+// must still load, or WorkManager cannot drain the queue to cancel it.
 
 const SRC = dirname(fileURLToPath(import.meta.url))
 const ANDROID = join(SRC, '..', '..', 'walletlens_source/release_package/app/src/main')
-const RES = join(ANDROID, 'res')
-const WORKER = join(ANDROID, 'java/live/walletlens/twa/PeriodicUpdateWorker.java')
+const JAVA = join(ANDROID, 'java/live/walletlens/twa')
 
-const LANGS = LANGUAGES.map(l => l.code)
-const SETS = ['hack', 'academy', 'feature']
+const read = (f) => readFileSync(join(JAVA, f), 'utf8')
+const worker = read('PeriodicUpdateWorker.java')
+const scheduler = read('NotificationScheduler.java')
 
-const resFile = (lang) =>
-  join(RES, lang === 'en' ? 'values' : `values-${lang}`, 'notification_copy.xml')
-
-/** Item counts for every string-array in a resource file, by array name. */
-function arrays(xml) {
-  const out = {}
-  for (const m of xml.matchAll(/<string-array name="([^"]+)">([\s\S]*?)<\/string-array>/g)) {
-    out[m[1]] = [...m[2].matchAll(/<item>([\s\S]*?)<\/item>/g)].map(i => i[1])
-  }
-  return out
-}
-
-/** Lengths of the URL arrays still declared in Java. */
-function javaUrlCounts() {
-  const java = readFileSync(WORKER, 'utf8')
-  const out = {}
-  for (const m of java.matchAll(/private static final String\[\] (\w+)_URLS = \{([\s\S]*?)\};/g)) {
-    out[m[1].toLowerCase()] = [...m[2].matchAll(/"https:\/\/[^"]+"/g)].length
-  }
-  return out
-}
-
-describe('Android notification copy', () => {
-  it('ships a resource file for every language the picker offers', () => {
-    // A missing file is not a build error — Android falls back to values/ —
-    // so adding a language to LANGUAGES would silently leave its
-    // notifications in English.
-    const missing = LANGS.filter(l => !existsSync(resFile(l)))
-    expect(missing).toEqual([])
+describe('the timer-driven notifications stay retired', () => {
+  it('leaves the worker class loadable', () => {
+    // Not deleted. WorkManager instantiates by class name while draining a
+    // queue; a missing class makes those runs fail rather than complete, and
+    // the queue does not clear.
+    expect(worker).toMatch(/class PeriodicUpdateWorker extends Worker/)
   })
 
-  for (const lang of LANGS) {
-    it(`${lang}: titles, bodies and URLs are the same length`, () => {
-      const a = arrays(readFileSync(resFile(lang), 'utf8'))
-      const urls = javaUrlCounts()
-      for (const set of SETS) {
-        const titles = a[`notif_${set}_titles`]
-        const bodies = a[`notif_${set}_bodies`]
-        expect(titles, `notif_${set}_titles missing in ${lang}`).toBeTruthy()
-        expect(bodies.length, `${set} bodies vs titles in ${lang}`).toBe(titles.length)
-        expect(urls[set], `${set} URLs vs titles in ${lang}`).toBe(titles.length)
-      }
-    })
+  it('does no work and does not ask to be retried', () => {
+    // Result.success(), not retry: a failed run stays in the queue, which is
+    // the one outcome that would keep this alive.
+    expect(worker).toMatch(/return Result\.success\(\)/)
+    expect(worker).not.toMatch(/Result\.retry\(\)/)
+  })
 
-    it(`${lang}: no entry is empty`, () => {
-      const a = arrays(readFileSync(resFile(lang), 'utf8'))
-      const blank = []
-      for (const [name, items] of Object.entries(a)) {
-        items.forEach((v, i) => { if (!v.trim()) blank.push(`${name}[${i}]`) })
-      }
-      expect(blank).toEqual([])
-    })
+  it('posts nothing and fetches nothing', () => {
+    // The whole point. A tombstone that still talks to CoinGecko or still
+    // holds notification copy reads as a live feature to the next person.
+    expect(worker).not.toMatch(/NotificationManager|NotificationCompat|\.notify\(/)
+    expect(worker).not.toMatch(/HttpURLConnection|coingecko|metals\.live/i)
+    expect(worker).not.toMatch(/getStringArray/)
+  })
 
-    if (lang !== 'en') {
-      it(`${lang}: bodies are actually translated`, () => {
-        // A copy-paste of the English file would pass every check above.
-        const en = arrays(readFileSync(resFile('en'), 'utf8'))
-        const tr = arrays(readFileSync(resFile(lang), 'utf8'))
-        const same = []
-        for (const set of SETS) {
-          const key = `notif_${set}_bodies`
-          en[key].forEach((v, i) => { if (v === tr[key][i]) same.push(`${key}[${i}]`) })
-        }
-        expect(same).toEqual([])
-      })
+  it('takes the canned copy with it', () => {
+    // Six files of string-arrays that nothing reads any more.
+    for (const dir of ['values', 'values-ar', 'values-de', 'values-es', 'values-fr', 'values-it']) {
+      expect(existsSync(join(ANDROID, 'res', dir, 'notification_copy.xml')),
+        `${dir}/notification_copy.xml should be gone`).toBe(false)
     }
-  }
-
-  it('the worker reads the arrays instead of hard-coded English', () => {
-    const java = readFileSync(WORKER, 'utf8')
-    expect(java).toContain('R.array.notif_hack_titles')
-    expect(java).toContain('R.array.notif_academy_titles')
-    expect(java).toContain('R.array.notif_feature_titles')
-    // The old literal tables must be gone, not merely unused.
-    expect(java).not.toMatch(/String\[\]\[\]\s+(HACKS|ACADEMY|FEATURES)\s*=/)
   })
 
-  it('the worker overrides the locale rather than trusting the device', () => {
-    // An English phone can be running WalletLens in Arabic. Reading
-    // getResources() directly would follow the phone, not the choice.
-    const java = readFileSync(WORKER, 'utf8')
-    expect(java).toContain('createConfigurationContext')
-    expect(java).toContain('LangPrefs.KEY_LANG')
+  it('still cancels the queued work, under the names it was queued with', () => {
+    // A renamed constant cancels nothing and fails silently — the device just
+    // keeps its 30-minute worker.
+    expect(scheduler).toMatch(/cancelUniqueWork\(PERIODIC_WORK\)/)
+    expect(scheduler).toMatch(/cancelUniqueWork\(IMMEDIATE_WORK\)/)
+    expect(scheduler).toMatch(/PERIODIC_WORK\s*=\s*"[^"]+"/)
   })
 
-  it('LangPrefs only accepts the languages the picker offers', () => {
-    const prefs = readFileSync(join(ANDROID, 'java/live/walletlens/twa/LangPrefs.java'), 'utf8')
-    const listed = prefs.match(/Arrays\.asList\(([^)]*)\)/)[1]
-      .split(',').map(s => s.trim().replace(/"/g, ''))
-    expect(listed.sort()).toEqual([...LANGS].sort())
+  it('runs the cancel from every entry point', () => {
+    // Cold start, launch and boot. Missing one leaves a device that only ever
+    // arrives through that path still running the worker.
+    for (const f of ['WalletLensApp.java', 'LauncherActivity.java', 'BootReceiver.java']) {
+      expect(read(f), `${f} must call NotificationScheduler.schedule`)
+        .toMatch(/NotificationScheduler\.schedule\(/)
+    }
   })
 
-  it('the web sends the language on the widget-sync payload', () => {
-    const widgets = readFileSync(join(SRC, 'nativeWidgets.js'), 'utf8')
-    expect(widgets).toContain('lang: currentLang()')
-    expect(widgets).toMatch(/export function syncLanguage/)
-
-    const sync = readFileSync(join(ANDROID, 'java/live/walletlens/twa/WidgetSyncActivity.java'), 'utf8')
-    expect(sync).toContain('LangPrefs.set(ctx, j.optString("lang", null))')
-  })
-
-  it('picking a language tells the shell and the push server right away', () => {
-    const ctx = readFileSync(join(SRC, 'LanguageContext.jsx'), 'utf8')
-    expect(ctx).toContain('syncLanguage')
-    expect(ctx).toContain('syncAlerts')
+  it('keeps NotificationHelper, which web push needs', () => {
+    // Easy to mistake for part of the same dead feature. DelegationService
+    // routes every web push into these channels; deleting them silences the
+    // system that replaced the timer.
+    const delegation = read('DelegationService.java')
+    expect(delegation).toMatch(/NotificationHelper/)
+    expect(delegation).toMatch(/CHANNEL_ALERTS_ID/)
   })
 })
