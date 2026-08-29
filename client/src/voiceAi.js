@@ -9,6 +9,7 @@
 // transparently falls back to the serverless endpoint.
 
 import { ANTHROPIC_KEY } from './anthropic'
+import { VOICE_API } from './apiHosts.js'
 
 const KEY_STORAGE  = 'walletlens_anthropic_key'
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
@@ -51,7 +52,7 @@ const TRADES_FORMAT = {
 // ANTHROPIC_API_KEY secret. The site is static (GitHub Pages) so it can't host
 // this itself. Defaults to the Deno Deploy project name from voice-api/README;
 // override at runtime without rebuilding via localStorage 'wl_voice_api'.
-const DEFAULT_VOICE_API = 'https://walletlens-voice-parse.tia8910.deno.net/'
+const DEFAULT_VOICE_API = VOICE_API
 function voiceEndpoint() {
   try {
     const o = localStorage.getItem('wl_voice_api')

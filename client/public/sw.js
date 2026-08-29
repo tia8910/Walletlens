@@ -4,7 +4,7 @@
 // • Google Fonts: cache-first (immutable font files, long-lived stylesheet)
 // • Price APIs: stale-while-revalidate with 5-min TTL for offline use
 // • Everything else: network with cache fallback
-const SW_VERSION = 'v223'
+const SW_VERSION = 'v224'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 // CDN assets (coin icons, Google Fonts) are content-addressed and never change,
@@ -52,7 +52,7 @@ const PRICE_API_PATTERNS = [
   // Deno proxy — first CORS proxy tried for every external price fetch;
   // caching its responses means the SW serves repeat requests from cache
   // rather than round-tripping through the proxy on every price poll.
-  'walletlens-voice-parse.tia8910.deno.net',
+  'walletlens-voice.tarek-abdelhameed.workers.dev',
 ]
 
 // Static CDN assets (coin icons, images) — cached indefinitely in version-independent
@@ -306,7 +306,7 @@ self.addEventListener('fetch', e => {
 // no sound, no buzz, nothing until the phone was picked up and unlocked. A
 // price alert nobody hears is not a price alert. notificationSound.test.js
 // now derives the set from CHANNEL_DELIVERY so the two cannot drift again.
-const LOUD_CHANNELS = new Set(['target', 'move', 'level', 'test'])
+const LOUD_CHANNELS = new Set(['target', 'move', 'level', 'zakat', 'test'])
 
 self.addEventListener('push', e => {
   let data = {}

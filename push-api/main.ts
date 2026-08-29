@@ -48,6 +48,7 @@ import {
   isBreaking, localDayKey, localHour, matchArticle,
   MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS, pickHeadline, pruneSent, pushTopic,
   RETENTION_HOUR, RETENTION_MIN_PCT, sanitizeAlerts, sanitizePrefs, sanitizeSetup,
+  sanitizeZakatDue, dueZakatReminder, trimZakatSent, mergeSubForWrite,
   sanitizeTz, sanitizeWatch, seedRefFromChange, shortHash,
   crossedLevel,
 } from "./notify-logic.js"
@@ -93,9 +94,12 @@ const kv = await Deno.openKv()
 type Lang = "en" | "ar" | "fr" | "es"
 
 interface WatchAsset { id: string; symbol: string; kind: "crypto" | "stock" | "metal" }
+// Mirrors DEFAULT_PREFS in notify-logic.js exactly; pushClient.test.js checks
+// that table against the client's copy. `levels` was already read at the level
+// crossing below without being declared here.
 interface Prefs {
-  moves: boolean; news: boolean; digest: boolean; retention: boolean
-  features: boolean; movePct: number
+  moves: boolean; levels: boolean; news: boolean; digest: boolean
+  retention: boolean; features: boolean; zakat: boolean; movePct: number
 }
 interface PriceRef { price: number; ts: number }
 
@@ -121,6 +125,14 @@ interface StoredSub {
   lastPrice: Record<string, number>
   /** Last round level announced per asset, so oscillation does not re-alert. */
   lastLevel: Record<string, number>
+  /**
+   * The user's zakat anniversary as 'YYYY-MM-DD', and the reminders already
+   * sent for it. A DATE and nothing else: the amount owed, the portfolio value
+   * and whether the user is even above nisab are worked out on the device and
+   * never sent here. See the privacy note at the top of this file.
+   */
+  zakatDue?: string | null
+  zakatSent: string[]
   /** Prices as of the user's last visit, for "since you were away" copy. */
   seenRef: { at: number; prices: Record<string, number> } | null
   /** Story hashes already pushed, pruned on every news run. */
@@ -175,6 +187,8 @@ function normalize(s: Partial<StoredSub> & Pick<StoredSub, "subscription">): Sto
     // an older deploy still carry the old key, and the day's count is not
     // worth losing on the deploy that lands.
     sent: s.sent ?? (s as { quota?: { day: string; n: number } }).quota ?? { day: "", n: 0 },
+    zakatDue: sanitizeZakatDue(s.zakatDue) as string | null,
+    zakatSent: trimZakatSent(s.zakatSent) as string[],
   }
 }
 
@@ -254,12 +268,70 @@ async function endpointKey(endpoint: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 24)
 }
 
+// ── Subscription scan, cached across cron runs ──────────────────────────────
+//
+// This is a FULL TABLE SCAN, and it was run once per job: five crons, two of
+// them every minute, each opening with its own allSubs(). That is ~3,480 scans
+// a day before a single notification is sent — the same list, re-read up to
+// five times in the same minute — and it is what exhausted the KV Reads
+// allowance and had the whole org suspended.
+//
+// The cadences themselves are not the waste and are deliberately not touched:
+// the comments on each cron below explain that they are set by what the
+// OUTBOUND call costs (one batched CoinGecko request for crypto, one per
+// symbol for stocks). Prices are still fetched every minute. Timeliness is the
+// product. Re-reading the same rows is not.
+//
+// The scan is cached for five minutes: ~288 scans a day instead of ~3,480.
+//
+// What goes stale is only the SUBSCRIBER LIST, never a price. A device that
+// subscribes is picked up on the next scan, so at worst it waits a few minutes
+// for its first notification. Its own writes invalidate this isolate's cache
+// immediately (see handle()), so the wait only applies across isolates.
+//
+// Writing is where a long cache gets dangerous, and that is handled separately
+// in saveSub(): a cron holding a five-minute-old row must never put it back on
+// top of a preference change or a /seen heartbeat.
+// Five minutes. Safe at this length only because saveSub() re-reads before
+// writing; without that, this would be a five-minute window for a cron to
+// undo a user's own change.
+const SUBS_CACHE_MS = 5 * 60_000
+let subsCache: { at: number; subs: Array<{ key: Deno.KvKey; sub: StoredSub }> } | null = null
+
+/** Drop the cached scan. Called whenever a request may have written a sub. */
+function invalidateSubsCache() {
+  subsCache = null
+}
+
 async function allSubs(): Promise<Array<{ key: Deno.KvKey; sub: StoredSub }>> {
+  const now = Date.now()
+  if (subsCache && now - subsCache.at < SUBS_CACHE_MS) return subsCache.subs
+
   const out: Array<{ key: Deno.KvKey; sub: StoredSub }> = []
   for await (const e of kv.list<StoredSub>({ prefix: ["sub"] })) {
     if (e.value?.subscription?.endpoint) out.push({ key: e.key, sub: normalize(e.value) })
   }
+  subsCache = { at: now, subs: out }
   return out
+}
+
+/**
+ * Persist a subscription a cron has mutated, without clobbering the user.
+ *
+ * The cached row can be minutes old. Everything the HTTP side owns is taken
+ * fresh from KV at write time; everything the crons own is taken from the copy
+ * they just mutated. Costs one extra read, but only on the rare path where a
+ * cron actually has something to write (every cron write is behind
+ * `if (changed)`), against ~3,200 full scans a day saved.
+ *
+ * A row that has since been deleted is NOT rewritten: an unsubscribe during
+ * the cron run must not be undone by it.
+ */
+async function saveSub(key: Deno.KvKey, sub: StoredSub): Promise<void> {
+  const fresh = (await kv.get<StoredSub>(key)).value
+  const merged = mergeSubForWrite(sub, fresh) as StoredSub | null
+  if (!merged) return   // unsubscribed mid-run; leave it gone
+  await kv.set(key, merged)
 }
 
 // ── Sending ─────────────────────────────────────────────────────────────────
@@ -389,7 +461,7 @@ async function checkTargets() {
         changed = true
       }
     }
-    if (changed) await kv.set(key, sub)
+    if (changed) await saveSub(key, sub)
   }
 }
 
@@ -520,7 +592,7 @@ async function checkMoves({ kinds = null, refreshSeen = true }: {
     for (const k of Object.keys(sub.lastPrice)) if (!live.has(k)) { delete sub.lastPrice[k]; changed = true }
     for (const k of Object.keys(sub.lastLevel)) if (!live.has(k)) { delete sub.lastLevel[k]; changed = true }
 
-    if (changed) await kv.set(key, sub)
+    if (changed) await saveSub(key, sub)
   }
 }
 
@@ -562,7 +634,7 @@ async function checkNews() {
       if (sent) { sub.lastNewsAt = now; break }
     }
 
-    if (changed) await kv.set(key, sub)
+    if (changed) await saveSub(key, sub)
   }
 }
 
@@ -570,6 +642,9 @@ async function checkNews() {
 // Runs hourly and picks out the subscriptions whose *local* clock has just
 // reached the send hour, which is how a single cron serves every timezone.
 const DIGEST_HOUR = 9
+// Its own slot. Stacking it on the 09:00 brief would mean two notifications
+// landing together, and the one that matters here is not the one about prices.
+const ZAKAT_HOUR = 11
 
 async function checkDaily() {
   const subs = await allSubs()
@@ -590,6 +665,7 @@ async function checkDaily() {
     const h = localHour(now, sub.tz)
     return (h === DIGEST_HOUR && sub.prefs.digest)
       || (h === RETENTION_HOUR && sub.prefs.retention)
+      || (h === ZAKAT_HOUR && sub.prefs.zakat && !!sub.zakatDue)
       || featureDue(sub)
   })
   if (!due.length) return
@@ -635,6 +711,28 @@ async function checkDaily() {
       changed = true
     }
 
+    // — Zakat year completing —
+    // A date the user set a year ago, reached on their own local clock. This
+    // is the only channel that fires without consulting a price, which is the
+    // point: the server has never been told what they owe.
+    if (hour === ZAKAT_HOUR && sub.prefs.zakat && sub.zakatDue) {
+      const hit = dueZakatReminder({
+        dueDate: sub.zakatDue,
+        today: localDayKey(now, sub.tz),
+        sent: sub.zakatSent,
+      })
+      if (hit) {
+        await deliver(sub, buildPayload({
+          channel: "zakat",
+          title: copy("zakatTitle", sub.lang)(hit.days),
+          body: copy("zakatBody", sub.lang)(hit.days),
+          tag: "zakat",
+        }), { now })
+        sub.zakatSent = trimZakatSent([...sub.zakatSent, hit.key]) as string[]
+        changed = true
+      }
+    }
+
     // — Win-back ladder —
     if (hour === RETENTION_HOUR && sub.prefs.retention) {
       const step = dueRetentionStep({ lastSeen: sub.lastSeen, now, sentSteps: sub.retention })
@@ -655,7 +753,7 @@ async function checkDaily() {
           }),
           RETENTION_MIN_PCT,
         )
-        if (!mover) { if (changed) await kv.set(key, sub); continue }
+        if (!mover) { if (changed) await saveSub(key, sub); continue }
 
         const body = copy("retentionMoverBody", sub.lang)(
           mover.symbol, fmtPct(mover.pct), mover.pct > 0,
@@ -711,7 +809,7 @@ async function checkDaily() {
       }
     }
 
-    if (changed) await kv.set(key, sub)
+    if (changed) await saveSub(key, sub)
   }
 }
 
@@ -791,6 +889,12 @@ async function handle(req: Request, info: Deno.ServeHandlerInfo): Promise<Respon
   const origin = req.headers.get("origin")
   const headers = corsHeaders(origin)
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers })
+
+  // Anything that is not a read may write a subscription. Invalidating here
+  // rather than next to each kv.set covers all seven write sites and every
+  // one added later — a cache whose correctness depends on remembering to
+  // clear it is a cache that will eventually be wrong.
+  if (req.method !== "GET") invalidateSubsCache()
 
   const ip = req.headers.get("cf-connecting-ip")
     || (info as { remoteAddr?: { hostname?: string } })?.remoteAddr?.hostname
@@ -891,6 +995,11 @@ async function handle(req: Request, info: Deno.ServeHandlerInfo): Promise<Respon
         ? sanitizePrefs(body.prefs) as Prefs
         : existing?.prefs,
       lang: asLang(body.lang) as Lang | undefined ?? existing?.lang,
+      // Clearing is meaningful — the year lapsed, or zakat was paid — so an
+      // explicit null must be honoured rather than falling through to the
+      // stored value the way an absent field does.
+      zakatDue: body.zakatDue !== undefined ? sanitizeZakatDue(body.zakatDue) : existing?.zakatDue,
+      zakatSent: existing?.zakatSent,
       tz: body.tz !== undefined ? sanitizeTz(body.tz) : existing?.tz,
       createdAt: existing?.createdAt ?? now,
       // Subscribing happens in the app, so it is by definition a visit.
@@ -939,6 +1048,13 @@ async function handle(req: Request, info: Deno.ServeHandlerInfo): Promise<Respon
     // blank out what an earlier sync established.
     if (body.setup !== undefined) sub.setup = { ...sub.setup, ...sanitizeSetup(body.setup) }
     if (body.prefs !== undefined) sub.prefs = sanitizePrefs(body.prefs) as Prefs
+    if (body.zakatDue !== undefined) {
+      const next = sanitizeZakatDue(body.zakatDue) as string | null
+      // A new anniversary is a new set of reminders. Keeping the old keys
+      // would silence the first reminder of the new year.
+      if (next !== sub.zakatDue) sub.zakatSent = []
+      sub.zakatDue = next
+    }
     if (body.tz !== undefined) sub.tz = sanitizeTz(body.tz)
     sub.lang = asLang(body.lang) as Lang | undefined ?? sub.lang
     // Reaching this endpoint means the app is open.

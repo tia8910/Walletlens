@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react'
+import { noteMoment } from '../reviewPrompt'
 import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 
 const LS_KEY = 'wl_goals'
+
+/** Goal ids already celebrated, so a target crossed twice is not two wins. */
+const GOALS_MET_KEY = 'wl_goals_met'
 
 function loadGoals() {
   try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] }
@@ -75,6 +79,30 @@ export default function GoalTracker({ currentValue }) {
   const [form, setForm] = useState({ label: '', targetAmount: '', targetDate: '' })
 
   useEffect(() => { saveGoals(goals) }, [goals])
+
+  // Reaching a savings goal is the strongest positive moment this app has, and
+  // it was the one entry in reviewPrompt's MOMENTS that nothing ever fired.
+  //
+  // Keyed by goal id in localStorage rather than by a ref: the crossing
+  // usually happens between sessions — the price moved while the app was
+  // closed — so the first render that sees pct >= 100 is often a fresh mount,
+  // where a ref is already empty. Persisting is also what stops a goal that
+  // hovers either side of its target from reporting the same win repeatedly.
+  useEffect(() => {
+    if (!(currentValue > 0)) return
+    let seen = []
+    try { seen = JSON.parse(localStorage.getItem(GOALS_MET_KEY) || '[]') } catch { seen = [] }
+    if (!Array.isArray(seen)) seen = []
+
+    const met = goals
+      .filter(g => g.targetAmount > 0 && currentValue >= g.targetAmount)
+      .map(g => String(g.id))
+    const fresh = met.filter(id => !seen.includes(id))
+    if (!fresh.length) return
+
+    try { localStorage.setItem(GOALS_MET_KEY, JSON.stringify([...seen, ...fresh])) } catch { /* private mode */ }
+    noteMoment('goal_reached')
+  }, [goals, currentValue])
 
   function addGoal() {
     if (!form.targetAmount || !form.targetDate) return

@@ -1,0 +1,26 @@
+name = "walletlens-voice"
+main = "index.js"
+compatibility_date = "2026-06-21"
+
+# Replaces the Deno Deploy project walletlens-voice-parse, which went down with
+# the rest of the org when its KV Reads allowance was exhausted.
+#
+# SELF_ORIGIN in the ported body still names the old Deno URL. Update it, and
+# the 19 call sites in the client, when this goes live.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "walletlens-voice"
+database_id = "b8ad66cc-5758-4fb9-b1c0-3e6507086955"
+
+# Carried over from the Deno service unchanged.
+[triggers]
+crons = [
+  "0 */6 * * *",   # guardian-sweep
+  "0 13 * * 1",    # weekly-report, Mondays
+]
+
+# Secrets, set with `wrangler secret put <NAME>`:
+#   ANTHROPIC_API_KEY    voice import, analyze, assistant
+#   RESEND_API_KEY       all outbound email
+#   SIGNUP_EXPORT_TOKEN  gates the export and subscriber-viewer routes

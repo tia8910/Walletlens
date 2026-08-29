@@ -71,8 +71,34 @@ final class ReviewGate {
      */
     private static final int REASK_AFTER_DAYS = 60;
 
-    /** Lifetime cap. Play's quota bites long before this does. */
-    private static final int MAX_ASKS = 4;
+    /**
+     * After this many asks the cadence slows down. It does NOT stop.
+     *
+     * <p>This was a hard lifetime cap, and the reasoning behind it does not
+     * survive contact with how the Play API behaves. launchReviewFlow
+     * completes identically whether the card was shown, was dismissed, or was
+     * silently suppressed because the user is over Google's quota — the
+     * outcome is deliberately hidden. An "ask" is therefore an ATTEMPT and
+     * nothing more, never evidence that anybody saw anything.
+     *
+     * <p>So a device could spend all four attempts inside one quota window,
+     * be shown nothing at all, and then be retired for life. The people most
+     * likely to hit that are exactly the ones who have never rated: somebody
+     * who rates on their first card stops being asked anyway, because Play
+     * stops serving it and ReviewActivity stamps the completion.
+     *
+     * <p>Nothing is lost by continuing. An attempt outside the quota costs
+     * nothing and shows nothing; Google, not this file, is the authority on
+     * how often a card may appear. Our job is a cadence that is not rude,
+     * which is what the longer gap below is for.
+     *
+     * <p>Mirrors SETTLED_ASKS in client/src/reviewPrompt.js, which made the
+     * same change on the web side for the same reason.
+     */
+    private static final int SETTLED_ASKS = 4;
+
+    /** The gap once settled. Longer, but never infinite. */
+    private static final int SETTLED_REASK_DAYS = 180;
 
     private ReviewGate() {}
 
@@ -108,14 +134,17 @@ final class ReviewGate {
             SharedPreferences p = prefs(c);
             long now = System.currentTimeMillis();
 
-            if (p.getInt(KEY_ASK_COUNT, 0) >= MAX_ASKS) return false;
             if (p.getInt(KEY_LAUNCHES, 0) < MIN_LAUNCHES) return false;
 
             long first = p.getLong(KEY_FIRST_SEEN, 0);
             if (first == 0 || now - first < MIN_DAYS * DAY_MS) return false;
 
+            // Slows after SETTLED_ASKS; never stops. See the constant for why
+            // a count of attempts cannot be read as a count of cards seen.
+            int askCount = p.getInt(KEY_ASK_COUNT, 0);
+            int gapDays = askCount >= SETTLED_ASKS ? SETTLED_REASK_DAYS : REASK_AFTER_DAYS;
             long asked = p.getLong(KEY_LAST_ASKED, 0);
-            if (asked != 0 && now - asked < REASK_AFTER_DAYS * DAY_MS) return false;
+            if (asked != 0 && now - asked < (long) gapDays * DAY_MS) return false;
 
             // A flow has already completed on this device, from either side.
             // Not a tidiness nicety: Play's per-user quota is small and

@@ -8,11 +8,12 @@
 // call only if the endpoint is unreachable AND a local key happens to be set.
 
 import { ANTHROPIC_KEY } from './anthropic'
+import { VOICE_API } from './apiHosts.js'
 
 const KEY_STORAGE = 'walletlens_anthropic_key'
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
 const MODEL = 'claude-sonnet-4-6'
-const DEFAULT_VOICE_API = 'https://walletlens-voice-parse.tia8910.deno.net/'
+const DEFAULT_VOICE_API = VOICE_API
 
 function endpoint() {
   try {

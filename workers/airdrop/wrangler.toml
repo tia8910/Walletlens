@@ -1,0 +1,30 @@
+name = "walletlens-airdrop"
+main = "index.js"
+compatibility_date = "2026-06-21"
+
+# Replaces the Deno Deploy project that served the $LENZ airdrop registration
+# API. Nothing in the client calls it — walletlens.tia8910.deno.net appears only
+# as a dns-prefetch hint in index.html — so confirm it is still wanted before
+# spending a D1 database on it.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "walletlens-airdrop"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# No crons: this service only ever responded to requests.
+
+# Secrets, set with `wrangler secret put <NAME>`:
+#   ADMIN_TOKEN   gates /export
+#   IP_SALT       salts the hashed IP used for rate limiting
+#
+# Plain vars, safe in this file:
+[vars]
+SUI_RPC = "https://fullnode.mainnet.sui.io:443"
+MIN_TX = "1"
+# DELIBERATE CHANGE, flagged rather than slipped in: the Deno code falls back
+# to "*" when this is unset, so if the old deployment never set it, this
+# endpoint accepted cross-origin registrations from anywhere. Naming the site
+# here restores the intent. Widen it back if something legitimately calls this
+# from another origin.
+ALLOWED_ORIGIN = "https://walletlens.live"

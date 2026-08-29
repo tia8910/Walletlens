@@ -17,7 +17,7 @@
 // Must stay in sync with client/src/LanguageContext.jsx. An unknown code falls
 // back to English rather than throwing, so a missing language is silent — the
 // test suite checks every channel has copy in every language for that reason.
-export const LANGS = ['en', 'ar', 'fr', 'es']
+export const LANGS = ['en', 'ar', 'fr', 'es', 'de', 'it']
 
 export function asLang(raw) {
   return typeof raw === 'string' && LANGS.includes(raw) ? raw : undefined
@@ -53,6 +53,8 @@ export const COPY = {
     ar: (dir, sym) => `${dir} بلغ ${sym} هدفك`,
     fr: (dir, sym) => `${dir} ${sym} a atteint votre objectif`,
     es: (dir, sym) => `${dir} ${sym} ha alcanzado tu objetivo`,
+    de: (dir, sym) => `${dir} ${sym} hat Ihr Ziel erreicht`,
+    it: (dir, sym) => `${dir} ${sym} ha raggiunto il tuo obiettivo`,
   },
   targetBody: {
     en: (sym, cond, target, now) =>
@@ -63,6 +65,40 @@ export const COPY = {
       `${sym} est ${cond === 'above' ? 'au-dessus' : 'en dessous'} de ${target} $ — désormais à ${now} $.`,
     es: (sym, cond, target, now) =>
       `${sym} está ${cond === 'above' ? 'por encima' : 'por debajo'} de ${target} $: ahora ${now} $.`,
+    de: (sym, cond, target, now) =>
+      `${sym} liegt ${cond === 'above' ? 'über' : 'unter'} ${target} $ — jetzt ${now} $.`,
+    it: (sym, cond, target, now) =>
+      `${sym} è ${cond === 'above' ? 'sopra' : 'sotto'} ${target} $ — ora ${now} $.`,
+  },
+
+  // — Zakat year completing —
+  zakatTitle: {
+    en: (days) => days === 0 ? 'Your zakat is due today' : 'Your zakat year is nearly complete',
+    ar: (days) => days === 0 ? 'زكاتك تحلّ اليوم' : 'اقترب تمام حولك الزكوي',
+    fr: (days) => days === 0 ? 'Votre zakat est due aujourd\u2019hui' : 'Votre année zakat touche à sa fin',
+    es: (days) => days === 0 ? 'Tu zakat vence hoy' : 'Tu año de zakat está por completarse',
+    de: (days) => days === 0 ? 'Ihre Zakat ist heute fällig' : 'Ihr Zakat-Jahr ist bald vollendet',
+    it: (days) => days === 0 ? 'La tua zakat scade oggi' : 'Il tuo anno di zakat sta per completarsi',
+  },
+  zakatBody: {
+    en: (days) => days === 0
+      ? 'Your zakat year completes today. Open WalletLens to work out what is due.'
+      : `Your zakat year completes in ${days} days. Open WalletLens to see what is due.`,
+    ar: (days) => days === 0
+      ? 'يتمّ حولك الزكوي اليوم. افتح التطبيق لحساب ما يجب عليك.'
+      : `يتمّ حولك الزكوي بعد ${days} يوماً. افتح التطبيق لمعرفة ما يجب عليك.`,
+    fr: (days) => days === 0
+      ? 'Votre année zakat s\u2019achève aujourd\u2019hui. Ouvrez WalletLens pour calculer le montant dû.'
+      : `Votre année zakat s\u2019achève dans ${days} jours. Ouvrez WalletLens pour voir le montant dû.`,
+    es: (days) => days === 0
+      ? 'Tu año de zakat se completa hoy. Abre WalletLens para calcular lo que debes.'
+      : `Tu año de zakat se completa en ${days} días. Abre WalletLens para ver lo que debes.`,
+    de: (days) => days === 0
+      ? 'Ihr Zakat-Jahr ist heute vollendet. Öffnen Sie WalletLens, um den fälligen Betrag zu ermitteln.'
+      : `Ihr Zakat-Jahr ist in ${days} Tagen vollendet. Öffnen Sie WalletLens, um den fälligen Betrag zu sehen.`,
+    it: (days) => days === 0
+      ? 'Il tuo anno di zakat si completa oggi. Apri WalletLens per calcolare quanto è dovuto.'
+      : `Il tuo anno di zakat si completa tra ${days} giorni. Apri WalletLens per vedere quanto è dovuto.`,
   },
 
   // — Test push from Settings —
@@ -71,12 +107,16 @@ export const COPY = {
     ar: () => '🔔 تم تفعيل إشعارات WalletLens',
     fr: () => '🔔 Les notifications WalletLens sont activées',
     es: () => '🔔 Las notificaciones de WalletLens están activadas',
+    de: () => '🔔 WalletLens-Benachrichtigungen sind aktiv',
+    it: () => '🔔 Le notifiche WalletLens sono attive',
   },
   testBody: {
     en: () => 'Price moves, news on your assets and target alerts will now reach you even when the app is closed.',
     ar: () => 'ستصلك تحركات الأسعار وأخبار أصولك وتنبيهات الأهداف حتى عندما يكون التطبيق مغلقاً.',
     fr: () => 'Les mouvements de prix, l’actualité de vos actifs et vos alertes vous parviendront même application fermée.',
     es: () => 'Los movimientos de precio, las noticias de tus activos y tus alertas te llegarán aunque la app esté cerrada.',
+    de: () => 'Kursbewegungen, Nachrichten zu Ihren Anlagen und Zielalarme erreichen Sie ab jetzt auch bei geschlossener App.',
+    it: () => 'Movimenti di prezzo, notizie sui tuoi asset e avvisi sugli obiettivi ti raggiungeranno anche ad app chiusa.',
   },
 
   // — A holding moved sharply —
@@ -85,12 +125,16 @@ export const COPY = {
     ar: (sym, pct, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'يرتفع' : 'ينخفض'} ${pct}%`,
     fr: (sym, pct, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'en hausse' : 'en baisse'} de ${pct} %`,
     es: (sym, pct, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'sube' : 'baja'} un ${pct} %`,
+    de: (sym, pct, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'steigt' : 'fällt'} um ${pct} %`,
+    it: (sym, pct, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'sale' : 'scende'} del ${pct}%`,
   },
   moveBody: {
     en: (sym, pct, price, up) => `${sym} moved ${up ? '+' : '−'}${pct}% to ${price}. Tap to see the impact on your portfolio.`,
     ar: (sym, pct, price, up) => `تحرك ${sym} بنسبة ${up ? '+' : '−'}${pct}% إلى ${price}. اضغط لرؤية الأثر على محفظتك.`,
     fr: (sym, pct, price, up) => `${sym} a bougé de ${up ? '+' : '−'}${pct} % à ${price}. Touchez pour voir l’effet sur votre portefeuille.`,
     es: (sym, pct, price, up) => `${sym} se movió ${up ? '+' : '−'}${pct} % hasta ${price}. Toca para ver el efecto en tu cartera.`,
+    de: (sym, pct, price, up) => `${sym} hat sich um ${up ? '+' : '−'}${pct} % auf ${price} bewegt. Tippen Sie, um die Wirkung auf Ihr Portfolio zu sehen.`,
+    it: (sym, pct, price, up) => `${sym} si è mosso del ${up ? '+' : '−'}${pct}% a ${price}. Tocca per vedere l’effetto sul tuo portafoglio.`,
   },
 
   // — A round price level crossed —
@@ -103,12 +147,16 @@ export const COPY = {
     ar: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'يتجاوز' : 'ينزل تحت'} ${level}`,
     fr: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'franchit' : 'passe sous'} ${level}`,
     es: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'supera' : 'baja de'} ${level}`,
+    de: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'überschreitet' : 'fällt unter'} ${level}`,
+    it: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'supera' : 'scende sotto'} ${level}`,
   },
   levelBody: {
     en: (sym, price) => `${sym} is at ${price}. Tap to see the impact on your portfolio.`,
     ar: (sym, price) => `${sym} الآن عند ${price}. اضغط لرؤية الأثر على محفظتك.`,
     fr: (sym, price) => `${sym} est à ${price}. Touchez pour voir l’effet sur votre portefeuille.`,
     es: (sym, price) => `${sym} está en ${price}. Toca para ver el efecto en tu cartera.`,
+    de: (sym, price) => `${sym} steht bei ${price}. Tippen Sie, um die Wirkung auf Ihr Portfolio zu sehen.`,
+    it: (sym, price) => `${sym} è a ${price}. Tocca per vedere l’effetto sul tuo portafoglio.`,
   },
 
   // — Breaking news mentioning an asset the user holds —
@@ -117,12 +165,16 @@ export const COPY = {
     ar: (sym) => `📰 ${sym} في الأخبار`,
     fr: (sym) => `📰 ${sym} dans l’actualité`,
     es: (sym) => `📰 ${sym} en las noticias`,
+    de: (sym) => `📰 ${sym} in den Nachrichten`,
+    it: (sym) => `📰 ${sym} nelle notizie`,
   },
   newsBody: {
     en: (headline) => headline,
     ar: (headline) => headline,
     fr: (headline) => headline,
     es: (headline) => headline,
+    de: (headline) => headline,
+    it: (headline) => headline,
   },
 
   // — Daily brief, sent once each morning in the user's own timezone —
@@ -131,12 +183,16 @@ export const COPY = {
     ar: () => '☀️ موجز السوق الخاص بك',
     fr: () => '☀️ Votre point marché',
     es: () => '☀️ Tu resumen de mercado',
+    de: () => '☀️ Ihre Marktübersicht',
+    it: () => '☀️ Il tuo riepilogo di mercato',
   },
   digestBody: {
     en: (sym, pct, up, count) => `Biggest mover: ${sym} ${up ? '+' : '−'}${pct}% over 24h, across your ${count} tracked ${count === 1 ? 'asset' : 'assets'}.`,
     ar: (sym, pct, up, count) => `أكبر تحرك: ${sym} ${up ? '+' : '−'}${pct}% خلال ٢٤ ساعة، من بين ${count} من أصولك المتابَعة.`,
     fr: (sym, pct, up, count) => `Plus fort mouvement : ${sym} ${up ? '+' : '−'}${pct} % sur 24 h, parmi vos ${count} actifs suivis.`,
     es: (sym, pct, up, count) => `Mayor movimiento: ${sym} ${up ? '+' : '−'}${pct} % en 24 h, entre tus ${count} activos seguidos.`,
+    de: (sym, pct, up, count) => `Größte Bewegung: ${sym} ${up ? '+' : '−'}${pct} % in 24 Std., unter Ihren ${count} verfolgten Anlagen.`,
+    it: (sym, pct, up, count) => `Movimento maggiore: ${sym} ${up ? '+' : '−'}${pct}% in 24 h, tra i tuoi ${count} asset seguiti.`,
   },
 
   // — Feature tips. One-off, each gated on the user's own state (FEATURE_TIPS) —
@@ -145,12 +201,16 @@ export const COPY = {
     ar: () => '\u{1F4C8} قرّر نقطة خروجك قبل أن تحتاجها',
     fr: () => '\u{1F4C8} D\u00e9cidez de votre sortie \u00e0 l\u2019avance',
     es: () => '\u{1F4C8} Decide tu salida antes de necesitarla',
+    de: () => '\u{1F4C8} Legen Sie Ihren Ausstieg fest, bevor Sie ihn brauchen',
+    it: () => '\u{1F4C8} Decidi la tua uscita prima di averne bisogno',
   },
   featCoinTargetsBody: {
     en: () => 'Set take-profit and stop-loss levels per asset, and WalletLens tracks how close each one is \u2014 so the plan is made calmly, not mid-crash.',
     ar: () => 'حدّد مستويات جني الأرباح ووقف الخسارة لكل أصل، ويتابع WalletLens قرب كل منها — لتضع الخطة بهدوء لا وسط الانهيار.',
     fr: () => 'D\u00e9finissez des niveaux de prise de b\u00e9n\u00e9fice et de stop par actif : WalletLens suit leur proximit\u00e9, pour d\u00e9cider \u00e0 froid.',
     es: () => 'Fija niveles de toma de beneficios y stop por activo; WalletLens sigue lo cerca que est\u00e1 cada uno, para decidir en fr\u00edo.',
+    de: () => 'Setzen Sie je Anlage Gewinnziele und Verluststopps; WalletLens verfolgt, wie nah jedes davon ist — so entsteht der Plan in Ruhe, nicht mitten im Absturz.',
+    it: () => 'Fissa livelli di presa di profitto e di stop per ogni asset: WalletLens segue quanto è vicino ciascuno, così il piano nasce a mente fredda.',
   },
 
   featDriveTitle: {
@@ -158,12 +218,16 @@ export const COPY = {
     ar: () => '\u{1F510} محفظتك موجودة في متصفح واحد فقط',
     fr: () => '\u{1F510} Votre portefeuille n\u2019existe que dans un navigateur',
     es: () => '\u{1F510} Tu cartera vive en un solo navegador',
+    de: () => '\u{1F510} Ihr Portfolio lebt in einem einzigen Browser',
+    it: () => '\u{1F510} Il tuo portafoglio vive in un solo browser',
   },
   featDriveBody: {
     en: () => 'Clear your site data and it\u2019s gone. Turn on encrypted Google Drive backup \u2014 we can\u2019t read it, and it restores in one tap.',
     ar: () => 'امسح بيانات الموقع وستختفي. فعّل النسخ الاحتياطي المشفّر إلى Google Drive — لا يمكننا قراءته، ويُستعاد بضغطة واحدة.',
     fr: () => 'Videz les donn\u00e9es du site et tout dispara\u00eet. Activez la sauvegarde Google Drive chiffr\u00e9e \u2014 illisible pour nous, restaur\u00e9e en un geste.',
     es: () => 'Si borras los datos del sitio, desaparece. Activa la copia cifrada en Google Drive: no podemos leerla y se restaura de un toque.',
+    de: () => 'Löschen Sie die Websitedaten und es ist weg. Aktivieren Sie das verschlüsselte Google-Drive-Backup — wir können es nicht lesen, und es lässt sich mit einem Tippen wiederherstellen.',
+    it: () => 'Se cancelli i dati del sito, sparisce. Attiva il backup cifrato su Google Drive: noi non possiamo leggerlo e si ripristina con un tocco.',
   },
 
   featQrtransferTitle: {
@@ -171,12 +235,16 @@ export const COPY = {
     ar: () => '\u{1F4F1} هل تنتقل إلى هاتف جديد؟',
     fr: () => '\u{1F4F1} Vous changez de t\u00e9l\u00e9phone ?',
     es: () => '\u{1F4F1} \u00bfCambias de tel\u00e9fono?',
+    de: () => '\u{1F4F1} Umzug auf ein neues Handy?',
+    it: () => '\u{1F4F1} Stai passando a un telefono nuovo?',
   },
   featQrtransferBody: {
     en: () => 'Scan one QR code and your whole portfolio moves across \u2014 offline, no account, nothing sent anywhere.',
     ar: () => 'امسح رمز QR واحداً لتنتقل محفظتك بالكامل — دون إنترنت ودون حساب ودون إرسال أي شيء.',
     fr: () => 'Scannez un QR code et tout votre portefeuille suit \u2014 hors ligne, sans compte, rien n\u2019est envoy\u00e9.',
     es: () => 'Escanea un c\u00f3digo QR y toda tu cartera se muda: sin conexi\u00f3n, sin cuenta y sin enviar nada.',
+    de: () => 'Einen QR-Code scannen und das ganze Portfolio zieht mit — offline, ohne Konto, ohne dass etwas verschickt wird.',
+    it: () => 'Scansiona un QR e tutto il portafoglio si sposta — offline, senza account, senza inviare nulla.',
   },
 
   featSmartimportTitle: {
@@ -184,12 +252,16 @@ export const COPY = {
     ar: () => '\u{1F399}\uFE0F توقّف عن إدخال صفقاتك يدوياً',
     fr: () => '\u{1F399}\uFE0F Arr\u00eatez de saisir vos trades',
     es: () => '\u{1F399}\uFE0F Deja de teclear tus operaciones',
+    de: () => '\u{1F399}\uFE0F Schluss mit dem Eintippen Ihrer Trades',
+    it: () => '\u{1F399}\uFE0F Smetti di digitare le tue operazioni',
   },
   featSmartimportBody: {
     en: () => 'Say \u201cI bought half a Bitcoin at 65K\u201d, or screenshot any exchange \u2014 WalletLens reads it and fills in the trade.',
     ar: () => 'قل «اشتريت نصف بيتكوين بسعر ٦٥ ألفاً»، أو التقط صورة لأي منصة — يقرأها WalletLens ويملأ الصفقة.',
     fr: () => 'Dites \u00ab j\u2019ai achet\u00e9 un demi-Bitcoin \u00e0 65K \u00bb, ou capturez n\u2019importe quelle plateforme : WalletLens lit et remplit la transaction.',
     es: () => 'Di \u00abcompr\u00e9 medio Bitcoin a 65K\u00bb o haz una captura de cualquier exchange: WalletLens lo lee y rellena la operaci\u00f3n.',
+    de: () => 'Sagen Sie „Ich habe einen halben Bitcoin zu 65.000 gekauft“ oder fotografieren Sie eine beliebige Börse — WalletLens liest es und trägt den Trade ein.',
+    it: () => 'Di’ «ho comprato mezzo Bitcoin a 65K», oppure fotografa qualsiasi exchange: WalletLens lo legge e compila l’operazione.',
   },
 
   featApplockTitle: {
@@ -197,84 +269,112 @@ export const COPY = {
     ar: () => '\u{1F512} محفظتك غير مقفلة الآن',
     fr: () => '\u{1F512} Votre portefeuille est d\u00e9verrouill\u00e9',
     es: () => '\u{1F512} Tu cartera est\u00e1 desbloqueada ahora',
+    de: () => '\u{1F512} Ihr Portfolio ist gerade entsperrt',
+    it: () => '\u{1F512} Il tuo portafoglio è sbloccato in questo momento',
   },
   featApplockBody: {
     en: () => 'Anyone holding your phone can open WalletLens and read every number. App Lock puts your fingerprint in front of it.',
     ar: () => 'أي شخص يمسك هاتفك يمكنه فتح WalletLens وقراءة كل رقم. قفل التطبيق يضع بصمتك أمامه.',
     fr: () => 'Quiconque tient votre t\u00e9l\u00e9phone peut ouvrir WalletLens et lire chaque chiffre. Le verrou place votre empreinte devant.',
     es: () => 'Cualquiera con tu tel\u00e9fono puede abrir WalletLens y leer cada cifra. El bloqueo pone tu huella delante.',
+    de: () => 'Wer Ihr Handy in der Hand hält, kann WalletLens öffnen und jede Zahl lesen. Die App-Sperre stellt Ihren Fingerabdruck davor.',
+    it: () => 'Chiunque abbia in mano il tuo telefono può aprire WalletLens e leggere ogni cifra. Il blocco app mette la tua impronta davanti.',
   },
   featTechnicalsTitle: {
     en: () => '\u{1F4C9} RSI, MACD and moving averages on what you hold',
     ar: () => '\u{1F4C9} مؤشرات RSI و MACD والمتوسطات لما تملكه',
     fr: () => '\u{1F4C9} RSI, MACD et moyennes mobiles sur vos actifs',
     es: () => '\u{1F4C9} RSI, MACD y medias m\u00f3viles de lo que tienes',
+    de: () => '\u{1F4C9} RSI, MACD und gleitende Durchschnitte für Ihre Bestände',
+    it: () => '\u{1F4C9} RSI, MACD e medie mobili su ciò che possiedi',
   },
   featTechnicalsBody: {
     en: () => 'The Technicals page reads your own holdings, so you are not looking up tickers one at a time somewhere else.',
     ar: () => 'صفحة التحليل الفني تقرأ ممتلكاتك، فلا تبحث عن كل رمز على حدة في مكان آخر.',
     fr: () => 'La page Technique lit vos propres avoirs \u2014 plus besoin de chercher chaque ticker ailleurs.',
     es: () => 'La p\u00e1gina T\u00e9cnica lee tus propias posiciones, sin buscar cada ticker por separado.',
+    de: () => 'Die Technik-Seite liest Ihre eigenen Positionen, sodass Sie nicht anderswo jedes Kürzel einzeln nachschlagen.',
+    it: () => 'La pagina Tecnica legge le tue posizioni, così non devi cercare ogni simbolo altrove.',
   },
   featWhalesTitle: {
     en: () => '\u{1F40B} Someone just moved a very large amount of BTC',
     ar: () => '\u{1F40B} شخص ما حرّك للتو كمية ضخمة من البيتكوين',
     fr: () => '\u{1F40B} Quelqu\u2019un vient de d\u00e9placer une tr\u00e8s grosse somme en BTC',
     es: () => '\u{1F40B} Alguien acaba de mover una cantidad enorme de BTC',
+    de: () => '\u{1F40B} Jemand hat gerade sehr viel BTC bewegt',
+    it: () => '\u{1F40B} Qualcuno ha appena mosso moltissimi BTC',
   },
   featWhalesBody: {
     en: () => 'WalletLens watches the Bitcoin chain for transactions over $1M. Worth a look when the market moves and nobody says why.',
     ar: () => 'يراقب WalletLens شبكة البيتكوين بحثًا عن تحويلات تتجاوز مليون دولار. يستحق النظر عندما يتحرك السوق دون سبب معلن.',
     fr: () => 'WalletLens surveille la cha\u00eene Bitcoin pour les transactions de plus d\u2019un million. Utile quand le march\u00e9 bouge sans raison annonc\u00e9e.',
     es: () => 'WalletLens vigila la cadena de Bitcoin por transacciones de m\u00e1s de un mill\u00f3n. \u00datil cuando el mercado se mueve sin motivo aparente.',
+    de: () => 'WalletLens beobachtet die Bitcoin-Chain auf Transaktionen über 1 Mio. $. Ein Blick lohnt sich, wenn der Markt sich bewegt und niemand sagt warum.',
+    it: () => 'WalletLens osserva la catena Bitcoin per transazioni sopra 1 M$. Vale un’occhiata quando il mercato si muove e nessuno spiega perché.',
   },
   featCoachTitle: {
     en: () => '\u{1F9ED} A second opinion on how your portfolio is built',
     ar: () => '\u{1F9ED} رأي ثانٍ في طريقة بناء محفظتك',
     fr: () => '\u{1F9ED} Un second avis sur la construction de votre portefeuille',
     es: () => '\u{1F9ED} Una segunda opini\u00f3n sobre c\u00f3mo est\u00e1 armada tu cartera',
+    de: () => '\u{1F9ED} Eine zweite Meinung zum Aufbau Ihres Portfolios',
+    it: () => '\u{1F9ED} Un secondo parere su come è costruito il tuo portafoglio',
   },
   featCoachBody: {
     en: () => 'Coach looks at concentration, overlap and what you are actually exposed to \u2014 not at what it thinks you should buy.',
     ar: () => 'يفحص المدرّب التركّز والتداخل وما أنت معرّض له فعليًا \u2014 لا ما يظن أنه عليك شراؤه.',
     fr: () => 'Coach examine la concentration, les doublons et votre exposition r\u00e9elle \u2014 pas ce qu\u2019il pense que vous devriez acheter.',
     es: () => 'Coach mira la concentraci\u00f3n, el solapamiento y tu exposici\u00f3n real \u2014 no lo que cree que deber\u00edas comprar.',
+    de: () => 'Der Coach betrachtet Konzentration, Überschneidungen und Ihre tatsächliche Beteiligung — nicht das, was er meint, dass Sie kaufen sollten.',
+    it: () => 'Il Coach guarda concentrazione, sovrapposizioni e la tua esposizione reale — non quello che pensa dovresti comprare.',
   },
   featRebalanceTitle: {
     en: () => '\u2696\uFE0F Your mix has drifted from where you set it',
     ar: () => '\u2696\uFE0F توزيع محفظتك انحرف عمّا حددته',
     fr: () => '\u2696\uFE0F Votre r\u00e9partition a d\u00e9riv\u00e9',
     es: () => '\u2696\uFE0F Tu distribuci\u00f3n se ha desviado',
+    de: () => '\u2696\uFE0F Ihre Mischung ist von Ihrer Vorgabe abgedriftet',
+    it: () => '\u2696\uFE0F Il tuo mix si è allontanato da come lo avevi impostato',
   },
   featRebalanceBody: {
     en: () => 'The rebalancing calculator shows the exact trades to get back to your target weights, using your real holdings.',
     ar: () => 'حاسبة إعادة التوازن تعرض الصفقات الدقيقة للعودة إلى أوزانك المستهدفة، باستخدام ممتلكاتك الحقيقية.',
     fr: () => 'Le calculateur de r\u00e9\u00e9quilibrage montre les op\u00e9rations exactes pour revenir \u00e0 vos pond\u00e9rations cibles.',
     es: () => 'La calculadora de reequilibrio muestra las operaciones exactas para volver a tus pesos objetivo.',
+    de: () => 'Der Rebalancing-Rechner zeigt die genauen Trades zurück zu Ihren Zielgewichten, auf Basis Ihrer echten Bestände.',
+    it: () => 'Il calcolatore di ribilanciamento mostra le operazioni esatte per tornare ai pesi voluti, sulle tue posizioni reali.',
   },
   featAcademyTitle: {
     en: () => '\u{1F393} The part most trackers leave out',
     ar: () => '\u{1F393} الجزء الذي تتجاهله معظم التطبيقات',
     fr: () => '\u{1F393} Ce que la plupart des trackers omettent',
     es: () => '\u{1F393} La parte que casi ning\u00fan tracker incluye',
+    de: () => '\u{1F393} Der Teil, den die meisten Tracker weglassen',
+    it: () => '\u{1F393} La parte che quasi tutti i tracker tralasciano',
   },
   featAcademyBody: {
     en: () => 'Short, plain explanations of what you are holding and the mistakes that cost people the most. No jargon, no upsell.',
     ar: () => 'شروح قصيرة وواضحة لما تملكه وللأخطاء الأكثر كلفة. بلا مصطلحات ولا عروض بيع.',
     fr: () => 'Des explications courtes et claires sur ce que vous d\u00e9tenez et les erreurs les plus co\u00fbteuses. Sans jargon ni argumentaire.',
     es: () => 'Explicaciones breves y claras de lo que tienes y de los errores que m\u00e1s cuestan. Sin jerga ni venta.',
+    de: () => 'Kurze, klare Erklärungen zu dem, was Sie halten, und zu den Fehlern, die am meisten kosten. Kein Fachjargon, kein Verkaufsdruck.',
+    it: () => 'Spiegazioni brevi e chiare su ciò che possiedi e sugli errori che costano di più. Senza gergo e senza spinte commerciali.',
   },
   featGuardianTitle: {
     en: () => '\u{1F6E1}\uFE0F Who reaches your portfolio if you can\u2019t?',
     ar: () => '\u{1F6E1}\uFE0F من يصل إلى محفظتك إن لم تستطع أنت؟',
     fr: () => '\u{1F6E1}\uFE0F Qui acc\u00e8de \u00e0 votre portefeuille si vous ne le pouvez plus ?',
     es: () => '\u{1F6E1}\uFE0F \u00bfQui\u00e9n accede a tu cartera si t\u00fa no puedes?',
+    de: () => '\u{1F6E1}\uFE0F Wer erreicht Ihr Portfolio, wenn Sie es nicht können?',
+    it: () => '\u{1F6E1}\uFE0F Chi raggiunge il tuo portafoglio se tu non puoi?',
   },
   featGuardianBody: {
     en: () => 'Portfolio Guardian quietly checks you\u2019re still around, and passes your holdings list to someone you trust if you stop answering.',
     ar: () => 'يتحقق حارس المحفظة بهدوء من أنك ما زلت موجوداً، ويمرّر قائمة أصولك إلى شخص تثق به إذا توقفت عن الرد.',
     fr: () => 'Portfolio Guardian v\u00e9rifie discr\u00e8tement que vous \u00eates l\u00e0, et transmet la liste de vos avoirs \u00e0 un proche si vous ne r\u00e9pondez plus.',
     es: () => 'Portfolio Guardian comprueba en silencio que sigues ah\u00ed y entrega tu lista de activos a alguien de confianza si dejas de responder.',
+    de: () => 'Der Portfolio-Wächter prüft unauffällig, ob Sie noch da sind, und gibt Ihre Bestandsliste an eine Vertrauensperson weiter, wenn Sie nicht mehr antworten.',
+    it: () => 'Il Guardiano del portafoglio verifica con discrezione che tu ci sia, e passa l’elenco delle tue posizioni a una persona di fiducia se smetti di rispondere.',
   },
 
   featVisionTitle: {
@@ -282,12 +382,16 @@ export const COPY = {
     ar: () => '\u{1F3AF} امنح أموالك وجهة',
     fr: () => '\u{1F3AF} Donnez une destination \u00e0 votre argent',
     es: () => '\u{1F3AF} Dale un destino a tu dinero',
+    de: () => '\u{1F3AF} Geben Sie Ihrem Geld ein Ziel',
+    it: () => '\u{1F3AF} Dai una destinazione ai tuoi soldi',
   },
   featVisionBody: {
     en: () => 'Vision Goals splits your portfolio into buckets \u2014 emergency fund, house, retirement \u2014 and tracks each one filling up.',
     ar: () => 'تقسّم «أهداف الرؤية» محفظتك إلى سلال — صندوق طوارئ، منزل، تقاعد — وتتابع امتلاء كل واحدة.',
     fr: () => 'Vision Goals r\u00e9partit votre portefeuille en objectifs \u2014 \u00e9pargne de secours, logement, retraite \u2014 et suit leur progression.',
     es: () => 'Vision Goals reparte tu cartera en metas \u2014 fondo de emergencia, casa, jubilaci\u00f3n \u2014 y sigue c\u00f3mo se llenan.',
+    de: () => 'Visionsziele teilen Ihr Portfolio in Töpfe — Notgroschen, Haus, Ruhestand — und verfolgen, wie sich jeder füllt.',
+    it: () => 'Gli Obiettivi Visione dividono il portafoglio in contenitori — fondo di emergenza, casa, pensione — e seguono il riempimento di ciascuno.',
   },
 
   featWatchlistTitle: {
@@ -295,12 +399,16 @@ export const COPY = {
     ar: () => '\u{1F440} تابع ما لا تملكه بعد',
     fr: () => '\u{1F440} Suivez ce que vous ne d\u00e9tenez pas encore',
     es: () => '\u{1F440} Vigila lo que a\u00fan no tienes',
+    de: () => '\u{1F440} Behalten Sie im Blick, was Sie noch nicht besitzen',
+    it: () => '\u{1F440} Tieni d’occhio ciò che non possiedi ancora',
   },
   featWatchlistBody: {
     en: () => 'Add coins and stocks you\u2019re considering to your watchlist, and we\u2019ll alert you when one reaches the price you want.',
     ar: () => 'أضف العملات والأسهم التي تفكر بها إلى قائمة متابعتك، وسننبّهك عندما يبلغ أحدها السعر الذي تريده.',
     fr: () => 'Ajoutez \u00e0 votre liste de suivi les actifs qui vous int\u00e9ressent : nous vous alerterons au prix voulu.',
     es: () => 'A\u00f1ade a tu lista de seguimiento lo que est\u00e1s considerando y te avisaremos cuando llegue al precio que quieras.',
+    de: () => 'Setzen Sie Coins und Aktien, die Sie erwägen, auf die Watchlist — wir melden uns, sobald einer Ihren Wunschkurs erreicht.',
+    it: () => 'Aggiungi alla watchlist monete e titoli che stai valutando: ti avvisiamo appena uno raggiunge il prezzo che vuoi.',
   },
 
   featWeeklyTitle: {
@@ -308,12 +416,16 @@ export const COPY = {
     ar: () => '\u{1F4EC} محفظتك في ملخّص أسبوعي',
     fr: () => '\u{1F4EC} Votre portefeuille r\u00e9sum\u00e9 chaque semaine',
     es: () => '\u{1F4EC} Tu cartera resumida cada semana',
+    de: () => '\u{1F4EC} Ihr Portfolio, jede Woche zusammengefasst',
+    it: () => '\u{1F4EC} Il tuo portafoglio, riassunto ogni settimana',
   },
   featWeeklyBody: {
     en: () => 'A branded weekly report in your inbox \u2014 performance, allocation and P&L. Your transactions never leave the device.',
     ar: () => 'تقرير أسبوعي في بريدك — الأداء والتوزيع والأرباح والخسائر. ومعاملاتك لا تغادر جهازك أبداً.',
     fr: () => 'Un rapport hebdomadaire dans votre bo\u00eete mail \u2014 performance, r\u00e9partition et P&L. Vos transactions ne quittent jamais l\u2019appareil.',
     es: () => 'Un informe semanal en tu correo \u2014 rendimiento, distribuci\u00f3n y P&L. Tus transacciones nunca salen del dispositivo.',
+    de: () => 'Ein gestalteter Wochenbericht in Ihrem Posteingang — Entwicklung, Aufteilung und Gewinn. Ihre Transaktionen verlassen das Gerät nie.',
+    it: () => 'Un report settimanale curato nella tua posta — rendimento, allocazione e utili. Le tue transazioni non lasciano mai il dispositivo.',
   },
 
   featTargetsTitle: {
@@ -321,12 +433,16 @@ export const COPY = {
     ar: () => '🎯 اعرف لحظة بلوغ سعرك',
     fr: () => '🎯 Soyez pr\u00e9venu d\u00e8s que votre prix est atteint',
     es: () => '🎯 Ent\u00e9rate en cuanto se alcance tu precio',
+    de: () => '🎯 Erfahren Sie es in dem Moment, in dem Ihr Kurs erreicht wird',
+    it: () => '🎯 Sappilo nel momento in cui il tuo prezzo viene raggiunto',
   },
   featTargetsBody: {
     en: (sym) => `Set a target on ${sym} and WalletLens will alert you the moment it hits — no need to keep checking.`,
     ar: (sym) => `حدّد هدفاً لـ ${sym} وسينبّهك WalletLens لحظة بلوغه — دون الحاجة إلى المتابعة المستمرة.`,
     fr: (sym) => `D\u00e9finissez un objectif sur ${sym} et WalletLens vous alertera d\u00e8s qu\u2019il est atteint, sans v\u00e9rifier sans cesse.`,
     es: (sym) => `Fija un objetivo en ${sym} y WalletLens te avisar\u00e1 en cuanto se alcance, sin tener que mirar a cada rato.`,
+    de: (sym) => `Setzen Sie ein Ziel für ${sym} und WalletLens meldet sich, sobald es erreicht ist — kein ständiges Nachsehen nötig.`,
+    it: (sym) => `Imposta un obiettivo su ${sym} e WalletLens ti avviserà appena viene raggiunto — senza controllare di continuo.`,
   },
 
   featDiversifyTitle: {
@@ -334,12 +450,16 @@ export const COPY = {
     ar: () => '📊 اطّلع على صافي ثروتك كاملاً',
     fr: () => '📊 Voyez tout votre patrimoine',
     es: () => '📊 Mira tu patrimonio completo',
+    de: () => '📊 Sehen Sie Ihr ganzes Vermögen',
+    it: () => '📊 Guarda tutto il tuo patrimonio',
   },
   featDiversifyBody: {
     en: () => 'Add the rest of what you own — crypto, stocks, gold and cash — for one live view of your net worth.',
     ar: () => 'أضف بقية ما تملك — العملات الرقمية والأسهم والذهب والنقد — للحصول على عرض حيّ واحد لصافي ثروتك.',
     fr: () => 'Ajoutez le reste de ce que vous poss\u00e9dez \u2014 crypto, actions, or et liquidit\u00e9s \u2014 pour une vue unique et en direct.',
     es: () => 'A\u00f1ade el resto de lo que tienes \u2014 cripto, acciones, oro y efectivo \u2014 para una \u00fanica vista en vivo.',
+    de: () => 'Ergänzen Sie den Rest Ihres Besitzes — Krypto, Aktien, Gold und Bargeld — für eine einzige Live-Ansicht Ihres Vermögens.',
+    it: () => 'Aggiungi il resto di ciò che possiedi — cripto, azioni, oro e liquidità — per un’unica vista dal vivo del tuo patrimonio.',
   },
 
   featMultiassetTitle: {
@@ -347,12 +467,16 @@ export const COPY = {
     ar: () => '🏦 WalletLens يتتبّع أكثر من العملات الرقمية',
     fr: () => '🏦 WalletLens ne suit pas que la crypto',
     es: () => '🏦 WalletLens no solo rastrea cripto',
+    de: () => '🏦 WalletLens verfolgt mehr als Krypto',
+    it: () => '🏦 WalletLens non segue solo le cripto',
   },
   featMultiassetBody: {
     en: () => 'Stocks, gold, silver, cash and real estate sit alongside your coins — one net-worth dashboard, still no account.',
     ar: () => 'الأسهم والذهب والفضة والنقد والعقارات إلى جانب عملاتك — لوحة واحدة لصافي الثروة، وبلا حساب.',
     fr: () => 'Actions, or, argent, liquidit\u00e9s et immobilier c\u00f4toient vos cryptos \u2014 un seul tableau de bord, toujours sans compte.',
     es: () => 'Acciones, oro, plata, efectivo e inmuebles junto a tus monedas: un solo panel, y sin cuenta.',
+    de: () => 'Aktien, Gold, Silber, Bargeld und Immobilien stehen neben Ihren Coins — ein Vermögens-Dashboard, weiterhin ohne Konto.',
+    it: () => 'Azioni, oro, argento, liquidità e immobili stanno accanto alle tue monete — un’unica dashboard patrimoniale, sempre senza account.',
   },
 
   // — Win-back for users who stopped opening the app —
@@ -377,6 +501,16 @@ export const COPY = {
       : step <= 14 ? 'Dos semanas: esto ha cambiado'
       : step <= 30 ? 'Tu lista de seguimiento sigue activa'
       : 'Seguimos haciendo el seguimiento por ti',
+    de: (step) => step <= 3 ? 'Die Märkte haben sich bewegt, während Sie weg waren'
+      : step <= 7 ? 'Eine Woche Marktbewegungen'
+      : step <= 14 ? 'Zwei Wochen — das hat sich geändert'
+      : step <= 30 ? 'Ihre Watchlist läuft weiter'
+      : 'Wir haben für Sie weiter verfolgt',
+    it: (step) => step <= 3 ? 'I mercati si sono mossi mentre eri via'
+      : step <= 7 ? 'Una settimana di movimenti di mercato'
+      : step <= 14 ? 'Due settimane — ecco che cosa è cambiato'
+      : step <= 30 ? 'La tua watchlist è ancora attiva'
+      : 'Abbiamo continuato a seguire per te',
   },
   /** Used when we know how one of their assets actually moved — far stronger. */
   retentionMoverBody: {
@@ -384,6 +518,8 @@ export const COPY = {
     ar: (sym, pct, up) => `${sym} ${up ? 'مرتفع' : 'منخفض'} بنسبة ${pct}% منذ آخر زيارة. شاهد أثر ذلك على محفظتك.`,
     fr: (sym, pct, up) => `${sym} est ${up ? 'en hausse' : 'en baisse'} de ${pct} % depuis votre dernière visite. Voyez l’effet sur votre portefeuille.`,
     es: (sym, pct, up) => `${sym} ${up ? 'sube' : 'baja'} un ${pct} % desde tu última visita. Mira el efecto en tu cartera.`,
+    de: (sym, pct, up) => `${sym} ist seit Ihrem letzten Besuch ${pct} % ${up ? 'im Plus' : 'im Minus'}. Sehen Sie, was das mit Ihrem Portfolio gemacht hat.`,
+    it: (sym, pct, up) => `${sym} è ${up ? 'in rialzo' : 'in calo'} del ${pct}% dalla tua ultima visita. Guarda l’effetto sul tuo portafoglio.`,
   },
 }
 
@@ -685,7 +821,8 @@ export const DEFAULT_PREFS = {
   digest: true,     // morning brief — only sends when something actually moved
   retention: true,  // win-back nudges while idle
   features: true,   // one-off tips, each gated on the user's own state
-  movePct: 5,       // swing threshold, percent
+  zakat: true,      // the zakat year completing — a date, never an amount
+  movePct: 2,       // swing threshold, percent
 }
 
 const MIN_MOVE_PCT = 1
@@ -704,8 +841,133 @@ export function sanitizePrefs(raw) {
     digest: bool(p.digest, DEFAULT_PREFS.digest),
     retention: bool(p.retention, DEFAULT_PREFS.retention),
     features: bool(p.features, DEFAULT_PREFS.features),
+    zakat: bool(p.zakat, DEFAULT_PREFS.zakat),
     movePct: pct,
   }
+}
+
+// ── Merging a cron's copy back over the stored row ──────────────────────────
+//
+// allSubs() caches its full-table scan for minutes (see main.ts), so the row a
+// cron mutated can be well out of date by the time it is written. Writing it
+// wholesale would undo whatever the user did meanwhile — a preference change,
+// a new alert, the /seen heartbeat that says they came back.
+//
+// So the write is a merge, and the rule is ownership. Every field below is
+// written ONLY by the HTTP handlers; the cron never touches them, so the
+// stored value always wins.
+export const USER_OWNED_FIELDS = [
+  'subscription', 'alerts', 'watch', 'setup', 'prefs',
+  'lang', 'tz', 'lastSeen', 'zakatDue',
+]
+
+/**
+ * Combine the row a cron mutated with the row currently in storage.
+ *
+ * @param mutated the cron's copy, carrying whatever it just recorded
+ * @param fresh   the row as stored right now, or null if it has been deleted
+ * @returns the row to write, or null when there is nothing to write to
+ */
+export function mergeSubForWrite(mutated, fresh) {
+  // Deleted mid-run. An unsubscribe must not be undone by a cron that was
+  // already holding the row.
+  if (!fresh) return null
+  if (!mutated) return fresh
+
+  const merged = { ...mutated }
+  for (const f of USER_OWNED_FIELDS) merged[f] = fresh[f]
+
+  // zakatSent is bookkeeping FOR a specific zakatDue. If the user moved the
+  // date while this run was in flight, the reminders already sent belong to
+  // the old date, and the reset that came with the new one is what counts.
+  if (fresh.zakatDue !== mutated.zakatDue) {
+    merged.zakatSent = Array.isArray(fresh.zakatSent) ? fresh.zakatSent : []
+  }
+
+  // retention is the one field both sides write: the win-back ladder APPENDS
+  // the step it just sent, and /seen CLEARS the list because the user came
+  // back. Taking it fresh unconditionally would drop the append and re-send
+  // the same nudge every run; keeping ours would ignore the return visit. An
+  // empty stored list means /seen ran, and that wins; otherwise our copy
+  // carries the append.
+  const freshRetention = Array.isArray(fresh.retention) ? fresh.retention : []
+  merged.retention = freshRetention.length === 0
+    ? []
+    : (Array.isArray(mutated.retention) ? mutated.retention : freshRetention)
+
+  return merged
+}
+
+// ── Zakat reminders ─────────────────────────────────────────────────────────
+// The one thing the server is told is a DATE. Not the amount, not the
+// portfolio value, not whether the user is above nisab — all of that is worked
+// out on the device and stays there. A reminder that says "your zakat year
+// completes today" needs nothing else, and asking for more would break the
+// promise the rest of this file keeps.
+//
+// Three reminders: a month out (time to arrange the money), a week out, and on
+// the day. Each fires once per due date, tracked by key.
+
+export const ZAKAT_MILESTONES = [30, 7, 0]
+
+const DAY_MS = 86400000
+
+/** 'YYYY-MM-DD' → epoch ms at UTC midnight, or NaN if malformed. */
+export function parseDayKey(s) {
+  if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return NaN
+  const [y, m, d] = s.split('-').map(Number)
+  if (m < 1 || m > 12 || d < 1 || d > 31) return NaN
+  const t = Date.UTC(y, m - 1, d)
+  // Round-trip guard: Date.UTC happily accepts 2025-02-31.
+  const back = new Date(t)
+  if (back.getUTCMonth() !== m - 1 || back.getUTCDate() !== d) return NaN
+  return t
+}
+
+export function sanitizeZakatDue(raw) {
+  if (raw == null) return null
+  const t = parseDayKey(raw)
+  if (!Number.isFinite(t)) return null
+  // A zakat year is one lunar year, so a due date more than ~14 months out or
+  // more than a year past is not a date this app produced.
+  const now = Date.now()
+  if (t > now + 430 * DAY_MS || t < now - 400 * DAY_MS) return null
+  return raw
+}
+
+/**
+ * Which zakat reminder, if any, is due today.
+ *
+ * @param dueDate 'YYYY-MM-DD' — the user's own zakat anniversary
+ * @param today   'YYYY-MM-DD' in the user's local timezone
+ * @param sent    keys already delivered
+ * @returns { days, key } or null
+ */
+export function dueZakatReminder({ dueDate, today, sent = [] }) {
+  const due = parseDayKey(dueDate)
+  const now = parseDayKey(today)
+  if (!Number.isFinite(due) || !Number.isFinite(now)) return null
+
+  const daysOut = Math.round((due - now) / DAY_MS)
+  // Past the date: the app rolls the year forward once it is paid, so a due
+  // date in the past means it has not been. Keep saying so on the day itself
+  // only — a daily nag about an obligation is not this app's place.
+  if (daysOut < 0) return null
+
+  // The largest milestone at or above today's distance, so a phone that was
+  // off for the 30-day mark still gets the 7-day one rather than nothing.
+  const hit = ZAKAT_MILESTONES.find(m => daysOut === m)
+  if (hit === undefined) return null
+
+  const key = `${dueDate}:${hit}`
+  if (sent.includes(key)) return null
+  return { days: hit, key }
+}
+
+/** Keep the sent-key list from growing without bound. */
+export function trimZakatSent(sent, max = 12) {
+  const list = Array.isArray(sent) ? sent.filter(x => typeof x === 'string') : []
+  return list.length > max ? list.slice(list.length - max) : list
 }
 
 // ── Watch list ──────────────────────────────────────────────────────────────
@@ -1055,6 +1317,7 @@ export const CHANNEL_URL = {
   digest: '/dashboard',
   retention: '/dashboard',
   feature: '/dashboard',
+  zakat: '/dashboard?tab=tools',
   test: '/settings',
 }
 
@@ -1082,6 +1345,12 @@ export const CHANNEL_DELIVERY = {
   digest:    { urgency: 'low',    ttl: 4 * 60 * 60 },   // stale after the morning
   retention: { urgency: 'low',    ttl: 12 * 60 * 60 },  // no hurry by definition
   feature:   { urgency: 'low',    ttl: 24 * 60 * 60 },  // useful whenever it lands
+  // High urgency for three notifications a year. The reminder is worth waking
+  // a dozing phone for — it is a religious obligation falling due on a date the
+  // user chose, not a price that will still be there later — and the loudness
+  // invariant is that a channel which buzzes is one that wakes the device.
+  // The long TTL is the other half: unlike a price, this stays true all day.
+  zakat:     { urgency: 'high',   ttl: 24 * 60 * 60 },
   test:      { urgency: 'high',   ttl: 60 },            // immediate or not at all
 }
 

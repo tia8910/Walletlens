@@ -25,6 +25,16 @@ export const BACKUP_FIELDS = {
   // Migrations key off this. Restoring data without it can leave a newer
   // snapshot being re-migrated by an older device.
   sv: 'crypto_tracker_schema_version',
+  // ── Zakat ────────────────────────────────────────────────────────────────
+  // The hawl start date is the one piece of state in the whole feature that
+  // cannot be recomputed: it records the day this person's wealth first
+  // reached nisab. Losing it on a device migration silently restarts their
+  // zakat year, which moves the date they owe on. The madhhab choices and the
+  // per-holding intents are equally theirs — a restored device that reverts
+  // to the defaults is quietly answering a religious question for them.
+  zh: 'wl_zakat_hawl',
+  zs: 'wl_zakat_settings',
+  zi: 'wl_zakat_intents',
 
   // ── Goals and planning ───────────────────────────────────────────────────
   gl: 'wl_goals',
@@ -113,14 +123,23 @@ export const DEVICE_ONLY_KEYS = [
   'wl_last_visit', 'wl_streak', 'wl_engagement_ts', 'wl_daily_notif_date',
   'wl_guessr_hs', 'wl_sfx_enabled', 'wl_chunk_retry',
   'wl_target_reached_fired', 'wl_portfolio_notify_ts', 'wl_guardian_remind_ts',
-  // Market Pulse. Sound preferences follow wl_sfx_enabled and stay with the
-  // device — volume and haptics are properties of the phone, not the
-  // portfolio. The rest is derived state that rebuilds itself correctly on
-  // first refresh: wl_pulse_state re-seeds from the current value (which is
-  // the point of seedRecords — carrying an old high-water mark across would
-  // announce a stale all-time high), and the snapshot and missed-event
-  // records are transient by construction.
-  'wl_pulse_settings', 'wl_pulse_state', 'wl_pulse_missed', 'wl_pulse_samples',
+  // Screen effects. Whether they are on, and whether they make a sound, are
+  // properties of the phone rather than of the portfolio — a tablet left on
+  // silent should not inherit a handset's choice.
+  //
+  // wl_fx_state is deliberately not carried either. It holds the day already
+  // celebrated and the running all-time high, and both re-seed from the
+  // current value on the new device's first refresh. Restoring an old
+  // high-water mark would announce a stale record; restoring an old day
+  // marker would swallow the new device's first-open burst.
+  'wl_fx_settings', 'wl_fx_state',
+  // Derived from wl_zakat_hawl and the current prices on every render, and
+  // read by the push registration. The restored hawl regenerates it on the
+  // new device's first visit to the calculator.
+  'wl_zakat_due',
+  // Which currency the calculator displays in. A screen preference, like the
+  // rest of the display settings that stay with the device.
+  'wl_zakat_currency',
   // Marks THIS install as running inside the Android app. Carrying it to a
   // browser would make the site think it was the app.
   'wl_native',

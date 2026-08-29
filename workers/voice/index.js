@@ -1,0 +1,2154 @@
+// WalletLens voice-parse + analysis API, on Cloudflare Workers.
+//
+// A port of voice-api/main.ts, not a rewrite. The body below is that file
+// transpiled by the TypeScript compiler — types removed by the tool that
+// understands them, rather than by hand or by regex — and otherwise
+// untouched. All 316 comment lines are preserved, including the ones tsc
+// dropped along with the type declarations they described.
+//
+// The trick that makes it a port rather than a rewrite: "Deno" below is a
+// local object, so every Deno.env.get, Deno.openKv, Deno.cron and Deno.serve
+// call in those 2,000 lines keeps working unchanged. Nothing in the request
+// handling, the Claude prompts, the email templates or the Guardian logic had
+// to be edited to move host.
+//
+// That is safe because every one of those calls sits inside a function — there
+// is no module-scope env read to strip — and Workers has no global named Deno
+// to collide with.
+//
+// What actually changed:
+//   Deno KV       -> D1, behind the Deno.Kv-shaped shim in kv.js
+//   Deno.cron     -> Cron Triggers, dispatched in scheduled()
+//   Deno.serve    -> the fetch handler
+//   Deno.env.get  -> Worker bindings
+//
+// Resend and Anthropic were already plain fetch calls and needed nothing.
+
+import { KvOnD1 } from './kv.js'
+
+// Set on every invocation, before the ported body runs. Workers only exposes
+// bindings inside a handler, which is why these are not module constants.
+let ENV = {}
+let KV = null
+
+// Populated at module load by the body's own Deno.cron / Deno.serve calls.
+const CRONS = []
+let HANDLER = null
+
+const Deno = {
+  env: { get: (k) => ENV[k] },
+  openKv: async () => KV,
+  cron: (name, schedule, fn) => { CRONS.push({ name, schedule, fn }) },
+  serve: (fn) => { HANDLER = fn },
+}
+
+// -- The ported service ------------------------------------------------------
+
+"use strict";
+// WalletLens voice-parse API — Deno Deploy edition.
+//
+// A single-file serverless endpoint that turns a raw speech-to-text (or typed)
+// transcript into one or more structured trades using Claude. The Anthropic
+// key lives ONLY here as the `ANTHROPIC_API_KEY` env secret — it is never sent
+// to the browser, so it can't be stolen from the public static site.
+//
+// Deploy: see voice-api/README.md (Deno Deploy, free).
+//
+// Request:  POST { transcript: string, hintLang?: 'en'|'ar' }
+// Response: { ok: true, trades: [ { type, symbol, name?, amount, price? } ] }
+const ALLOWED_ORIGINS = new Set([
+    "https://walletlens.live",
+    "https://www.walletlens.live",
+    "http://localhost:5173",
+    "http://localhost:4173",
+]);
+// Cloudflare Pages serves the site from a project subdomain plus a per-deploy
+// (and per-branch) preview subdomain, e.g. https://walletlenslive1.pages.dev,
+// https://<hash>.walletlenslive.pages.dev, https://<branch>.walletlenslive.pages.dev.
+// Allow the whole project so previews can reach the API too — scoped to our
+// project name, not all of *.pages.dev.
+const PAGES_PREVIEW = /^https:\/\/([a-z0-9-]+\.)?walletlenslive1?\.pages\.dev$/;
+function isAllowedOrigin(origin) {
+    return !!origin && (ALLOWED_ORIGINS.has(origin) || PAGES_PREVIEW.test(origin));
+// ── Weekly portfolio report ─────────────────────────────────────────────────
+// A privacy-minded weekly digest. The client sends only a small, rounded
+// snapshot of stats (no per-transaction data, no exact holdings amounts); the
+// server stores that and emails a branded HTML report every week from
+// noreply@walletlens.live. Everything is rounded and bounded, mirroring the
+// Portfolio Guardian summary model.
+// ── Subscribers viewer page ─────────────────────────────────────────────────
+// Token-gated HTML page (GET /subscribers?token=…) that lists newsletter
+// signups and weekly-digest subscribers so the owner can see them from a phone
+// without curl. Personal data — only ever reachable with SIGNUP_EXPORT_TOKEN.
+}
+function corsHeaders(origin) {
+    const allow = isAllowedOrigin(origin) ? origin : "https://walletlens.live";
+    return {
+        "Access-Control-Allow-Origin": allow,
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+        "Vary": "Origin",
+        "Content-Type": "application/json",
+    };
+}
+// ── Price proxy (GET /proxy?url=…) ──────────────────────────────────────────
+// The static site can't reach some price APIs directly: they lack CORS headers
+// (CoinGecko, Stooq, Yahoo) or are geo-blocked from the user's own IP (Binance
+// in some regions). This server-side proxy fetches an allowlisted upstream and
+// returns it with permissive CORS, so prices work on every network/region
+// without relying on flaky public CORS proxies. Allowlist-only = not an open
+// proxy. No secrets involved; safe to run unauthenticated.
+const PROXY_ALLOWLIST = new Set([
+    "api.coingecko.com",
+    "min-api.cryptocompare.com",
+    "api.binance.com",
+    "api1.binance.com",
+    "api-gcp.binance.com",
+    "api.gold-api.com",
+    "stooq.com",
+    "query1.finance.yahoo.com",
+    "query2.finance.yahoo.com",
+    "rest.coincap.io",
+    "api.coincap.io",
+    "api.coinpaprika.com",
+    "open.er-api.com",
+    "api.frankfurter.app",
+    // Asset logo CDNs — proxied so coin logos load on networks that block them
+    "coin-images.coingecko.com",
+    "assets.coingecko.com",
+    "cdn.jsdelivr.net",
+    "assets.coincap.io",
+    "raw.githubusercontent.com",
+    "lcw.nyc3.cdn.digitaloceanspaces.com",
+]);
+async function handleProxy(target, headers) {
+    if (!target) {
+        return new Response(JSON.stringify({ error: "missing_url" }), { status: 400, headers });
+    }
+    let parsed;
+    // Returns the raw send result so callers that need to explain a failure to the
+    // user (e.g. the Guardian test-email) can surface Resend's actual reason
+    // instead of a generic error. `reason` is null on success.
+    try {
+        parsed = new URL(target);
+    }
+    catch {
+        return new Response(JSON.stringify({ error: "bad_url" }), { status: 400, headers });
+    }
+    if (parsed.protocol !== "https:" || !PROXY_ALLOWLIST.has(parsed.hostname)) {
+        return new Response(JSON.stringify({ error: "host_not_allowed" }), { status: 403, headers });
+    }
+    try {
+        const upstream = await fetch(parsed.toString(), {
+            headers: { "Accept": "application/json, text/csv, image/*, */*", "User-Agent": "WalletLens-Proxy/1.0" },
+            signal: AbortSignal.timeout(8000),
+        });
+        // If the upstream redirected, the final host must still be allowlisted —
+        // otherwise an allowlisted API could bounce us to an arbitrary URL (SSRF).
+        try {
+            const finalHost = new URL(upstream.url).hostname;
+            if (finalHost && !PROXY_ALLOWLIST.has(finalHost)) {
+                return new Response(JSON.stringify({ error: "redirect_not_allowed" }), { status: 502, headers });
+            }
+        }
+        catch { /* upstream.url unavailable — keep going with the body checks */ }
+        // Cap the passthrough at 5 MB — price JSON and logos are tiny; anything
+        // bigger would only tie up server memory.
+        const MAX_BODY = 5 * 1024 * 1024;
+        const cl = Number(upstream.headers.get("content-length") || 0);
+        if (cl > MAX_BODY) {
+            return new Response(JSON.stringify({ error: "response_too_large" }), { status: 502, headers });
+        }
+        // Pass bytes through untouched — text() would corrupt binary (logo images)
+        const body = await upstream.arrayBuffer();
+        if (body.byteLength > MAX_BODY) {
+            return new Response(JSON.stringify({ error: "response_too_large" }), { status: 502, headers });
+        }
+        const ct = upstream.headers.get("content-type") || "application/json";
+        const isImage = ct.startsWith("image/");
+        return new Response(body, {
+            status: upstream.status,
+            headers: {
+                ...headers,
+                "Content-Type": ct,
+                // Logos are immutable — cache long; price data stays fresh
+                "Cache-Control": isImage ? "public, max-age=86400" : "public, max-age=30",
+            },
+        });
+    }
+    catch (e) {
+        return new Response(JSON.stringify({ error: "upstream_failed", detail: String(e) }), { status: 502, headers });
+    }
+}
+// ── Email sending (Resend) ──────────────────────────────────────────────────
+// Transactional / marketing mail goes out from contact@walletlens.live.
+// Requires the RESEND_API_KEY env secret and a verified walletlens.live domain
+// in the Resend dashboard.
+const MAIL_FROM = "WalletLens <contact@walletlens.live>";
+// Portfolio Guardian is an unattended, automated notifier — its mail is sent
+// from a no-reply address so heirs don't reply into a mailbox nobody watches.
+// Replies are still routed to contact@ so anyone who does hit "reply" reaches us.
+const GUARDIAN_FROM = "WalletLens Portfolio Guardian <noreply@walletlens.live>";
+const BACKUP_FROM = "WalletLens Backup <noreply@walletlens.live>";
+// The automated weekly portfolio digest — unattended mail, so it goes out from
+// the no-reply address (replies still route to contact@ via reply_to).
+const WEEKLY_FROM = "WalletLens Weekly <noreply@walletlens.live>";
+async function sendEmailResult(to, subject, html, from = MAIL_FROM, replyTo = "contact@walletlens.live", attachments) {
+    const key = Deno.env.get("RESEND_API_KEY");
+    if (!key)
+        return { ok: false, reason: "mail_not_configured" };
+    try {
+        // deno-lint-ignore no-explicit-any
+        const payload = {
+            from, to, subject, html, reply_to: replyTo,
+            // A List-Unsubscribe header materially improves inbox placement (Gmail
+            // and Outlook both weigh it). Points at contact@ so unsubscribe works
+            // even for mail sent from the no-reply address.
+            headers: { "List-Unsubscribe": "<mailto:contact@walletlens.live?subject=unsubscribe>" },
+        };
+        if (attachments && attachments.length)
+            payload.attachments = attachments;
+        const resp = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+            body: JSON.stringify(payload),
+        });
+        if (resp.ok)
+            return { ok: true, reason: null };
+        const detail = await resp.text().catch(() => "");
+        console.error("Resend error:", resp.status, detail);
+        // Resend puts a human-readable "message" in its JSON error body — the most
+        // common being "domain is not verified" (blocks sending to non-owner
+        // addresses). Pass it through so the UI can tell the user what to fix.
+        let msg = "";
+        try {
+            msg = JSON.parse(detail)?.message || "";
+        }
+        catch { /* non-JSON */ }
+        return { ok: false, reason: msg || `resend_${resp.status}` };
+    }
+    catch (e) {
+        console.error("Resend exception:", e);
+        return { ok: false, reason: "network_error" };
+    }
+}
+async function sendEmail(to, subject, html, from = MAIL_FROM, attachments) {
+    return (await sendEmailResult(to, subject, html, from, "contact@walletlens.live", attachments)).ok;
+}
+// Validate a client-supplied base64 QR PNG before we store/attach it.
+function sanitizeQrPng(raw) {
+    if (typeof raw !== "string")
+        return null;
+    const s = raw.trim();
+    // Base64 only, and small enough to sit comfortably under Deno KV's 64 KiB
+    // value limit alongside the rest of the record.
+    if (!s || s.length > 45000 || !/^[A-Za-z0-9+/=]+$/.test(s))
+        return null;
+    return s;
+}
+const QR_FILENAME = "walletlens-portfolio.png";
+// Normalise + validate an heir list — keep heirs with a valid email address.
+// deno-lint-ignore no-explicit-any
+function sanitizeHeirs(heirs) {
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return (Array.isArray(heirs) ? heirs : [])
+        .slice(0, 3)
+        // deno-lint-ignore no-explicit-any
+        .filter((h) => h && typeof h.email === "string" && emailRe.test(h.email.trim()))
+        // deno-lint-ignore no-explicit-any
+        .map((h) => ({
+        name: String(h.name || "").trim().slice(0, 80) || "Heir",
+        email: String(h.email).trim().toLowerCase(),
+    }));
+}
+// Branded HTML shell so every email looks consistent.
+function emailShell(bodyHtml) {
+    return `<!DOCTYPE html><html><body style="margin:0;background:#0b0f14;font-family:'Plus Jakarta Sans',Segoe UI,system-ui,sans-serif;color:#e6edf3;padding:24px">
+  <div style="max-width:560px;margin:0 auto;background:#11161d;border:1px solid #1f2730;border-radius:16px;overflow:hidden">
+    <div style="padding:22px 28px;border-bottom:1px solid #1f2730">
+      <span style="font-size:20px;font-weight:800;color:#4ade80">WalletLens</span>
+      <span style="font-size:11px;color:#7d8794;letter-spacing:.08em;margin-left:8px">TRACK · ANALYZE · GROW</span>
+    </div>
+    <div style="padding:28px">${bodyHtml}</div>
+    <div style="padding:18px 28px;border-top:1px solid #1f2730;font-size:12px;color:#6b7480">
+      You're receiving this because you joined WalletLens at
+      <a href="https://walletlens.live" style="color:#4ade80;text-decoration:none">walletlens.live</a>.<br>
+      100% free · private · no account. Reply <b>unsubscribe</b> to stop.
+    </div>
+  </div></body></html>`;
+}
+const WELCOME_HTML = emailShell(`
+  <h1 style="margin:0 0 14px;font-size:22px;color:#fff">Welcome aboard! 🎉</h1>
+  <p style="margin:0 0 14px;line-height:1.6;color:#c4cdd6">
+    Thanks for joining WalletLens — the <b>free, private</b> net-worth tracker for crypto, stocks, metals, cash &amp; real estate. No account, your data never leaves your device.
+  </p>
+  <p style="margin:0 0 18px;line-height:1.6;color:#c4cdd6">
+    Here's the fastest way to start: import your whole portfolio from a <b>screenshot</b> — no API keys, no manual typing.
+  </p>
+  <a href="https://walletlens.live/dashboard" style="display:inline-block;background:#4ade80;color:#04210f;font-weight:800;text-decoration:none;padding:12px 22px;border-radius:12px">Open my dashboard →</a>
+  <p style="margin:22px 0 0;line-height:1.6;color:#8a93a0;font-size:13px">
+    You'll get a weekly market-sentiment digest and early access to new features. That's it.
+  </p>
+`);
+// deno-lint-ignore no-explicit-any
+function sanitizeWeeklyStats(raw) {
+    if (!raw || typeof raw !== "object")
+        return null;
+    const num = (v, d = 0) => (typeof v === "number" && isFinite(v)) ? v : d;
+    // deno-lint-ignore no-explicit-any
+    const holdings = Array.isArray(raw.holdings)
+        ? raw.holdings.slice(0, 6).map((h) => ({
+            sym: String(h?.sym || "?").slice(0, 8).toUpperCase(),
+            valueUsd: Math.round(num(h?.valueUsd)),
+            pnlPct: Math.round(num(h?.pnlPct) * 100) / 100,
+        }))
+        : [];
+    return {
+        currency: String(raw.currency || "USD").slice(0, 5).toUpperCase(),
+        totalUsd: Math.round(num(raw.totalUsd)),
+        weekChange: Math.round(num(raw.weekChange)),
+        weekChangePct: Math.round(num(raw.weekChangePct) * 100) / 100,
+        daysTracked: Math.max(0, Math.round(num(raw.daysTracked))),
+        assetCount: Math.max(0, Math.round(num(raw.assetCount))),
+        holdings,
+        weekLabel: String(raw.weekLabel || "").replace(/[<>]/g, "").slice(0, 40),
+    };
+}
+function weeklyReportContent(s) {
+    const cur = s.currency || "USD";
+    const money = (n) => `${cur} ${Math.round(n).toLocaleString("en-US")}`;
+    const up = s.weekChange >= 0;
+    const changeColor = up ? "#16a34a" : "#dc2626";
+    const changeBg = up ? "#ecfdf5" : "#fef2f2";
+    const pct = `${up ? "+" : ""}${s.weekChangePct.toFixed(2)}%`;
+    const changeLine = `${up ? "▲ +" : "▼ "}${money(Math.abs(s.weekChange))} (${pct})`;
+    const holdingRows = s.holdings.map((h) => {
+        const hUp = h.pnlPct >= 0;
+        return `<tr>
+      <td style="padding:10px 16px;border-bottom:1px solid #eef1f4;font-weight:700;color:#0f172a">${h.sym}</td>
+      <td style="padding:10px 16px;border-bottom:1px solid #eef1f4;text-align:right;color:#334155">${money(h.valueUsd)}</td>
+      <td style="padding:10px 16px;border-bottom:1px solid #eef1f4;text-align:right;font-weight:700;color:${hUp ? "#16a34a" : "#dc2626"}">${hUp ? "+" : ""}${h.pnlPct.toFixed(2)}%</td>
+    </tr>`;
+    }).join("");
+    const html = emailShell(`
+    <p style="margin:0 0 4px;font-size:12px;letter-spacing:.08em;color:#4ade80;font-weight:700;text-transform:uppercase">Weekly report${s.weekLabel ? ` · ${s.weekLabel}` : ""}</p>
+    <h1 style="margin:0 0 6px;font-size:30px;line-height:1.1;color:#fff">${money(s.totalUsd)}</h1>
+    <div style="display:inline-block;background:${changeBg};color:${changeColor};font-weight:800;font-size:14px;border-radius:10px;padding:6px 12px;margin:0 0 22px">${changeLine} this week</div>
+    ${s.holdings.length ? `
+    <p style="margin:0 0 8px;font-size:12px;letter-spacing:.06em;color:#8a93a0;font-weight:700;text-transform:uppercase">Your holdings</p>
+    <table role="presentation" style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e6e9ee;border-radius:12px;overflow:hidden;margin:0 0 22px">
+      <tr style="background:#f8fafc">
+        <td style="padding:9px 16px;font-size:11px;letter-spacing:.05em;color:#64748b;font-weight:700;text-transform:uppercase">Asset</td>
+        <td style="padding:9px 16px;font-size:11px;letter-spacing:.05em;color:#64748b;font-weight:700;text-transform:uppercase;text-align:right">Value</td>
+        <td style="padding:9px 16px;font-size:11px;letter-spacing:.05em;color:#64748b;font-weight:700;text-transform:uppercase;text-align:right">P&amp;L</td>
+      </tr>
+      ${holdingRows}
+    </table>` : ""}
+    <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 24px">
+      <tr>
+        <td style="text-align:center;padding:8px"><div style="font-size:22px;font-weight:800;color:#fff">${s.daysTracked}</div><div style="font-size:12px;color:#8a93a0">Days tracked</div></td>
+        <td style="text-align:center;padding:8px"><div style="font-size:22px;font-weight:800;color:#fff">${s.assetCount}</div><div style="font-size:12px;color:#8a93a0">Assets</div></td>
+        <td style="text-align:center;padding:8px"><div style="font-size:22px;font-weight:800;color:${changeColor}">${pct}</div><div style="font-size:12px;color:#8a93a0">This week</div></td>
+      </tr>
+    </table>
+    <div style="text-align:center;margin:0 0 8px">
+      <a href="https://walletlens.live/dashboard" style="display:inline-block;background:#4ade80;color:#04210f;font-weight:800;text-decoration:none;padding:12px 24px;border-radius:12px">Open my dashboard →</a>
+    </div>
+  `);
+    const subject = `Your WalletLens week: ${money(s.totalUsd)} (${pct})`;
+    return { subject, html };
+}
+function buildPrompt(transcript, hintLang, alternatives) {
+    // When several speech-to-text engines disagree, listing every candidate
+    // lets the model triangulate the true utterance — the single biggest
+    // accuracy win for garbled or accented speech.
+    const altBlock = alternatives.length > 1
+        ? `\nThe speech-to-text engines produced these CANDIDATE transcripts of the SAME spoken sentence. They may disagree, drop words, or mis-hear coins — reconcile them into the single true intent (a coin appearing in any candidate is strong evidence it was said):\n${alternatives.map((a, i) => `  ${i + 1}. "${a}"`).join("\n")}\n\nPrimary (best-guess) transcript: "${transcript}"\n`
+        : `\nTranscript: "${transcript}"\n`;
+    return `You are a world-class voice-trade interpreter for a crypto/stock/metals portfolio app. Accuracy is critical — a wrong coin or amount records a wrong trade.
+
+The user spoke into their microphone (or typed) this. The speech engine may mis-hear words, mix languages, or transcribe Arabic phonetically as English (e.g. "اشتري واحد بيتكوين" → "street ultra bitcoin"). Slang/dialect is common: Saudi, Egyptian, Levantine, Maghrebi Arabic; English trader slang like "aped", "hodl", "scoop", "yolo'd", "tp'd".
+
+Transcript hint language: ${hintLang}
+${altBlock}
+Extract EVERY trade. Return STRICT JSON ONLY — no markdown, no commentary:
+
+{
+  "trades": [
+    { "type": "buy" | "sell" | null, "symbol": "BTC", "name": "Bitcoin", "amount": <number | null>, "price": <number or null> }
+  ]
+}
+
+Rules:
+- MULTIPLE trades in one sentence → one object PER asset. Scan the ENTIRE sentence from start to finish — NEVER stop after the first coin. "I bought 1 Bitcoin and 1 Ethereum" → [{buy BTC 1},{buy ETH 1}]. "اشتريت واحد بيتكوين وواحد ايثيريوم" → the same two trades. A single intent verb governs every coin listed after it until a new verb appears — apply it to each. If you returned only 1 trade but the sentence contains multiple coin names, you missed trades — re-read and add them all.
+- Worked Arabic example: "اشتريت اثنين سولانا وثلاث ايثيريوم وبعت نص بيتكوين" → [{buy SOL 2},{buy ETH 3},{sell BTC 0.5}]. The verb switches to "بعت" (sell) for Bitcoin only.
+- A shared amount before a list applies to each unless a per-coin amount is given: "2 Solana and 3 Cardano" → [SOL×2, ADA×3]; "5 of Bitcoin and Ethereum" → [BTC×5, ETH×5].
+- Arabic "و" / "و " (and) separates assets: "بيتكوين وايثيريوم" = two assets. So does a comma or pause.
+- Too garbled to extract any trade → { "trades": [] }.
+- Arabic dialect intent verbs: اشتري/اشتريت/شريت/جبت/أخذت/خذيت/حطيت/كومت/جمعت/كسبت/استثمرت/دخلت/نزلت = BUY; بعت/بيع/صفيت/سحبت/كسرت/خرجت/طرحت/جنيت/طلعت/فشيت = SELL.
+- Arabic spelled numbers: واحد=1, اثنين/اتنين=2, ثلاثة/تلاتة=3, اربعة=4, خمسة=5, عشرة=10.
+- Amount slang: "5K"/"5 grand" = 5000; "2 mil" = 2,000,000; "half"/"نص"/"نصف" = 0.5; "quarter"/"ربع" = 0.25; الف/ألف=1000, مليون=1,000,000.
+- Coin mis-hearings: Selena/Salina/Celina = Solana; "a theorem"/"etherium"/"a theory" = Ethereum; "big point"/"bit corn" = Bitcoin; "polka dot" = Polkadot; "chain link"/"jane link" = Chainlink; "ava lunch" = Avalanche; "throne" = TRON; "dough"/"doggie coin" = Dogecoin; "rebel"/"ripple" = XRP.
+- Stocks: Apple=AAPL, Tesla=TSLA, Microsoft=MSFT, NVIDIA=NVDA, Google=GOOGL, Amazon=AMZN, Meta=META, Palantir=PLTR, Coinbase=COIN, Robinhood=HOOD.
+- Metals: gold=XAU, silver=XAG, platinum=XPT, copper=HG.
+- A coin with no clear buy/sell intent or amount → still include it with "type": null and "amount": null; the user will fill in the details.`;
+}
+// Structured-output schema — forces Claude to return valid, parseable trade
+// JSON every time. This REPLACES the old assistant-prefill "{" trick, which
+// returns HTTP 400 on Sonnet 5 (and every current Claude model) — the reason
+// the AI parse silently failed and only the first coin was ever detected.
+const TRADES_FORMAT = {
+    type: "json_schema",
+    schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["trades"],
+        properties: {
+            trades: {
+                type: "array",
+                items: {
+                    type: "object",
+                    additionalProperties: false,
+                    required: ["type", "symbol", "name", "amount", "price"],
+                    properties: {
+                        type: { anyOf: [{ type: "string", enum: ["buy", "sell"] }, { type: "null" }] },
+                        symbol: { type: "string" },
+                        name: { type: "string" },
+                        amount: { anyOf: [{ type: "number" }, { type: "null" }] },
+                        price: { anyOf: [{ type: "number" }, { type: "null" }] },
+                    },
+                },
+            },
+        },
+    },
+};
+// ── In-app assistant ──────────────────────────────────────────────────────
+// A lightweight feature-finder chat. Understands the app's feature map and
+// points users at the right page/tab via [[nav:/route|Label]] markers that the
+// client turns into one-tap buttons. Uses Haiku for speed/cost.
+const ASSISTANT_FEATURES = [
+    "- Dashboard (/dashboard): Net-worth overview across crypto, stocks, precious metals, cash & real estate — total value, all-time & 24h P&L, allocation donut, holdings by category, and a shareable gains card. Tap any holding to open its detail page (chart, your position, signals).",
+    "- Add a trade / Buy & Sell (/dashboard): Log a buy or sell. You can also import holdings from a screenshot (AI reads it), an Excel/CSV file, or by voice — just speak your trades.",
+    "- Watchlist (/dashboard?tab=watchlist): Follow coins you don't own yet with live prices.",
+    "- AI Analysis (/dashboard?tab=ai): Portfolio health score, Fear & Greed gauge, stress test, rebalance planner, entry-quality check, risk scanner and a full wallet evaluation.",
+    "- Price Alerts (/dashboard?tab=alerts): Get notified when an asset crosses a price you choose.",
+    "- Sell Targets (/dashboard?tab=targets): Set price targets per asset and track progress toward taking profit.",
+    "- Wallets & Backup (/dashboard?tab=manage): Manage multiple wallets and export/import your data as a WLZ backup code or QR.",
+    "- Transactions (/transactions): Your full buy/sell history — edit, filter and review every trade.",
+    "- Portfolio Vision (/vision): Plan goals with 'buckets' (emergency fund, savings targets, monthly cash-flow) and get AI planning advice on funding pace, diversification and withdrawal safety.",
+    "- Whale Tracker (/whales): Large on-chain transactions and smart-money / volume signals.",
+    "- Alpha (/alpha): Deep-dive analytics — correlations, sector/asset-class views and concentration risk.",
+    "- Coach (/coach): Portfolio evaluation across BTC anchor, diversification, stablecoin reserve and P&L health.",
+    "- Technicals (/technicals): RSI, MACD, Bollinger Bands and trend signals per asset.",
+    "- Rebalancing Calculator (/rebalancing-calculator): Work out the exact trades to reach a target allocation.",
+    "- Fear & Greed Index (/fear-and-greed-index): The live crypto market-sentiment gauge and what each band signals.",
+    "- Market Index (/market-index): A broad market overview across assets.",
+    "- Academy (/academy): Educational guides on investing and getting the most out of WalletLens.",
+    "- Portfolio Guardian (/settings): A dead-man's switch — if you stop opening WalletLens for your chosen interval, it emails your chosen heirs your message and a scannable QR of your portfolio. Set it up in Settings. Just opening the app resets the countdown.",
+    "- Settings (/settings): Display currency, language, light/dark mode & color themes, biometric app lock, backup/restore, and Portfolio Guardian.",
+    "- LENZ token & Airdrop (/airdrop): The LENZ token, airdrop and reward quests. Token details live at /lenz.",
+    "- Blog (/blog), About (/about) and FAQ (/faq): Daily market recaps, product info and common questions.",
+].join("\n");
+function buildAssistantSystem(lang) {
+    const langLine = lang === "ar"
+        ? "Reply in Arabic (the user is using the app in Arabic)."
+        : "Reply in English.";
+    return `You are the friendly in-app assistant for WalletLens, a free, private, all-asset portfolio tracker (crypto, precious metals, stocks, and cash). Your job is to understand what the user wants to accomplish and point them to the right feature.
+
+${langLine}
+
+Be concise and warm — usually 1–3 short sentences. Do not invent features that are not in the list. WalletLens is 100% local: no account, no wallet connection, data never leaves the device — reassure users about privacy when relevant.
+
+Available features (and their routes):
+${ASSISTANT_FEATURES}
+
+When you recommend a place in the app for the user to go, ALWAYS end that recommendation with a navigation marker on its own line, in this exact format:
+[[nav:/route|Button Label]]
+
+Examples:
+- "where do I add a trade?" → "You can log buys and sells in Transactions. [[nav:/transactions|Open Transactions]]"
+- "is my portfolio too risky?" → "Run the AI Analysis — it gives a health score and a stress test. [[nav:/dashboard?tab=ai|Open AI Analysis]]"
+- "I want to plan when to sell" → "Set price targets per asset and track progress. [[nav:/dashboard?tab=targets|Open Sell Targets]]"
+
+You may include more than one marker if several features fit. Only use routes from the list above. If the user asks something unrelated to the app, answer briefly and helpfully without a marker.`;
+}
+// deno-lint-ignore no-explicit-any
+function filterTrades(arr) {
+    return Array.isArray(arr)
+        ? arr.filter((t) => {
+            if (!t || !t.symbol)
+                return false;
+            // Keep every well-formed trade, INCLUDING partials: "bought Bitcoin"
+            // (type but no amount) pre-fills the card as Buy+BTC; "2 Solana"
+            // (amount but no verb) pre-fills the rest. The user completes the
+            // missing field in the edit card instead of losing the whole trade.
+            if (t.type != null && t.type !== "buy" && t.type !== "sell")
+                return false;
+            if (t.amount != null && !(typeof t.amount === "number" && t.amount > 0))
+                return false;
+            return true;
+        })
+        : [];
+}
+// ── Magic Indicator AI verdict ────────────────────────────────────────────
+// Synthesises the already-computed numeric pillars (technical, on-chain,
+// volume, whales, fundamental) into a concise natural-language direction.
+// The LLM does NOT fetch live data — it reasons over the supplied numbers plus
+// its own knowledge of the asset's fundamentals/tokenomics.
+// deno-lint-ignore no-explicit-any
+function buildAnalyzePrompt(p) {
+    const pillars = Array.isArray(p?.pillars)
+        ? p.pillars.map((x) => `  - ${x.label}: ${x.score} (${x.note})`).join("\n")
+        : "  (none)";
+    const stats = p?.stats && typeof p.stats === "object"
+        ? Object.entries(p.stats).map(([k, v]) => `  - ${k}: ${v}`).join("\n")
+        : "  (none)";
+    return `You are a seasoned crypto markets analyst. A quantitative engine has scored ${p?.asset?.name || p?.asset?.symbol || "an asset"} (${p?.asset?.symbol || "?"}) across five pillars, each from -100 (bearish) to +100 (bullish).
+
+Composite Magic score: ${p?.magic?.score} → "${p?.magic?.direction}" (confidence ${p?.magic?.confidence}%).
+
+Pillar scores:
+${pillars}
+
+Key stats:
+${stats}
+
+Using these numbers AND your knowledge of this asset's fundamentals, tokenomics and typical market behaviour, give a crisp portfolio-holder verdict. Be specific and avoid generic hedging. Return STRICT JSON ONLY — no markdown, no commentary:
+
+{
+  "direction": "Strong Buy" | "Accumulate" | "Neutral" | "Reduce" | "Distribute",
+  "oneLiner": "<=18 word punchy thesis",
+  "bull": ["<short bull point>", "<short bull point>"],
+  "bear": ["<short bear/risk point>", "<short bear/risk point>"],
+  "action": "<one concrete next step for a holder, <=20 words>"
+}
+
+Keep bull/bear to 2-3 items each. Ground every point in the pillars/stats or well-known facts about the asset. This is analysis, not financial advice.`;
+}
+// ── Sell-target reality check (mode: "target_analysis") ────────────────────
+// Given a user's sell target for one asset plus a few pre-computed local stats
+// (current price, ATH, ~1-year return, annualised volatility), returns a concise
+// verdict on whether the target is reasonable and a rough timeframe. Education,
+// never a price prediction.
+// deno-lint-ignore no-explicit-any
+function buildTargetAnalysisPrompt(p) {
+    const sym = String(p?.symbol || "the asset").slice(0, 12);
+    const name = String(p?.name || sym).slice(0, 40);
+    const num = (v) => (typeof v === "number" && isFinite(v)) ? v : null;
+    const cur = num(p?.current);
+    const tgt = num(p?.target);
+    const ath = num(p?.ath);
+    const yr = num(p?.oneYearReturnPct);
+    const vol = num(p?.volatilityPct);
+    const reqPct = (cur && tgt) ? ((tgt - cur) / cur) * 100 : null;
+    const lines = [
+        `Asset: ${name} (${sym})`,
+        cur != null ? `Current price: $${cur.toLocaleString()}` : null,
+        tgt != null ? `User's sell target: $${tgt.toLocaleString()}` : null,
+        reqPct != null ? `Required move: ${reqPct >= 0 ? "+" : ""}${reqPct.toFixed(1)}%` : null,
+        ath != null ? `All-time high: $${ath.toLocaleString()}${(tgt && ath) ? ` (target is ${tgt <= ath ? `${(((ath - tgt) / ath) * 100).toFixed(0)}% below ATH — traded there before` : `${(((tgt - ath) / ath) * 100).toFixed(0)}% above ATH — uncharted`})` : ""}` : null,
+        yr != null ? `~1-year price change: ${yr >= 0 ? "+" : ""}${yr.toFixed(0)}%` : null,
+        vol != null ? `Annualised volatility: ${vol.toFixed(0)}%` : null,
+    ].filter(Boolean).join("\n");
+    return `You are a seasoned, level-headed markets analyst inside a portfolio app. A user has set a SELL target for an asset. Judge whether the target is reasonable and roughly how long it could take, grounded ONLY in the numbers below plus your general knowledge of this asset. This is education, NOT financial advice, and you must NEVER promise or predict a price will be hit.
+
+${lines}
+
+Return STRICT JSON ONLY — no markdown, no commentary:
+{
+  "verdict": "Reasonable" | "Ambitious" | "Aggressive" | "Very aggressive" | "Extreme",
+  "timeframe": "<short rough horizon, e.g. '1–2 years at its historical pace' or 'unlikely within a few years'>",
+  "reasoning": "<2-3 sentence plain-English explanation grounded in the numbers: how big the move is, whether it has precedent (ATH), and what would need to happen. End with a soft reminder this is not a prediction.>"
+}`;
+}
+// ── Portfolio Vision advice ────────────────────────────────────────────────
+// Reviews the user's planning "buckets" (goals, targets, monthly cash-flow) and
+// asset-class mix, and returns concrete, prioritised planning advice. Reasons
+// over the supplied numbers + general personal-finance best practice. Education,
+// not individualised financial advice.
+// deno-lint-ignore no-explicit-any
+function buildVisionAdvicePrompt(p) {
+    const cur = p?.currency || "USD";
+    const cats = Array.isArray(p?.categories) && p.categories.length
+        ? p.categories.map((c) => `  - ${c.name}: ${cur} ${Math.round(c.value).toLocaleString()} (${c.pct}%)`).join("\n")
+        : "  (no live holdings — planning from manual amounts)";
+    const buckets = Array.isArray(p?.buckets) && p.buckets.length
+        ? p.buckets.map((b) => {
+            const bits = [
+                `type: ${b.type}`,
+                `current: ${cur} ${Math.round(b.current || 0).toLocaleString()}`,
+                b.target ? `target: ${cur} ${Math.round(b.target).toLocaleString()}` : null,
+                b.targetMonths ? `timeframe: ${b.targetMonths} months` : null,
+                b.monthlyContribution ? `adding: ${cur} ${Math.round(b.monthlyContribution).toLocaleString()}/mo` : null,
+                b.monthlyWithdrawal ? `drawing: ${cur} ${Math.round(b.monthlyWithdrawal).toLocaleString()}/mo` : null,
+                b.categories?.length ? `focus: ${b.categories.join(", ")}` : null,
+                `${b.pctOfNW || 0}% of net worth`,
+            ].filter(Boolean).join(" · ");
+            return `  - "${b.name}" — ${bits}`;
+        }).join("\n")
+        : "  (no buckets yet)";
+    const m = p?.monthly || {};
+    return `You are a sharp, fiduciary-minded personal-finance and portfolio-planning advisor inside WalletLens (a private, all-asset net-worth tracker: crypto, stocks, metals, cash, real estate). The user has organised their money into planning "buckets" (goals). Give specific, prioritised, numbers-grounded advice — diversification, emergency-fund adequacy, withdrawal sustainability (~4%/yr rule of thumb), goal funding pace, concentration risk, and asset-class fit per goal. Be concrete and avoid generic hedging. This is education, not individualised financial advice.
+
+Asset-class notes:
+- "Stablecoins" = USD-pegged tokens (USDT, USDC, DAI, etc.). Cash-equivalent, low-risk, appropriate for emergency funds, short-term goals, and liquidity reserves. Do NOT treat them as volatile crypto.
+- "Crypto" = volatile non-stable coins only (BTC, ETH, SOL, etc.). High risk, long-term growth.
+
+Total net worth: ${cur} ${Math.round(p?.netWorth || 0).toLocaleString()}
+Asset-class mix:
+${cats}
+Monthly plan: adding ${cur} ${Math.round(m.in || 0).toLocaleString()} · drawing ${cur} ${Math.round(m.out || 0).toLocaleString()} · net ${cur} ${Math.round(m.net || 0).toLocaleString()}
+Buckets:
+${buckets}
+
+Return STRICT JSON ONLY — no markdown, no commentary:
+
+{
+  "headline": "<=14 word overall verdict on this plan",
+  "score": <integer 0-100 plan-health: diversification + emergency cover + goal feasibility + withdrawal safety>,
+  "insights": [
+    { "title": "<=6 words", "detail": "<=30 words, specific & numbers-grounded", "level": "good" | "warn" | "tip" }
+  ],
+  "actions": [ "<one concrete next step, <=18 words>" ]
+}
+
+Give 3-6 insights and 2-4 actions. Every point must reference the user's actual numbers/buckets above. If a bucket is underfunded for its timeframe, say by how much per month. If an emergency fund is missing or thin, flag it. If one asset class dominates, call out the concentration.`;
+}
+// ── Daily market recap (mode: "recap") ─────────────────────────────────────
+// Writes one dated, data-grounded all-markets recap (crypto + stocks + metals)
+// for the blog. The caller (the daily-recap GitHub workflow) sends only a
+// pre-formatted market snapshot + the date; the prompt is built HERE so this
+// stays a constrained recap generator, not an open text endpoint. Returns the
+// parsed article fields. The Anthropic key never leaves this server.
+function buildRecapPrompt(snapshotText, dateStr, year) {
+    const system = `You are the senior markets writer for WalletLens (walletlens.live), a free, private, browser-based portfolio tracker for crypto, stocks, precious metals, real estate and cash — all in one net-worth view, no account, all data on-device. You write concise, accurate daily market recaps. Educational, never financial advice. Never invent numbers — use ONLY the data provided. Never promise or predict prices.`;
+    const prompt = `Write today's all-markets daily recap for ${dateStr}.
+
+Today's live snapshot (use these exact numbers — do not invent others):
+${snapshotText}
+
+Write a tight, scannable recap (450-650 words) covering crypto, US stocks and precious metals together, so a reader sees the whole picture in one place. Requirements:
+- Open with 1-2 plain paragraphs summarising the day's cross-market mood (NO H1 — the title is rendered separately).
+- Use ## H2 sections. Suggested: "Crypto", "Stocks", "Precious Metals", then a short "What It Means" wrap-up.
+- Include a Markdown table summarising the key moves (asset, level/price, 24h change).
+- Reference the crypto Fear & Greed reading and what that sentiment band signals (no prediction).
+- Mention WalletLens naturally ONCE or TWICE where it genuinely helps (e.g. tracking crypto + stocks + metals in one net-worth view), and link [walletlens.live](https://walletlens.live) once and the [Fear & Greed Index](/fear-and-greed-index) once.
+- End with a one-line educational-not-advice note.
+- Use the year ${year} where natural.
+
+Return EXACTLY this plain-text format. Begin your reply immediately with "TITLE:" — output nothing before it, no preamble, no code fences:
+
+TITLE: <specific, <=70 chars, includes the date, e.g. "Markets Today — ${dateStr}: ...">
+SUMMARY: <1-2 sentence meta description, 120-160 chars, mentions crypto, stocks and metals>
+READTIME: <N min read>
+BODY:
+<the full recap body in Markdown>`;
+    return { system, prompt };
+}
+// ── Portfolio Guardian notification content ─────────────────────────────────
+// One place that builds the heir-facing email so the live notification and the
+// test send stay in sync.
+function escapeHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+// ── "Email me my backup" content ────────────────────────────────────────────
+// Sends the user their own WalletLens backup code (and a scannable QR when it
+// fits one) so they can restore on any device. Delivered once; nothing is
+// stored server-side.
+const BACKUP_QR_FILENAME = "walletlens-backup.png";
+function backupEmailContent(opts) {
+    const { code, hasQr } = opts;
+    const html = emailShell(`
+    <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#fff">Your WalletLens backup</h1>
+    <p style="margin:0 0 18px;line-height:1.7;color:#c4cdd6">
+      Here's your private backup. To restore on any device, open
+      <a href="https://walletlens.live/dashboard" style="color:#4ade80;text-decoration:none">WalletLens</a>
+      → <b style="color:#e2e8f0">Settings → Backup → Restore</b>, then paste the code below${hasQr ? " (or scan the attached QR)" : ""}.
+    </p>
+    ${hasQr ? `
+    <div style="background:#10201a;border:1px solid #1f4a3a;border-radius:12px;padding:18px;margin:0 0 20px">
+      <p style="margin:0;line-height:1.7;color:#c4cdd6;font-size:14px">
+        <b style="color:#4ade80">Fastest:</b> open the attached image <b style="color:#e2e8f0">${BACKUP_QR_FILENAME}</b> on another device and scan it from
+        <b>Settings → Backup → Restore → Scan</b>.
+      </p>
+    </div>` : ""}
+    <p style="margin:0 0 8px;font-size:11px;letter-spacing:.08em;color:#4ade80;font-weight:700;text-transform:uppercase">Backup code</p>
+    <div style="background:#0f141a;border:1px solid #1f2730;border-radius:12px;padding:16px 18px;margin:0 0 22px">
+      <code style="display:block;word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.55;color:#e2e8f0">${escapeHtml(code)}</code>
+    </div>
+    <div style="background:#111827;border:1px solid #374151;border-radius:12px;padding:14px 18px;margin:0 0 8px">
+      <p style="margin:0;color:#9ca3af;font-size:12.5px;line-height:1.7">
+        🔒 <b style="color:#d1d5db">Keep this email private.</b> Anyone with this code or QR can restore your portfolio.
+        WalletLens stores no financial data on its servers — this backup was delivered once and not retained.
+      </p>
+    </div>
+  `);
+    return { subject: "Your WalletLens backup code", html };
+}
+function guardianContent(opts) {
+    const { message = "", valueStr, assetStr, lastSeen, isTest = false, hasQr = false } = opts;
+    const owner = (opts.ownerName || "").trim();
+    const testBanner = isTest ? `
+    <div style="background:#3a2a0a;border:1px solid #a16207;border-radius:12px;padding:14px 18px;margin:0 0 22px">
+      <p style="margin:0;color:#fde68a;font-weight:800;font-size:15px">✅ This is only a test</p>
+      <p style="margin:6px 0 0;color:#e7d9b0;font-size:13px;line-height:1.6">This is a preview of exactly what your heirs will receive if Portfolio Guardian is ever triggered. Nothing has happened and no heirs were emailed — this test was sent only to you.</p>
+    </div>` : "";
+    const heading = isTest
+        ? "You've been named as someone's heir"
+        : `${owner ? escapeHtml(owner) : "Someone who trusts you"} may need you to act`;
+    const leadLine = isTest
+        ? `If this were a real alert, it would mean ${owner ? `<b style="color:#e2e8f0">${escapeHtml(owner)}</b>` : "the person who named you"} had stopped checking in with WalletLens — and this email would guide you through reaching their portfolio.`
+        : `${owner ? `<b style="color:#e2e8f0">${escapeHtml(owner)}</b> named you` : "You were named"} as an heir in <b style="color:#4ade80">WalletLens Portfolio Guardian</b>, a safeguard that reaches out to you if they stop opening WalletLens. They have not checked in since <b>${lastSeen}</b>, so we're letting you know as they asked.`;
+    // Real alerts only: a missed check-in often just means a lost phone, travel
+    // or illness — the heir's first move should be human contact, not the backup.
+    const reachOutFirst = isTest ? "" : `
+    <div style="background:#2a1215;border:1px solid #7f1d1d;border-radius:12px;padding:14px 18px;margin:0 0 22px">
+      <p style="margin:0;color:#fecaca;font-size:13.5px;line-height:1.7">
+        <b>First, try to reach ${owner ? escapeHtml(owner) : "them"} directly.</b> A missed check-in can
+        simply mean a lost phone, travel or illness. Call or visit them before anything else — this
+        email will still be here if you need it.
+      </p>
+    </div>`;
+    const html = emailShell(`
+    ${testBanner}
+    <h1 style="margin:0 0 18px;font-size:23px;line-height:1.3;color:#fff">${heading}</h1>
+    <p style="margin:0 0 18px;line-height:1.7;color:#c4cdd6">${leadLine}</p>
+    ${reachOutFirst}
+    ${message ? `
+    <div style="background:#141b12;border-left:3px solid #4ade80;padding:16px 20px;border-radius:0 10px 10px 0;margin:0 0 24px">
+      <p style="margin:0 0 6px;font-size:11px;letter-spacing:.08em;color:#4ade80;font-weight:700;text-transform:uppercase">Their message to you</p>
+      <p style="margin:0;line-height:1.8;color:#e6f2ea;font-style:italic;font-size:15px">"${escapeHtml(message)}"</p>
+    </div>` : ""}
+    <table role="presentation" style="width:100%;border-collapse:collapse;background:#0f141a;border:1px solid #1f2730;border-radius:12px;margin:0 0 24px">
+      <tr>
+        <td style="padding:16px 20px;border-bottom:1px solid #1f2730;font-size:13px;color:#8a93a0">Portfolio value</td>
+        <td style="padding:16px 20px;border-bottom:1px solid #1f2730;font-size:15px;color:#fff;font-weight:700;text-align:right">${valueStr}</td>
+      </tr>
+      <tr>
+        <td style="padding:16px 20px;border-bottom:1px solid #1f2730;font-size:13px;color:#8a93a0">Assets held</td>
+        <td style="padding:16px 20px;border-bottom:1px solid #1f2730;font-size:14px;color:#e2e8f0;text-align:right">${assetStr}</td>
+      </tr>
+      <tr>
+        <td style="padding:16px 20px;font-size:13px;color:#8a93a0">Last seen active</td>
+        <td style="padding:16px 20px;font-size:14px;color:#e2e8f0;text-align:right">${lastSeen}</td>
+      </tr>
+    </table>
+    <div style="background:#111827;border:1px solid #374151;border-radius:12px;padding:14px 18px;margin:0 0 24px">
+      <p style="margin:0;color:#9ca3af;font-size:12.5px;line-height:1.7">
+        🔒 <b style="color:#d1d5db">Protect yourself:</b> WalletLens will <b>never</b> ask you for
+        passwords, seed phrases, bank details or any payment. The backup only lets you <i>view</i> the
+        portfolio — actual funds always stay at their exchange or wallet. If anyone emails or calls
+        asking for a fee to "unlock" or "release" the funds, it is a scam.
+      </p>
+    </div>
+    ${hasQr ? `
+    <div style="background:#10201a;border:1px solid #1f4a3a;border-radius:12px;padding:22px;margin:0 0 20px;text-align:center">
+      <p style="margin:0 0 8px;font-weight:800;color:#4ade80;font-size:16px">📎 Scan the attached QR to view the portfolio</p>
+      <p style="margin:0;line-height:1.75;color:#c4cdd6;font-size:14px">
+        This email has a QR image attached — <b style="color:#e2e8f0">${QR_FILENAME}</b>.
+        <b>Open it and scan it with your phone's camera</b> and it opens WalletLens showing ${owner ? escapeHtml(owner) + "'s" : "the"} full portfolio. That's it — no code to type, no account, nothing to sign up for.
+      </p>
+    </div>
+    <div style="background:#0f1a1b;border:1px solid #1f3d3a;border-radius:12px;padding:20px;margin:0 0 24px">
+      <p style="margin:0 0 12px;font-weight:700;color:#4ade80;font-size:14px">Can't scan it? Open the attachment instead</p>
+      <ol style="margin:0;padding-left:20px;line-height:1.9;color:#b0bec5">
+        <li>Save the attached image <b style="color:#e2e8f0">${QR_FILENAME}</b> to your device.</li>
+        <li>Open <a href="https://walletlens.live" style="color:#4ade80;text-decoration:none">walletlens.live</a> on any phone, tablet or computer.</li>
+        <li>Go to <b>Settings → Backup → Restore</b> and <b>upload or scan that image</b>.</li>
+        <li>The full portfolio appears instantly — no account, no password.</li>
+      </ol>
+    </div>
+    <p style="margin:0;line-height:1.7;color:#7d8794;font-size:13px">
+      The QR was generated from the owner's own device — WalletLens keeps no financial data on its servers. Anyone with this QR can view the portfolio, so keep this email safe.<br><br>
+      Need a hand? Reach us at <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>.
+    </p>` : `
+    <div style="background:#0f1a1b;border:1px solid #1f3d3a;border-radius:12px;padding:20px;margin:0 0 24px">
+      <p style="margin:0 0 12px;font-weight:700;color:#4ade80;font-size:14px">How to access their portfolio</p>
+      <ol style="margin:0;padding-left:20px;line-height:1.9;color:#b0bec5">
+        <li>Find their <b style="color:#e2e8f0">WalletLens backup code</b> (starts with <code style="color:#4ade80">WLZ</code>) or a QR code — check their notes app, password manager, photos, printed documents or messages.</li>
+        <li>Open <a href="https://walletlens.live" style="color:#4ade80;text-decoration:none">walletlens.live</a> on any phone, tablet or computer.</li>
+        <li>Go to <b>Settings → Backup → Restore</b> and paste or scan the code.</li>
+        <li>Their full portfolio appears instantly — no account, no password, nothing to sign up for.</li>
+      </ol>
+    </div>
+    <p style="margin:0;line-height:1.7;color:#7d8794;font-size:13px">
+      WalletLens keeps no financial data on its own servers — the portfolio lives on the owner's device. If you can't find a backup code, check their devices for the WalletLens app or a saved browser bookmark.<br><br>
+      Need a hand? Reach us at <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>.
+    </p>`}
+  `);
+    const subject = isTest
+        ? "✅ Test: you're set up as a WalletLens heir"
+        : `${owner ? owner + " — " : ""}an important WalletLens Portfolio Guardian alert`;
+    return { subject, html };
+}
+// This endpoint's own public origin — used to build the one-click "I'm still
+// here" reset link that goes in the owner-warning email.
+const SELF_ORIGIN = "https://walletlens-voice.tarek-abdelhameed.workers.dev";
+// Grace period between warning the owner and notifying heirs. A missed
+// check-in usually just means a lost phone, travel or illness — the owner is
+// given this long to respond to the warning email before heirs are contacted.
+const GUARDIAN_GRACE_DAYS = 14;
+const GUARDIAN_GRACE_MS = GUARDIAN_GRACE_DAYS * 24 * 60 * 60 * 1000;
+// Owner-facing warning email. Sent when the deadline first passes, BEFORE any
+// heir is contacted, so a lost phone / no backup can't trigger a false alarm:
+// the owner gets this at their own address with a one-click reset link that
+// works from any device (no phone, no backup code needed).
+function guardianOwnerWarning(opts) {
+    const { ownerName = "", lastSeen, graceDays, resetUrl, intervalDays } = opts;
+    const name = ownerName.trim();
+    const html = emailShell(`
+    <div style="background:#3a2a0a;border:1px solid #a16207;border-radius:12px;padding:14px 18px;margin:0 0 22px">
+      <p style="margin:0;color:#fde68a;font-weight:800;font-size:15px">⚠️ Action needed — your heirs have NOT been contacted yet</p>
+    </div>
+    <h1 style="margin:0 0 18px;font-size:23px;line-height:1.3;color:#fff">${name ? escapeHtml(name) + ", are" : "Are"} you still there?</h1>
+    <p style="margin:0 0 18px;line-height:1.7;color:#c4cdd6">
+      You haven't opened <b style="color:#4ade80">WalletLens</b> since <b>${lastSeen}</b>${intervalDays ? `, which is longer than your ${intervalDays}-day Portfolio Guardian interval` : ""}. Before we notify your heirs, we're checking with you first.
+    </p>
+    <div style="text-align:center;margin:0 0 22px">
+      <a href="${resetUrl}" style="display:inline-block;background:#4ade80;color:#04210f;font-weight:800;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px">✅ I'm still here — reset the countdown</a>
+      <p style="margin:12px 0 0;color:#8a93a0;font-size:13px">Works from any phone or computer — no app, backup code or password needed.</p>
+    </div>
+    <div style="background:#2a1215;border:1px solid #7f1d1d;border-radius:12px;padding:14px 18px;margin:0 0 22px">
+      <p style="margin:0;color:#fecaca;font-size:13.5px;line-height:1.7">
+        If you do <b>nothing</b>, your heirs will be automatically notified in <b>${graceDays} days</b> with your message and a QR of your portfolio. Simply opening WalletLens on your own device also resets this.
+      </p>
+    </div>
+    <p style="margin:0;line-height:1.7;color:#7d8794;font-size:13px">
+      Didn't set this up, or want to stop Portfolio Guardian entirely? Open WalletLens → Portfolio Guardian → Cancel, or just click the reset button above to buy more time.<br><br>
+      Need a hand? Reach us at <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>.
+    </p>
+  `);
+    const subject = `${name ? name + " — " : ""}⚠️ Open WalletLens or your heirs will be notified in ${graceDays} days`;
+    return { subject, html };
+}
+// Self-contained landing page for the reset link in the owner-warning email.
+// The button POSTs guardian_reset to this same origin (so no CORS), then shows
+// a success/failure state inline. Kept dependency-free so it renders in any browser.
+function guardianResetPage(deviceId) {
+    const invalid = !deviceId;
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>WalletLens Portfolio Guardian</title>
+<style>
+  body{margin:0;background:#0b0f14;color:#e6edf3;font-family:'Plus Jakarta Sans',Segoe UI,system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}
+  .card{max-width:480px;width:100%;background:#11161d;border:1px solid #1f2730;border-radius:16px;padding:32px;text-align:center}
+  .brand{font-size:20px;font-weight:800;color:#4ade80;margin-bottom:8px}
+  h1{font-size:22px;margin:8px 0 12px}
+  p{line-height:1.6;color:#c4cdd6;margin:0 0 20px}
+  button{background:#4ade80;color:#04210f;font-weight:800;font-size:16px;border:0;border-radius:12px;padding:14px 26px;cursor:pointer}
+  button:disabled{opacity:.6;cursor:default}
+  .ok{color:#4ade80;font-weight:700}
+  .err{color:#fca5a5;font-weight:700}
+  .muted{color:#7d8794;font-size:13px}
+</style></head><body>
+<div class="card">
+  <div class="brand">WalletLens</div>
+  <div id="view">
+    ${invalid
+        ? `<h1>Link expired or invalid</h1><p>This reset link is missing its device code. Open WalletLens on your own device to check in, or contact <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>.</p>`
+        : `<h1>Reset your Guardian countdown?</h1>
+         <p>Confirm you're still here and Portfolio Guardian will restart the countdown. Your heirs will <b>not</b> be contacted.</p>
+         <button id="btn" onclick="reset()">✅ Yes, I'm still here</button>
+         <p class="muted" style="margin-top:16px">This is safe — it only resets your own timer.</p>`}
+  </div>
+</div>
+<script>
+async function reset(){
+  var b=document.getElementById('btn'); b.disabled=true; b.textContent='Resetting…';
+  try{
+    var r=await fetch('/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'guardian_reset',deviceId:${JSON.stringify(deviceId)}})});
+    var j=await r.json().catch(function(){return {}});
+    if(r.ok&&j.ok){document.getElementById('view').innerHTML='<h1 class="ok">✓ You\\'re checked in</h1><p>Your Portfolio Guardian countdown has been reset. Nothing was sent to your heirs. You can close this page.</p>';}
+    else{throw new Error(j.reason||j.error||'failed');}
+  }catch(e){
+    document.getElementById('view').innerHTML='<h1 class="err">Couldn\\'t reset</h1><p>'+(String(e.message)==='not_found'?'This Guardian is no longer active.':'Something went wrong. Please open WalletLens on your device to check in, or email contact@walletlens.live.')+'</p>';
+  }
+}
+</script>
+</body></html>`;
+}
+// ── Portfolio Guardian cron ───────────────────────────────────────────────
+// Two-phase dead-man's switch, scanned every 6 h:
+//   1. When the deadline first passes, email the OWNER a warning with a reset
+//      link and start a grace period (heirs are NOT contacted yet).
+//   2. Only if the owner still doesn't respond within GUARDIAN_GRACE_DAYS are
+//      the heirs notified.
+// Legacy records with no ownerEmail keep the old behavior (notify at deadline).
+// Also callable via POST { mode:"guardian_cron_trigger" }.
+async function runGuardianCron() {
+    const kv = await Deno.openKv();
+    const now = Date.now();
+    let scanned = 0, warned = 0, notified = 0;
+    for await (const entry of kv.list({ prefix: ["guardian"] })) {
+        scanned++;
+        const rec = entry.value;
+        if (!rec?.active || rec.notifiedAt)
+            continue;
+        const lastCheckin = new Date(rec.lastCheckin).getTime();
+        const intervalMs = rec.intervalDays * 24 * 60 * 60 * 1000;
+        if (now - lastCheckin < intervalMs)
+            continue;
+        // ── Phase 1/2: warn the owner first, then wait out the grace period ──
+        const ownerEmail = String(rec.ownerEmail || "").trim();
+        if (ownerEmail) {
+            // A warnedAt only counts if it belongs to the current miss cycle (i.e. is
+            // newer than the last check-in); a stale one from before a check-in is ignored.
+            const warnedAtRaw = rec.warnedAt;
+            const warnedAt = warnedAtRaw ? new Date(warnedAtRaw).getTime() : 0;
+            const warnedThisCycle = warnedAt > lastCheckin;
+            if (!warnedThisCycle) {
+                const resetUrl = `${SELF_ORIGIN}/guardian-reset?d=${encodeURIComponent(rec.deviceId)}`;
+                const { subject, html } = guardianOwnerWarning({
+                    ownerName: rec.ownerName,
+                    lastSeen: new Date(rec.lastCheckin).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+                    graceDays: GUARDIAN_GRACE_DAYS,
+                    resetUrl,
+                    intervalDays: rec.intervalDays,
+                });
+                await sendEmail(ownerEmail, subject, html, GUARDIAN_FROM);
+                await kv.set(entry.key, { ...rec, warnedAt: new Date().toISOString() });
+                warned++;
+                continue;
+            }
+            // Warned already — hold until the grace period elapses.
+            if (now - warnedAt < GUARDIAN_GRACE_MS)
+                continue;
+        }
+        const ps = rec.portfolioSummary;
+        const valueStr = ps.totalUsd > 0
+            ? `approximately ${ps.currency} ${ps.totalUsd.toLocaleString()}`
+            : "an undisclosed amount";
+        const assetStr = ps.assetSymbols.length > 0 ? ps.assetSymbols.join(", ") : "various assets";
+        const lastSeen = new Date(rec.lastCheckin).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+        const qrPng = sanitizeQrPng(rec.qrPng);
+        const attachments = qrPng ? [{ filename: QR_FILENAME, content: qrPng }] : undefined;
+        const { subject, html } = guardianContent({
+            ownerName: rec.ownerName,
+            message: rec.message || "",
+            valueStr, assetStr, lastSeen,
+            intervalDays: rec.intervalDays,
+            hasQr: !!qrPng,
+        });
+        const heirs = rec.heirs;
+        for (const heir of heirs) {
+            if (heir.email)
+                await sendEmail(heir.email, subject, html, GUARDIAN_FROM, attachments);
+        }
+        await kv.set(entry.key, { ...rec, notifiedAt: new Date().toISOString() });
+        notified++;
+    }
+    console.log(`Guardian cron: scanned ${scanned}, warned ${warned}, notified ${notified}`);
+    return { scanned, warned, notified };
+}
+Deno.cron("guardian-sweep", "0 */6 * * *", async () => {
+    try {
+        await runGuardianCron();
+    }
+    catch (e) {
+        console.error("Guardian cron failed:", e);
+    }
+});
+// ── Weekly report cron ──────────────────────────────────────────────────────
+// Every Monday 13:00 UTC, email each active subscriber their most recent stored
+// stats from noreply@walletlens.live. The ~6.4-day guard means a fresh
+// subscribe (which sends immediately and stamps lastSentAt) is never doubled up
+// by the very next Monday.
+const WEEKLY_MIN_GAP_MS = 6.4 * 24 * 60 * 60 * 1000;
+async function runWeeklyCron() {
+    const kv = await Deno.openKv();
+    const now = Date.now();
+    let scanned = 0, sent = 0;
+    for await (const entry of kv.list({ prefix: ["weekly"] })) {
+        scanned++;
+        const rec = entry.value;
+        if (!rec?.active || !rec.email || !rec.stats)
+            continue;
+        const last = rec.lastSentAt ? new Date(rec.lastSentAt).getTime() : 0;
+        if (last && now - last < WEEKLY_MIN_GAP_MS)
+            continue;
+        const { subject, html } = weeklyReportContent(rec.stats);
+        const ok = await sendEmail(rec.email, subject, html, WEEKLY_FROM);
+        if (ok) {
+            await kv.set(entry.key, { ...rec, lastSentAt: new Date().toISOString() });
+            sent++;
+        }
+        // Stay under Resend's rate limit.
+        await new Promise((r) => setTimeout(r, 120));
+    }
+    console.log(`Weekly cron: scanned ${scanned}, sent ${sent}`);
+    return { scanned, sent };
+}
+Deno.cron("weekly-report", "0 13 * * 1", async () => {
+    try {
+        await runWeeklyCron();
+    }
+    catch (e) {
+        console.error("Weekly cron failed:", e);
+    }
+});
+function subscribersPage(signups, weekly, guardians) {
+    const fmtDate = (s) => {
+        if (!s)
+            return "—";
+        const d = new Date(s);
+        return isNaN(d.getTime())
+            ? escapeHtml(s)
+            : d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+    };
+    const activeWeekly = weekly.filter((w) => w.email && w.active !== false).length;
+    const activeGuardians = guardians.filter((g) => g.ownerEmail && g.active !== false).length;
+    // Guardian owners are deliberately NOT in "copy all". They gave an address so
+    // Guardian could warn them before contacting their heirs — not to be mailed.
+    // Putting them in the same bucket makes pasting them into a campaign a single
+    // tap, which is how a purpose limit gets crossed by accident rather than by
+    // decision. Their own button below is there when it is a decision.
+    const allEmails = Array.from(new Set([
+        ...signups.map((s) => s.email),
+        ...weekly.map((w) => w.email || ""),
+    ].filter(Boolean))).join(", ");
+    const signupRows = signups.length
+        ? signups.map((s, i) => `<tr><td class="n">${i + 1}</td><td>${escapeHtml(s.email)}</td><td>${escapeHtml(s.source || "—")}</td><td>${fmtDate(s.at)}</td></tr>`).join("")
+        : `<tr><td colspan="4" class="empty">No newsletter signups yet.</td></tr>`;
+    const weeklyRows = weekly.length
+        ? weekly.map((w, i) => `<tr><td class="n">${i + 1}</td><td>${escapeHtml(w.email || "—")}</td><td>${w.active === false ? '<span class="pill paused">Paused</span>' : '<span class="pill active">Active</span>'}</td><td>${fmtDate(w.createdAt)}</td><td>${fmtDate(w.lastSentAt)}</td></tr>`).join("")
+        : `<tr><td colspan="5" class="empty">No weekly subscribers yet.</td></tr>`;
+    const guardianState = (g) => g.notifiedAt
+        ? '<span class="pill notified">Heirs notified</span>'
+        : g.warnedAt
+            ? '<span class="pill paused">Warned</span>'
+            : g.active === false
+                ? '<span class="pill off">Cancelled</span>'
+                : '<span class="pill active">Active</span>';
+    const guardianRows = guardians.length
+        ? guardians.map((g, i) => `<tr><td class="n">${i + 1}</td><td>${escapeHtml(g.ownerEmail || "—")}</td><td>${escapeHtml(g.ownerName || "—")}</td><td>${g.heirCount ?? 0}</td><td>${g.intervalDays ?? "—"}d</td><td>${guardianState(g)}</td><td>${fmtDate(g.createdAt)}</td><td>${fmtDate(g.lastCheckin)}</td></tr>`).join("")
+        : `<tr><td colspan="8" class="empty">No Guardian subscribers yet.</td></tr>`;
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>WalletLens subscribers</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#0b0f14;color:#e6edf3;font-family:'Plus Jakarta Sans',Segoe UI,system-ui,sans-serif;padding:20px 14px 60px}
+  .wrap{max-width:920px;margin:0 auto}
+  .brand{font-size:20px;font-weight:800;color:#4ade80}
+  h1{font-size:19px;margin:18px 0 4px}
+  .sub{color:#8a93a0;font-size:13px;margin:0 0 18px}
+  .stats{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 20px}
+  .stat{flex:1 1 140px;background:#11161d;border:1px solid #1f2730;border-radius:14px;padding:14px 16px}
+  .stat .v{font-size:26px;font-weight:800;color:#fff}
+  .stat .l{font-size:12px;color:#8a93a0}
+  h2{font-size:15px;margin:26px 0 8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .copy{background:#132a1e;color:#4ade80;border:1px solid #1f4a3a;border-radius:9px;padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer}
+  .copy:active{transform:scale(.96)}
+  .card{background:#11161d;border:1px solid #1f2730;border-radius:14px;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:440px}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid #1a212b;white-space:nowrap}
+  th{color:#8a93a0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+  td.n{color:#5b6572;width:34px}
+  tr:last-child td{border-bottom:none}
+  .empty{color:#6b7480;text-align:center;font-style:italic}
+  .pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px}
+  .pill.active{background:#123024;color:#4ade80}
+  .pill.paused{background:#2a2410;color:#e7c14b}
+  .pill.notified{background:#2f1618;color:#f87171}
+  .pill.off{background:#1a212b;color:#8a93a0}
+  .note{color:#6b7480;font-size:12px;line-height:1.6;margin:8px 2px 0}
+  .foot{color:#5b6572;font-size:12px;margin-top:26px;line-height:1.6}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#132a1e;color:#4ade80;border:1px solid #1f4a3a;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+</style></head><body><div class="wrap">
+  <div class="brand">WalletLens</div>
+  <h1>Subscribers</h1>
+  <p class="sub">Live from Deno KV. Keep this URL private — it contains personal data.</p>
+  <div class="stats">
+    <div class="stat"><div class="v">${signups.length}</div><div class="l">Newsletter signups</div></div>
+    <div class="stat"><div class="v">${weekly.length}</div><div class="l">Weekly subscribers</div></div>
+    <div class="stat"><div class="v">${activeWeekly}</div><div class="l">Weekly · active</div></div>
+    <div class="stat"><div class="v">${guardians.length}</div><div class="l">Guardian subscribers</div></div>
+    <div class="stat"><div class="v">${activeGuardians}</div><div class="l">Guardian · active</div></div>
+  </div>
+
+  <h2>Newsletter signups <button class="copy" onclick="copyCol('su')">Copy emails</button></h2>
+  <div class="card"><table id="su">
+    <tr><th>#</th><th>Email</th><th>Source</th><th>Joined</th></tr>
+    ${signupRows}
+  </table></div>
+
+  <h2>Weekly-digest subscribers <button class="copy" onclick="copyCol('wk')">Copy emails</button></h2>
+  <div class="card"><table id="wk">
+    <tr><th>#</th><th>Email</th><th>Status</th><th>Joined</th><th>Last sent</th></tr>
+    ${weeklyRows}
+  </table></div>
+
+  <h2>Portfolio Guardian <button class="copy" onclick="copyCol('gd')">Copy emails</button></h2>
+  <div class="card"><table id="gd">
+    <tr><th>#</th><th>Owner email</th><th>Name</th><th>Heirs</th><th>Every</th><th>State</th><th>Joined</th><th>Last seen</th></tr>
+    ${guardianRows}
+  </table></div>
+  <p class="note">Heir names and addresses, the owner\u2019s personal message and their portfolio
+    snapshot are stored but deliberately not shown here \u2014 none of it is needed to see who subscribed.</p>
+
+  <p class="foot">All emails (deduped): tap <b>Copy all</b> below to grab every address.
+    <b>Guardian owners are excluded</b> \u2014 they gave their address for deadline warnings, not mail.<br>
+    <button class="copy" style="margin-top:8px" onclick="copyAll()">Copy all emails</button>
+  </p>
+</div>
+<div class="toast" id="toast">Copied</div>
+<script>
+  var ALL = ${JSON.stringify(allEmails)};
+  function toast(){var t=document.getElementById('toast');t.classList.add('show');setTimeout(function(){t.classList.remove('show')},1200)}
+  function doCopy(text){
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(toast,function(){fallback(text)})}
+    else fallback(text);
+  }
+  function fallback(text){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast()}catch(e){}document.body.removeChild(ta)}
+  function copyCol(id){
+    var rows=document.querySelectorAll('#'+id+' tr');var out=[];
+    for(var i=1;i<rows.length;i++){var c=rows[i].children[1];if(c){var v=c.textContent.trim();if(v&&v!=='—')out.push(v)}}
+    doCopy(out.join(', '));
+  }
+  function copyAll(){doCopy(ALL)}
+</script>
+</body></html>`;
+}
+// ── Per-IP rate limiting ────────────────────────────────────────────────────
+// The AI modes are unauthenticated (CORS only stops browsers, not scripts) and
+// each call spends real Anthropic API money. This in-memory limiter is per
+// isolate — not a hard guarantee — but turns "free unlimited abuse" into
+// "throttled abuse" at zero latency cost. Buckets: AI calls are expensive
+// (tight limit), email-sending modes are spam vectors (very tight), the
+// GET /proxy is cheap (loose).
+const rlBuckets = new Map();
+function rateLimited(ip, bucket, max, windowMs = 60_000) {
+    const key = bucket + ":" + ip;
+    const now = Date.now();
+    const b = rlBuckets.get(key);
+    if (!b || now > b.reset) {
+        if (rlBuckets.size > 20_000)
+            rlBuckets.clear();
+        rlBuckets.set(key, { n: 1, reset: now + windowMs });
+        return false;
+    }
+    b.n++;
+    return b.n > max;
+}
+const AI_MODES = new Set(["vision", "analyze", "assistant", "vision_advice", "recap", "target_analysis"]);
+const EMAIL_MODES = new Set(["email", "guardian_setup", "guardian_test", "backup_email", "weekly_subscribe"]);
+Deno.serve(async (req) => {
+    const origin = req.headers.get("Origin");
+    const headers = corsHeaders(origin);
+    if (req.method === "OPTIONS")
+        return new Response(null, { status: 204, headers });
+    const ip = req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    // Server-side price proxy — GET /proxy?url=<allowlisted upstream>
+    if (req.method === "GET") {
+        const reqUrl = new URL(req.url);
+        if (reqUrl.pathname === "/proxy") {
+            if (rateLimited(ip, "proxy", 300)) {
+                return new Response(JSON.stringify({ error: "rate_limited" }), { status: 429, headers });
+            }
+            return await handleProxy(reqUrl.searchParams.get("url"), headers);
+        }
+        // Owner "I'm still here" reset landing page (linked from the warning email).
+        // This GET only RENDERS a confirmation page — it never mutates state, so email
+        // link-scanners / prefetchers can't silently reset the switch. The visible
+        // button issues the actual POST { mode:"guardian_reset" }.
+        if (reqUrl.pathname === "/guardian-reset") {
+            const d = reqUrl.searchParams.get("d") || "";
+            const safeD = /^[a-zA-Z0-9_-]{8,64}$/.test(d) ? d : "";
+            return new Response(guardianResetPage(safeD), {
+                status: 200,
+                headers: { "content-type": "text/html; charset=utf-8" },
+            });
+        }
+        // Token-gated subscribers viewer — GET /subscribers?token=SIGNUP_EXPORT_TOKEN
+        // Lists newsletter signups + weekly-digest subscribers. &format=json for raw.
+        // Personal data, so a valid token is mandatory and results are never cached.
+        if (reqUrl.pathname === "/subscribers") {
+            if (rateLimited(ip, "subscribers", 30)) {
+                return new Response("Too many requests — try again in a minute.", {
+                    status: 429, headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+                });
+            }
+            const expected = Deno.env.get("SIGNUP_EXPORT_TOKEN");
+            const token = reqUrl.searchParams.get("token") || "";
+            if (!expected || token !== expected) {
+                return new Response("Unauthorized. Open this page as /subscribers?token=YOUR_SIGNUP_EXPORT_TOKEN" +
+                    (expected ? "" : "\n\n(SIGNUP_EXPORT_TOKEN is not set on this deployment — set it in the Deno project's environment variables first.)"), { status: 401, headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" } });
+            }
+            try {
+                const kv = await Deno.openKv();
+                const signups = [];
+                for await (const e of kv.list({ prefix: ["signups"] })) {
+                    if (e.value?.email)
+                        signups.push(e.value);
+                }
+                const weekly = [];
+                for await (const e of kv.list({ prefix: ["weekly"] })) {
+                    const v = e.value || {};
+                    weekly.push({
+                        email: v.email,
+                        active: v.active,
+                        createdAt: v.createdAt,
+                        lastSentAt: v.lastSentAt,
+                    });
+                }
+                // Guardian owners live under their own prefix, which is why they were
+                // missing from this page. Projected down to the same fields the POST
+                // guardian_export returns — the record also holds the heirs, the
+                // owner's personal message, a portfolio summary and qrPng, an image
+                // encoding their entire holdings snapshot. None of that is needed to
+                // see who subscribed, and this page is a URL that gets pasted around.
+                const guardians = [];
+                for await (const e of kv.list({ prefix: ["guardian"] })) {
+                    const v = e.value || {};
+                    if (!v.ownerEmail)
+                        continue;
+                    guardians.push({
+                        ownerEmail: v.ownerEmail,
+                        ownerName: v.ownerName || "",
+                        active: v.active,
+                        intervalDays: v.intervalDays ?? null,
+                        heirCount: Array.isArray(v.heirs) ? v.heirs.length : 0,
+                        createdAt: v.createdAt,
+                        lastCheckin: v.lastCheckin,
+                        warnedAt: v.warnedAt ?? null,
+                        notifiedAt: v.notifiedAt ?? null,
+                    });
+                }
+                signups.sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
+                weekly.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+                guardians.sort((a, b) => String(b.createdAt || b.lastCheckin || "").localeCompare(String(a.createdAt || a.lastCheckin || "")));
+                if (reqUrl.searchParams.get("format") === "json") {
+                    return new Response(JSON.stringify({
+                        ok: true,
+                        counts: { signups: signups.length, weekly: weekly.length, guardians: guardians.length },
+                        signups,
+                        weekly,
+                        guardians,
+                    }, null, 2), { status: 200, headers: { ...headers, "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
+                }
+                return new Response(subscribersPage(signups, weekly, guardians), {
+                    status: 200,
+                    // no-referrer matters here specifically: the token is in the query
+                    // string, so any outbound link or image would otherwise hand the
+                    // full URL — token included — to a third-party server.
+                    headers: {
+                        "content-type": "text/html; charset=utf-8",
+                        "cache-control": "no-store",
+                        "x-robots-tag": "noindex",
+                        "referrer-policy": "no-referrer",
+                    },
+                });
+            }
+            catch (e) {
+                console.error("subscribers view error:", e);
+                return new Response("Storage error — could not read subscribers.", {
+                    status: 500, headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+                });
+            }
+        }
+        return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers });
+    }
+    if (req.method !== "POST") {
+        return new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers });
+    }
+    // deno-lint-ignore no-explicit-any
+    let body;
+    try {
+        body = await req.json();
+    }
+    catch {
+        return new Response(JSON.stringify({ error: "bad_request" }), { status: 400, headers });
+    }
+    // Throttle the expensive / abusable modes before any work happens.
+    const mode = typeof body?.mode === "string" ? body.mode : "voice";
+    if (AI_MODES.has(mode) || mode === "voice") {
+        if (rateLimited(ip, "ai", 20)) {
+            return new Response(JSON.stringify({ error: "rate_limited" }), { status: 429, headers });
+        }
+    }
+    else if (EMAIL_MODES.has(mode)) {
+        // Email-sending modes are spam vectors from our verified domain.
+        if (rateLimited(ip, "mail", 5, 10 * 60_000)) {
+            return new Response(JSON.stringify({ error: "rate_limited" }), { status: 429, headers });
+        }
+    }
+    else if (rateLimited(ip, "misc", 60)) {
+        return new Response(JSON.stringify({ error: "rate_limited" }), { status: 429, headers });
+    }
+    // ── Newsletter / waitlist signup (mode: "email") ──────────────────────────
+    // Stores an opted-in email in Deno KV (built into Deno Deploy, no setup).
+    // No AI key required — runs even if ANTHROPIC_API_KEY is absent.
+    if (body?.mode === "email") {
+        const email = (body.email || "").toString().trim().toLowerCase();
+        const source = (body.source || "landing").toString().slice(0, 60);
+        // RFC-lite validation — good enough to reject obvious junk
+        if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return new Response(JSON.stringify({ error: "invalid_email" }), { status: 400, headers });
+        }
+        try {
+            const kv = await Deno.openKv();
+            const key = ["signups", email];
+            const existing = await kv.get(key);
+            if (existing.value) {
+                return new Response(JSON.stringify({ ok: true, duplicate: true }), { status: 200, headers });
+            }
+            await kv.set(key, { email, source, at: new Date().toISOString() });
+            // Maintain a running counter for quick totals
+            await kv.atomic().sum(["signups_count"], 1n).commit();
+            // Auto-send the welcome email from contact@walletlens.live (best-effort).
+            sendEmail(email, "Welcome to WalletLens 🎉", WELCOME_HTML).catch(() => { });
+            return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+        }
+        catch (e) {
+            console.error("KV signup error:", e);
+            return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers });
+        }
+    }
+    // ── Export collected signups (mode: "email_export") ───────────────────────
+    // Protected by the SIGNUP_EXPORT_TOKEN env secret. POST { mode, token }.
+    // Returns every stored signup so the list can be downloaded into an ESP.
+    if (body?.mode === "email_export") {
+        const expected = Deno.env.get("SIGNUP_EXPORT_TOKEN");
+        if (!expected || body.token !== expected) {
+            return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers });
+        }
+        try {
+            const kv = await Deno.openKv();
+            const rows = [];
+            for await (const entry of kv.list({ prefix: ["signups"] })) {
+                rows.push(entry.value);
+            }
+            return new Response(JSON.stringify({ ok: true, count: rows.length, signups: rows }), { status: 200, headers });
+        }
+        catch (e) {
+            console.error("KV export error:", e);
+            return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers });
+        }
+    }
+    // ── Export Guardian subscribers (mode: "guardian_export") ─────────────────
+    // Same SIGNUP_EXPORT_TOKEN gate as email_export. POST { mode, token }.
+    //
+    // Guardian records live under a different KV prefix from ["signups"], so
+    // these people were invisible to email_export even though they had handed
+    // over an address.
+    //
+    // The projection below is deliberately narrow. A Guardian record also holds:
+    //
+    //   • heirs[]          — names and addresses of people who never used
+    //                        WalletLens and never agreed to anything; their
+    //                        address was supplied by someone else.
+    //   • message          — a private note meant to be read after the owner
+    //                        stops answering.
+    //   • portfolioSummary — total value and asset symbols.
+    //   • qrPng            — an image encoding the owner's ENTIRE holdings
+    //                        snapshot. Anyone holding this export could scan it
+    //                        and load their portfolio.
+    //
+    // None of that is needed to know who subscribed, and an export is the most
+    // copied, forwarded and least-guarded artefact a service produces. Fields are
+    // listed one by one rather than deleted from a spread, so a field added to
+    // the record later stays out of the export until someone chooses to add it.
+    if (body?.mode === "guardian_export") {
+        const expected = Deno.env.get("SIGNUP_EXPORT_TOKEN");
+        if (!expected || body.token !== expected) {
+            return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers });
+        }
+        try {
+            const kv = await Deno.openKv();
+            const rows = [];
+            let active = 0;
+            for await (const entry of kv.list({ prefix: ["guardian"] })) {
+                // deno-lint-ignore no-explicit-any
+                const r = entry.value;
+                if (!r?.ownerEmail)
+                    continue;
+                if (r.active)
+                    active++;
+                rows.push({
+                    ownerEmail: r.ownerEmail,
+                    ownerName: r.ownerName || "",
+                    active: !!r.active,
+                    intervalDays: r.intervalDays ?? null,
+                    heirCount: Array.isArray(r.heirs) ? r.heirs.length : 0,
+                    createdAt: r.createdAt || null,
+                    lastCheckin: r.lastCheckin || null,
+                    warnedAt: r.warnedAt || null,
+                    notifiedAt: r.notifiedAt || null,
+                    deviceId: r.deviceId || null,
+                });
+            }
+            rows.sort((a, b) => 
+            // deno-lint-ignore no-explicit-any
+            String(b.createdAt || b.lastCheckin || "")
+                // deno-lint-ignore no-explicit-any
+                .localeCompare(String(a.createdAt || a.lastCheckin || "")));
+            return new Response(JSON.stringify({ ok: true, count: rows.length, active, guardians: rows }), { status: 200, headers });
+        }
+        catch (e) {
+            console.error("Guardian export error:", e);
+            return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers });
+        }
+    }
+    // ── Send a campaign to all signups (mode: "send_campaign") ────────────────
+    // Protected by SIGNUP_EXPORT_TOKEN. POST { mode, token, subject, html, test? }.
+    // Sends from contact@walletlens.live via Resend, wrapped in the brand shell.
+    // Pass `test: "you@email"` to send a single preview to yourself first.
+    if (body?.mode === "send_campaign") {
+        const expected = Deno.env.get("SIGNUP_EXPORT_TOKEN");
+        if (!expected || body.token !== expected) {
+            return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers });
+        }
+        if (!Deno.env.get("RESEND_API_KEY")) {
+            return new Response(JSON.stringify({ error: "mail_not_configured" }), { status: 503, headers });
+        }
+        const subject = (body.subject || "").toString().trim();
+        const inner = (body.html || "").toString();
+        if (!subject || !inner) {
+            return new Response(JSON.stringify({ error: "missing_subject_or_html" }), { status: 400, headers });
+        }
+        const html = emailShell(inner);
+        // Preview mode — send only to the given test address.
+        if (body.test) {
+            const ok = await sendEmail(body.test.toString(), `[TEST] ${subject}`, html);
+            return new Response(JSON.stringify({ ok, test: true }), { status: ok ? 200 : 502, headers });
+        }
+        try {
+            const kv = await Deno.openKv();
+            const recipients = [];
+            for await (const entry of kv.list({ prefix: ["signups"] })) {
+                if (entry.value?.email)
+                    recipients.push(entry.value.email);
+            }
+            let sent = 0, failed = 0;
+            // Sequential with a tiny delay to stay under Resend's rate limit.
+            for (const to of recipients) {
+                const ok = await sendEmail(to, subject, html);
+                ok ? sent++ : failed++;
+                await new Promise((r) => setTimeout(r, 120));
+            }
+            return new Response(JSON.stringify({ ok: true, total: recipients.length, sent, failed }), { status: 200, headers });
+        }
+        catch (e) {
+            console.error("Campaign error:", e);
+            return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers });
+        }
+    }
+    // ── Email me my backup ───────────────────────────────────────────────────
+    // POST { mode:"backup_email", email, code, qrPng? } — sends the user their
+    // own backup code (and QR if it fit one) from noreply@walletlens.live. The
+    // code is delivered once and never stored.
+    if (body?.mode === "backup_email") {
+        const email = String(body.email || "").trim().toLowerCase();
+        if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return new Response(JSON.stringify({ error: "invalid_email" }), { status: 400, headers });
+        }
+        const code = String(body.code || "");
+        // Backup codes are normally a few KB; cap generously to reject junk.
+        if (!code || code.length > 400_000) {
+            return new Response(JSON.stringify({ error: "invalid_code" }), { status: 400, headers });
+        }
+        const qrPng = sanitizeQrPng(body.qrPng);
+        const attachments = qrPng ? [{ filename: BACKUP_QR_FILENAME, content: qrPng }] : undefined;
+        const { subject, html } = backupEmailContent({ code, hasQr: !!qrPng });
+        const r = await sendEmailResult(email, subject, html, BACKUP_FROM, "contact@walletlens.live", attachments);
+        if (!r.ok) {
+            return new Response(JSON.stringify({ ok: false, reason: r.reason || "send_failed" }), { status: 200, headers });
+        }
+        return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+    }
+    // ── Weekly report: subscribe / refresh / unsubscribe ─────────────────────
+    // KV schema: ["weekly", deviceId] → { deviceId, email, stats, active, createdAt, lastSentAt }
+    // Only rounded, bounded stats are stored — same privacy model as Guardian.
+    if (body?.mode === "weekly_subscribe") {
+        // POST { mode, email, deviceId, stats } — store the subscription and send the
+        // first report immediately from noreply@walletlens.live.
+        const email = String(body.email || "").trim().toLowerCase();
+        if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return new Response(JSON.stringify({ error: "invalid_email" }), { status: 400, headers });
+        }
+        const deviceId = String(body.deviceId || "");
+        if (!/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+            return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers });
+        }
+        const stats = sanitizeWeeklyStats(body.stats);
+        try {
+            const kv = await Deno.openKv();
+            let lastSentAt = null;
+            let sent = false;
+            // Send the first report right away so the subscription is felt immediately.
+            if (stats) {
+                const { subject, html } = weeklyReportContent(stats);
+                const r = await sendEmailResult(email, subject, html, WEEKLY_FROM);
+                sent = r.ok;
+                if (r.ok)
+                    lastSentAt = new Date().toISOString();
+            }
+            await kv.set(["weekly", deviceId], {
+                deviceId, email, stats, active: true,
+                createdAt: new Date().toISOString(), lastSentAt,
+            });
+            return new Response(JSON.stringify({ ok: true, sent }), { status: 200, headers });
+        }
+        catch (e) {
+            console.error("Weekly subscribe error:", e);
+            return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers });
+        }
+    }
+    if (body?.mode === "weekly_refresh") {
+        // POST { mode, deviceId, email?, stats } — keep the stored snapshot current so
+        // the cron sends fresh numbers. Merges: holdings are only replaced when the
+        // client actually sends them (a snapshot-only refresh keeps the last list).
+        //
+        // Also acts as a resilient catch-up: if a weekly report is overdue (the cron
+        // didn't fire, e.g. the deployment restarted), this sends it on the next app
+        // open. The same ~6.4-day guard + lastSentAt stamp prevent double sends, so
+        // the cron and this path never both fire for the same week.
+        const deviceId = String(body.deviceId || "");
+        if (!/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+            return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers });
+        }
+        try {
+            const kv = await Deno.openKv();
+            const entry = await kv.get(["weekly", deviceId]);
+            if (!entry.value || !entry.value.active) {
+                return new Response(JSON.stringify({ ok: false, reason: "not_subscribed" }), { status: 200, headers });
+            }
+            const prev = (entry.value.stats || {});
+            const fresh = sanitizeWeeklyStats(body.stats);
+            // Keep prior holdings if this refresh didn't include any, and the
+            // prior count with them. assetCount was overwritten by the spread
+            // while holdings were preserved, so a report could list real
+            // holdings above a count of zero — the two describe the same thing
+            // and have to be carried across together or not at all.
+            //
+            // The count is gated on the COUNT, not on holdings being present:
+            // the client can
+            // now count held assets from balances alone, without prices, so a
+            // refresh may legitimately carry a real count and no priced
+            // holdings. Falling back on an empty holdings array would throw
+            // that good number away.
+            const stats = fresh
+                ? {
+                    ...fresh,
+                    holdings: fresh.holdings.length ? fresh.holdings : (prev.holdings || []),
+                    assetCount: fresh.assetCount || (prev.assetCount ?? 0),
+                }
+                : prev;
+            let lastSentAt = entry.value.lastSentAt ?? null;
+            let sent = false;
+            const last = lastSentAt ? new Date(lastSentAt).getTime() : 0;
+            const email = String(entry.value.email || "");
+            if (email && stats && stats.totalUsd != null &&
+                Date.now() - last >= WEEKLY_MIN_GAP_MS) {
+                const { subject, html } = weeklyReportContent(stats);
+                const ok = await sendEmail(email, subject, html, WEEKLY_FROM);
+                if (ok) {
+                    lastSentAt = new Date().toISOString();
+                    sent = true;
+                }
+            }
+            await kv.set(["weekly", deviceId], { ...entry.value, stats, lastSentAt });
+            return new Response(JSON.stringify({ ok: true, sent }), { status: 200, headers });
+        }
+        catch (e) {
+            console.error("Weekly refresh error:", e);
+            return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers });
+        }
+    }
+    if (body?.mode === "weekly_unsubscribe") {
+        // POST { mode, deviceId } — stop future weekly sends.
+        const deviceId = String(body.deviceId || "");
+        if (!/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+            return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers });
+        }
+        try {
+            const kv = await Deno.openKv();
+            const entry = await kv.get(["weekly", deviceId]);
+            if (entry.value)
+                await kv.set(["weekly", deviceId], { ...entry.value, active: false });
+            return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+        }
+        catch (e) {
+            console.error("Weekly unsubscribe error:", e);
+            return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers });
+        }
+    }
+    // Manual admin trigger for the weekly cron (protected).
+    if (body?.mode === "weekly_cron_trigger") {
+        const expected = Deno.env.get("SIGNUP_EXPORT_TOKEN");
+        if (!expected || body.token !== expected) {
+            return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers });
+        }
+        const result = await runWeeklyCron();
+        return new Response(JSON.stringify({ ok: true, ...result }), { status: 200, headers });
+    }
+    // ── Portfolio Guardian — Dead Man's Switch ───────────────────────────────
+    // Lets users register heir email addresses. If they stop opening WalletLens
+    // for longer than their chosen interval, the server emails the heirs with a
+    // portfolio summary and a personal message.
+    //
+    // KV schema:
+    //   ["guardian", deviceId]  → GuardianRecord
+    //
+    // GuardianRecord {
+    //   deviceId: string          (anonymous — chosen by client)
+    //   ownerEmail: string        (required — warned first before any heir)
+    //   heirs: [{name, email}]    (up to 3)
+    //   message: string           (personal message from user, max 500 chars)
+    //   intervalDays: number      (30 | 60 | 90 | 180)
+    //   portfolioSummary: {       (client-supplied at setup/checkin time)
+    //     totalUsd: number,
+    //     assetSymbols: string[]  (e.g. ["BTC","ETH","AAPL","Gold"])
+    //     currency: string        (display currency code)
+    //   }
+    //   lastCheckin: string       (ISO timestamp)
+    //   warnedAt?: string         (ISO timestamp the owner-warning email was sent)
+    //   notifiedAt?: string       (ISO timestamp of heir notification, if sent)
+    //   active: boolean
+    // }
+    //
+    // No financial amounts beyond a rounded total are stored server-side.
+    // The backup code never leaves the device.
+    if (body?.mode === "guardian_setup") {
+        // POST { mode:"guardian_setup", deviceId, ownerName?, ownerEmail, heirs, message, intervalDays, portfolioSummary }
+        const { deviceId, ownerName, ownerEmail, heirs, message, intervalDays, portfolioSummary } = body;
+        // Validate deviceId — alphanumeric, 8-64 chars
+        if (!deviceId || typeof deviceId !== "string" || !/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+            return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers });
+        }
+        // Owner email is required — it's the recovery channel the switch warns first,
+        // so a lost phone / missing backup can never falsely notify heirs.
+        const cleanOwnerEmail = String(ownerEmail || "").trim().toLowerCase();
+        if (!cleanOwnerEmail || cleanOwnerEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanOwnerEmail)) {
+            return new Response(JSON.stringify({ error: "invalid_owner_email" }), { status: 400, headers });
+        }
+        // Validate heirs array (1–3 items)
+        if (!Array.isArray(heirs) || heirs.length === 0 || heirs.length > 3) {
+            return new Response(JSON.stringify({ error: "invalid_heirs" }), { status: 400, headers });
+        }
+        const cleanHeirs = sanitizeHeirs(heirs);
+        if (cleanHeirs.length === 0) {
+            return new Response(JSON.stringify({ error: "no_valid_heirs" }), { status: 400, headers });
+        }
+        // Validate interval
+        const validIntervals = [1, 7, 30, 60, 90, 180];
+        const interval = validIntervals.includes(Number(intervalDays)) ? Number(intervalDays) : 90;
+        // Validate message + owner name
+        const cleanMessage = String(message || "").trim().slice(0, 500);
+        const cleanOwnerName = String(ownerName || "").trim().slice(0, 80);
+        // Validate portfolio summary (optional but must be safe if provided)
+        const summary = portfolioSummary && typeof portfolioSummary === "object"
+            ? {
+                totalUsd: typeof portfolioSummary.totalUsd === "number" ? Math.round(Math.abs(portfolioSummary.totalUsd)) : 0,
+                assetSymbols: Array.isArray(portfolioSummary.assetSymbols)
+                    ? portfolioSummary.assetSymbols.slice(0, 20).map((s) => String(s).slice(0, 10)) : [],
+                currency: String(portfolioSummary.currency || "USD").slice(0, 5).toUpperCase(),
+            }
+            : { totalUsd: 0, assetSymbols: [], currency: "USD" };
+        try {
+            const kv = await Deno.openKv();
+            // This handler is reused for edits and overwrites the record wholesale,
+            // so the original subscribe date has to be carried across or every edit
+            // would look like a brand-new signup.
+            const prior = await kv.get(["guardian", deviceId]);
+            // deno-lint-ignore no-explicit-any
+            const priorCreatedAt = prior.value?.createdAt;
+            const record = {
+                deviceId,
+                ownerName: cleanOwnerName,
+                ownerEmail: cleanOwnerEmail,
+                heirs: cleanHeirs,
+                message: cleanMessage,
+                intervalDays: interval,
+                portfolioSummary: summary,
+                qrPng: sanitizeQrPng(body.qrPng),
+                createdAt: priorCreatedAt || new Date().toISOString(),
+                lastCheckin: new Date().toISOString(),
+                warnedAt: null,
+                notifiedAt: null,
+                active: true,
+            };
+            await kv.set(["guardian", deviceId], record);
+            return new Response(JSON.stringify({ ok: true, interval, heirCount: cleanHeirs.length }), { status: 200, headers });
+        }
+        catch (e) {
+            console.error("Guardian setup error:", e);
+            return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers });
+        }
+    }
+    if (body?.mode === "guardian_test") {
+        // Immediately send a clearly-labeled TEST preview to the OWNER'S OWN email
+        // so they can see exactly what their heirs would receive — without emailing
+        // the heirs. Uses the form data directly (no KV lookup needed).
+        const { ownerName, ownerEmail, message, portfolioSummary } = body;
+        const cleanOwnerEmail = String(ownerEmail || "").trim().toLowerCase();
+        if (!cleanOwnerEmail || cleanOwnerEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanOwnerEmail)) {
+            return new Response(JSON.stringify({ error: "invalid_owner_email" }), { status: 400, headers });
+        }
+        const cleanMessage = String(message || "").trim().slice(0, 500);
+        const cleanOwnerName = String(ownerName || "").trim().slice(0, 80);
+        // deno-lint-ignore no-explicit-any
+        const ps = (portfolioSummary && typeof portfolioSummary === "object") ? portfolioSummary : {};
+        const totalUsd = typeof ps.totalUsd === "number" ? Math.round(Math.abs(ps.totalUsd)) : 0;
+        const currency = String(ps.currency || "USD").slice(0, 5).toUpperCase();
+        // deno-lint-ignore no-explicit-any
+        const assetSymbols = Array.isArray(ps.assetSymbols) ? ps.assetSymbols.slice(0, 20).map((x) => String(x).slice(0, 10)) : [];
+        const valueStr = totalUsd > 0 ? `approximately ${currency} ${totalUsd.toLocaleString()}` : "an undisclosed amount";
+        const assetStr = assetSymbols.length ? assetSymbols.join(", ") : "various assets";
+        const lastSeen = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+        const qrPng = sanitizeQrPng(body.qrPng);
+        const attachments = qrPng ? [{ filename: QR_FILENAME, content: qrPng }] : undefined;
+        const { subject, html } = guardianContent({
+            ownerName: cleanOwnerName, message: cleanMessage, valueStr, assetStr, lastSeen, isTest: true, hasQr: !!qrPng,
+        });
+        // Send the preview to the owner only.
+        const r = await sendEmailResult(cleanOwnerEmail, subject, html, GUARDIAN_FROM, "contact@walletlens.live", attachments);
+        if (!r.ok) {
+            return new Response(JSON.stringify({ ok: false, sent: 0, failed: 1, reason: r.reason || "send_failed" }), { status: 200, headers });
+        }
+        return new Response(JSON.stringify({ ok: true, sent: 1, failed: 0 }), { status: 200, headers });
+    }
+    if (body?.mode === "guardian_checkin") {
+        // POST { mode:"guardian_checkin", deviceId, portfolioSummary? }
+        const { deviceId, portfolioSummary } = body;
+        if (!deviceId || typeof deviceId !== "string" || !/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+            return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers });
+        }
+        try {
+            const kv = await Deno.openKv();
+            const entry = await kv.get(["guardian", deviceId]);
+            if (!entry.value || !entry.value.active) {
+                return new Response(JSON.stringify({ ok: false, reason: "not_found" }), { status: 200, headers });
+            }
+            const updated = { ...entry.value, lastCheckin: new Date().toISOString(), warnedAt: null, notifiedAt: null };
+            // Optionally refresh the portfolio summary
+            if (portfolioSummary && typeof portfolioSummary === "object") {
+                updated.portfolioSummary = {
+                    totalUsd: typeof portfolioSummary.totalUsd === "number" ? Math.round(Math.abs(portfolioSummary.totalUsd)) : entry.value.portfolioSummary.totalUsd,
+                    assetSymbols: Array.isArray(portfolioSummary.assetSymbols)
+                        ? portfolioSummary.assetSymbols.slice(0, 20).map((s) => String(s).slice(0, 10))
+                        : entry.value.portfolioSummary.assetSymbols,
+                    currency: String(portfolioSummary.currency || entry.value.portfolioSummary.currency || "USD").slice(0, 5).toUpperCase(),
+                };
+            }
+            // Refresh the stored portfolio QR so the emailed snapshot stays current as
+            // of the owner's most recent visit.
+            const freshQr = sanitizeQrPng(body.qrPng);
+            if (freshQr)
+                updated.qrPng = freshQr;
+            await kv.set(["guardian", deviceId], updated);
+            return new Response(JSON.stringify({ ok: true, lastCheckin: updated.lastCheckin }), { status: 200, headers });
+        }
+        catch (e) {
+            console.error("Guardian checkin error:", e);
+            return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers });
+        }
+    }
+    if (body?.mode === "guardian_reset") {
+        // POST { mode:"guardian_reset", deviceId }
+        // Fired by the "I'm still here" button on the emailed warning page. Resets
+        // the deadline from any device — no phone or backup code needed — and clears
+        // the warning/notified state so a fresh cycle can warn again next time.
+        const { deviceId } = body;
+        if (!deviceId || typeof deviceId !== "string" || !/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+            return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers });
+        }
+        try {
+            const kv = await Deno.openKv();
+            const entry = await kv.get(["guardian", deviceId]);
+            if (!entry.value || !entry.value.active) {
+                return new Response(JSON.stringify({ ok: false, reason: "not_found" }), { status: 200, headers });
+            }
+            const nowIso = new Date().toISOString();
+            await kv.set(["guardian", deviceId], { ...entry.value, lastCheckin: nowIso, warnedAt: null, notifiedAt: null });
+            return new Response(JSON.stringify({ ok: true, lastCheckin: nowIso }), { status: 200, headers });
+        }
+        catch (e) {
+            console.error("Guardian reset error:", e);
+            return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers });
+        }
+    }
+    if (body?.mode === "guardian_cancel") {
+        // POST { mode:"guardian_cancel", deviceId }
+        const { deviceId } = body;
+        if (!deviceId || typeof deviceId !== "string" || !/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+            return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers });
+        }
+        try {
+            const kv = await Deno.openKv();
+            const entry = await kv.get(["guardian", deviceId]);
+            if (entry.value) {
+                await kv.set(["guardian", deviceId], { ...entry.value, active: false });
+            }
+            return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+        }
+        catch (e) {
+            console.error("Guardian cancel error:", e);
+            return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers });
+        }
+    }
+    // Manual admin trigger (protected)
+    if (body?.mode === "guardian_cron_trigger") {
+        const expected = Deno.env.get("SIGNUP_EXPORT_TOKEN");
+        if (!expected || body.token !== expected) {
+            return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers });
+        }
+        const result = await runGuardianCron();
+        return new Response(JSON.stringify({ ok: true, ...result }), { status: 200, headers });
+    }
+    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!apiKey) {
+        return new Response(JSON.stringify({ error: "not_configured" }), { status: 503, headers });
+    }
+    // ── Screenshot import (mode: "vision") ────────────────────────────────────
+    // Accepts a base64 image of a portfolio / trade history / order confirmation
+    // and extracts holdings via Claude vision. Returns { ok, holdings: [...] }.
+    if (body?.mode === "vision") {
+        const image = (body.image || "").toString();
+        const mediaType = (body.mediaType || "image/png").toString();
+        if (!image) {
+            return new Response(JSON.stringify({ error: "no_image" }), { status: 400, headers });
+        }
+        const prompt = `You are a precise data-extraction engine for a crypto/stock/metals portfolio app. The user uploaded a screenshot — it may be an exchange/wallet portfolio, a holdings list, a trade/order history, or a single order confirmation.
+
+Extract EVERY asset position or trade you can read. Return STRICT JSON ONLY — a single JSON array, no markdown, no commentary. Each item:
+{ "symbol": "BTC", "name": "Bitcoin", "amount": <number of units>, "price": <number, unit price in USD or 0 if not shown>, "type": "buy" | "sell" }
+
+Rules:
+- "amount" is the QUANTITY of units (coins/shares/oz), never the fiat value. If only a fiat value and a price are shown, divide to get units.
+- If a row shows a holding/balance with no explicit buy/sell, use "buy".
+- Use the ticker for "symbol" (BTC, ETH, SOL, AAPL, TSLA, XAU, …) in uppercase.
+- Ignore totals, fiat cash balances, ads, and UI chrome. Only real asset positions/trades.
+- If nothing can be read, return [].`;
+        try {
+            const resp = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": apiKey,
+                    "anthropic-version": "2023-06-01",
+                },
+                body: JSON.stringify({
+                    model: "claude-sonnet-4-6",
+                    max_tokens: 1500,
+                    messages: [{
+                            role: "user",
+                            content: [
+                                { type: "image", source: { type: "base64", media_type: mediaType, data: image } },
+                                { type: "text", text: prompt },
+                            ],
+                        }],
+                }),
+            });
+            if (!resp.ok) {
+                const err = await resp.text();
+                console.error("Claude API error (vision):", resp.status, err);
+                return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers });
+            }
+            const data = await resp.json();
+            const text = data.content?.[0]?.text || "";
+            const match = text.match(/\[[\s\S]*\]/);
+            const holdings = match ? JSON.parse(match[0]) : [];
+            return new Response(JSON.stringify({ ok: true, holdings }), { headers });
+        }
+        catch (e) {
+            console.error("vision error:", e);
+            return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers });
+        }
+    }
+    // ── Magic Indicator AI verdict (mode: "analyze") ──────────────────────────
+    if (body?.mode === "analyze") {
+        try {
+            const resp = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": apiKey,
+                    "anthropic-version": "2023-06-01",
+                },
+                body: JSON.stringify({
+                    model: "claude-sonnet-4-6",
+                    max_tokens: 700,
+                    messages: [{ role: "user", content: buildAnalyzePrompt(body) }],
+                }),
+            });
+            if (!resp.ok) {
+                const err = await resp.text();
+                console.error("Claude API error (analyze):", resp.status, err);
+                return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers });
+            }
+            const data = await resp.json();
+            const text = data.content?.[0]?.text || "";
+            const match = text.match(/\{[\s\S]*\}/);
+            if (!match)
+                throw new Error("no JSON in response");
+            const verdict = JSON.parse(match[0]);
+            return new Response(JSON.stringify({ ok: true, verdict }), { headers });
+        }
+        catch (e) {
+            console.error("analyze error:", e);
+            return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers });
+        }
+    }
+    // ── Sell-target reality check (mode: "target_analysis") ────────────────────
+    if (body?.mode === "target_analysis") {
+        try {
+            const resp = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": apiKey,
+                    "anthropic-version": "2023-06-01",
+                },
+                body: JSON.stringify({
+                    model: "claude-sonnet-4-6",
+                    max_tokens: 400,
+                    messages: [{ role: "user", content: buildTargetAnalysisPrompt(body) }],
+                }),
+            });
+            if (!resp.ok) {
+                const err = await resp.text();
+                console.error("Claude API error (target_analysis):", resp.status, err);
+                return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers });
+            }
+            const data = await resp.json();
+            const text = data.content?.[0]?.text || "";
+            const match = text.match(/\{[\s\S]*\}/);
+            if (!match)
+                throw new Error("no JSON in response");
+            const analysis = JSON.parse(match[0]);
+            return new Response(JSON.stringify({ ok: true, analysis }), { headers });
+        }
+        catch (e) {
+            console.error("target_analysis error:", e);
+            return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers });
+        }
+    }
+    // ── In-app assistant (mode: "assistant") ──────────────────────────────────
+    // Accepts a short chat history and returns Claude Haiku's reply. The reply
+    // may contain [[nav:/route|Label]] markers the client renders as buttons.
+    if (body?.mode === "assistant") {
+        const lang = body.lang === "ar" ? "ar" : "en";
+        // deno-lint-ignore no-explicit-any
+        const rawMsgs = Array.isArray(body.messages) ? body.messages : [];
+        const messages = rawMsgs
+            .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+            .slice(-12) // cap history
+            .map((m) => ({ role: m.role, content: m.content.toString().slice(0, 2000) }));
+        if (messages.length === 0 || messages[messages.length - 1].role !== "user") {
+            return new Response(JSON.stringify({ error: "no_message" }), { status: 400, headers });
+        }
+        try {
+            const resp = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": apiKey,
+                    "anthropic-version": "2023-06-01",
+                },
+                body: JSON.stringify({
+                    model: "claude-haiku-4-5-20251001",
+                    max_tokens: 600,
+                    system: buildAssistantSystem(lang),
+                    messages,
+                }),
+            });
+            if (!resp.ok) {
+                const err = await resp.text();
+                console.error("Claude API error (assistant):", resp.status, err);
+                return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers });
+            }
+            const data = await resp.json();
+            const reply = data.content?.[0]?.text || "";
+            return new Response(JSON.stringify({ ok: true, reply }), { headers });
+        }
+        catch (e) {
+            console.error("assistant error:", e);
+            return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers });
+        }
+    }
+    // ── Portfolio Vision advice (mode: "vision_advice") ───────────────────────
+    if (body?.mode === "vision_advice") {
+        try {
+            const resp = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": apiKey,
+                    "anthropic-version": "2023-06-01",
+                },
+                body: JSON.stringify({
+                    model: "claude-sonnet-4-6",
+                    max_tokens: 900,
+                    messages: [{ role: "user", content: buildVisionAdvicePrompt(body) }],
+                }),
+            });
+            if (!resp.ok) {
+                const err = await resp.text();
+                console.error("Claude API error (vision_advice):", resp.status, err);
+                return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers });
+            }
+            const data = await resp.json();
+            const text = data.content?.[0]?.text || "";
+            const match = text.match(/\{[\s\S]*\}/);
+            if (!match)
+                throw new Error("no JSON in response");
+            const advice = JSON.parse(match[0]);
+            return new Response(JSON.stringify({ ok: true, advice }), { headers });
+        }
+        catch (e) {
+            console.error("vision_advice error:", e);
+            return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers });
+        }
+    }
+    // ── Daily market recap (mode: "recap") ────────────────────────────────────
+    if (body?.mode === "recap") {
+        const snapshotText = (body.snapshotText || "").toString().slice(0, 2000);
+        const dateStr = (body.date || "").toString().slice(0, 40);
+        const year = Number(body.year) || new Date().getUTCFullYear();
+        if (!snapshotText || !dateStr) {
+            return new Response(JSON.stringify({ error: "missing_snapshot_or_date" }), { status: 400, headers });
+        }
+        try {
+            const { system, prompt } = buildRecapPrompt(snapshotText, dateStr, year);
+            const resp = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": apiKey,
+                    "anthropic-version": "2023-06-01",
+                },
+                body: JSON.stringify({
+                    model: "claude-sonnet-4-6",
+                    max_tokens: 3000,
+                    system,
+                    messages: [{ role: "user", content: prompt }],
+                }),
+            });
+            if (!resp.ok) {
+                const err = await resp.text();
+                console.error("Claude API error (recap):", resp.status, err);
+                return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers });
+            }
+            const data = await resp.json();
+            let out = (data.content?.[0]?.text || "");
+            const tStart = out.indexOf("TITLE:");
+            if (tStart === -1)
+                throw new Error("no TITLE: header");
+            out = out.slice(tStart);
+            const bodyIdx = out.indexOf("\nBODY:");
+            if (bodyIdx === -1)
+                throw new Error("no BODY: marker");
+            const headerText = out.slice(0, bodyIdx);
+            let content = out.slice(bodyIdx + "\nBODY:".length).replace(/^\r?\n/, "");
+            content = content.replace(/^```[a-z]*\s*\n/i, "").replace(/\n?```\s*$/i, "").trim();
+            const field = (name) => {
+                const m = headerText.match(new RegExp("^" + name + ":\\s*(.+)$", "mi"));
+                return m ? m[1].trim() : "";
+            };
+            const title = field("TITLE");
+            const summary = field("SUMMARY");
+            const readTime = field("READTIME") || "4 min read";
+            if (!title || !content || content.length < 400)
+                throw new Error("recap too short");
+            return new Response(JSON.stringify({ ok: true, title, summary, readTime, content }), { headers });
+        }
+        catch (e) {
+            console.error("recap error:", e);
+            return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers });
+        }
+    }
+    const transcript = (body.transcript || "").toString().trim().slice(0, 500);
+    if (!transcript) {
+        return new Response(JSON.stringify({ error: "no_transcript" }), { status: 400, headers });
+    }
+    const hintLang = ["ar", "hi", "fr", "tr", "es"].includes(String(body.hintLang)) ? String(body.hintLang) : "en";
+    // Optional candidate transcripts from the other recognizers, de-duped.
+    const alternatives = Array.isArray(body.alternatives)
+        ? Array.from(new Set(body.alternatives
+            .map((a) => (a || "").toString().trim().slice(0, 500))
+            .filter((a) => a.length > 0))).slice(0, 12)
+        : [];
+    if (!alternatives.includes(transcript))
+        alternatives.unshift(transcript);
+    try {
+        const resp = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-api-key": apiKey,
+                "anthropic-version": "2023-06-01",
+            },
+            body: JSON.stringify({
+                model: "claude-sonnet-5",
+                // Higher cap so long multi-trade JSON is never truncated (which would
+                // silently drop trades).
+                max_tokens: 2048,
+                // Thinking off: latency-sensitive extraction; the prompt already carries
+                // explicit rules + worked examples.
+                thinking: { type: "disabled" },
+                // Guaranteed valid JSON — replaces the old assistant-prefill trick,
+                // which 400s on Sonnet 5 and every current model.
+                output_config: { format: TRADES_FORMAT },
+                messages: [
+                    { role: "user", content: buildPrompt(transcript, hintLang, alternatives) },
+                ],
+            }),
+        });
+        if (!resp.ok) {
+            const err = await resp.text();
+            console.error("Claude API error:", resp.status, err);
+            return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers });
+        }
+        const data = await resp.json();
+        const text = data.content?.[0]?.text || "";
+        const match = text.match(/\{[\s\S]*\}/);
+        if (!match)
+            throw new Error("no JSON in response");
+        const trades = filterTrades(JSON.parse(match[0]).trades);
+        return new Response(JSON.stringify({ ok: true, trades }), { headers });
+    }
+    catch (e) {
+        console.error("voice-parse error:", e);
+        return new Response(JSON.stringify({ error: "parse_error", message: String(e) }), { status: 500, headers });
+    }
+});
+
+
+// -- Worker entry points -----------------------------------------------------
+
+function bind(env) {
+  ENV = env
+  KV = new KvOnD1(env.DB)
+}
+
+export default {
+  async fetch(req, env) {
+    bind(env)
+    if (!HANDLER) return new Response('handler not registered', { status: 500 })
+    return HANDLER(req)
+  },
+
+  async scheduled(event, env, ctx) {
+    bind(env)
+    // Matched on the schedule string, because that is what Cloudflare hands
+    // back; the job name is not part of the event.
+    const job = CRONS.find(c => c.schedule === event.cron)
+    if (!job) {
+      console.warn('no cron registered for schedule:', event.cron)
+      return
+    }
+    ctx.waitUntil(
+      Promise.resolve(job.fn()).catch(e =>
+        console.error('cron ' + job.name + ' failed:', String(e && e.message || e).slice(0, 300))),
+    )
+  },
+}
+
+// Exported for tests: what the body registered at import time.
+export function __registered() {
+  return { crons: CRONS.map(c => ({ name: c.name, schedule: c.schedule })), hasHandler: !!HANDLER }
+}

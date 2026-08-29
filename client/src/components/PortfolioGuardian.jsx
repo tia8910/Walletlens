@@ -6,8 +6,9 @@ import { loadSnapshots } from '../snapshots'
 import { api } from '../api'
 import { makeQr } from '../utils/qrBackup'
 import { useLanguage } from '../LanguageContext'
+import { VOICE_API } from '../apiHosts.js'
 
-const ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
+const ENDPOINT = VOICE_API
 const GUARDIAN_KEY = 'wl_guardian'
 const DEVICE_ID_KEY = 'wl_guardian_device_id'
 

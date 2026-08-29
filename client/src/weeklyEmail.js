@@ -12,8 +12,10 @@
 // was and it never did; snapshots.js stores the raw value and it is sent as
 // stored. Do not restore that wording without also making it true.
 import { loadSnapshots } from './snapshots'
+import { foldBalances } from './data/portfolio'
+import { VOICE_API } from './apiHosts.js'
 
-const ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
+const ENDPOINT = VOICE_API
 const SUB_KEY = 'wl_weekly_email'
 // Reuse the same anonymous device id as Portfolio Guardian so a device has one
 // identity across features (it's just a random opaque key, never PII).
@@ -65,7 +67,10 @@ function snapshotFields() {
     totalUsd: current.v,
     weekChange,
     weekChangePct,
-    daysTracked: snaps.length,
+    // Distinct calendar days, not snapshot count. Snapshots are written at
+    // most every 30 minutes, so snaps.length counted half-hours: nine of them
+    // reported "9 days tracked" for an afternoon's use.
+    daysTracked: new Set(snaps.map(s => new Date(s.ts).toDateString())).size,
     weekLabel: `${fmtD(weekStart.ts)} – ${fmtD(current.ts)}`,
   }
 }
@@ -86,9 +91,28 @@ export function buildWeeklyPayload({ enriched, currency = 'USD' } = {}) {
   return {
     currency,
     ...base,
-    assetCount: Array.isArray(enriched) ? enriched.length : 0,
+    // Falls back to the stored transactions rather than reporting zero.
+    //
+    // Settings renders the signup with no `enriched` prop — it has no access
+    // to the priced portfolio — so subscribing from there sent assetCount: 0
+    // beside a real total, and the first report read "USD 14,105 · 0 Assets".
+    // The count does not need prices, only balances, so it can always be
+    // answered honestly.
+    //
+    // `holdings` still requires prices and stays empty here; the server keeps
+    // whatever it already had, which is what the refresh path is for.
+    assetCount: Array.isArray(enriched) ? enriched.length : assetCountFromStorage(),
     holdings,
   }
+}
+
+/** How many assets are actually held, from balances alone. No prices needed. */
+function assetCountFromStorage() {
+  try {
+    const txs = JSON.parse(localStorage.getItem('crypto_tracker_transactions') || '[]')
+    const balances = foldBalances(txs)
+    return Object.values(balances).filter(b => (Number(b.amount) || 0) > 0).length
+  } catch { return 0 }
 }
 
 // Opt in: sends the first report now and schedules the weekly send.

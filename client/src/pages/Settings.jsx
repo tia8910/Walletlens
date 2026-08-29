@@ -9,11 +9,12 @@ import { useLanguage, LANGUAGES } from '../LanguageContext'
 import InstallExtension from '../components/InstallExtension'
 import InterestPicker from '../components/InterestPicker'
 import PushToggle from '../components/PushToggle'
+import ZakatNotifyToggle from '../components/ZakatNotifyToggle'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import DriveBackup from '../components/DriveBackup'
 import { isAndroidTWA } from '../nativeBridge'
 import { requestReviewNow, reviewDiagnostics } from '../reviewPrompt'
-import { pulseSettings, setPulseSettings } from '../marketPulseRuntime'
+import { effectSettings, setEffectSettings, primeEffectAudio } from '../screenEffectsRuntime'
 import { widgetSyncDiagnostics, forceSyncWidgets } from '../nativeWidgets'
 
 const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || '')
@@ -87,7 +88,7 @@ export default function Settings() {
   const hideValues  = settings.hideValues  ?? false
   const [editInterests, setEditInterests] = useState(false)
   const [wdiag, setWdiag] = useState(() => widgetSyncDiagnostics())
-  const [pulse, setPulse] = useState(() => pulseSettings())
+  const [fx, setFx] = useState(() => effectSettings())
   const [rdiag] = useState(() => reviewDiagnostics())
 
   return (
@@ -165,7 +166,7 @@ export default function Settings() {
             Android the "already welcomed" flag lives in Chrome's storage for
             walletlens.live, so reinstalling the app does not replay it. Without
             this row an existing user has no way to reach the other languages. */}
-        <div className="settings-row">
+        <div className="settings-row settings-row-stack">
           <div className="settings-label">
             <span>{t('setLanguage')}</span>
             <span className="settings-hint">{t('setLanguageHint')}</span>
@@ -236,6 +237,15 @@ export default function Settings() {
         <PushToggle />
       </div>
 
+      {/* ── Zakat ── Its own section rather than a row inside Notifications,
+           because the per-channel rows there are hidden behind
+           SHOW_CHANNEL_DETAIL: a zakat toggle living among them would exist
+           and be unreachable. ── */}
+      <div className="settings-section glass-card">
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="crescent" size={16} />{t('setZakat')}</h3>
+        <ZakatNotifyToggle />
+      </div>
+
       {/* ── Weekly Report ── */}
       <div className="settings-section glass-card">
         <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="mail" size={16} />{t('setWeeklyReport')}</h3>
@@ -248,37 +258,68 @@ export default function Settings() {
         <BiometricToggle />
       </div>
 
-      {/* ── Market Pulse ── Off by default. A finance app that makes noise
-           nobody asked for only gets to do it once. */}
+      {/* ── Portfolio Guardian ── */}
       <div className="settings-section glass-card">
-        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bell" size={16} />{t('setPulse')}</h3>
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          {t('setGuardian')}
+        </h3>
         <div className="settings-row">
           <div className="settings-label">
-            <span>{t('setPulseSound')}</span>
-            <span className="settings-hint">{t('setPulseHint')}</span>
+            <span>{t('setGuardian')}</span>
+            <span className="settings-hint">{t('setGuardianDesc')}</span>
           </div>
-          <button className={`settings-chip ${pulse.enabled ? 'active' : ''}`}
+          <button
+            className={`settings-toggle ${(() => { try { return !!JSON.parse(localStorage.getItem('wl_guardian') || 'null')?.email } catch { return false } })() ? 'on' : ''}`}
             onClick={() => {
-              const next = setPulseSettings({ enabled: !pulse.enabled })
-              setPulse(next)
-              track('market_pulse_toggle', { on: next.enabled })
+              track('guardian_toggle_click', { source: 'settings' })
+              navigate('/guardian')
+            }}>
+            <span className="settings-toggle-thumb"/>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Screen effects ── On by default, unlike the sound-only feature
+           this replaced. Three occasions a day at most, and the picture is the
+           point; the sound is the part that gets its own switch. */}
+      <div className="settings-section glass-card">
+        <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="bell" size={16} />{t('setFx')}</h3>
+        <div className="settings-row">
+          <div className="settings-label">
+            <span>{t('setFx')}</span>
+            <span className="settings-hint">{t('setFxHint')}</span>
+          </div>
+          <button className={`settings-chip ${fx.enabled ? 'active' : ''}`}
+            onClick={() => {
+              const next = setEffectSettings({ enabled: !fx.enabled })
+              setFx(next)
+              track('screen_effects_toggle', { on: next.enabled })
             }}
             style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
-            {pulse.enabled ? t('setPulseOn') : t('setPulseOff')}
+            {fx.enabled ? t('commonOn') : t('commonOff')}
           </button>
         </div>
 
-        {pulse.enabled && (
+        {fx.enabled && (
           <>
             <div className="settings-divider"/>
             <div className="settings-row">
               <div className="settings-label">
-                <span>{t('setPulseHaptics')}</span>
-                <span className="settings-hint">{t('setPulseHapticsHint')}</span>
+                <span>{t('setFxSound')}</span>
+                <span className="settings-hint">{t('setFxSoundHint')}</span>
               </div>
-              <button className={`settings-chip ${pulse.haptics ? 'active' : ''}`}
-                onClick={() => setPulse(setPulseSettings({ haptics: !pulse.haptics }))}>
-                {pulse.haptics ? t('setPulseOn') : t('setPulseOff')}
+              <button className={`settings-chip ${fx.sound ? 'active' : ''}`}
+                onClick={() => {
+                  const next = setEffectSettings({ sound: !fx.sound })
+                  setFx(next)
+                  // Turning sound ON is a tap, which is the only moment a
+                  // browser will let the audio context start. Doing it here
+                  // means the next effect is audible instead of held.
+                  if (next.sound) { try { primeEffectAudio() } catch {} }
+                  track('screen_effects_sound', { on: next.sound })
+                }}>
+                {fx.sound ? t('commonOn') : t('commonOff')}
               </button>
             </div>
           </>

@@ -200,9 +200,25 @@ public class ReviewActivity extends Activity {
 
     /** Close out, optionally sending the user to the listing instead. */
     private void finishFlow(boolean openStore) {
-        if (openStore && openStoreListing()) {
-            markCompleted();
-        }
+        // Deliberately does NOT markCompleted().
+        //
+        // Reaching here means Play declined — it would not show a card, so the
+        // store listing was opened instead. Opening a listing is not evidence
+        // that anybody rated anything; the user may well have hit back at once.
+        //
+        // Stamping a completion here was the same "an attempt is not evidence"
+        // error the flow callback above already guards against, one branch
+        // over. The consequence was worse, though: alreadyRan() reads that
+        // stamp, so a single tap on "Rate WalletLens" that bounced to the store
+        // permanently disabled the automatic launch-time ask on that device.
+        // Testing the manual button was enough to kill the feature you were
+        // testing.
+        //
+        // Nothing is needed here to keep the volume sane. markAsked() has
+        // already started the re-ask gap, and the manual button is a thing the
+        // user went looking for, not an interruption we owe them a cooldown
+        // for.
+        if (openStore) openStoreListing();
         handOff();
     }
 

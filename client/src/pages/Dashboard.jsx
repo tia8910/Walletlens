@@ -8,11 +8,10 @@ import {
 import { api } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
-import { pulseClass, breadthOf } from '../marketPulse'
-import { observeMarket, armPulseAudio, demoPulse, onPulseRelease, fireWelcome } from '../marketPulseRuntime'
-import PulseDiscovery from '../components/PulseDiscovery'
-import PulseOverlay from '../components/PulseOverlay'
-import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass } from '../data/assets'
+import { observe, primeEffectAudio } from '../screenEffectsRuntime'
+import { EXPLODE, ROCKET, ATH } from '../screenEffects'
+import ScreenEffect from '../components/ScreenEffect'
+import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset, GOLD_ID, SILVER_ID } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
 import Logo from '../components/Logo'
 import Icon from '../components/Icon'
@@ -46,6 +45,7 @@ import Tip from '../components/Tip'
 import RebalancePanel from '../components/RebalancePanel'
 import { syncWidgets } from '../nativeWidgets'
 import { noteAppOpen, maybeAskForReview, noteMoment } from '../reviewPrompt'
+import { VOICE_API, voiceProxy } from '../apiHosts.js'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -62,6 +62,8 @@ const ShareCard      = lazy(() => import('../components/ShareCard'))
 const CorrelationMatrix = lazy(() => import('../components/CorrelationMatrix'))
 const SectorHeatmap  = lazy(() => import('../components/SectorHeatmap'))
 const SmartImport    = lazy(() => import('../components/SmartImport'))
+const DriveBackup    = lazy(() => import('../components/DriveBackup'))
+const ZakatCalculator = lazy(() => import('../components/ZakatCalculator'))
 const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
 const SmartAlerts    = lazy(() => import('../components/SmartAlerts'))
 const RiskScanner    = lazy(() => import('../components/RiskScanner'))
@@ -168,17 +170,6 @@ function hasCryptoExposure(enriched) {
   } catch { return false }
 }
 
-// ── Asset category classifier ─────────────────────────────────────────────
-function categorizeAsset(h) {
-  const id = (h.coin_id || '').toLowerCase()
-  const sym = (h.coin_symbol || '').toLowerCase()
-  if (id.startsWith('metal:') || ['xau','xag','xpt','xpd'].includes(sym)) return 'metals'
-  if (id.startsWith('stock:') || id.startsWith('xstock:') || ['aapl','msft','tsla','amzn','nvda','googl','goog','meta','nflx','baba','v','jpm','wmt'].includes(sym)) return 'stocks'
-  if (id.startsWith('real:') || id.includes('appartment') || id.includes('apartment') || id.includes('property') || sym.includes('appartment') || sym.includes('property') || sym.includes('reit') || sym === 'real') return 'realestate'
-  // Only actual fiat currencies go to cash — stablecoins (USDT, USDC, DAI…) are crypto
-  if (id.startsWith('cash:') || id.startsWith('fiat:') || ['usd','eur','gbp','jpy','us'].includes(sym)) return 'cash'
-  return 'crypto'
-}
 
 
 // Risk/market-cap bucket for the rebalance recommender: safe money (cash,
@@ -1588,7 +1579,12 @@ function EmailBackupPanel() {
   )
 }
 
-function DataPanel({ onRefresh, onImported }) {
+// `drive` is opt-in rather than always on: DataPanel is mounted in six places,
+// two of which (the manage tab and the import chooser modal it can open) are on
+// screen at the same time. Two live DriveBackup panels would both answer the
+// OAuth return and fire two connects, so only the Backup & Restore card asks
+// for it.
+function DataPanel({ onRefresh, onImported, drive = false }) {
   const { t } = useLanguage()
   const [code, setCode]     = useState('')
   const [copied, setCopied] = useState(false)
@@ -1681,6 +1677,12 @@ function DataPanel({ onRefresh, onImported }) {
         <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0 0 0.5rem 0.15rem' }}>{t('setSecurity')}</div>
         <BiometricToggle />
       </div>
+
+      {drive && (
+        <Suspense fallback={null}>
+          <DriveBackup embedded />
+        </Suspense>
+      )}
 
       <p className="dvx-data-hint">
         {t('dsBackupCodeHelp')}
@@ -2660,7 +2662,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
               {a.imgSrc || goldLogo
                 ? <img
                     src={a.imgSrc
-                      ? `https://walletlens-voice-parse.tia8910.deno.net/proxy?url=${encodeURIComponent(a.imgSrc)}`
+                      ? voiceProxy(a.imgSrc)
                       : goldLogo}
                     onError={e => { if (a.imgSrc && !e.currentTarget.dataset.fb) { e.currentTarget.dataset.fb = '1'; e.currentTarget.src = a.imgSrc } }}
                     alt={a.label} style={{ width:22, height:22, borderRadius:'50%', objectFit:'cover', flexShrink:0 }} />
@@ -2718,7 +2720,7 @@ function fmtQty(n) {
 
 // Sell-target reality check — "is this target reasonable, and how long might it
 // take?" Local heuristic (ATH + past-year pace + trend) with an optional AI take.
-const VOICE_ENDPOINT = 'https://walletlens-voice-parse.tia8910.deno.net/'
+const VOICE_ENDPOINT = VOICE_API
 function TargetRealityCheck({ coinId, coinSymbol, coinName, currentPrice, targetPrice, assetClass, compact = false }) {
   const { t } = useLanguage()
   const [data, setData] = useState(null)
@@ -3117,7 +3119,7 @@ function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsC
 // ── Static card config — defined at module level to avoid recreating on every render ──
 // Dashboard bottom-nav tabs — used to validate a restored tab so a pull-to-refresh
 // (full page reload) returns to the same tab instead of resetting to the dashboard.
-const DASH_TABS = new Set(['overview', 'watchlist', 'tools', 'alerts', 'targets', 'manage'])
+const DASH_TABS = new Set(['overview', 'watchlist', 'tools', 'alerts', 'targets', 'manage', 'zakat'])
 const ACTIVE_TAB_KEY = 'wl_active_tab'
 
 const CARD_CONFIG = [
@@ -3254,6 +3256,13 @@ export default function Dashboard() {
     }
     // An explicit deep-link (location.state.tab) always wins.
     if (location.state?.tab && DASH_TABS.has(location.state.tab)) return location.state.tab
+    // Coming back from the Google OAuth redirect, which lands on /dashboard with
+    // only { driveConnected } in router state — no tab. DriveBackup lives in the
+    // manage tab, and it is the thing that finishes the connection, so it has to
+    // be mounted. The saved-tab fallback below usually gets this right by
+    // accident; this makes it deliberate, and survives private mode where
+    // sessionStorage is gone.
+    if (location.state?.driveConnected) return 'manage'
     // ?tab= is the same deep link in URL form, which is the only form a push
     // notification can carry — router state doesn't survive a cold app launch
     // from the lock screen.
@@ -3564,15 +3573,25 @@ export default function Dashboard() {
     if (p.length) {
       setPricesLoading(true)
       const ids = p.map(h => h.coin_id).join(',')
+      // Always include gold and silver so the Zakat calculator can compute
+      // nisab even when the user does not hold metals as portfolio assets.
+      const metalIds = [GOLD_ID, SILVER_ID].filter(id => !p.some(h => h.coin_id === id))
+      const allIds = metalIds.length ? ids + ',' + metalIds.join(',') : ids
       try {
-        const [px, imgs] = await Promise.all([
-          api.getPrices(ids),
-          api.getCoinImages(ids).catch(() => ({})),
-        ])
-        setPrices(px || {})
-        setCoinImages(imgs || {})
+        setPrices(await api.getPrices(allIds) || {})
       } catch {}
       setPricesLoading(false)
+
+      // Logos are decoration and are fetched separately, NOT awaited.
+      //
+      // These used to sit in a Promise.all with the prices, so `loaded` — and
+      // therefore the first paint, and therefore the day's champion overlay,
+      // which cannot run before it — waited on the SLOWER of two independent
+      // requests. Nothing on screen needs a logo to be correct: the champion
+      // overlay falls back to the symbol on a disc, and rows to a letter
+      // badge. Trading a correct number arriving sooner for a picture arriving
+      // later is the right way round.
+      api.getCoinImages(ids).then(imgs => setCoinImages(imgs || {})).catch(() => {})
     }
     setLoaded(true)
   }
@@ -3589,9 +3608,13 @@ export default function Dashboard() {
   async function refreshPrices() {
     const ids = portfolioRef.current.map(h => h.coin_id).join(',')
     if (!ids) return
+    // Always include gold/silver so Zakat nisab stays live even when user
+    // does not hold metals in their portfolio.
+    const extra = [GOLD_ID, SILVER_ID].filter(id => !portfolioRef.current.some(h => h.coin_id === id))
+    const allIds = extra.length ? ids + ',' + extra.join(',') : ids
     setPricesLoading(true)
     try {
-      const px = await api.getPrices(ids)
+      const px = await api.getPrices(allIds)
       if (px && Object.keys(px).length) setPrices(px)
     } catch {}
     setPricesLoading(false)
@@ -3744,10 +3767,23 @@ export default function Dashboard() {
     syncWidgets({ enriched, totalValue, categoryOf: categorizeAsset })
   }, [loaded, enriched, totalValue])
 
+  // Stable refs so WalletEvalTab's memo() (and its internal useMemo over
+  // computeWalletEval, a non-trivial multi-category scoring pass) actually
+  // skips recomputation instead of re-running on every render — including
+  // the ~90 animation frames of the ticker count-up on each price refresh.
+  const walletEvalTargets = useMemo(
+    () => Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v })),
+    [coinTargets]
+  )
+  const handleWalletEvalAction = useCallback(
+    kind => kind === 'targets' ? setActiveTab('targets') : openSheet('buy', 'wallet_eval'),
+    [openSheet]
+  )
+
   // ── Sell-targets analysis ────────────────────────────────────────────────
   //
   // Sits here rather than with the rest of the derived numbers because the
-  // Market Pulse effect just below reads it: a hook cannot depend on a const
+  // hook just below reads it: a hook cannot depend on a const
   // declared after it without tripping over the temporal dead zone when React
   // evaluates the dependency array during render.
   const targetsAnalysis = useMemo(() => {
@@ -3787,110 +3823,52 @@ export default function Dashboard() {
     return { rows, totalPotentialProceeds, totalReached, chartData, totalTargets: rows.reduce((s, r) => s + r.targets.length, 0), rowsWithTargets: rows.filter(r => r.targets.length > 0).length }
   }, [enriched, coinTargets])
 
-  const [pulseEvent, setPulseEvent] = useState(null)
-
-  // Market Pulse — react to meaningful market moves.
+  const [effect, setEffect] = useState(null)
+  // Screen effects — three occasions and no others.
   //
-  // All this does is assemble a snapshot and hand it over. Whether anything is
-  // worth reacting to is marketPulse.js's decision, and that decision is pure,
-  // so the interesting rules are covered by tests rather than by whatever this
-  // component happens to re-render.
+  // Which one, if any, is screenEffects.js's decision and that decision is
+  // pure: it takes the numbers and the stored state and returns an effect. So
+  // the awkward rules — a day boundary in the user's own timezone, an
+  // all-time high on a device that has never recorded one — are answered in a
+  // test rather than by opening the app on the right morning.
   //
-  // Runs on every price refresh on purpose: a crossing is only visible by
-  // comparing consecutive samples, so a skipped refresh is a missed event.
+  // Runs when prices settle rather than on mount, because every trigger needs
+  // a portfolio value and that is not known until they land.
   useEffect(() => {
-    if (!loaded || !enriched.length) return
-    armPulseAudio()
-
-    const samples = {}
-    for (const h of enriched) {
-      const pct = prices[h.coin_id]?.usd_24h_change
-      if (!Number.isFinite(pct)) continue
-      samples[h.coin_id] = {
-        changePct: pct,
-        symbol: (h.coin_symbol || '').toUpperCase(),
-        // Carried so the champion overlay has a logo to blow up. Empty is a
-        // valid value — the overlay falls back to the symbol on a disc.
-        image: h.coin_image || '',
-        cls: pulseClass({
-          category: categorizeAsset(h),
-          isStable: isStablecoin(h.coin_id, h.coin_symbol),
-          mcTier: classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id,
-        }),
-      }
-    }
+    if (!loaded || !enriched.length || !(totalValue > 0)) return
     // The portfolio's own day, weighted by holding size — the same figure the
-    // milestone detector and the brand tint already use, rather than a second
-    // definition of "up today" that could disagree with what is on screen.
+    // brand tint already uses, rather than a second definition of "up today"
+    // that could disagree with what is on screen.
     const dayPnL = enriched.reduce((sum, h) => sum + (h.value * (h.pct24h || 0) / 100), 0)
     const dayBase = totalValue - dayPnL
-    const portfolioChangePct = dayBase > 0 ? (dayPnL / dayBase) * 100 : 0
+    const changePct = dayBase > 0 ? (dayPnL / dayBase) * 100 : 0
+    const fired = observe({ totalValue, changePct, holdings: enriched })
+    if (fired) setEffect(fired)
+  }, [loaded, enriched, totalValue])
 
-    // How much of the portfolio is green, regardless of what it is worth.
-    // Cash and stablecoins are excluded: they never move, so counting them
-    // would drag every breadth figure toward the middle.
-    const breadth = breadthOf(
-      enriched
-        .filter(h => categorizeAsset(h) !== 'cash' && !isStablecoin(h.coin_id, h.coin_symbol))
-        .map(h => prices[h.coin_id]?.usd_24h_change)
-    )
-
-    // Sell targets the user set that the price has now met. Read from the same
-    // analysis the Targets tab renders, so the overlay and the tab can never
-    // disagree about what "reached" means. Each one is announced once ever —
-    // the state keyed by target id lives in marketPulse.
-    const targetsHit = targetsAnalysis.rows.flatMap(r =>
-      r.targets
-        .filter(tg => tg.reached)
-        .map(tg => ({ id: String(tg.id), symbol: r.coinSymbol, price: tg.price }))
-    )
-
-    // The welcome moment, before anything about the market.
-    //
-    // Fired here rather than in the onboarding handler because the caption
-    // states the portfolio's value, and that is not known until prices have
-    // landed — a number that appears and then corrects itself is worse than
-    // waiting a beat for the right one. The tap has already unlocked audio by
-    // now (primePulseAudio in NativeOnboarding.finish), so it lands with
-    // sound. Once ever; returns null every time after.
-    const welcome = fireWelcome({ totalValue })
-    if (welcome) { setPulseEvent(welcome); return }
-
-    const event = observeMarket({ samples, totalValue, portfolioChangePct, breadth, targetsHit })
-    // Set even when the audio was refused — someone on silent has not opted
-    // out of seeing it, and the caption is the part that carries the fact.
-    if (event) setPulseEvent(event)
-  }, [loaded, enriched, prices, totalValue, targetsAnalysis])
-
-  // An event that landed before audio could be unlocked is held by the
-  // runtime and released on the first tap. It has to reach the overlay by
-  // this path rather than by observeMarket's return value, because by then
-  // that call has long since returned.
-  useEffect(() => {
-    onPulseRelease(setPulseEvent)
-    return () => onPulseRelease(null)
-  }, [])
-
-  // ?pulse=rocket — fire one event on demand, to check the feature works.
+  // ?fx=explode|rocket|ath — play one on demand.
   //
-  // A real rocket needs an asset to cross its threshold between two price
-  // refreshes, so a short session shows nothing whether the code works or not.
-  // That makes "I saw no effects" and "it is broken" indistinguishable, which
-  // is no way to verify anything on a phone.
+  // Kept from the old system because the reasoning survives it: the explode
+  // fires once a day and the other two need the market to cooperate, so a
+  // short session shows nothing whether the code works or not. That makes "I
+  // saw no effect" and "it is broken" indistinguishable, which is no way to
+  // check anything on a phone.
   //
-  // Waits for a tap rather than firing on load, because unlock() only works
-  // inside a user gesture — firing immediately would show the animation in
-  // silence and look like the audio was broken.
+  // Waits for a tap rather than firing on load: audio only unlocks inside a
+  // gesture, and an animation in silence looks like the sound is broken.
   useEffect(() => {
-    const type = new URLSearchParams(location.search).get('pulse')
-    if (!type) return
+    const want = new URLSearchParams(location.search).get('fx')
+    if (![EXPLODE, ROCKET, ATH].includes(want)) return undefined
     const once = () => {
-      const event = demoPulse(type, { totalValue })
-      if (event) setPulseEvent(event)
+      primeEffectAudio()
+      const leader = enriched[0]
+        ? { symbol: (enriched[0].coin_symbol || '').toUpperCase(), image: enriched[0].coin_image || '' }
+        : null
+      setEffect({ effect: want, payload: { leader, changePct: 7.4, totalValue } })
     }
     document.addEventListener('click', once, { once: true })
     return () => document.removeEventListener('click', once)
-  }, [location.search, totalValue])
+  }, [location.search, enriched, totalValue])
 
   // Play in-app review. reviewPrompt owns the "has this person used WalletLens
   // enough to have an opinion?" rules; all this does is count the launch and
@@ -4219,6 +4197,24 @@ export default function Dashboard() {
 
   const displayHoldings = (showAllHoldings || isHoldingsFiltered) ? filteredHoldings : filteredHoldings.slice(0, 6)
 
+  // Holdings grouped by category for the holdings list — memoized so this
+  // grouping pass doesn't re-run on every render (e.g. the ticker count-up
+  // animation firing on every price refresh), only when the underlying
+  // holdings actually change.
+  const groupedHoldings = useMemo(() => {
+    const grouped = {}
+    displayHoldings.forEach(h => {
+      const cat = categorizeAsset(h)
+      if (!grouped[cat]) grouped[cat] = []
+      grouped[cat].push(h)
+    })
+    return grouped
+  }, [displayHoldings])
+  const visibleHoldingCategories = useMemo(
+    () => CATEGORY_ORDER.filter(cat => groupedHoldings[cat]?.length > 0),
+    [groupedHoldings]
+  )
+
   // Stale manual price check — warn if any non-crypto asset price is >7 days old
   const staleAssets = useMemo(() => {
     const manual = api.getManualPrices ? api.getManualPrices() : {}
@@ -4308,6 +4304,16 @@ export default function Dashboard() {
 
   return (
     <div className="dvx">
+      {/* Screen effects — outside the tab blocks on purpose.
+          The overlay this replaced lived inside `activeTab === 'overview'`,
+          but the occasions that trigger an effect are read from prices, not
+          from which tab is open, and the active tab is restored from
+          sessionStorage on reload. So a user whose last tab was Backup would
+          refresh, spend the day's effect, hear the held sound on their next
+          tap, and never see the animation — it was unreachable from five of
+          the six tabs. */}
+      <ScreenEffect effect={effect?.effect} payload={effect?.payload} onDone={() => setEffect(null)} />
+
       {/* Live news ticker — above the tab navigation so it's always visible */}
       <NewsTicker />
 
@@ -4440,11 +4446,6 @@ export default function Dashboard() {
             )
           })()}
 
-          {/* Market Pulse offer, shown only after the user has actually missed
-              something worth hearing. At most twice, ever. */}
-          {enriched.length > 0 && <PulseDiscovery />}
-          <PulseOverlay event={pulseEvent} onDone={() => setPulseEvent(null)} />
-
           {/* Sentiment + portfolio tips ticker */}
           {enriched.length > 0 && (
             <SentimentTicker
@@ -4486,6 +4487,11 @@ export default function Dashboard() {
               <button className="dvx-refresh-btn" title={t('atRefreshPrices')} disabled={refreshing} onClick={async () => {
                 setRefreshing(true)
                 track('manual_refresh')
+                // No effect suppression here any more. The old system could
+                // fire on any market move, so a manual refresh was a good way
+                // to provoke one by accident; these three fire at most once a
+                // day each, and a refresh that reveals a genuine new high has
+                // earned its celebration.
                 try { await refreshPrices() } finally { setRefreshing(false) }
               }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
@@ -5077,13 +5083,8 @@ export default function Dashboard() {
                   : <>
                     <div>
                       {(() => {
-                        const grouped = {}
-                        displayHoldings.forEach(h => {
-                          const cat = categorizeAsset(h)
-                          if (!grouped[cat]) grouped[cat] = []
-                          grouped[cat].push(h)
-                        })
-                        return CATEGORY_ORDER.filter(cat => grouped[cat]?.length > 0).map(cat => {
+                        const grouped = groupedHoldings
+                        return visibleHoldingCategories.map(cat => {
                           const ci = catBreakdown.find(c => c.cat === cat)
                           return (
                           <div key={cat}>
@@ -5385,11 +5386,7 @@ export default function Dashboard() {
             <div className="glass-card dvx-movers-card">
               <h3 style={{ margin:'0 0 0.75rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="trend-up" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('dsTodaysMovers')}</h3>
               <div className="dvx-movers-row">
-                {[...enriched]
-                  .filter(h => prices[h.coin_id]?.usd_24h_change != null)
-                  .sort((a, b) => (prices[b.coin_id]?.usd_24h_change ?? 0) - (prices[a.coin_id]?.usd_24h_change ?? 0))
-                  .slice(0, 3)
-                  .map(h => {
+                {topGainers.map(h => {
                     const chg = prices[h.coin_id]?.usd_24h_change ?? 0
                     return (
                       <div key={h.coin_id} className="dvx-mover-item dvx-mover-up">
@@ -5447,8 +5444,8 @@ export default function Dashboard() {
             <WalletEvalTab
               enriched={enriched}
               totalValue={totalValue}
-              targets={Object.entries(coinTargets).map(([coin_id, v]) => ({ coin_id, ...v }))}
-              onAction={kind => kind === 'targets' ? setActiveTab('targets') : openSheet('buy', 'wallet_eval')}
+              targets={walletEvalTargets}
+              onAction={handleWalletEvalAction}
             />
           )}
 
@@ -5559,7 +5556,7 @@ export default function Dashboard() {
           </div>
           <div className="glass-card dvx-form-card">
             <h3>{t('backupTitle')}</h3>
-            <DataPanel onRefresh={loadAll} onImported={() => setActiveTab('overview')} />
+            <DataPanel drive onRefresh={loadAll} onImported={() => setActiveTab('overview')} />
           </div>
           <div className="glass-card dvx-form-card">
             <h3>{t('dsBrowserExtension')}</h3>
@@ -5604,6 +5601,15 @@ export default function Dashboard() {
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ══ ZAKAT ══ */}
+      {activeTab === 'zakat' && (
+        <div className="dvx-form-page">
+          <Suspense fallback={<TabFallback />}>
+            <ZakatCalculator holdings={enriched} prices={prices} />
+          </Suspense>
         </div>
       )}
 

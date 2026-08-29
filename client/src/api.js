@@ -46,6 +46,7 @@ import {
 } from './data/storage';
 import { foldBalances as _foldBalancesPure, diffHoldings } from './data/portfolio';
 import { analyzeTechnicals } from './technicals';
+import { voiceProxy } from './apiHosts.js'
 
 export {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
@@ -62,7 +63,7 @@ const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
 // not subject to the browser's CORS limits or per-region IP geo-blocks (e.g.
 // Binance). Tried FIRST everywhere because it's the most reliable; the public
 // proxies below remain as backups if the Deno service is ever unreachable.
-export const DENO_PROXY = (u) => `https://walletlens-voice-parse.tia8910.deno.net/proxy?url=${encodeURIComponent(u)}`;
+export const DENO_PROXY = (u) => voiceProxy(u);
 
 // Multiple CORS proxies — some networks/IPs get rate-limited or blocked by
 // specific proxies, so we try several before giving up.
@@ -1750,8 +1751,17 @@ export const api = {
   })(),
 
   // Fetch coin images from market data (more reliable than search thumb)
-  getCoinImages: async (ids) => {
+  getCoinImages: (() => {
+    // In-flight cache, same pattern as getPrices above: if the same id-set is
+    // already being fetched (e.g. Dashboard's initial load and a background
+    // refresh land in the same tick), share the one fetch instead of firing
+    // a second identical fan-out.
+    const _inFlight = new Map();
+    return async (ids) => {
     if (!ids) return {};
+    const key = ids.split(',').filter(Boolean).sort().join(',');
+    if (_inFlight.has(key)) return _inFlight.get(key);
+    const promise = (async () => {
     const now = Date.now();
     const coinIds = ids.split(',').filter(Boolean);
     const allCached = coinIds.every(id => !!coinImageCache[id]);
@@ -1770,13 +1780,13 @@ export const api = {
 
       // For any coin not returned by the batch (e.g. renamed ID), try individual lookup
       const missing = coinIds.filter(id => !coinImageCache[id] && !id.startsWith('metal:') && !id.startsWith('stock:') && !id.startsWith('fiat:'));
-      for (const id of missing.slice(0, 5)) {
+      await Promise.all(missing.slice(0, 5).map(async id => {
         try {
           const coin = await fetchJSON(`${COINGECKO_BASE}/coins/${id}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false`);
           if (coin?.image?.large) coinImageCache[id] = coin.image.large;
           else if (coin?.image?.thumb) coinImageCache[id] = coin.image.thumb;
         } catch {}
-      }
+      }));
       if (missing.length) _saveCache(IMAGE_CACHE_KEY, coinImageCache);
     }
 
@@ -1785,7 +1795,11 @@ export const api = {
       if (coinImageCache[id]) result[id] = coinImageCache[id];
     }
     return result;
-  },
+    })().finally(() => _inFlight.delete(key));
+    _inFlight.set(key, promise);
+    return promise;
+    };
+  })(),
 
   searchCoins: async (query) => {
     if (!query) return [];

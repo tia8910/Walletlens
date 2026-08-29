@@ -5,11 +5,16 @@ import en from './i18n/en.js'
  *
  * `en` is bundled eagerly — it is the default for the large majority of
  * visitors and the fallback every other language reads through for a
- * missing key, so it must always be available synchronously. `ar`, `fr`
- * and `es` are each ~90 KB of strings that only the sliver of visitors
- * using them ever need; loading all four up front used to add ~390 KB of
- * JS (minified) to every single page load, including the English landing
- * page. `loadLanguage` fetches one on demand and caches it here.
+ * missing key, so it must always be available synchronously. The other five
+ * are each ~90 KB of strings that only the sliver of visitors using them
+ * ever need; loading all six up front added most of a megabyte of JS to
+ * every single page load, including the English landing page.
+ * `loadLanguage` fetches one on demand and caches it here.
+ *
+ * Every language the picker offers needs an entry below. A code with no
+ * loader silently falls back to English, which looks like a translation bug
+ * rather than a missing line here — LanguageContext.test.js checks the two
+ * lists against each other for that reason.
  */
 export const translations = { en }
 
@@ -17,7 +22,21 @@ const loaders = {
   ar: () => import('./i18n/ar.js').then(m => m.default),
   fr: () => import('./i18n/fr.js').then(m => m.default),
   es: () => import('./i18n/es.js').then(m => m.default),
+  de: () => import('./i18n/de.js').then(m => m.default),
+  it: () => import('./i18n/it.js').then(m => m.default),
 }
+
+/**
+ * Every language a dictionary exists for, English included.
+ *
+ * Exported because `Object.keys(translations)` is no longer the answer: it
+ * holds only what has been loaded so far, which at module-evaluation time is
+ * English alone. The parity suite used to derive its language list that way,
+ * and code-splitting turned all 25 of its cases into zero without failing —
+ * a translation table could then go missing half its keys with the suite
+ * still green.
+ */
+export const LANGUAGE_CODES = ['en', ...Object.keys(loaders)]
 
 export async function loadLanguage(lang) {
   if (translations[lang]) return translations[lang]

@@ -125,8 +125,12 @@ describe('the public documents agree with each other', () => {
       .flatMap(s => s.faqs)
       .find(f => /languages other than English/i.test(f.q))
     expect(answer, 'the language question disappeared from the FAQ').toBeTruthy()
-    for (const name of ['Arabic', 'French', 'Spanish']) {
-      expect(answer.a, `FAQ does not mention ${name}`).toContain(name)
+    // Derived from LANGUAGES rather than a hardcoded list. The hardcoded
+    // version passed happily while German and Italian shipped and the answer
+    // still named four languages — the very drift this test was written to
+    // catch, reintroduced by the way it was written.
+    for (const { label } of LANGUAGES.filter(l => l.code !== 'en')) {
+      expect(answer.a, `FAQ does not mention ${label}`).toContain(label)
     }
   })
 })
