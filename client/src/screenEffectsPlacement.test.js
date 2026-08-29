@@ -176,3 +176,44 @@ describe('nothing is left of the system this replaced', () => {
     }
   })
 })
+
+describe('the explode shows the asset, not its ticker', () => {
+  // THE BUG: the overlay rendered its own <img src={leader.image}> and fell to
+  // a lettered disc when that was empty — which it often is, because the effect
+  // only carries whatever coin_image the holdings row happened to have. So the
+  // explode that is supposed to blow up YOUR asset blew up the letters "BTC".
+  //
+  // CoinLogo is the app's own answer and already knows the whole chain: stored
+  // image, then the icon CDNs by symbol, then proxied variants for networks
+  // that block them, and only then a generated badge. Reusing it means the
+  // effect shows the same logo the holdings row does.
+  it('renders the mark through CoinLogo', () => {
+    expect(overlayCode).toMatch(/import CoinLogo from '\.\/CoinLogo'/)
+    expect(overlayCode).toMatch(/<CoinLogo\b/)
+  })
+
+  it('keeps no bespoke image fallback of its own', () => {
+    // A second, weaker chain living beside CoinLogo is how this regressed the
+    // first time: the overlay looked like it handled missing logos, and it did
+    // — badly, and differently from everywhere else in the app.
+    expect(overlayCode).not.toMatch(/<img[^>]*src=\{[^}]*leader/)
+    expect(overlayCode).not.toMatch(/fx-champ-badge/)
+  })
+
+  it('passes the symbol and coin id, not just the image', () => {
+    // The image is the part that is missing. Symbol and coinId are what let
+    // CoinLogo find one anyway.
+    const mark = /function AssetMark\([\s\S]*?\n\}/.exec(overlayCode)[0]
+    expect(mark).toMatch(/symbol=\{leader\?\.symbol/)
+    expect(mark).toMatch(/coinId=\{leader\?\.assetId/)
+  })
+
+  it('lets CSS size the mark over the svg\'s own attributes', () => {
+    // CoinLogo's generated badge is an <svg> with width/height attributes.
+    // Without !important those beat the stylesheet and the mark renders at
+    // icon size in the middle of a full-screen effect.
+    expect(css).toMatch(/\.fx-champ-img \{\n {2}width: 100% !important; height: 100% !important;/)
+    // …and the lettered-disc class is gone with the code that rendered it.
+    expect(css).not.toMatch(/\.fx-champ-badge/)
+  })
+})

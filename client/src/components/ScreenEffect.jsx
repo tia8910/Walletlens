@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLanguage } from '../LanguageContext'
-import { getCachedCoinImage } from '../api'
+import CoinLogo from './CoinLogo'
 import { EXPLODE, ROCKET, ATH } from '../screenEffects'
 import { playEffectSound, SOUND_MS } from '../screenEffectsAudio'
 
@@ -119,50 +119,34 @@ function BurstCanvas({ duration, delay = 0, originY = 0.5 }) {
 }
 
 /**
- * The asset's logo, filling the screen before it comes apart.
+ * The asset's mark, at whatever size the CSS gives it.
  *
- * The image is a remote coin icon, which is the one thing on screen that can
- * simply fail — a cold cache, a blocked CDN, an asset that never had an icon.
- * A blank centre would leave the whole effect looking broken, so a failure
- * falls back to the symbol on a plain disc, the same thing the rest of the app
- * does for a missing logo.
+ * Uses CoinLogo rather than an <img> of its own. The effect only ever carries
+ * whatever `coin_image` the holdings row happened to have, and that is empty
+ * often enough to matter — an asset added before its icon resolved, a cold
+ * cache, a CDN the network blocks. When it was empty this fell straight to a
+ * ticker on a disc, so the explode that is supposed to blow up YOUR asset blew
+ * up the letters "BTC" instead.
+ *
+ * CoinLogo is the app's own answer to that and already knows the whole chain:
+ * the stored image, then the icon CDNs by symbol, then the proxied variants
+ * for networks that block them, and only then a generated badge. Reusing it
+ * means the effect shows the same logo the holdings row does, and gets every
+ * future improvement to that chain for free.
  */
-function AssetLogo({ leader }) {
-  // Two sources before giving up. The effect carries whatever the holdings row
-  // had, but that can be empty for an asset added before its icon resolved,
-  // and the app's own image cache often has one by now.
-  const sources = [
-    leader?.image,
-    leader?.assetId ? getCachedCoinImage(leader.assetId) : null,
-  ].filter(Boolean)
-  const [tried, setTried] = useState(0)
-  const label = (leader?.symbol || '?').toString().toUpperCase().slice(0, 4)
-  const src = sources[tried]
-
+function AssetMark({ leader, className }) {
   return (
-    <span className="fx-champ">
-      {src
-        ? <img
-            key={src}
-            src={src}
-            alt=""
-            className="fx-champ-img"
-            onError={() => setTried(n => n + 1)}
-          />
-        : <span className="fx-champ-badge">{label}</span>}
-    </span>
-  )
-}
-
-/** The asset's mark at rocket size — logo, or its ticker on a disc. */
-function RocketMark({ leader }) {
-  if (leader?.image) {
-    return <img className="fx-rocket-mark" src={leader.image} alt="" aria-hidden="true" />
-  }
-  return (
-    <span className="fx-rocket-mark fx-mark-text" aria-hidden="true">
-      {leader?.symbol ? leader.symbol.slice(0, 4) : '★'}
-    </span>
+    <CoinLogo
+      image={leader?.image || ''}
+      symbol={leader?.symbol || ''}
+      coinId={leader?.assetId || ''}
+      className={className}
+      // CSS sizes both the <img> and the generated <svg> to fill their box;
+      // this is only the intrinsic attribute, and it must not be tiny or the
+      // generated badge rasterises soft when CSS scales it up.
+      size={256}
+      fallbackChar={leader?.symbol ? leader.symbol.slice(0, 4).toUpperCase() : '★'}
+    />
   )
 }
 
@@ -210,7 +194,7 @@ export default function ScreenEffect({ effect, payload, onDone }) {
 
       {effect === EXPLODE && !reduced && (
         <>
-          <AssetLogo leader={leader} />
+          <span className="fx-champ"><AssetMark leader={leader} className="fx-champ-img" /></span>
           {/* The flash is a separate layer so it can cover the logo at the
               moment of impact without animating the logo's own opacity, which
               is already carrying the scale. */}
@@ -224,7 +208,7 @@ export default function ScreenEffect({ effect, payload, onDone }) {
       {effect === ROCKET && !reduced && (
         <div className="fx-rocket-track">
           <div className="fx-rocket">
-            <RocketMark leader={leader} />
+            <AssetMark leader={leader} className="fx-rocket-mark" />
             <span className="fx-flame" />
           </div>
           {Number.isFinite(payload?.changePct) && (
