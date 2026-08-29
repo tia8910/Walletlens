@@ -15,7 +15,10 @@ export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS })
 }
 
-export async function onRequestGet({ request }) {
+const CACHE_SECONDS = 60
+
+export async function onRequestGet(context) {
+  const { request } = context
   const url = new URL(request.url)
   const raw = (url.searchParams.get('symbols') || url.searchParams.get('symbol') || '').toUpperCase().trim()
   if (!raw) {
@@ -23,6 +26,18 @@ export async function onRequestGet({ request }) {
   }
 
   const symbols = raw.split(',').map(s => s.trim()).filter(Boolean)
+
+  // Edge cache keyed on the sorted symbol set, so requests for the same
+  // tickers from every visitor worldwide share one Stooq/Yahoo fetch instead
+  // of each hitting the upstream (which rate-limits/IP-blocks aggressively).
+  const cacheKey = new Request(
+    `https://stocks.cache/${[...new Set(symbols)].sort().join(',')}`,
+    { method: 'GET' }
+  )
+  const cache = caches.default
+  const cached = await cache.match(cacheKey)
+  if (cached) return cached
+
   const result = {}
 
   // ── 1. Stooq BATCH — one request for ALL symbols. Server-side (no CORS),
@@ -88,7 +103,14 @@ export async function onRequestGet({ request }) {
     }))
   }
 
-  return new Response(JSON.stringify(result), {
-    headers: { ...CORS, 'Cache-Control': 'public, max-age=60' },
+  const response = new Response(JSON.stringify(result), {
+    headers: { ...CORS, 'Cache-Control': `public, max-age=${CACHE_SECONDS}` },
   })
+  // Only cache a response that actually has data — caching a total outage
+  // (both upstreams down) would otherwise pin every visitor to an empty
+  // result for the full TTL instead of letting the next request retry.
+  if (Object.keys(result).length > 0) {
+    context.waitUntil(cache.put(cacheKey, response.clone()))
+  }
+  return response
 }
