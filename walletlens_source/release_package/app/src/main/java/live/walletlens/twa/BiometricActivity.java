@@ -63,8 +63,21 @@ public class BiometricActivity extends AppCompatActivity {
     public static final String STATUS_CANCEL      = "cancel";
     public static final String STATUS_UNAVAILABLE = "unavailable";
 
+    /**
+     * How many times a transient sensor error re-offers the prompt.
+     *
+     * <p>Two, deliberately small. Enough to ride out a face read that timed
+     * out or a sensor the system briefly took away, not enough to sit there
+     * re-arming a prompt forever if something is genuinely wrong.
+     */
+    private static final int MAX_TRANSIENT_RETRIES = 2;
+
+    /** Long enough for the previous prompt to be fully gone before the next. */
+    private static final long RETRY_DELAY_MS = 350L;
+
     private BiometricPrompt biometricPrompt;
     private BiometricPrompt.PromptInfo promptInfo;
+    private int retriesLeft = MAX_TRANSIENT_RETRIES;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -157,17 +170,64 @@ public class BiometricActivity extends AppCompatActivity {
                         super.onAuthenticationError(errorCode, errString);
                         Log.d(TAG, "Biometric error " + errorCode + ": " + errString);
 
+                        // Both branches used to end in redirectBack(false), which
+                        // the launcher reads as STATUS_CANCEL and treats as a
+                        // deliberate refusal — it calls finish() and the app
+                        // closes. So every transient sensor hiccup looked exactly
+                        // like the user saying no.
+                        //
+                        // That is not a rare path. ERROR_TIMEOUT fires whenever a
+                        // face is not presented quickly enough, ERROR_CANCELED
+                        // whenever the system takes the sensor away — a
+                        // notification shade pulled down, the screen changing
+                        // state — and ERROR_VENDOR is what several OEM face
+                        // implementations report on an ordinary failed read. None
+                        // of those is a refusal, and closing the app on them is
+                        // the "it says cancelled and shuts" report.
                         if (errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON
                                 || errorCode == BiometricPrompt.ERROR_USER_CANCELED) {
-                            // User pressed "Cancel" or back button
+                            // An actual refusal. Closing is correct here: showing
+                            // the portfolio anyway would make the lock decorative.
                             redirectBack(false);
-                        } else {
-                            // System error – show toast and redirect
-                            Toast.makeText(BiometricActivity.this,
-                                    "Authentication error: " + errString,
-                                    Toast.LENGTH_SHORT).show();
-                            redirectBack(false);
+                            return;
                         }
+
+                        if (errorCode == BiometricPrompt.ERROR_LOCKOUT
+                                || errorCode == BiometricPrompt.ERROR_LOCKOUT_PERMANENT) {
+                            // Too many failed attempts. Retrying is pointless —
+                            // the sensor refuses until the cooldown expires — and
+                            // silently closing leaves the user with no idea why.
+                            Toast.makeText(BiometricActivity.this,
+                                    "Too many attempts. Wait a moment and reopen WalletLens.",
+                                    Toast.LENGTH_LONG).show();
+                            redirectBack(false);
+                            return;
+                        }
+
+                        // Everything else is transient: offer the prompt again
+                        // rather than throwing the user out of the app.
+                        //
+                        // Bounded, and that bound is the point. ERROR_CANCELED
+                        // also arrives when this activity is going away, and an
+                        // unbounded retry there would re-arm the prompt against a
+                        // dying window — the shape of the launcher loop this file
+                        // has already been through once.
+                        if (retriesLeft > 0 && !isFinishing() && !isDestroyed()) {
+                            retriesLeft--;
+                            Log.d(TAG, "Transient biometric error; retrying ("
+                                    + retriesLeft + " left)");
+                            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                                if (!isFinishing() && !isDestroyed()) {
+                                    biometricPrompt.authenticate(promptInfo);
+                                }
+                            }, RETRY_DELAY_MS);
+                            return;
+                        }
+
+                        Toast.makeText(BiometricActivity.this,
+                                "Authentication error: " + errString,
+                                Toast.LENGTH_SHORT).show();
+                        redirectBack(false);
                     }
 
                     @Override
