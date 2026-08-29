@@ -1371,16 +1371,20 @@ describe('the delivery step reports why it failed', () => {
     // was a deliberate simplification — Settings shows one switch now, not
     // seven — and it made the feature undiagnosable.
     //
-    // SHOW_CHANNEL_DETAIL is false, so the one line saying what the server
-    // actually holds for this device was drawn for nobody. When the channels
-    // went quiet there was nothing to read: not for the user, and not for us.
-    // Every channel is gated on the watch list being non-empty, so "Watching
-    // 0 assets" IS the diagnosis, and it was the single fact no one could see.
+    // Behind the old build-time channel-detail flag, the one line saying what
+    // the server actually holds for this device was drawn for nobody. When the
+    // channels went quiet there was nothing to read: not for the user, and not
+    // for us. Most channels are gated on the watch list being non-empty, so
+    // "Watching 0 assets" IS the diagnosis, and it was the single fact no one
+    // could see.
     //
     // The warnings were always unconditional and stay that way. They are the
     // only thing that reports a device that is registered and undeliverable —
     // the failure that looks completely healthy from every other angle.
-    expect(toggle).toMatch(/const SHOW_CHANNEL_DETAIL = (true|false)/)
+    //
+    // The flag itself is gone: the channel rows are a runtime disclosure now.
+    // Asserted as an absence so it cannot come back and re-hide this line.
+    expect(toggle).not.toMatch(/SHOW_CHANNEL_DETAIL/)
 
     // The summary is no longer gated on anything.
     expect(toggle).toMatch(/<div>\s*\n\s*Watching <strong>\{status\.watch\}<\/strong>/)
@@ -1635,13 +1639,41 @@ describe('the send-a-test control', () => {
     join(dirname(fileURLToPath(import.meta.url)), 'components/PushToggle.jsx'), 'utf8',
   )
 
-  it('is gated with the rest of the channel detail', () => {
-    expect(toggle).toMatch(/SHOW_CHANNEL_DETAIL && status\?\.found && <TestSend \/>/)
+  it('is still gated, on a flag of its own', () => {
+    expect(toggle).toMatch(/const SHOW_TEST_SEND = false/)
+    expect(toggle).toMatch(/SHOW_TEST_SEND && status\?\.found && <TestSend \/>/)
   })
 
-  it('keeps the preference rows gated too', () => {
-    expect(toggle).toMatch(/const SHOW_CHANNEL_DETAIL = false/)
-    expect(toggle).toMatch(/\{SHOW_CHANNEL_DETAIL && \(/)
+  it('no longer drags the preference rows down with it', () => {
+    // The button and the channel list used to share one const, so hiding the
+    // button hid every switch in the app — including the move-sensitivity
+    // picker, which is the one control that answers "why so few alerts".
+    // They are separate concerns and are separated now: the rows sit behind a
+    // disclosure the user can open, the button behind a build-time flag.
+    expect(toggle).not.toMatch(/SHOW_CHANNEL_DETAIL/)
+    expect(toggle).toMatch(/channelsOpen && \(/)
+    // A disclosure is only a disclosure if something can open it.
+    expect(toggle).toMatch(/setChannelsOpen\(o => !o\)/)
+    expect(toggle).toMatch(/aria-expanded=\{channelsOpen\}/)
+  })
+
+  it('puts every channel behind that disclosure, not behind a const', () => {
+    // The failure this catches: a channel row added outside the disclosure
+    // block renders unconditionally and turns the screen back into the wall of
+    // switches the flag existed to prevent — or, added while still gated on a
+    // const, is unreachable. Each row must be inside the one block.
+    const open = toggle.indexOf('{channelsOpen && (')
+    const close = toggle.indexOf('{status && <PushStatusLine')
+    expect(open).toBeGreaterThan(-1)
+    expect(close).toBeGreaterThan(open)
+    const inside = toggle.slice(open, close)
+    for (const pref of [
+      'moves', 'levels', 'news', 'newsMarket', 'portfolio',
+      'academy', 'hacks', 'digest', 'retention', 'features', 'zakat',
+    ]) {
+      expect(inside, `${pref} row inside the disclosure`)
+        .toMatch(new RegExp(`${pref}: !prefs\\.${pref}`))
+    }
   })
 
   it('leaves the undeliverable-subscription warnings ungated', () => {
@@ -1656,7 +1688,7 @@ describe('the send-a-test control', () => {
     // happily on exactly the regression it exists to catch.
     for (const cond of ['status.vapid === false', 'keyOk === false']) {
       expect(toggle).toContain(`{${cond} && (`)
-      expect(toggle).not.toContain(`SHOW_CHANNEL_DETAIL && ${cond}`)
+      expect(toggle).not.toContain(`channelsOpen && ${cond}`)
     }
   })
 

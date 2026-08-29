@@ -32,15 +32,18 @@ describe('the toggle is somewhere a person can reach it', () => {
     expect(section[0]).toMatch(/name="crescent"/)
   })
 
-  it('is not inside the channel list that renders for nobody', () => {
+  it('does not depend on the channel list to be reachable', () => {
     // PushToggle still carries a zakat Row — the file's own convention is to
     // keep built rows rather than delete them — but it must not be the only
-    // place the toggle exists.
-    expect(pushToggle).toMatch(/SHOW_CHANNEL_DETAIL = false/)
-    // Naming it in a comment is how the separation is explained; gating on it
-    // is what would make the toggle disappear again.
-    expect(toggle).not.toMatch(/SHOW_CHANNEL_DETAIL\s*&&/)
-    expect(toggle).not.toMatch(/import[^\n]*SHOW_CHANNEL_DETAIL/)
+    // place the toggle exists. It was, once, when that list was hidden behind
+    // a build-time const, and the toggle vanished with it.
+    //
+    // The list is a runtime disclosure now, so it is reachable again; this
+    // section stays independent of it regardless. A user looking for zakat
+    // reminders should not have to know they are a notification channel.
+    expect(pushToggle).not.toMatch(/SHOW_CHANNEL_DETAIL/)
+    expect(toggle).not.toMatch(/channelsOpen/)
+    expect(toggle).not.toMatch(/import[^\n]*(SHOW_CHANNEL_DETAIL|channelsOpen)/)
   })
 
   it('draws a crescent that Icon actually knows', () => {

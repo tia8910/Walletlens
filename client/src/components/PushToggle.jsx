@@ -19,39 +19,41 @@ import { useLanguage } from '../LanguageContext'
 const MOVE_STEPS = [3, 5, 10, 20]
 
 /**
- * Whether Settings shows the per-channel controls.
+ * Whether Settings shows the TEST SEND button.
  *
- * Off: one switch, and the channels run on their defaults — moves at 2%, round
- * levels, news, the morning brief, win-back nudges and feature tips all stay
- * ON, they simply are not listed. Seven rows and a sensitivity picker is a lot
- * of surface for a decision most people make once, as "yes, notify me", and the
- * detail invited fiddling with switches whose consequences only show up days
- * later.
+ * It was briefly exposed to verify delivery through the move from Deno Deploy
+ * to Cloudflare Workers, where a stored, valid, completely undeliverable
+ * subscription was a real possibility and nothing on screen could tell it from
+ * a quiet market. That question is settled, and a button whose only job is
+ * answering it does not need to sit in front of every user forever.
  *
- * The rows are kept rather than deleted: they are built, translated into four
- * languages and tested, and this is a presentation decision that may well be
- * reversed. Flip this to true to get them back.
- *
- * Note what is NOT gated on this: the status line's WARNINGS. Those render
- * either way, because they are the only thing that says a device is registered
- * but undeliverable — the failure that looks completely healthy from the
- * outside and took a long night to find. The healthy "Watching 5 assets"
- * summary is hidden with everything else; a screen that is quiet when all is
- * well and speaks up when it is not is the point.
- *
- * The test send is gated too. It was briefly exposed to verify delivery
- * through the move from Deno Deploy to Cloudflare Workers, where a stored,
- * valid, completely undeliverable subscription was a real possibility and
- * nothing on screen could tell it from a quiet market. That question is
- * settled, and a button whose only job is answering it does not need to sit
- * in front of every user forever.
- *
- * What answers it now, without the button: the warnings above, and the push
- * worker's own GET /health, which reports whether VAPID is configured and
- * which public key it holds — enough to catch a key mismatch, the failure
- * that motivated exposing the button in the first place.
+ * What answers it now, without the button: the status line's warnings, and the
+ * push worker's own GET /health, which reports whether VAPID is configured and
+ * which public key it holds — enough to catch a key mismatch, the failure that
+ * motivated exposing the button in the first place.
  */
-const SHOW_CHANNEL_DETAIL = false
+const SHOW_TEST_SEND = false
+
+/**
+ * The per-channel controls used to be hidden behind the same flag, on the
+ * reasoning that seven rows and a sensitivity picker is a lot of surface for a
+ * decision most people make once, as "yes, notify me".
+ *
+ * That reasoning survives; hiding them outright does not. There are eleven
+ * channels now, several of them about topics rather than prices, and a user
+ * who wants the hacks but not the win-back nudges had no way to say so — nor
+ * any way to see that the choice existed. Worse, the sensitivity picker is the
+ * single most useful control on this screen and it was unreachable: someone
+ * getting too few alerts could not turn the threshold down.
+ *
+ * So the rows are behind a disclosure, closed by default. Shut, this screen is
+ * exactly what it was: one switch, with every channel running on its default —
+ * moves at 2%, round levels, news, market news, the morning brief, the daily
+ * portfolio read, the Academy challenge, investment hacks, win-back nudges,
+ * feature tips and zakat reminders all ON. Open, every one of them is
+ * switchable. The fiddling the flag was meant to prevent now costs one
+ * deliberate tap, which is the right price for it.
+ */
 
 function Row({ label, hint, on, onToggle }) {
   return (
@@ -154,22 +156,22 @@ function PushStatusLine({ status, repair }) {
   const noWatch = status.watch === 0
   const keyOk = vapidKeyMatches(status.vapidKey)
 
-  // The summary renders whether or not anything is wrong, and `detail` no
-  // longer gates it.
+  // The summary renders whether or not anything is wrong, and nothing gates it.
   //
-  // It used to. SHOW_CHANNEL_DETAIL is false, so the one line that says what
-  // the server actually holds for this device — how many assets it watches,
-  // how many targets, how many notifications it has sent today — was never
-  // drawn for anyone. A user whose channels were silent had nothing to read,
-  // and neither did we: diagnosing it meant asking them to check a line that
-  // does not exist.
+  // Something used to. Behind the old channel-detail flag, the one line that
+  // says what the server actually holds for this device — how many assets it
+  // watches, how many targets, how many notifications it has sent today — was
+  // never drawn for anyone. A user whose channels were silent had nothing to
+  // read, and neither did we: diagnosing it meant asking them to check a line
+  // that does not exist.
   //
-  // This is the third thing in this file to be lost behind that const, after
-  // the zakat toggle and the test send. The widgets panel in Settings already
-  // states the principle — "deliberately NOT gated: if detection is what's
-  // broken, hiding the panel behind it would hide the one readout that says
-  // so" — and it applies at least as strongly here, where the failure mode is
-  // silence and there is nothing else to look at.
+  // The widgets panel in Settings already states the principle — "deliberately
+  // NOT gated: if detection is what's broken, hiding the panel behind it would
+  // hide the one readout that says so" — and it applies at least as strongly
+  // here, where the failure mode is silence and there is nothing else to look
+  // at. That is also why the channel rows are now a disclosure rather than a
+  // build-time const: a control nobody can reach is a control that does not
+  // exist.
   return (
     <div className="settings-hint" style={{ marginTop: '0.5rem', lineHeight: 1.6 }}>
       <div>
@@ -258,6 +260,10 @@ export default function PushToggle() {
   // null = the repair has not finished yet; otherwise ensureRegistered()'s
   // verdict, which is what tells "still trying" apart from "gave up".
   const [repair, setRepair] = useState(null)
+  // Closed by default: the common case for this screen is "yes, notify me",
+  // and eleven rows in front of that is the surface the old flag was hiding
+  // from. Opening it is one tap, and it stays open for the visit.
+  const [channelsOpen, setChannelsOpen] = useState(false)
 
   useEffect(() => { isPushEnabled().then(setEnabled).catch(() => {}) }, [])
 
@@ -337,7 +343,21 @@ export default function PushToggle() {
 
       {enabled && (
         <>
-          {SHOW_CHANNEL_DETAIL && (
+          <div className="settings-divider" />
+          <button
+            type="button"
+            className="settings-row settings-row-toggle np-channels-summary"
+            aria-expanded={channelsOpen}
+            onClick={() => setChannelsOpen(o => !o)}
+          >
+            <div className="settings-label">
+              <span>{t('npChannels')}</span>
+              <span className="settings-hint">{t('npChannelsHint')}</span>
+            </div>
+            <span className="np-channels-chevron" aria-hidden="true">{channelsOpen ? '▲' : '▼'}</span>
+          </button>
+
+          {channelsOpen && (
             <>
             <div className="settings-divider" />
 
@@ -381,6 +401,38 @@ export default function PushToggle() {
 
             <div className="settings-divider" />
             <Row
+              label={t('npNewsMarket')}
+              hint={t('npNewsMarketHint')}
+              on={prefs.newsMarket}
+              onToggle={() => updatePref({ newsMarket: !prefs.newsMarket }, 'push_pref_news_market')}
+            />
+
+            <div className="settings-divider" />
+            <Row
+              label={t('npPortfolio')}
+              hint={t('npPortfolioHint')}
+              on={prefs.portfolio}
+              onToggle={() => updatePref({ portfolio: !prefs.portfolio }, 'push_pref_portfolio')}
+            />
+
+            <div className="settings-divider" />
+            <Row
+              label={t('npAcademy')}
+              hint={t('npAcademyHint')}
+              on={prefs.academy}
+              onToggle={() => updatePref({ academy: !prefs.academy }, 'push_pref_academy')}
+            />
+
+            <div className="settings-divider" />
+            <Row
+              label={t('npHacks')}
+              hint={t('npHacksHint')}
+              on={prefs.hacks}
+              onToggle={() => updatePref({ hacks: !prefs.hacks }, 'push_pref_hacks')}
+            />
+
+            <div className="settings-divider" />
+            <Row
               label={t('npDigest')}
               hint={t('npDigestHint')}
               on={prefs.digest}
@@ -414,7 +466,7 @@ export default function PushToggle() {
           )}
 
           {status && <PushStatusLine status={status} repair={repair} />}
-          {SHOW_CHANNEL_DETAIL && status?.found && <TestSend />}
+          {SHOW_TEST_SEND && status?.found && <TestSend />}
 
           <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>
         </>
