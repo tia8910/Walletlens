@@ -160,6 +160,7 @@ async function sendEmailResult(
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+      signal: AbortSignal.timeout(10000),
       body: JSON.stringify(payload),
     })
     if (resp.ok) return { ok: true, reason: null }
@@ -1859,6 +1860,7 @@ Rules:
           "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
         },
+        signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
           max_tokens: 1500,
@@ -1897,6 +1899,7 @@ Rules:
           "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
         },
+        signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
           max_tokens: 700,
@@ -1930,6 +1933,7 @@ Rules:
           "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
         },
+        signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
           max_tokens: 400,
@@ -1975,6 +1979,7 @@ Rules:
           "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
         },
+        signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 600,
@@ -2006,6 +2011,7 @@ Rules:
           "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
         },
+        signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
           max_tokens: 900,
@@ -2046,6 +2052,7 @@ Rules:
           "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
         },
+        signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
           max_tokens: 3000,
@@ -2106,6 +2113,7 @@ Rules:
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
       },
+      signal: AbortSignal.timeout(15000),
       body: JSON.stringify({
         model: "claude-sonnet-5",
         // Higher cap so long multi-trade JSON is never truncated (which would

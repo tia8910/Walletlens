@@ -423,6 +423,7 @@ export default {
     setReview: 'اترك تقييماً',
     setReviewHint: 'بطاقة التقييم في Play، أو صفحة المتجر إذا تعذّر عرضها',
     commonOn: 'مفعّل',
+    loadMoreTx: 'تحميل المزيد',
     commonOff: 'متوقف',
     setFx: 'مؤثرات الشاشة',
     fxAllTimeHigh: 'أعلى قيمة على الإطلاق',

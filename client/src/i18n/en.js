@@ -423,6 +423,7 @@ export default {
     setReview: 'Leave a review',
     setReviewHint: 'Play\'s rating card, or the store listing if it can\'t show',
     commonOn: 'On',
+    loadMoreTx: 'Load more',
     commonOff: 'Off',
     setFx: 'Screen effects',
     fxAllTimeHigh: 'New all-time high',

@@ -734,23 +734,38 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey])
 
+  // computeMagic() only depends on ta/signals/fundamentals (via idsKey), never on
+  // live price/value — so it's memoized separately from the block below. Without
+  // this split, every 60s price refresh replaces `enriched` and forces a full
+  // magic re-score of every holding even though the scoring inputs are unchanged.
+  const magicByCoin = useMemo(() => {
+    const map = {}
+    for (const h of enriched) {
+      if (!isAnalyzable(h)) continue
+      const cat = assetClass(h.coin_id)
+      const coinTa = ta[h.coin_id] || null
+      // For non-crypto assets, synthesize fundamentals + signals from OHLCV
+      const isMetalOrStock = cat === 'gold' || cat === 'silver' || cat === 'copper' || cat === 'platinum' || cat === 'stock'
+      const coinFund = fundamentals[h.coin_id] || (isMetalOrStock ? synthesizeFundamentals(coinTa) : null)
+      const coinSig = signals[h.coin_id] || (isMetalOrStock ? synthesizeSignals(coinTa) : null)
+      map[h.coin_id] = {
+        cat,
+        ta: coinTa,
+        signals: coinSig,
+        fundamental: coinFund,
+        magic: computeMagic({ ta: coinTa, signals: coinSig, fundamental: coinFund, assetClass: cat }),
+      }
+    }
+    return map
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey, ta, signals, fundamentals])
+
   const { cryptoItems, nonCryptoCount } = useMemo(() => {
     const tv = totalValue || enriched.reduce((s, h) => s + (h.value || 0), 0)
     const cryptoItems = enriched
-      .filter(isAnalyzable)
+      .filter(h => magicByCoin[h.coin_id])
       .map(h => {
-        const cat = assetClass(h.coin_id)
-        const coinTa = ta[h.coin_id] || null
-        // For non-crypto assets, synthesize fundamentals + signals from OHLCV
-        const isMetalOrStock = cat === 'gold' || cat === 'silver' || cat === 'copper' || cat === 'platinum' || cat === 'stock'
-        const coinFund = fundamentals[h.coin_id] || (isMetalOrStock ? synthesizeFundamentals(coinTa) : null)
-        const coinSig = signals[h.coin_id] || (isMetalOrStock ? synthesizeSignals(coinTa) : null)
-        const magic = computeMagic({
-          ta: coinTa,
-          signals: coinSig,
-          fundamental: coinFund,
-          assetClass: cat,
-        })
+        const { cat, ta: coinTa, signals: coinSig, fundamental: coinFund, magic } = magicByCoin[h.coin_id]
         return {
           ...h,
           _cat: cat,
@@ -766,7 +781,7 @@ export default function MagicAnalysisPanel({ enriched = [], totalValue = 0 }) {
       .sort((a, b) => b.value - a.value)
     const nonCryptoCount = enriched.filter(h => !isAnalyzable(h)).length
     return { cryptoItems, nonCryptoCount }
-  }, [enriched, totalValue, ta, signals, fundamentals])
+  }, [enriched, totalValue, magicByCoin])
 
   // Category counts for tabs
   const catCounts = useMemo(() => {

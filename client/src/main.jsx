@@ -6,7 +6,6 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { LanguageProvider } from './LanguageContext'
 import { ThemeProvider } from './ThemeContext'
 import { initAutoTrack, initErrorTracking, initHumanSignal } from './analytics'
-import { initVitals } from './vitals'
 import './index.css'
 
 // Auto-reload on stale chunk error (unhandled promise rejection path).
@@ -82,7 +81,18 @@ initErrorTracking()
 // Flag sessions that actually interacted, so crawler traffic can be segmented out.
 initHumanSignal()
 // Report Core Web Vitals (LCP, INP, CLS, FCP, TTFB) to GA4.
-initVitals()
+//
+// Imported dynamically and started after first paint. A static import put the
+// web-vitals library's parse and execute cost on the critical path — ahead of
+// the first render — which is a measurable irony in the code whose job is
+// measuring how fast the first render was. It now lands in its own chunk.
+//
+// requestIdleCallback where it exists, a timeout where it does not (Safari):
+// the metrics are buffered by the library either way, so nothing is lost by
+// subscribing late.
+const startVitals = () => import('./vitals').then(m => m.initVitals()).catch(() => {})
+if (typeof requestIdleCallback === 'function') requestIdleCallback(startVitals)
+else setTimeout(startVitals, 1)
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

@@ -17,6 +17,12 @@ export async function onRequestOptions() {
 
 const CACHE_SECONDS = 60
 
+// The client gives this whole function a 6s budget before falling back to a
+// slower path (see fetchTwelveDataBatch in client/src/api.js). That is what
+// sizes the AbortSignal.timeout() calls below: without a cap, one hung
+// upstream blocks past the budget and the caller discards the entire
+// response, including the symbols that came back fine.
+
 export async function onRequestGet(context) {
   const { request } = context
   const url = new URL(request.url)
@@ -47,7 +53,8 @@ export async function onRequestGet(context) {
   try {
     const s = symbols.map(x => `${x.toLowerCase()}.us`).join(';')
     const res = await fetch(
-      `https://stooq.com/q/l/?s=${encodeURIComponent(s)}&f=sd2t2ohlcvn&h&e=csv`
+      `https://stooq.com/q/l/?s=${encodeURIComponent(s)}&f=sd2t2ohlcvn&h&e=csv`,
+      { signal: AbortSignal.timeout(8000) }
     )
     if (res.ok) {
       const text = await res.text()
@@ -83,9 +90,9 @@ export async function onRequestGet(context) {
     await Promise.all(missing.map(async sym => {
       for (const host of ['query1', 'query2']) {
         try {
-          const res = await fetch(
+          const res = await fetchWithTimeout(
             `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`,
-            { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WalletLens/1.0)' } }
+            { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WalletLens/1.0)' }, signal: AbortSignal.timeout(6000) }
           )
           if (!res.ok) continue
           const meta = (await res.json())?.chart?.result?.[0]?.meta

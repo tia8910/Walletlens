@@ -402,6 +402,7 @@ export default {
     setReview: 'Dejar una reseña',
     setReviewHint: 'La tarjeta de valoración de Play, o la ficha de la tienda si no puede mostrarse',
     commonOn: 'Activado',
+    loadMoreTx: 'Cargar más',
     commonOff: 'Desactivado',
     setFx: 'Efectos en pantalla',
     fxAllTimeHigh: 'Nuevo máximo histórico',
