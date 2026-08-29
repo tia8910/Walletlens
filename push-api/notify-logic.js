@@ -822,7 +822,7 @@ export const DEFAULT_PREFS = {
   retention: true,  // win-back nudges while idle
   features: true,   // one-off tips, each gated on the user's own state
   zakat: true,      // the zakat year completing — a date, never an amount
-  movePct: 5,       // swing threshold, percent
+  movePct: 2,       // swing threshold, percent
 }
 
 const MIN_MOVE_PCT = 1
