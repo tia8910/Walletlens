@@ -362,6 +362,49 @@
             </intent-filter>
         </activity>
 
+        <!-- The portfolio's copy in the app's OWN storage.
+
+             The app is a TWA, so the page renders in Chrome and everything it
+             saves lands in Chrome's sandbox. Clearing Chrome's browsing data
+             therefore deletes the portfolio, while this app's own "Clear
+             storage" leaves it untouched — and Android's app backup never sees
+             it at all. This receives a mirror of it and writes it here.
+
+             Exported for the same reason WidgetSync is: the page that sends
+             the intent runs in Chrome's process, so the launch is a cross-app
+             start. It exposes no read: the only way out is vault-restore,
+             which relaunches OUR launcher at OUR origin, so another app can
+             trigger a restore but can never receive the contents.
+
+             taskAffinity="" for the same reason as WidgetSync and the
+             permission gate — excludeFromRecents is a property of the TASK,
+             and without its own affinity this would hand its exclusion to the
+             app's real task. -->
+        <activity
+            android:name=".DataVaultActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="walletlens"
+                    android:host="vault-save" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="walletlens"
+                    android:host="vault-restore" />
+            </intent-filter>
+        </activity>
+
         <!-- Google Play in-app review card. The web app decides when the user
              has used WalletLens enough to be worth asking, then opens
              walletlens://review. Exported for the same reason WidgetSync is:

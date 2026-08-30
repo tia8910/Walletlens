@@ -34,6 +34,7 @@ import { useBiometricLock, BiometricLockScreen } from './components/BiometricLoc
 import { setAppInteractive } from './reviewPrompt'
 import { applySettings } from './settingsUtils'
 import { initMood } from './moodEngine'
+import { pendingVaultPayload, consumeVaultPayload } from './nativeVault'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -402,6 +403,29 @@ export default function App() {
 
   const _guardianChecked = useRef(false)
   const _backupChecked = useRef(false)
+
+  // The app handing its copy of the portfolio back.
+  //
+  // DataVaultActivity answers a restore by RELAUNCHING us with the payload on
+  // the URL fragment — the only channel that exists, because a TWA has no
+  // JavaScript bridge and native code cannot write into Chrome's storage.
+  //
+  // Consumed before anything reads localStorage, and it reloads afterwards
+  // rather than trying to tell every screen the store changed underneath it.
+  // A restore happens once, on a device that has just been emptied; one extra
+  // navigation is a fair price for not having to make the whole app
+  // re-entrant against its own storage being replaced mid-render.
+  useEffect(() => {
+    if (!pendingVaultPayload()) return
+    let cancelled = false
+    consumeVaultPayload().then(out => {
+      if (cancelled || out.status !== 'restored') return
+      // The fragment is already stripped by now, so this cannot loop.
+      window.location.reload()
+    })
+    return () => { cancelled = true }
+  }, [])
+
   useEffect(() => {
     requestAnimationFrame(() => { applySettings(); initMood() })
     const _standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone

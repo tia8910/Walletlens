@@ -28,12 +28,30 @@ export function loadData(key, fallback = []) {
   } catch { return fallback }
 }
 
+// The two keys that ARE the portfolio. A change to either is worth mirroring
+// into the Android app's own storage; a change to anything else is not, and
+// firing an intent per settings toggle would be noise.
+const MIRRORED = new Set(['transactions', 'wallets'])
+
 export function saveData(key, data) {
   try {
     const raw = JSON.stringify(data)
     localStorage.setItem(`${PREFIX}${key}`, raw)
     parseCache.set(key, { raw, value: data })
   } catch {}
+
+  // Mirror to the app, on Android only, and never at the cost of the write
+  // above.
+  //
+  // Imported lazily for isolation rather than for bundle size — App.jsx pulls
+  // the same module in statically to handle a restore at boot, so it is in the
+  // main chunk either way. What the dynamic import buys is that this line
+  // cannot throw: saveData is the path every holding takes on its way to disk,
+  // and a mirror that is a nice-to-have must not be able to fail the write it
+  // is copying.
+  if (MIRRORED.has(key)) {
+    import('../nativeVault').then(m => m.scheduleVaultSave()).catch(() => {})
+  }
 }
 
 export function bumpId(key) {
