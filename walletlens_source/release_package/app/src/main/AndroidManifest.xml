@@ -362,6 +362,33 @@
             </intent-filter>
         </activity>
 
+        <!-- The app rendering the site itself, instead of asking Chrome to.
+
+             NOT the launcher yet, and that is deliberate. This changes where
+             every user's data lives, so it ships dark first: reachable by an
+             explicit intent for on-device testing, while the TWA launcher
+             stays exactly as it is. Promoting it is a one-line change to which
+             activity carries the LAUNCHER category, once it has been proven on
+             a real phone.
+
+             Not exported: nothing outside this app has any business opening
+             the shell, and the JavaScript bridge inside it can read the user's
+             portfolio. -->
+        <activity
+            android:name=".AppShellActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:theme="@android:style/Theme.Black.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="walletlens"
+                    android:host="shell" />
+            </intent-filter>
+        </activity>
+
         <!-- The portfolio's copy in the app's OWN storage.
 
              The app is a TWA, so the page renders in Chrome and everything it

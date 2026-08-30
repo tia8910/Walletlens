@@ -1,0 +1,229 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+// Moving the app off the Trusted Web Activity and onto its own WebView.
+//
+// The single fact that makes this dangerous: a WebView CANNOT read what Chrome
+// stored for the same origin. Different process, different sandbox. So the
+// first launch after the switch finds localStorage empty, and without a
+// migration every existing user opens the app to a portfolio they spent months
+// building and finds nothing in it.
+//
+// The vault is what crosses. These cover the crossing, and the guards that
+// stop it firing when it must not.
+
+const SRC = dirname(fileURLToPath(import.meta.url))
+const JAVA_DIR = join(
+  SRC, '..', '..', 'walletlens_source/release_package/app/src/main/java/live/walletlens/twa',
+)
+const read = (f) => readFileSync(join(JAVA_DIR, f), 'utf8')
+const code = (f) => read(f)
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/\/\/[^\n]*/g, '')
+
+describe('the WebView shell', () => {
+  it('turns on the storage that is the entire reason for the change', () => {
+    // Without setDomStorageEnabled a WebView's localStorage silently does
+    // nothing: writes appear to succeed and the store is empty on the next
+    // load. That looks exactly like the data loss this change is meant to end,
+    // which is the worst possible way for it to be missing.
+    expect(code('AppShellActivity.java')).toMatch(/setDomStorageEnabled\(true\)/)
+  })
+
+  it('keeps outside pages out of the bridge', () => {
+    // @JavascriptInterface exposes the bridge to whatever page the WebView is
+    // showing, and the bridge can read the user's portfolio. If an outbound
+    // link could load in here, that page could read it. Everything that is not
+    // our origin leaves for a real browser, which has no bridge.
+    const src = code('AppShellActivity.java')
+    expect(src).toMatch(/shouldOverrideUrlLoading/)
+    expect(src).toMatch(/ORIGIN\.equals/)
+    expect(src).toMatch(/ACTION_VIEW/)
+  })
+
+  it('refuses mixed content', () => {
+    expect(code('AppShellActivity.java')).toMatch(/MIXED_CONTENT_NEVER_ALLOW/)
+  })
+
+  it('does not become the launcher yet', () => {
+    // It changes where every user's data lives, so it ships dark: reachable by
+    // an explicit intent for on-device testing while the TWA launcher stays
+    // exactly as it is. Promoting it is a deliberate one-line change.
+    const manifest = readFileSync(
+      join(SRC, '..', '..', 'walletlens_source/release_package/app/src/main/AndroidManifest.xml'),
+      'utf8',
+    )
+    const block = manifest.slice(
+      manifest.indexOf('android:name=".AppShellActivity"'),
+      manifest.indexOf('</activity>', manifest.indexOf('android:name=".AppShellActivity"')),
+    )
+    expect(block).toMatch(/android:exported="false"/)
+    expect(block, 'the shell must not carry LAUNCHER yet').not.toMatch(/category\.LAUNCHER/)
+  })
+
+  it('holds its host weakly, so the Activity can be collected', () => {
+    // A JavaScript object holding a strong reference to the Activity is the
+    // classic WebView leak: nothing can be collected on rotation or finish.
+    expect(code('WalletLensBridge.java')).toMatch(/WeakReference<Activity>/)
+  })
+
+  it('exposes only what the phase implements', () => {
+    // A bridge method calling a helper that does not exist yet is a file that
+    // does not compile — and this file has no compiler in CI to catch it.
+    const src = code('WalletLensBridge.java')
+    expect(src).toMatch(/public String readVault\(\)/)
+    expect(src).toMatch(/public boolean writeVault\(/)
+    expect(src).not.toMatch(/NotificationHelper\.|WidgetSyncActivity\.|ReviewActivity/)
+  })
+
+  it('can write the vault without going through an Activity', () => {
+    // The whole gain of the bridge: a call with a return value, from anywhere,
+    // with no user gesture. The intent path could offer none of those.
+    expect(code('DataVaultActivity.java')).toMatch(/static boolean write\(/)
+  })
+})
+
+// ── The web half ────────────────────────────────────────────────────────────
+
+describe('detecting the shell', () => {
+  let store
+  beforeEach(() => {
+    store = {}
+    vi.stubGlobal('localStorage', {
+      getItem: k => (k in store ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v) },
+      removeItem: k => { delete store[k] },
+    })
+  })
+  afterEach(() => { vi.unstubAllGlobals(); vi.resetModules(); vi.restoreAllMocks() })
+
+  const withBridge = (over = {}) => vi.stubGlobal('window', {
+    AndroidBridge: {
+      shellVersion: () => 'webview-1',
+      readVault: () => '',
+      writeVault: () => true,
+      appLockEnabled: () => false,
+      setAppLock: () => {},
+      ...over,
+    },
+  })
+
+  it('is a capability check, not a user-agent sniff', async () => {
+    // isAndroidTWA() guesses from document.referrer and the UA, and one wrong
+    // guess silently disabled App Lock, the widgets, the biometric onboarding
+    // slide and the rating card at once — all four being features that are
+    // SUPPOSED to be absent off Android, so nothing errored.
+    withBridge()
+    const { inAppShell, shellVersion } = await import('./nativeShell.js')
+    expect(inAppShell()).toBe(true)
+    expect(shellVersion()).toBe('webview-1')
+
+    const src = readFileSync(join(SRC, 'nativeShell.js'), 'utf8')
+    expect(src).not.toMatch(/navigator\.userAgent|document\.referrer/)
+  })
+
+  it('says no when there is no bridge', async () => {
+    vi.stubGlobal('window', {})
+    const { inAppShell, shellVersion } = await import('./nativeShell.js')
+    expect(inAppShell()).toBe(false)
+    expect(shellVersion()).toBeNull()
+  })
+})
+
+describe('seeding the portfolio across from the vault', () => {
+  let store
+  beforeEach(() => {
+    store = {}
+    vi.stubGlobal('localStorage', {
+      getItem: k => (k in store ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v) },
+      removeItem: k => { delete store[k] },
+    })
+  })
+  afterEach(() => { vi.unstubAllGlobals(); vi.resetModules(); vi.restoreAllMocks() })
+
+  async function load(bridgeOver = {}, applyImpl) {
+    vi.stubGlobal('window', {
+      AndroidBridge: {
+        shellVersion: () => 'webview-1',
+        readVault: () => '',
+        writeVault: () => true,
+        appLockEnabled: () => false,
+        setAppLock: () => {},
+        ...bridgeOver,
+      },
+    })
+    vi.doMock('./backupCore', () => ({
+      applyBackupCode: applyImpl || (async () => ({ restored: 7, when: null })),
+    }))
+    return import('./nativeShell.js')
+  }
+
+  it('restores an empty device from the app’s copy', async () => {
+    // The migration in one test. Without it, every user updating from the TWA
+    // build opens the app to nothing.
+    const { seedFromVault } = await load({ readVault: () => 'WL3-payload' })
+    expect(await seedFromVault()).toEqual({ status: 'restored', restored: 7 })
+  })
+
+  it('never overwrites a device that already has holdings', async () => {
+    store.crypto_tracker_transactions = JSON.stringify([{ id: 1 }])
+    const apply = vi.fn(async () => ({ restored: 99 }))
+    const { seedFromVault } = await load({ readVault: () => 'WL3-payload' }, apply)
+
+    expect((await seedFromVault()).status).toBe('not-empty')
+    expect(apply, 'a live portfolio must never be replaced').not.toHaveBeenCalled()
+  })
+
+  it('treats an unreadable store as NOT empty', async () => {
+    // Seeding over a store that merely failed to parse once would destroy the
+    // very data the migration exists to protect.
+    store.crypto_tracker_transactions = '{ not json'
+    const apply = vi.fn(async () => ({ restored: 99 }))
+    const { seedFromVault } = await load({ readVault: () => 'WL3-payload' }, apply)
+
+    expect((await seedFromVault()).status).toBe('not-empty')
+    expect(apply).not.toHaveBeenCalled()
+  })
+
+  it('runs once ever, not once per launch', async () => {
+    const apply = vi.fn(async () => ({ restored: 7 }))
+    const { seedFromVault } = await load({ readVault: () => 'WL3-payload' }, apply)
+
+    expect((await seedFromVault()).status).toBe('restored')
+    expect((await seedFromVault()).status).toBe('already-seeded')
+    expect(apply).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not retry a corrupt vault for ever', async () => {
+    // Marked before applying, on purpose: a corrupt vault does not become less
+    // corrupt on the fifth attempt, and retrying every launch is a loop.
+    const apply = vi.fn(async () => { throw new Error('corrupt') })
+    const { seedFromVault } = await load({ readVault: () => 'WL3-bad' }, apply)
+
+    expect((await seedFromVault()).status).toBe('corrupt')
+    expect((await seedFromVault()).status).toBe('already-seeded')
+    expect(apply).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports an empty vault without claiming to have restored', async () => {
+    const { seedFromVault } = await load({ readVault: () => '' })
+    expect((await seedFromVault()).status).toBe('empty-vault')
+  })
+
+  it('does nothing outside the shell', async () => {
+    vi.stubGlobal('window', {})
+    vi.doMock('./backupCore', () => ({ applyBackupCode: async () => ({ restored: 1 }) }))
+    const { seedFromVault } = await import('./nativeShell.js')
+    expect((await seedFromVault()).status).toBe('not-in-shell')
+  })
+
+  it('survives a bridge that throws', async () => {
+    const { seedFromVault } = await load({
+      readVault: () => { throw new Error('binder died') },
+    })
+    expect((await seedFromVault()).status).toBe('bridge-failed')
+  })
+})

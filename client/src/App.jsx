@@ -35,6 +35,7 @@ import { setAppInteractive } from './reviewPrompt'
 import { applySettings } from './settingsUtils'
 import { initMood } from './moodEngine'
 import { pendingVaultPayload, consumeVaultPayload } from './nativeVault'
+import { inAppShell, seedFromVault } from './nativeShell'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -415,6 +416,21 @@ export default function App() {
   // A restore happens once, on a device that has just been emptied; one extra
   // navigation is a fair price for not having to make the whole app
   // re-entrant against its own storage being replaced mid-render.
+  // First run inside the app's own WebView: bring the portfolio across.
+  //
+  // A WebView cannot read what Chrome stored for the same origin, so without
+  // this an app updating from the TWA build opens to an empty portfolio. The
+  // vault is what survives the switch. Runs before anything renders holdings,
+  // and reloads only when it actually restored something.
+  useEffect(() => {
+    if (!inAppShell()) return
+    let cancelled = false
+    seedFromVault().then(out => {
+      if (!cancelled && out.status === 'restored') window.location.reload()
+    })
+    return () => { cancelled = true }
+  }, [])
+
   useEffect(() => {
     if (!pendingVaultPayload()) return
     let cancelled = false
