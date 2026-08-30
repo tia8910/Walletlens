@@ -196,6 +196,8 @@ function generateAnalysis(detail, type) {
   }
 }
 
+const TX_PAGE_SIZE = 50
+
 export default function Transactions({ showAdd, onCloseAdd }) {
   const { t } = useLanguage()
   const location = useLocation()
@@ -208,6 +210,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const [tradeType, setTradeType] = useState('buy')
   const [tradePrefill, setTradePrefill] = useState(null)
   const [filterWallet, setFilterWallet] = useState('')
+  const [visibleCount, setVisibleCount] = useState(TX_PAGE_SIZE)
   const [coinSearch, setCoinSearch] = useState('')
   const [coinResults, setCoinResults] = useState([])
   const [fetchingPrice, setFetchingPrice] = useState(false)
@@ -230,6 +233,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const searchTimeout = useRef(null)
 
   useEffect(() => { loadData() }, [filterWallet])
+  useEffect(() => { setVisibleCount(TX_PAGE_SIZE) }, [filterWallet, transactions])
   useEffect(() => { track('transactions_view') }, [])
 
   useEffect(() => {
@@ -1060,7 +1064,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         </div>
       ) : (
         <div className="tx-list">
-          {transactions.map(t => {
+          {transactions.slice(0, visibleCount).map(t => {
             const sym = (t.coin_symbol || t.coin_id || '??').toUpperCase()
             const txType = t.type || 'buy'
             const isPositive = txType === 'buy'
@@ -1095,6 +1099,12 @@ export default function Transactions({ showAdd, onCloseAdd }) {
             )
           })}
         </div>
+      )}
+
+      {transactions.length > visibleCount && (
+        <button className="btn-secondary tx-load-more" onClick={() => setVisibleCount(c => c + TX_PAGE_SIZE)}>
+          {t('loadMore')}
+        </button>
       )}
 
       <Suspense fallback={null}>

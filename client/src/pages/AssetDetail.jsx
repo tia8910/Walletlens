@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api, ASSET_CATEGORIES, STOCK_PREFIX, GOLD_ID, SILVER_ID, assetClass } from '../api'
 import { getAnnualDividend, getDividendYield } from '../data/assets'
@@ -57,8 +57,13 @@ export default function AssetDetail() {
   const [note, setNote] = useState(() => api.getCoinNote(coinId))
   useEffect(() => { setNote(api.getCoinNote(coinId)) }, [coinId])
   const [noteEditing, setNoteEditing] = useState(false)
+  // The route reuses this component instance across coin navigations, so a
+  // slow response for a previously-viewed coin can resolve after a newer
+  // coinId's load has started. Guards below drop any update that arrives
+  // after activeCoinIdRef has moved on to a different coin.
+  const activeCoinIdRef = useRef(coinId)
 
-  useEffect(() => { loadData() }, [coinId])
+  useEffect(() => { activeCoinIdRef.current = coinId; loadData() }, [coinId])
   useEffect(() => { api.getWallets().then(setWallets).catch(() => {}) }, [])
   useEffect(() => { loadChart() }, [coinId, chartDays])
   useEffect(() => {
@@ -85,6 +90,7 @@ export default function AssetDetail() {
     // Local-only sync data — instant
     let portfolio = []
     try { portfolio = (await api.getPortfolio()) || [] } catch {}
+    if (activeCoinIdRef.current !== coinId) return
     const h = portfolio.find(p => p.coin_id === coinId)
     setHoldings(h || null)
     // Enrich the whole portfolio with best-effort USD values (from the price
@@ -104,6 +110,7 @@ export default function AssetDetail() {
     } catch { setAllHoldings(portfolio) }
     try {
       const allTargets = await api.getCoinTargets()
+      if (activeCoinIdRef.current !== coinId) return
       setTargets(allTargets[coinId]?.targets || [])
     } catch {}
 
@@ -124,6 +131,7 @@ export default function AssetDetail() {
     // Background — fetch prices + image + detail in parallel, fill in
     // as each resolves. Never throws to the caller; never blocks the UI.
     api.getPrices(coinId).then(prices => {
+      if (activeCoinIdRef.current !== coinId) return
       const p = prices?.[coinId]
       if (!p) return
       setCoin(prev => ({
@@ -138,6 +146,7 @@ export default function AssetDetail() {
     if (!nonCrypto) {
       Promise.all([api.getCoinImages(coinId), api.getCoinDetail(coinId)])
         .then(([images, detail]) => {
+          if (activeCoinIdRef.current !== coinId) return
           const image = images?.[coinId] || h?.coin_image || ''
           const md = detail?.market_data
           setCoin(prev => ({
@@ -162,6 +171,7 @@ export default function AssetDetail() {
   async function loadChart() {
     try {
       const data = await api.getChartData(coinId, chartDays)
+      if (activeCoinIdRef.current !== coinId) return
       setChartData(data)
     } catch (e) { console.error(e) }
   }

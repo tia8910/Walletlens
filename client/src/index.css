@@ -2675,6 +2675,7 @@ select option { background: var(--bg3); color: var(--text); }
 
 /* ─── Transaction List ─── */
 .tx-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.tx-load-more { width: 100%; margin-top: 0.75rem; }
 .tx-card {
   display: flex; align-items: center; gap: 0.6rem;
   padding: 0.85rem; background: var(--bg2); border: 1px solid var(--border);
