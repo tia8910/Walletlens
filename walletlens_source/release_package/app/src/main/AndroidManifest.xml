@@ -33,6 +33,23 @@
     
         <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
 
+        <!-- Voice import and the QR scanner.
+             The app never needed these while it was a TWA: the page ran in
+             Chrome, so CHROME held the microphone and camera permissions and
+             showed its own prompts. Rendering the site in our own WebView
+             means the page can only reach hardware this app is allowed to
+             touch — and with nothing declared, speech recognition failed
+             instantly with "not-allowed" and the QR scanner's getUserMedia
+             was denied before any prompt could appear.
+
+             Both are marked not-required so the app still installs on a device
+             without a microphone or a camera; the features that need them
+             simply do not offer themselves there. -->
+        <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+        <uses-permission android:name="android.permission.CAMERA"/>
+        <uses-feature android:name="android.hardware.microphone" android:required="false"/>
+        <uses-feature android:name="android.hardware.camera" android:required="false"/>
+
         <!-- Storage for data export to Downloads -->
         <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
             android:maxSdkVersion="28" />

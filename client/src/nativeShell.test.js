@@ -327,6 +327,36 @@ describe('the WebView shell', () => {
     expect(lock).toMatch(/setNativeAppLock\(false\)/)
   })
 
+  it('opens documents the WebView can actually read', () => {
+    // params.createIntent() returns ACTION_GET_CONTENT, and some pickers answer
+    // that with a file:// URI. A WebView cannot read one — setAllowFileAccess
+    // defaults to false from API 30 — so the page got a File it could not read
+    // and the screenshot import failed with nothing to point at.
+    // ACTION_OPEN_DOCUMENT always returns a readable content:// URI.
+    const src = code('AppShellActivity.java')
+    expect(src).toMatch(/ACTION_OPEN_DOCUMENT/)
+    expect(src).toMatch(/CATEGORY_OPENABLE/)
+    expect(src, 'the picker must not fall back to a file:// producer')
+      .not.toMatch(/params\.createIntent\(\)/)
+  })
+
+  it('turns an accept of file extensions into MIME types', () => {
+    // The spreadsheet input asks for ".xlsx,.xls,.csv". createIntent cannot map
+    // extensions, so the chooser opened on a type no app claims and listed
+    // nothing at all.
+    const src = code('AppShellActivity.java')
+    expect(src).toMatch(/MimeTypeMap\.getSingleton\(\)/)
+    expect(src).toMatch(/getMimeTypeFromExtension/)
+  })
+
+  it('widens rather than narrows when a type cannot be resolved', () => {
+    // Narrowing to a type that matches nothing is the failure being fixed; the
+    // catch-all at least shows the user their files.
+    const src = code('AppShellActivity.java')
+    const body = src.slice(src.indexOf('private Intent buildFileIntent'))
+    expect(body.slice(0, body.indexOf('return intent;'))).toMatch(/unknown \|\| mimes\.isEmpty\(\)/)
+  })
+
   it('holds its host weakly, so the Activity can be collected', () => {
     // A JavaScript object holding a strong reference to the Activity is the
     // classic WebView leak: nothing can be collected on rotation or finish.

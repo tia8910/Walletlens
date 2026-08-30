@@ -372,6 +372,30 @@ public class WalletLensBridge {
         return n.length() > 100 ? n.substring(n.length() - 100) : n;
     }
 
+    // ── Microphone ───────────────────────────────────────────────────────
+
+    /** Whether the app may record audio. */
+    @JavascriptInterface
+    public boolean micAllowed() {
+        Activity a = activity();
+        return a instanceof AppShellActivity && ((AppShellActivity) a).micAllowed();
+    }
+
+    /**
+     * Ask for the microphone, for the page's speech recognition.
+     *
+     * <p>getUserMedia raises onPermissionRequest and the shell answers it.
+     * SpeechRecognition does not: Chromium's WebView checks this app's own
+     * RECORD_AUDIO and fails with "not-allowed" without consulting the app, so
+     * the page has to ask for it before it starts listening. Fire-and-forget —
+     * the answer lands in the app's permission state, not in a return value.
+     */
+    @JavascriptInterface
+    public void requestMic() {
+        Activity a = activity();
+        if (a instanceof AppShellActivity) ((AppShellActivity) a).requestMic();
+    }
+
     // ── Notifications ────────────────────────────────────────────────────
 
     /**
