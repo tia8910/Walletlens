@@ -43,4 +43,24 @@ describe('the permission primer', () => {
       expect(table.npAskBodyEmpty, lang).not.toBe(table.npAskBody)
     }
   })
+
+  it('waits for the dashboard instead of giving up on it', () => {
+    // The gate that moved this card onto the dashboard nearly stopped it
+    // appearing at all. It asked once, four seconds after mount, and gave up
+    // for the session if the answer was no — and the answer IS no at mount,
+    // because the component mounts as onboarding finishes, before the router
+    // has landed on the dashboard. So the card was shown to almost nobody.
+    //
+    // This component sits outside the router tree and is never told about a
+    // navigation, so waiting means asking again.
+    expect(src).toContain('onDashboard()')
+    expect(src).toMatch(/setInterval\(/)
+  })
+
+  it('gives up eventually rather than lurking for the session', () => {
+    // An unbounded interval would sit there for as long as the app is open,
+    // waiting to interrupt whatever the user eventually does.
+    expect(src).toMatch(/deadline/)
+    expect(src).toMatch(/Date\.now\(\) > deadline/)
+  })
 })
