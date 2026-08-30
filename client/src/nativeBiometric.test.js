@@ -103,3 +103,94 @@ describe('onboarding survives a reload', () => {
     expect(onboarding).toMatch(/localStorage\.removeItem\(ONBOARD_STEP_KEY\)/)
   })
 })
+
+// ── Arming the prompt ───────────────────────────────────────────────────────
+//
+// Reported as "the fingerprint doesn't respond the first time".
+//
+// BiometricPrompt is implemented as a headless Fragment, so authenticate()
+// commits a fragment transaction and needs the host activity to be at least
+// STARTED for it to be honoured. It used to be armed from the end of onCreate
+// on a 400ms postDelayed — a guess at how long the window takes to be created,
+// themed and focused. On a cold start this activity is launched while
+// LauncherActivity is still tearing down, and on the first launch after
+// install the guess is short: the transaction is dropped and no dialog is ever
+// shown. A warm retry resumes in a fraction of the time, which is why it read
+// as a slow sensor rather than a prompt that was never asked for.
+
+describe('when the prompt is asked for', () => {
+  // Comments stripped: the prose above the fix quotes the old timer verbatim
+  // to explain it, so a raw match finds the very construct it must prove gone.
+  const code = () => java()
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/[^\n]*/g, '')
+
+  /** The body of a method, from its signature to the matching close brace. */
+  function methodBody(src, signature) {
+    const start = src.indexOf(signature)
+    if (start === -1) return ''
+    let depth = 0, i = src.indexOf('{', start)
+    for (let j = i; j < src.length; j++) {
+      if (src[j] === '{') depth++
+      else if (src[j] === '}' && --depth === 0) return src.slice(i, j + 1)
+    }
+    return ''
+  }
+
+  it('arms it from onResume, where the transaction is actually allowed', () => {
+    const resume = methodBody(code(), 'protected void onResume()')
+    expect(resume, 'an onResume override').not.toBe('')
+    expect(resume).toMatch(/super\.onResume\(\)/)
+    expect(resume).toMatch(/biometricPrompt\.authenticate\(promptInfo\)/)
+  })
+
+  it('does not arm it on a timer from onCreate', () => {
+    // The regression in one assertion. onCreate builds the prompt; it must not
+    // be the thing that shows it, because it cannot know when the window is
+    // ready and a fixed delay is a guess that loses on the slowest launch.
+    //
+    // The bounded retry after a transient sensor error is a different thing
+    // and stays: it lives inside onAuthenticationError, which is lexically
+    // inside onCreate because the callback is an anonymous class. So the check
+    // is that every authenticate() in onCreate is one of THOSE — not a blanket
+    // "no authenticate here", which this assertion was at first and which the
+    // retry tripped immediately.
+    const create = methodBody(code(), 'protected void onCreate(')
+    expect(create, 'onCreate still builds the prompt').toMatch(/new BiometricPrompt\(/)
+
+    const retry = methodBody(create, 'public void onAuthenticationError(')
+    expect(retry, 'the transient-error retry').toMatch(/authenticate\(promptInfo\)/)
+
+    const outsideRetry = create.replace(retry, '')
+    expect(outsideRetry, 'onCreate must not show the prompt itself')
+      .not.toMatch(/authenticate\(/)
+    expect(outsideRetry, 'and must not schedule it on a guessed delay')
+      .not.toMatch(/postDelayed/)
+  })
+
+  it('asks only once however many times the activity resumes', () => {
+    // onResume runs again on every return to the foreground — the shade being
+    // dismissed, a screen off and on. Without the guard each one stacks
+    // another prompt on the one already showing.
+    const resume = methodBody(code(), 'protected void onResume()')
+    expect(resume).toMatch(/promptShown/)
+    expect(resume).toMatch(/promptShown\s*=\s*true/)
+    expect(code()).toMatch(/boolean promptShown\s*=\s*false/)
+  })
+
+  it('does nothing on the paths that never built a prompt', () => {
+    // enable/disable and an unavailable sensor all finish inside onCreate
+    // without constructing one. onResume still runs on the way out, so an
+    // unguarded authenticate() there is a null dereference on the single most
+    // common intent the web app sends.
+    const resume = methodBody(code(), 'protected void onResume()')
+    expect(resume).toMatch(/biometricPrompt == null/)
+    expect(resume).toMatch(/promptInfo == null/)
+  })
+
+  it('still guards against a window that has gone away', () => {
+    const resume = methodBody(code(), 'protected void onResume()')
+    expect(resume).toMatch(/isFinishing\(\)/)
+    expect(resume).toMatch(/isDestroyed\(\)/)
+  })
+})

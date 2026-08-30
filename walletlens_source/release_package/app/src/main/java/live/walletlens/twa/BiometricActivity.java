@@ -79,6 +79,15 @@ public class BiometricActivity extends AppCompatActivity {
     private BiometricPrompt.PromptInfo promptInfo;
     private int retriesLeft = MAX_TRANSIENT_RETRIES;
 
+    /**
+     * Whether the prompt has been asked for. onResume runs again every time
+     * the activity comes back to the foreground — the notification shade being
+     * dismissed, a screen-off and on — and each of those would otherwise stack
+     * another prompt on the one already showing. Re-arming after a transient
+     * error is the error callback's job, and it has its own bounded retry.
+     */
+    private boolean promptShown = false;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -239,12 +248,52 @@ public class BiometricActivity extends AppCompatActivity {
                     }
                 });
 
-        // Show the biometric prompt with a slight delay for smooth animation
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+        // The prompt itself is armed from onResume(), not here. See below.
+    }
+
+    /**
+     * Show the prompt, once, as soon as the activity is actually resumed.
+     *
+     * <p>It used to be armed from the end of {@code onCreate} on a 400ms
+     * {@code postDelayed}, "for smooth animation". That is the bug behind
+     * "the fingerprint doesn't respond the first time".
+     *
+     * <p>{@link BiometricPrompt} is implemented as a headless Fragment, so
+     * {@code authenticate()} commits a fragment transaction and needs the host
+     * activity to be at least STARTED for it to be honoured. On a cold start
+     * this activity is launched from {@code LauncherActivity.onCreate} while
+     * that activity is still tearing itself down, and the window has to be
+     * created, themed (translucent) and given focus before this one is
+     * resumed. 400ms is a guess at how long all of that takes, and on the
+     * first launch after install — the slowest one there is, with nothing warm
+     * and the TWA starting Chrome alongside — the guess is short. The
+     * transaction is dropped and no dialog is ever shown.
+     *
+     * <p>It looked intermittent because it is: a warm second attempt resumes
+     * in a fraction of the time, so the same code works on the retry and the
+     * fault reads as "the sensor was slow" rather than "the prompt was never
+     * asked for".
+     *
+     * <p>onResume is the state the transaction actually requires, so waiting
+     * for it is both correct and faster than the timer it replaces. The work
+     * is posted rather than run inline because {@code authenticate()} commits
+     * that transaction, and committing from inside the lifecycle callback is
+     * what exposes it to "state already saved".
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // Null on the paths that finished in onCreate without building a
+        // prompt: the enable/disable intents, and a device that cannot ask.
+        if (promptShown || biometricPrompt == null || promptInfo == null) return;
+        promptShown = true;
+
+        new Handler(Looper.getMainLooper()).post(() -> {
             if (!isFinishing() && !isDestroyed()) {
                 biometricPrompt.authenticate(promptInfo);
             }
-        }, 400);
+        });
     }
 
     // ── Auth success handler ─────────────────────────────────────────────
