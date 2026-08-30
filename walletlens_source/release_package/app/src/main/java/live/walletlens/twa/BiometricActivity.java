@@ -97,6 +97,18 @@ public class BiometricActivity extends AppCompatActivity {
      */
     private boolean enabling = false;
 
+    /**
+     * True when the prompt was raised by the bridge and must NOT relaunch.
+     *
+     * The redirect path delivers its result by restarting the app with
+     * ?biometric_auth=success on the URL, which is three fragile steps — an
+     * intent that needs a live user activation, a top-frame navigation, and a
+     * cold start that has to carry the parameter through. Called from the
+     * bridge there is nothing to deliver: the unlock timestamp is written
+     * where isSessionValid already reads it, and the page asks.
+     */
+    private boolean silent = false;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -137,6 +149,11 @@ public class BiometricActivity extends AppCompatActivity {
                 //
                 // So it falls through to the prompt below instead of returning.
                 enabling = true;
+            } else if ("unlock".equals(action)
+                    && "1".equals(intent.getData().getQueryParameter("noredirect"))) {
+                // Raised by the bridge. Fall through to the prompt, then finish
+                // without relaunching anything.
+                silent = true;
             } else if ("disable".equals(action)) {
                 setEnabled(this, false);
                 Log.d(TAG, "Biometric lock disabled via intent");
@@ -146,11 +163,14 @@ public class BiometricActivity extends AppCompatActivity {
             }
         }
 
-        // Check if biometric hardware is available
+        // Check that SOMETHING here can authenticate the user.
+        //
+        // The mask has to be the same one the prompt is built with, below:
+        // asking whether a fingerprint is usable and then showing a prompt that
+        // also accepts the device PIN would turn away a phone that can in fact
+        // let its owner in.
         BiometricManager biometricManager = BiometricManager.from(this);
-        int canAuth = biometricManager.canAuthenticate(
-                BiometricManager.Authenticators.BIOMETRIC_STRONG
-                        | BiometricManager.Authenticators.BIOMETRIC_WEAK);
+        int canAuth = biometricManager.canAuthenticate(allowedAuthenticators());
 
         if (canAuth != BiometricManager.BIOMETRIC_SUCCESS) {
             String errorMsg = getBiometricErrorString(canAuth);
@@ -158,23 +178,42 @@ public class BiometricActivity extends AppCompatActivity {
             Toast.makeText(this,
                     "Biometric authentication is not available on this device: " + errorMsg,
                     Toast.LENGTH_LONG).show();
-            // Not a refusal — the device cannot ask. Reported separately so the
-            // launcher lets the user in and turns the lock off, rather than
-            // barring them from an app whose data lives only on this device.
+            // Not a refusal — the device cannot ask. A lock nothing can open
+            // is not security, it is a locked-out owner, so the lock comes off
+            // rather than the user being barred from an app whose data lives
+            // only on this device.
+            //
+            // The redirect is for the cold-start path only. Called from the
+            // bridge (silent) or from the settings toggle (enabling) the app is
+            // already running underneath, and relaunching it here would throw
+            // away the page — clearing the preference is the whole answer,
+            // because isSessionValid reports an unlocked app once the lock is
+            // off and that is exactly what the page is polling for.
+            setEnabled(this, false);
+            if (silent || enabling) {
+                finish();
+                return;
+            }
             redirectBack(STATUS_UNAVAILABLE);
             return;
         }
 
         // Build the prompt info
-        promptInfo = new BiometricPrompt.PromptInfo.Builder()
-                .setTitle("WalletLens")
-                .setSubtitle("Unlock your portfolio")
-                .setDescription("Use your fingerprint or face to unlock the app")
-                .setAllowedAuthenticators(
-                        BiometricManager.Authenticators.BIOMETRIC_STRONG
-                                | BiometricManager.Authenticators.BIOMETRIC_WEAK)
-                .setNegativeButtonText("Cancel")
-                .build();
+        BiometricPrompt.PromptInfo.Builder builder =
+                new BiometricPrompt.PromptInfo.Builder()
+                        .setTitle("WalletLens")
+                        .setSubtitle("Unlock your portfolio")
+                        .setDescription(credentialFallback()
+                                ? "Use your fingerprint, face, or screen lock to unlock the app"
+                                : "Use your fingerprint or face to unlock the app")
+                        .setAllowedAuthenticators(allowedAuthenticators());
+
+        // The negative button is only legal WITHOUT a device credential: the
+        // builder throws if both are set, because the credential path supplies
+        // its own "Use PIN" affordance and its own cancel.
+        if (!credentialFallback()) builder.setNegativeButtonText("Cancel");
+
+        promptInfo = builder.build();
 
         Executor executor = ContextCompat.getMainExecutor(this);
 
@@ -222,7 +261,9 @@ public class BiometricActivity extends AppCompatActivity {
                             // the sensor refuses until the cooldown expires — and
                             // silently closing leaves the user with no idea why.
                             Toast.makeText(BiometricActivity.this,
-                                    "Too many attempts. Wait a moment and reopen WalletLens.",
+                                    credentialFallback()
+                                            ? "Too many attempts. Reopen WalletLens and use your screen lock."
+                                            : "Too many attempts. Wait a moment and reopen WalletLens.",
                                     Toast.LENGTH_LONG).show();
                             redirectBack(false);
                             return;
@@ -264,6 +305,36 @@ public class BiometricActivity extends AppCompatActivity {
                 });
 
         // The prompt itself is armed from onResume(), not here. See below.
+    }
+
+    /**
+     * Whether the prompt may fall back to the phone's PIN, pattern or password.
+     *
+     * <p>This exists because the lock had no way out. The prompt allowed
+     * biometrics and nothing else, so a finger the sensor had stopped reading —
+     * a cut, a wet hand, a re-enrolment that invalidated the old template, an
+     * OEM face unlock that quietly stopped working after an update — left the
+     * owner of the device standing in front of their own portfolio with no
+     * second way in and no way to turn the lock off, because the setting that
+     * turns it off is behind the lock.
+     *
+     * <p>API 30, deliberately. {@code DEVICE_CREDENTIAL} cannot be combined
+     * with {@code BIOMETRIC_WEAK} on 28 and 29 — the builder throws — and this
+     * app's minSdk is 23, so the older devices keep the biometric-only prompt
+     * with its Cancel button. They are not made worse; the modern ones are made
+     * escapable.
+     */
+    private static boolean credentialFallback() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
+    }
+
+    /** The authenticators both {@code canAuthenticate} and the prompt use. */
+    private static int allowedAuthenticators() {
+        int biometric = BiometricManager.Authenticators.BIOMETRIC_STRONG
+                | BiometricManager.Authenticators.BIOMETRIC_WEAK;
+        return credentialFallback()
+                ? biometric | BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                : biometric;
     }
 
     /**
@@ -323,6 +394,15 @@ public class BiometricActivity extends AppCompatActivity {
         Log.d(TAG, "Unlock token saved – session active for "
                 + (SESSION_DURATION_MS / 1000) + "s");
 
+        if (silent) {
+            // The timestamp above is the whole result. isSessionValid reads it,
+            // the bridge exposes that, and the page is polling for it — so
+            // finishing here returns to an app that is already unlocked.
+            Log.d(TAG, "unlocked without a relaunch");
+            finish();
+            return;
+        }
+
         if (enabling) {
             // Turning the lock ON, with the fingerprint now proven to work.
             // No redirect: the app is running underneath and was never locked,
@@ -357,6 +437,19 @@ public class BiometricActivity extends AppCompatActivity {
      *               asked", which is what produced the relaunch loop.
      */
     private void redirectBack(String status) {
+        // Nothing to redirect to when the app is already on screen.
+        //
+        // Both of these paths were started by a page that is still running
+        // underneath this activity: the bridge unlock polls for the result, and
+        // the settings toggle just wants its prompt answered. Restarting the
+        // app to deliver a status parameter would take the user off whatever
+        // they were doing — which is precisely how enabling the lock used to
+        // drop people back on slide one of onboarding.
+        if (silent || enabling) {
+            finish();
+            return;
+        }
+
         String redirectUrl = getIntent().getStringExtra(EXTRA_REDIRECT_URL);
 
         // Also accept the redirect as a query parameter on the launch URI.

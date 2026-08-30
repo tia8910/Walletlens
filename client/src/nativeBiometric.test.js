@@ -216,3 +216,72 @@ describe('when the prompt is asked for', () => {
     expect(resume).toMatch(/isDestroyed\(\)/)
   })
 })
+
+// ── Nobody is locked out of their own portfolio ─────────────────────────────
+//
+// Reported as "fingerprint activated but can't unlock". The prompt allowed
+// BIOMETRIC_STRONG | BIOMETRIC_WEAK and nothing else, so a finger the sensor
+// had stopped reading left the owner of the device with no second way in — and
+// no way to turn the lock off, because the setting that turns it off is behind
+// the lock. The data is local to the phone; there is no "sign in on another
+// device" to fall back on.
+
+describe('the lock can always be opened by its owner', () => {
+  const src = () => java()
+
+  it('offers the device PIN, pattern or password alongside biometrics', () => {
+    expect(src()).toContain('BiometricManager.Authenticators.DEVICE_CREDENTIAL')
+  })
+
+  it('gates the credential on API 30, where it is legal with BIOMETRIC_WEAK', () => {
+    // DEVICE_CREDENTIAL cannot be combined with BIOMETRIC_WEAK on 28 and 29 —
+    // the builder throws — and minSdk is 23. Those devices keep the
+    // biometric-only prompt; the modern ones get the escape hatch.
+    expect(src()).toMatch(/Build\.VERSION\.SDK_INT >= Build\.VERSION_CODES\.R/)
+  })
+
+  it('never sets a negative button together with the credential', () => {
+    // PromptInfo.Builder throws when both are set, and a throw here is a
+    // crash on the lock screen — strictly worse than the bug being fixed.
+    expect(src()).toMatch(/if \(!credentialFallback\(\)\) builder\.setNegativeButtonText/)
+  })
+
+  it('asks canAuthenticate about the same authenticators the prompt allows', () => {
+    // Asking whether a fingerprint is usable and then showing a prompt that
+    // also takes the PIN would turn away a phone that can in fact let its
+    // owner in.
+    expect(src()).toContain('canAuthenticate(allowedAuthenticators())')
+    expect(src()).toContain('setAllowedAuthenticators(allowedAuthenticators())')
+  })
+
+  it('turns the lock off when nothing on the device can open it', () => {
+    // A lock nothing can pass is not security, it is a locked-out owner.
+    const unavailable = java().slice(java().indexOf('int canAuth ='))
+    const branch = unavailable.slice(0, unavailable.indexOf('// Build the prompt info'))
+    expect(branch).toContain('setEnabled(this, false)')
+  })
+
+  it('does not relaunch the app to deliver a result nobody is waiting for', () => {
+    // Both the bridge unlock and the settings toggle run over a page that is
+    // still on screen. redirectBack cold-starts the app, which is what once
+    // dropped users back on slide one of onboarding.
+    const body = java().slice(java().indexOf('private void redirectBack(String status)'))
+    const head = body.slice(0, body.indexOf('String redirectUrl'))
+    expect(head).toMatch(/if \(silent \|\| enabling\)/)
+    expect(head).toContain('finish()')
+  })
+})
+
+describe('the web escape hatch clears both sides', () => {
+  const lock = readFileSync(join(SRC, 'components', 'BiometricLock.jsx'), 'utf8')
+
+  it('tells the app, not just localStorage', () => {
+    // Clearing only the web copy left the two disagreeing: the lock screen was
+    // gone, but the app still believed the lock was on and Settings still
+    // showed it that way.
+    const body = lock.slice(lock.indexOf('function recoverEntry'))
+    const fn = body.slice(0, body.indexOf('\n  }'))
+    expect(fn).toContain("localStorage.removeItem('wl_biometric_enabled')")
+    expect(fn).toContain('setNativeAppLock(false)')
+  })
+})
