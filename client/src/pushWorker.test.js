@@ -553,3 +553,180 @@ describe('notifications are written in the language the user picked', () => {
     vi.restoreAllMocks()
   })
 })
+
+// ── An Android device, from the database row to Firebase ─────────────────────
+//
+// THE GAP THESE CLOSE.
+//
+// Every job test above uses fakeStore(), which returns whatever it was handed.
+// The real SubStore does not: it decides which rows are worth returning, and
+// its rule was "has a Web Push endpoint". An FCM device has a token instead, so
+// the real scan dropped every Android install and no test above could notice,
+// because none of them used the real scan.
+//
+// So these run the actual store over an actual (fake) D1 holding ONE row — a
+// device with a token and no subscription — through the actual cron dispatch
+// and the actual sender, and check a message reaches Firebase addressed to
+// that token. Every link in the chain the user's phone depends on.
+
+describe('a token-addressed device reaches Firebase', () => {
+  /** Minimal D1 double: enough for SELECT/INSERT/UPDATE as the store uses them. */
+  function d1(rows = {}) {
+    const map = new Map(Object.entries(rows))
+    return {
+      map,
+      prepare(sql) {
+        const st = {
+          args: [],
+          bind(...a) { st.args = a; return st },
+          async all() {
+            return /SELECT key, data FROM subs/.test(sql)
+              ? { results: [...map.entries()].map(([key, data]) => ({ key, data })) }
+              : { results: [] }
+          },
+          async first() {
+            const d = map.get(st.args[0])
+            return d ? { data: d } : null
+          },
+          async run() {
+            if (/^INSERT INTO subs/.test(sql)) map.set(st.args[0], st.args[1])
+            else if (/^UPDATE subs/.test(sql)) map.set(st.args[2], st.args[0])
+            else if (/^DELETE FROM subs/.test(sql)) map.delete(st.args[0])
+            return { success: true }
+          },
+        }
+        return st
+      },
+    }
+  }
+
+  /**
+   * A real RSA key, generated here.
+   *
+   * accessToken() signs a JWT with WebCrypto and importKey rejects anything
+   * that is not a genuine PKCS8 key, so a placeholder string would fail before
+   * the code under test ran. Generating one costs milliseconds and keeps the
+   * signing step honest instead of stubbed.
+   */
+  async function serviceAccount() {
+    const pair = await crypto.subtle.generateKey(
+      { name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
+      true, ['sign', 'verify'],
+    )
+    const pkcs8 = new Uint8Array(await crypto.subtle.exportKey('pkcs8', pair.privateKey))
+    let bin = ''
+    for (const b of pkcs8) bin += String.fromCharCode(b)
+    const body = btoa(bin).match(/.{1,64}/g).join('\n')
+    return JSON.stringify({
+      project_id: 'walletlens-test',
+      client_email: 'push@walletlens-test.iam.gserviceaccount.com',
+      private_key: `-----BEGIN PRIVATE KEY-----\n${body}\n-----END PRIVATE KEY-----\n`,
+    })
+  }
+
+  const TOKEN = 'the-devices-fcm-registration-token'
+
+  /** The row an Android install writes: a token, and no subscription at all. */
+  const fcmRow = (over = {}) => JSON.stringify(sub({
+    subscription: null,
+    transport: 'fcm',
+    fcmToken: TOKEN,
+    ...over,
+  }))
+
+  async function harness(rows) {
+    const { SubStore } = await import('../../workers/push/store.js')
+    const { makeSender } = await import('../../workers/push/index.js')
+    const db = d1(rows)
+    const store = new SubStore(db, { cacheMs: 0 })
+    const env = { FCM_SERVICE_ACCOUNT: await serviceAccount() }
+
+    const calls = []
+    const fetchMock = vi.fn(async (url, init) => {
+      // Only the FCM send carries JSON. The token exchange posts form-encoded
+      // URLSearchParams, and parsing that as JSON throws inside the mock —
+      // which surfaces as "no message was sent" and looks exactly like the bug
+      // under test rather than like a broken double.
+      let body = null
+      try { body = typeof init?.body === 'string' ? JSON.parse(init.body) : null } catch { body = null }
+      calls.push({ url: String(url), body })
+      if (String(url).includes('oauth2.googleapis.com')) {
+        return { ok: true, status: 200, async json() { return { access_token: 'at', expires_in: 3600 } } }
+      }
+      return { ok: true, status: 200, async json() { return {} }, async text() { return '' } }
+    })
+    return { store, jobs: createJobs({ store, send: makeSender(env, store) }), calls, fetchMock, db }
+  }
+
+  beforeEach(async () => {
+    const { resetTokenCache } = await import('../../workers/push/fcm.js')
+    resetTokenCache()
+  })
+
+  it('is returned by the real scan at all', async () => {
+    // The regression in one line. Before the fix this list was empty, and
+    // everything below it was unreachable for an app install.
+    const { store } = await harness({ 'fcm:1': fcmRow() })
+    const all = await store.all()
+    expect(all, 'the crons must be able to see the device').toHaveLength(1)
+    expect(all[0].sub.fcmToken).toBe(TOKEN)
+  })
+
+  it('gets a price target notification through the real cron dispatch', async () => {
+    const { jobs, calls, fetchMock } = await harness({
+      'fcm:1': fcmRow({
+        alerts: [{ id: 7, coin_id: 'bitcoin', coin_symbol: 'BTC', condition: 'above', targetPrice: 100000 }],
+      }),
+    })
+    vi.spyOn(await import('../../push-api/markets.js'), 'fetchCryptoQuotes')
+      .mockResolvedValue({ bitcoin: { price: 101000, change24h: 3 } })
+    vi.stubGlobal('fetch', fetchMock)
+
+    // The real schedule, not the job called by hand.
+    await runSchedule('* * * * *', jobs)
+
+    const send = calls.find(c => c.url.includes('fcm.googleapis.com'))
+    expect(send, 'a message was posted to Firebase').toBeTruthy()
+    expect(send.body.message.token, 'addressed to this device').toBe(TOKEN)
+    expect(send.body.message.data.channel).toBe('target')
+    // HIGH or it waits out Doze on an idle phone, which is most of the time
+    // the app is closed — the whole point of the transport.
+    expect(send.body.message.android.priority).toBe('HIGH')
+
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('gets a scheduled channel — the one that had never arrived', async () => {
+    // The hack, the academy question and the portfolio pulse all run from
+    // checkDaily on the hourly cron. Every one of them was silent on an app
+    // install for the same single reason.
+    const now = atHour(HACK_HOUR)
+    const { jobs, calls, fetchMock } = await harness({
+      'fcm:1': fcmRow({ lastHackAt: now - HACK_GAP_MS - 1, hacksSent: [], tz: 0 }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await runSchedule('5 * * * *', jobs)
+
+    const send = calls.find(c => c.url.includes('fcm.googleapis.com'))
+    expect(send, 'the hourly job reached the device').toBeTruthy()
+    expect(send.body.message.token).toBe(TOKEN)
+
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+  })
+
+  it('keeps the device addressable after a cron has written the row back', async () => {
+    // save() merges the cron's copy over storage. If the address were not
+    // user-owned, this write would be where a rotated token got clobbered —
+    // and the device would go quiet again with nothing to see.
+    const { store } = await harness({ 'fcm:1': fcmRow() })
+    const [{ key, sub: row }] = await store.all()
+    await store.save(key, { ...row, lastHackAt: 999 })
+    store.invalidate()
+    const after = await store.all()
+    expect(after, 'still visible to the next scan').toHaveLength(1)
+    expect(after[0].sub.fcmToken, 'still addressable').toBe(TOKEN)
+  })
+})

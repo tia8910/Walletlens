@@ -128,7 +128,17 @@ async function sendViaFcm(env, store, sub, payload, { now }) {
   }
 }
 
-function makeSender(env, store) {
+/**
+ * Exported as a test seam, in the same spirit as fcm.js's resetTokenCache.
+ *
+ * The transport decision is the one piece of delivery no other test could
+ * reach: the jobs are tested against a stand-in sender, and the store is
+ * tested without one. Between those two sat the question nobody was asking —
+ * does a token-addressed device, loaded from a real scan, actually reach
+ * Firebase — which is exactly where the crons' blindness to the Android app
+ * lived.
+ */
+export function makeSender(env, store) {
   return async function send(sub, payload, { now = Date.now() } = {}) {
     // One decision, two transports. Which one a device wants is a property of
     // the subscription, not of the notification — jobs.js has no idea either
