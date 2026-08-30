@@ -84,6 +84,37 @@ export function decideEffect({
     return { effect: null, payload: null, nextState: next }
   }
 
+  // The first open of the day belongs to the explode, outright.
+  //
+  // It used to be last of the three, on the reasoning that the rarest occasion
+  // should win. In practice that reasoning inverted itself: a portfolio that
+  // grows sets a new high on most mornings, so the ATH took nearly every first
+  // open — and because the day is marked whichever effect wins, the explode
+  // was not merely postponed, it was consumed. The "once a day, every day"
+  // effect became the one that almost never played.
+  //
+  // Ordering it first costs the ATH nothing, because the high is deliberately
+  // NOT advanced on this path. The record is still a record on the next price
+  // poll a few seconds later, and fires then — so a morning that breaks a high
+  // now shows the welcome and then the record, rather than the record and
+  // nothing else ever.
+  if (firstOpenToday) {
+    // A device that has never stored a high is ARMED here rather than left at
+    // zero. There is no celebration to lose — the first number a fresh install
+    // sees is never celebrated (see the ATH branch below) — and without this a
+    // user who opens the app and closes it again before the next poll would
+    // never record a high at all, so the ATH could never arm.
+    //
+    // An existing high is deliberately left alone, so a genuine record still
+    // fires seconds later instead of being swallowed by the welcome.
+    if (prev.ath <= 0 && totalValue > 0) next.ath = totalValue
+    return {
+      effect: EXPLODE,
+      payload: { leader: leader || null },
+      nextState: next,
+    }
+  }
+
   const isRecord = totalValue > prev.ath
   if (isRecord) next.ath = totalValue
 
@@ -106,14 +137,6 @@ export function decideEffect({
     return {
       effect: ROCKET,
       payload: { changePct, leader: leader || null },
-      nextState: next,
-    }
-  }
-
-  if (firstOpenToday) {
-    return {
-      effect: EXPLODE,
-      payload: { leader: leader || null },
       nextState: next,
     }
   }
