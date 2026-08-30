@@ -64,41 +64,51 @@ describe('the first open of the day', () => {
 
 describe('the rocket', () => {
   const up = { changePct: ROCKET_THRESHOLD_PCT + 1 }
+  // The day's first open belongs to the burst, so every rocket case here is a
+  // LATER poll on a day already opened. Written out rather than inherited from
+  // a previous decide() call: a helper that quietly starts on an unopened day
+  // would make each of these assert the burst instead, which is how this suite
+  // read before the ordering changed.
+  const opened = { ...EMPTY_STATE, ath: 10_000, day: dayKey(noon, 0) }
 
   it('launches on a day up more than the threshold', () => {
-    expect(decide(up).effect).toBe(ROCKET)
+    expect(decide({ ...up, state: opened }).effect).toBe(ROCKET)
   })
 
   it('does not launch just below the threshold', () => {
     // 4.9% is a good day. It is not this.
-    const { effect } = decide({ changePct: ROCKET_THRESHOLD_PCT - 0.1 })
-    expect(effect).toBe(EXPLODE)   // still the day's first open
+    const { effect } = decide({ changePct: ROCKET_THRESHOLD_PCT - 0.1, state: opened })
+    expect(effect).toBeNull()
   })
 
   it('launches exactly at the threshold', () => {
-    expect(decide({ changePct: ROCKET_THRESHOLD_PCT }).effect).toBe(ROCKET)
+    expect(decide({ changePct: ROCKET_THRESHOLD_PCT, state: opened }).effect).toBe(ROCKET)
   })
 
   it('launches once a day, not once a poll', () => {
     // Without the rocketDay guard this fires on every price refresh for as
     // long as the day stays green, which is most of a good day.
-    const first = decide(up)
+    const first = decide({ ...up, state: opened })
     expect(first.effect).toBe(ROCKET)
     const again = decide({ ...up, state: first.nextState })
     expect(again.effect).toBeNull()
   })
 
-  it('launches again the next day if that day is also up', () => {
-    const first = decide(up)
-    const tomorrow = decide({ ...up, now: noon + DAY, state: first.nextState })
-    expect(tomorrow.effect).toBe(ROCKET)
+  it('launches again the next day, after that day’s burst', () => {
+    const first = decide({ ...up, state: opened })
+    // Tomorrow opens with the burst...
+    const open = decide({ ...up, now: noon + DAY, state: first.nextState })
+    expect(open.effect).toBe(EXPLODE)
+    // ...and the rocket follows on the next poll, the day now being marked.
+    const later = decide({ ...up, now: noon + DAY + 60_000, state: open.nextState })
+    expect(later.effect).toBe(ROCKET)
   })
 
   it('spends the day marker even though the burst did not play', () => {
     // Both are "the app opened today" events. Leaving the day unmarked would
     // fire the burst an hour later and read as celebrating twice for one
     // occasion.
-    const { nextState } = decide(up)
+    const { nextState } = decide({ ...up, state: opened })
     expect(nextState.day).toBe(dayKey(noon, 0))
   })
 })
@@ -120,6 +130,9 @@ describe('the all-time high', () => {
     // sight of the app is the effect that is supposed to be the rarest.
     const { effect, nextState } = decide({ state: EMPTY_STATE })
     expect(effect).toBe(EXPLODE)
+    // Armed on the burst path so the ATH can fire on some later day. Without
+    // it, someone who opens the app and closes it before the next price poll
+    // would never store a high at all.
     expect(nextState.ath).toBe(1000)   // recorded, just not celebrated
   })
 
@@ -195,5 +208,66 @@ describe('pickLeader', () => {
 
   it('picks the least-bad day when everything is down', () => {
     expect(pickLeader([h('btc', -9), h('eth', -2)]).symbol).toBe('ETH')
+  })
+})
+
+
+// ── The burst that almost never played ──────────────────────────────────────
+//
+// Reported as "explode still doesn't appear on the first open of the day".
+//
+// Nothing was wrong with the burst. It was simply LAST of the three, on the
+// reasoning that the rarest occasion should win — and that reasoning inverted
+// itself in practice. A portfolio that grows sets a new high most mornings, so
+// the ATH took nearly every first open; and because the day is marked whichever
+// effect wins, the burst was not postponed but consumed. The "once a day, every
+// day" effect became the one that almost never played.
+
+describe('a portfolio that keeps growing', () => {
+  const start = Date.UTC(2026, 7, 20, 9, 0, 0)
+
+  it('still gets its burst on a morning that breaks a high', () => {
+    // Yesterday closed at 1000, which is the stored high. This morning opens
+    // at 1100 — a record. Before the fix this returned ATH and the day was
+    // spent, so the burst never played.
+    const state = { ...EMPTY_STATE, ath: 1000, day: dayKey(start - DAY, 0) }
+    const open = decideEffect({ now: start, totalValue: 1100, state })
+    expect(open.effect).toBe(EXPLODE)
+  })
+
+  it('and the record still lands, on the next poll rather than never', () => {
+    const state = { ...EMPTY_STATE, ath: 1000, day: dayKey(start - DAY, 0) }
+    const open = decideEffect({ now: start, totalValue: 1100, state })
+    const poll = decideEffect({ now: start + 30_000, totalValue: 1100, state: open.nextState })
+    expect(poll.effect, 'the high must not be swallowed by the welcome').toBe(ATH)
+    expect(poll.payload.previous).toBe(1000)
+  })
+
+  it('gets the burst every day across a rising week', () => {
+    // The regression in one assertion: seven consecutive mornings on a
+    // portfolio that gains every day. Every one of them must open with the
+    // burst. Before the fix, six of the seven were ATH.
+    let state = { ...EMPTY_STATE, ath: 1000, day: dayKey(start - DAY, 0) }
+    const opens = []
+    for (let d = 0; d < 7; d++) {
+      const total = 1100 + d * 100
+      const open = decideEffect({ now: start + d * DAY, totalValue: total, state })
+      opens.push(open.effect)
+      // The rest of the day's polls, which is where the record now lands.
+      state = decideEffect({
+        now: start + d * DAY + 60_000, totalValue: total, state: open.nextState,
+      }).nextState
+    }
+    expect(opens).toEqual(Array(7).fill(EXPLODE))
+  })
+
+  it('does not fire twice on one open', () => {
+    // The burst marks the day, so a second poll seconds later must not repeat
+    // it — the record is a different occasion, the burst is not.
+    const state = { ...EMPTY_STATE, ath: 5000, day: dayKey(start - DAY, 0) }
+    const open = decideEffect({ now: start, totalValue: 1100, state })
+    const poll = decideEffect({ now: start + 5000, totalValue: 1100, state: open.nextState })
+    expect(open.effect).toBe(EXPLODE)
+    expect(poll.effect).toBeNull()
   })
 })
