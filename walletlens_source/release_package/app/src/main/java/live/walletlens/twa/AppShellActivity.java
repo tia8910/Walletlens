@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.MimeTypeMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -592,7 +593,7 @@ public class AppShellActivity extends ComponentActivity {
             pendingFiles = callback;
 
             try {
-                filePicker.launch(params.createIntent());
+                filePicker.launch(buildFileIntent(params));
                 return true;
             } catch (Throwable e) {
                 Log.w(TAG, "no file picker available: " + e);
@@ -631,6 +632,66 @@ public class AppShellActivity extends ComponentActivity {
     boolean micAllowed() {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                 == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * The intent to open for a file input.
+     *
+     * <p>NOT params.createIntent(), which this used and which fails two ways.
+     *
+     * <p>It returns ACTION_GET_CONTENT, and some pickers answer that with a
+     * {@code file://} URI. A WebView cannot read one: setAllowFileAccess
+     * defaults to FALSE from API 30, so the page receives a File it cannot
+     * read and the import fails with nothing to point at.
+     * ACTION_OPEN_DOCUMENT always returns a readable {@code content://} URI,
+     * which is the whole reason the Storage Access Framework exists.
+     *
+     * <p>And it cannot map an {@code accept} written as file EXTENSIONS. This
+     * app's spreadsheet input asks for ".xlsx,.xls,.csv", so the chooser opened
+     * on a type no app claims and listed nothing. Extensions are resolved to
+     * MIME types here, and anything unresolvable widens to the catch-all rather
+     * than narrowing to a type that matches nothing.
+     */
+    @NonNull
+    private Intent buildFileIntent(@NonNull WebChromeClient.FileChooserParams params) {
+        List<String> mimes = new ArrayList<>();
+        boolean unknown = false;
+
+        String[] accepts = params.getAcceptTypes();
+        for (String accept : accepts != null ? accepts : new String[0]) {
+            if (accept == null) continue;
+            String a = accept.trim();
+            if (a.isEmpty()) continue;
+            if (a.startsWith(".")) {
+                String mime = MimeTypeMap.getSingleton()
+                        .getMimeTypeFromExtension(a.substring(1).toLowerCase());
+                if (mime != null) mimes.add(mime);
+                else unknown = true;      // e.g. .xls on an older map
+            } else if (a.contains("/")) {
+                mimes.add(a);
+            } else {
+                unknown = true;
+            }
+        }
+
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        // A single type as setType, several as EXTRA_MIME_TYPES with the
+        // catch-all — that is the pairing SAF expects, and setting only the
+        // extra without a type shows nothing on some devices.
+        if (unknown || mimes.isEmpty()) {
+            intent.setType("*/*");
+        } else if (mimes.size() == 1) {
+            intent.setType(mimes.get(0));
+        } else {
+            intent.setType("*/*");
+            intent.putExtra(Intent.EXTRA_MIME_TYPES, mimes.toArray(new String[0]));
+        }
+
+        if (params.getMode() == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE) {
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        }
+        return intent;
     }
 
     /**
