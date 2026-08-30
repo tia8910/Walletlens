@@ -372,6 +372,65 @@ public class WalletLensBridge {
         return n.length() > 100 ? n.substring(n.length() - 100) : n;
     }
 
+    /**
+     * Ask Play to show its in-app review card.
+     *
+     * <p>Directly, for the same reason promptAppLock is: the intent path went
+     * out through a hidden iframe and needed a live user activation, and both
+     * of those fail without saying so. The review prompt is the worst place
+     * for a silent failure — nothing about it is visible even when it works,
+     * because Play declines to show the card more often than not, so a
+     * dropped intent and a spent quota look identical from here.
+     *
+     * @param source        which rule earned the ask, for logcat
+     * @param fallbackStore open the store listing if Play shows nothing —
+     *                      true only when the user went looking for it
+     */
+    @JavascriptInterface
+    public void requestReview(String source, boolean fallbackStore) {
+        Activity a = activity();
+        if (a == null) return;
+        try {
+            String url = "walletlens://review?source="
+                    + Uri.encode(source == null || source.isEmpty() ? "unknown" : source)
+                    + (fallbackStore ? "&fallback=store" : "");
+            Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            i.setClass(a, ReviewActivity.class);
+            a.startActivity(i);
+        } catch (Throwable e) {
+            Log.w(TAG, "could not ask for a review: " + e);
+        }
+    }
+
+    /**
+     * Raise the fingerprint prompt to turn App Lock on.
+     *
+     * <p>Directly, not through walletlens://. The intent path has three ways to
+     * fail silently and it was hitting at least one of them: fireNativeIntent
+     * refuses without a live user activation, the navigation moves the top
+     * frame, and the URL has to survive the shell's scheme routing. None of
+     * that is needed here — this is a method call — and all three were
+     * invisible when they failed, which is how "Enable" came to sit on
+     * "Setting up…" waiting for a prompt that was never asked for.
+     *
+     * <p>The activity writes the preference itself once the prompt is passed,
+     * so a refused or cancelled prompt leaves the lock off. Callers poll
+     * appLockEnabled().
+     */
+    @JavascriptInterface
+    public void promptAppLock() {
+        Activity a = activity();
+        if (a == null) return;
+        try {
+            Intent i = new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("walletlens://biometric-auth?action=enable"));
+            i.setClass(a, BiometricActivity.class);
+            a.startActivity(i);
+        } catch (Throwable e) {
+            Log.w(TAG, "could not raise the App Lock prompt: " + e);
+        }
+    }
+
     // ── Microphone ───────────────────────────────────────────────────────
 
     /** Whether the app may record audio. */

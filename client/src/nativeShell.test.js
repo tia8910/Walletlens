@@ -281,7 +281,19 @@ describe('the WebView shell', () => {
     // up there. The TWA never had this because the window was Chrome's.
     const src = code('AppShellActivity.java')
     expect(src).toMatch(/setOnApplyWindowInsetsListener/)
-    expect(src).toMatch(/web\.setPadding\(bars\.left, bars\.top, bars\.right, bars\.bottom\)/)
+    expect(src).toMatch(/v\.setPadding\(bars\.left, bars\.top, bars\.right, bars\.bottom\)/)
+  })
+
+  it('pads the root, not the WebView', () => {
+    // A ViewGroup's padding shrinks the area its children get — plain layout,
+    // and it cannot be argued with. A WebView applies its padding to its own
+    // content, and whether that survives a page of fixed-position elements is
+    // a question about Chromium's internals. Two attempts at the second
+    // mechanism changed nothing on a real device.
+    const src = code('AppShellActivity.java')
+    expect(src).toMatch(/private ViewGroup shellRoot/)
+    expect(src, 'the WebView must not be the thing being padded')
+      .not.toMatch(/web\.setPadding\(/)
   })
 
   it('asks for an insets dispatch instead of assuming one', () => {
@@ -374,6 +386,38 @@ describe('the WebView shell', () => {
     const src = code('AppShellActivity.java')
     const body = src.slice(src.indexOf('private Intent buildFileIntent'))
     expect(body.slice(0, body.indexOf('return intent;'))).toMatch(/unknown \|\| mimes\.isEmpty\(\)/)
+  })
+
+  it('pads the top even when the insets never arrive', () => {
+    // The listener is the correct mechanism and it failed to fix this twice on
+    // a real device, for reasons not visible from here: a dispatch that never
+    // happens, an OEM window reporting zero, a WebView resetting its padding.
+    // The fallback asks the platform how tall the status bar is.
+    const src = code('AppShellActivity.java')
+    expect(src).toMatch(/private void ensureTopInset\(\)/)
+    expect(src, 'the fallback pads the root too').toMatch(/shellRoot\.setPadding\(/)
+    expect(src, 'it must run once the page is up').toMatch(/onPageFinished/)
+    // The dimension name is a string literal, which code() blanks — so this
+    // one reads the raw source. Anchored on the CALL so a mention in prose
+    // cannot satisfy it.
+    expect(read('AppShellActivity.java')).toMatch(/systemDimen\("status_bar_height"\)/)
+  })
+
+  it('does not guess the bottom inset', () => {
+    // navigation_bar_height reports a full bar even on a device using gesture
+    // navigation, where the real inset is a thin handle — applying it would
+    // carve dead space out of the bottom of every screen.
+    expect(code('AppShellActivity.java')).not.toMatch(/navigation_bar_height/)
+  })
+
+  it('raises the App Lock prompt through the bridge', () => {
+    // sendNativeIntent refuses without a live user activation, moves the top
+    // frame, and has to survive scheme routing. All three fail silently, and
+    // at least one of them left "Enable" sitting on "Setting up…" waiting for
+    // a prompt that was never asked for.
+    expect(code('WalletLensBridge.java')).toMatch(/public void promptAppLock\(\)/)
+    const lock = readFileSync(join(SRC, 'components/BiometricLock.jsx'), 'utf8')
+    expect(lock).toMatch(/promptNativeAppLock\(\)/)
   })
 
   it('holds its host weakly, so the Activity can be collected', () => {

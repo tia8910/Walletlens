@@ -127,6 +127,10 @@ export const DEVICE_ONLY_KEYS = [
   // a flow, not a fact about the portfolio — restoring it would drop a new
   // device back onto slide 3 of an introduction it never started.
   'wl_welcome_step_v2',
+  // Whether this device has had its one welcome notification. A property of
+  // the install, not of the portfolio: a new device has not been welcomed and
+  // should be.
+  'wl_push_welcomed',
   // UI, session and scheduling state. Harmless to lose, noise to carry.
   'wl_active_tab', 'wl_assistant_fab_pos', 'wl_assistant_history',
   'wl_tour_done_v2', 'wl_vision_explained', 'wl_vision_visited',

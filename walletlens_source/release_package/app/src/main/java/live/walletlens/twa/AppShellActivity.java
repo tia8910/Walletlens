@@ -125,6 +125,21 @@ public class AppShellActivity extends ComponentActivity {
 
     private WebView web;
 
+    /**
+     * The view that carries the inset padding.
+     *
+     * The padding goes on the ROOT, not on the WebView. A ViewGroup's padding
+     * shrinks the area its children get, which is plain layout and cannot be
+     * argued with; a WebView's padding is applied by the WebView to its own
+     * content, and whether that survives a page with fixed-position elements
+     * is a question about Chromium's internals. Two attempts at the second
+     * mechanism changed nothing on a real device, so this uses the first.
+     *
+     * <p>The root also paints the brand colour, so the inset strips look like
+     * the TWA's STATUS_BAR_COLOR rather than a transparent gap.
+     */
+    private ViewGroup shellRoot;
+
     /** onResume runs on every return to the app; the handoff must not. */
     private boolean handoffChecked;
 
@@ -215,6 +230,7 @@ public class AppShellActivity extends ComponentActivity {
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(BAR_COLOR);
         root.addView(web);
+        shellRoot = root;
         setContentView(root);
         applyInsets(root);
 
@@ -304,7 +320,7 @@ public class AppShellActivity extends ComponentActivity {
             Insets bars = windowInsets.getInsets(
                     WindowInsetsCompat.Type.systemBars()
                             | WindowInsetsCompat.Type.displayCutout());
-            if (web != null) web.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return WindowInsetsCompat.CONSUMED;
         });
 
@@ -486,6 +502,15 @@ public class AppShellActivity extends ComponentActivity {
      */
     private class ShellClient extends WebViewClient {
         @Override
+        public void onPageFinished(WebView view, String url) {
+            super.onPageFinished(view, url);
+            // Last chance to notice the insets never arrived. By now the page
+            // is on screen, so if the padding is still zero it is not going to
+            // be set by anything else.
+            ensureTopInset();
+        }
+
+        @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             Uri url = request.getUrl();
             if (url == null) return false;
@@ -656,6 +681,51 @@ public class AppShellActivity extends ComponentActivity {
     boolean micAllowed() {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                 == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * Pad the top from the system's own dimension when the insets never came.
+     *
+     * <h3>Why a fallback exists at all</h3>
+     *
+     * The listener above is the correct mechanism and it has now failed to fix
+     * this twice on a real device, for reasons this code cannot see from here:
+     * a dispatch that never happens, an OEM window that reports zero, a
+     * WebView that resets its own padding. Each is plausible and none is
+     * diagnosable without the phone in hand.
+     *
+     * <p>So this asks the platform how tall the status bar is and uses that.
+     * It is cruder — the value ignores cutouts and does not change with
+     * rotation — but it is a number every Android device has had for fifteen
+     * years, and a page an inch too low beats a page with its header
+     * underneath the clock.
+     *
+     * <p>TOP ONLY. navigation_bar_height reports a full bar even on a device
+     * using gesture navigation, where the real inset is a thin handle, so
+     * applying it would carve dead space out of the bottom of every screen.
+     * The listener handles the bottom correctly when it runs, and when it does
+     * not, nothing there is being cropped.
+     *
+     * <p>Does nothing once the listener has set a padding — that path is
+     * better in every way, and this only exists for when it did not happen.
+     */
+    private void ensureTopInset() {
+        if (shellRoot == null || shellRoot.getPaddingTop() > 0) return;
+        int top = systemDimen("status_bar_height");
+        if (top <= 0) return;
+        Log.w(TAG, "window insets never arrived; padding " + top + "px from resources");
+        shellRoot.setPadding(shellRoot.getPaddingLeft(), top,
+                shellRoot.getPaddingRight(), shellRoot.getPaddingBottom());
+    }
+
+    /** A framework dimension by name, or 0 when this platform has no such thing. */
+    private int systemDimen(@NonNull String name) {
+        try {
+            int id = getResources().getIdentifier(name, "dimen", "android");
+            return id > 0 ? getResources().getDimensionPixelSize(id) : 0;
+        } catch (Throwable e) {
+            return 0;
+        }
     }
 
     /**

@@ -54,6 +54,8 @@ const PREFS_KEY = 'wl_push_prefs'
 const WATCH_CACHE_KEY = 'wl_push_watch'
 const SEEN_PING_KEY = 'wl_push_seen_ts'
 const OPTOUT_KEY = 'wl_push_optout'
+/** Whether this device has already had its one welcome notification. */
+const WELCOMED_KEY = 'wl_push_welcomed'
 const ASK_KEY = 'wl_push_ask'
 
 // Mirrors DEFAULT_PREFS in push-api/notify-logic.js. The server sanitizes
@@ -592,6 +594,22 @@ function watchShellPermission(onChange) {
  * arrive must not present itself as that having failed.
  */
 async function sendWelcomePush() {
+  // Once per device, ever.
+  //
+  // Fired from autoEnablePush as well as from the toggle, and that is the
+  // point: when the OS permission is already granted — carried over from an
+  // earlier install, say — nothing ever asks, push is registered silently, and
+  // the user is given no sign at all that notifications are on. This is the
+  // one thing that tells them.
+  //
+  // The flag is written BEFORE the send. A welcome that fails is not worth
+  // retrying on every launch for ever, and the toggle in Settings can send a
+  // test on demand.
+  try {
+    if (localStorage.getItem(WELCOMED_KEY)) return
+    localStorage.setItem(WELCOMED_KEY, String(Date.now()))
+  } catch { /* private mode: send it and accept the risk of a repeat */ }
+
   try { await sendTestPush() } catch { /* the toggle is on either way */ }
 }
 
@@ -699,7 +717,11 @@ export async function autoEnablePush() {
       if (shellRegistered()) return { ok: false, reason: 'already-on' }
       const native = await import('./nativePush.js')
       const res = await native.registerNativePush({ watch: watchFromStorage() })
-      return res.ok ? { ok: true } : { ok: false, reason: res.reason }
+      if (!res.ok) return { ok: false, reason: res.reason }
+      // Registered without anyone being asked, because the OS permission was
+      // already there. Without this the user has no way to know.
+      sendWelcomePush()
+      return { ok: true }
     }
 
     if (!VAPID_PUBLIC) return { ok: false, reason: 'unsupported' }

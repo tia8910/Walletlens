@@ -89,6 +89,21 @@ const isAndroidTWA = detectAndroidTWA()
  *
  * @returns {boolean} whether the app was actually told
  */
+/**
+ * Ask the app to raise the fingerprint prompt.
+ *
+ * @returns {boolean} whether the app was reached at all — false in a TWA
+ *   install or a browser, where the caller falls back to the intent.
+ */
+function promptNativeAppLock() {
+  try {
+    const b = window.AndroidBridge
+    if (!b || typeof b.promptAppLock !== 'function') return false
+    b.promptAppLock()
+    return true
+  } catch { return false }
+}
+
 /** Whether the app can be asked about its own App Lock flag. */
 function appLockReadable() {
   try { return typeof window.AndroidBridge?.appLockEnabled === 'function' } catch { return false }
@@ -104,7 +119,9 @@ function appLockReadable() {
  * armed.
  */
 async function waitForAppLock() {
-  const deadline = Date.now() + 45_000
+  // Long enough for a considered fingerprint, short enough that a prompt which
+  // never appeared reports back rather than holding the button indefinitely.
+  const deadline = Date.now() + 20_000
   while (Date.now() < deadline) {
     try { if (window.AndroidBridge.appLockEnabled()) return true } catch { return false }
     await new Promise(r => setTimeout(r, 250))
@@ -291,7 +308,10 @@ export function useBiometricLock() {
     // unverified behaviour under a new name. The intent raises the prompt, and
     // the app writes the flag itself once it has been passed.
     if (isAndroidTWA) {
-      sendNativeIntent('enable')
+      // The bridge where there is one. sendNativeIntent can refuse silently —
+      // it needs a live user activation — and that is how this ended up
+      // sitting on "Setting up…" waiting for a prompt nobody had asked for.
+      if (!promptNativeAppLock()) sendNativeIntent('enable')
 
       // Wait for the app to say the lock is on. Only reachable through the
       // bridge; a TWA install has no way to answer, so it keeps the old
