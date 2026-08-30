@@ -284,6 +284,25 @@ describe('the WebView shell', () => {
     expect(src).toMatch(/web\.setPadding\(bars\.left, bars\.top, bars\.right, bars\.bottom\)/)
   })
 
+  it('asks for an insets dispatch instead of assuming one', () => {
+    // setOnApplyWindowInsetsListener does not trigger a dispatch. If the window
+    // has already sent its insets by the time the listener is registered, it is
+    // never called, the padding stays zero, and the page renders under the
+    // status bar exactly as if none of it existed. That is how the first
+    // version of this fix shipped without fixing anything.
+    const src = code('AppShellActivity.java')
+    expect(src).toMatch(/ViewCompat\.requestApplyInsets\(root\)/)
+  })
+
+  it('is edge-to-edge on every Android version, not just 15', () => {
+    // targetSdk 35+ is edge-to-edge on Android 15 and NOT on 14 and below —
+    // two layouts, and the padding can only correct one of them, because the
+    // insets come back zero on the other. Asking for it everywhere leaves one
+    // behaviour to reason about.
+    expect(code('AppShellActivity.java'))
+      .toMatch(/setDecorFitsSystemWindows\(getWindow\(\), false\)/)
+  })
+
   it('pads for the camera cutout too, not just the bars', () => {
     // A punch-hole sits beside the status bar in landscape rather than within
     // it, so systemBars() alone still loses a strip of the page to the lens.

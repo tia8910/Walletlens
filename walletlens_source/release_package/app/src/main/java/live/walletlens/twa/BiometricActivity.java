@@ -88,6 +88,15 @@ public class BiometricActivity extends AppCompatActivity {
      */
     private boolean promptShown = false;
 
+    /**
+     * True when this run exists to TURN THE LOCK ON, not to open the app.
+     *
+     * The prompt is the same; what happens after it is not. On success the
+     * preference is written and the activity simply finishes, back to the page
+     * that asked — no redirect, because the app was never locked.
+     */
+    private boolean enabling = false;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -117,11 +126,17 @@ public class BiometricActivity extends AppCompatActivity {
         if (intent != null && intent.getData() != null) {
             String action = intent.getData().getQueryParameter("action");
             if ("enable".equals(action)) {
-                setEnabled(this, true);
-                Log.d(TAG, "Biometric lock enabled via intent");
-                Toast.makeText(this, "🔒 Biometric lock enabled", Toast.LENGTH_SHORT).show();
-                finish();
-                return;
+                // VERIFY, then enable. This used to write the preference and
+                // finish, with no prompt at all — so "Enable" on the onboarding
+                // slide asked for nothing, showed nothing but a toast, and moved
+                // on. Nothing about it looked like it had worked, and nothing
+                // had confirmed the user could actually pass the lock they had
+                // just switched on. Someone whose only enrolled fingerprint no
+                // longer reads would have locked themselves out of their own
+                // portfolio and found out on the next cold start.
+                //
+                // So it falls through to the prompt below instead of returning.
+                enabling = true;
             } else if ("disable".equals(action)) {
                 setEnabled(this, false);
                 Log.d(TAG, "Biometric lock disabled via intent");
@@ -307,6 +322,18 @@ public class BiometricActivity extends AppCompatActivity {
 
         Log.d(TAG, "Unlock token saved – session active for "
                 + (SESSION_DURATION_MS / 1000) + "s");
+
+        if (enabling) {
+            // Turning the lock ON, with the fingerprint now proven to work.
+            // No redirect: the app is running underneath and was never locked,
+            // and relaunching it here is what once dropped users back to slide
+            // one of onboarding.
+            setEnabled(this, true);
+            Log.d(TAG, "Biometric lock enabled after a successful prompt");
+            Toast.makeText(this, "🔒 App Lock is on", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
         redirectBack(true);
     }

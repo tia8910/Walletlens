@@ -17,7 +17,7 @@
 // and web-push → WebCrypto (webpush.js), which is the only genuinely new code.
 
 import {
-  asLang, bumpSent, DEFAULT_PREFS, deliveryFor, localDayKey,
+  asLang, bumpSent, copy, DEFAULT_PREFS, deliveryFor, localDayKey,
   pushTopic, sanitizeAlerts, sanitizePrefs, sanitizeSetup, sanitizeTz,
   sanitizeWatch, sanitizeZakatDue, trimZakatSent,
   normalizeSub as normalize,
@@ -377,10 +377,13 @@ async function handle(req, env, store) {
     if (!found) return json({ error: 'unknown_subscription' }, headers, 404)
     const send = makeSender(env, store)
     const lang = asLang(body.lang) ?? found.sub.lang
+    // Localised, like every other notification. This was hard-coded English,
+    // which made the one notification whose whole job is to prove the feature
+    // works arrive in the wrong language for most of the people it reassures.
     const ok = await send(found.sub, {
       channel: 'test',
-      title: 'WalletLens',
-      body: 'Notifications are working.',
+      title: copy('welcomeTitle', lang)(),
+      body: copy('welcomeBody', lang)(),
       tag: 'wl-test',
       url: '/settings',
       lang,

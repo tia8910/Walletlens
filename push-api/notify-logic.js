@@ -47,6 +47,29 @@ export function fmtPrice(n) {
 // way around the duplication without shipping the whole translation table to
 // Deno Deploy, and these are short strings.
 export const COPY = {
+  // — The one sent the moment notifications are switched on —
+  //
+  // It is a welcome and a test at once, and the test half is the point: it is
+  // the only proof the user ever gets that the whole path works — permission,
+  // token, server, FCM, and the channel the app posts on. Without it "enabled"
+  // is a toggle position, and the first real notification might be days away.
+  welcomeTitle: {
+    en: () => 'Notifications are on',
+    ar: () => 'تم تفعيل الإشعارات',
+    fr: () => 'Notifications activées',
+    es: () => 'Notificaciones activadas',
+    de: () => 'Benachrichtigungen sind an',
+    it: () => 'Notifiche attive',
+  },
+  welcomeBody: {
+    en: () => 'This is what they look like. We’ll tell you when your assets move, and nothing else.',
+    ar: () => 'هكذا ستبدو. سنخبرك عند تحرّك أصولك، ولا شيء غير ذلك.',
+    fr: () => 'Voilà à quoi elles ressemblent. Nous vous préviendrons quand vos actifs bougent, et rien d’autre.',
+    es: () => 'Así se ven. Te avisaremos cuando tus activos se muevan, y nada más.',
+    de: () => 'So sehen sie aus. Wir melden uns, wenn sich deine Werte bewegen — sonst nicht.',
+    it: () => 'Ecco come appaiono. Ti avviseremo quando i tuoi asset si muovono, e nient’altro.',
+  },
+
   // — Price targets the user set explicitly (pre-existing channel) —
   targetTitle: {
     en: (dir, sym) => `${dir} ${sym} hit your target`,

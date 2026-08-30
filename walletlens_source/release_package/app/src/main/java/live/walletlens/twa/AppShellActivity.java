@@ -35,6 +35,7 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
@@ -197,6 +198,20 @@ public class AppShellActivity extends ComponentActivity {
         // The WebView sits inside a root that paints the bars' background, so
         // the inset strips are brand-coloured rather than transparent gaps.
         // See applyInsets for why any of this is needed.
+        // Opt IN to edge-to-edge, explicitly, on every Android version.
+        //
+        // Counter-intuitive for a fix whose symptom was content UNDER the
+        // status bar, and it is the point: an app targeting SDK 35+ is
+        // edge-to-edge on Android 15 whether it asks or not, and is NOT on 14
+        // and below. Two layouts, one of which the padding below corrects and
+        // one of which it cannot, because the insets come back zero there.
+        //
+        // Asking for it everywhere collapses that into one case: the window
+        // always spans the screen, the insets are always real, and the padding
+        // is always what positions the page. One behaviour to reason about
+        // instead of a version check.
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(BAR_COLOR);
         root.addView(web);
@@ -292,6 +307,15 @@ public class AppShellActivity extends ComponentActivity {
             if (web != null) web.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return WindowInsetsCompat.CONSUMED;
         });
+
+        // Ask for a dispatch rather than assuming one is coming.
+        //
+        // setOnApplyWindowInsetsListener does NOT trigger one. If the window
+        // has already dispatched its insets by the time this runs, the listener
+        // sits there having never been called, the padding stays zero, and the
+        // page renders under the status bar exactly as if none of this existed
+        // — which is the shape of the bug that survived the first fix.
+        ViewCompat.requestApplyInsets(root);
 
         // Light icons, because the strip behind them is the brand's dark green.
         // Left alone, the system picks from the old window background and draws

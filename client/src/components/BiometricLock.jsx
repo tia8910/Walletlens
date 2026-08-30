@@ -89,6 +89,29 @@ const isAndroidTWA = detectAndroidTWA()
  *
  * @returns {boolean} whether the app was actually told
  */
+/** Whether the app can be asked about its own App Lock flag. */
+function appLockReadable() {
+  try { return typeof window.AndroidBridge?.appLockEnabled === 'function' } catch { return false }
+}
+
+/**
+ * Wait for the app to report the lock as on.
+ *
+ * The prompt is a system dialog over a separate Activity, so its outcome lands
+ * in the app's own state rather than in anything JavaScript can await. Polling
+ * with a deadline is the honest shape of that; giving up returns false, which
+ * the caller reports as "not enabled" rather than claiming a lock that is not
+ * armed.
+ */
+async function waitForAppLock() {
+  const deadline = Date.now() + 45_000
+  while (Date.now() < deadline) {
+    try { if (window.AndroidBridge.appLockEnabled()) return true } catch { return false }
+    await new Promise(r => setTimeout(r, 250))
+  }
+  return false
+}
+
 function setNativeAppLock(on) {
   try {
     const b = window.AndroidBridge
@@ -254,19 +277,38 @@ export function useBiometricLock() {
   // SharedPreferences, then fall through to the localStorage flow. On
   // non-Android devices we use WebAuthn as before.
   async function enable() {
-    // Native path: store the flag locally AND tell the native app.
+    // Native path: prove the fingerprint works, THEN turn the lock on.
+    //
+    // This used to write the flag, tell the app, and return true — without
+    // anything being verified and without a prompt ever appearing. Tapping
+    // "Enable" on the onboarding slide therefore asked for nothing and showed
+    // nothing, which is exactly how it was reported. Worse, it armed a lock
+    // nobody had confirmed the user could pass: one stale enrolled fingerprint
+    // and the next cold start is a locked portfolio.
+    //
+    // NOT setNativeAppLock(true), deliberately, even though the bridge is
+    // right there. That writes the preference outright, which is the
+    // unverified behaviour under a new name. The intent raises the prompt, and
+    // the app writes the flag itself once it has been passed.
     if (isAndroidTWA) {
+      sendNativeIntent('enable')
+
+      // Wait for the app to say the lock is on. Only reachable through the
+      // bridge; a TWA install has no way to answer, so it keeps the old
+      // optimistic behaviour rather than failing on a question it cannot ask.
+      if (appLockReadable()) {
+        const passed = await waitForAppLock()
+        if (!passed) {
+          track('biometric_enable_cancelled')
+          return false
+        }
+      }
+
       localStorage.setItem(ENABLED_KEY, '1')
       sessionStorage.setItem(SESSION_KEY, '1')
       setEnabled(true)
       setLocked(false)
       track('biometric_enabled')
-      // The bridge where there is one. Under the TWA the only way to reach
-      // native code was to fire an intent and hope — no return value, and no
-      // way to tell a dropped one from a delivered one. In the shell this is
-      // an ordinary call that either succeeds or does not, so a lock the user
-      // just switched on cannot end up on in the page and off in the app.
-      if (!setNativeAppLock(true)) sendNativeIntent('enable')
       return true
     }
 
