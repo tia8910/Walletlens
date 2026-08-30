@@ -25,6 +25,14 @@ import { shouldAskPush, noteAskShown, enablePush, watchFromStorage } from '../pu
  * is to change what the card says when the portfolio is empty, not to stay
  * silent.
  */
+/** Whether the user is on the dashboard, where an interruption is bearable. */
+function onDashboard() {
+  try {
+    const path = (window.location.pathname || '').replace(/\/+$/, '')
+    return path === '' || path === '/dashboard' || path.endsWith('/dashboard')
+  } catch { return false }
+}
+
 export default function NotificationPrimer() {
   const { t } = useLanguage()
   const [show, setShow] = useState(false)
@@ -39,6 +47,13 @@ export default function NotificationPrimer() {
 
     const offer = () => {
       if (!shouldAskPush()) return
+      // On the dashboard, not wherever the user happens to be. This card is
+      // mounted at the app root, so without this it can arrive over a trade
+      // sheet, an import, or the last frame of onboarding — which is what it
+      // did, and the welcome flow does not survive a system dialog landing on
+      // top of it. The dashboard is where someone has arrived and is looking
+      // around, which is the only moment this question is welcome.
+      if (!onDashboard()) return
       // Read at show time, not at mount: someone who adds their first holding
       // during those four seconds should get the promise about it.
       const noHoldings = watchFromStorage().length === 0

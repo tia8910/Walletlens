@@ -345,6 +345,17 @@ dependencies {
     // instead of throwing the user out to the Play listing.
     implementation 'com.google.android.play:review:2.0.2'
 
+    // Google Play In-App Updates — tells the user a new version is out.
+    //
+    // The app is a shell around a web app, so most changes ship the moment
+    // Cloudflare Pages deploys and nobody has to do anything. Native changes do
+    // not: notification channels, the vault, the file pickers, the biometric
+    // prompt all live in this APK, and an install left on an old code keeps the
+    // old behaviour for ever, because Play's own auto-update is off or
+    // Wi-Fi-only for a great many people. This asks Play whether a newer
+    // version code is live and, if it is, says so in the app.
+    implementation 'com.google.android.play:app-update:2.1.0'
+
     // Firebase Cloud Messaging.
     //
     // The transport the notification channels need once the app renders itself

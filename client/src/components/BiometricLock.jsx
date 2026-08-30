@@ -104,6 +104,40 @@ function promptNativeAppLock() {
   } catch { return false }
 }
 
+/**
+ * Ask the app to raise the unlock prompt.
+ *
+ * @returns {boolean} whether the app was reached — false in a TWA install or a
+ *   browser, where the caller falls back to the intent.
+ */
+function promptNativeUnlock() {
+  try {
+    const b = window.AndroidBridge
+    if (!b || typeof b.promptAppUnlock !== 'function' || typeof b.appUnlocked !== 'function') {
+      return false
+    }
+    b.promptAppUnlock()
+    return true
+  } catch { return false }
+}
+
+/**
+ * Wait for the app to report itself unlocked.
+ *
+ * A minute: a fingerprint that will not read is retried, a face that is not
+ * presented times out, and the person doing it is standing between their
+ * portfolio and the screen. Giving up returns false, which the caller reports
+ * as declined rather than as unlocked.
+ */
+async function waitForUnlock() {
+  const deadline = Date.now() + 60_000
+  while (Date.now() < deadline) {
+    try { if (window.AndroidBridge.appUnlocked()) return true } catch { return false }
+    await new Promise(r => setTimeout(r, 250))
+  }
+  return false
+}
+
 /** Whether the app can be asked about its own App Lock flag. */
 function appLockReadable() {
   try { return typeof window.AndroidBridge?.appLockEnabled === 'function' } catch { return false }
@@ -413,6 +447,37 @@ export function useBiometricLock() {
       // coming back fired an unlock intent of its own.
       authInProgress = true
       noteUnlockRequested()
+
+      // The bridge where there is one, and this is the path that matters most.
+      //
+      // The intent below delivers its result by RELAUNCHING the app with
+      // ?biometric_auth=success on the URL: an intent that needs a live user
+      // activation, a top-frame navigation, and a cold start that has to carry
+      // the parameter through. Any one of those failing leaves someone staring
+      // at a lock screen that will not open, with their portfolio right there
+      // and unreachable. That is the worst failure this app has, and it was
+      // reported.
+      //
+      // Through the bridge nothing is delivered: the app records the unlock
+      // where it already keeps it, and this asks.
+      if (promptNativeUnlock()) {
+        try {
+          const opened = await waitForUnlock()
+          if (opened) {
+            sessionStorage.setItem(SESSION_KEY, '1')
+            setLocked(false)
+            track('biometric_unlock_success')
+            return
+          }
+          track('biometric_unlock_fail')
+          const err = new Error('unlock-declined')
+          err.name = 'NeedsGestureError'
+          throw err
+        } finally {
+          authInProgress = false
+        }
+      }
+
       if (!sendNativeIntent('unlock', currentUrlForReturn())) {
         authInProgress = false
         const err = new Error('needs-gesture')
@@ -561,6 +626,12 @@ function BiometricLockScreenInner({ onUnlock }) {
     // Last-resort: only reachable when the device genuinely can't authenticate.
     localStorage.removeItem('wl_biometric_enabled')
     sessionStorage.removeItem('wl_biometric_unlocked')
+    // And tell the app, which keeps the flag of record. Clearing only the web
+    // copy left the two disagreeing: the lock screen was gone, but Settings
+    // still showed App Lock as on and the app still believed it, so the next
+    // time the web flag was written back the user was locked out again by a
+    // lock they had already escaped.
+    setNativeAppLock(false)
     window.location.reload()
   }
 

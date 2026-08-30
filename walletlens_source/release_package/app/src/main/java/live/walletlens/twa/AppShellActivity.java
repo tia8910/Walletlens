@@ -358,6 +358,10 @@ public class AppShellActivity extends ComponentActivity {
             handoffChecked = true;
             maybeStartHandoff();
         }
+        // Whether a newer version is on Play. Day-gated inside, and silent on
+        // an install that did not come from Play, so this is safe on every
+        // resume — see PlayUpdate.
+        PlayUpdate.check(this);
     }
 
     // ── The handoff ─────────────────────────────────────────────────────────

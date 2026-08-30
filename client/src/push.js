@@ -105,6 +105,22 @@ function inAppShell() {
 }
 
 /**
+ * Whether the first-run welcome flow has finished.
+ *
+ * Read rather than imported: NativeOnboarding owns these keys, and push.js has
+ * no business importing a component to ask a question about localStorage. An
+ * unreadable store counts as "still onboarding" — the safe answer, since the
+ * cost of not asking is a deferred prompt and the cost of asking is a system
+ * dialog landing on top of a welcome flow.
+ */
+function onboardingFinished() {
+  try {
+    if (localStorage.getItem('wl_welcome_step_v2')) return false   // mid-flow
+    return !!localStorage.getItem('wl_welcomed_v2')
+  } catch { return false }
+}
+
+/**
  * Whether the OS will let the app post a notification, read synchronously.
  *
  * The same answer nativePush.nativeNotificationsAllowed() gives. Duplicated
@@ -352,6 +368,11 @@ function readAsk() {
 export function shouldAskPush() {
   try {
     if (!isPushSupported()) return false
+
+    // Never during the welcome flow. The card is mounted behind onboardDone in
+    // App.jsx, but that is one component's render condition and this is the
+    // rule — asserted here so it holds for every caller, present and future.
+    if (!onboardingFinished()) return false
     if (inAppShell()) {
       // Already allowed means autoEnablePush has it; VAPID is a Web Push key
       // and has nothing to say about whether to show the primer here.
@@ -631,6 +652,17 @@ async function enablePushInShell() {
   const native = await import('./nativePush.js')
 
   if (!native.nativeNotificationsAllowed()) {
+    // Never mid-onboarding, whoever is asking.
+    //
+    // This is the last line of defence rather than the first: the primer is
+    // already gated, but a system dialog is not a card that can be dismissed
+    // and re-shown — it lands on top of the welcome flow, takes the focus, and
+    // the flow does not survive it. Guarding at the point the dialog is raised
+    // means no future caller can reintroduce that by accident.
+    if (!onboardingFinished()) {
+      throw new Error('Finish setting up WalletLens first.')
+    }
+
     // Android stops showing the dialog after two refusals: the request returns
     // immediately, having displayed nothing. Firing it anyway is what made
     // tapping Enable do nothing — and then, because the attempt was counted as

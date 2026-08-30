@@ -373,6 +373,41 @@ public class WalletLensBridge {
     }
 
     /**
+     * Raise the fingerprint prompt to UNLOCK the app.
+     *
+     * <p>The old path delivered its result by relaunching the app with
+     * ?biometric_auth=success on the URL — an intent needing a live user
+     * activation, a top-frame navigation, and a cold start that had to carry
+     * the parameter through. Any one of those failing leaves the user staring
+     * at a lock screen that will not open, which is the worst failure this app
+     * has: the portfolio is right there and unreachable.
+     *
+     * <p>Nothing is delivered now. The activity writes its unlock timestamp
+     * where isSessionValid already reads it, and the page polls
+     * {@link #appUnlocked()}.
+     */
+    @JavascriptInterface
+    public void promptAppUnlock() {
+        Activity a = activity();
+        if (a == null) return;
+        try {
+            Intent i = new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("walletlens://biometric-auth?action=unlock&noredirect=1"));
+            i.setClass(a, BiometricActivity.class);
+            a.startActivity(i);
+        } catch (Throwable e) {
+            Log.w(TAG, "could not raise the unlock prompt: " + e);
+        }
+    }
+
+    /** Whether the app is inside a valid unlocked session. */
+    @JavascriptInterface
+    public boolean appUnlocked() {
+        Activity a = activity();
+        return a != null && BiometricActivity.isSessionValid(a);
+    }
+
+    /**
      * Ask Play to show its in-app review card.
      *
      * <p>Directly, for the same reason promptAppLock is: the intent path went
