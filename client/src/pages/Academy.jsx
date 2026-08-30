@@ -7,8 +7,8 @@ import Icon from '../components/Icon'
 import { useTheme } from '../ThemeContext'
 import { POSTS } from '../data/blogPosts'
 import { useLanguage } from '../LanguageContext'
-import {
 import { shareFile, shareText } from '../fileOut'
+import {
   questions as academyQuestions,
   guessrCoins,
   hacks as academyHacks,
