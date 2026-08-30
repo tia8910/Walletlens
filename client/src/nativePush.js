@@ -115,6 +115,29 @@ export function requestNativeNotificationPermission() {
   try { b.requestNotificationPermission(); return true } catch { return false }
 }
 
+/**
+ * Whether the system will still show a permission dialog.
+ *
+ * "granted" | "can-ask" | "blocked". Android stops showing the dialog after
+ * two refusals — requestPermissions then returns having displayed nothing —
+ * and firing it anyway is how a tap on Enable came to do nothing at all.
+ *
+ * Older shells have no such method; they report "can-ask", which is the
+ * behaviour they had before this existed.
+ */
+export function nativeNotificationAskState() {
+  const b = bridge()
+  if (!b || typeof b.notificationAskState !== 'function') return 'can-ask'
+  try { return b.notificationAskState() || 'can-ask' } catch { return 'can-ask' }
+}
+
+/** Open this app's notification settings — the only route left when blocked. */
+export function openNativeNotificationSettings() {
+  const b = bridge()
+  if (!b || typeof b.openNotificationSettings !== 'function') return false
+  try { return !!b.openNotificationSettings() } catch { return false }
+}
+
 /** Whether the OS will currently let a notification through. */
 export function nativeNotificationsAllowed() {
   const b = bridge()

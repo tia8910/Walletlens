@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.util.Base64;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
@@ -424,6 +425,72 @@ public class WalletLensBridge {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true;
         return ContextCompat.checkSelfPermission(a, Manifest.permission.POST_NOTIFICATIONS)
                 == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * Whether the system will still show a notification permission dialog.
+     *
+     * <p>THE PROBLEM THIS SOLVES. On Android 13 and up the system stops showing
+     * the dialog after the user has refused twice: requestPermissions returns
+     * immediately, having displayed nothing. The web layer could not tell that
+     * apart from a dialog the user had not answered yet, so it fired the
+     * request, waited thirty seconds for an answer that was never coming, and
+     * then counted a failed ask — spending one of the three the primer allows
+     * and putting a week's cooldown on the next. From the user's side: tapping
+     * Enable did nothing, and the app then stopped asking.
+     *
+     * <p>shouldShowRequestPermissionRationale cannot answer this alone. It is
+     * false in two OPPOSITE situations — never asked, and asked twice and
+     * refused — which is why the gate records that it asked.
+     *
+     * @return "granted", "can-ask", or "blocked"
+     */
+    @JavascriptInterface
+    public String notificationAskState() {
+        Activity a = activity();
+        if (a == null) return "blocked";
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return "granted";
+        if (ContextCompat.checkSelfPermission(a, Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED) {
+            return "granted";
+        }
+        // Never asked: the first dialog always appears.
+        if (!NotificationPermissionActivity.hasAsked(a)) return "can-ask";
+        // Refused once: Android shows it again, with a rationale expected.
+        if (a.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+            return "can-ask";
+        }
+        return "blocked";
+    }
+
+    /**
+     * Open this app's notification settings.
+     *
+     * <p>The only route left once the system has stopped showing the dialog.
+     * Offering it beats a button that silently does nothing, which is what the
+     * user was getting.
+     */
+    @JavascriptInterface
+    public boolean openNotificationSettings() {
+        Activity a = activity();
+        if (a == null) return false;
+        try {
+            Intent i = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, a.getPackageName());
+            a.startActivity(i);
+            return true;
+        } catch (Throwable e) {
+            // Not every OEM ships that screen. The app's own details page is
+            // always there and is one tap from the same toggle.
+            try {
+                a.startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.fromParts("package", a.getPackageName(), null)));
+                return true;
+            } catch (Throwable e2) {
+                Log.w(TAG, "could not open notification settings: " + e2);
+                return false;
+            }
+        }
     }
 
     /**

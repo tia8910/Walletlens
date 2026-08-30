@@ -595,6 +595,16 @@ async function enablePushInShell() {
   const native = await import('./nativePush.js')
 
   if (!native.nativeNotificationsAllowed()) {
+    // Android stops showing the dialog after two refusals: the request returns
+    // immediately, having displayed nothing. Firing it anyway is what made
+    // tapping Enable do nothing — and then, because the attempt was counted as
+    // a failed ask, the app stopped offering for a week. Settings is the only
+    // route left, so offer that instead of a dialog that will never appear.
+    if (native.nativeNotificationAskState() === 'blocked') {
+      native.openNativeNotificationSettings()
+      throw new Error('Turn notifications on for WalletLens in Settings — it’s open now.')
+    }
+
     native.requestNativeNotificationPermission()
 
     const deadline = Date.now() + 30_000
