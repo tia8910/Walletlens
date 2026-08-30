@@ -79,6 +79,25 @@ const isAndroidTWA = detectAndroidTWA()
 // It matters most here: the lock screen auto-prompts on mount, which is by
 // definition not a gesture. Returns false when it declined, so the caller can
 // fall back to asking the user to tap.
+/**
+ * Set the app's own App Lock flag through the bridge.
+ *
+ * Returns false when there is no bridge — a TWA install, or a browser — and
+ * the caller falls back to the intent. Read straight off window rather than
+ * through nativeShell.js, which imports the backup code and with it half the
+ * app; this file is loaded on the lock screen, before anything else.
+ *
+ * @returns {boolean} whether the app was actually told
+ */
+function setNativeAppLock(on) {
+  try {
+    const b = window.AndroidBridge
+    if (!b || typeof b.setAppLock !== 'function') return false
+    b.setAppLock(!!on)
+    return true
+  } catch { return false }
+}
+
 function sendNativeIntent(action, redirectUrl) {
   const base = 'walletlens://biometric-auth?action=' + encodeURIComponent(action)
   const url = redirectUrl
@@ -235,15 +254,19 @@ export function useBiometricLock() {
   // SharedPreferences, then fall through to the localStorage flow. On
   // non-Android devices we use WebAuthn as before.
   async function enable() {
-    // Native TWA path: store enabled flag locally AND tell the native app
+    // Native path: store the flag locally AND tell the native app.
     if (isAndroidTWA) {
       localStorage.setItem(ENABLED_KEY, '1')
       sessionStorage.setItem(SESSION_KEY, '1')
       setEnabled(true)
       setLocked(false)
       track('biometric_enabled')
-      // Fire-and-forget: tell the native app to persist the flag
-      sendNativeIntent('enable')
+      // The bridge where there is one. Under the TWA the only way to reach
+      // native code was to fire an intent and hope — no return value, and no
+      // way to tell a dropped one from a delivered one. In the shell this is
+      // an ordinary call that either succeeds or does not, so a lock the user
+      // just switched on cannot end up on in the page and off in the app.
+      if (!setNativeAppLock(true)) sendNativeIntent('enable')
       return true
     }
 
@@ -368,9 +391,11 @@ export function useBiometricLock() {
 
   // ── Disable ───────────────────────────────────────────────────────────
   function disable() {
-    // Native TWA path: tell the native app to clear the SharedPrefs flag
+    // Native path: clear the app's own flag too. Left set, the app would go on
+    // demanding a fingerprint for a lock the user had just switched off — the
+    // worse direction of the two to get wrong.
     if (isAndroidTWA) {
-      sendNativeIntent('disable')
+      if (!setNativeAppLock(false)) sendNativeIntent('disable')
     }
     // Also clear local state regardless of platform
     localStorage.removeItem(ENABLED_KEY)

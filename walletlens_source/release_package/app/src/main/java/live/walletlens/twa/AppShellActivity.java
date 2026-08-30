@@ -426,10 +426,33 @@ public class AppShellActivity extends ComponentActivity {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             Uri url = request.getUrl();
-            if (url != null && ORIGIN.equals(url.getScheme() + "://" + url.getHost())) {
+            if (url == null) return false;
+            if (ORIGIN.equals(url.getScheme() + "://" + url.getHost())) {
                 return false;   // ours: render it here
             }
-            // A Custom Tab rather than a browser intent. Two reasons, and the
+
+            // Anything that is not the web goes straight to Android.
+            //
+            // THIS IS WHY APP LOCK STOPPED WORKING. The page reaches native
+            // code by navigating to walletlens://, and every one of those was
+            // being handed to a Custom Tab below — a Custom Tab is a BROWSER,
+            // and a browser cannot open a walletlens:// scheme. So enabling
+            // the fingerprint lock in onboarding fired an intent that went to
+            // Chrome and died there, and the same was true of the review
+            // prompt, the export and the vault save. Nothing errored: the page
+            // fires these and never expects an answer.
+            String scheme = url.getScheme();
+            if (!"http".equals(scheme) && !"https".equals(scheme)) {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, url));
+                } catch (Throwable e) {
+                    Log.w(TAG, "nothing handles " + scheme + "://: " + e);
+                }
+                return true;
+            }
+
+            // A Custom Tab rather than a browser intent, for http(s) only. Two
+            // reasons, and the
             // second is the one that matters: it keeps the user inside the app
             // visually, and Google's sign-in — which is the outbound
             // navigation that actually matters here — is ACCEPTED in a Custom
