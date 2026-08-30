@@ -42,6 +42,35 @@ const TWA_FLAG = 'wl_is_twa'
 /** This app's Android package — the only one whose referrer means "us". */
 const PACKAGE = 'live.walletlens.twa'
 
+/**
+ * True when the page is running as an installed app rather than a browser tab.
+ *
+ * WHY THIS IS NOT JUST display-mode: standalone
+ *
+ * It was, and that broke the moment the Android app stopped being a TWA. A TWA
+ * renders in a Custom Tab that reports `display-mode: standalone`, so the media
+ * query was a perfectly good "am I the app" test for years. The app's own
+ * WebView reports `display-mode: browser` — it is not a PWA, it is a view
+ * inside an activity — so the query went false everywhere at once.
+ *
+ * Nothing errored, because everything it gates is *supposed* to be absent in a
+ * browser tab. The app lost its native onboarding, its bottom navigation and
+ * its app-mode layout class, and the notification primer with them: the primer
+ * waits for onboarding to finish, and onboarding that never mounts never
+ * finishes. Three unrelated-looking bugs, one boolean.
+ *
+ * The bridge is the reliable half — it is injected by the shell and by nothing
+ * else — and the media query stays for the PWA installs it was always right
+ * about.
+ */
+export function isInstalledApp() {
+  try {
+    if (typeof window === 'undefined') return false
+    if (window.AndroidBridge && typeof window.AndroidBridge.shellVersion === 'function') return true
+    return !!(window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone)
+  } catch { return false }
+}
+
 export function isAndroidTWA() {
   if (typeof navigator === 'undefined') return false
 
