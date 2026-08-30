@@ -152,12 +152,13 @@ public final class NotificationHelper {
                 tapIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        // Use the app launcher icon as the small icon (also works as default).
-        int smallIcon = context.getResources()
-                .getIdentifier("ic_notification_chart", "drawable", context.getPackageName());
-        if (smallIcon == 0) {
-            smallIcon = android.R.drawable.ic_dialog_info;
-        }
+        // The WalletLens mark, referenced directly rather than looked up by
+        // name. getIdentifier() is a runtime string lookup: it survives no
+        // rename, R8 cannot see it (which is why keep.xml had to name the
+        // drawable by hand), and when it misses it returns 0 and the app
+        // silently posts every notification under a generic system info icon.
+        // R.drawable is the same answer, checked by the compiler.
+        int smallIcon = R.drawable.ic_notification_logo;
 
         int accentColor = 0xFF071A0C; // WalletLens brand dark green
 
