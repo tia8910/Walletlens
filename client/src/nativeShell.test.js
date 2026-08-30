@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -69,13 +69,33 @@ describe('the WebView shell', () => {
     expect(code('WalletLensBridge.java')).toMatch(/WeakReference<Activity>/)
   })
 
-  it('exposes only what the phase implements', () => {
-    // A bridge method calling a helper that does not exist yet is a file that
-    // does not compile — and this file has no compiler in CI to catch it.
+  it('calls only helpers that actually exist', () => {
+    // A bridge method calling a helper that does not exist is a file that does
+    // not compile, and there is no Java compiler in CI to catch it — so the
+    // check is that every class.method the bridge reaches for is declared in
+    // the class it names.
+    //
+    // This began life as "exposes only what phase 1 implements", which was the
+    // right guard while the bridge was a stub and the wrong one the moment it
+    // stopped being one. The invariant it was really protecting is this.
     const src = code('WalletLensBridge.java')
-    expect(src).toMatch(/public String readVault\(\)/)
-    expect(src).toMatch(/public boolean writeVault\(/)
-    expect(src).not.toMatch(/NotificationHelper\.|WidgetSyncActivity\.|ReviewActivity/)
+    const dir = join(
+      SRC, '..', '..',
+      'walletlens_source/release_package/app/src/main/java/live/walletlens/twa',
+    )
+    // Only classes in this package. Framework and AndroidX types resolve
+    // against the SDK, which the compiler checks and this cannot.
+    const ours = new Set(
+      readdirSync(dir).filter(f => f.endsWith('.java')).map(f => f.replace(/\.java$/, '')),
+    )
+    const calls = [...src.matchAll(/\b([A-Z]\w+)\.(\w+)\(/g)]
+      .filter(([, cls]) => ours.has(cls))
+
+    expect(calls.length, 'the bridge should be reaching for something').toBeGreaterThan(0)
+    for (const [, cls, method] of calls) {
+      const target = readFileSync(join(dir, `${cls}.java`), 'utf8')
+      expect(target, `${cls}.${method} must exist`).toMatch(new RegExp(`\\b${method}\\s*\\(`))
+    }
   })
 
   it('can write the vault without going through an Activity', () => {
@@ -286,5 +306,52 @@ describe('signing in to Google from inside the app', () => {
     // And still navigates normally in a browser, where there is no bridge and
     // the ordinary redirect is exactly right.
     expect(body).toMatch(/window\.location\.assign\(url\)/)
+  })
+})
+
+// ── Widgets ─────────────────────────────────────────────────────────────────
+//
+// The widgets were fed by an intent, which could not report whether it
+// applied and could only fire during a user gesture. A widget is looked at
+// precisely when nobody is touching the screen, so the background sync was
+// being skipped exactly when it mattered.
+
+describe('widget sync in the shell', () => {
+  const JAVA = join(
+    SRC, '..', '..',
+    'walletlens_source/release_package/app/src/main/java/live/walletlens/twa',
+  )
+  const javaCode = (f) => readFileSync(join(JAVA, f), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+
+  it('can be applied without starting an Activity', () => {
+    // Starting one is what needed the gesture, what left tasks in the recents
+    // switcher, and what made taskAffinity="" necessary in the manifest.
+    expect(javaCode('WidgetSyncActivity.java')).toMatch(/static void applyPayload\(/)
+    expect(javaCode('WalletLensBridge.java'))
+      .toMatch(/WidgetSyncActivity\.applyPayload\(a, json\)/)
+  })
+
+  it('reports whether it worked', () => {
+    // The whole gain over the intent. Through that channel the web app could
+    // never tell a written widget from a dropped one.
+    expect(javaCode('WalletLensBridge.java')).toMatch(/public boolean syncWidgets\(/)
+  })
+
+  it('tries the bridge before the intent at every send site', () => {
+    // Three call sites, and one left on the old path is a sync that silently
+    // does not happen in the shell — which is the failure this replaces.
+    const src = readFileSync(join(SRC, 'nativeWidgets.js'), 'utf8')
+    const bridgeCalls = (src.match(/syncViaBridge\(/g) || []).length
+    const intentCalls = (src.match(/walletlens:\/\/widget-sync\?data=/g) || []).length
+    // One definition plus one guard per intent site.
+    expect(bridgeCalls).toBe(intentCalls + 1)
+  })
+
+  it('still falls back to the intent outside the shell', () => {
+    // The TWA build is still what most installs are running, and it has no
+    // bridge at all.
+    const src = readFileSync(join(SRC, 'nativeWidgets.js'), 'utf8')
+    expect(src).toMatch(/!syncViaBridge\([\s\S]{0,40}?&&\s*\n\s*!fireNativeIntent\(/)
   })
 })

@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.json.JSONArray;
@@ -62,9 +63,31 @@ public class WidgetSyncActivity extends Activity {
         Uri uri = intent.getData();
         String raw = uri.getQueryParameter("data");
         if (raw == null || raw.isEmpty()) return;
+        applyPayload(getApplicationContext(), raw);
+    }
 
+    /**
+     * Repaint the widgets from a portfolio summary.
+     *
+     * <p>Static and Context-taking so the WebView shell's JavaScript bridge can
+     * call it directly, which is a better channel than the intent this
+     * Activity was built for in three ways that all bit:
+     *
+     * <ul>
+     *   <li>It returns. The intent could not report whether it applied, so the
+     *       web app has never been able to tell a written widget from a
+     *       dropped one — and the sync fails silently by design.</li>
+     *   <li>It needs no user gesture. Chrome only permits an external protocol
+     *       launch during a tap, so the five-minute background sync was
+     *       skipped whenever nobody happened to be touching the screen.</li>
+     *   <li>It starts no Activity, so it cannot leave a task behind. The
+     *       taskAffinity="" on this Activity in the manifest exists entirely
+     *       because starting one did.</li>
+     * </ul>
+     */
+    static void applyPayload(@NonNull Context context, @NonNull String raw) throws Exception {
         JSONObject j = new JSONObject(raw);
-        Context ctx = getApplicationContext();
+        Context ctx = context.getApplicationContext();
 
         // The payload also carries the language chosen in the web app. It has
         // nowhere else to go: localStorage is unreadable from native code, and

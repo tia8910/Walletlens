@@ -275,4 +275,32 @@ public class WalletLensBridge {
         });
         return true;
     }
+
+    // ── Widgets ──────────────────────────────────────────────────────────
+
+    /**
+     * Repaint the home-screen widgets from a portfolio summary.
+     *
+     * <p>The same payload WidgetSyncActivity has always taken, on a channel
+     * that can actually carry it. Through the intent this returned nothing, so
+     * the web app could never tell a written widget from a dropped one; and it
+     * needed a user gesture, so the five-minute background sync was skipped
+     * whenever nobody happened to be touching the screen — which is most of
+     * the time a widget is looked at.
+     *
+     * @param json the summary; see WidgetSyncActivity for the shape
+     * @return whether the widgets were repainted
+     */
+    @JavascriptInterface
+    public boolean syncWidgets(String json) {
+        Activity a = activity();
+        if (a == null || json == null || json.isEmpty()) return false;
+        try {
+            WidgetSyncActivity.applyPayload(a, json);
+            return true;
+        } catch (Throwable e) {
+            Log.w(TAG, "widget sync failed: " + e);
+            return false;
+        }
+    }
 }
