@@ -87,7 +87,9 @@ public class WalletLensMessagingService extends FirebaseMessagingService {
                 // stale within the hour.
                 helper.showAlertNotification(title, body != null ? body : "", url);
             } else {
-                helper.showNotification(title, body != null ? body : "", url);
+                // The fourth argument is the tap intent's extra data payload,
+                // which a data-only push does not carry: the deep link is the url.
+                helper.showNotification(title, body != null ? body : "", url, null);
             }
         } catch (Throwable e) {
             Log.w(TAG, "could not show push: " + e);

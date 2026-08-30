@@ -71,9 +71,14 @@ describe('the WebView shell', () => {
 
   it('calls only helpers that actually exist', () => {
     // A bridge method calling a helper that does not exist is a file that does
-    // not compile, and there is no Java compiler in CI to catch it — so the
-    // check is that every class.method the bridge reaches for is declared in
-    // the class it names.
+    // not compile, so the check is that every class.method the bridge reaches
+    // for is declared in the class it names.
+    //
+    // A real compiler now runs on every PR that touches the Android project
+    // (.github/workflows/android-compile.yml), which makes this the cheaper of
+    // two overlapping guards rather than the only one: it answers in
+    // milliseconds here instead of minutes on a runner, and it names the
+    // bridge method rather than a line number in generated output.
     //
     // This began life as "exposes only what phase 1 implements", which was the
     // right guard while the bridge was a stub and the wrong one the moment it
