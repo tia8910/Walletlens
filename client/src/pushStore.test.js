@@ -115,11 +115,87 @@ describe('the cached scan', () => {
     expect(all[0].key).toBe('good')
   })
 
-  it('skips a row with no endpoint', async () => {
+  it('skips a row that cannot be addressed at all', async () => {
     const db = fakeD1()
     db.rows.set('empty', { data: JSON.stringify({ alerts: [] }), updated_at: 0 })
     const store = new SubStore(db, { now: () => 0 })
     expect(await store.all()).toHaveLength(0)
+  })
+
+  it('includes a device addressed by an FCM token', async () => {
+    // THE BUG THIS FILE EXISTS FOR NOW.
+    //
+    // The condition here was `sub?.subscription?.endpoint`, written when Web
+    // Push was the only transport. An FCM device has no subscription at all —
+    // it has a token, because a WebView has no service worker to subscribe
+    // with — so every device running the Android app was dropped from this
+    // list. all() is the loader EVERY cron job uses, so those devices were
+    // invisible to moves, targets, news, the morning brief, retention, feature
+    // tips, zakat, hacks, academy and the portfolio pulse. All of them.
+    //
+    // And it hid perfectly: the welcome notification still arrived, because
+    // /test addresses the device by token through get() and never touches this
+    // list. Permission granted, token registered, Firebase delivering, one
+    // notification received — and not a single scheduled one ever sent.
+    const db = fakeD1()
+    db.rows.set('fcm:abc', {
+      data: JSON.stringify({
+        transport: 'fcm',
+        fcmToken: 'a-real-looking-token',
+        subscription: null,
+        watch: [{ kind: 'crypto', id: 'bitcoin', symbol: 'BTC' }],
+      }),
+      updated_at: 0,
+    })
+    const store = new SubStore(db, { now: () => 0 })
+    const all = await store.all()
+    expect(all, 'an app install must be visible to the crons').toHaveLength(1)
+    expect(all[0].key).toBe('fcm:abc')
+    expect(all[0].sub.fcmToken).toBe('a-real-looking-token')
+  })
+
+  it('carries both kinds of device in one scan', async () => {
+    // The two transports run side by side; a scan that returns only one of
+    // them is the failure above in either direction.
+    const db = fakeD1()
+    const store = new SubStore(db, { now: () => 0 })
+    await store.put('web', sub())
+    db.rows.set('fcm:xyz', {
+      data: JSON.stringify({ transport: 'fcm', fcmToken: 'tok', subscription: null }),
+      updated_at: 0,
+    })
+    store.invalidate()
+    expect(await store.all()).toHaveLength(2)
+  })
+})
+
+describe('the address survives a cron write', () => {
+  it('keeps a token the device re-registered while a cron held the row', async () => {
+    // USER_OWNED_FIELDS protects `subscription` for an obvious reason: a
+    // device that re-subscribed mid-run must not have its new endpoint
+    // overwritten by the stale one the cron is carrying. The FCM pair belongs
+    // there by exactly the same argument, and was missing.
+    //
+    // FCM tokens rotate — a restore to a new device, an app-data clear, or at
+    // Firebase's own discretion. Without this the first cron write would put
+    // the dead token back and the device would go silent again, with a
+    // subscription that still looks perfectly healthy on /status.
+    const db = fakeD1()
+    const store = new SubStore(db, { now: () => 0 })
+    db.rows.set('fcm:k', {
+      data: JSON.stringify({ transport: 'fcm', fcmToken: 'NEW-token', subscription: null }),
+      updated_at: 0,
+    })
+    // The cron's copy, read before the device re-registered.
+    await store.save('fcm:k', {
+      transport: 'fcm', fcmToken: 'OLD-token', subscription: null,
+      lastHackAt: 123,
+    })
+    const after = await store.get('fcm:k')
+    expect(after.fcmToken, 'the address the device registered wins').toBe('NEW-token')
+    expect(after.transport).toBe('fcm')
+    // And the cron's own bookkeeping still lands.
+    expect(after.lastHackAt).toBe(123)
   })
 })
 
