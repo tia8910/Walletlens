@@ -32,6 +32,7 @@ import { useTheme, THEMES } from './ThemeContext'
 import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
 import { setAppInteractive } from './reviewPrompt'
+import { isInstalledApp } from './nativeBridge'
 import { applySettings } from './settingsUtils'
 import { initMood } from './moodEngine'
 import { pendingVaultPayload, consumeVaultPayload } from './nativeVault'
@@ -135,7 +136,7 @@ function PWATopbarButton() {
   const [installed, setInstalled] = useState(false)
 
   useEffect(() => {
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+    if (isInstalledApp()) {
       setInstalled(true); return
     }
     const handler = (e) => { e.preventDefault(); setPrompt(e) }
@@ -444,7 +445,7 @@ export default function App() {
 
   useEffect(() => {
     requestAnimationFrame(() => { applySettings(); initMood() })
-    const _standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
+    const _standalone = isInstalledApp()
     if (_standalone) {
       setIsStandalone(true)
       track('pwa_session', { installed: true })

@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { useTheme } from '../ThemeContext'
+import { isInstalledApp } from '../nativeBridge'
 
 const DISMISSED_KEY = 'wl_pwa_dismissed'
 
 function detectPlatform() {
   const ua = navigator.userAgent
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
+  // Includes the app's own WebView, which is as installed as it gets and must
+  // never be offered an install prompt.
+  const isStandalone = isInstalledApp()
   const isIOS = /iphone|ipad|ipod/i.test(ua) && !window.MSStream
   const isSafariDesktop = /^((?!chrome|android).)*safari/i.test(ua) && !isIOS
   const isFirefox = /firefox/i.test(ua)

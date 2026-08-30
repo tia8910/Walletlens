@@ -618,6 +618,15 @@ async function enablePushInShell() {
     if (res.reason === 'no-token') {
       throw new Error('The app hasn’t finished setting up notifications yet. Try again in a moment.')
     }
+    // "Couldn't reach the server" for every failure is what cost a whole
+    // release to diagnose: the server was reached and REFUSED — it was running
+    // a build that predated FCM support and rejected a subscription with no
+    // Web Push endpoint — and the message sent everyone looking at the network
+    // instead. A refusal and an unreachable host are different faults with
+    // different fixes, and they say so now.
+    if (res.reason?.startsWith('http-')) {
+      throw new Error(`The notification server refused this device (${res.reason.slice(5)}). It may be running an older version — try again shortly.`)
+    }
     throw new Error('Couldn’t reach the notification server. Please try again.')
   }
 

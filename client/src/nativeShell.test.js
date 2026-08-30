@@ -127,6 +127,53 @@ describe('the WebView shell', () => {
     expect(offenders, 'these still open the TWA directly').toEqual([])
   })
 
+  // ── The app must look like an app ────────────────────────────────────
+  //
+  // display-mode: standalone was the "am I the app" test for years, and it was
+  // right for years: a TWA renders in a Custom Tab, which reports standalone.
+  // The shell's WebView reports `browser`, so the flag went false everywhere at
+  // once and took the native onboarding, the bottom navigation, the app-mode
+  // layout class and — through onboarding, which the primer waits for — the
+  // notification prompt with it. Nothing errored, because every one of those is
+  // supposed to be absent in a browser tab.
+
+  it('counts the shell as an installed app', async () => {
+    const { isInstalledApp } = await import('./nativeBridge')
+
+    const mq = window.matchMedia
+    window.matchMedia = () => ({ matches: false })   // a WebView: display-mode browser
+    try {
+      expect(isInstalledApp(), 'a plain browser is not the app').toBe(false)
+
+      window.AndroidBridge = { shellVersion: () => 'webview-1' }
+      expect(isInstalledApp(), 'the shell is the app').toBe(true)
+    } finally {
+      delete window.AndroidBridge
+      window.matchMedia = mq
+    }
+  })
+
+  it('still counts a standalone PWA as an installed app', async () => {
+    const { isInstalledApp } = await import('./nativeBridge')
+    const mq = window.matchMedia
+    window.matchMedia = () => ({ matches: true })
+    try {
+      expect(isInstalledApp()).toBe(true)
+    } finally { window.matchMedia = mq }
+  })
+
+  it('decides app-only UI from one place', () => {
+    // Four files each had their own copy of the media query, so "is this the
+    // app" could be answered differently in four places — and was, the moment
+    // the answer changed. They go through isInstalledApp now.
+    const roots = ['App.jsx', 'components/PWAInstallPrompt.jsx', 'pages/Landing.jsx']
+    for (const f of roots) {
+      const src = readFileSync(join(SRC, f), 'utf8')
+      expect(src, `${f} must not test display-mode itself`)
+        .not.toMatch(/matchMedia\??\.?\(['"]\(display-mode: standalone\)['"]\)/)
+    }
+  })
+
   it('holds its host weakly, so the Activity can be collected', () => {
     // A JavaScript object holding a strong reference to the Activity is the
     // classic WebView leak: nothing can be collected on rotation or finish.
