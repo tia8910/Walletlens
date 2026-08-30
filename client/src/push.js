@@ -539,6 +539,7 @@ export async function enablePush() {
     throw new Error('Couldn’t reach the notification server. Please try again.')
   }
   try { localStorage.removeItem(OPTOUT_KEY) } catch {}
+  sendWelcomePush()
   return { ok: true }
 }
 
@@ -575,6 +576,23 @@ function watchShellPermission(onChange) {
     document.removeEventListener('visibilitychange', onVisible)
     window.removeEventListener('focus', check)
   }
+}
+
+/**
+ * The notification that proves the rest of them will arrive.
+ *
+ * Sent through the server on purpose, not raised locally. A local notification
+ * would only prove this app can draw one; this exercises the whole path —
+ * permission, token, the push worker, FCM, and the channel the app posts on —
+ * which is the only part anyone actually doubts. It is also the only feedback
+ * a user ever gets that "on" means anything, since the first real alert may be
+ * days away.
+ *
+ * Never throws. Enabling notifications succeeded; a welcome that did not
+ * arrive must not present itself as that having failed.
+ */
+async function sendWelcomePush() {
+  try { await sendTestPush() } catch { /* the toggle is on either way */ }
 }
 
 /**
@@ -641,6 +659,11 @@ async function enablePushInShell() {
   }
 
   try { localStorage.removeItem(OPTOUT_KEY) } catch { /* private mode */ }
+
+  // Not awaited: the toggle should flip the moment the server has the device,
+  // and a welcome that takes a second to arrive must not hold the UI on a
+  // spinner while it does.
+  sendWelcomePush()
   return { ok: true }
 }
 
@@ -1043,14 +1066,27 @@ export async function pingSeen({ force = false } = {}) {
  * reported success for a notification that was never delivered.
  */
 export async function sendTestPush() {
-  const sub = await getSubscription()
-  if (!sub) throw new Error('Turn notifications on first.')
+  // The address differs by transport. In the app's own WebView there is no
+  // Web Push subscription to find, so this used to throw "Turn notifications
+  // on first" at someone whose notifications were already on.
+  let address
+  if (inAppShell()) {
+    const native = await import('./nativePush.js')
+    const token = native.nativePushToken()
+    if (!token) throw new Error('The app hasn’t finished setting up notifications yet.')
+    address = { fcmToken: token }
+  } else {
+    const sub = await getSubscription()
+    if (!sub) throw new Error('Turn notifications on first.')
+    address = { endpoint: sub.endpoint }
+  }
+
   let res
   try {
     res = await fetch(`${PUSH_API}/test`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endpoint: sub.endpoint, lang: currentLang() }),
+      body: JSON.stringify({ ...address, lang: currentLang() }),
     })
   } catch (e) {
     throw new Error(`Couldn't reach the notification server. ${detailOf(e)}`)

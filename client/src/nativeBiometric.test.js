@@ -46,10 +46,32 @@ describe('BiometricActivity ↔ web contract', () => {
     expect(existsSync(JAVA)).toBe(true)
   })
 
-  it('enable does not relaunch the app', () => {
+  it('enable verifies the fingerprint before turning the lock on', () => {
+    // It used to write the preference and finish, with no prompt at all. So
+    // "Enable" on the onboarding slide asked for nothing and showed nothing,
+    // which is how it was reported — and it armed a lock nobody had confirmed
+    // the user could pass. One stale enrolled fingerprint and the next cold
+    // start is a portfolio its owner cannot open.
+    //
+    // The branch now falls THROUGH to the prompt rather than returning, so it
+    // must not settle anything itself.
     const body = branchFor('enable')
-    expect(body).toContain('finish()')
-    expect(body).not.toContain('redirectBack')
+    expect(body).toMatch(/enabling = true/)
+    expect(body, 'must not enable without a prompt').not.toMatch(/setEnabled\(this, true\)/)
+    expect(body, 'must not finish before the prompt runs').not.toContain('finish()')
+  })
+
+  it('enable still does not relaunch the app', () => {
+    // The invariant the previous version of this case protected, in its new
+    // home: on success the activity finishes back to the page that asked.
+    // redirectBack would cold-start the app and drop the user on slide one of
+    // the onboarding they are standing in.
+    const success = java().slice(java().indexOf('private void onAuthSuccess'))
+    const enabled = success.slice(success.indexOf('if (enabling)'))
+    const branch = enabled.slice(0, enabled.indexOf('return;'))
+    expect(branch).toContain('setEnabled(this, true)')
+    expect(branch).toContain('finish()')
+    expect(branch).not.toContain('redirectBack')
   })
 
   it('disable does not relaunch the app', () => {
