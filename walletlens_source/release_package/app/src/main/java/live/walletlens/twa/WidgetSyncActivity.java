@@ -152,8 +152,15 @@ public class WidgetSyncActivity extends Activity {
         Log.d(TAG, "Widget sync applied: nw=" + nw + " tracked=" + tracked);
     }
 
-    /** Repaint every placed widget with the values just written. */
-    private void refreshAll(Context ctx) {
+    /**
+     * Repaint every placed widget with the values just written.
+     *
+     * <p>Static because the only caller is now {@link #applyPayload}, which is
+     * itself static: the bridge applies a payload without ever starting this
+     * activity. Nothing here reads instance state — the context it needs is the
+     * argument — so there was never anything for an instance to provide.
+     */
+    private static void refreshAll(Context ctx) {
         AppWidgetManager mgr = AppWidgetManager.getInstance(ctx);
 
         for (int id : mgr.getAppWidgetIds(new ComponentName(ctx, WalletLensWidgetProvider.class))) {
