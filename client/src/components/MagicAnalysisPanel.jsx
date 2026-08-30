@@ -10,6 +10,7 @@ import { isStablecoin } from '../stablecoins'
 import { assetClass } from '../data/assets'
 import { getCachedCoinImage } from '../api'
 import { useLanguage } from '../LanguageContext'
+import { shareFile } from '../fileOut'
 
 // Translation keys, not text: these are hover tooltips describing what each
 // pillar measures, and they were the last English left in the panel.
@@ -458,28 +459,19 @@ function ShareCardButton({ item, verdict }) {
 
     const sym = (item.coin_symbol || 'asset').toLowerCase()
     const filename = `walletlens-${sym}.png`
-    let usedWebShare = false
+    // shareFile covers all three: the browser's share sheet, Android's through
+    // the bridge, and a plain save when there is no sheet at all. The version
+    // here reached for navigator.share and an <a download>, neither of which
+    // exists in the app's own WebView, so Share did nothing on Android.
+    let outcome = 'failed'
     try {
-      if (navigator.canShare) {
-        const blob = await new Promise(res => canvas.toBlob(res, 'image/png'))
-        if (blob) {
-          const file = new File([blob], filename, { type: 'image/png' })
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], text: decodeURIComponent(tweetTextFor(item, v)) })
-            usedWebShare = true
-          }
-        }
-      }
-    } catch (e) {
-      if (e?.name === 'AbortError') { setSharing(false); return }
-    }
-    if (!usedWebShare) {
-      // Desktop: download the image so the user can attach it, then open X compose.
-      try {
-        const dataUrl = canvas.toDataURL('image/png')
-        const a = document.createElement('a')
-        a.href = dataUrl; a.download = filename; a.click()
-      } catch {}
+      outcome = await shareFile(canvas.toDataURL('image/png'), filename, {
+        text: decodeURIComponent(tweetTextFor(item, v)),
+      })
+    } catch { /* falls through to the compose window */ }
+
+    if (outcome !== 'shared') {
+      // Desktop: the image is saved, so the user can attach it to the post.
       setTimeout(() => window.open(`https://twitter.com/intent/tweet?text=${tweetTextFor(item, v)}`, '_blank', 'noopener'), 400)
     }
     setSharing(false)

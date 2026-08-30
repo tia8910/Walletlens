@@ -2,14 +2,24 @@ package live.walletlens.twa;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Base64;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
+import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 
 import androidx.browser.customtabs.CustomTabsIntent;
 
@@ -204,6 +214,163 @@ public class WalletLensBridge {
     // ── App lock ─────────────────────────────────────────────────────────
 
     /** Whether the user has turned the app's own lock on. */
+    // ── Files out ────────────────────────────────────────────────────────
+    //
+    // WHY THE PAGE CANNOT DO THIS ITSELF
+    //
+    // In a browser the app saves a file by making a blob URL and clicking an
+    // <a download>, and shares one with navigator.share. A WebView implements
+    // NEITHER. The anchor click is inert — no download, no error — and
+    // navigator.share is undefined. So the backup export, the QR image, the
+    // portfolio PNG and every share button became silent no-ops the moment the
+    // app stopped being Chrome, on the one platform where "export your data"
+    // is the promise this app makes about privacy.
+    //
+    // The page hands the bytes over as base64 instead. Not elegant, and it
+    // costs a third in size, but it is the only representation that survives
+    // the JavascriptInterface boundary, which passes strings and nothing else.
+
+    /** Anything above this is refused rather than risking an OOM on the hop. */
+    private static final int MAX_FILE_BYTES = 12 * 1024 * 1024;
+
+    /**
+     * Save a file to the device's Downloads folder.
+     *
+     * <p>MediaStore on Android 10 and up, because scoped storage makes writing
+     * to the public Downloads directory by path fail there — which is exactly
+     * what DataExportActivity still does, and why exporting has been quietly
+     * failing on every modern phone.
+     *
+     * @return true if it was written
+     */
+    @JavascriptInterface
+    public boolean saveFile(String name, String mimeType, String base64) {
+        Activity a = activity();
+        if (a == null) return false;
+
+        byte[] bytes = decode(base64);
+        if (bytes == null) return false;
+
+        String safe = safeName(name);
+        String mime = (mimeType == null || mimeType.isEmpty()) ? "application/octet-stream" : mimeType;
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentValues v = new ContentValues();
+                v.put(MediaStore.Downloads.DISPLAY_NAME, safe);
+                v.put(MediaStore.Downloads.MIME_TYPE, mime);
+                v.put(MediaStore.Downloads.IS_PENDING, 1);
+                Uri item = a.getContentResolver()
+                        .insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
+                if (item == null) return false;
+                try (OutputStream out = a.getContentResolver().openOutputStream(item)) {
+                    if (out == null) return false;
+                    out.write(bytes);
+                }
+                v.clear();
+                v.put(MediaStore.Downloads.IS_PENDING, 0);
+                a.getContentResolver().update(item, v, null, null);
+            } else {
+                File dir = Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_DOWNLOADS);
+                if (!dir.exists() && !dir.mkdirs()) return false;
+                try (FileOutputStream out = new FileOutputStream(new File(dir, safe))) {
+                    out.write(bytes);
+                }
+            }
+        } catch (Throwable e) {
+            Log.w(TAG, "could not save " + safe + ": " + e);
+            return false;
+        }
+
+        // The page cannot show a system-level confirmation and a file that
+        // lands silently in Downloads reads as nothing having happened.
+        try { a.runOnUiThread(() -> Toast.makeText(a, "Saved to Downloads: " + safe, Toast.LENGTH_LONG).show()); }
+        catch (Throwable ignored) { }
+        return true;
+    }
+
+    /**
+     * Hand a file to the Android share sheet.
+     *
+     * <p>Written to the app's cache and shared through the FileProvider the
+     * manifest already declares: a file:// URI would throw FileUriExposedException
+     * on anything since Android 7, and granting read permission on a content://
+     * URI is the only way another app can open it.
+     */
+    @JavascriptInterface
+    public boolean shareFile(String name, String mimeType, String base64, String text) {
+        Activity a = activity();
+        if (a == null) return false;
+
+        byte[] bytes = decode(base64);
+        if (bytes == null) return false;
+
+        try {
+            File dir = new File(a.getCacheDir(), "share");
+            if (!dir.exists() && !dir.mkdirs()) return false;
+            File f = new File(dir, safeName(name));
+            try (FileOutputStream out = new FileOutputStream(f)) { out.write(bytes); }
+
+            Uri uri = FileProvider.getUriForFile(a, a.getPackageName() + ".fileprovider", f);
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType((mimeType == null || mimeType.isEmpty()) ? "*/*" : mimeType);
+            send.putExtra(Intent.EXTRA_STREAM, uri);
+            if (text != null && !text.isEmpty()) send.putExtra(Intent.EXTRA_TEXT, text);
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            a.startActivity(Intent.createChooser(send, null));
+            return true;
+        } catch (Throwable e) {
+            Log.w(TAG, "could not share " + name + ": " + e);
+            return false;
+        }
+    }
+
+    /** Share plain text, with no file. */
+    @JavascriptInterface
+    public boolean shareText(String text, String title) {
+        Activity a = activity();
+        if (a == null || text == null || text.isEmpty()) return false;
+        try {
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType("text/plain");
+            send.putExtra(Intent.EXTRA_TEXT, text);
+            if (title != null && !title.isEmpty()) send.putExtra(Intent.EXTRA_SUBJECT, title);
+            a.startActivity(Intent.createChooser(send, null));
+            return true;
+        } catch (Throwable e) {
+            Log.w(TAG, "could not share text: " + e);
+            return false;
+        }
+    }
+
+    @Nullable
+    private static byte[] decode(String base64) {
+        if (base64 == null || base64.isEmpty()) return null;
+        try {
+            byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
+            if (bytes.length == 0 || bytes.length > MAX_FILE_BYTES) return null;
+            return bytes;
+        } catch (Throwable e) {
+            return null;
+        }
+    }
+
+    /**
+     * A filename that cannot escape the directory it is meant for.
+     *
+     * The name comes from the page. A separator in it would make the write
+     * land somewhere else entirely, and "../" repeated enough times reaches
+     * anywhere this process can write.
+     */
+    @NonNull
+    private static String safeName(@Nullable String name) {
+        String n = name == null ? "" : name.replaceAll("[^A-Za-z0-9._-]", "_");
+        while (n.startsWith(".")) n = n.substring(1);
+        if (n.isEmpty()) n = "walletlens-export";
+        return n.length() > 100 ? n.substring(n.length() - 100) : n;
+    }
+
     // ── Notifications ────────────────────────────────────────────────────
 
     /**

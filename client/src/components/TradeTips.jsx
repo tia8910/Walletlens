@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
+import { shareFile } from '../fileOut'
 
 const CATEGORIES = [
   { id: 'All',        tKey: 'tipsCatAll' },
@@ -224,20 +225,14 @@ export default function TradeTips() {
   const handleShare = async () => {
     const canvas = buildShareCanvas(tip)
     const blob = await canvasToBlob(canvas)
-    const file = new File([blob], 'walletlens-tip.png', { type: 'image/png' })
     const shareText = tip.type === 'quote'
       ? `"${tip.title}" — ${tip.author} | WalletLens`
       : `${tip.type === 'do' ? 'DO:' : 'AVOID:'} ${tip.title} — ${tip.body} | WalletLens`
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file], title: tip.title, text: shareText })
-    } else {
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'walletlens-tip.png'
-      a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-    }
+    // One call for both: shareFile opens the share sheet where there is one
+    // — the browser's or, in the app, Android's — and saves the file where
+    // there is not. The hand-rolled fallback here could do neither in a
+    // WebView, so tapping Share simply did nothing.
+    await shareFile(blob, 'walletlens-tip.png', { title: tip.title, text: shareText })
     setShareState('done')
     setTimeout(() => setShareState('idle'), 2000)
   }

@@ -10,12 +10,16 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import androidx.activity.ComponentActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -101,6 +105,30 @@ public class AppShellActivity extends ComponentActivity {
     /** onResume runs on every return to the app; the handoff must not. */
     private boolean handoffChecked;
 
+    /**
+     * The page's pending <input type="file">, waiting on the system picker.
+     *
+     * A WebView does NOT open a file picker on its own. Tapping a file input
+     * calls onShowFileChooser and, if the app does not answer it, absolutely
+     * nothing happens — no picker, no error, no console message. That took out
+     * screenshot import, CSV import and restoring from a backup file, which in
+     * this app is most of the ways data gets in.
+     */
+    private ValueCallback<Uri[]> pendingFiles;
+
+    /**
+     * Registered as a field, deliberately.
+     *
+     * registerForActivityResult has to be called before the activity is
+     * STARTED, and it throws if it is not. A field initialiser runs during
+     * construction, which is always early enough; calling it from the tap that
+     * needs it would crash the app.
+     */
+    private final ActivityResultLauncher<Intent> filePicker =
+            registerForActivityResult(
+                    new ActivityResultContracts.StartActivityForResult(),
+                    result -> deliverFiles(result.getResultCode(), result.getData()));
+
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -151,6 +179,7 @@ public class AppShellActivity extends ComponentActivity {
 
         web.addJavascriptInterface(new WalletLensBridge(this), WalletLensBridge.NAME);
         web.setWebViewClient(new ShellClient());
+        web.setWebChromeClient(new ShellChrome());
 
         if (savedInstanceState != null) {
             // Rotation and process death. Restoring beats reloading: a reload
@@ -350,6 +379,50 @@ public class AppShellActivity extends ComponentActivity {
             }
             return true;
         }
+    }
+
+    /**
+     * Everything the page asks the browser UI for. Here, that is file inputs.
+     */
+    private class ShellChrome extends WebChromeClient {
+        @Override
+        public boolean onShowFileChooser(WebView view,
+                                         ValueCallback<Uri[]> callback,
+                                         FileChooserParams params) {
+            // A second tap while a picker is already open. The old callback
+            // must be answered or the page's input stays disabled for ever.
+            if (pendingFiles != null) pendingFiles.onReceiveValue(null);
+            pendingFiles = callback;
+
+            try {
+                filePicker.launch(params.createIntent());
+                return true;
+            } catch (Throwable e) {
+                Log.w(TAG, "no file picker available: " + e);
+                pendingFiles = null;
+                // false hands the input back to the WebView, which does nothing
+                // with it — but it leaves the control usable rather than stuck
+                // waiting on a callback that will never be answered.
+                return false;
+            }
+        }
+    }
+
+    /**
+     * Hand the picked files back to the page.
+     *
+     * The callback must be answered on EVERY path, cancellation included.
+     * A WebView that never hears back leaves the file input permanently inert:
+     * the user taps it again and nothing happens, for the rest of the session.
+     */
+    private void deliverFiles(int resultCode, @Nullable Intent data) {
+        ValueCallback<Uri[]> cb = pendingFiles;
+        pendingFiles = null;
+        if (cb == null) return;
+        cb.onReceiveValue(
+                resultCode == RESULT_OK
+                        ? WebChromeClient.FileChooserParams.parseResult(resultCode, data)
+                        : null);
     }
 
     @Override

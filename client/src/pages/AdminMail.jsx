@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
 import { VOICE_API } from '../apiHosts.js'
+import { saveFile } from '../fileOut'
 
 const ENDPOINT = VOICE_API
 const TOKEN_KEY = 'wl_admin_mail_token'
@@ -56,12 +57,13 @@ export default function AdminMail() {
     // would otherwise shift every later column by one.
     const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`
     const csv = [cols.join(','), ...guardians.rows.map(r => cols.map(c => esc(r[c])).join(','))].join('\n')
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `guardian-subscribers-${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    // Through saveFile like every other export. This page is operator-only and
+    // would work with the anchor, but one file left doing it by hand is one
+    // file the next person copies from.
+    saveFile(
+      new Blob([csv], { type: 'text/csv;charset=utf-8' }),
+      `guardian-subscribers-${new Date().toISOString().slice(0, 10)}.csv`,
+    )
   }
 
   async function sendTest() {

@@ -19,9 +19,55 @@ const JAVA_DIR = join(
   SRC, '..', '..', 'walletlens_source/release_package/app/src/main/java/live/walletlens/twa',
 )
 const read = (f) => readFileSync(join(JAVA_DIR, f), 'utf8')
-const code = (f) => read(f)
-  .replace(/\/\*[\s\S]*?\*\//g, '')
-  .replace(/\/\/[^\n]*/g, '')
+
+/**
+ * Source with comments removed and string bodies blanked.
+ *
+ * A single pass, not chained regexes, and that is the point. Java source
+ * contains all four of these, and every regex ordering gets one of them wrong:
+ *
+ *   "*​/*"                    a string holding a block-comment CLOSER
+ *   "https:/​/walletlens.live" a string holding a line-comment opener
+ *   // the app's own WebView  an apostrophe in prose, which looks like a char
+ *                            literal and runs to the next apostrophe
+ *
+ * Strip comments first and the mime wildcard opens a comment that deletes real
+ * code up to the next javadoc. Blank strings first and an apostrophe in a
+ * comment blanks the code after it. Both happened here, and both reported a
+ * missing line that was plainly in the file.
+ *
+ * So this walks the text once, in the states the language actually has.
+ */
+function code(f) {
+  const src = read(f)
+  let out = ''
+  let i = 0
+  while (i < src.length) {
+    const two = src.slice(i, i + 2)
+    if (two === '//') {
+      while (i < src.length && src[i] !== '\n') i++
+      continue
+    }
+    if (two === '/*') {
+      i += 2
+      while (i < src.length && src.slice(i, i + 2) !== '*/') i++
+      i += 2
+      continue
+    }
+    if (src[i] === '"' || src[i] === "'") {
+      const quote = src[i]
+      i++
+      while (i < src.length && src[i] !== quote) i += src[i] === '\\' ? 2 : 1
+      i++
+      // The quotes are kept so a matcher can still see that a literal was
+      // there; only the body goes.
+      out += quote + quote
+      continue
+    }
+    out += src[i++]
+  }
+  return out
+}
 
 const javaDir = () => JAVA_DIR
 
@@ -172,6 +218,60 @@ describe('the WebView shell', () => {
       expect(src, `${f} must not test display-mode itself`)
         .not.toMatch(/matchMedia\??\.?\(['"]\(display-mode: standalone\)['"]\)/)
     }
+  })
+
+  // ── Files ────────────────────────────────────────────────────────────
+
+  it('opens a file picker for the page', () => {
+    // A WebView does not open one on its own: tapping <input type="file">
+    // calls onShowFileChooser and, if the app does not answer, nothing at all
+    // happens. That is screenshot import, CSV import and restoring a backup
+    // file — most of the ways data gets into this app.
+    const src = code('AppShellActivity.java')
+    expect(src).toMatch(/setWebChromeClient/)
+    expect(src).toMatch(/onShowFileChooser/)
+    expect(src).toMatch(/FileChooserParams\.parseResult/)
+  })
+
+  it('always answers the file-chooser callback', () => {
+    // A callback that is never answered leaves the input permanently inert:
+    // the user taps it again and nothing happens, for the rest of the session.
+    // So cancellation has to deliver null rather than returning early.
+    const src = code('AppShellActivity.java')
+    const body = src.slice(src.indexOf('private void deliverFiles'))
+    expect(body).toMatch(/onReceiveValue/)
+    expect(body, 'cancellation must still answer the callback').toMatch(/:\s*null/)
+  })
+
+  it('registers the picker before the activity can start', () => {
+    // registerForActivityResult throws if it runs after STARTED, so it has to
+    // be a field initialiser rather than something the tap sets up.
+    expect(code('AppShellActivity.java'))
+      .toMatch(/private final ActivityResultLauncher<Intent> filePicker\s*=\s*registerForActivityResult/)
+  })
+
+  it('cannot be talked into writing outside Downloads', () => {
+    // The filename arrives from the page. A separator in it would put the
+    // write somewhere else entirely.
+    // Asserted on the CALLS, not on the sanitiser's character class: the class
+    // lives in a string literal, which code() blanks, and pinning the exact
+    // regex would test the spelling rather than the property anyway. What
+    // matters is that neither writer ever touches the raw name.
+    const src = code('WalletLensBridge.java')
+    expect(src).toMatch(/private static String safeName\(/)
+    for (const method of ['saveFile', 'shareFile']) {
+      const body = src.slice(src.indexOf(`public boolean ${method}(`))
+      expect(body.slice(0, body.indexOf('\n    }')), `${method} must sanitise the name`)
+        .toMatch(/safeName\(name\)/)
+    }
+  })
+
+  it('shares through the FileProvider, never a file:// URI', () => {
+    // A file:// URI throws FileUriExposedException on anything since Android
+    // 7, and there is no way for the receiving app to read it.
+    const src = code('WalletLensBridge.java')
+    expect(src).toMatch(/FileProvider\.getUriForFile/)
+    expect(src).toMatch(/FLAG_GRANT_READ_URI_PERMISSION/)
   })
 
   it('holds its host weakly, so the Activity can be collected', () => {
