@@ -12,6 +12,7 @@ import PushToggle from '../components/PushToggle'
 import ZakatNotifyToggle from '../components/ZakatNotifyToggle'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import DriveBackup from '../components/DriveBackup'
+import DeviceVault from '../components/DeviceVault'
 import { isAndroidTWA } from '../nativeBridge'
 import { requestReviewNow, reviewDiagnostics } from '../reviewPrompt'
 import { effectSettings, setEffectSettings, primeEffectAudio } from '../screenEffectsRuntime'
@@ -352,6 +353,12 @@ export default function Settings() {
       )}
 
       <DriveBackup />
+
+      {/* ── The app's own copy of the portfolio ──
+           Android only. Same reasoning as the widgets panel below: NOT gated
+           on isAndroidTWA(), because if detection is what is broken this is
+           the readout that says so. */}
+      {isAndroid && <DeviceVault />}
 
       {/* ── Home screen widgets ── Android only, and deliberately NOT gated on
            isAndroidTWA(): if detection is what's broken, hiding the panel
