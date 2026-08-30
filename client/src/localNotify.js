@@ -26,9 +26,54 @@
 // for a browser with no service worker controlling the page — a fresh first
 // load before the worker activates, or a browser with SW disabled.
 
-/** Whether the browser will show us anything at all. */
+/**
+ * The bridge, when this page runs inside the app's own WebView.
+ *
+ * A WebView implements no part of the Notification API — not the constructor,
+ * not a service worker to fall back to — so in the shell every path below is a
+ * silent no-op, which is the exact failure this file was written to end, one
+ * platform later. The app can post a notification perfectly well; it just has
+ * to be asked in Java.
+ */
+function shell() {
+  try {
+    const b = typeof window !== 'undefined' ? window.AndroidBridge : null
+    return b && typeof b.showLocalNotification === 'function' ? b : null
+  } catch { return null }
+}
+
+/** Whether we can show anything at all. */
 export function canNotify() {
+  const b = shell()
+  if (b) {
+    try { return !!b.notificationsAllowed() } catch { return false }
+  }
   return typeof Notification !== 'undefined' && Notification.permission === 'granted'
+}
+
+/**
+ * Ask for permission to show these, from inside the tap that wants it.
+ *
+ * One dialog either way: the browser's where there is a browser, Android's in
+ * the shell. The shell's answer does not arrive in a promise — it is decided
+ * by a system dialog over a separate Activity — so this resolves on what the
+ * OS says once the user is back, and callers repaint from canNotify().
+ */
+export async function requestNotifyPermission() {
+  const b = shell()
+  if (b) {
+    if (canNotify()) return true
+    try { b.requestNotificationPermission() } catch { return false }
+    const deadline = Date.now() + 30_000
+    while (Date.now() < deadline && !canNotify()) {
+      await new Promise(r => setTimeout(r, 300))
+    }
+    return canNotify()
+  }
+
+  if (typeof Notification === 'undefined') return false
+  if (Notification.permission === 'granted') return true
+  try { return (await Notification.requestPermission()) === 'granted' } catch { return false }
 }
 
 /**
@@ -39,6 +84,14 @@ export function canNotify() {
  */
 export async function showLocalNotification(title, options = {}) {
   if (!canNotify()) return false
+
+  const b = shell()
+  if (b) {
+    try {
+      b.showLocalNotification(title, options.body || '', options.data?.url || '')
+      return true
+    } catch { return false }
+  }
 
   // The path that works on Android. `ready` resolves only once a worker is
   // active, so this is also the check for "is there one".

@@ -127,9 +127,7 @@ public class CrashLogActivity extends Activity {
      */
     private void continueToApp() {
         try {
-            Intent go = new Intent(this, LauncherActivity.class);
-            go.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            startActivity(go);
+            startActivity(AppEntry.home(this));
         } catch (Throwable ignored) {
             // Better to close than to strand the user on this screen.
         }

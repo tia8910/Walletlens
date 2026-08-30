@@ -6,7 +6,7 @@ import Icon from './Icon'
 import { track } from '../analytics'
 import { syncAlerts } from '../push'
 import { useLanguage } from '../LanguageContext'
-import { showLocalNotification } from '../localNotify'
+import { showLocalNotification, requestNotifyPermission, canNotify as notificationsAvailable } from '../localNotify'
 
 const WATCHLIST_KEY = 'wl_watchlist'
 const WL_ALERTS_KEY = 'wl_watchlist_alerts'
@@ -103,7 +103,7 @@ export default function Watchlist({ portfolioPrices = {} }) {
   const [alertFormId, setAlertFormId] = useState(null)
   const [alertCond, setAlertCond]     = useState('above')
   const [alertPrice, setAlertPrice]   = useState('')
-  const [notifPerm, setNotifPerm] = useState(() => (typeof Notification !== 'undefined' ? Notification.permission : 'default'))
+  const [notifPerm, setNotifPerm] = useState(() => (notificationsAvailable() ? 'granted' : (typeof Notification !== 'undefined' ? Notification.permission : 'default')))
   const alertsRef  = useRef(alerts)
   const searchRef  = useRef(null)
   const itemsRef   = useRef(items)
@@ -157,7 +157,7 @@ export default function Watchlist({ portfolioPrices = {} }) {
     const merged = { ...portfolioPrices, ...prices }
     const updated = [...alertsRef.current]
     let changed = false
-    const canNotify = 'Notification' in window && Notification.permission === 'granted'
+    const canNotify = notificationsAvailable()
     for (let i = 0; i < updated.length; i++) {
       const a = updated[i]
       if (a.triggered) continue
@@ -256,9 +256,8 @@ export default function Watchlist({ portfolioPrices = {} }) {
   }
 
   async function requestPerm() {
-    if (!('Notification' in window)) return
-    const r = await Notification.requestPermission()
-    setNotifPerm(r)
+    const ok = await requestNotifyPermission()
+    setNotifPerm(ok ? 'granted' : 'denied')
   }
 
   function toggleSearch() {

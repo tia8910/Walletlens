@@ -56,8 +56,7 @@ public class WalletLensWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.widget_tracked, trackedAssets + " assets");
         views.setTextViewText(R.id.widget_top_mover, topMover);
 
-        Intent tapIntent = new Intent(context, LauncherActivity.class);
-        tapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        Intent tapIntent = AppEntry.home(context);
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context, 0, tapIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);

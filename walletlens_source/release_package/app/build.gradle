@@ -302,7 +302,12 @@ task generateShorcutsFile {
                     'intent'(
                             'android:action': 'android.intent.action.MAIN',
                             'android:targetPackage': twaManifest.applicationId,
-                            'android:targetClass': twaManifest.applicationId + '.LauncherActivity',
+                            // AppShellActivity, not LauncherActivity. A long-press
+                            // shortcut is a launcher entry like any other, and one
+                            // that still targeted the TWA would open Chrome from an
+                            // app that no longer uses it — the address bar back on
+                            // the one path nobody thinks to retest.
+                            'android:targetClass': twaManifest.applicationId + '.AppShellActivity',
                             'android:data': s.url)
                     'categories'('android:name': 'android.intent.category.LAUNCHER')
                 }

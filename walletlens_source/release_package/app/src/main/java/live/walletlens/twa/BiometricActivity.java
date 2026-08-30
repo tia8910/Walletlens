@@ -366,10 +366,10 @@ public class BiometricActivity extends AppCompatActivity {
             redirectUrl = "https://walletlens.live/dashboard?biometric_auth=" + status;
         }
 
-        Intent intent = new Intent(this, LauncherActivity.class);
-        intent.setData(Uri.parse(redirectUrl));
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(intent);
+        // deepLink rather than setData: redirectUrl can arrive as a query
+        // parameter on the launch URI, which the web app sets, so it is not
+        // this app's own string by the time it gets here.
+        startActivity(AppEntry.deepLink(this, redirectUrl));
         finish();
     }
 

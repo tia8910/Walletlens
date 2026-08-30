@@ -60,8 +60,13 @@ export function shellVersion() {
  * spent months building and find nothing in it.
  *
  * What survives the switch is the vault — the app's own copy, in the app's own
- * files directory, which the TWA build has been writing since 6.1. The shell
- * can read that file, so the first run asks for it and restores from it.
+ * files directory. The shell can read that file, so the first run asks for it
+ * and restores from it.
+ *
+ * The vault has only been written since 6.2, and an install updating straight
+ * from 6.1 arrives with an empty one. AppShellActivity fills it first, by
+ * opening the site in Chrome once so the page there can mirror itself across —
+ * which is why an empty vault below is a retry rather than a verdict.
  *
  * Guarded three ways, because a restore that runs when it should not is worse
  * than one that never runs:
@@ -95,12 +100,23 @@ export async function seedFromVault() {
   let payload = ''
   try { payload = b.readVault() || '' } catch { return { status: 'bridge-failed' } }
 
+  if (!payload) {
+    // NOT marked. An empty vault is the state a fresh install from 6.1 starts
+    // in, and it is exactly the state AppShellActivity's handoff exists to
+    // change: the app opens the site in Chrome, the user taps once, the vault
+    // is written, and the shell reloads this page. Marking here would make
+    // that reload find "already-seeded" and hand the user an empty app with
+    // their portfolio sitting in a file the code had decided not to read.
+    //
+    // Safe to retry: reading an empty file costs nothing, and hasNothing()
+    // above still guards against ever overwriting a portfolio that exists.
+    return { status: 'empty-vault' }
+  }
+
   // Marked BEFORE applying. If applyBackupCode throws on a corrupt vault, the
   // alternative is retrying it on every launch for ever, and a corrupt vault
   // does not become less corrupt on the fifth attempt.
   mark()
-
-  if (!payload) return { status: 'empty-vault' }
 
   try {
     const { restored } = await applyBackupCode(payload)

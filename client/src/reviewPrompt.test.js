@@ -52,6 +52,9 @@ beforeEach(() => {
   vi.setSystemTime(T0)
   localStorage.clear()
   sessionStorage.clear()
+  // Onboarded, because that is what every case below is about: a person USING
+  // the app. The welcome-flow gate has its own tests further down.
+  localStorage.setItem('wl_welcomed_v2', '1')
   bridge.fired = []
   bridge.opts = []
   bridge.twa = true
@@ -109,28 +112,85 @@ describe('maybeAskForReview', () => {
     expect(firedIntents()).toEqual([])
   })
 
-  it('asks on the very first visit', async () => {
-    // No waiting period and no session minimum. This is the whole point of the
-    // current rules, so it is asserted directly rather than inferred from the
-    // generous seed() default the other tests use.
+  // ── Not on the way in ────────────────────────────────────────────────
+  //
+  // These four are one bug, reported twice: the card arrived at the start of
+  // the app, before there was anything to have an opinion about. Each asserts
+  // one of the gates that now stands between a launch and an ask.
+
+  it('never asks on a first visit', async () => {
     const { noteAppOpen, maybeAskForReview } = await loadModule()
     noteAppOpen()
     expect(readState()).toMatchObject({ opens: 1 })
 
-    vi.setSystemTime(T0 + 20 * 1000)   // just past the dwell
-    expect(maybeAskForReview(READY)).toBe(true)
-    expect(firedIntents()).toEqual(['walletlens://review?source=returning'])
+    // Well past every dwell window — the block is the usage history, not time
+    // on screen.
+    vi.setSystemTime(T0 + 10 * 60 * 1000)
+    expect(maybeAskForReview(READY)).toBe(false)
+    expect(firedIntents()).toEqual([])
   })
 
-  it('asks even with an empty portfolio', async () => {
-    // Requiring a holding would push the ask past the first visit for every new
-    // user, which is the one thing these rules exist to avoid. The floor went
-    // three, then one, then none.
+  it('waits for a few launches', async () => {
+    const { maybeAskForReview } = await loadModule()
+    seed({ opens: 2 })
+    vi.setSystemTime(T0 + 60 * 1000)
+    expect(maybeAskForReview(READY)).toBe(false)
+
+    seed({ opens: 3 })
+    expect(maybeAskForReview(READY)).toBe(true)
+  })
+
+  it('waits for a later day than the first', async () => {
+    // A single long session is still a first impression, however many hours
+    // of it there are.
+    const { maybeAskForReview } = await loadModule()
+    seed({ first: T0 - 1 * DAY })
+    vi.setSystemTime(T0 + 60 * 1000)
+    expect(maybeAskForReview(READY)).toBe(false)
+
+    seed({ first: T0 - 2 * DAY })
+    expect(maybeAskForReview(READY)).toBe(true)
+  })
+
+  it('waits for a portfolio', async () => {
+    // The app does one thing. A user with nothing in it has not seen it do it.
     const { maybeAskForReview } = await loadModule()
     seed()
     vi.setSystemTime(T0 + 60 * 1000)
 
-    expect(maybeAskForReview({ holdingsCount: 0, totalValue: 0 })).toBe(true)
+    expect(maybeAskForReview({ holdingsCount: 0, totalValue: 0 })).toBe(false)
+    expect(maybeAskForReview({ holdingsCount: 1, totalValue: 40 })).toBe(true)
+  })
+
+  it('never asks during the welcome flow', async () => {
+    // The clearest version of the whole mistake: asking someone to rate an app
+    // they are still being introduced to.
+    const { maybeAskForReview } = await loadModule()
+    seed()
+    vi.setSystemTime(T0 + 60 * 1000)
+
+    localStorage.removeItem('wl_welcomed_v2')
+    expect(maybeAskForReview(READY), 'welcome never finished').toBe(false)
+
+    localStorage.setItem('wl_welcomed_v2', '1')
+    localStorage.setItem('wl_welcome_step_v2', '2')
+    expect(maybeAskForReview(READY), 'part-way through the welcome').toBe(false)
+
+    localStorage.removeItem('wl_welcome_step_v2')
+    expect(maybeAskForReview(READY)).toBe(true)
+  })
+
+  it('gives a session a full minute before considering it', async () => {
+    // Was fifteen seconds, which on a slow phone could land the card while the
+    // dashboard was still settling.
+    const { maybeAskForReview } = await loadModule()
+    seed()
+
+    vi.setSystemTime(T0 + 45 * 1000)
+    expect(maybeAskForReview(READY)).toBe(false)
+
+    vi.setSystemTime(T0 + 61 * 1000)
+    expect(maybeAskForReview(READY)).toBe(true)
   })
 
   it('does not ask twice in the same session, or again for months', async () => {
@@ -250,11 +310,11 @@ describe('positive moments', () => {
     seed({ first: T0 - 5 * DAY, opens: 5, moment: T0, momentKind: 'import_success' })
 
     // Too soon even for a moment.
-    vi.setSystemTime(T0 + 3 * 1000)
+    vi.setSystemTime(T0 + 10 * 1000)
     expect(maybeAskForReview(READY)).toBe(false)
 
-    // Past the shortened window but well inside the normal 40s one.
-    vi.setSystemTime(T0 + 12 * 1000)
+    // Past the shortened window, well inside the normal one-minute wait.
+    vi.setSystemTime(T0 + 25 * 1000)
     expect(maybeAskForReview(READY)).toBe(true)
   })
 
@@ -271,7 +331,7 @@ describe('positive moments', () => {
   it('clears the moment once used, so one win is not worth two asks', async () => {
     const { maybeAskForReview } = await loadModule()
     seed({ first: T0 - 5 * DAY, opens: 5, moment: T0, momentKind: 'goal_reached' })
-    vi.setSystemTime(T0 + 12 * 1000)
+    vi.setSystemTime(T0 + 25 * 1000)
 
     expect(maybeAskForReview(READY)).toBe(true)
     expect(readState()).toMatchObject({ moment: 0, momentKind: '' })

@@ -75,10 +75,54 @@ export const DEFAULT_PUSH_PREFS = {
 }
 
 export function isPushSupported() {
+  // The app's own WebView has no service worker and therefore no PushManager,
+  // so every check below fails there — and the toggle read "not supported" on
+  // the one platform where notifications are most of the point. It supports
+  // notifications perfectly well; it receives them over FCM instead, which is
+  // a different transport rather than a missing capability.
+  if (inAppShell()) return true
+
   return typeof navigator !== 'undefined' &&
     'serviceWorker' in navigator &&
     'PushManager' in window &&
     'Notification' in window
+}
+
+/**
+ * Whether this page runs inside the app's own WebView.
+ *
+ * Read straight off the bridge rather than through nativeShell.js, which
+ * imports the backup code that imports half the app: this is called from
+ * isPushSupported(), which runs during render.
+ */
+function inAppShell() {
+  try {
+    const b = typeof window !== 'undefined' ? window.AndroidBridge : null
+    return !!(b && typeof b.shellVersion === 'function')
+  } catch { return false }
+}
+
+/**
+ * Whether the OS will let the app post a notification, read synchronously.
+ *
+ * The same answer nativePush.nativeNotificationsAllowed() gives. Duplicated
+ * here — three lines of it — because watchPermission() is synchronous and
+ * cannot await a dynamic import, and because everything below has to keep
+ * working if the bridge shim fails to load at all.
+ */
+function shellNotificationsAllowed() {
+  try {
+    const b = window.AndroidBridge
+    return !!(b && typeof b.notificationsAllowed === 'function' && b.notificationsAllowed())
+  } catch { return false }
+}
+
+/** Whether the push worker already knows this device's token. */
+function shellRegistered() {
+  try {
+    const b = window.AndroidBridge
+    return !!(b && typeof b.pushTokenSynced === 'function' && b.pushTokenSynced())
+  } catch { return false }
 }
 
 // VAPID public key is base64url; the PushManager wants a Uint8Array.
@@ -305,8 +349,15 @@ function readAsk() {
  */
 export function shouldAskPush() {
   try {
-    if (!isPushSupported() || !VAPID_PUBLIC) return false
-    if (Notification.permission !== 'default') return false
+    if (!isPushSupported()) return false
+    if (inAppShell()) {
+      // Already allowed means autoEnablePush has it; VAPID is a Web Push key
+      // and has nothing to say about whether to show the primer here.
+      if (shellNotificationsAllowed()) return false
+    } else {
+      if (!VAPID_PUBLIC) return false
+      if (Notification.permission !== 'default') return false
+    }
     if (localStorage.getItem(OPTOUT_KEY)) return false
     const { n = 0, ts = 0 } = readAsk()
     if (n >= MAX_ASKS) return false
@@ -389,6 +440,12 @@ export async function isPushEnabled() {
   try {
     if (localStorage.getItem(OPTOUT_KEY)) return false
   } catch { /* storage blocked — fall through to the subscription */ }
+
+  // In the shell there is no subscription object to find. "On" means the OS
+  // will deliver and the server has the address — both, because either alone
+  // is a toggle that reads On while nothing arrives.
+  if (inAppShell()) return shellNotificationsAllowed() && shellRegistered()
+
   try { return !!(await getSubscription()) } catch { return false }
 }
 
@@ -434,6 +491,14 @@ async function askNativeNotificationPermission() {
 
 export async function enablePush() {
   if (!isPushSupported()) throw new Error('Push notifications aren’t supported on this device.')
+
+  // In the app's own WebView the whole Web Push path below is unavailable and
+  // asking for the browser permission is worse than useless: the dialog grants
+  // something a WebView can never act on, and the user then meets Android's
+  // own dialog for the permission that actually decides anything. Two asks,
+  // one decision, and the first one buys nothing.
+  if (inAppShell()) return enablePushInShell()
+
   if (!VAPID_PUBLIC) throw new Error('Push isn’t configured yet (missing key). Try again after the next update.')
 
   await askNativeNotificationPermission()
@@ -478,6 +543,89 @@ export async function enablePush() {
 }
 
 /**
+ * watchPermission's shell half: poll the OS on every return to the app.
+ *
+ * A transition INTO allowed is the only one worth acting on, exactly as in the
+ * browser path — re-registering on every app switch would put a request on the
+ * network each time someone glanced at another app.
+ */
+function watchShellPermission(onChange) {
+  let last = shellNotificationsAllowed()
+  let stopped = false
+
+  const check = async () => {
+    if (stopped) return
+    const now = shellNotificationsAllowed()
+    if (now === last) return
+    last = now
+    if (!now) { onChange?.(false); return }
+    try {
+      const native = await import('./nativePush.js')
+      await native.registerNativePush({ force: true, watch: watchFromStorage() })
+      if (!stopped) onChange?.(await isPushEnabled())
+    } catch { /* nothing to repaint */ }
+  }
+
+  const onVisible = () => { if (document.visibilityState === 'visible') check() }
+  document.addEventListener('visibilitychange', onVisible)
+  window.addEventListener('focus', check)
+
+  return () => {
+    stopped = true
+    document.removeEventListener('visibilitychange', onVisible)
+    window.removeEventListener('focus', check)
+  }
+}
+
+/**
+ * Turn notifications on inside the app's own WebView.
+ *
+ * ONE DIALOG. Android's, for POST_NOTIFICATIONS, which is the only permission
+ * that governs whether a notification from this app appears. There is no
+ * browser permission to ask for here and no subscription to make — the address
+ * is an FCM token the native side already holds.
+ *
+ * The wait is for a dialog, not a promise: the permission is requested by a
+ * separate Activity and the answer lands in the app's own state rather than in
+ * anything JavaScript can await. So this polls the bridge, briefly, and gives
+ * up rather than hanging a toggle for ever. A user who takes longer than that
+ * is not stuck — the permission is granted, and the next launch registers.
+ */
+async function enablePushInShell() {
+  const native = await import('./nativePush.js')
+
+  if (!native.nativeNotificationsAllowed()) {
+    native.requestNativeNotificationPermission()
+
+    const deadline = Date.now() + 30_000
+    while (Date.now() < deadline && !native.nativeNotificationsAllowed()) {
+      await new Promise(r => setTimeout(r, 300))
+    }
+    if (!native.nativeNotificationsAllowed()) {
+      throw new Error('Allow notifications for WalletLens, then try again.')
+    }
+  }
+
+  const res = await native.registerNativePush({
+    force: true,
+    watch: watchFromStorage(),
+    setup: featureSetup(),
+    prefs: getPushPrefs(),
+    lang: currentLang(),
+    tz: currentTz(),
+  })
+  if (!res.ok) {
+    if (res.reason === 'no-token') {
+      throw new Error('The app hasn’t finished setting up notifications yet. Try again in a moment.')
+    }
+    throw new Error('Couldn’t reach the notification server. Please try again.')
+  }
+
+  try { localStorage.removeItem(OPTOUT_KEY) } catch { /* private mode */ }
+  return { ok: true }
+}
+
+/**
  * Turn push on by itself, without prompting, when permission already exists.
  *
  * In the Android app this is the normal path: the shell asks for
@@ -496,7 +644,23 @@ export async function enablePush() {
  */
 export async function autoEnablePush() {
   try {
-    if (!isPushSupported() || !VAPID_PUBLIC) return { ok: false, reason: 'unsupported' }
+    if (!isPushSupported()) return { ok: false, reason: 'unsupported' }
+
+    // The shell's version of the same idea, and the reasoning is identical:
+    // register without prompting when the OS has already said yes, never
+    // prompt from here. VAPID is not part of it — that key belongs to Web
+    // Push, and requiring it would make this return 'unsupported' on the one
+    // platform that needs it most.
+    if (inAppShell()) {
+      if (!shellNotificationsAllowed()) return { ok: false, reason: 'not-granted' }
+      if (localStorage.getItem(OPTOUT_KEY)) return { ok: false, reason: 'opted-out' }
+      if (shellRegistered()) return { ok: false, reason: 'already-on' }
+      const native = await import('./nativePush.js')
+      const res = await native.registerNativePush({ watch: watchFromStorage() })
+      return res.ok ? { ok: true } : { ok: false, reason: res.reason }
+    }
+
+    if (!VAPID_PUBLIC) return { ok: false, reason: 'unsupported' }
     if (Notification.permission !== 'granted') return { ok: false, reason: 'not-granted' }
     if (localStorage.getItem(OPTOUT_KEY)) return { ok: false, reason: 'opted-out' }
     if (await getSubscription()) return { ok: false, reason: 'already-on' }
@@ -534,6 +698,14 @@ export async function autoEnablePush() {
  */
 export function watchPermission(onChange) {
   if (typeof window === 'undefined' || !isPushSupported()) return () => {}
+
+  // The shell's permission lives in Android, not in the page, and it changes
+  // in places the page is never told about: the system dialog this app raises,
+  // and Settings → Apps → Notifications, which the user may visit at any time.
+  // Same shape as below — re-check when the app comes back to the foreground —
+  // reading the OS rather than Notification.permission, which is not defined
+  // here at all.
+  if (inAppShell()) return watchShellPermission(onChange)
 
   let last = Notification.permission
   let stopped = false
@@ -709,6 +881,19 @@ export async function ensureRegistered() {
 export async function pushStatus() {
   try {
     if (!isPushSupported()) return { supported: false }
+
+    // Notification.permission does not exist in the app's WebView, and reading
+    // it is what would throw before any of the rest of this ran.
+    if (inAppShell()) {
+      const permission = shellNotificationsAllowed() ? 'granted' : 'default'
+      const native = await import('./nativePush.js')
+      const token = native.nativePushToken()
+      if (!token) return { supported: true, subscribed: false, permission }
+      const res = await fetch(`${PUSH_API}/status?fcmToken=${encodeURIComponent(token)}`)
+      if (!res.ok) return { supported: true, subscribed: true, permission, reachable: false }
+      return { supported: true, subscribed: true, permission, reachable: true, ...(await res.json()) }
+    }
+
     const sub = await getSubscription()
     if (!sub) return { supported: true, subscribed: false, permission: Notification.permission }
     const res = await fetch(`${PUSH_API}/status?endpoint=${encodeURIComponent(sub.endpoint)}`)

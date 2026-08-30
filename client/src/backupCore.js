@@ -123,6 +123,10 @@ export const DEVICE_ONLY_KEYS = [
   // Rollback buffer for the last import. Restoring it would offer to undo an
   // import that happened on a different device.
   'crypto_tracker_pre_import_snapshot',
+  // How far through the first-run welcome flow this device got. A position in
+  // a flow, not a fact about the portfolio — restoring it would drop a new
+  // device back onto slide 3 of an introduction it never started.
+  'wl_welcome_step_v2',
   // UI, session and scheduling state. Harmless to lose, noise to carry.
   'wl_active_tab', 'wl_assistant_fab_pos', 'wl_assistant_history',
   'wl_tour_done_v2', 'wl_vision_explained', 'wl_vision_visited',

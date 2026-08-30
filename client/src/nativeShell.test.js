@@ -23,6 +23,29 @@ const code = (f) => read(f)
   .replace(/\/\*[\s\S]*?\*\//g, '')
   .replace(/\/\/[^\n]*/g, '')
 
+const javaDir = () => JAVA_DIR
+
+/**
+ * The manifest with its comments removed.
+ *
+ * Stripped because the comments in it discuss the very attributes these tests
+ * count — the note explaining why the permission gate no longer carries
+ * MAIN/LAUNCHER would otherwise be counted as an activity that does.
+ */
+const readManifest = () => readFileSync(
+  join(SRC, '..', '..', 'walletlens_source/release_package/app/src/main/AndroidManifest.xml'),
+  'utf8',
+).replace(/<!--[\s\S]*?-->/g, '')
+
+/** One <activity> element, by its exact android:name value. */
+function activityBlock(name) {
+  const manifest = readManifest()
+  const start = manifest.indexOf(`android:name="${name}"`)
+  if (start < 0) throw new Error(`no activity named ${name} in the manifest`)
+  const end = manifest.indexOf('</activity>', start)
+  return manifest.slice(start, end < 0 ? undefined : end)
+}
+
 describe('the WebView shell', () => {
   it('turns on the storage that is the entire reason for the change', () => {
     // Without setDomStorageEnabled a WebView's localStorage silently does
@@ -47,20 +70,61 @@ describe('the WebView shell', () => {
     expect(code('AppShellActivity.java')).toMatch(/MIXED_CONTENT_NEVER_ALLOW/)
   })
 
-  it('does not become the launcher yet', () => {
-    // It changes where every user's data lives, so it ships dark: reachable by
-    // an explicit intent for on-device testing while the TWA launcher stays
-    // exactly as it is. Promoting it is a deliberate one-line change.
-    const manifest = readFileSync(
-      join(SRC, '..', '..', 'walletlens_source/release_package/app/src/main/AndroidManifest.xml'),
+  // The shell shipped dark first — declared, reachable by an explicit intent,
+  // deliberately not the launcher — and this suite asserted that. It is the
+  // launcher now, so what these assert is the state that replaced it: the app
+  // has ONE way in, and it is the one that is not a browser.
+
+  it('is the launcher', () => {
+    const block = activityBlock('.AppShellActivity')
+    expect(block).toMatch(/android:exported="true"/)
+    expect(block).toMatch(/category\.LAUNCHER/)
+  })
+
+  it('is the only launcher', () => {
+    // The TWA gate carried MAIN/LAUNCHER until this version. Two of them is
+    // two icons in the app drawer, one of which opens Chrome — and a user who
+    // taps the wrong one gets the address bar back with no way to tell why.
+    const manifest = readManifest()
+    const launchers = [...manifest.matchAll(/category\.LAUNCHER/g)]
+    expect(launchers.length, 'exactly one activity may carry MAIN/LAUNCHER').toBe(1)
+    expect(activityBlock('.NotificationPermissionActivity')).not.toMatch(/category\.LAUNCHER/)
+  })
+
+  it('answers walletlens.live links instead of the TWA', () => {
+    // A link tapped anywhere on the device used to open LauncherActivity,
+    // which is Chrome rendering the site. Leaving that filter behind would
+    // mean every shared link re-entered the app through the browser it just
+    // stopped being.
+    expect(activityBlock('.AppShellActivity')).toMatch(/android:scheme="https"/)
+    expect(activityBlock('LauncherActivity')).not.toMatch(/android:scheme="https"/)
+  })
+
+  it('owns the long-press shortcuts', () => {
+    // Android reads android.app.shortcuts from whichever activity carries
+    // MAIN/LAUNCHER, and the generated file names its target class outright —
+    // so a shortcut left pointing at the TWA opens Chrome from the one path
+    // nobody thinks to retest.
+    expect(activityBlock('.AppShellActivity')).toMatch(/android\.app\.shortcuts/)
+    const shortcuts = readFileSync(
+      join(SRC, '..', '..', 'walletlens_source/release_package/app/src/main/res/xml/shortcuts.xml'),
       'utf8',
     )
-    const block = manifest.slice(
-      manifest.indexOf('android:name=".AppShellActivity"'),
-      manifest.indexOf('</activity>', manifest.indexOf('android:name=".AppShellActivity"')),
-    )
-    expect(block).toMatch(/android:exported="false"/)
-    expect(block, 'the shell must not carry LAUNCHER yet').not.toMatch(/category\.LAUNCHER/)
+    expect(shortcuts).toMatch(/AppShellActivity/)
+    expect(shortcuts).not.toMatch(/LauncherActivity/)
+  })
+
+  it('sends nothing to the TWA launcher any more', () => {
+    // Ten files built an Intent for LauncherActivity by name: every widget's
+    // tap target, the notification tap, the biometric hand-back, the crash
+    // screen, the review prompt, the vault restore. Each one that stayed
+    // behind is a path that opens Chrome from inside the app.
+    const dir = javaDir()
+    const offenders = readdirSync(dir)
+      .filter(f => f.endsWith('.java'))
+      .filter(f => /new Intent\([^)]*LauncherActivity\.class/.test(
+        readFileSync(join(dir, f), 'utf8')))
+    expect(offenders, 'these still open the TWA directly').toEqual([])
   })
 
   it('holds its host weakly, so the Activity can be collected', () => {

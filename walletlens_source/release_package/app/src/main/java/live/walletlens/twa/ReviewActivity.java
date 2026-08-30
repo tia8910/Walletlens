@@ -238,9 +238,7 @@ public class ReviewActivity extends Activity {
 
         if (continueToApp) {
             try {
-                Intent app = new Intent(this, LauncherActivity.class);
-                app.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                startActivity(app);
+                startActivity(AppEntry.home(this));
             } catch (Throwable t) {
                 // Nothing left to try. Finishing at least returns the user to
                 // their launcher rather than a blank translucent window.

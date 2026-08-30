@@ -94,19 +94,42 @@ const startVitals = () => import('./vitals').then(m => m.initVitals()).catch(() 
 if (typeof requestIdleCallback === 'function') requestIdleCallback(startVitals)
 else setTimeout(startVitals, 1)
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <BrowserRouter basename={basename}>
-        <ThemeProvider>
-          <LanguageProvider>
-            <App />
-          </LanguageProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-    </ErrorBoundary>
-  </React.StrictMode>
-)
+// The one-time handoff out of Chrome. Checked before anything mounts, because
+// this tab was opened by the Android app for exactly one purpose — see
+// handoff.js — and the rest of the app booting on top of it is at best noise
+// and at worst a router redirect that loses the parameter.
+//
+// Loaded lazily and only when the parameter is present, so no browser pays for
+// a migration screen that will never run in it.
+if (handoffRequested()) {
+  import('./handoff.js')
+    .then(m => { if (!m.mountHandoff()) mountApp() })
+    .catch(mountApp)
+} else {
+  mountApp()
+}
+
+/** The parameter check, inline so it costs nothing to ask. */
+function handoffRequested() {
+  try { return new URLSearchParams(location.search).get('wlhandoff') === '1' }
+  catch { return false }
+}
+
+function mountApp() {
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <BrowserRouter basename={basename}>
+          <ThemeProvider>
+            <LanguageProvider>
+              <App />
+            </LanguageProvider>
+          </ThemeProvider>
+        </BrowserRouter>
+      </ErrorBoundary>
+    </React.StrictMode>
+  )
+}
 
 // Register the service worker after first paint. Skipped on the
 // /Walletlens/ subpath since GitHub Pages doesn't serve it from there
