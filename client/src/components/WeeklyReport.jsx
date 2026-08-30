@@ -3,6 +3,7 @@ import Icon from './Icon'
 import { track } from '../analytics'
 import { loadSnapshots } from '../snapshots'
 import { getWeeklySub } from '../weeklyEmail'
+import { saveFile, shareFile } from '../fileOut'
 
 function fmtUsd(n) {
   if (!n && n !== 0) return '$0'
@@ -272,10 +273,10 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
 
   function download() {
     track('weekly_report_download')
-    const a = document.createElement('a')
-    a.href = canvasRef.current.toDataURL('image/png')
-    a.download = `walletlens-weekly-${new Date().toISOString().split('T')[0]}.png`
-    a.click()
+    saveFile(
+      canvasRef.current.toDataURL('image/png'),
+      `walletlens-weekly-${new Date().toISOString().split('T')[0]}.png`,
+    )
   }
 
   async function shareToX() {
@@ -286,18 +287,17 @@ export default function WeeklyReport({ enriched, totalValue, onClose }) {
     const text = encodeURIComponent(
       `My crypto portfolio week: ${(up?'+':'')}${stats?.weekChangePct?.toFixed(1)}%\n\nCurrent value: ${totalValue ? ('$'+(totalValue/1000).toFixed(1)+'K') : 'undisclosed'}\n\nTracked with WalletLens — free, private, no account.\n\nwalletlens.live #WalletLens`
     )
+    // shareFile knows the app's WebView has no navigator.share and hands the
+    // image to Android's share sheet instead. Without it this fell through to
+    // the compose window below with nothing attached.
     try {
-      if (navigator.canShare) {
-        const dataUrl = canvasRef.current.toDataURL('image/png')
-        const res = await fetch(dataUrl)
-        const blob = await res.blob()
-        const file = new File([blob], 'walletlens-weekly.png', { type: 'image/png' })
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], text: decodeURIComponent(text) })
-          setSharing(false); return
-        }
-      }
-    } catch {}
+      const outcome = await shareFile(
+        canvasRef.current.toDataURL('image/png'),
+        'walletlens-weekly.png',
+        { text: decodeURIComponent(text) },
+      )
+      if (outcome === 'shared' || outcome === 'saved') { setSharing(false); return }
+    } catch { /* fall through to the desktop path */ }
     download()
     setTimeout(() => window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank', 'noopener'), 400)
     setSharing(false)

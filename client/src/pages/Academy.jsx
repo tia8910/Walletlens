@@ -7,6 +7,7 @@ import Icon from '../components/Icon'
 import { useTheme } from '../ThemeContext'
 import { POSTS } from '../data/blogPosts'
 import { useLanguage } from '../LanguageContext'
+import { shareFile, shareText } from '../fileOut'
 import {
   questions as academyQuestions,
   guessrCoins,
@@ -326,9 +327,10 @@ function KnowledgeWheel({ store, onIqGain, setWheel }) {
     const text = t('ayWheelShareText')
     const url = 'https://walletlens.live/academy?tab=wheel'
     try {
-      if (navigator.share) {
-        await navigator.share({ title: t('ayWheelShareTitle'), text, url })
-      } else {
+      // shareText, because navigator.share does not exist in the app's own
+      // WebView: the else-branch below would have opened an X compose window
+      // inside the app instead of the share sheet.
+      if (!await shareText(text, { title: t('ayWheelShareTitle'), url })) {
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank', 'noopener')
       }
     } catch { /* user cancelled share sheet — still grant once daily below */ }
@@ -577,24 +579,13 @@ async function shareHackToX(hack, color) {
   const text = `${hack.icon} ${hack.title}\n\n${hack.body.slice(0, 160)}…\n\n#WalletLens #Crypto #InvestmentTips`
   const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent('https://walletlens.live')}`
 
-  // Try Web Share API first (mobile)
-  if (navigator.canShare) {
-    try {
-      const res = await fetch(dataUrl)
-      const blob = await res.blob()
-      const file = new File([blob], 'walletlens-hack.png', { type: 'image/png' })
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: hack.title, text })
-        return
-      }
-    } catch { /* fall through */ }
-  }
+  // The share sheet where there is one — the browser's, or Android's through
+  // the bridge — and a saved file where there is not.
+  try {
+    if (await shareFile(dataUrl, 'walletlens-hack.png', { title: hack.title, text }) === 'shared') return
+  } catch { /* fall through to the compose window */ }
 
-  // Desktop fallback: download image + open X
-  const a = document.createElement('a')
-  a.href = dataUrl
-  a.download = 'walletlens-hack.png'
-  a.click()
+  // Desktop: the image is saved above, so it can be attached to the post.
   setTimeout(() => window.open(xUrl, '_blank'), 400)
 }
 

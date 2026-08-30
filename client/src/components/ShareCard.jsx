@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { useTheme } from '../ThemeContext'
+import { saveFile, savesThroughApp, shareFile } from '../fileOut'
 
 function getThemeColors() {
   const style = getComputedStyle(document.documentElement)
@@ -314,17 +315,17 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
 
   function download() {
     track('portfolio_share_download')
-    // iOS Safari doesn't support anchor download — open dataUrl in new tab instead
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
     const dataUrl = canvasRef.current.toDataURL('image/png')
-    if (isSafari) {
+    // iOS Safari supports neither an anchor download nor, usefully, a blob
+    // URL in a new tab; opening the data URL is still the only thing that
+    // works there. Everywhere else — browser and app alike — goes through
+    // saveFile, which knows that an anchor click is inert in a WebView.
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    if (isSafari && !savesThroughApp()) {
       window.open(dataUrl, '_blank')
-    } else {
-      const a = document.createElement('a')
-      a.href = dataUrl
-      a.download = 'walletlens-portfolio.png'
-      a.click()
+      return
     }
+    saveFile(dataUrl, 'walletlens-portfolio.png')
   }
 
   async function copyImage() {
@@ -348,24 +349,22 @@ export default function ShareCard({ totalValue, totalPnL, totalPnLPct, topHoldin
     if (sharing) return
     setSharing(true)
     track('portfolio_share_x')
-    let usedWebShare = false
+    // shareFile rather than navigator.share directly: that API does not exist
+    // in the app's own WebView, so this whole block used to fall straight
+    // through to the desktop path on Android — a download the WebView also
+    // could not perform, and then a compose window with no image attached.
+    let outcome = 'failed'
     try {
-      // Try Web Share API with image file — on mobile this opens the native share sheet
-      // and the image attaches automatically when the user picks X/Twitter
-      if (navigator.canShare) {
-        const blob = await new Promise(resolve => canvasRef.current.toBlob(resolve, 'image/png'))
-        const file = new File([blob], 'walletlens-portfolio.png', { type: 'image/png' })
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: 'My WalletLens Portfolio', text: decodeURIComponent(tweetText()) })
-          usedWebShare = true
-        }
-      }
-    } catch (e) {
-      // AbortError = user dismissed share sheet — that's fine, don't fall through
-      if (e?.name === 'AbortError') { setSharing(false); return }
-    }
+      const blob = await new Promise(resolve => canvasRef.current.toBlob(resolve, 'image/png'))
+      outcome = await shareFile(blob, 'walletlens-portfolio.png', {
+        title: 'My WalletLens Portfolio',
+        text: decodeURIComponent(tweetText()),
+      })
+    } catch { /* fall through to the desktop path below */ }
     setSharing(false)
-    if (usedWebShare) return
+    // 'saved' counts: the file is on the device and the compose window would
+    // be a second, unasked-for action on top of a share the user completed.
+    if (outcome === 'shared' || outcome === 'saved') return
     // Desktop fallback: download image then open X compose
     download()
     setTimeout(() => window.open(`https://twitter.com/intent/tweet?text=${tweetText()}`, '_blank', 'noopener'), 400)

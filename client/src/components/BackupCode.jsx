@@ -7,6 +7,7 @@ import { track, trackProfileCreated } from '../analytics'
 import { generateBackupCode, applyBackupCode, makeQrParts } from '../backupCore'
 import { EMAIL_RE, loadBackupSub, clearBackupSub, subscribeBackupEmail, resendBackupNow, daysUntilNextBackup } from '../backupSubscription'
 import { useLanguage } from '../LanguageContext'
+import { saveFile } from '../fileOut'
 
 // ── Component ─────────────────────────────────────────────────────────────
 
@@ -201,11 +202,13 @@ export default function BackupCode({ hideTrigger = false }) {
 
   const handleDownload = () => {
     if (!exportCode) return
-    const blob = new Blob([exportCode], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = `walletlens-backup-${new Date().toISOString().slice(0,10)}.txt`
-    a.click(); URL.revokeObjectURL(url)
+    // Through saveFile, because an <a download> click does nothing at all in
+    // the app's own WebView — and "you can always take your data out" is the
+    // promise this whole screen exists to keep.
+    saveFile(
+      new Blob([exportCode], { type: 'text/plain' }),
+      `walletlens-backup-${new Date().toISOString().slice(0, 10)}.txt`,
+    )
   }
 
   const handleImport = async () => {
