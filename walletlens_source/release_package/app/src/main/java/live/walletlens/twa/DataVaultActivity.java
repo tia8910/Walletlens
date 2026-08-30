@@ -139,10 +139,23 @@ public class DataVaultActivity extends Activity {
             Log.w(TAG, "opaque vault URI, no data to read");
             return;
         }
+        write(this, payload);
+    }
 
+    /**
+     * Store a backup code, atomically.
+     *
+     * <p>Static and Context-taking so the WebView shell's JavaScript bridge can
+     * call it directly. Under the TWA the only way in was this Activity
+     * catching an intent, which could not report whether it worked; through the
+     * bridge the same code path returns a boolean the web app can act on.
+     *
+     * @return whether the vault now holds this payload
+     */
+    static boolean write(@NonNull Context context, @Nullable String payload) {
         if (payload == null || payload.isEmpty()) {
             Log.w(TAG, "vault save with no payload");
-            return;
+            return false;
         }
 
         // Only the format this app produces. The intent filter is exported —
@@ -153,13 +166,13 @@ public class DataVaultActivity extends Activity {
         // overwrite the vault with rubbish and destroy the backup silently.
         if (!payload.startsWith("WL3-") && !payload.startsWith("WL1-")) {
             Log.w(TAG, "refusing a vault payload that is not a backup code");
-            return;
+            return false;
         }
 
         byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
         if (bytes.length > MAX_PAYLOAD_BYTES) {
             Log.w(TAG, "vault payload too large to be restorable: " + bytes.length);
-            return;
+            return false;
         }
 
         // Written to a temporary file and renamed. A half-written vault is
@@ -167,7 +180,7 @@ public class DataVaultActivity extends Activity {
         // so at the one moment the user has nothing else left. Rename is
         // atomic on the same filesystem, so the real file is either the old
         // one or the complete new one, never a partial write.
-        File dir = getFilesDir();
+        File dir = context.getFilesDir();
         File tmp = new File(dir, VAULT_FILE + ".tmp");
         File out = new File(dir, VAULT_FILE);
 
@@ -179,17 +192,18 @@ public class DataVaultActivity extends Activity {
             Log.w(TAG, "vault write failed: " + e.getMessage());
             //noinspection ResultOfMethodCallIgnored
             tmp.delete();
-            return;
+            return false;
         }
 
         if (!tmp.renameTo(out)) {
             Log.w(TAG, "vault rename failed; keeping the previous copy");
             //noinspection ResultOfMethodCallIgnored
             tmp.delete();
-            return;
+            return false;
         }
 
         Log.d(TAG, "vault saved, " + bytes.length + " bytes");
+        return true;
     }
 
     // ── Restore ──────────────────────────────────────────────────────────
