@@ -376,6 +376,37 @@ describe('the WebView shell', () => {
     expect(body.slice(0, body.indexOf('return intent;'))).toMatch(/unknown \|\| mimes\.isEmpty\(\)/)
   })
 
+  it('pads the top even when the insets never arrive', () => {
+    // The listener is the correct mechanism and it failed to fix this twice on
+    // a real device, for reasons not visible from here: a dispatch that never
+    // happens, an OEM window reporting zero, a WebView resetting its padding.
+    // The fallback asks the platform how tall the status bar is.
+    const src = code('AppShellActivity.java')
+    expect(src).toMatch(/private void ensureTopInset\(\)/)
+    expect(src, 'it must run once the page is up').toMatch(/onPageFinished/)
+    // The dimension name is a string literal, which code() blanks — so this
+    // one reads the raw source. Anchored on the CALL so a mention in prose
+    // cannot satisfy it.
+    expect(read('AppShellActivity.java')).toMatch(/systemDimen\("status_bar_height"\)/)
+  })
+
+  it('does not guess the bottom inset', () => {
+    // navigation_bar_height reports a full bar even on a device using gesture
+    // navigation, where the real inset is a thin handle — applying it would
+    // carve dead space out of the bottom of every screen.
+    expect(code('AppShellActivity.java')).not.toMatch(/navigation_bar_height/)
+  })
+
+  it('raises the App Lock prompt through the bridge', () => {
+    // sendNativeIntent refuses without a live user activation, moves the top
+    // frame, and has to survive scheme routing. All three fail silently, and
+    // at least one of them left "Enable" sitting on "Setting up…" waiting for
+    // a prompt that was never asked for.
+    expect(code('WalletLensBridge.java')).toMatch(/public void promptAppLock\(\)/)
+    const lock = readFileSync(join(SRC, 'components/BiometricLock.jsx'), 'utf8')
+    expect(lock).toMatch(/promptNativeAppLock\(\)/)
+  })
+
   it('holds its host weakly, so the Activity can be collected', () => {
     // A JavaScript object holding a strong reference to the Activity is the
     // classic WebView leak: nothing can be collected on rotation or finish.

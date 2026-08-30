@@ -372,6 +372,35 @@ public class WalletLensBridge {
         return n.length() > 100 ? n.substring(n.length() - 100) : n;
     }
 
+    /**
+     * Raise the fingerprint prompt to turn App Lock on.
+     *
+     * <p>Directly, not through walletlens://. The intent path has three ways to
+     * fail silently and it was hitting at least one of them: fireNativeIntent
+     * refuses without a live user activation, the navigation moves the top
+     * frame, and the URL has to survive the shell's scheme routing. None of
+     * that is needed here — this is a method call — and all three were
+     * invisible when they failed, which is how "Enable" came to sit on
+     * "Setting up…" waiting for a prompt that was never asked for.
+     *
+     * <p>The activity writes the preference itself once the prompt is passed,
+     * so a refused or cancelled prompt leaves the lock off. Callers poll
+     * appLockEnabled().
+     */
+    @JavascriptInterface
+    public void promptAppLock() {
+        Activity a = activity();
+        if (a == null) return;
+        try {
+            Intent i = new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("walletlens://biometric-auth?action=enable"));
+            i.setClass(a, BiometricActivity.class);
+            a.startActivity(i);
+        } catch (Throwable e) {
+            Log.w(TAG, "could not raise the App Lock prompt: " + e);
+        }
+    }
+
     // ── Microphone ───────────────────────────────────────────────────────
 
     /** Whether the app may record audio. */
