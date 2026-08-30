@@ -127,13 +127,67 @@ public class WalletLensBridge {
         return DataVaultActivity.write(a, payload);
     }
 
-    // ── Notifications, widgets and review ────────────────────────────────
+    // ── Notifications ────────────────────────────────────────────────────
+
+    /**
+     * The device's FCM registration token, or empty if it has none yet.
+     *
+     * <p>This is the address that replaces the Web Push endpoint. A WebView has
+     * no service worker, so the subscription the server has addressed since the
+     * Deno service does not exist here — but everything the server decides
+     * ABOVE the transport, which is every channel and every gate in
+     * workers/push/jobs.js, is untouched by the swap.
+     */
+    @JavascriptInterface
+    public String pushToken() {
+        Activity a = activity();
+        if (a == null) return "";
+        return WalletLensMessagingService.token(a);
+    }
+
+    /**
+     * Whether the server already knows the token we are holding.
+     *
+     * <p>FCM rotates tokens on its own schedule — a restore to a new device, a
+     * data clear, a token it decides is stale — and a rotated one is the FCM
+     * equivalent of an expired Web Push endpoint: the server goes on sending to
+     * an address nobody is at, and nothing fails loudly enough to notice. The
+     * flag is cleared when a new token arrives, so the web app can tell a
+     * device that needs re-registering from one that does not and avoid
+     * re-POSTing the same address on every launch.
+     */
+    @JavascriptInterface
+    public boolean pushTokenSynced() {
+        Activity a = activity();
+        return a != null && WalletLensMessagingService.tokenSynced(a);
+    }
+
+    /** Called once the web app has registered the token with the push worker. */
+    @JavascriptInterface
+    public void markPushTokenSynced() {
+        Activity a = activity();
+        if (a == null) return;
+        WalletLensMessagingService.markTokenSynced(a);
+    }
+
+    /**
+     * Ask FCM for a token if we have not got one.
+     *
+     * <p>onNewToken only fires when a token is created or rotated, so a device
+     * that already had one before this code existed would never hear about it.
+     */
+    @JavascriptInterface
+    public void ensurePushToken() {
+        Activity a = activity();
+        if (a == null) return;
+        WalletLensMessagingService.ensureToken(a);
+    }
+
+    // ── Widgets and review ───────────────────────────────────────────────
     //
-    // Deliberately absent for now. Each is a real move — notifications most of
-    // all, because a WebView has no service worker push and the transport has
-    // to become FCM — and adding a method here that calls a helper which does
-    // not exist yet buys nothing except a file that does not compile. They
-    // arrive with the phases that implement them.
+    // Still absent. Both are real moves off the intent plumbing and arrive with
+    // the phase that does them; a method here calling a helper that does not
+    // exist yet buys nothing except a file that will not compile.
 
     // ── App lock ─────────────────────────────────────────────────────────
 

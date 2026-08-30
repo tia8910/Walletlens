@@ -20,7 +20,8 @@ name: Deploy Cloudflare Workers
 # Per-worker secrets, uploaded to the worker only when the matching GitHub
 # secret exists (see the "Upload secrets" steps):
 #   voice: ANTHROPIC_API_KEY, RESEND_API_KEY, SIGNUP_EXPORT_TOKEN
-#   push:  VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT
+#   push:  VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT,
+#          FCM_SERVICE_ACCOUNT
 #
 # The VAPID pair MUST be the one the Deno push service used. A rotated pair is
 # rejected by subscriptionMatchesKey(), which silently invalidates every
@@ -142,6 +143,7 @@ jobs:
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          FCM_SERVICE_ACCOUNT: ${{ secrets.FCM_SERVICE_ACCOUNT }}
         run: |
           # Unlike the voice keys, these are not optional: a push worker with
           # no VAPID pair accepts subscriptions and then fails to send to any
@@ -161,6 +163,27 @@ jobs:
             echo "set VAPID_SUBJECT"
           else
             echo "::warning::VAPID_SUBJECT is not set; the worker falls back to its built-in default."
+          fi
+
+          # The FCM service account, for devices in the Android app's own
+          # WebView. Optional, unlike the VAPID pair: a deploy without it still
+          # serves every browser, desktop and iOS install over Web Push, which
+          # is every subscriber that existed before the shell. Warned rather
+          # than failed, because failing here would make the push worker
+          # undeployable for anyone who has not set Firebase up.
+          #
+          # Validated as JSON before upload. A truncated paste — easy, it is a
+          # long single-line file — would otherwise be stored happily and only
+          # surface as every Android notification silently not arriving.
+          if [ -n "$FCM_SERVICE_ACCOUNT" ]; then
+            if ! printf '%s' "$FCM_SERVICE_ACCOUNT" | python3 -c "import json,sys; d=json.load(sys.stdin); assert d.get('project_id') and d.get('client_email') and d.get('private_key')"; then
+              echo "::error::FCM_SERVICE_ACCOUNT is not a complete service-account JSON (needs project_id, client_email, private_key). Re-copy the whole file from the Firebase console."
+              exit 1
+            fi
+            printf '%s' "$FCM_SERVICE_ACCOUNT" | npx --yes wrangler@4 secret put FCM_SERVICE_ACCOUNT
+            echo "set FCM_SERVICE_ACCOUNT"
+          else
+            echo "::warning::FCM_SERVICE_ACCOUNT is not set; Android app installs will not receive notifications. Web Push is unaffected."
           fi
 
       - name: Deploy

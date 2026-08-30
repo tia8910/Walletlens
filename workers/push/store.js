@@ -20,7 +20,25 @@ const SUBS_CACHE_MS = 5 * 60_000
 
 /** SHA-256 of the endpoint, truncated. Same derivation the Deno service used. */
 export async function endpointKey(endpoint) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(endpoint))
+  return hashKey(endpoint)
+}
+
+/**
+ * The row key for a device addressed by an FCM token.
+ *
+ * Prefixed, and that prefix is the point. A token and an endpoint are both
+ * opaque strings, and hashing them into the same 24-hex space means a
+ * collision would silently hand one device another's subscription — the same
+ * table, the same key length, no way to tell which kind it was. Twelve
+ * characters of key spent on saying which transport a row belongs to is a
+ * trade worth making.
+ */
+export async function tokenKey(token) {
+  return `fcm:${(await hashKey(token)).slice(0, 20)}`
+}
+
+async function hashKey(value) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 24)
 }
 

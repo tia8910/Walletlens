@@ -18,6 +18,40 @@ import groovy.xml.MarkupBuilder
 
 plugins {
     id 'com.android.application'
+    id 'com.google.gms.google-services'
+}
+
+// Refuse to build against a placeholder Firebase config.
+//
+// THIS EXACT MISTAKE HAS SHIPPED. The app once went out with a stub
+// google-services.json and no real Firebase project behind it, which made
+// FirebaseInitProvider throw at PROCESS START — before Application.onCreate,
+// so nothing could catch it — and every launch died with "this app has a bug".
+// See the comment on AnalyticsHelper, which is what is left of that incident.
+//
+// The Google services plugin only checks the file EXISTS. It cannot tell a
+// real project from a convincing placeholder, and the failure it lets through
+// is invisible until an actual device starts the process. So the check is
+// here: a config whose project id or app id looks like a placeholder fails the
+// build, where the cost is a red CI run instead of every install crashing.
+def googleServicesFile = file('google-services.json')
+if (!googleServicesFile.exists()) {
+    throw new GradleException(
+        'app/google-services.json is missing. Download it from the Firebase ' +
+        'console (Project settings > General > Your apps) — it is not secret ' +
+        'and belongs in the repo.')
+}
+def gs = new groovy.json.JsonSlurper().parseText(googleServicesFile.text)
+def gsProject = gs?.project_info?.project_id?.toString() ?: ''
+def gsAppId = gs?.client?.getAt(0)?.client_info?.mobilesdk_app_id?.toString() ?: ''
+if (!gsProject || gsProject.toLowerCase().contains('placeholder')
+        || gsProject.toLowerCase().contains('example')
+        || !(gsAppId ==~ /^1:\d+:android:[0-9a-f]+$/)) {
+    throw new GradleException(
+        "app/google-services.json does not look like a real Firebase project " +
+        "(project_id='${gsProject}', mobilesdk_app_id='${gsAppId}'). A stub " +
+        "config crashes the app at process start, before any error handling " +
+        "can run. Replace it with the file from the Firebase console.")
 }
 
 def twaManifest = [
@@ -298,4 +332,17 @@ dependencies {
     // Google Play In-App Review — shows the native rating card inside the app
     // instead of throwing the user out to the Play listing.
     implementation 'com.google.android.play:review:2.0.2'
+
+    // Firebase Cloud Messaging.
+    //
+    // The transport the notification channels need once the app renders itself
+    // in a WebView: a WebView has no service worker, so the Web Push
+    // subscription the server has addressed since the Deno service does not
+    // exist there. Everything ABOVE the transport — every channel, threshold
+    // and cooldown in workers/push/jobs.js — is unchanged by this.
+    //
+    // The BoM pins one mutually-tested set of Firebase versions, so the
+    // messaging artifact carries no version of its own.
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')
+    implementation 'com.google.firebase:firebase-messaging'
 }

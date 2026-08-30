@@ -302,6 +302,37 @@
             </intent-filter>
         </activity>
 
+        <!-- Receives pushes over FCM and draws them.
+
+             The transport the notification channels need once the app renders
+             itself in a WebView: a WebView has no service worker, so the Web
+             Push subscription the server has addressed since the Deno service
+             does not exist there. Everything above the transport — every
+             channel and gate in workers/push/jobs.js — is unchanged.
+
+             exported="false": FCM binds this through Play Services, which does
+             not need it exported, and nothing else has any business delivering
+             a notification that wears this app's icon. -->
+        <service
+            android:name=".WalletLensMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- The small icon and colour FCM uses for a notification this app did
+             not draw itself. The server sends data-only messages, so this
+             should never be reached — but the default without it is the app
+             icon rendered as a white square, and "should never" is not a
+             reason to ship that. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification_chart" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="walletlens_general" />
+
         <!-- Boot completed receiver – re-schedules notifications after reboot -->
         <receiver
             android:name=".BootReceiver"

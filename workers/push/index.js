@@ -22,7 +22,8 @@ import {
   sanitizeWatch, sanitizeZakatDue, trimZakatSent,
   normalizeSub as normalize,
 } from '../../push-api/notify-logic.js'
-import { SubStore, endpointKey } from './store.js'
+import { accessToken, buildMessage, isDeadToken, FCM_ENDPOINT } from './fcm.js'
+import { SubStore, endpointKey, tokenKey } from './store.js'
 import { createJobs } from './jobs.js'
 import { encryptPayload, vapidHeader } from './webpush.js'
 
@@ -73,8 +74,67 @@ function isRealPushEndpoint(endpoint) {
  * Send one notification. Drops the subscription if the push service says the
  * endpoint is gone, which is the only way this table ever shrinks on its own.
  */
+/**
+ * Deliver over FCM, for a device whose subscription carries a token.
+ *
+ * A peer of the Web Push path below, not a replacement for it. The app renders
+ * itself in a WebView now, and a WebView has no service worker, so the Web
+ * Push subscription does not exist there. Every browser, desktop and iOS
+ * home-screen install still uses Web Push and is untouched by this.
+ */
+async function sendViaFcm(env, store, sub, payload, { now }) {
+  const { urgency, ttl } = deliveryFor(payload.channel)
+  const token = sub.fcmToken
+  if (!token) return false
+
+  let account
+  try {
+    account = JSON.parse(env.FCM_SERVICE_ACCOUNT || '{}')
+  } catch {
+    console.warn('FCM_SERVICE_ACCOUNT is not valid JSON')
+    return false
+  }
+  if (!account.project_id) {
+    console.warn('FCM_SERVICE_ACCOUNT has no project_id; is the secret set?')
+    return false
+  }
+
+  try {
+    const auth = await accessToken(account, now)
+    const res = await fetch(FCM_ENDPOINT(account.project_id), {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${auth}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildMessage({ token, payload, urgency, ttl })),
+    })
+
+    if (!res.ok) {
+      const text = (await res.text()).slice(0, 300)
+      // The FCM equivalent of Web Push's 404/410, and it matters for the same
+      // reason: this is the only way the table ever shrinks on its own. A
+      // reinstalled or wiped device would otherwise be sent to for ever.
+      if (isDeadToken(res.status, text)) {
+        await store.delete(await tokenKey(token))
+        return false
+      }
+      console.warn('fcm rejected', res.status, text)
+      return false
+    }
+
+    bumpSent(sub, now)
+    return true
+  } catch (e) {
+    console.warn('fcm failed', String(e?.message || e).slice(0, 200))
+    return false
+  }
+}
+
 function makeSender(env, store) {
   return async function send(sub, payload, { now = Date.now() } = {}) {
+    // One decision, two transports. Which one a device wants is a property of
+    // the subscription, not of the notification — jobs.js has no idea either
+    // exists and should not.
+    if (sub.transport === 'fcm') return sendViaFcm(env, store, sub, payload, { now })
+
     const { urgency, ttl } = deliveryFor(payload.channel)
     const topic = pushTopic(payload.tag)
     const endpoint = sub.subscription?.endpoint
@@ -184,21 +244,38 @@ async function handle(req, env, store) {
 
   if (req.method === 'POST' && path === '/subscribe') {
     const body = await readJson(req)
-    const subscription = body.subscription
-    if (!subscription?.endpoint) return json({ error: 'missing_subscription' }, headers, 400)
-    if (!isRealPushEndpoint(subscription.endpoint)) {
-      const host = endpointHost(subscription.endpoint)
-      console.warn('rejected push endpoint host:', host || '(unparseable)')
-      return json({ error: 'invalid_endpoint', host }, headers, 400)
+
+    // Two kinds of address now. A device inside the Android app's WebView has
+    // an FCM token and no Web Push subscription — a WebView has no service
+    // worker, so there is nothing to subscribe. Everything else is unchanged.
+    const isFcm = body.transport === 'fcm'
+    const fcmToken = isFcm ? String(body.fcmToken || '').trim() : ''
+    const subscription = isFcm ? null : body.subscription
+
+    if (isFcm) {
+      // FCM tokens are long opaque strings. The length floor is not validation
+      // so much as a guard against an empty or truncated one being stored as a
+      // real address, which would look healthy on /status for ever and never
+      // deliver anything.
+      if (fcmToken.length < 20) return json({ error: 'missing_token' }, headers, 400)
+    } else {
+      if (!subscription?.endpoint) return json({ error: 'missing_subscription' }, headers, 400)
+      if (!isRealPushEndpoint(subscription.endpoint)) {
+        const host = endpointHost(subscription.endpoint)
+        console.warn('rejected push endpoint host:', host || '(unparseable)')
+        return json({ error: 'invalid_endpoint', host }, headers, 400)
+      }
     }
 
-    const k = await endpointKey(subscription.endpoint)
+    const k = isFcm ? await tokenKey(fcmToken) : await endpointKey(subscription.endpoint)
     const existing = await store.get(k)
     const now = Date.now()
 
     const stored = normalize({
       ...(existing ?? {}),
       subscription,
+      transport: isFcm ? 'fcm' : 'webpush',
+      fcmToken,
       alerts: body.alerts !== undefined ? sanitizeAlerts(body.alerts) : existing?.alerts,
       watch: body.watch !== undefined ? sanitizeWatch(body.watch) : existing?.watch,
       setup: { ...existing?.setup, ...sanitizeSetup(body.setup) },
