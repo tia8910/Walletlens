@@ -1,7 +1,12 @@
 package live.walletlens.twa;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
+import android.util.Log;
 import android.webkit.JavascriptInterface;
+
+import androidx.browser.customtabs.CustomTabsIntent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -48,6 +53,8 @@ import java.lang.ref.WeakReference;
  * to the page that already owns it.
  */
 public class WalletLensBridge {
+
+    private static final String TAG = "WalletLensBridge";
 
     /** The name JavaScript sees. Web side checks for window.AndroidBridge. */
     public static final String NAME = "AndroidBridge";
@@ -127,13 +134,67 @@ public class WalletLensBridge {
         return DataVaultActivity.write(a, payload);
     }
 
-    // ── Notifications, widgets and review ────────────────────────────────
+    // ── Notifications ────────────────────────────────────────────────────
+
+    /**
+     * The device's FCM registration token, or empty if it has none yet.
+     *
+     * <p>This is the address that replaces the Web Push endpoint. A WebView has
+     * no service worker, so the subscription the server has addressed since the
+     * Deno service does not exist here — but everything the server decides
+     * ABOVE the transport, which is every channel and every gate in
+     * workers/push/jobs.js, is untouched by the swap.
+     */
+    @JavascriptInterface
+    public String pushToken() {
+        Activity a = activity();
+        if (a == null) return "";
+        return WalletLensMessagingService.token(a);
+    }
+
+    /**
+     * Whether the server already knows the token we are holding.
+     *
+     * <p>FCM rotates tokens on its own schedule — a restore to a new device, a
+     * data clear, a token it decides is stale — and a rotated one is the FCM
+     * equivalent of an expired Web Push endpoint: the server goes on sending to
+     * an address nobody is at, and nothing fails loudly enough to notice. The
+     * flag is cleared when a new token arrives, so the web app can tell a
+     * device that needs re-registering from one that does not and avoid
+     * re-POSTing the same address on every launch.
+     */
+    @JavascriptInterface
+    public boolean pushTokenSynced() {
+        Activity a = activity();
+        return a != null && WalletLensMessagingService.tokenSynced(a);
+    }
+
+    /** Called once the web app has registered the token with the push worker. */
+    @JavascriptInterface
+    public void markPushTokenSynced() {
+        Activity a = activity();
+        if (a == null) return;
+        WalletLensMessagingService.markTokenSynced(a);
+    }
+
+    /**
+     * Ask FCM for a token if we have not got one.
+     *
+     * <p>onNewToken only fires when a token is created or rotated, so a device
+     * that already had one before this code existed would never hear about it.
+     */
+    @JavascriptInterface
+    public void ensurePushToken() {
+        Activity a = activity();
+        if (a == null) return;
+        WalletLensMessagingService.ensureToken(a);
+    }
+
+    // ── Widgets and review ───────────────────────────────────────────────
     //
-    // Deliberately absent for now. Each is a real move — notifications most of
-    // all, because a WebView has no service worker push and the transport has
-    // to become FCM — and adding a method here that calls a helper which does
-    // not exist yet buys nothing except a file that does not compile. They
-    // arrive with the phases that implement them.
+    // Still absent. Both are real moves off the intent plumbing and arrive with
+    // the phase that does them; a method here calling a helper that does not
+    // exist yet buys nothing except a file that will not compile.
 
     // ── App lock ─────────────────────────────────────────────────────────
 
@@ -157,5 +218,89 @@ public class WalletLensBridge {
         Activity a = activity();
         if (a == null) return;
         BiometricActivity.setEnabled(a, enabled);
+    }
+
+    // ── Signing in to Google ─────────────────────────────────────────────
+
+    /**
+     * Open a URL in a real browser tab, outside the WebView.
+     *
+     * <p>This exists for one reason: Google refuses OAuth inside an embedded
+     * WebView. Navigating to accounts.google.com from here does not fail
+     * subtly — it returns a page reading {@code disallowed_useragent},
+     * deliberately, to stop an app being able to watch its users type a Google
+     * password into a view that app controls. That is a rule worth having, and
+     * the answer is not to fight it.
+     *
+     * <p>A Custom Tab is the answer. It IS the user's browser — same process,
+     * same cookie jar, same password manager, and this app cannot see inside
+     * it — so Google accepts it, while the user stays visually inside the app
+     * instead of being thrown out to a separate task.
+     *
+     * <p>Falls back to a plain browser intent when no Custom Tabs provider is
+     * installed. Uglier, still correct.
+     */
+    @JavascriptInterface
+    public boolean openExternal(String url) {
+        Activity a = activity();
+        if (a == null) return false;
+
+        // https only. This method is reachable from any JavaScript running in
+        // the WebView, and "open anything, anywhere" is a wider door than it
+        // needs to be — an intent:// or file:// here would be a way out of the
+        // sandbox rather than a way to a login page.
+        if (url == null || !url.startsWith("https://")) return false;
+
+        final Uri uri;
+        try {
+            uri = Uri.parse(url);
+        } catch (Throwable e) {
+            return false;
+        }
+
+        a.runOnUiThread(() -> {
+            try {
+                new CustomTabsIntent.Builder()
+                        .setShowTitle(true)
+                        .build()
+                        .launchUrl(a, uri);
+            } catch (Throwable e) {
+                Log.w(TAG, "no custom tabs provider; falling back to a browser: " + e);
+                try {
+                    a.startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                } catch (Throwable e2) {
+                    Log.w(TAG, "no browser at all: " + e2);
+                }
+            }
+        });
+        return true;
+    }
+
+    // ── Widgets ──────────────────────────────────────────────────────────
+
+    /**
+     * Repaint the home-screen widgets from a portfolio summary.
+     *
+     * <p>The same payload WidgetSyncActivity has always taken, on a channel
+     * that can actually carry it. Through the intent this returned nothing, so
+     * the web app could never tell a written widget from a dropped one; and it
+     * needed a user gesture, so the five-minute background sync was skipped
+     * whenever nobody happened to be touching the screen — which is most of
+     * the time a widget is looked at.
+     *
+     * @param json the summary; see WidgetSyncActivity for the shape
+     * @return whether the widgets were repainted
+     */
+    @JavascriptInterface
+    public boolean syncWidgets(String json) {
+        Activity a = activity();
+        if (a == null || json == null || json.isEmpty()) return false;
+        try {
+            WidgetSyncActivity.applyPayload(a, json);
+            return true;
+        } catch (Throwable e) {
+            Log.w(TAG, "widget sync failed: " + e);
+            return false;
+        }
     }
 }

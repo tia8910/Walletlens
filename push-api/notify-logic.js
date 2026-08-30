@@ -1057,6 +1057,18 @@ export function sanitizePrefs(raw) {
 export function normalizeSub(s = {}) {
   return {
     subscription: s.subscription,
+    // Which delivery channel this device wants.
+    //
+    // 'webpush' for every browser, desktop and iOS home-screen install, which
+    // is what every existing row is. 'fcm' for the Android app once it renders
+    // itself in a WebView, because a WebView has no service worker and the Web
+    // Push subscription does not exist there.
+    //
+    // Defaulted rather than required, so the thousands of rows written before
+    // this field existed keep working untouched — a subscription that does not
+    // say is a Web Push one, which is exactly what it is.
+    transport: s.transport === 'fcm' ? 'fcm' : 'webpush',
+    fcmToken: typeof s.fcmToken === 'string' ? s.fcmToken : '',
     alerts: s.alerts ?? [],
     fired: s.fired ?? {},
     createdAt: s.createdAt ?? Date.now(),

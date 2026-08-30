@@ -14,6 +14,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import androidx.activity.ComponentActivity;
+import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -133,6 +134,37 @@ public class AppShellActivity extends ComponentActivity {
     }
 
     /**
+     * A URL arriving from outside — the Google sign-in coming back.
+     *
+     * <p>The Drive flow leaves the app for a Custom Tab, because Google
+     * refuses OAuth inside a WebView, and Google finishes it by redirecting to
+     * https://walletlens.live/drive-callback with the token in the FRAGMENT.
+     * That deep link comes back here, and loading it into the WebView is what
+     * completes the sign-in: the page's own completeRedirectSignIn() reads the
+     * fragment, checks the state parameter and stores the token, exactly as it
+     * does in a browser. No native code touches the token.
+     *
+     * <p>Loading it into the SAME WebView is load-bearing. The state parameter
+     * that makes this flow safe lives in sessionStorage, so a fresh WebView —
+     * or a reload — would come back to a token it could not verify and the
+     * sign-in would fail with a state mismatch. singleTask plus onNewIntent is
+     * what keeps one WebView alive across the trip out to the browser.
+     */
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+
+        Uri url = intent != null ? intent.getData() : null;
+        if (url == null || web == null) return;
+        if (!ORIGIN.equals(url.getScheme() + "://" + url.getHost())) {
+            Log.w(TAG, "ignoring an inbound URL that is not ours");
+            return;
+        }
+        web.loadUrl(url.toString());
+    }
+
+    /**
      * Keep our own origin inside the shell, and send everything else out.
      *
      * <p>This is the security boundary the JavaScript bridge depends on.
@@ -149,10 +181,22 @@ public class AppShellActivity extends ComponentActivity {
             if (url != null && ORIGIN.equals(url.getScheme() + "://" + url.getHost())) {
                 return false;   // ours: render it here
             }
+            // A Custom Tab rather than a browser intent. Two reasons, and the
+            // second is the one that matters: it keeps the user inside the app
+            // visually, and Google's sign-in — which is the outbound
+            // navigation that actually matters here — is ACCEPTED in a Custom
+            // Tab and refused in a WebView. Handing it to a separate browser
+            // app instead would complete the OAuth flow somewhere this app can
+            // never hear the answer from.
             try {
-                startActivity(new Intent(Intent.ACTION_VIEW, url));
+                new CustomTabsIntent.Builder().setShowTitle(true).build().launchUrl(
+                        AppShellActivity.this, url);
             } catch (Throwable e) {
-                Log.w(TAG, "no handler for outbound link: " + url);
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, url));
+                } catch (Throwable e2) {
+                    Log.w(TAG, "no handler for outbound link: " + url);
+                }
             }
             return true;
         }

@@ -9,6 +9,29 @@
 
 import { isAndroidTWA, fireNativeIntent } from './nativeBridge'
 
+/**
+ * Hand a widget payload straight to the app, when there is an app to hand it
+ * to.
+ *
+ * Inside the WebView shell this replaces the intent entirely, and it is better
+ * on every axis the intent was weak on:
+ *
+ *   - it RETURNS, so a failed sync is visible instead of silent;
+ *   - it needs no user gesture, so the five-minute background sync actually
+ *     runs rather than being skipped whenever nobody is touching the screen —
+ *     which is most of the time a widget is being looked at;
+ *   - it starts no Activity, so nothing is left in the recents switcher.
+ *
+ * Returns false outside the shell, where the caller falls back to the intent.
+ */
+function syncViaBridge(json) {
+  try {
+    const b = typeof window !== 'undefined' ? window.AndroidBridge : null
+    if (!b || typeof b.syncWidgets !== 'function') return false
+    return !!b.syncWidgets(json)
+  } catch { return false }
+}
+
 const SYNC_KEY = 'wl_widget_sync_at'
 const PAYLOAD_KEY = 'wl_widget_payload'
 const DIAG_KEY = 'wl_widget_diag'
@@ -85,7 +108,8 @@ export function syncLanguage({ retryOnGesture = true } = {}) {
     payload.lang = currentLang()
     const json = JSON.stringify(payload)
     try { localStorage.setItem(PAYLOAD_KEY, json) } catch { /* quota; carry on */ }
-    if (!fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(json), { keepSession: true })) {
+    if (!syncViaBridge(json) &&
+        !fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(json), { keepSession: true })) {
       // Activation is transient and the picker may close, re-render and settle
       // before this runs — and a language change that misses the window then
       // waits for the next dashboard sync to reach the notifications. Ride the
@@ -114,7 +138,8 @@ export function forceSyncWidgets() {
     // path runs from a button, so activation is normally present — but if the
     // tap has already expired by the time we get here, saying "fired" would be
     // a lie the Settings readout then repeats back to the user.
-    if (!fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(raw), { keepSession: true })) {
+    if (!syncViaBridge(raw) &&
+        !fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(raw), { keepSession: true })) {
       return note('no-activation', { manual: true })
     }
     localStorage.setItem(SYNC_KEY, String(Date.now()))
@@ -229,7 +254,8 @@ export function syncWidgets({ enriched = [], totalValue = 0, categoryOf = null, 
     // it performs would end the TWA session. Record the timestamp only when it
     // actually went — stamping a sync that never happened would start the
     // throttle against a widget that was never updated.
-    if (!fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(json), { keepSession: true })) {
+    if (!syncViaBridge(json) &&
+        !fireNativeIntent('walletlens://widget-sync?data=' + encodeURIComponent(json), { keepSession: true })) {
       return note('no-activation', { nw: payload.nw, tracked: payload.tracked })
     }
 

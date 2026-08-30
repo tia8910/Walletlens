@@ -19,6 +19,12 @@ buildscript {
         // on 8.9.1 — only the plugin version goes back.
         classpath 'com.android.tools.build:gradle:8.9.1'
 
+        // Reads app/google-services.json and turns it into the resources the
+        // Firebase SDK looks up at runtime. Groovy, not the Kotlin DSL the
+        // console's setup page shows — this project uses build.gradle, and the
+        // snippets there would not apply.
+        classpath 'com.google.gms:google-services:4.4.2'
+
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }

@@ -749,6 +749,29 @@ export async function syncWatch(holdings) {
   const watch = resolveWatch(holdings)
   try { localStorage.setItem(WATCH_CACHE_KEY, JSON.stringify(watch)) } catch {}
 
+  // Inside the app's own WebView there is no Web Push subscription to find —
+  // a WebView has no service worker, so getSubscription() below returns null
+  // and this function would return having done nothing at all. That device
+  // registers by token instead, and this is the same call for it: the watch
+  // list, the setup flags and the preferences all travel with the address.
+  //
+  // Imported lazily so the browser bundle does not carry the bridge shim, and
+  // so a fault in it cannot break the Web Push path underneath.
+  try {
+    const native = await import('./nativePush.js')
+    if (native.usesNativePush()) {
+      await native.registerNativePush({
+        force: true,   // the watch list has changed; the server needs it
+        watch,
+        setup: featureSetup(),
+        prefs: getPushPrefs(),
+        lang: currentLang(),
+        tz: currentTz(),
+      })
+      return
+    }
+  } catch { /* fall through to Web Push */ }
+
   try {
     const sub = await getSubscription()
     if (!sub) return

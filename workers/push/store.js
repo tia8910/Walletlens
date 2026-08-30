@@ -20,7 +20,25 @@ const SUBS_CACHE_MS = 5 * 60_000
 
 /** SHA-256 of the endpoint, truncated. Same derivation the Deno service used. */
 export async function endpointKey(endpoint) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(endpoint))
+  return hashKey(endpoint)
+}
+
+/**
+ * The row key for a device addressed by an FCM token.
+ *
+ * Prefixed, and that prefix is the point. A token and an endpoint are both
+ * opaque strings, and hashing them into the same 24-hex space means a
+ * collision would silently hand one device another's subscription — the same
+ * table, the same key length, no way to tell which kind it was. Twelve
+ * characters of key spent on saying which transport a row belongs to is a
+ * trade worth making.
+ */
+export async function tokenKey(token) {
+  return `fcm:${(await hashKey(token)).slice(0, 20)}`
+}
+
+async function hashKey(value) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 24)
 }
 
@@ -68,6 +86,27 @@ export class SubStore {
     const key = await endpointKey(endpoint)
     const sub = await this.get(key)
     return sub ? { key, sub } : null
+  }
+
+  /**
+   * Find a device by whichever address it has.
+   *
+   * A Web Push device is identified by its endpoint and an FCM device by its
+   * token — they are different strings in different fields, and every handler
+   * that used to take only an endpoint now takes either. Written once here
+   * rather than branched at six call sites, which is how one of them ends up
+   * quietly supporting only half the devices.
+   *
+   * @param {{endpoint?:string, fcmToken?:string}} body a request body
+   */
+  async getByAddress({ endpoint, fcmToken } = {}) {
+    if (fcmToken) {
+      const key = await tokenKey(fcmToken)
+      const sub = await this.get(key)
+      return sub ? { key, sub } : null
+    }
+    if (endpoint) return this.getByEndpoint(endpoint)
+    return null
   }
 
   /** Write a record outright. Used by the request handlers, which own the row. */
