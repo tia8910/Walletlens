@@ -37,6 +37,17 @@ export async function tokenKey(token) {
   return `fcm:${(await hashKey(token)).slice(0, 20)}`
 }
 
+/**
+ * Whether a stored row can actually be sent to.
+ *
+ * One question, two transports, and it must stay one question: a check for
+ * either address written inline at each call site is how the FCM half went
+ * missing from the cron scan while every other path supported it.
+ */
+export function addressable(sub) {
+  return !!(sub?.subscription?.endpoint || sub?.fcmToken)
+}
+
 async function hashKey(value) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 24)
@@ -71,7 +82,25 @@ export class SubStore {
       const sub = parse(r.data)
       // A row that will not parse is skipped rather than thrown on: one bad
       // record must not stop every other user's notifications.
-      if (sub?.subscription?.endpoint) rows.push({ key: r.key, sub })
+      //
+      // ADDRESSABLE, not "has a Web Push endpoint" — and that distinction is
+      // the whole bug this line used to be.
+      //
+      // This is the loader EVERY cron job uses. The condition was written when
+      // Web Push was the only transport, and an FCM device does not have a
+      // subscription at all: it has a token, in another field, because a
+      // WebView has no service worker to subscribe with. So every device
+      // running the Android app was dropped here and was invisible to every
+      // scheduled job — moves, targets, news, the morning brief, retention,
+      // feature tips, zakat, hacks, academy, the portfolio pulse. All of them.
+      //
+      // It was invisible in the one way that is worst to debug: the app's
+      // welcome notification still arrived, because /test addresses the device
+      // by token through get() and never comes near this list. So the pipe
+      // looked healthy end to end — permission granted, token registered,
+      // Firebase delivering — and not one scheduled notification had ever been
+      // sent to an app install since the transport was added.
+      if (addressable(sub)) rows.push({ key: r.key, sub })
     }
     this.cache = { at: t, rows }
     return rows

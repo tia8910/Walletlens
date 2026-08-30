@@ -1137,7 +1137,15 @@ export function normalizeSub(s = {}) {
 // written ONLY by the HTTP handlers; the cron never touches them, so the
 // stored value always wins.
 export const USER_OWNED_FIELDS = [
-  'subscription', 'alerts', 'watch', 'setup', 'prefs',
+  // The device's ADDRESS, in both its forms. `subscription` was here from the
+  // start for an obvious reason — a device that re-subscribed while a cron
+  // held the row must not have its new endpoint overwritten by the old one —
+  // and the FCM pair belongs here by exactly that argument. FCM tokens rotate:
+  // on a restore to a new device, an app-data clear, or at Firebase's own
+  // discretion. Left out, a cron write would put the dead token back and the
+  // device would go silent again with nothing to see.
+  'subscription', 'transport', 'fcmToken',
+  'alerts', 'watch', 'setup', 'prefs',
   'lang', 'tz', 'lastSeen', 'zakatDue',
 ]
 
