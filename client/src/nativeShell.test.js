@@ -274,6 +274,59 @@ describe('the WebView shell', () => {
     expect(src).toMatch(/FLAG_GRANT_READ_URI_PERMISSION/)
   })
 
+  it('keeps the page out from under the status bar', () => {
+    // An app targeting SDK 35+ is edge-to-edge and cannot opt out, so the
+    // window covers the whole screen and a WebView added to it renders behind
+    // the clock. The header, the search field and the settings button all live
+    // up there. The TWA never had this because the window was Chrome's.
+    const src = code('AppShellActivity.java')
+    expect(src).toMatch(/setOnApplyWindowInsetsListener/)
+    expect(src).toMatch(/web\.setPadding\(bars\.left, bars\.top, bars\.right, bars\.bottom\)/)
+  })
+
+  it('pads for the camera cutout too, not just the bars', () => {
+    // A punch-hole sits beside the status bar in landscape rather than within
+    // it, so systemBars() alone still loses a strip of the page to the lens.
+    expect(code('AppShellActivity.java')).toMatch(/Type\.displayCutout\(\)/)
+  })
+
+  it('targets an SDK where this is mandatory', () => {
+    // If this ever drops below 35 the inset handling above stops being forced
+    // — and someone removing it would find the tests still green.
+    const gradle = readFileSync(
+      join(SRC, '..', '..', 'walletlens_source/release_package/app/build.gradle'),
+      'utf8',
+    )
+    const targetSdk = Number((gradle.match(/targetSdk\s+(\d+)/) || [])[1])
+    expect(targetSdk).toBeGreaterThanOrEqual(35)
+  })
+
+  it('never hands a walletlens:// URL to a browser', () => {
+    // THE BUG THIS ENDS. Every route into native code is a walletlens:// URL
+    // the page navigates to, and they were all falling through to the Custom
+    // Tab branch — a Custom Tab is a browser, and a browser cannot open a
+    // custom scheme. Enabling the fingerprint lock in onboarding fired an
+    // intent that went to Chrome and died there; so did the review prompt, the
+    // export and the vault save. Nothing errored, because the page fires these
+    // and never expects an answer.
+    const src = code('AppShellActivity.java')
+    const handler = src.slice(src.indexOf('shouldOverrideUrlLoading'))
+    const nonWeb = handler.indexOf('.equals(scheme)')
+    const customTab = handler.indexOf('CustomTabsIntent')
+    expect(nonWeb, 'the scheme must be checked at all').toBeGreaterThan(-1)
+    expect(nonWeb, 'non-web schemes must be handled BEFORE the Custom Tab')
+      .toBeLessThan(customTab)
+  })
+
+  it('sets App Lock through the bridge, not only an intent', () => {
+    // The intent path cannot report anything, so a dropped one leaves the lock
+    // on in the page and off in the app — which is the state that demands a
+    // fingerprint the app has no record of wanting.
+    const lock = readFileSync(join(SRC, 'components/BiometricLock.jsx'), 'utf8')
+    expect(lock).toMatch(/setNativeAppLock\(true\)/)
+    expect(lock).toMatch(/setNativeAppLock\(false\)/)
+  })
+
   it('holds its host weakly, so the Activity can be collected', () => {
     // A JavaScript object holding a strong reference to the Activity is the
     // classic WebView leak: nothing can be collected on rotation or finish.

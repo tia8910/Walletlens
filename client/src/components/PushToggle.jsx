@@ -263,6 +263,19 @@ export default function PushToggle() {
   // Closed by default: the common case for this screen is "yes, notify me",
   // and eleven rows in front of that is the surface the old flag was hiding
   // from. Opening it is one tap, and it stays open for the visit.
+  // The per-channel list is hidden.
+  //
+  // Eleven toggles, every one of them on by default, is a wall of switches
+  // between the user and a feature they have just turned on — and each one is
+  // an invitation to switch off a channel before ever seeing what it sends.
+  // The single Push notifications toggle is the decision that matters; the
+  // preferences behind it keep their defaults and still travel to the server
+  // with every registration, so nothing about the delivery side changes.
+  //
+  // Kept rather than deleted: the rows, their copy in six languages and the
+  // prefs they write are all still correct, and this is the one line to flip
+  // if per-channel control is ever wanted back.
+  const SHOW_CHANNELS = false
   const [channelsOpen, setChannelsOpen] = useState(false)
 
   useEffect(() => { isPushEnabled().then(setEnabled).catch(() => {}) }, [])
@@ -341,7 +354,7 @@ export default function PushToggle() {
         </button>
       </div>
 
-      {enabled && (
+      {enabled && SHOW_CHANNELS && (
         <>
           <div className="settings-divider" />
           <button

@@ -88,13 +88,29 @@ describe('the FCM message', () => {
     expect(m.message.data).not.toHaveProperty('gone')
   })
 
-  it('maps urgency onto the only two levels FCM has', () => {
-    expect(buildMessage({ token: 't', payload, urgency: 'high', ttl: 1 }).message.android.priority)
-      .toBe('HIGH')
-    for (const u of ['normal', 'low', undefined]) {
-      expect(buildMessage({ token: 't', payload, urgency: u, ttl: 1 }).message.android.priority)
-        .toBe('NORMAL')
+  it('sends every notification at high priority', () => {
+    // This used to mirror the Web Push urgency table, and that is wrong for
+    // FCM. A NORMAL data message is HELD while the device is in Doze — most of
+    // the time a phone is idle with the app closed — and released only when
+    // something else wakes it, so the scheduled channels landed hours late or
+    // in a clump. Every message here exists to be drawn as a notification, so
+    // every one of them is HIGH.
+    for (const u of ['high', 'normal', 'low', undefined]) {
+      expect(
+        buildMessage({ token: 't', payload, urgency: u, ttl: 1 }).message.android.priority,
+        `urgency ${u} must still deliver on time`,
+      ).toBe('HIGH')
     }
+  })
+
+  it('still varies the TTL by urgency', () => {
+    // Priority is about WHEN it arrives, TTL about whether a stale one should
+    // arrive at all. Flattening the first must not flatten the second: a price
+    // alert from last Tuesday is still worth dropping.
+    expect(buildMessage({ token: 't', payload, urgency: 'high', ttl: 3600 }).message.android.ttl)
+      .toBe('3600s')
+    expect(buildMessage({ token: 't', payload, urgency: 'low', ttl: 86400 }).message.android.ttl)
+      .toBe('86400s')
   })
 
   it('carries the TTL in the form FCM parses', () => {

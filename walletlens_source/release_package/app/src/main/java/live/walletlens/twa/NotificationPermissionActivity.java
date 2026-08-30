@@ -1,6 +1,7 @@
 package live.walletlens.twa;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -11,6 +12,7 @@ import android.util.Log;
 import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
 /**
@@ -86,6 +88,12 @@ public class NotificationPermissionActivity extends ComponentActivity {
         if (askOnly && needsRequest) {
             Log.d(TAG, "Requesting POST_NOTIFICATIONS on demand");
             try {
+                // Recorded BEFORE launching, and it is what makes a permanent
+                // denial detectable. shouldShowRequestPermissionRationale is
+                // false in two opposite situations — never asked, and asked
+                // twice and refused — so on its own it cannot tell "the dialog
+                // will appear" from "the dialog will never appear again".
+                markAsked(this);
                 requestPermission.launch(Manifest.permission.POST_NOTIFICATIONS);
             } catch (Exception e) {
                 Log.w(TAG, "permission request failed: " + e.getMessage());
@@ -97,6 +105,21 @@ public class NotificationPermissionActivity extends ComponentActivity {
         } else {
             proceed();
         }
+    }
+
+    // ── Has the system dialog ever been raised? ──────────────────────────
+
+    private static final String PERM_PREFS = "walletlens_perm";
+    private static final String KEY_ASKED = "post_notifications_asked";
+
+    static void markAsked(@NonNull Context context) {
+        context.getSharedPreferences(PERM_PREFS, Context.MODE_PRIVATE)
+                .edit().putBoolean(KEY_ASKED, true).apply();
+    }
+
+    static boolean hasAsked(@NonNull Context context) {
+        return context.getSharedPreferences(PERM_PREFS, Context.MODE_PRIVATE)
+                .getBoolean(KEY_ASKED, false);
     }
 
     /**

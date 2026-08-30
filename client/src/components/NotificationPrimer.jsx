@@ -35,9 +35,9 @@ export default function NotificationPrimer() {
   useEffect(() => {
     if (!shouldAskPush()) return
 
-    // Let the app settle before interrupting: a card that animates in over a
-    // half-drawn dashboard reads as an ad, not as a feature.
-    const timer = setTimeout(() => {
+    let timer = null
+
+    const offer = () => {
       if (!shouldAskPush()) return
       // Read at show time, not at mount: someone who adds their first holding
       // during those four seconds should get the promise about it.
@@ -45,8 +45,29 @@ export default function NotificationPrimer() {
       setEmpty(noHoldings)
       setShow(true)
       track('push_primer_shown', { empty: noHoldings })
-    }, 4000)
-    return () => clearTimeout(timer)
+    }
+
+    // Let the app settle before interrupting: a card that animates in over a
+    // half-drawn dashboard reads as an ad, not as a feature.
+    const arm = () => {
+      clearTimeout(timer)
+      timer = setTimeout(offer, 4000)
+    }
+    arm()
+
+    // Re-armed when the app comes back to the foreground, and that is a fix
+    // rather than a flourish. This was a single timer set on mount, so anything
+    // that unmounted the component inside those four seconds — a tap through to
+    // another tab, which is exactly what someone does on landing — cancelled
+    // the only offer of the session. It read as the app asking sometimes and
+    // not others.
+    const onVisible = () => { if (document.visibilityState === 'visible') arm() }
+    document.addEventListener('visibilitychange', onVisible)
+
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
 
   function dismiss(reason) {

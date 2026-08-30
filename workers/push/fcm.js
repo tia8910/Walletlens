@@ -148,11 +148,25 @@ export function buildMessage({ token, payload, urgency, ttl }) {
       token,
       data,
       android: {
-        // FCM's own two-value scale. `high` wakes a dozing device, which is
-        // what a price that is stale within the hour needs; `normal` is
-        // batched with whatever else is pending, which is right for a hack or
-        // an academy question.
-        priority: urgency === 'high' ? 'HIGH' : 'NORMAL',
+        // HIGH for everything, and the reasoning changed with the transport.
+        //
+        // This used to mirror the Web Push urgency table — high for a price,
+        // normal for a hack or an academy question — which is right for Web
+        // Push, where low urgency saves battery and the message still arrives.
+        // FCM's NORMAL is not that. A NORMAL data message is DEFERRED while
+        // the device is in Doze, which is most of the time a phone is idle
+        // with the app closed. So the scheduled channels — the daily read, the
+        // morning brief, the academy question, the hacks — arrived hours late
+        // or in a clump when something else happened to wake the phone.
+        //
+        // Every message this app sends exists to be drawn as a notification;
+        // there is no silent data sync here. That is exactly the case Google
+        // names for HIGH, and the throttling they warn about is for apps that
+        // send high priority for work the user never sees.
+        //
+        // `urgency` still decides the TTL below and the Web Push header, which
+        // is where the distinction continues to earn its keep.
+        priority: 'HIGH',
         // Seconds, and FCM wants the trailing `s`. This is the same TTL the
         // Web Push transport sends, and it exists for the same reason: a
         // phone that was off for a few days must not come back to a price
