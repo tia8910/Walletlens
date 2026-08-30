@@ -5,6 +5,7 @@ import { track, trackProfileCreated } from '../analytics'
 import { api } from '../api'
 import { useLanguage } from '../LanguageContext'
 import { parseTradesWithClaude } from '../voiceAi'
+import { ensureMicPermission } from '../nativeMedia'
 import {
   POPULAR_TICKERS, POPULAR_FIAT,
   GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID,
@@ -1450,10 +1451,27 @@ export default function VoiceImport({ hideTrigger = false, onImported, onClose }
       return sT > sBest || (sT === sBest && t.length > bestSoFar.length) ? t : bestSoFar
     }, '')
 
-  const startListening = () => {
+  const startListening = async () => {
     if (!SUPPORTED) {
       track('voice_unsupported', { lang })
       setError(t('errVoiceUnsupported')); return
+    }
+
+    // Ask Android for the microphone BEFORE starting recognition.
+    //
+    // Chromium's WebView checks this app's own RECORD_AUDIO and fails the
+    // recognition with `not-allowed` without ever consulting the app, so no
+    // prompt appears and the error below reads as the user having refused a
+    // microphone they were never offered. ensureMicPermission is a no-op in a
+    // browser, where the prompt belongs to the moment of capture.
+    if (!await ensureMicPermission()) {
+      track('voice_mic_denied', { lang })
+      // voiceLang, not isAppArabic: that one is declared further down this
+      // function, so reading it here is a temporal-dead-zone error.
+      setError(voiceLang === 'ar'
+        ? 'تم رفض إذن الميكروفون — اسمح بالوصول وحاول مرة أخرى'
+        : 'Microphone permission denied. Please allow mic access.')
+      return
     }
     // Stop any lingering recognizers from the previous session.
     recsRef.current.forEach(r => { try { r.stop() } catch {} })

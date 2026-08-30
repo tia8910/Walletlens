@@ -1,7 +1,9 @@
 package live.walletlens.twa;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.graphics.Color;
@@ -10,8 +12,12 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+
+import java.util.ArrayList;
+import java.util.List;
 import android.widget.FrameLayout;
 import android.webkit.CookieManager;
+import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -25,6 +31,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -129,6 +136,36 @@ public class AppShellActivity extends ComponentActivity {
      * this app is most of the ways data gets in.
      */
     private ValueCallback<Uri[]> pendingFiles;
+
+    /**
+     * The page's pending getUserMedia, waiting on an Android permission.
+     *
+     * A WebView grants the page NOTHING on its own. When the page asks for the
+     * microphone or camera the WebView calls onPermissionRequest, and an app
+     * that does not answer it leaves the request denied — silently, with no
+     * system prompt and no error the page can distinguish from a refusal.
+     * Under the TWA this never came up: the page was in Chrome, and Chrome
+     * held the permissions and raised its own dialogs.
+     */
+    private PermissionRequest pendingMedia;
+
+    /** Which WebView resources the pending request would grant. */
+    private String[] pendingMediaResources;
+
+    /**
+     * Registered as a field for the same reason the file picker is: after
+     * STARTED it throws.
+     */
+    private final ActivityResultLauncher<String[]> mediaPermissions =
+            registerForActivityResult(
+                    new ActivityResultContracts.RequestMultiplePermissions(),
+                    result -> {
+                        boolean granted = !result.isEmpty();
+                        for (Boolean ok : result.values()) {
+                            if (ok == null || !ok) granted = false;
+                        }
+                        settleMedia(granted);
+                    });
 
     /**
      * Registered as a field, deliberately.
@@ -474,9 +511,77 @@ public class AppShellActivity extends ComponentActivity {
     }
 
     /**
-     * Everything the page asks the browser UI for. Here, that is file inputs.
+     * Everything the page asks the browser UI for: file inputs, and the
+     * microphone and camera.
      */
     private class ShellChrome extends WebChromeClient {
+
+        /**
+         * The page wants hardware. Ask Android first, then answer the page.
+         *
+         * <p>Answering is not optional. An unanswered request is a denied one,
+         * and the page cannot tell that apart from a user saying no — which is
+         * exactly what voice import reported ("Microphone permission denied")
+         * on a device where no prompt had ever appeared.
+         */
+        @Override
+        public void onPermissionRequest(PermissionRequest request) {
+            List<String> android = new ArrayList<>();
+            List<String> resources = new ArrayList<>();
+            for (String r : request.getResources()) {
+                if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(r)) {
+                    android.add(Manifest.permission.RECORD_AUDIO);
+                    resources.add(r);
+                } else if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(r)) {
+                    android.add(Manifest.permission.CAMERA);
+                    resources.add(r);
+                }
+            }
+
+            // Anything else — MIDI, protected media — is refused rather than
+            // passed through. The page only ever asks for the two above, and a
+            // request for something else did not come from our own code.
+            if (resources.isEmpty()) {
+                request.deny();
+                return;
+            }
+
+            List<String> missing = new ArrayList<>();
+            for (String p : android) {
+                if (ContextCompat.checkSelfPermission(AppShellActivity.this, p)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    missing.add(p);
+                }
+            }
+
+            if (missing.isEmpty()) {
+                request.grant(resources.toArray(new String[0]));
+                return;
+            }
+
+            // One at a time. A second request while a dialog is up would lose
+            // the first, and the page behind it would wait for ever.
+            if (pendingMedia != null) pendingMedia.deny();
+            pendingMedia = request;
+            pendingMediaResources = resources.toArray(new String[0]);
+
+            try {
+                mediaPermissions.launch(missing.toArray(new String[0]));
+            } catch (Throwable e) {
+                Log.w(TAG, "could not ask for " + missing + ": " + e);
+                settleMedia(false);
+            }
+        }
+
+        @Override
+        public void onPermissionRequestCanceled(PermissionRequest request) {
+            // The page gave up — a navigation, or the element went away.
+            if (pendingMedia == request) {
+                pendingMedia = null;
+                pendingMediaResources = null;
+            }
+        }
+
         @Override
         public boolean onShowFileChooser(WebView view,
                                          ValueCallback<Uri[]> callback,
@@ -497,6 +602,55 @@ public class AppShellActivity extends ComponentActivity {
                 // waiting on a callback that will never be answered.
                 return false;
             }
+        }
+    }
+
+    /**
+     * Ask for the microphone directly, for an API that never asks us.
+     *
+     * <p>onPermissionRequest covers getUserMedia. It does NOT cover
+     * SpeechRecognition: Chromium's WebView checks the app's own RECORD_AUDIO
+     * and fails the recognition with "not-allowed" without ever consulting the
+     * app — which is precisely what voice import hit, reporting a denied
+     * microphone on a device that had never been asked. So the page asks for
+     * this one through the bridge before it starts listening.
+     */
+    void requestMic() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        try {
+            mediaPermissions.launch(new String[]{ Manifest.permission.RECORD_AUDIO });
+        } catch (Throwable e) {
+            Log.w(TAG, "could not ask for the microphone: " + e);
+        }
+    }
+
+    /** Whether the app may record audio at all. */
+    boolean micAllowed() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * Answer the page now that Android has answered us.
+     *
+     * <p>Answered on every path, refusal included: a WebView left holding an
+     * unanswered PermissionRequest never resolves the page's promise, so the
+     * microphone button would spin for ever rather than reporting a refusal.
+     */
+    private void settleMedia(boolean granted) {
+        PermissionRequest req = pendingMedia;
+        String[] resources = pendingMediaResources;
+        pendingMedia = null;
+        pendingMediaResources = null;
+        if (req == null) return;
+        try {
+            if (granted && resources != null) req.grant(resources);
+            else req.deny();
+        } catch (Throwable e) {
+            Log.w(TAG, "could not answer the page's permission request: " + e);
         }
     }
 
