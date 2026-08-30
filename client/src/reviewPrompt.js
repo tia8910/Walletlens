@@ -173,6 +173,21 @@ export const FRICTIONS = new Set([
   'restore_failed',
 ])
 
+/**
+ * Ask the app to raise the review card.
+ *
+ * @returns {boolean} whether the app was reached — false in a TWA install or a
+ *   browser, where the caller falls back to the intent.
+ */
+function requestNativeReview(source, fallbackStore) {
+  try {
+    const b = typeof window !== 'undefined' ? window.AndroidBridge : null
+    if (!b || typeof b.requestReview !== 'function') return false
+    b.requestReview(String(source || 'unknown'), !!fallbackStore)
+    return true
+  } catch { return false }
+}
+
 function readState() {
   try {
     const raw = localStorage.getItem(STATE_KEY)
@@ -428,6 +443,13 @@ function fireAsk(source) {
   // top-frame navigation because the relaunch IS how its result arrives, this
   // is fire-and-forget by design — the state above is written before firing,
   // and a dropped intent deliberately costs one ask rather than retrying.
+  // The bridge where there is one. fireNativeIntent goes out through a hidden
+  // iframe and refuses without a live user activation, and both fail silently
+  // — which on this path is indistinguishable from Play simply declining to
+  // show a card, so the ask could have been vanishing for ever with nothing
+  // to see. Inside the app it is a method call.
+  if (requestNativeReview(source, false)) return true
+
   return fireNativeIntent(
     'walletlens://review?source=' + encodeURIComponent(source),
     { keepSession: true },
@@ -527,6 +549,8 @@ export function requestReviewNow(source = 'manual') {
   // leave a rating, Play's own per-user quota is what stops a second card —
   // and on the native side ReviewGate checks review_flow_completed_at, which
   // is only written when a flow actually ran.
+  if (requestNativeReview(source, true)) return true
+
   return fireNativeIntent(
     'walletlens://review?fallback=store&source=' + encodeURIComponent(source)
   )

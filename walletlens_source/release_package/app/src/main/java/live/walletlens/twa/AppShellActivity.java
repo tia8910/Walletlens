@@ -125,6 +125,21 @@ public class AppShellActivity extends ComponentActivity {
 
     private WebView web;
 
+    /**
+     * The view that carries the inset padding.
+     *
+     * The padding goes on the ROOT, not on the WebView. A ViewGroup's padding
+     * shrinks the area its children get, which is plain layout and cannot be
+     * argued with; a WebView's padding is applied by the WebView to its own
+     * content, and whether that survives a page with fixed-position elements
+     * is a question about Chromium's internals. Two attempts at the second
+     * mechanism changed nothing on a real device, so this uses the first.
+     *
+     * <p>The root also paints the brand colour, so the inset strips look like
+     * the TWA's STATUS_BAR_COLOR rather than a transparent gap.
+     */
+    private ViewGroup shellRoot;
+
     /** onResume runs on every return to the app; the handoff must not. */
     private boolean handoffChecked;
 
@@ -215,6 +230,7 @@ public class AppShellActivity extends ComponentActivity {
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(BAR_COLOR);
         root.addView(web);
+        shellRoot = root;
         setContentView(root);
         applyInsets(root);
 
@@ -304,7 +320,7 @@ public class AppShellActivity extends ComponentActivity {
             Insets bars = windowInsets.getInsets(
                     WindowInsetsCompat.Type.systemBars()
                             | WindowInsetsCompat.Type.displayCutout());
-            if (web != null) web.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return WindowInsetsCompat.CONSUMED;
         });
 
@@ -694,11 +710,12 @@ public class AppShellActivity extends ComponentActivity {
      * better in every way, and this only exists for when it did not happen.
      */
     private void ensureTopInset() {
-        if (web == null || web.getPaddingTop() > 0) return;
+        if (shellRoot == null || shellRoot.getPaddingTop() > 0) return;
         int top = systemDimen("status_bar_height");
         if (top <= 0) return;
         Log.w(TAG, "window insets never arrived; padding " + top + "px from resources");
-        web.setPadding(web.getPaddingLeft(), top, web.getPaddingRight(), web.getPaddingBottom());
+        shellRoot.setPadding(shellRoot.getPaddingLeft(), top,
+                shellRoot.getPaddingRight(), shellRoot.getPaddingBottom());
     }
 
     /** A framework dimension by name, or 0 when this platform has no such thing. */

@@ -270,6 +270,48 @@ describe('maybeAskForReview', () => {
   })
 })
 
+describe('inside the app shell', () => {
+  // fireNativeIntent goes out through a hidden iframe and refuses without a
+  // live user activation. Both fail silently — and on THIS path a dropped
+  // intent is indistinguishable from Play declining to show a card, which it
+  // does more often than not. The ask could have been vanishing for ever with
+  // nothing to see.
+  afterEach(() => { delete window.AndroidBridge })
+
+  it('asks the app directly rather than firing an intent', async () => {
+    const requestReview = vi.fn()
+    window.AndroidBridge = { requestReview }
+    const { maybeAskForReview } = await loadModule()
+    localStorage.setItem('wl_welcomed_v2', '1')
+    seed()
+    vi.setSystemTime(T0 + 61 * 1000)
+
+    expect(maybeAskForReview(READY)).toBe(true)
+    expect(requestReview).toHaveBeenCalledWith('returning', false)
+    expect(firedIntents(), 'no iframe intent when the bridge is there').toEqual([])
+  })
+
+  it('lets the deliberate tap fall back to the store', async () => {
+    const requestReview = vi.fn()
+    window.AndroidBridge = { requestReview }
+    const { requestReviewNow } = await loadModule()
+
+    expect(requestReviewNow('settings')).toBe(true)
+    expect(requestReview).toHaveBeenCalledWith('settings', true)
+  })
+
+  it('still fires the intent when there is no bridge', async () => {
+    // A TWA install has no bridge and must keep working exactly as before.
+    const { maybeAskForReview } = await loadModule()
+    localStorage.setItem('wl_welcomed_v2', '1')
+    seed()
+    vi.setSystemTime(T0 + 61 * 1000)
+
+    expect(maybeAskForReview(READY)).toBe(true)
+    expect(firedIntents()).toEqual(['walletlens://review?source=returning'])
+  })
+})
+
 describe('requestReviewNow', () => {
   it('ignores the usage rules and allows the store fallback', async () => {
     const { requestReviewNow } = await loadModule()

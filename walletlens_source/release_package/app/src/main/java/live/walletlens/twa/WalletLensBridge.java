@@ -373,6 +373,36 @@ public class WalletLensBridge {
     }
 
     /**
+     * Ask Play to show its in-app review card.
+     *
+     * <p>Directly, for the same reason promptAppLock is: the intent path went
+     * out through a hidden iframe and needed a live user activation, and both
+     * of those fail without saying so. The review prompt is the worst place
+     * for a silent failure — nothing about it is visible even when it works,
+     * because Play declines to show the card more often than not, so a
+     * dropped intent and a spent quota look identical from here.
+     *
+     * @param source        which rule earned the ask, for logcat
+     * @param fallbackStore open the store listing if Play shows nothing —
+     *                      true only when the user went looking for it
+     */
+    @JavascriptInterface
+    public void requestReview(String source, boolean fallbackStore) {
+        Activity a = activity();
+        if (a == null) return;
+        try {
+            String url = "walletlens://review?source="
+                    + Uri.encode(source == null || source.isEmpty() ? "unknown" : source)
+                    + (fallbackStore ? "&fallback=store" : "");
+            Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            i.setClass(a, ReviewActivity.class);
+            a.startActivity(i);
+        } catch (Throwable e) {
+            Log.w(TAG, "could not ask for a review: " + e);
+        }
+    }
+
+    /**
      * Raise the fingerprint prompt to turn App Lock on.
      *
      * <p>Directly, not through walletlens://. The intent path has three ways to

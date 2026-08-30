@@ -281,7 +281,19 @@ describe('the WebView shell', () => {
     // up there. The TWA never had this because the window was Chrome's.
     const src = code('AppShellActivity.java')
     expect(src).toMatch(/setOnApplyWindowInsetsListener/)
-    expect(src).toMatch(/web\.setPadding\(bars\.left, bars\.top, bars\.right, bars\.bottom\)/)
+    expect(src).toMatch(/v\.setPadding\(bars\.left, bars\.top, bars\.right, bars\.bottom\)/)
+  })
+
+  it('pads the root, not the WebView', () => {
+    // A ViewGroup's padding shrinks the area its children get — plain layout,
+    // and it cannot be argued with. A WebView applies its padding to its own
+    // content, and whether that survives a page of fixed-position elements is
+    // a question about Chromium's internals. Two attempts at the second
+    // mechanism changed nothing on a real device.
+    const src = code('AppShellActivity.java')
+    expect(src).toMatch(/private ViewGroup shellRoot/)
+    expect(src, 'the WebView must not be the thing being padded')
+      .not.toMatch(/web\.setPadding\(/)
   })
 
   it('asks for an insets dispatch instead of assuming one', () => {
@@ -383,6 +395,7 @@ describe('the WebView shell', () => {
     // The fallback asks the platform how tall the status bar is.
     const src = code('AppShellActivity.java')
     expect(src).toMatch(/private void ensureTopInset\(\)/)
+    expect(src, 'the fallback pads the root too').toMatch(/shellRoot\.setPadding\(/)
     expect(src, 'it must run once the page is up').toMatch(/onPageFinished/)
     // The dimension name is a string literal, which code() blanks — so this
     // one reads the raw source. Anchored on the CALL so a mention in prose
