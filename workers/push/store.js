@@ -88,6 +88,27 @@ export class SubStore {
     return sub ? { key, sub } : null
   }
 
+  /**
+   * Find a device by whichever address it has.
+   *
+   * A Web Push device is identified by its endpoint and an FCM device by its
+   * token — they are different strings in different fields, and every handler
+   * that used to take only an endpoint now takes either. Written once here
+   * rather than branched at six call sites, which is how one of them ends up
+   * quietly supporting only half the devices.
+   *
+   * @param {{endpoint?:string, fcmToken?:string}} body a request body
+   */
+  async getByAddress({ endpoint, fcmToken } = {}) {
+    if (fcmToken) {
+      const key = await tokenKey(fcmToken)
+      const sub = await this.get(key)
+      return sub ? { key, sub } : null
+    }
+    if (endpoint) return this.getByEndpoint(endpoint)
+    return null
+  }
+
   /** Write a record outright. Used by the request handlers, which own the row. */
   async put(key, sub) {
     await this.db

@@ -218,11 +218,24 @@ async function handle(req, env, store) {
 
   if (path === '/status') {
     const endpoint = url.searchParams.get('endpoint') ?? ''
-    if (!endpoint) return json({ error: 'missing_endpoint' }, headers, 400)
-    const endpointOk = isRealPushEndpoint(endpoint)
+    const fcmToken = url.searchParams.get('fcmToken') ?? ''
+    if (!endpoint && !fcmToken) return json({ error: 'missing_endpoint' }, headers, 400)
 
-    const stored = await store.get(await endpointKey(endpoint))
-    if (!stored) return json({ found: false, endpointOk, host: endpointHost(endpoint) }, headers)
+    // endpointOk is a Web Push question — is this a push service we recognise —
+    // and it has no meaning for a token. Reporting `false` for an FCM device
+    // would light the "your browser cannot receive push" warning in Settings
+    // on a device that is perfectly capable of it.
+    const endpointOk = fcmToken ? true : isRealPushEndpoint(endpoint)
+
+    const stored = fcmToken
+      ? await store.get(await tokenKey(fcmToken))
+      : await store.get(await endpointKey(endpoint))
+    if (!stored) {
+      return json({
+        found: false, endpointOk,
+        host: fcmToken ? 'fcm' : endpointHost(endpoint),
+      }, headers)
+    }
 
     const sub = normalize(stored)
     const now = Date.now()
@@ -232,6 +245,7 @@ async function handle(req, env, store) {
       endpointOk,
       vapid: vapidReady,
       vapidKey: env.VAPID_PUBLIC_KEY || '',
+      transport: sub.transport,
       watch: sub.watch.length,
       alerts: sub.alerts.length,
       prefs: sub.prefs,
@@ -297,8 +311,8 @@ async function handle(req, env, store) {
 
   if (req.method === 'POST' && path === '/alerts') {
     const body = await readJson(req)
-    if (!body.endpoint) return json({ error: 'missing_endpoint' }, headers, 400)
-    const found = await store.getByEndpoint(body.endpoint)
+    if (!body.endpoint && !body.fcmToken) return json({ error: 'missing_endpoint' }, headers, 400)
+    const found = await store.getByAddress(body)
     if (!found) return json({ error: 'unknown_subscription' }, headers, 404)
 
     const nextAlerts = sanitizeAlerts(body.alerts)
@@ -316,8 +330,8 @@ async function handle(req, env, store) {
 
   if (req.method === 'POST' && path === '/watch') {
     const body = await readJson(req)
-    if (!body.endpoint) return json({ error: 'missing_endpoint' }, headers, 400)
-    const found = await store.getByEndpoint(body.endpoint)
+    if (!body.endpoint && !body.fcmToken) return json({ error: 'missing_endpoint' }, headers, 400)
+    const found = await store.getByAddress(body)
     if (!found) return json({ error: 'unknown_subscription' }, headers, 404)
 
     const sub = found.sub
@@ -344,8 +358,8 @@ async function handle(req, env, store) {
 
   if (req.method === 'POST' && path === '/seen') {
     const body = await readJson(req)
-    if (!body.endpoint) return json({ error: 'missing_endpoint' }, headers, 400)
-    const found = await store.getByEndpoint(body.endpoint)
+    if (!body.endpoint && !body.fcmToken) return json({ error: 'missing_endpoint' }, headers, 400)
+    const found = await store.getByAddress(body)
     if (!found) return json({ error: 'unknown_subscription' }, headers, 404)
     await store.put(found.key, {
       ...found.sub,
@@ -358,8 +372,8 @@ async function handle(req, env, store) {
 
   if (req.method === 'POST' && path === '/test') {
     const body = await readJson(req)
-    if (!body.endpoint) return json({ error: 'missing_endpoint' }, headers, 400)
-    const found = await store.getByEndpoint(body.endpoint)
+    if (!body.endpoint && !body.fcmToken) return json({ error: 'missing_endpoint' }, headers, 400)
+    const found = await store.getByAddress(body)
     if (!found) return json({ error: 'unknown_subscription' }, headers, 404)
     const send = makeSender(env, store)
     const lang = asLang(body.lang) ?? found.sub.lang
@@ -377,7 +391,8 @@ async function handle(req, env, store) {
 
   if (req.method === 'DELETE' && path === '/unsubscribe') {
     const body = await readJson(req)
-    if (body.endpoint) await store.delete(await endpointKey(body.endpoint))
+    if (body.fcmToken) await store.delete(await tokenKey(body.fcmToken))
+    else if (body.endpoint) await store.delete(await endpointKey(body.endpoint))
     return json({ ok: true }, headers)
   }
 
