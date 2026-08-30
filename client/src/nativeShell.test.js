@@ -274,6 +274,33 @@ describe('the WebView shell', () => {
     expect(src).toMatch(/FLAG_GRANT_READ_URI_PERMISSION/)
   })
 
+  it('keeps the page out from under the status bar', () => {
+    // An app targeting SDK 35+ is edge-to-edge and cannot opt out, so the
+    // window covers the whole screen and a WebView added to it renders behind
+    // the clock. The header, the search field and the settings button all live
+    // up there. The TWA never had this because the window was Chrome's.
+    const src = code('AppShellActivity.java')
+    expect(src).toMatch(/setOnApplyWindowInsetsListener/)
+    expect(src).toMatch(/web\.setPadding\(bars\.left, bars\.top, bars\.right, bars\.bottom\)/)
+  })
+
+  it('pads for the camera cutout too, not just the bars', () => {
+    // A punch-hole sits beside the status bar in landscape rather than within
+    // it, so systemBars() alone still loses a strip of the page to the lens.
+    expect(code('AppShellActivity.java')).toMatch(/Type\.displayCutout\(\)/)
+  })
+
+  it('targets an SDK where this is mandatory', () => {
+    // If this ever drops below 35 the inset handling above stops being forced
+    // — and someone removing it would find the tests still green.
+    const gradle = readFileSync(
+      join(SRC, '..', '..', 'walletlens_source/release_package/app/build.gradle'),
+      'utf8',
+    )
+    const targetSdk = Number((gradle.match(/targetSdk\s+(\d+)/) || [])[1])
+    expect(targetSdk).toBeGreaterThanOrEqual(35)
+  })
+
   it('holds its host weakly, so the Activity can be collected', () => {
     // A JavaScript object holding a strong reference to the Activity is the
     // classic WebView leak: nothing can be collected on rotation or finish.

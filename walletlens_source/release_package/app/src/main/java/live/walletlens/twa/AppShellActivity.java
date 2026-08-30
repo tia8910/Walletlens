@@ -8,7 +8,9 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.webkit.CookieManager;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -23,6 +25,10 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 /**
  * The app rendering the site itself, instead of asking Chrome to.
@@ -94,6 +100,14 @@ public class AppShellActivity extends ComponentActivity {
      */
     private static final String HANDOFF_URL = ORIGIN + "/dashboard?wlhandoff=1";
 
+    /**
+     * What shows behind the status and navigation bars.
+     *
+     * The same colour the TWA used for its status bar (colorPrimary), so the
+     * app looks the way it did before it started rendering itself.
+     */
+    private static final int BAR_COLOR = 0xFF071A0C;
+
     private static final String PREFS = "walletlens_shell";
     /** How many times the handoff has been offered. */
     private static final String KEY_HANDOFF_TRIES = "handoff_tries";
@@ -141,7 +155,15 @@ public class AppShellActivity extends ComponentActivity {
         // most visible difference between a shell that feels native and one
         // that feels like a browser someone hid the chrome on.
         web.setBackgroundColor(Color.parseColor("#0b0f1a"));
-        setContentView(web);
+
+        // The WebView sits inside a root that paints the bars' background, so
+        // the inset strips are brand-coloured rather than transparent gaps.
+        // See applyInsets for why any of this is needed.
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(BAR_COLOR);
+        root.addView(web);
+        setContentView(root);
+        applyInsets(root);
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -194,6 +216,53 @@ public class AppShellActivity extends ComponentActivity {
             // same origin check the WebViewClient enforces, applied before the
             // first load rather than only to navigations after it.
             web.loadUrl(ourUrl(getIntent()));
+        }
+    }
+
+    /**
+     * Keep the page out from under the status and navigation bars.
+     *
+     * <h3>Why this is not optional</h3>
+     *
+     * An app targeting SDK 35 or above is edge-to-edge and cannot opt out —
+     * Android 15 removed the flag that used to turn it off. So the activity's
+     * window covers the whole screen, status bar and gesture bar included, and
+     * a WebView added to it renders underneath both. The top of the page is
+     * simply behind the clock: the header, the search field and the settings
+     * button are all drawn there and all unreachable.
+     *
+     * <p>The TWA never had this because it was not this app's window. Chrome
+     * hosted the page and androidbrowserhelper told it what colour to paint the
+     * bars, so the insets were somebody else's problem. Rendering the site
+     * ourselves means inheriting that problem along with the storage.
+     *
+     * <p>Padding rather than fitsSystemWindows: the deprecated attribute
+     * consumes insets in a way that stops working the moment a parent also
+     * handles them, and it gives no control over what the strip looks like.
+     * Padding the WebView leaves the root's brand colour showing behind the
+     * bars, which is what the TWA's STATUS_BAR_COLOR did.
+     *
+     * <p>displayCutout is included with the system bars. A punch-hole or notch
+     * in landscape sits beside the status bar, not within it, and a page padded
+     * only for systemBars() still loses a strip of itself to the camera.
+     */
+    private void applyInsets(@NonNull View root) {
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, windowInsets) -> {
+            Insets bars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.systemBars()
+                            | WindowInsetsCompat.Type.displayCutout());
+            if (web != null) web.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return WindowInsetsCompat.CONSUMED;
+        });
+
+        // Light icons, because the strip behind them is the brand's dark green.
+        // Left alone, the system picks from the old window background and draws
+        // dark-on-dark — a status bar whose clock cannot be read.
+        try {
+            new WindowInsetsControllerCompat(getWindow(), root)
+                    .setAppearanceLightStatusBars(false);
+        } catch (Throwable e) {
+            Log.w(TAG, "could not set status bar appearance: " + e);
         }
     }
 
