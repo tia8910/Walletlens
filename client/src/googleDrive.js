@@ -142,7 +142,27 @@ export function beginRedirectSignIn() {
     sessionStorage.setItem(STATE_KEY, state)
     sessionStorage.setItem(RETURN_KEY, window.location.pathname || '/settings')
   } catch { /* private mode: state check will fail closed on return */ }
-  window.location.assign(buildAuthUrl(state))
+
+  const url = buildAuthUrl(state)
+
+  // Inside the app's own WebView this navigation must leave the WebView.
+  //
+  // Google REFUSES OAuth in an embedded WebView — accounts.google.com answers
+  // `disallowed_useragent`, deliberately, so that an app cannot watch its users
+  // type a Google password into a view it controls. Navigating there in-place
+  // does not fail subtly; it fails with a page nobody can get past.
+  //
+  // The bridge opens a Custom Tab, which IS the user's browser and which
+  // Google accepts. Google redirects back to /drive-callback, the app catches
+  // that deep link, and the shell loads it into this same WebView — so the
+  // sessionStorage state written just above is still here to check against,
+  // and completeRedirectSignIn below runs exactly as it does in a browser.
+  try {
+    const bridge = typeof window !== 'undefined' ? window.AndroidBridge : null
+    if (bridge && typeof bridge.openExternal === 'function' && bridge.openExternal(url)) return
+  } catch { /* fall through to the ordinary navigation */ }
+
+  window.location.assign(url)
 }
 
 /**

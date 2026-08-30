@@ -1,7 +1,12 @@
 package live.walletlens.twa;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
+import android.util.Log;
 import android.webkit.JavascriptInterface;
+
+import androidx.browser.customtabs.CustomTabsIntent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -48,6 +53,8 @@ import java.lang.ref.WeakReference;
  * to the page that already owns it.
  */
 public class WalletLensBridge {
+
+    private static final String TAG = "WalletLensBridge";
 
     /** The name JavaScript sees. Web side checks for window.AndroidBridge. */
     public static final String NAME = "AndroidBridge";
@@ -211,5 +218,61 @@ public class WalletLensBridge {
         Activity a = activity();
         if (a == null) return;
         BiometricActivity.setEnabled(a, enabled);
+    }
+
+    // ── Signing in to Google ─────────────────────────────────────────────
+
+    /**
+     * Open a URL in a real browser tab, outside the WebView.
+     *
+     * <p>This exists for one reason: Google refuses OAuth inside an embedded
+     * WebView. Navigating to accounts.google.com from here does not fail
+     * subtly — it returns a page reading {@code disallowed_useragent},
+     * deliberately, to stop an app being able to watch its users type a Google
+     * password into a view that app controls. That is a rule worth having, and
+     * the answer is not to fight it.
+     *
+     * <p>A Custom Tab is the answer. It IS the user's browser — same process,
+     * same cookie jar, same password manager, and this app cannot see inside
+     * it — so Google accepts it, while the user stays visually inside the app
+     * instead of being thrown out to a separate task.
+     *
+     * <p>Falls back to a plain browser intent when no Custom Tabs provider is
+     * installed. Uglier, still correct.
+     */
+    @JavascriptInterface
+    public boolean openExternal(String url) {
+        Activity a = activity();
+        if (a == null) return false;
+
+        // https only. This method is reachable from any JavaScript running in
+        // the WebView, and "open anything, anywhere" is a wider door than it
+        // needs to be — an intent:// or file:// here would be a way out of the
+        // sandbox rather than a way to a login page.
+        if (url == null || !url.startsWith("https://")) return false;
+
+        final Uri uri;
+        try {
+            uri = Uri.parse(url);
+        } catch (Throwable e) {
+            return false;
+        }
+
+        a.runOnUiThread(() -> {
+            try {
+                new CustomTabsIntent.Builder()
+                        .setShowTitle(true)
+                        .build()
+                        .launchUrl(a, uri);
+            } catch (Throwable e) {
+                Log.w(TAG, "no custom tabs provider; falling back to a browser: " + e);
+                try {
+                    a.startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                } catch (Throwable e2) {
+                    Log.w(TAG, "no browser at all: " + e2);
+                }
+            }
+        });
+        return true;
     }
 }

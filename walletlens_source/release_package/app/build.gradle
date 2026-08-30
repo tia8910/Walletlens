@@ -326,6 +326,13 @@ dependencies {
     implementation "androidx.biometric:biometric:1.2.0-alpha05"
     implementation "androidx.appcompat:appcompat:1.7.0"
 
+    // Custom Tabs. Already arrives transitively through androidbrowserhelper,
+    // but the WebView shell depends on it DIRECTLY — Google refuses OAuth in a
+    // WebView, so the Drive sign-in has to leave for a real browser tab — and
+    // a direct dependency should be declared rather than inherited from a
+    // library that might drop it.
+    implementation "androidx.browser:browser:1.8.0"
+
     // QR code generation for export
     implementation 'com.google.zxing:core:3.5.3'
 

@@ -227,3 +227,64 @@ describe('seeding the portfolio across from the vault', () => {
     expect((await seedFromVault()).status).toBe('bridge-failed')
   })
 })
+
+// ── Google Drive in the shell ───────────────────────────────────────────────
+//
+// Google REFUSES OAuth inside an embedded WebView: accounts.google.com answers
+// `disallowed_useragent`, deliberately, so an app cannot watch its users type a
+// Google password into a view it controls. So the sign-in has to leave the
+// WebView for a real browser tab, and the token has to find its way back.
+
+describe('signing in to Google from inside the app', () => {
+  const JAVA = join(
+    SRC, '..', '..',
+    'walletlens_source/release_package/app/src/main/java/live/walletlens/twa',
+  )
+  const rawJava = (f) => readFileSync(join(JAVA, f), 'utf8')
+  const javaCode = (f) => rawJava(f).replace(/\/\*[\s\S]*?\*\//g, '')
+
+  it('leaves the WebView through a Custom Tab, not a browser hand-off', () => {
+    // A Custom Tab IS the user's browser — Google accepts it — and it keeps
+    // the flow inside this app's task, so the redirect comes back to us. A
+    // plain browser intent completes the OAuth somewhere this app can never
+    // hear the answer from.
+    expect(javaCode('WalletLensBridge.java')).toMatch(/CustomTabsIntent/)
+    expect(javaCode('AppShellActivity.java')).toMatch(/CustomTabsIntent/)
+  })
+
+  it('refuses to open anything that is not https', () => {
+    // openExternal is reachable from any JavaScript in the WebView. An
+    // intent:// or file:// here would be a way out of the sandbox rather than
+    // a way to a login page.
+    expect(javaCode('WalletLensBridge.java')).toMatch(/!url\.startsWith\("https:\/\/"\)/)
+  })
+
+  it('brings the callback back into the SAME WebView', () => {
+    // The state parameter that makes this flow safe lives in sessionStorage.
+    // A fresh WebView would come back to a token it cannot verify, and the
+    // sign-in would fail with a state mismatch.
+    const src = javaCode('AppShellActivity.java')
+    expect(src).toMatch(/protected void onNewIntent/)
+    expect(src).toMatch(/web\.loadUrl\(url\.toString\(\)\)/)
+    // And only our own origin may be loaded into a WebView that has the bridge
+    // attached to it.
+    expect(src).toMatch(/ORIGIN\.equals/)
+  })
+
+  it('declares the Custom Tabs dependency rather than inheriting it', () => {
+    const gradle = readFileSync(
+      join(SRC, '..', '..', 'walletlens_source/release_package/app/build.gradle'), 'utf8',
+    )
+    expect(gradle).toMatch(/androidx\.browser:browser/)
+  })
+
+  it('routes the auth navigation through the bridge when there is one', () => {
+    const src = readFileSync(join(SRC, 'googleDrive.js'), 'utf8')
+    const fn = src.slice(src.indexOf('export function beginRedirectSignIn'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    expect(body).toMatch(/openExternal/)
+    // And still navigates normally in a browser, where there is no bridge and
+    // the ordinary redirect is exactly right.
+    expect(body).toMatch(/window\.location\.assign\(url\)/)
+  })
+})
