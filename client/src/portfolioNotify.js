@@ -1,5 +1,5 @@
 import { translator } from './i18n'
-import { canNotify, showLocalNotification } from './localNotify'
+import { canNotify, showLocalNotification, requestNotifyPermission } from './localNotify'
 
 /**
  * Smart portfolio & engagement notification system.
@@ -266,16 +266,16 @@ export function checkGuardianReminder() {
 // ── Permission ─────────────────────────────────────────────────────────
 
 export async function requestPortfolioNotifPermission() {
-  if (!('Notification' in window)) return false
-  if (Notification.permission === 'granted') return true
-  const result = await Notification.requestPermission()
-  return result === 'granted'
+  return requestNotifyPermission()
 }
 
 // ── Full initialization – call once per app load ───────────────────────
 
 export function initNotifications(currentPortfolioValue) {
-  if (!('Notification' in window)) return
+  // canNotify rather than a bare Notification check: the app's own WebView has
+  // no Notification object at all and would fall out here, silently, with
+  // every in-app alert disabled on the platform they matter most on.
+  if (!canNotify() && typeof Notification === 'undefined') return
 
   // 1. Track the visit & get streak
   const streak = trackVisit()

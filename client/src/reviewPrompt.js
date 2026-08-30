@@ -19,11 +19,18 @@
 // levers that actually move review volume are how many users ever qualify, and
 // whether the one ask they get lands somewhere they are not busy or annoyed.
 //
-// Of those two, reach was chosen: every returning user qualifies, with no
-// waiting period. A moment is a bonus that shortens the dwell and labels the
-// source, not a requirement. What remains is only the stuff that would make an
-// ask actively counterproductive — an open sheet, an empty portfolio, or a
-// recent failure in the app.
+// Of those two, reach was chosen once — every visitor qualified, from the very
+// first launch, on a fifteen-second dwell. That was wrong, and it was reported
+// as a bug twice before the reason was understood: the card arrived while
+// someone was still working out what the app WAS. There is nothing to rate
+// fifteen seconds into a first launch, so the card is dismissed, and Play
+// counts that against a per-user quota nobody gets back. Maximising who is
+// asked is worth nothing if the ask lands before there is an opinion to give.
+//
+// So the gates below ask for evidence that the app is actually being used:
+// several launches, on more than one day, by someone who has put a portfolio
+// in. A moment is still a bonus that shortens the dwell and labels the source,
+// not a requirement.
 //
 // Friction below means the APP failed — an exception, a failed import, a sync
 // error. It deliberately does not include the market going down. A drawdown is
@@ -44,33 +51,34 @@ const SESSION_FLAG = 'wl_review_session_counted'
 
 // ── Base eligibility ───────────────────────────────────────────────────────
 //
-// There is no waiting period and no session minimum: the card is eligible from
-// the very first visit. This deliberately matches how apps like Product Hunt
-// do it, and the trade is understood — some of those users are rating an app
-// they have barely used, which costs a little on the average. What it buys is
-// that everybody gets asked instead of the fraction still around days later.
+// Every gate here answers one question: has this person used WalletLens enough
+// to have an opinion about it?
 //
-// Two rules survive, because both prevent an ask that would actively backfire:
-//
-//   `busy`     — never land the card on someone mid-entry, with a trade sheet
-//                or import chooser open.
-//   dwell      — give the session a few seconds first, so the card is not the
-//                first thing that happens when the dashboard paints.
-//
-// Note what is NOT required: a portfolio. Requiring one would push the ask past
-// the first visit for every new user, which is exactly what this is not.
-//
-// Moments still exist, but only as a bonus — they shorten the dwell and label
-// the source. They are not a gate.
-const MIN_OPENS = 1              // the first launch counts
-const MIN_DAYS = 0               // no waiting period
-const MIN_HOLDINGS = 0           // no portfolio needed
-const MIN_DWELL_MS = 15 * 1000   // don't interrupt the first seconds of a session
+//   opens      — three launches. One is someone looking around; three is
+//                someone who came back on purpose.
+//   days       — and on a later day than the first. A single long session is
+//                still a first impression.
+//   holdings   — a portfolio. The app does one thing, and a user with nothing
+//                in it has not seen the app do it.
+//   dwell      — a full minute into the session, so the card is never part of
+//                arriving. This was fifteen seconds, which on a phone that
+//                takes a moment to load meant the card could land while the
+//                dashboard was still settling.
+//   `busy`     — never on someone mid-entry, with a trade sheet or import
+//                chooser open.
+//   onboarding — never while the welcome flow is unfinished. Asking someone to
+//                rate an app they are still being introduced to is the clearest
+//                possible version of this whole mistake.
+const MIN_OPENS = 3
+const MIN_DAYS = 2
+const MIN_HOLDINGS = 1
+const MIN_DWELL_MS = 60 * 1000
 
 // A moment shortens the dwell: someone who just watched a price target hit is
-// already looking at good news, and making them wait another half minute only
-// risks them navigating away.
-const MOMENT_DWELL_MS = 8 * 1000
+// already looking at good news, and making them wait another minute only risks
+// them navigating away. It shortens it — it does not remove it, and it does not
+// excuse any of the gates above.
+const MOMENT_DWELL_MS = 20 * 1000
 
 // How long a positive moment stays worth acting on. Long enough to survive a
 // re-render or a tab switch, short enough that the card still feels connected
@@ -279,7 +287,24 @@ export function reviewDiagnostics() {
  * A moment is no longer required to pass. It still decides the *source* label
  * and shortens the dwell, but a returning user qualifies on their own.
  */
+/**
+ * Whether the first-run welcome flow has been finished.
+ *
+ * Read rather than imported: NativeOnboarding owns these keys, and this file
+ * has no business importing a component to ask a question about localStorage.
+ * An unreadable store counts as "still onboarding" — the safe answer, since
+ * the cost of not asking is one deferred card and the cost of asking is the
+ * card landing on a welcome screen.
+ */
+function onboardingFinished() {
+  try {
+    if (localStorage.getItem('wl_welcome_step_v2')) return false   // mid-flow
+    return !!localStorage.getItem('wl_welcomed_v2')
+  } catch { return false }
+}
+
 function storedGates(s, now) {
+  if (!onboardingFinished()) return 'onboarding'
   if (s.friction && now - s.friction < FRICTION_QUIET_MS) return 'friction'
   if (s.opens < MIN_OPENS) return 'few-opens'
   if (!s.first || now - s.first < MIN_DAYS * DAY_MS) return 'too-new'
@@ -349,10 +374,10 @@ function evaluate(snap) {
 
   if (snap.busy) return { ok: false, blocked: 'busy' }
 
-  // Only checked when MIN_HOLDINGS is above zero. It is deliberately not, so
-  // this is inert — kept as the single line to change if the ask should ever
-  // wait for a portfolio again, rather than having to reconstruct the rule.
-  if (MIN_HOLDINGS > 0 && snap.holdingsCount < MIN_HOLDINGS) {
+  // Live again. This sat inert behind `MIN_HOLDINGS > 0` while the rule was
+  // "ask everybody"; an empty portfolio is now a reason to wait, because the
+  // one thing this app does has not happened yet for that user.
+  if (snap.holdingsCount < MIN_HOLDINGS) {
     return { ok: false, blocked: 'no-portfolio' }
   }
 

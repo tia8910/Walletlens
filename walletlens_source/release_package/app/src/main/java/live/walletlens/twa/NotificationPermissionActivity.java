@@ -99,17 +99,24 @@ public class NotificationPermissionActivity extends ComponentActivity {
         }
     }
 
-    /** Hand off to the TWA launcher as a fresh task root, then finish. */
+    /**
+     * Open the app, then finish.
+     *
+     * <p>This used to be the launcher's own handoff, with CLEAR_TASK to make
+     * the TWA a clean task root — androidbrowserhelper insists on that, and
+     * without it the TWA degraded to a Custom Tab with an address bar.
+     *
+     * <p>None of that applies now. The shell IS the launcher, so this activity
+     * is only ever reached through walletlens://notification-permission, with
+     * the app already running behind it. CLEAR_TASK would tear that down and
+     * cold-start the app on top of a user who had just tapped a toggle.
+     */
     private void proceed() {
-        Intent i = new Intent(this, LauncherActivity.class);
-        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        // Carry through any deep-link data that landed on the gate.
         Intent source = getIntent();
-        if (source != null && source.getData() != null) {
-            Uri data = source.getData();
-            i.setData(data);
-        }
-        startActivity(i);
+        Uri data = source != null ? source.getData() : null;
+        startActivity(data != null
+                ? AppEntry.deepLink(this, data.toString())
+                : AppEntry.home(this));
         finish();
     }
 }

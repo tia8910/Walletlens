@@ -3,7 +3,7 @@ import { track } from '../analytics'
 import { syncAlerts } from '../push'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
-import { showLocalNotification } from '../localNotify'
+import { showLocalNotification, requestNotifyPermission, canNotify } from '../localNotify'
 
 const STORAGE_KEY = 'walletlens_price_alerts'
 
@@ -21,9 +21,7 @@ function bumpId() {
 }
 
 function requestNotificationPermission() {
-  if (!('Notification' in window)) return Promise.resolve('denied')
-  if (Notification.permission === 'granted') return Promise.resolve('granted')
-  return Notification.requestPermission()
+  return requestNotifyPermission().then(ok => (ok ? 'granted' : 'denied'))
 }
 
 function fireNotification(title, body) {
@@ -90,7 +88,7 @@ export default function PriceAlerts({ enriched, prices }) {
   const [coinId, setCoinId]         = useState('')
   const [condition, setCondition]   = useState('above')
   const [targetInput, setTargetInput] = useState('')
-  const [notifPerm, setNotifPerm]   = useState(() => (typeof Notification !== 'undefined' ? Notification.permission : 'default'))
+  const [notifPerm, setNotifPerm]   = useState(() => (canNotify() ? 'granted' : (typeof Notification !== 'undefined' ? Notification.permission : 'default')))
   const [toasts, setToasts]         = useState([])
   const prevPricesRef               = useRef({})
   const alertsRef                   = useRef(alerts)

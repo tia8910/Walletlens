@@ -53,8 +53,7 @@ public class AllocationWidgetProvider extends AppWidgetProvider {
         setBarWeight(views, R.id.alloc_gold_bar, gold);
         setBarWeight(views, R.id.alloc_cash_bar, cash);
 
-        Intent tap = new Intent(context, LauncherActivity.class);
-        tap.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        Intent tap = AppEntry.home(context);
         views.setOnClickPendingIntent(R.id.widget_container,
                 PendingIntent.getActivity(context, 3, tap, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
 

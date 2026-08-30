@@ -195,12 +195,19 @@ public final class NotificationHelper {
      * If {@code targetUrl} is null, the default launch URL will be used.
      */
     private Intent createTapIntent(@Nullable String targetUrl, @Nullable String dataPayload) {
-        Intent intent = new Intent(context, LauncherActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        // AppEntry, not LauncherActivity. A notification that opened the TWA
+        // would open Chrome — address bar and all — from an app that is no
+        // longer a browser, and the tap is the one moment a user is most
+        // certain they are in the app.
+        //
+        // deepLink also drops a URL that is not ours. This one arrives in a
+        // push payload, over the network, and ends up inside a PendingIntent
+        // that outlives the check: an unchecked one would let anyone who could
+        // forge a push put a link of their choosing on the lock screen wearing
+        // this app's icon.
+        Intent intent = AppEntry.deepLink(context, targetUrl);
 
         if (targetUrl != null && !targetUrl.isEmpty()) {
-            // Set the URI so LauncherActivity.getLaunchingUrl() returns this URL.
-            intent.setData(Uri.parse(targetUrl));
             intent.putExtra(EXTRA_TARGET_URL, targetUrl);
         }
 

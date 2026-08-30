@@ -49,8 +49,7 @@ public class DailyPnlWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.widget_pnl_losers, String.valueOf(losers));
         views.setTextViewText(R.id.widget_pnl_best, best);
 
-        Intent tap = new Intent(context, LauncherActivity.class);
-        tap.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        Intent tap = AppEntry.home(context);
         views.setOnClickPendingIntent(R.id.widget_container,
                 PendingIntent.getActivity(context, 2, tap, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
 

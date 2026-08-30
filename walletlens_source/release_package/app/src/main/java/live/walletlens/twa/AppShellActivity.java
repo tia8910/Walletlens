@@ -2,6 +2,8 @@ package live.walletlens.twa;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -53,23 +55,51 @@ import androidx.annotation.Nullable;
  * <h3>Existing users</h3>
  *
  * A WebView cannot read what Chrome stored — different process, different
- * sandbox — so on its own this would empty every installed device. It does not,
- * because the TWA build has been mirroring the portfolio into this app's own
- * files directory since 6.1, and that file is right where this can reach it.
- * The web app asks for it through the bridge on first run. The vault was built
- * as a safety net; it turns out to be the bridge across this change, which is
- * why 6.1 has to be widely installed before this ships.
+ * sandbox — so on its own this would empty every installed device on the day
+ * it shipped.
+ *
+ * <p>The vault is what carries them across: the app's own copy of the
+ * portfolio, in the app's own files directory, which this can read and the web
+ * app asks for through the bridge on first run.
+ *
+ * <p>But the vault only started being written in 6.2, and nobody is obliged to
+ * install 6.2 before 6.3 — Play updates whatever is installed to whatever is
+ * newest. An install coming straight from 6.1 reaches this class with an EMPTY
+ * vault and a full portfolio sitting in Chrome, unreachable.
+ *
+ * <p>So the handoff below exists, and it is not a nicety: it is the only path
+ * that data has. See {@link #maybeStartHandoff}.
  */
 public class AppShellActivity extends ComponentActivity {
 
     private static final String TAG = "WalletLensShell";
 
+    /** The one host this shell will render. Anything else goes to a browser. */
+    static final String HOST = "walletlens.live";
+
     /** The origin the shell will render. Anything else goes to a real browser. */
-    private static final String ORIGIN = "https://walletlens.live";
+    private static final String ORIGIN = "https://" + HOST;
 
     private static final String START_URL = ORIGIN + "/dashboard";
 
+    /**
+     * The page that mirrors Chrome's copy into the vault. Read by the web app,
+     * which shows a single button rather than acting on a query parameter by
+     * itself — the intent that writes the vault needs a user gesture, and a
+     * migration that moves someone's portfolio should be something they saw.
+     */
+    private static final String HANDOFF_URL = ORIGIN + "/dashboard?wlhandoff=1";
+
+    private static final String PREFS = "walletlens_shell";
+    /** How many times the handoff has been offered. */
+    private static final String KEY_HANDOFF_TRIES = "handoff_tries";
+    /** Offered at most this many times, then never again. */
+    private static final int HANDOFF_MAX_TRIES = 3;
+
     private WebView web;
+
+    /** onResume runs on every return to the app; the handoff must not. */
+    private boolean handoffChecked;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -129,7 +159,118 @@ public class AppShellActivity extends ComponentActivity {
             // through entering.
             web.restoreState(savedInstanceState);
         } else {
-            web.loadUrl(START_URL);
+            // A notification tap, a widget tap or a walletlens.live link opened
+            // anywhere on the device arrives as the intent's data. Falling back
+            // to the dashboard rather than trusting it blindly: ourUrl() is the
+            // same origin check the WebViewClient enforces, applied before the
+            // first load rather than only to navigations after it.
+            web.loadUrl(ourUrl(getIntent()));
+        }
+    }
+
+    /** The URL an intent is asking for, if it is ours, else the dashboard. */
+    private static String ourUrl(@Nullable Intent intent) {
+        Uri url = intent != null ? intent.getData() : null;
+        if (url != null && AppEntry.isOurs(url.toString())) return url.toString();
+        return START_URL;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!handoffChecked) {
+            handoffChecked = true;
+            maybeStartHandoff();
+        }
+    }
+
+    // ── The handoff ─────────────────────────────────────────────────────────
+
+    /**
+     * Fetch the portfolio out of Chrome, once, on an install that has one.
+     *
+     * <p>THE PROBLEM. Until this version the app was a Trusted Web Activity, so
+     * the portfolio lives in Chrome's storage for walletlens.live. This shell
+     * cannot read a byte of it. The vault would carry it across, but the vault
+     * has only been written since 6.2 and an install updating straight from 6.1
+     * has an empty one. For those users the data is not lost — it is sitting in
+     * Chrome, perfectly intact, on the other side of a sandbox boundary.
+     *
+     * <p>THE WAY ACROSS. Chrome can still be asked to open the page, and the
+     * page running in Chrome still has that storage. So the app opens it once,
+     * in a Custom Tab, on a URL the web app recognises. The page offers one
+     * button; the button writes the whole portfolio into the vault through the
+     * intent the TWA build already used; and the page then returns to
+     * {@code walletlens://shell}, where {@link #onNewIntent} reloads and the
+     * web app's seedFromVault() finds a full vault waiting.
+     *
+     * <p>EXTRA_REFERRER is load-bearing. The page decides whether it is allowed
+     * to fire a native intent by looking for an {@code android-app://} referrer
+     * from this package, which is the check that cannot be spoofed by a web
+     * page. A Custom Tab launched without it looks like an ordinary browser tab
+     * to the page, and the button would do nothing at all.
+     *
+     * <p>WHO SEES IT. Only an install that was UPDATED, never a fresh one:
+     * a first install has nothing in Chrome to fetch, and sending a new user
+     * out to a browser before they have seen the app would be the worst
+     * possible first screen. Offered at most three times, counted before the
+     * launch rather than after, so a user who dismisses it is asked again on a
+     * later launch and nobody is asked for ever.
+     */
+    private void maybeStartHandoff() {
+        SharedPreferences p = getSharedPreferences(PREFS, MODE_PRIVATE);
+        int tries = p.getInt(KEY_HANDOFF_TRIES, 0);
+        if (tries >= HANDOFF_MAX_TRIES) return;
+
+        if (!isUpdatedInstall()) {
+            // Nothing in Chrome to go and get. Close the door so a later update
+            // of THIS install never offers it either.
+            p.edit().putInt(KEY_HANDOFF_TRIES, HANDOFF_MAX_TRIES).apply();
+            return;
+        }
+
+        String vault = DataVaultActivity.read(this);
+        if (vault != null && !vault.isEmpty()) {
+            // Already carried across — either by 6.2's mirroring or by an
+            // earlier run of this.
+            p.edit().putInt(KEY_HANDOFF_TRIES, HANDOFF_MAX_TRIES).apply();
+            return;
+        }
+
+        // Counted BEFORE the launch. If the Custom Tab throws, or the user
+        // dismisses it, or Chrome is not installed, the count still moved and
+        // this cannot become a loop that reopens a browser on every launch.
+        p.edit().putInt(KEY_HANDOFF_TRIES, tries + 1).apply();
+
+        try {
+            CustomTabsIntent tab = new CustomTabsIntent.Builder().setShowTitle(false).build();
+            tab.intent.putExtra(Intent.EXTRA_REFERRER,
+                    Uri.parse("android-app://" + getPackageName()));
+            tab.launchUrl(this, Uri.parse(HANDOFF_URL));
+        } catch (Throwable e) {
+            // No browser at all is survivable: the app still works, it just
+            // starts empty, and the user can restore from their own backup.
+            Log.w(TAG, "could not open the handoff page: " + e);
+        }
+    }
+
+    /**
+     * Whether this install arrived as an update rather than a first install.
+     *
+     * <p>Play sets both timestamps on a first install and moves only the second
+     * on an update, so they are equal exactly once in an install's life. A few
+     * seconds of slack because the two are written by different steps of the
+     * install and are not guaranteed to be the same millisecond.
+     */
+    private boolean isUpdatedInstall() {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            return info.lastUpdateTime - info.firstInstallTime > 10_000L;
+        } catch (Throwable e) {
+            // Unknown. Treated as an update, because offering the handoff to
+            // someone who does not need it costs one dismissible screen, and
+            // withholding it from someone who does costs their portfolio.
+            return true;
         }
     }
 
@@ -157,6 +298,15 @@ public class AppShellActivity extends ComponentActivity {
 
         Uri url = intent != null ? intent.getData() : null;
         if (url == null || web == null) return;
+
+        // The handoff coming back. The page in Chrome has written the vault and
+        // sent us here; reloading is what makes the web app run seedFromVault()
+        // again, this time against a vault that has something in it.
+        if ("walletlens".equals(url.getScheme())) {
+            if ("shell".equals(url.getHost())) web.loadUrl(START_URL);
+            return;
+        }
+
         if (!ORIGIN.equals(url.getScheme() + "://" + url.getHost())) {
             Log.w(TAG, "ignoring an inbound URL that is not ours");
             return;

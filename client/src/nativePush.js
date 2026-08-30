@@ -96,6 +96,25 @@ export async function registerNativePush(opts = {}) {
   return { ok: true }
 }
 
+/**
+ * Ask Android for notification permission.
+ *
+ * ONE dialog, and the reason it is here rather than in the page: in the shell
+ * the browser's Notification.requestPermission() grants something a WebView
+ * can never act on — there is no service worker to deliver to — and the user
+ * then meets Android's own dialog for the permission that actually decides
+ * whether anything appears. Two prompts, different wording, one decision, and
+ * the first of them inert.
+ *
+ * Fire-and-forget: the answer arrives in the app's own state, not in a promise
+ * this could return. Callers poll nativeNotificationsAllowed().
+ */
+export function requestNativeNotificationPermission() {
+  const b = bridge()
+  if (!b || typeof b.requestNotificationPermission !== 'function') return false
+  try { b.requestNotificationPermission(); return true } catch { return false }
+}
+
 /** Whether the OS will currently let a notification through. */
 export function nativeNotificationsAllowed() {
   const b = bridge()

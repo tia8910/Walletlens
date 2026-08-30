@@ -213,11 +213,13 @@ public class DataVaultActivity extends Activity {
         String fragment = FRAGMENT_KEY + "="
                 + (payload != null && !payload.isEmpty() ? Uri.encode(payload) : EMPTY_MARKER);
 
-        // Back to the launcher, which is the only way into the TWA, carrying
-        // the payload where the network will never see it.
-        Intent i = new Intent(this, LauncherActivity.class);
+        // Back into the app, carrying the payload where the network will never
+        // see it. deepLink drops a URL that is not ours, and RESTORE_URL is
+        // ours, so the fragment is appended after the check rather than being
+        // offered up to it — a fragment is not part of what "ours" means and a
+        // portfolio has no business being parsed as a host.
+        Intent i = AppEntry.deepLink(this, RESTORE_URL);
         i.setData(Uri.parse(RESTORE_URL + "#" + fragment));
-        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(i);
         finish();
     }

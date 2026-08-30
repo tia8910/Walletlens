@@ -66,8 +66,7 @@ public class TopMoversWidgetProvider extends AppWidgetProvider {
             views.setTextColor(ROW_CHANGE[i], color);
         }
 
-        Intent tap = new Intent(context, LauncherActivity.class);
-        tap.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        Intent tap = AppEntry.home(context);
         views.setOnClickPendingIntent(R.id.widget_container,
                 PendingIntent.getActivity(context, 1, tap, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
 

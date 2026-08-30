@@ -1,10 +1,15 @@
 package live.walletlens.twa;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
+
+import androidx.core.content.ContextCompat;
 
 import androidx.browser.customtabs.CustomTabsIntent;
 
@@ -134,7 +139,7 @@ public class WalletLensBridge {
         return DataVaultActivity.write(a, payload);
     }
 
-    // ── Notifications ────────────────────────────────────────────────────
+    // ── Push registration ─────────────────────────────────────────────────
 
     /**
      * The device's FCM registration token, or empty if it has none yet.
@@ -199,7 +204,97 @@ public class WalletLensBridge {
     // ── App lock ─────────────────────────────────────────────────────────
 
     /** Whether the user has turned the app's own lock on. */
+    // ── Notifications ────────────────────────────────────────────────────
+
+    /**
+     * Post a notification the page raised itself.
+     *
+     * <p>These are the in-app alerts — a watchlist target crossed while the app
+     * is open, a Smart Alert firing — as distinct from push, which is what
+     * reaches a closed phone. The page used to raise them through the service
+     * worker registration, and the shell has no service worker and no
+     * Notification API at all, so every one of them became a silent no-op the
+     * moment the app stopped being Chrome.
+     *
+     * <p>The quiet channel: an alert about a screen the user is already looking
+     * at does not need to buzz.
+     */
     @JavascriptInterface
+    public void showLocalNotification(String title, String body, String url) {
+        Activity a = activity();
+        if (a == null) return;
+        if (title == null || title.isEmpty()) return;
+        try {
+            NotificationHelper helper = new NotificationHelper(a);
+            helper.createChannels();
+            helper.showNotification(
+                    title,
+                    body != null ? body : "",
+                    AppEntry.isOurs(url) ? url : null,
+                    null);
+        } catch (Throwable e) {
+            Log.w(TAG, "could not show a local notification: " + e);
+        }
+    }
+
+    /**
+     * Whether Android will let this app post a notification.
+     *
+     * <p>Not the same question as the web {@code Notification.permission},
+     * which is what the app used to ask. Under the TWA the page ran in Chrome,
+     * so a Web Push subscription and a browser permission were exactly the
+     * right things to want. In this shell there is no service worker and no Web
+     * Push; notifications arrive over FCM and are posted by this app, so the
+     * only permission that decides anything is Android's own.
+     *
+     * <p>Below Android 13 there is no runtime permission at all and the answer
+     * is yes.
+     */
+    @JavascriptInterface
+    public boolean notificationsAllowed() {
+        Activity a = activity();
+        if (a == null) return false;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true;
+        return ContextCompat.checkSelfPermission(a, Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * Ask for notification permission, once, at the moment the user asks for
+     * notifications.
+     *
+     * <p>THE BUG THIS ENDS. The app asked twice. The web layer called
+     * {@code Notification.requestPermission()} and Chrome showed its dialog;
+     * then the native gate asked for POST_NOTIFICATIONS and Android showed
+     * another. Two dialogs, different wording, for one decision — and in the
+     * shell the first of them grants something unusable, because a WebView
+     * cannot receive Web Push however the user answers it.
+     *
+     * <p>So the web layer stops asking and calls this instead. One dialog, the
+     * system one, for the permission that actually governs whether a
+     * notification appears.
+     *
+     * <p>Routed through NotificationPermissionActivity rather than requested
+     * here: {@code registerForActivityResult} has to be registered before the
+     * host activity is STARTED, and the shell's host is long since resumed by
+     * the time a user touches a toggle. That gate activity exists for precisely
+     * this and already handles the case where the permission is already held.
+     */
+    @JavascriptInterface
+    public void requestNotificationPermission() {
+        Activity a = activity();
+        if (a == null) return;
+        try {
+            Intent i = new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("walletlens://notification-permission"));
+            i.setClass(a, NotificationPermissionActivity.class);
+            a.startActivity(i);
+        } catch (Throwable e) {
+            Log.w(TAG, "could not ask for notification permission: " + e);
+        }
+    }
+
+        @JavascriptInterface
     public boolean appLockEnabled() {
         Activity a = activity();
         return a != null && BiometricActivity.isEnabled(a);

@@ -19,12 +19,15 @@
 // directory, where Clear storage and app backup both reach it and where
 // clearing Chrome cannot.
 //
-// WHAT IT IS NOT
-// A move. Making the app the primary store means rendering in a WebView
-// instead of a TWA, and that costs Web Push (a WebView has no service worker
-// push), Google Drive sign-in (Google refuses OAuth in WebViews) and every
-// existing user's data — a WebView cannot read what Chrome has stored. This is
-// a second copy that costs none of that.
+// WHAT IT BECAME
+// It was written as a second copy, explicitly not a move, on the grounds that
+// making the app the primary store would cost Web Push, Google Drive sign-in
+// and every existing user's data.
+//
+// The app made that move anyway in 6.3, and paid each of those: push became
+// FCM, Drive sign-in became a Custom Tab, and this file became the bridge the
+// data crosses. A safety net turned out to be the only route — which is worth
+// remembering the next time one looks like overkill.
 
 import { isAndroidTWA, fireNativeIntent } from './nativeBridge'
 import { generateBackupCode, applyBackupCode } from './backupCore'
@@ -53,8 +56,15 @@ const EMPTY_MARKER = 'empty'
  *
  * @returns {Promise<{ok: boolean, reason?: string, bytes?: number}>}
  */
-export async function saveVault() {
-  if (!isAndroidTWA()) return { ok: false, reason: 'not-in-app' }
+export async function saveVault({ inApp } = {}) {
+  // `inApp` overrides the detection, and exists for exactly one caller: the
+  // handoff screen (handoff.js), which runs in a Custom Tab the app opened.
+  // Detection there rests on Chrome turning EXTRA_REFERRER into a document
+  // referrer, and if any Chrome build does not, the user's one migration
+  // opportunity would fail silently. The handoff parameter is its own
+  // evidence: only the app opens that URL, and a page that faked it would be
+  // asking us to copy ITS localStorage, which is empty of ours.
+  if (!inApp && !isAndroidTWA()) return { ok: false, reason: 'not-in-app' }
 
   let code
   try {

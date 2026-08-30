@@ -6,7 +6,7 @@ import Icon from './Icon'
 import { TOKEN_UNLOCKS } from '../data/assets'
 import { useLanguage } from '../LanguageContext'
 import { renderMaybe } from '../data/walletEvalTips'
-import { showLocalNotification } from '../localNotify'
+import { showLocalNotification, requestNotifyPermission } from '../localNotify'
 
 // ── Token Unlock Database is defined in data/assets.js ──────────────────────
 
@@ -116,9 +116,10 @@ const DEFAULT_CONFIG = {
 
 // ── Notifications ──────────────────────────────────────────────────────────
 function reqPermission() {
-  if (!('Notification' in window)) return Promise.resolve('denied')
-  if (Notification.permission === 'granted') return Promise.resolve('granted')
-  return Notification.requestPermission()
+  // Through localNotify, which knows that in the app's own WebView the
+  // permission that matters is Android's and there is no Notification object
+  // to read at all.
+  return requestNotifyPermission().then(ok => (ok ? 'granted' : 'denied'))
 }
 function fireNotif(title, body) {
   showLocalNotification(title, { body, icon: '/icon-192.png', badge: '/badge-96.png' })
