@@ -271,12 +271,28 @@ describe('the Android half', () => {
     expect(gradle).toMatch(/does not look like a real Firebase project/)
   })
 
-  it('ships the real config, matching the app it signs', () => {
-    const gs = JSON.parse(readFileSync(
-      join(SRC, '..', '..', 'walletlens_source/release_package/app/google-services.json'), 'utf8',
-    ))
-    expect(gs.client[0].client_info.android_client_info.package_name)
-      .toBe('live.walletlens.twa')
-    expect(gs.client[0].client_info.mobilesdk_app_id).toMatch(/^1:\d+:android:[0-9a-f]+$/)
+  it('gets its config from a secret, because the repo will not hold one', () => {
+    // google-services.json is gitignored — .gitignore groups it with the
+    // keystore under "never commit signing material or Firebase config". It is
+    // not actually secret (it ships inside every APK), but the rule is the
+    // repo's and this is not the place to overrule it.
+    //
+    // So the build writes it from GOOGLE_SERVICES_JSON. This test used to read
+    // the committed file, which passed on a machine where it happened to exist
+    // untracked and would have failed in every fresh clone — and the build it
+    // was supposed to be reassuring about had already failed for exactly that
+    // reason.
+    const ignore = readFileSync(join(SRC, '..', '..', '.gitignore'), 'utf8')
+    expect(ignore).toMatch(/google-services\.json/)
+
+    const wf = readFileSync(
+      join(SRC, '..', '..', '.github/workflows/build-aab.yml'), 'utf8',
+    )
+    expect(wf).toMatch(/GOOGLE_SERVICES_JSON/)
+    expect(wf, 'a missing config must fail the build, not skip it')
+      .toMatch(/GOOGLE_SERVICES_JSON secret is not set/)
+    // And the package is checked before Gradle ever runs, because a config for
+    // a different app builds cleanly and then never receives a notification.
+    expect(wf).toMatch(/live\.walletlens\.twa/)
   })
 })

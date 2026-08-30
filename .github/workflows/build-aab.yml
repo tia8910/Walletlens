@@ -47,6 +47,32 @@ jobs:
           fi
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > walletlens_source/release_package/signingKey.keystore
 
+      # google-services.json is deliberately gitignored — see .gitignore, which
+      # groups it with the keystore under "never commit signing material or
+      # Firebase config". It is NOT actually secret (it ships inside every APK
+      # and anyone can unzip it back out), but it is not this workflow's place
+      # to overrule that, so it arrives the same way the keystore does.
+      #
+      # Required, not optional. The Google services plugin needs it at
+      # configuration time, and app/build.gradle refuses a placeholder — which
+      # is the whole point, because a stub config once made FirebaseInitProvider
+      # throw at process start, before Application.onCreate, and crashed every
+      # launch with "this app has a bug".
+      #
+      # Passed through env rather than interpolated into the script: the secret
+      # is JSON, and pasting it inside quotes is how a stray character ends the
+      # string early and writes a truncated file that parses as nothing.
+      - name: Write Firebase config from secret
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+            echo "::error::GOOGLE_SERVICES_JSON secret is not set. Copy the whole of google-services.json from the Firebase console (Project settings > General > Your apps) into a repository secret of that name."
+            exit 1
+          fi
+          printf '%s' "$GOOGLE_SERVICES_JSON" > walletlens_source/release_package/app/google-services.json
+          python3 -c "import json; d=json.load(open('walletlens_source/release_package/app/google-services.json')); pkg=d['client'][0]['client_info']['android_client_info']['package_name']; assert pkg=='live.walletlens.twa', 'wrong package: '+pkg; print('firebase config ok:', d['project_info']['project_id'], pkg)"
+
       - name: Create local.properties
         run: |
           echo "sdk.dir=$ANDROID_HOME" > walletlens_source/release_package/local.properties
