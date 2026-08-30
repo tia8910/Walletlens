@@ -1150,7 +1150,7 @@ describe('a device the server has forgotten', () => {
     // Every field but the subscription is enrichment. Building them inline
     // meant a throw from any one aborted the POST before it was sent, and
     // surfaced as a network error because that is where the exception landed.
-    const fn = client.slice(client.indexOf('function registrationPayload'))
+    const fn = client.slice(client.indexOf('function registrationFields'))
     const body = fn.slice(0, fn.indexOf('\n}'))
     for (const call of ['readAlerts', 'resolveWatch()', 'featureSetup', 'getPushPrefs', 'currentLang', 'currentTz']) {
       expect(body).toContain(call)
@@ -1158,6 +1158,65 @@ describe('a device the server has forgotten', () => {
     expect(body).toMatch(/const safe = \(fn, fallback\) => \{ try \{ return fn\(\) \} catch \{ return fallback \} \}/)
     // And both senders go through it, not just the repair path.
     expect(client.match(/JSON\.stringify\(registrationPayload\(sub\)\)/g)?.length).toBe(2)
+  })
+
+  it('the app registers the same record the browser does', () => {
+    // The bug this asserts against: autoEnablePush's shell branch sent
+    // `watch` and NOTHING else. That is not an edge case in the Android app,
+    // it is the normal path — the shell holds POST_NOTIFICATIONS from launch,
+    // so registration happens silently with no toggle ever touched. Those
+    // devices were stored with no alerts (price targets never armed), no tz
+    // (every daily channel on the wrong clock), no zakatDue, and no lang.
+    //
+    // The welcome notification still arrived, because it is addressed straight
+    // to the token and needs none of this — which is exactly why it presented
+    // as "one notification, then silence".
+    // Sliced by offset rather than matched by regex: the argument is an object
+    // literal containing a call, and any regex for "up to the closing paren"
+    // stops at the wrong one.
+    const calls = []
+    for (let i = client.indexOf('registerNativePush(');
+         i !== -1;
+         i = client.indexOf('registerNativePush(', i + 1)) {
+      calls.push(client.slice(i, i + 140))
+    }
+    expect(calls.length, 'every shell registration').toBeGreaterThanOrEqual(3)
+    for (const call of calls) {
+      expect(call, 'must carry the whole record').toContain('registrationFields()')
+    }
+  })
+
+  it('price targets reach the server from inside the app', () => {
+    // syncAlerts read a service worker registration, and the app's WebView has
+    // no service worker — so it returned on its second line on every Android
+    // device and a target the user set was never armed anywhere that could
+    // fire. Stored locally, drawn on the dashboard, silent for ever.
+    const fn = client.slice(client.indexOf('export async function syncAlerts'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    // Anchored on the CALLS, not on words that also appear in the comment
+    // explaining the bug — which is what the first version of this matched.
+    const nativeAt = body.indexOf('await native.registerNativePush(')
+    const webAt = body.indexOf('const sub = await getSubscription()')
+    expect(nativeAt, 'a native branch').toBeGreaterThan(-1)
+    expect(webAt, 'the Web Push branch is still there').toBeGreaterThan(-1)
+    expect(nativeAt, 'checked BEFORE the service worker lookup that always fails there')
+      .toBeLessThan(webAt)
+  })
+
+  it('gives back the asks that were spent asking at the wrong moment', () => {
+    // The card used to be offered during onboarding, where a system dialog
+    // lands on top of the welcome flow. Each of those counted: three and the
+    // app never offers again, and each puts a week between attempts. Without
+    // this the release that moved the card to the dashboard would have reached
+    // devices whose budget was already gone.
+    const fn = client.slice(client.indexOf('function readAsk'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    expect(body).toContain('ASK_RESET_KEY')
+    expect(body).toContain('localStorage.removeItem(ASK_KEY)')
+    // Once. A timestamp would let it repeat and make the cooldown meaningless.
+    expect(body).toMatch(/setItem\(ASK_RESET_KEY/)
+    // And it must not undo a deliberate opt-out.
+    expect(body).not.toContain('OPTOUT_KEY')
   })
 
   it('tells a failing read apart from a failing write', () => {

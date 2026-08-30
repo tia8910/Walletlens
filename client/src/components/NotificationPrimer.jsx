@@ -43,19 +43,32 @@ export default function NotificationPrimer() {
   useEffect(() => {
     if (!shouldAskPush()) return
 
-    let timer = null
+    let settle = null
+    let poll = null
+    let deadline = 0
+
+    const stop = () => { clearTimeout(settle); clearInterval(poll); settle = null; poll = null }
 
     const offer = () => {
-      if (!shouldAskPush()) return
+      if (!shouldAskPush()) { stop(); return }
       // On the dashboard, not wherever the user happens to be. This card is
       // mounted at the app root, so without this it can arrive over a trade
       // sheet, an import, or the last frame of onboarding — which is what it
       // did, and the welcome flow does not survive a system dialog landing on
       // top of it. The dashboard is where someone has arrived and is looking
       // around, which is the only moment this question is welcome.
+      //
+      // WAITED FOR, not merely required. The first version of this gate asked
+      // the question once, four seconds after mount, and gave up for the rest
+      // of the session if the answer was no — and the answer is no at exactly
+      // the moment this component mounts, because it mounts as onboarding
+      // finishes and the router has not landed on the dashboard yet. So the
+      // gate that was added to move the card ONTO the dashboard stopped it
+      // appearing there at all. It keeps looking now.
       if (!onDashboard()) return
+      stop()
       // Read at show time, not at mount: someone who adds their first holding
-      // during those four seconds should get the promise about it.
+      // while this is waiting should get the promise about it.
       const noHoldings = watchFromStorage().length === 0
       setEmpty(noHoldings)
       setShow(true)
@@ -63,10 +76,24 @@ export default function NotificationPrimer() {
     }
 
     // Let the app settle before interrupting: a card that animates in over a
-    // half-drawn dashboard reads as an ad, not as a feature.
+    // half-drawn dashboard reads as an ad, not as a feature. Then keep asking,
+    // because arriving at the dashboard is a navigation this component is not
+    // told about — it is not inside the router's tree.
+    //
+    // Bounded. If two minutes of app use never reach the dashboard, the person
+    // is doing something else and the question can wait for the next launch;
+    // an interval that never ends would sit there for the life of the session
+    // waiting to interrupt whatever they eventually do.
     const arm = () => {
-      clearTimeout(timer)
-      timer = setTimeout(offer, 4000)
+      stop()
+      deadline = Date.now() + 120_000
+      settle = setTimeout(() => {
+        offer()
+        poll = setInterval(() => {
+          if (Date.now() > deadline) { stop(); return }
+          offer()
+        }, 1500)
+      }, 4000)
     }
     arm()
 
@@ -80,7 +107,7 @@ export default function NotificationPrimer() {
     document.addEventListener('visibilitychange', onVisible)
 
     return () => {
-      clearTimeout(timer)
+      stop()
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [])

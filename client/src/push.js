@@ -354,8 +354,32 @@ const MAX_ASKS = 3
 /** Gap between asks — long enough that a "not now" is genuinely respected. */
 const ASK_GAP_MS = 7 * 24 * 60 * 60 * 1000
 
+/**
+ * Flag marking that the ask ledger has been given back its asks, once.
+ *
+ * The card used to be offered during the welcome flow, where a system dialog
+ * lands on top of onboarding and the flow does not survive it. Every one of
+ * those was recorded as an ask: three of them and the app never offers again,
+ * and each one puts a WEEK between attempts. So the release that finally moved
+ * the card to the dashboard would have arrived at devices with the budget
+ * already spent — the fix would have shipped and changed nothing that anyone
+ * could see for another seven days.
+ *
+ * Cleared once, keyed on a flag rather than a timestamp so it cannot repeat.
+ * An opt-out is NOT touched: someone who turned notifications off in Settings
+ * has decided, and this is about asks that were never really made.
+ */
+const ASK_RESET_KEY = 'wl_push_ask_reset_v1'
+
 function readAsk() {
-  try { return JSON.parse(localStorage.getItem(ASK_KEY) || '{}') } catch { return {} }
+  try {
+    if (!localStorage.getItem(ASK_RESET_KEY)) {
+      localStorage.setItem(ASK_RESET_KEY, '1')
+      localStorage.removeItem(ASK_KEY)
+      return {}
+    }
+    return JSON.parse(localStorage.getItem(ASK_KEY) || '{}')
+  } catch { return {} }
 }
 
 /**
@@ -419,9 +443,38 @@ function detailOf(e) {
  * the server.
  */
 function registrationPayload(sub) {
+  return { subscription: sub.toJSON(), ...registrationFields() }
+}
+
+/**
+ * Everything a subscription carries except its address.
+ *
+ * Shared, and that is the fix. The Web Push path built this list; the shell's
+ * two registration paths each built their own, and one of them built almost
+ * none of it — autoEnablePush sent `watch` and nothing else.
+ *
+ * That path is not an edge case in the Android app, it is the NORMAL one: the
+ * shell holds POST_NOTIFICATIONS from launch, so by the time the page loads
+ * permission is already granted and registration happens silently, with no
+ * toggle ever touched. Every device that came that way is stored without:
+ *
+ *   alerts     so price targets are never armed on the server and never fire
+ *   tz         so the daily brief, zakat, hacks, academy and the portfolio
+ *              pulse are all evaluated against the wrong local clock
+ *   zakatDue   so the zakat reminder has no date to count down to
+ *   lang       so every notification arrives in English
+ *   setup      so the feature tips cannot tell what is already configured
+ *
+ * The welcome notification still arrives, because that is addressed straight
+ * to the token and needs none of this. Which is exactly why it looked like
+ * "one notification and then silence".
+ *
+ * Every field is best-effort: a throw from any one of them must not abort a
+ * registration, and an absent field leaves whatever the server already had.
+ */
+function registrationFields() {
   const safe = (fn, fallback) => { try { return fn() } catch { return fallback } }
   return {
-    subscription: sub.toJSON(),
     alerts: safe(readAlerts, []),
     watch: safe(() => resolveWatch(), []),
     setup: safe(featureSetup, {}),
@@ -585,7 +638,7 @@ function watchShellPermission(onChange) {
     if (!now) { onChange?.(false); return }
     try {
       const native = await import('./nativePush.js')
-      await native.registerNativePush({ force: true, watch: watchFromStorage() })
+      await native.registerNativePush({ force: true, ...registrationFields() })
       if (!stopped) onChange?.(await isPushEnabled())
     } catch { /* nothing to repaint */ }
   }
@@ -684,14 +737,7 @@ async function enablePushInShell() {
     }
   }
 
-  const res = await native.registerNativePush({
-    force: true,
-    watch: watchFromStorage(),
-    setup: featureSetup(),
-    prefs: getPushPrefs(),
-    lang: currentLang(),
-    tz: currentTz(),
-  })
+  const res = await native.registerNativePush({ force: true, ...registrationFields() })
   if (!res.ok) {
     if (res.reason === 'no-token') {
       throw new Error('The app hasn’t finished setting up notifications yet. Try again in a moment.')
@@ -748,7 +794,7 @@ export async function autoEnablePush() {
       if (localStorage.getItem(OPTOUT_KEY)) return { ok: false, reason: 'opted-out' }
       if (shellRegistered()) return { ok: false, reason: 'already-on' }
       const native = await import('./nativePush.js')
-      const res = await native.registerNativePush({ watch: watchFromStorage() })
+      const res = await native.registerNativePush(registrationFields())
       if (!res.ok) return { ok: false, reason: res.reason }
       // Registered without anyone being asked, because the OS permission was
       // already there. Without this the user has no way to know.
@@ -1008,6 +1054,26 @@ export async function pushStatus() {
 }
 
 export async function syncAlerts() {
+  // The Android app first, because for a long time it was not here at all.
+  //
+  // getSubscription() reads a service worker registration, and the app's
+  // WebView has no service worker — so this function returned on its second
+  // line on every Android device and the price targets a user set were never
+  // sent to the server after the initial registration. The target channel was
+  // simply dead in the app: targets were stored locally, drawn on the
+  // dashboard, and never armed anywhere that could fire a notification.
+  //
+  // Re-registering rather than POSTing /alerts by token: the whole record
+  // travels together that way, so an alert change cannot leave the rest of the
+  // subscription behind the way this file's paths kept doing.
+  try {
+    const native = await import('./nativePush.js')
+    if (native.usesNativePush()) {
+      await native.registerNativePush({ force: true, ...registrationFields() })
+      return
+    }
+  } catch { /* fall through to Web Push */ }
+
   try {
     const sub = await getSubscription()
     if (!sub) return
@@ -1043,11 +1109,10 @@ export async function syncWatch(holdings) {
     if (native.usesNativePush()) {
       await native.registerNativePush({
         force: true,   // the watch list has changed; the server needs it
+        ...registrationFields(),
+        // After the spread: this is the list the caller's holdings produced,
+        // which registrationFields() cannot see.
         watch,
-        setup: featureSetup(),
-        prefs: getPushPrefs(),
-        lang: currentLang(),
-        tz: currentTz(),
       })
       return
     }
