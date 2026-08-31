@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The WalletLens mark, as the small icon on every notification this app posts.
+
+    WHY IT IS A SILHOUETTE AND NOT THE LOGO PNG
+
+    Android does not draw the small icon. It takes the ALPHA CHANNEL, throws
+    away every colour in it, and tints the result to match the status bar. So
+    the full-colour launcher icon cannot be used here: its plate is opaque
+    edge to edge, and the system would render it as a solid white square.
+    "Use the app logo" therefore means the mark alone, on transparency — which
+    is exactly what the themed launcher icon already is.
+
+    GEOMETRY
+
+    The paths are ic_launcher_monochrome.xml's, unchanged, so the two cannot
+    drift into being different logos. Only the frame around them differs: that
+    file targets the 108dp adaptive-icon canvas, where the safe zone leaves the
+    mark filling about half the viewport. Dropped into a 24dp status bar that
+    would be a mark with a wide empty border around it — legible only as a
+    smudge.
+
+    Here the same shape is fitted to a 22dp box inside the 24dp canvas, which
+    is the padding the platform's own notification icons use. The group
+    transform is that fit: the raw artwork spans x [10.15, 53.85] and
+    y [7.93, 58.07], so scaling by 0.43877 makes it 22dp on its longer side,
+    and the translation centres what is left. Stroke widths ride the same
+    transform, so the 5.06 ring becomes 2.22dp — heavy enough to survive the
+    status bar at its smallest.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:scaleX="0.43877"
+        android:scaleY="0.43877"
+        android:translateX="-2.0407"
+        android:translateY="-2.4795">
+        <!-- The lens ring. -->
+        <path
+            android:pathData="M16.360,27.940 a17.480,17.480 0 1,0 34.960,0 a17.480,17.480 0 1,0 -34.960,0 Z"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="5.06" />
+        <!-- The pip. -->
+        <path android:pathData="M42.764,15.520 a3.496,3.496 0 1,0 6.992,0 a3.496,3.496 0 1,0 -6.992,0 Z" android:fillColor="#FFFFFFFF" />
+        <!-- Three bars, shortest to tallest. -->
+        <path android:pathData="M23.444,29.320 H25.836 A1.104,1.104 0 0 1 26.940,30.424 V35.116 A1.104,1.104 0 0 1 25.836,36.220 H23.444 A1.104,1.104 0 0 1 22.340,35.116 V30.424 A1.104,1.104 0 0 1 23.444,29.320 Z" android:fillColor="#FFFFFFFF" />
+        <path android:pathData="M29.884,24.260 H32.276 A1.104,1.104 0 0 1 33.380,25.364 V35.116 A1.104,1.104 0 0 1 32.276,36.220 H29.884 A1.104,1.104 0 0 1 28.780,35.116 V25.364 A1.104,1.104 0 0 1 29.884,24.260 Z" android:fillColor="#FFFFFFFF" />
+        <path android:pathData="M36.324,19.200 H38.716 A1.104,1.104 0 0 1 39.820,20.304 V35.116 A1.104,1.104 0 0 1 38.716,36.220 H36.324 A1.104,1.104 0 0 1 35.220,35.116 V20.304 A1.104,1.104 0 0 1 36.324,19.200 Z" android:fillColor="#FFFFFFFF" />
+        <!-- The handle. -->
+        <path
+            android:pathData="M21.420,40.820 L12.680,55.540"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="5.06"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

@@ -8,17 +8,20 @@
 
     • TopMoversWidgetProvider resolves its row views with
       Resources.getIdentifier("mover1_name", "id", pkg) and friends.
-    • NotificationHelper resolves its small icon with
-      Resources.getIdentifier("ic_notification_chart", "drawable", pkg).
 
   The shrinker does switch to a conservative mode when it detects getIdentifier
-  usage, but that heuristic is not something a release build should depend on —
-  a stripped widget id crashes the widget, and a stripped icon downgrades every
-  notification to the generic system icon.
+  usage, but that heuristic is not something a release build should depend on:
+  a stripped widget id crashes the widget.
+
+  The notification icon used to be listed here for the same reason, and is not
+  any more — NotificationHelper names it as R.drawable.ic_notification_logo and
+  the manifest points two meta-data entries at it, so the shrinker can see it
+  by ordinary means. An entry kept "just in case" would outlive the rename that
+  makes it stale and quietly protect nothing.
 
   shrinkMode stays "safe" (the default) deliberately: "strict" would ignore the
   heuristic entirely and rely solely on this list.
 -->
 <resources xmlns:tools="http://schemas.android.com/tools"
     tools:shrinkMode="safe"
-    tools:keep="@layout/widget_*,@drawable/ic_notification_chart,@drawable/splash,@drawable/shortcut_*,@raw/web_app_manifest" />
+    tools:keep="@layout/widget_*,@drawable/splash,@drawable/shortcut_*,@raw/web_app_manifest" />

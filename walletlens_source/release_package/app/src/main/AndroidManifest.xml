@@ -279,7 +279,7 @@
             
                 <meta-data
                     android:name="android.support.customtabs.trusted.SMALL_ICON"
-                    android:resource="@drawable/ic_notification_chart" />
+                    android:resource="@drawable/ic_notification_logo" />
             
 
             <intent-filter>
@@ -346,7 +346,7 @@
              reason to ship that. -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@drawable/ic_notification_chart" />
+            android:resource="@drawable/ic_notification_logo" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="walletlens_general" />
