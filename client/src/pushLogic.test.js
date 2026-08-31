@@ -55,20 +55,48 @@ describe('notification copy', () => {
     expect(() => copy('nope', 'en')).toThrow()
   })
 
-  it('actually translates the bodies rather than copying English', () => {
+  it('actually translates the prose rather than copying English', () => {
     // Every string below is user-facing; a copy-paste would pass a "has a
     // function" check while shipping English to an Arabic reader.
+    //
+    // The price TITLES are exempt, and deliberately so: they are built from a
+    // symbol, a signed percentage and a price — "📈 BTC +3.2% · $101,234" —
+    // which is identical in every language because there is no word in it.
+    // That is the property, not an oversight: a headline with nothing to
+    // translate cannot be right in one language and wrong in another. The
+    // guard stays on everything that is a sentence, which is where a
+    // copy-paste actually hurts.
     const same = []
     for (const lang of LANGS.filter(l => l !== 'en')) {
-      expect(COPY.moveTitle[lang]('BTC', '6.1', true)).not.toBe(COPY.moveTitle.en('BTC', '6.1', true))
-      if (COPY.retentionMoverBody[lang]('BTC', '9', true) === COPY.retentionMoverBody.en('BTC', '9', true)) same.push(lang)
+      for (const key of ['moveBody', 'levelBody', 'retentionMoverBody']) {
+        const args = key === 'retentionMoverBody' ? ['BTC', '9', true] : ['BTC', '+8.4%']
+        if (COPY[key][lang](...args) === COPY[key].en(...args)) same.push(`${key}.${lang}`)
+      }
+      // levelTitle keeps a verb ("broke"), so it must still be translated.
+      if (COPY.levelTitle[lang]('BTC', '$100,000', true, '$101,234')
+          === COPY.levelTitle.en('BTC', '$100,000', true, '$101,234')) same.push(`levelTitle.${lang}`)
     }
     expect(same).toEqual([])
   })
 
+  it('says the same thing in every language where it is only numbers', () => {
+    // The other half of the rule above, asserted rather than assumed.
+    for (const lang of LANGS) {
+      expect(COPY.moveTitle[lang]('BTC', '+3.2%', true, '$101,234'))
+        .toBe('📈 BTC +3.2% · $101,234')
+    }
+  })
+
   it('builds a real sentence for each channel', () => {
-    expect(COPY.moveTitle.en('BTC', '6.1', true)).toContain('BTC')
-    expect(COPY.moveBody.en('BTC', '6.1', '$94,200', true)).toContain('$94,200')
+    // The title carries the price now — that is the whole point of the
+    // change. It used to live only in the body, which is the part a phone
+    // truncates or collapses, so the number the alert exists to deliver was
+    // the one thing that might never be seen.
+    expect(COPY.moveTitle.en('BTC', '+6.1%', true, '$94,200')).toContain('BTC')
+    expect(COPY.moveTitle.en('BTC', '+6.1%', true, '$94,200')).toContain('$94,200')
+    expect(COPY.moveTitle.en('BTC', '+6.1%', true, '$94,200')).toContain('+6.1%')
+    expect(COPY.moveTitle.en('BTC', '−6.1%', false, '$94,200')).toContain('📉')
+    expect(COPY.moveBody.en('BTC', '+8.4%')).toContain('+8.4%')
     expect(COPY.digestBody.en('ETH', '3.4', false, 5)).toContain('5')
     expect(COPY.retentionMoverBody.en('BTC', '9', true)).toContain('BTC')
     // Singular/plural: "your 1 tracked assets" is the kind of thing users

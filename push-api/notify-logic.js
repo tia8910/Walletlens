@@ -31,6 +31,24 @@ export function fmtPct(n) {
   return a >= 10 ? a.toFixed(0) : a.toFixed(1)
 }
 
+/**
+ * A percentage that carries its own direction: '+3.2%', '−5%'.
+ *
+ * fmtPct deliberately drops the sign, because its callers used to put the
+ * direction into a translated word ("up", "en hausse"). A price line reads
+ * better the way an exchange writes it — sign, number, unit — and it reads the
+ * SAME in every language, which is the point: a headline built from a symbol,
+ * a signed number and a price has nothing in it that can be mistranslated.
+ *
+ * U+2212 MINUS, not a hyphen. At notification size a hyphen beside a digit is
+ * easy to read as a dash or to miss altogether, and mistaking −5% for +5% is
+ * the single worst thing this text can do.
+ */
+export function signedPct(n) {
+  const v = Number(n) || 0
+  return `${v < 0 ? '−' : '+'}${fmtPct(v)}%`
+}
+
 /** Prices span BTC ($100k) to SHIB ($0.00002); one formatter for both. */
 export function fmtPrice(n) {
   const v = Number(n)
@@ -71,27 +89,35 @@ export const COPY = {
   },
 
   // — Price targets the user set explicitly (pre-existing channel) —
+  // The target the user set is the event; the price it reached is the number
+  // they want. Both in the title — a target alert that makes you open the app
+  // to find out what the price actually is has buried its own headline.
   targetTitle: {
-    en: (dir, sym) => `${dir} ${sym} hit your target`,
-    ar: (dir, sym) => `${dir} بلغ ${sym} هدفك`,
-    fr: (dir, sym) => `${dir} ${sym} a atteint votre objectif`,
-    es: (dir, sym) => `${dir} ${sym} ha alcanzado tu objetivo`,
-    de: (dir, sym) => `${dir} ${sym} hat Ihr Ziel erreicht`,
-    it: (dir, sym) => `${dir} ${sym} ha raggiunto il tuo obiettivo`,
+    en: (dir, sym, price) => `${dir} ${sym} hit your target · ${price}`,
+    ar: (dir, sym, price) => `${dir} بلغ ${sym} هدفك · ${price}`,
+    fr: (dir, sym, price) => `${dir} ${sym} a atteint votre objectif · ${price}`,
+    es: (dir, sym, price) => `${dir} ${sym} ha alcanzado tu objetivo · ${price}`,
+    de: (dir, sym, price) => `${dir} ${sym} hat Ihr Ziel erreicht · ${price}`,
+    it: (dir, sym, price) => `${dir} ${sym} ha raggiunto il tuo obiettivo · ${price}`,
   },
+  // The current price moved up into the title, so the body stops repeating it
+  // and says the two things left: which target this was, and how the day has
+  // gone. `target` arrives pre-formatted by fmtPrice now — it used to be a raw
+  // number with a '$' glued on, which wrote "$1e-7" for a sub-cent token and
+  // "$103500" without a separator for gold.
   targetBody: {
-    en: (sym, cond, target, now) =>
-      `${sym} is ${cond === 'above' ? 'above' : 'below'} $${target} — now $${now}.`,
-    ar: (sym, cond, target, now) =>
-      `${sym} ${cond === 'above' ? 'فوق' : 'تحت'} ${target} دولار — والسعر الآن ${now} دولار.`,
-    fr: (sym, cond, target, now) =>
-      `${sym} est ${cond === 'above' ? 'au-dessus' : 'en dessous'} de ${target} $ — désormais à ${now} $.`,
-    es: (sym, cond, target, now) =>
-      `${sym} está ${cond === 'above' ? 'por encima' : 'por debajo'} de ${target} $: ahora ${now} $.`,
-    de: (sym, cond, target, now) =>
-      `${sym} liegt ${cond === 'above' ? 'über' : 'unter'} ${target} $ — jetzt ${now} $.`,
-    it: (sym, cond, target, now) =>
-      `${sym} è ${cond === 'above' ? 'sopra' : 'sotto'} ${target} $ — ora ${now} $.`,
+    en: (sym, cond, target, day) =>
+      `Target ${cond === 'above' ? 'above' : 'below'} ${target} · ${sym} over 24h: ${day}`,
+    ar: (sym, cond, target, day) =>
+      `الهدف ${cond === 'above' ? 'فوق' : 'تحت'} ${target} · ${sym} خلال ٢٤ ساعة: ${day}`,
+    fr: (sym, cond, target, day) =>
+      `Objectif ${cond === 'above' ? 'au-dessus de' : 'en dessous de'} ${target} · ${sym} sur 24 h : ${day}`,
+    es: (sym, cond, target, day) =>
+      `Objetivo ${cond === 'above' ? 'por encima de' : 'por debajo de'} ${target} · ${sym} en 24 h: ${day}`,
+    de: (sym, cond, target, day) =>
+      `Ziel ${cond === 'above' ? 'über' : 'unter'} ${target} · ${sym} in 24 Std.: ${day}`,
+    it: (sym, cond, target, day) =>
+      `Obiettivo ${cond === 'above' ? 'sopra' : 'sotto'} ${target} · ${sym} nelle 24 h: ${day}`,
   },
 
   // — Zakat year completing —
@@ -143,21 +169,45 @@ export const COPY = {
   },
 
   // — A holding moved sharply —
+  // The headline reads like a ticker, and reads the same in every language.
+  //
+  // It used to be "📈 BTC up 3.2%" — the direction as a translated word, and
+  // the PRICE only in the body. On a phone the body is the part that gets
+  // collapsed or truncated, so the number a price alert exists to deliver was
+  // the one thing that might not be on screen. The title carries it now:
+  //
+  //     📈 BTC +3.2% · $101,234
+  //
+  // Symbol, signed percentage, price. Nothing in it to translate, so it cannot
+  // be right in one language and wrong in another. The emoji stays: it is the
+  // only colour a notification gets, and colour is how an exchange says up or
+  // down at a glance — the sign says it again for anyone whose launcher draws
+  // emoji flat.
   moveTitle: {
-    en: (sym, pct, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'up' : 'down'} ${pct}%`,
-    ar: (sym, pct, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'يرتفع' : 'ينخفض'} ${pct}%`,
-    fr: (sym, pct, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'en hausse' : 'en baisse'} de ${pct} %`,
-    es: (sym, pct, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'sube' : 'baja'} un ${pct} %`,
-    de: (sym, pct, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'steigt' : 'fällt'} um ${pct} %`,
-    it: (sym, pct, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'sale' : 'scende'} del ${pct}%`,
+    en: (sym, pct, up, price) => `${up ? '📈' : '📉'} ${sym} ${pct} · ${price}`,
+    ar: (sym, pct, up, price) => `${up ? '📈' : '📉'} ${sym} ${pct} · ${price}`,
+    fr: (sym, pct, up, price) => `${up ? '📈' : '📉'} ${sym} ${pct} · ${price}`,
+    es: (sym, pct, up, price) => `${up ? '📈' : '📉'} ${sym} ${pct} · ${price}`,
+    de: (sym, pct, up, price) => `${up ? '📈' : '📉'} ${sym} ${pct} · ${price}`,
+    it: (sym, pct, up, price) => `${up ? '📈' : '📉'} ${sym} ${pct} · ${price}`,
   },
+  // The body carries the one thing the title cannot: what the move looks like
+  // against the whole day. The percentage in the title is measured from a
+  // rolling reference — the price when this asset was last flagged — which is
+  // the right trigger but a poor sense of scale on its own: 3% since the last
+  // alert reads very differently when the day is +12% than when it is flat.
+  //
+  // The old body repeated the title's own numbers and ended with "Tap to see
+  // the impact on your portfolio", which every channel said, which taught the
+  // reader to stop reading bodies. Tapping a notification opens something;
+  // that does not need saying.
   moveBody: {
-    en: (sym, pct, price, up) => `${sym} moved ${up ? '+' : '−'}${pct}% to ${price}. Tap to see the impact on your portfolio.`,
-    ar: (sym, pct, price, up) => `تحرك ${sym} بنسبة ${up ? '+' : '−'}${pct}% إلى ${price}. اضغط لرؤية الأثر على محفظتك.`,
-    fr: (sym, pct, price, up) => `${sym} a bougé de ${up ? '+' : '−'}${pct} % à ${price}. Touchez pour voir l’effet sur votre portefeuille.`,
-    es: (sym, pct, price, up) => `${sym} se movió ${up ? '+' : '−'}${pct} % hasta ${price}. Toca para ver el efecto en tu cartera.`,
-    de: (sym, pct, price, up) => `${sym} hat sich um ${up ? '+' : '−'}${pct} % auf ${price} bewegt. Tippen Sie, um die Wirkung auf Ihr Portfolio zu sehen.`,
-    it: (sym, pct, price, up) => `${sym} si è mosso del ${up ? '+' : '−'}${pct}% a ${price}. Tocca per vedere l’effetto sul tuo portafoglio.`,
+    en: (sym, day) => `${sym} over 24h: ${day}`,
+    ar: (sym, day) => `${sym} خلال ٢٤ ساعة: ${day}`,
+    fr: (sym, day) => `${sym} sur 24 h : ${day}`,
+    es: (sym, day) => `${sym} en 24 h: ${day}`,
+    de: (sym, day) => `${sym} in 24 Std.: ${day}`,
+    it: (sym, day) => `${sym} nelle 24 h: ${day}`,
   },
 
   // — A round price level crossed —
@@ -165,21 +215,25 @@ export const COPY = {
   // exchange sends "BTC drops below $77,000" and it lands because 77,000 is a
   // level people are watching, not because the move was large. Dressing that up
   // buries the one fact worth reading.
+  // A level crossing keeps its verb: "broke $100,000" is the event, and no
+  // arrangement of bare numbers says it as well. The price it has reached goes
+  // beside it, because the level is where it crossed, not where it is now —
+  // by the time the phone buzzes those are two different numbers.
   levelTitle: {
-    en: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'breaks above' : 'drops below'} ${level}`,
-    ar: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'يتجاوز' : 'ينزل تحت'} ${level}`,
-    fr: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'franchit' : 'passe sous'} ${level}`,
-    es: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'supera' : 'baja de'} ${level}`,
-    de: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'überschreitet' : 'fällt unter'} ${level}`,
-    it: (sym, level, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'supera' : 'scende sotto'} ${level}`,
+    en: (sym, level, up, price) => `${up ? '📈' : '📉'} ${sym} ${up ? 'broke' : 'fell below'} ${level} · ${price}`,
+    ar: (sym, level, up, price) => `${up ? '📈' : '📉'} ${sym} ${up ? 'تجاوز' : 'نزل تحت'} ${level} · ${price}`,
+    fr: (sym, level, up, price) => `${up ? '📈' : '📉'} ${sym} ${up ? 'franchit' : 'passe sous'} ${level} · ${price}`,
+    es: (sym, level, up, price) => `${up ? '📈' : '📉'} ${sym} ${up ? 'supera' : 'baja de'} ${level} · ${price}`,
+    de: (sym, level, up, price) => `${up ? '📈' : '📉'} ${sym} ${up ? 'überschreitet' : 'fällt unter'} ${level} · ${price}`,
+    it: (sym, level, up, price) => `${up ? '📈' : '📉'} ${sym} ${up ? 'supera' : 'scende sotto'} ${level} · ${price}`,
   },
   levelBody: {
-    en: (sym, price) => `${sym} is at ${price}. Tap to see the impact on your portfolio.`,
-    ar: (sym, price) => `${sym} الآن عند ${price}. اضغط لرؤية الأثر على محفظتك.`,
-    fr: (sym, price) => `${sym} est à ${price}. Touchez pour voir l’effet sur votre portefeuille.`,
-    es: (sym, price) => `${sym} está en ${price}. Toca para ver el efecto en tu cartera.`,
-    de: (sym, price) => `${sym} steht bei ${price}. Tippen Sie, um die Wirkung auf Ihr Portfolio zu sehen.`,
-    it: (sym, price) => `${sym} è a ${price}. Tocca per vedere l’effetto sul tuo portafoglio.`,
+    en: (sym, day) => `${sym} over 24h: ${day}`,
+    ar: (sym, day) => `${sym} خلال ٢٤ ساعة: ${day}`,
+    fr: (sym, day) => `${sym} sur 24 h : ${day}`,
+    es: (sym, day) => `${sym} en 24 h: ${day}`,
+    de: (sym, day) => `${sym} in 24 Std.: ${day}`,
+    it: (sym, day) => `${sym} nelle 24 h: ${day}`,
   },
 
   // — Breaking news mentioning an asset the user holds —

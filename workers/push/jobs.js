@@ -22,7 +22,7 @@ import {
   crossedLevel, MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS, pickHeadline, pruneSent,
   matchArticle, isBreaking, shortHash, dueRetentionStep, pickFeatureTip,
   FEATURE_TIP_GAP_MS, RETENTION_HOUR, RETENTION_MIN_PCT, DIGEST_MIN_PCT,
-  fmtPct, fmtPrice, dueZakatReminder, trimZakatSent,
+  fmtPct, fmtPrice, signedPct, dueZakatReminder, trimZakatSent,
   isMarketStory, pickHack, pickChallenge, portfolioPulse, assetUrl,
   HACK_GAP_MS, HACK_HOUR, ACADEMY_HOUR, PORTFOLIO_HOUR, PULSE_MIN_PCT,
 } from '../../push-api/notify-logic.js'
@@ -69,8 +69,10 @@ export function createJobs({ store, send }) {
           const dir = a.condition === "above" ? "🚀" : "🔻"
           await send(sub, buildPayload({
             channel: "target",
-            title: copy("targetTitle", sub.lang)(dir, a.coin_symbol),
-            body: copy("targetBody", sub.lang)(a.coin_symbol, a.condition, a.targetPrice, p),
+            title: copy("targetTitle", sub.lang)(dir, a.coin_symbol, fmtPrice(p)),
+            body: copy("targetBody", sub.lang)(
+              a.coin_symbol, a.condition, fmtPrice(a.targetPrice),
+              signedPct(quotes[a.coin_id]?.change24h)),
             tag: `price-${id}`,
             sym: a.coin_symbol,
             // The asset, not the alerts list. The tap follows the sentence
@@ -164,8 +166,9 @@ export function createJobs({ store, send }) {
         if (cross && sub.prefs.levels) {
           const levelSent = await send(sub, buildPayload({
             channel: "level",
-            title: copy("levelTitle", sub.lang)(a.symbol, fmtPrice(cross.level), cross.up),
-            body: copy("levelBody", sub.lang)(a.symbol, fmtPrice(q.price)),
+            title: copy("levelTitle", sub.lang)(
+              a.symbol, fmtPrice(cross.level), cross.up, fmtPrice(q.price)),
+            body: copy("levelBody", sub.lang)(a.symbol, signedPct(q.change24h)),
             tag: `level-${k}`,
             sym: a.symbol,
             url: assetUrl(a),
@@ -186,8 +189,9 @@ export function createJobs({ store, send }) {
         const up = changePct > 0
         const sent = await send(sub, buildPayload({
           channel: "move",
-          title: copy("moveTitle", sub.lang)(a.symbol, fmtPct(changePct), up),
-          body: copy("moveBody", sub.lang)(a.symbol, fmtPct(changePct), fmtPrice(q.price), up),
+          title: copy("moveTitle", sub.lang)(
+            a.symbol, signedPct(changePct), up, fmtPrice(q.price)),
+          body: copy("moveBody", sub.lang)(a.symbol, signedPct(q.change24h)),
           tag: `move-${k}`,
           sym: a.symbol,
           url: assetUrl(a),

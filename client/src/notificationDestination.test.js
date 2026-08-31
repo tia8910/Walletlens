@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { assetUrl, buildPayload, CHANNEL_URL } from '../../push-api/notify-logic.js'
+import { assetUrl, buildPayload, CHANNEL_URL, signedPct, fmtPct } from '../../push-api/notify-logic.js'
 import { toWatchAssets } from './push'
 import { GOLD_ID, SILVER_ID } from './data/assets'
 
@@ -194,5 +194,39 @@ describe('the Academy honours the link', () => {
     const at = academy.indexOf('const [deepLinkedHack]')
     const body = academy.slice(at, academy.indexOf('\n  })', at))
     expect(body).toContain('Number.isInteger(n) && n >= 0')
+  })
+})
+
+// ── How a price alert reads ─────────────────────────────────────────────────
+
+describe('signedPct', () => {
+  it('carries the direction the way an exchange writes it', () => {
+    expect(signedPct(3.24)).toBe('+3.2%')
+    expect(signedPct(-3.24)).toBe('−3.2%')
+    expect(signedPct(12.7)).toBe('+13%')
+  })
+
+  it('uses a real minus sign, not a hyphen', () => {
+    // At notification size a hyphen beside a digit is easy to miss or to read
+    // as a dash. Mistaking −5% for +5% is the worst thing this text can do.
+    expect(signedPct(-5)).toContain('\u2212')
+    expect(signedPct(-5)).not.toContain('-')
+  })
+
+  it('agrees with fmtPct on the number itself', () => {
+    // Two formatters that round differently would print two different figures
+    // for one move depending on which channel sent it.
+    for (const n of [0.04, 1.25, 6.14, 9.99, 10, 12.7, 99.5]) {
+      expect(signedPct(n)).toBe(`+${fmtPct(n)}%`)
+      expect(signedPct(-n)).toBe(`−${fmtPct(n)}%`)
+    }
+  })
+
+  it('treats a missing 24h change as flat rather than printing NaN', () => {
+    // change24h is 0 on any feed that does not supply it, and undefined if a
+    // quote is malformed. "+NaN%" in a notification is unrecoverable.
+    for (const bad of [undefined, null, NaN, 'x']) {
+      expect(signedPct(bad)).toBe('+0.0%')
+    }
   })
 })
