@@ -250,21 +250,46 @@ android {
             // reading class names out of manifest meta-data, the Play review
             // library's callbacks crossing a binder boundary.
             //
-            // ── What is deliberately still off ───────────────────────────────
+            // ── Optimisation and resource shrinking, now on ──────────────────
             //
-            // shrinkResources, and the -optimize variant of the default config.
-            // Both were among the four untested changes that landed together
-            // before the v2.7 launch crash, and turning three things on at once
-            // is how that became impossible to diagnose. Minification alone is
-            // the change; the other two are separate decisions with their own
-            // evidence to gather.
+            // These were the two things this comment used to say were
+            // deliberately off, and the reason was sound: both were among four
+            // untested changes that landed together before the v2.7 launch
+            // crash, and turning three things on at once is how that became
+            // impossible to diagnose.
+            //
+            // They are on because Play's release dashboard asks for them, and
+            // the ground is firmer than it was:
+            //
+            //   • proguard-rules.pro has since gained explicit rules for the
+            //     JavaScript bridge and for Play In-App Update. The bridge rule
+            //     duplicates one in AGP's default config on purpose; the update
+            //     one was simply MISSING, and optimisation is what would have
+            //     turned that from latent into a silent failure.
+            //   • TopMoversWidgetProvider no longer resolves its views with
+            //     Resources.getIdentifier, which R8 cannot see through — that
+            //     was the sharpest edge shrinkResources had to survive.
+            //   • keep.xml still protects the resources that ARE resolved by
+            //     name, and shrinkMode stays "safe" rather than "strict", so
+            //     the shrinker keeps its conservative heuristic as well as the
+            //     explicit list.
+            //
+            // ── If this release crashes on launch ────────────────────────────
+            //
+            // These are two changes, not one, and they fail differently. A
+            // ClassNotFoundException, a NoSuchMethodError, or a bridge call
+            // that does nothing is the OPTIMISER: revert the proguardFiles line
+            // to 'proguard-android.txt'. A missing icon, an empty widget, or a
+            // Resources.NotFoundException is the RESOURCE SHRINKER: set
+            // shrinkResources back to false. Changing both back at once tells
+            // you nothing, which is the lesson from v2.7.
             //
             // This build is not for Play until it has opened on a device. The
             // failure mode of getting a keep rule wrong is a launch crash, and
             // no test here can catch it.
             minifyEnabled true
-            shrinkResources false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
