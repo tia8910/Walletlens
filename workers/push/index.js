@@ -120,7 +120,7 @@ async function sendViaFcm(env, store, sub, payload, { now }) {
       return false
     }
 
-    bumpSent(sub, now)
+    sub.sent = bumpSent(sub.sent, now, sub.tz)
     return true
   } catch (e) {
     console.warn('fcm failed', String(e?.message || e).slice(0, 200))
@@ -185,7 +185,7 @@ export function makeSender(env, store) {
         console.warn('push rejected', res.status, (await res.text()).slice(0, 200))
         return false
       }
-      bumpSent(sub, now)
+      sub.sent = bumpSent(sub.sent, now, sub.tz)
       return true
     } catch (e) {
       console.warn('push failed', String(e?.message || e).slice(0, 200))

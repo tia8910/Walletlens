@@ -775,6 +775,47 @@ describe('a token-addressed device reaches Firebase', () => {
     vi.useRealTimers()
   })
 
+  it('records the notification against the day it was sent', async () => {
+    // THE INSTRUMENT, and it was reading zero for every device on every
+    // transport since the counter was written.
+    //
+    // bumpSent(sent, nowMs, tzOffsetMin) RETURNS the new counter; it does not
+    // mutate. Both senders called it as bumpSent(sub, now) and dropped the
+    // result — so `sent` was passed the whole row (which has no .day), the
+    // timezone was silently omitted, and the value went nowhere.
+    //
+    // Nothing about delivery depended on it, which is why it survived: every
+    // notification still arrived. What broke is the only number that tells
+    // "nothing was due" apart from "this device is not wired up" — the
+    // distinction /status exists to report, and the one that has now cost
+    // this project several rounds of looking in the wrong place.
+    const now = Date.UTC(2026, 7, 31, 12, 0, 0)
+    const { store, jobs, calls, fetchMock } = await harness({
+      'fcm:1': fcmRow({
+        tz: 180,   // UTC+3: the local day must be the user's, not the server's
+        alerts: [{ id: 7, coin_id: 'bitcoin', coin_symbol: 'BTC', condition: 'above', targetPrice: 100000 }],
+      }),
+    })
+    vi.spyOn(await import('../../push-api/markets.js'), 'fetchCryptoQuotes')
+      .mockResolvedValue({ bitcoin: { price: 101000, change24h: 3 } })
+    vi.stubGlobal('fetch', fetchMock)
+    vi.setSystemTime(now)
+
+    await runSchedule('* * * * *', jobs)
+
+    expect(calls.some(c => c.url.includes('fcm.googleapis.com')), 'it did send').toBe(true)
+
+    // Read it back through the store, not off the in-memory row: a counter
+    // that is incremented and then dropped by the merge is no counter at all.
+    store.invalidate()
+    const [{ sub: after }] = await store.all()
+    expect(after.sent, 'the send was counted').toEqual({ day: '2026-08-31', n: 1 })
+
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
   it('keeps the device addressable after a cron has written the row back', async () => {
     // save() merges the cron's copy over storage. If the address were not
     // user-owned, this write would be where a rotated token got clobbered —
