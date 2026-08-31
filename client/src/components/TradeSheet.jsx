@@ -563,16 +563,15 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       })
 
       // Also keep the combined event for backwards compat
-      track('trade_submitted', {
-        trade_type: type,
-        asset_symbol: asset.symbol,
-        asset_category: assetCat,
-        trade_value_usd: valueUsd,
-      })
+      // asset_symbol and trade_value_usd removed: the ticker and dollar size of
+      // every trade, which is the most sensitive thing this app holds. The
+      // third of three call sites that were sending it — Transactions and the
+      // dashboard's manage tab had the same pair.
+      track('trade_submitted', { trade_type: type, asset_category: assetCat })
 
       // First manual trade = the user started their profile this way.
       if (isFirstHolding) {
-        trackProfileCreated({ method: 'manual_trade', assetCount: 1, source: 'trade_sheet' })
+        trackProfileCreated({ method: 'manual_trade', source: 'trade_sheet' })
         // The moment the app stops being empty. Matters most for the
         // single-asset users the old holdings floor excluded entirely.
         noteMoment('first_holding')
@@ -765,7 +764,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                           const up = Number(ch) >= 0
                           return (
                             <button key={c.id} type="button" className="bs-market-row"
-                              onClick={() => { track('trade_market_pick', { coin: c.id }); setSelectedCoin({ id: c.id, symbol: c.symbol, name: c.name }); setCoinSearch(c.name); setCoinResults([]) }}>
+                              onClick={() => { track('trade_market_pick'); setSelectedCoin({ id: c.id, symbol: c.symbol, name: c.name }); setCoinSearch(c.name); setCoinResults([]) }}>
                               <CoinLogo symbol={c.symbol} coinId={c.id} size={30} className="bs-coin-thumb" />
                               <div className="bs-coin-info">
                                 <strong>{c.symbol}</strong>

@@ -215,7 +215,9 @@ export default function BackupCode({ hideTrigger = false }) {
     setError(''); setImporting(true)
     try {
       const result = await applyBackupCode(importText)
-      trackProfileCreated({ method: importSourceRef.current, assetCount: result?.restored, source: 'backup_import' })
+      // assetCount removed — never forwarded, and it named how many holdings a
+      // restore brought back.
+      trackProfileCreated({ method: importSourceRef.current, source: 'backup_import' })
       setImportResult(result); setConfirmImport(false)
       // Full navigation to the dashboard re-reads the restored localStorage and
       // lands on the overview tab (Dashboard defaults to 'overview' on load).

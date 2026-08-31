@@ -196,14 +196,20 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
   async function generate() {
     if (!enriched.length || loading) return
     track('ai_sell_plan_generate')
-    trackAI({ action: 'sell_plan_generate', assetCount: enriched.length, planGenerated: true })
+    // assetCount removed. trackAI never forwarded it — the helper destructures
+    // only action and planGenerated — so this was a call site that read as if
+    // it sent the portfolio size while sending nothing. Harmless, and exactly
+    // the kind of thing someone later "fixes" by widening the helper.
+    trackAI({ action: 'sell_plan_generate', planGenerated: true })
     setLoading(true)
     try {
       const ids = enriched.map(h => h.coin_id).filter(Boolean)
       const ta = await api.getBulkTechnicals(ids)
       setTechnicals(ta || {})
       const withTA = Object.values(ta || {}).filter(Boolean).length
-      trackAI({ action: 'sell_plan_technicals', assetCount: ids.length, taCovered: withTA })
+      // assetCount and taCovered are both portfolio sizes; neither was
+      // forwarded, and both are removed rather than left looking live.
+      trackAI({ action: 'sell_plan_technicals' })
     } catch {
       setTechnicals({})
     } finally {

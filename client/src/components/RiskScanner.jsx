@@ -493,7 +493,12 @@ function RiskCard({ holding, onResult, forceRefresh }) {
       setResult(r)
       setLoading(false)
       if (r) {
-        track('risk_scan_result', { symbol: holding.coin_symbol, grade: r.grade, score: r.score })
+        // symbol dropped. Paired with a grade it said "this user holds SOL and
+        // it scored D" — a holding and a judgement about it, in one event.
+        // The grade and score stay: they are the scanner's own output and,
+        // without the ticker, describe how the FEATURE performs rather than
+        // what the user owns.
+        track('risk_scan_result', { grade: r.grade, score: r.score })
         onResult?.(holding.coin_id, r)
       }
     }).catch(() => setLoading(false))
@@ -503,7 +508,7 @@ function RiskCard({ holding, onResult, forceRefresh }) {
 
   function handleRescan(e) {
     e.stopPropagation()
-    track('risk_rescan', { symbol: holding.coin_symbol })
+    track('risk_rescan')
     runScan(true)
   }
 
@@ -511,7 +516,7 @@ function RiskCard({ holding, onResult, forceRefresh }) {
     <div className="glass-card risk-card" onClick={() => {
       if (result) {
         setExpanded(v => !v)
-        if (!expanded) track('risk_card_expand', { symbol: holding.coin_symbol, grade: result.grade })
+        if (!expanded) track('risk_card_expand', { grade: result.grade })
       }
     }}>
       <div className="risk-card-top">
@@ -756,7 +761,9 @@ export default function RiskScanner({ enriched }) {
   function rescanAll() {
     setResults({})
     setScanGen(g => g + 1)
-    track('risk_rescan_all', { holdings_count: cryptoHoldings.length })
+    // holdings_count was the size of their crypto portfolio, in a param named
+    // after it. That a rescan-all happened is the signal.
+    track('risk_rescan_all')
   }
 
   return (

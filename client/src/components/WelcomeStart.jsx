@@ -116,7 +116,7 @@ export default function WelcomeStart({ onDone }) {
         count++
       }
       track('welcome_start_seed', { cash: cashN > 0, usdt: usdtN > 0, gold: goldN > 0, btc: btcN > 0, currency })
-      trackProfileCreated({ method: 'welcome_balances', assetCount: count, source: 'welcome_start' })
+      trackProfileCreated({ method: 'welcome_balances', source: 'welcome_start' })
       sfx.haptic([10, 30, 12])
       finish()
     } catch {
