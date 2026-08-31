@@ -195,16 +195,41 @@ describe('the Android release is uploadable', () => {
     }
   })
 
-  it('runs R8 with optimisation and resource shrinking', () => {
-    // Play's release dashboard asks for both. They are recorded here so that
-    // turning either back off is a deliberate edit with a test in front of it,
-    // rather than a quiet revert — which is how they came to be off in the
-    // first place after the v2.7 launch crash.
+  it('keeps the R8 settings internally consistent', () => {
+    // This case used to pin minifyEnabled/shrinkResources/optimize ON, on the
+    // reasoning that Play asks for all three and a quiet revert is how they
+    // came to be off after the v2.7 crash.
+    //
+    // That was the wrong thing to assert, and 6.15 proved it: the app failed
+    // to launch, the documented first response is to turn R8 back down, and
+    // this test stood in front of the emergency action demanding a code change
+    // to perform it. A test must never pin the state whose reversal is the
+    // remedy — at best it is noise during an incident, at worst someone
+    // deletes it in a hurry and the real invariants go with it.
+    //
+    // What IS invariant is that the settings agree with each other. AGP fails
+    // the build outright for shrinkResources without minifyEnabled, and an
+    // optimising proguard file with minification off is a line that reads as
+    // protection while doing nothing — the exact misreading that made the v2.8
+    // bisect ambiguous. Whether R8 is up or down is a release decision; that
+    // the three settings tell the same story is not.
     const release = gradle.slice(gradle.indexOf('release {'))
     const code = release.slice(0, release.indexOf('\n        }')).replace(/^\s*\/\/.*$/gm, '')
-    expect(code).toMatch(/minifyEnabled\s+true/)
-    expect(code).toMatch(/shrinkResources\s+true/)
-    expect(code).toMatch(/proguard-android-optimize\.txt/)
+
+    const minify = /minifyEnabled\s+true/.test(code)
+    const shrink = /shrinkResources\s+true/.test(code)
+    const optimize = /proguard-android-optimize\.txt/.test(code)
+
+    if (shrink) {
+      expect(minify, 'shrinkResources needs minifyEnabled, or AGP fails the build').toBe(true)
+    }
+    if (optimize) {
+      expect(minify, 'an optimising proguard file with minification off does nothing').toBe(true)
+    }
+    // Whichever way it is set, the file must still be named: dropping the
+    // proguardFiles line entirely while leaving minifyEnabled on is what
+    // 6ff0b43 did, and it ran R8 with no keep rules of ours at all.
+    expect(code, 'the rules file must always be named').toMatch(/proguard-rules\.pro/)
   })
 
   it('keeps the JavaScript bridge, which optimisation would otherwise eat', () => {
