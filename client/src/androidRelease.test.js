@@ -166,6 +166,55 @@ describe('the Android release is uploadable', () => {
     }
   })
 
+  it('runs R8 with optimisation and resource shrinking', () => {
+    // Play's release dashboard asks for both. They are recorded here so that
+    // turning either back off is a deliberate edit with a test in front of it,
+    // rather than a quiet revert — which is how they came to be off in the
+    // first place after the v2.7 launch crash.
+    const release = gradle.slice(gradle.indexOf('release {'))
+    const code = release.slice(0, release.indexOf('\n        }')).replace(/^\s*\/\/.*$/gm, '')
+    expect(code).toMatch(/minifyEnabled\s+true/)
+    expect(code).toMatch(/shrinkResources\s+true/)
+    expect(code).toMatch(/proguard-android-optimize\.txt/)
+  })
+
+  it('keeps the JavaScript bridge, which optimisation would otherwise eat', () => {
+    // The whole app-to-native surface — vault, notifications, biometrics, file
+    // save, widgets — is 26 methods called from the web app BY NAME. Nothing
+    // in the Java references them, so to R8 they are dead code.
+    //
+    // AGP's default config has carried a @JavascriptInterface rule for years,
+    // which is why the bridge survives today. This asserts our own copy: the
+    // app should not depend on a file it does not control for the one thing
+    // that would take every native feature down at once.
+    const rules = readFileSync(join(nativeRoot, '..', '..', 'proguard-rules.pro'), 'utf8')
+    expect(rules).toMatch(/@android\.webkit\.JavascriptInterface <methods>;/)
+    expect(rules).toMatch(/-keep class live\.walletlens\.twa\.WalletLensBridge/)
+  })
+
+  it('keeps every Play library that answers across a binder', () => {
+    // The review library has had a rule since it was added. app-update did
+    // not, and it is the same situation: the Play Store drives the flow and
+    // resolves the listener's callback and AppUpdateInfo's fields by name on
+    // its side. Under optimisation that becomes a silent failure — the update
+    // prompt simply reports that no update is available, on release builds
+    // only.
+    const rules = readFileSync(join(nativeRoot, '..', '..', 'proguard-rules.pro'), 'utf8')
+    for (const pkg of ['review', 'appupdate', 'install']) {
+      expect(rules, `com.google.android.play.core.${pkg}`)
+        .toMatch(new RegExp(`-keep class com\\.google\\.android\\.play\\.core\\.${pkg}`))
+    }
+  })
+
+  it('still protects the resources resolved by name', () => {
+    // shrinkResources removes what it cannot see a reference to, and layouts
+    // and drawables named at runtime are exactly that. shrinkMode stays "safe"
+    // so the conservative heuristic applies too.
+    const keep = readFileSync(join(nativeRoot, 'res/raw/keep.xml'), 'utf8')
+    expect(keep).toMatch(/tools:shrinkMode="safe"/)
+    expect(keep).toMatch(/@layout\/widget_\*/)
+  })
+
   it('keeps the rules that cover what R8 cannot see', () => {
     // Each of these is a class Android resolves by name. Losing any one is a
     // runtime failure the build cannot detect.
