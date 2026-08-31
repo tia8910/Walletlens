@@ -1672,14 +1672,41 @@ export const CHANNEL_URL = {
   digest: '/dashboard',
   retention: '/dashboard',
   feature: '/dashboard',
-  zakat: '/dashboard?tab=tools',
+  // The zakat tab, not the tools tab it used to point at. Zakat has a tab of
+  // its own — a reminder that lands one tab away from the calculator it is
+  // about makes the user go looking for what they were just told.
+  zakat: '/dashboard?tab=zakat',
   // The three scheduled channels each land on the page they are about, not on
   // the dashboard. A hack that opens a portfolio screen has thrown away the
   // one thing the tap was for.
-  hack: '/academy',
-  academy: '/academy',
+  hack: '/academy?tab=hacks',
+  academy: '/academy?tab=challenge',
   portfolio: '/dashboard',
   test: '/settings',
+}
+
+/**
+ * Where a notification about ONE asset should land: that asset's own page.
+ *
+ * CHANNEL_URL can only answer "what kind of notification is this", and for the
+ * price channels that is not the interesting question. Being told BTC crossed
+ * a target and then being shown the dashboard makes the reader do the work the
+ * notification was supposed to have done — find the asset, open it, see the
+ * chart. The payload already knows which asset it is about.
+ *
+ * The id, not the symbol: /asset/:coinId is keyed by the id the app stores
+ * ('bitcoin'), and two listings can share a symbol. Encoded because an id
+ * arrives from a watch list the user's own device sent.
+ *
+ * Returns null when there is no id to use — a market-wide story, or a
+ * subscription written before watch entries carried one — and the caller then
+ * falls back to the channel's own page rather than linking to /asset/undefined.
+ */
+export function assetUrl(asset) {
+  const id = asset?.id ?? asset?.coin_id
+  if (id === undefined || id === null) return null
+  const s = String(id).trim()
+  return s ? `/asset/${encodeURIComponent(s)}` : null
 }
 
 // ── Delivery semantics ──────────────────────────────────────────────────────

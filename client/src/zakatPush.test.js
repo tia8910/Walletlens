@@ -120,10 +120,16 @@ describe('the channel is wired like every other one', () => {
     expect(sanitizePrefs({}).zakat).toBe(true)
   })
 
-  it('opens a route that exists', () => {
-    // A notification is a cold navigation carrying nothing but a URL, and the
-    // calculator lives on the analysis tab.
-    expect(CHANNEL_URL.zakat).toBe('/dashboard?tab=tools')
+  it('opens the tab the calculator is actually on', () => {
+    // A notification is a cold navigation carrying nothing but a URL.
+    //
+    // This used to say ?tab=tools, on the reasoning that the calculator lived
+    // on the analysis tab. It does not: ZakatCalculator renders under
+    // `activeTab === 'zakat'` and nowhere else, so the reminder landed one tab
+    // away from the thing it was reminding the user to do — and ?tab= is
+    // ignored silently when it names a tab that exists, so it simply opened
+    // the tools tab and looked deliberate.
+    expect(CHANNEL_URL.zakat).toBe('/dashboard?tab=zakat')
   })
 
   it('expires in a day rather than web-push’s four-week default', () => {

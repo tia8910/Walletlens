@@ -279,7 +279,9 @@ describe('scheduled content channels', () => {
     expect(q, 'the challenge reached the sender').toBeTruthy()
     // The body is a real stem from the bank, not a "your challenge is ready".
     expect(questions('en').map(x => x.q)).toContain(q.body)
-    expect(q.url).toBe('/academy')
+    // The challenge tab specifically. /academy alone opens whatever tab is
+    // default, which is a coincidence rather than a destination.
+    expect(q.url).toBe('/academy?tab=challenge')
   })
 
   it('does not repeat the challenge later the same day', async () => {
@@ -305,7 +307,9 @@ describe('scheduled content channels', () => {
     const first = sent.find(p => p.channel === 'hack')
     expect(first, 'the hack reached the sender').toBeTruthy()
     expect(first.body).toBe(hacks('en')[0].body)
-    expect(first.url).toBe('/academy')
+    // THIS hack, opened, by the index the rotation recorded — not a list of
+    // forty for the reader to search for the one they were just told about.
+    expect(first.url).toBe('/academy?tab=hacks&hack=0')
 
     // Same hour two days later: the gap has elapsed, so the next one is due —
     // and it must not be the one already read.

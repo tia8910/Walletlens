@@ -23,7 +23,7 @@ import {
   matchArticle, isBreaking, shortHash, dueRetentionStep, pickFeatureTip,
   FEATURE_TIP_GAP_MS, RETENTION_HOUR, RETENTION_MIN_PCT, DIGEST_MIN_PCT,
   fmtPct, fmtPrice, dueZakatReminder, trimZakatSent,
-  isMarketStory, pickHack, pickChallenge, portfolioPulse,
+  isMarketStory, pickHack, pickChallenge, portfolioPulse, assetUrl,
   HACK_GAP_MS, HACK_HOUR, ACADEMY_HOUR, PORTFOLIO_HOUR, PULSE_MIN_PCT,
 } from '../../push-api/notify-logic.js'
 import { assetKey, fetchCryptoQuotes, fetchNews, fetchQuotes, quoteFor } from '../../push-api/markets.js'
@@ -73,6 +73,9 @@ export function createJobs({ store, send }) {
             body: copy("targetBody", sub.lang)(a.coin_symbol, a.condition, a.targetPrice, p),
             tag: `price-${id}`,
             sym: a.coin_symbol,
+            // The asset, not the alerts list. The tap follows the sentence
+            // the notification just read out.
+            url: assetUrl({ id: a.coin_id }),
           }))
           sub.fired[id] = Date.now()
           changed = true
@@ -165,6 +168,7 @@ export function createJobs({ store, send }) {
             body: copy("levelBody", sub.lang)(a.symbol, fmtPrice(q.price)),
             tag: `level-${k}`,
             sym: a.symbol,
+            url: assetUrl(a),
           }), { now })
           if (levelSent) {
             sub.lastLevel[k] = cross.level
@@ -186,6 +190,7 @@ export function createJobs({ store, send }) {
           body: copy("moveBody", sub.lang)(a.symbol, fmtPct(changePct), fmtPrice(q.price), up),
           tag: `move-${k}`,
           sym: a.symbol,
+          url: assetUrl(a),
         }), { now })
         if (sent) { sub.moveFired[k] = now; changed = true }
       }
@@ -247,6 +252,11 @@ export function createJobs({ store, send }) {
           body: copy("newsBody", sub.lang)(article.title),
           tag: `news-${h}`,
           ...(asset ? { sym: asset.symbol } : {}),
+          // A story about something they hold opens that holding. A
+          // market-wide one opens the market page — NOT article.link, which
+          // would take the reader out of the app and into a news site, where
+          // nothing this app knows about their portfolio is on screen.
+          url: asset ? assetUrl(asset) : '/market-index',
         }), { now })
 
         // Recorded either way. A story that reached the send stage has had its
@@ -460,6 +470,10 @@ export function createJobs({ store, send }) {
             title: copy("hackTitle", sub.lang)(hack.title),
             body: hack.body,
             tag: `hack-${choice.index}`,
+            // The hack itself, opened, not a list of forty to search. The
+            // index is the same one hacksSent records, so the link and the
+            // rotation cannot disagree about which hack this was.
+            url: `/academy?tab=hacks&hack=${choice.index}`,
           }), { now })
           if (sent) {
             // A wrap starts the cycle over: the list is finite, the channel is
