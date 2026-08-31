@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { assetUrl, buildPayload, CHANNEL_URL } from '../../push-api/notify-logic.js'
+import { toWatchAssets } from './push'
+import { GOLD_ID, SILVER_ID } from './data/assets'
 
 // A notification is a promise about where a tap will land. Every channel used
 // to answer that with the dashboard, whatever it had just said — so being told
@@ -31,12 +33,52 @@ describe('assetUrl', () => {
   it('uses the id the route is keyed by, not the symbol', () => {
     // /asset/:coinId takes the stored id. Two listings can share a symbol, so
     // a symbol would sometimes open the wrong asset and sometimes nothing.
-    expect(assetUrl({ id: 'bitcoin', symbol: 'BTC' })).toBe('/asset/bitcoin')
+    expect(assetUrl({ id: 'bitcoin', symbol: 'BTC', kind: 'crypto' })).toBe('/asset/bitcoin')
   })
 
   it('accepts either name the two stores use for it', () => {
     // Watch entries carry `id`; alerts carry `coin_id`.
     expect(assetUrl({ coin_id: 'ethereum' })).toBe('/asset/ethereum')
+  })
+
+  // ── The prefix ──────────────────────────────────────────────────────────
+  //
+  // THE BUG THIS SECTION EXISTS FOR, caught before it shipped.
+  //
+  // toWatchAssets() splits an asset into a `kind` and an id with the prefix
+  // REMOVED: 'metal:xau' becomes kind 'metal' + id 'xau'. Right for the
+  // server, which groups quote lookups by kind. Wrong for a link — assetClass()
+  // reads the prefix, so '/asset/xau' is a request for a crypto coin called
+  // "xau", and the page comes up empty.
+  //
+  // Gold is the largest holding in a great many portfolios. The flagship case
+  // of this feature would have been broken for the people most likely to tap it.
+
+  it('puts back the prefix a watch entry had stripped', () => {
+    expect(assetUrl({ kind: 'metal', id: 'xau', symbol: 'XAU' })).toBe('/asset/metal%3Axau')
+    expect(assetUrl({ kind: 'stock', id: 'aapl', symbol: 'AAPL' })).toBe('/asset/stock%3Aaapl')
+  })
+
+  it('round-trips a real holding back to the id the app stores', () => {
+    // The guard that would have caught it. Runs a holding through the same
+    // toWatchAssets() the subscription uses, then asks for its link, and
+    // requires the two ids to match.
+    for (const coin_id of [GOLD_ID, SILVER_ID, 'stock:aapl', 'bitcoin', 'ethereum']) {
+      const [watched] = toWatchAssets([{ coin_id, coin_symbol: 'X', amount: 1 }])
+      expect(watched, `${coin_id} is watched`).toBeTruthy()
+      expect(assetUrl(watched), `${coin_id} must link to itself`)
+        .toBe(`/asset/${encodeURIComponent(coin_id)}`)
+    }
+  })
+
+  it('does not double the prefix if it is already there', () => {
+    expect(assetUrl({ kind: 'metal', id: 'metal:xau' })).toBe('/asset/metal%3Axau')
+  })
+
+  it('leaves an unfamiliar kind alone rather than guessing', () => {
+    // A wrong prefix is a link to nothing; a bare id still works for crypto,
+    // which is what an unrecognised kind most likely is.
+    expect(assetUrl({ kind: 'something-new', id: 'solana' })).toBe('/asset/solana')
   })
 
   it('encodes an id that arrived from a device', () => {

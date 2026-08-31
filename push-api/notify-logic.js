@@ -1703,10 +1703,57 @@ export const CHANNEL_URL = {
  * falls back to the channel's own page rather than linking to /asset/undefined.
  */
 export function assetUrl(asset) {
-  const id = asset?.id ?? asset?.coin_id
-  if (id === undefined || id === null) return null
-  const s = String(id).trim()
-  return s ? `/asset/${encodeURIComponent(s)}` : null
+  const id = appAssetId(asset)
+  return id ? `/asset/${encodeURIComponent(id)}` : null
+}
+
+/**
+ * The id the APP files this asset under, which is not always the one the
+ * subscription stores.
+ *
+ * This is the whole reason assetUrl is not one line. A subscription carries
+ * assets in two shapes and only one of them is already the app's id:
+ *
+ *   alerts      keep `coin_id` exactly as the app wrote it — 'metal:xau'
+ *   watch       are built by toWatchAssets(), which SPLITS the id into a
+ *               `kind` and an id with the prefix REMOVED — 'metal' + 'xau'
+ *
+ * That split is right for the server, which groups quote lookups by kind. It
+ * is wrong for a link: /asset/:coinId is keyed by the prefixed id, and
+ * assetClass() reads the prefix to decide what an asset even is. So '/asset/xau'
+ * is not a shorter way of saying gold — it is a request for a CRYPTO COIN
+ * called "xau", which does not exist, and the page comes up empty.
+ *
+ * Gold is the single largest holding in more than a few portfolios, so the
+ * flagship case of this whole feature — "the price alert opens the asset" —
+ * would have been broken for exactly the people most likely to tap it.
+ *
+ * The prefix is put back from `kind`. Tokenized stocks are the one lossy case:
+ * toWatchAssets strips 'stock:' and 'xstock:' to the same thing, so a holder
+ * of xstock:aapl lands on stock:aapl. That is the right ASSET on the wrong
+ * listing, which is still incomparably better than the dashboard.
+ */
+const KIND_PREFIX = { metal: 'metal:', stock: 'stock:', crypto: '' }
+
+function appAssetId(asset) {
+  // An alert's own id, already in the app's form. Checked first: it is the
+  // authoritative one wherever it exists.
+  const stored = asset?.coin_id
+  if (stored !== undefined && stored !== null && String(stored).trim()) {
+    return String(stored).trim()
+  }
+
+  const bare = asset?.id
+  if (bare === undefined || bare === null || !String(bare).trim()) return null
+  const s = String(bare).trim()
+
+  // An unknown kind is left alone rather than guessed at: a wrong prefix is a
+  // link to nothing, while a bare id at least still works for crypto, which is
+  // what an unrecognised kind most likely is.
+  const prefix = KIND_PREFIX[asset?.kind] ?? ''
+  // Already prefixed — a caller that passed the app's id under `id`.
+  if (prefix && s.startsWith(prefix)) return s
+  return prefix + s
 }
 
 // ── Delivery semantics ──────────────────────────────────────────────────────
