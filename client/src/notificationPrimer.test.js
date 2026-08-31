@@ -26,6 +26,36 @@ describe('the permission primer', () => {
   // loaded up front.
   beforeAll(loadAllLanguages)
 
+  it('waits for the dashboard\u2019s own onboarding, not just its URL', () => {
+    // THE REGRESSION THIS EXISTS FOR, reported twice from a device.
+    //
+    // The card was gated on being on the dashboard, and it was — the interest
+    // picker ("What do you want to track?") and the opening-balances step are
+    // overlays the DASHBOARD renders, at the dashboard's own URL. So the route
+    // check passed while the first-run flow was still in front of the user and
+    // the card landed on top of it: exactly the placement the route check was
+    // added to prevent, one layer further in.
+    //
+    // A system permission dialog over a half-finished onboarding is the worst
+    // moment to ask, and it is how the flow gets abandoned.
+    expect(src).toMatch(/function onboardingSettled\(\)/)
+    expect(src, 'the offer must check both').toMatch(/!onDashboard\(\) \|\| !onboardingSettled\(\)/)
+  })
+
+  it('uses the same predicate the dashboard ends its onboarding with', () => {
+    // Not a copy of the storage key. The dashboard's step machine treats
+    // hasStarted() as "the flow is done"; if the primer tested a key of its
+    // own, the two would drift and the card would come back early with
+    // nothing failing.
+    expect(src).toMatch(/import \{ hasStarted \} from '\.\/WelcomeStart'/)
+    const root = dirname(fileURLToPath(import.meta.url))
+    const welcome = readFileSync(join(root, 'components/WelcomeStart.jsx'), 'utf8')
+    expect(welcome, 'WelcomeStart must still export it').toMatch(/export function hasStarted\(\)/)
+    const dash = readFileSync(join(root, 'pages/Dashboard.jsx'), 'utf8')
+    expect(dash, 'and the dashboard must still end its flow on it')
+      .toMatch(/if \(hasStarted\(\)\) return 'done'/)
+  })
+
   it('does not refuse to ask an empty portfolio', () => {
     // The specific shape of the old gate: bail out before showing anything.
     expect(src).not.toMatch(/if\s*\(\s*watchFromStorage\(\)\.length\s*===\s*0\s*\)\s*return/)

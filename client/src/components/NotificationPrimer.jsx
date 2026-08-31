@@ -3,6 +3,7 @@ import Icon from './Icon'
 import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
 import { shouldAskPush, noteAskShown, enablePush, watchFromStorage } from '../push'
+import { hasStarted } from './WelcomeStart'
 
 /**
  * Asks permission to send notifications — in the app's own words first.
@@ -31,6 +32,26 @@ function onDashboard() {
     const path = (window.location.pathname || '').replace(/\/+$/, '')
     return path === '' || path === '/dashboard' || path.endsWith('/dashboard')
   } catch { return false }
+}
+
+/**
+ * Whether the dashboard's own onboarding has finished.
+ *
+ * Being ON the dashboard route is not the same as the dashboard being what is
+ * on screen, and that gap is the whole bug this fixes. The interest picker
+ * ("What do you want to track?") and the opening-balances step are overlays
+ * rendered BY the dashboard, at the dashboard's own URL — so the route check
+ * above passes while the first-run flow is still in front of the user, and the
+ * card arrived on top of it. Which is exactly the placement the route check
+ * was added to prevent, one layer further in.
+ *
+ * Both overlays end at hasStarted(), which the dashboard's own step machine
+ * uses to decide the flow is 'done'. A portfolio is the other way out: the
+ * dashboard only draws either overlay while there are no transactions, so a
+ * device with holdings is past them however it got there.
+ */
+function onboardingSettled() {
+  try { return hasStarted() || watchFromStorage().length > 0 } catch { return false }
 }
 
 export default function NotificationPrimer() {
@@ -65,7 +86,7 @@ export default function NotificationPrimer() {
       // finishes and the router has not landed on the dashboard yet. So the
       // gate that was added to move the card ONTO the dashboard stopped it
       // appearing there at all. It keeps looking now.
-      if (!onDashboard()) return
+      if (!onDashboard() || !onboardingSettled()) return
       stop()
       // Read at show time, not at mount: someone who adds their first holding
       // while this is waiting should get the promise about it.
