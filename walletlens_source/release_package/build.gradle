@@ -46,7 +46,7 @@ buildscript {
         // targetSdk, lint {}, layout.buildDirectory, buildFeatures.resValues)
         // is valid on both. 6.13 is then the known-good fallback, and 6.12
         // before it.
-        classpath 'com.android.tools.build:gradle:9.0.0'
+        classpath 'com.android.tools.build:gradle:8.9.1'
 
         // Reads app/google-services.json and turns it into the resources the
         // Firebase SDK looks up at runtime. Groovy, not the Kotlin DSL the

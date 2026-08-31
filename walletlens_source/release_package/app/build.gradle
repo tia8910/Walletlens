@@ -287,9 +287,28 @@ android {
             // This build is not for Play until it has opened on a device. The
             // failure mode of getting a keep rule wrong is a launch crash, and
             // no test here can catch it.
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // ALL OF R8 OFF, after 6.15 failed to launch.
+            //
+            // 6.15 carried four unvalidated toolchain changes at once — the TWA
+            // removal, R8 optimisation, resource shrinking and AGP 9 — because
+            // 6.12 through 6.14 were built and never installed. It crashed on
+            // first open, and nothing in that stack can be blamed over another
+            // from a single data point.
+            //
+            // So this is not a bisect step, it is a floor: no optimising, no
+            // shrinking, no renaming. minifyEnabled goes off as well as the
+            // rest, because the earlier v2.8 bisect established that turning
+            // OPTIMISATION off is not the same as turning R8 off — shrinking
+            // and renaming continued and it still crashed. Leaving it on here
+            // would repeat that mistake and produce another ambiguous result.
+            //
+            // What that buys is a decisive next reading. If this build opens,
+            // the fault is in the toolchain and the pieces go back one at a
+            // time with a device check between each. If it still crashes, the
+            // fault is in the Java or the manifest and R8 was never involved.
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
