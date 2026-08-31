@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 import CoinLogo from './CoinLogo'
@@ -730,24 +730,25 @@ const LEGEND = [
   { grade: 'DANGER',    color: '#ef4444', range: '0–34',   desc: 'Likely scam or extreme risk' },
 ]
 
-export default function RiskScanner({ enriched }) {
+const NON_CRYPTO = ['metal:', 'stock:', 'fiat:', 'cash:', 'bond:', 'real:', 'other:']
+
+function RiskScanner({ enriched }) {
   const { t } = useLanguage()
   const [results, setResults]   = useState({})
   const [scanGen, setScanGen]   = useState(0) // bump to force re-scan all
 
-  const NON_CRYPTO = ['metal:', 'stock:', 'fiat:', 'cash:', 'bond:', 'real:', 'other:']
-  const cryptoHoldings = enriched.filter(h => {
+  const cryptoHoldings = useMemo(() => enriched.filter(h => {
     const id = (h.coin_id || '').toLowerCase()
     return !NON_CRYPTO.some(p => id.startsWith(p)) &&
            !id.includes('appartment') && !id.includes('apartment') && !id.includes('property')
-  })
+  }), [enriched])
 
   // Sort by score ascending (most risky first) once results come in
-  const sorted = [...cryptoHoldings].sort((a, b) => {
+  const sorted = useMemo(() => [...cryptoHoldings].sort((a, b) => {
     const sa = results[a.coin_id]?.score ?? 999
     const sb = results[b.coin_id]?.score ?? 999
     return sa - sb
-  })
+  }), [cryptoHoldings, results])
 
   function handleResult(coinId, r) {
     setResults(prev => ({ ...prev, [coinId]: r }))
@@ -808,3 +809,5 @@ export default function RiskScanner({ enriched }) {
     </div>
   )
 }
+
+export default memo(RiskScanner)
