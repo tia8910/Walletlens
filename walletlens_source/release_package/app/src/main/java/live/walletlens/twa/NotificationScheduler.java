@@ -31,7 +31,7 @@ import androidx.work.WorkManager;
  * would leave every already-installed device running the 30-minute worker
  * forever. The cancel below is what actually stops it, so it has to execute on
  * upgrade — which is why {@code schedule()} keeps its name and its callers in
- * {@code WalletLensApp}, {@code LauncherActivity} and {@code BootReceiver}
+ * {@code WalletLensApp} and {@code BootReceiver}
  * rather than being removed.
  *
  * <p>{@link PeriodicUpdateWorker} is deliberately left in the source tree: it

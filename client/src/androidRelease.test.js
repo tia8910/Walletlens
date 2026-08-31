@@ -102,13 +102,44 @@ describe('the Android release is uploadable', () => {
     expect(decl).toMatch(/android:excludeFromRecents="true"/)
   })
 
-  it('leaves LauncherActivity with the app\'s own affinity', () => {
-    // The other half: the gate is moved aside, the TWA is not. Giving this one
-    // an empty affinity too would put them back in the same boat.
-    const launcher = manifest.slice(manifest.indexOf('android:name="LauncherActivity"'))
+  it('leaves the entry activity with the app\'s own affinity', () => {
+    // The other half: the gate is moved aside, the app is not. Giving the
+    // entry activity an empty affinity too would put them back in the same
+    // boat — one excluded task, no entry in the recents switcher.
+    //
+    // This used to name LauncherActivity, the TWA. That activity is gone (see
+    // the case below), so the invariant moved to the activity that actually
+    // roots the task now.
+    const launcher = manifest.slice(manifest.indexOf('android:name=".AppShellActivity"'))
     const decl = launcher.slice(0, launcher.indexOf('>'))
     expect(decl).not.toMatch(/android:taskAffinity/)
     expect(decl).not.toMatch(/android:excludeFromRecents/)
+  })
+
+  it('has no Trusted Web Activity left anywhere', () => {
+    // Play flagged release 90 for deprecated edge-to-edge APIs —
+    // Window.setStatusBarColor and setNavigationBarColor — and every one of
+    // them was called by androidbrowserhelper, not by this app. The app
+    // stopped being a TWA when AppShellActivity took over as launcher, so all
+    // of it was unreachable code still dragging in deprecated window APIs and
+    // an edge-to-edge path nothing rendered.
+    //
+    // The dependency, the two classes that extended it, and the four
+    // activities it contributed to the manifest are all gone. This fails if
+    // any of them comes back.
+    expect(gradle, 'the dependency').not.toMatch(/androidbrowserhelper:androidbrowserhelper/)
+    for (const name of [
+      'LauncherActivity',
+      'DelegationService',
+      'ManageDataLauncherActivity',
+      'WebViewFallbackActivity',
+      'FocusActivity',
+      'NotificationPermissionRequestActivity',
+    ]) {
+      expect(manifest.match(new RegExp(`android:name="[^"]*\\b${name}"`)), name).toBeNull()
+    }
+    // And the meta-data that fed the deprecated colour setters.
+    expect(manifest).not.toMatch(/customtabs\.trusted\.(STATUS|NAVIGATION)_BAR_COLOR/)
   })
 
   it('never runs R8 without the keep rules', () => {
@@ -140,17 +171,28 @@ describe('the Android release is uploadable', () => {
     // runtime failure the build cannot detect.
     const rules = readFileSync(join(nativeRoot, '..', '..', 'proguard-rules.pro'), 'utf8')
     expect(rules).toMatch(/-keep class live\.walletlens\.twa\.PeriodicUpdateWorker/)
-    expect(rules).toMatch(/-keep class com\.google\.androidbrowserhelper\.\*\*/)
+    // androidbrowserhelper's keep is gone with the library: a keep rule for a
+    // dependency that is no longer on the classpath protects nothing and
+    // outlives the reader who could tell.
+    expect(rules).not.toMatch(/androidbrowserhelper/)
     expect(rules).toMatch(/-keep class com\.google\.android\.play\.core\.review\.\*\*/)
     // Without this the mapping file cannot turn a Play Console trace back into
     // line numbers, which is half the point of shipping a mapping at all.
     expect(rules).toMatch(/-keepattributes SourceFile,LineNumberTable/)
   })
 
-  it('keeps notification delegation switched on', () => {
-    // The whole channel-routing fix hangs off DelegationService being bound by
-    // Chrome. enableNotifications false silently disables the service in the
-    // manifest, and web push falls back to arriving as "Chrome".
-    expect(gradle).toMatch(/enableNotifications:\s*true/)
+  it('routes every notification through the app\'s own channels', () => {
+    // This used to assert that DelegationService stayed enabled: under the TWA
+    // Chrome handed notifications to that service, and without it a price
+    // alert arrived on a channel androidx.browser invented and ignored the
+    // sound the user had chosen.
+    //
+    // There is no Chrome in the path any more. FCM delivers to
+    // WalletLensMessagingService, which draws the notification itself through
+    // NotificationHelper — so the channels are reached directly rather than
+    // via a delegate that had to be kept switched on.
+    const java = (f) => readFileSync(join(nativeRoot, 'java/live/walletlens/twa', f), 'utf8')
+    expect(java('NotificationHelper.java')).toMatch(/CHANNEL_ALERTS_ID/)
+    expect(java('WalletLensMessagingService.java')).toMatch(/showNotification/)
   })
 })

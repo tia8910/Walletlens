@@ -24,13 +24,6 @@
 }
 
 # ── Trusted Web Activity ───────────────────────────────────────────────────
-# androidbrowserhelper reads class names out of manifest meta-data and binds the
-# delegation service across processes. Keeping the whole package is cheap (it is
-# a small library) and avoids a class of very hard-to-diagnose TWA failures:
-# a stripped delegate shows a URL bar instead of a fullscreen app.
--keep class com.google.androidbrowserhelper.** { *; }
--keep class androidx.browser.** { *; }
--dontwarn com.google.androidbrowserhelper.**
 
 # ── Widgets ────────────────────────────────────────────────────────────────
 # The providers are declared in AndroidManifest.xml, so AGP already keeps the

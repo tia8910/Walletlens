@@ -34,7 +34,7 @@ import java.nio.charset.StandardCharsets;
  *       browser.</li>
  *   <li>Android's own Settings → Apps → WalletLens → Clear storage does the
  *       opposite: it wipes this app's data and leaves the portfolio untouched,
- *       because the portfolio was never here. (ManageDataLauncherActivity in
+ *       because the portfolio was never here. (The TWA's manage-space activity in
  *       the manifest exists to soften exactly that confusion.)</li>
  * </ul>
  *

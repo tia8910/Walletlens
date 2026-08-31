@@ -34,15 +34,15 @@ import androidx.core.content.ContextCompat;
  * immediately afterwards. On a launcher start it does nothing but forward.
  *
  * <p>A dedicated activity is still used because the AndroidBrowserHelper
- * LauncherActivity finishes itself the moment it launches the browser, which
+ * The entry activity finishes itself the moment it hands over, which
  * would dismiss any dialog requested there before the user could respond.
  *
  * Extends {@link ComponentActivity} so it can use the modern
  * {@code registerForActivityResult} permission API (more reliable than the old
  * onRequestPermissionsResult callback) without needing a Theme.AppCompat theme.
  *
- * The handoff launches {@link LauncherActivity} as a fresh task root
- * ({@code NEW_TASK | CLEAR_TASK}). This matters: if LauncherActivity is started
+ * The handoff launches the app as a fresh task root
+ * ({@code NEW_TASK | CLEAR_TASK}). This matters: if the entry activity is started
  * inside this gate's task it is NOT the task root, and the AndroidBrowserHelper
  * base class then relaunches/bails instead of opening the TWA — which showed up
  * as "granted the permission but the app didn't open".

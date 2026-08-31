@@ -137,13 +137,13 @@ describe('the WebView shell', () => {
     expect(activityBlock('.NotificationPermissionActivity')).not.toMatch(/category\.LAUNCHER/)
   })
 
-  it('answers walletlens.live links instead of the TWA', () => {
+  it('answers walletlens.live links itself', () => {
     // A link tapped anywhere on the device used to open LauncherActivity,
-    // which is Chrome rendering the site. Leaving that filter behind would
-    // mean every shared link re-entered the app through the browser it just
-    // stopped being.
+    // which is Chrome rendering the site. The shell owns that filter now —
+    // and LauncherActivity has since been deleted outright, so the half of
+    // this that asserted the filter had LEFT the TWA is asserted at the
+    // source instead, by androidRelease.test.js: there is no TWA to hold it.
     expect(activityBlock('.AppShellActivity')).toMatch(/android:scheme="https"/)
-    expect(activityBlock('LauncherActivity')).not.toMatch(/android:scheme="https"/)
   })
 
   it('owns the long-press shortcuts', () => {

@@ -325,17 +325,16 @@ repositories {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.2'
 
     implementation "androidx.work:work-runtime:2.10.0"
     implementation "androidx.biometric:biometric:1.2.0-alpha05"
     implementation "androidx.appcompat:appcompat:1.7.0"
 
-    // Custom Tabs. Already arrives transitively through androidbrowserhelper,
-    // but the WebView shell depends on it DIRECTLY — Google refuses OAuth in a
-    // WebView, so the Drive sign-in has to leave for a real browser tab — and
-    // a direct dependency should be declared rather than inherited from a
-    // library that might drop it.
+    // Custom Tabs. This used to arrive transitively through
+    // androidbrowserhelper as well; that library is gone, so this declaration
+    // is now the only thing providing it. The WebView shell needs it directly:
+    // Google refuses OAuth in a WebView, so the Drive sign-in has to leave for
+    // a real browser tab, and the one-time handoff out of Chrome uses it too.
     implementation "androidx.browser:browser:1.8.0"
 
     // QR code generation for export

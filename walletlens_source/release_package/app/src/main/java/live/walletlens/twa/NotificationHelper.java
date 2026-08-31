@@ -192,14 +192,15 @@ public final class NotificationHelper {
     // ── Intent handling ───────────────────────────────────────────────────
 
     /**
-     * Build an intent that opens the TWA LauncherActivity at {@code targetUrl}.
+     * Build an intent that opens the app at {@code targetUrl}.
      * If {@code targetUrl} is null, the default launch URL will be used.
      */
     private Intent createTapIntent(@Nullable String targetUrl, @Nullable String dataPayload) {
-        // AppEntry, not LauncherActivity. A notification that opened the TWA
-        // would open Chrome — address bar and all — from an app that is no
-        // longer a browser, and the tap is the one moment a user is most
-        // certain they are in the app.
+        // AppEntry. This used to have to say "not LauncherActivity", because
+        // a notification that opened the TWA opened Chrome — address bar and
+        // all — from an app that is no longer a browser. That activity does
+        // not exist any more; AppEntry is simply where the app's entry point
+        // is decided, in one place.
         //
         // deepLink also drops a URL that is not ours. This one arrives in a
         // push payload, over the network, and ends up inside a PendingIntent
@@ -221,7 +222,7 @@ public final class NotificationHelper {
 
     /**
      * Extract the target URL from the intent that launched the activity.
-     * Used in LauncherActivity to check if it was opened from a notification.
+     * Used by the entry activity to check if it was opened from a notification.
      */
     @Nullable
     public static String getTargetUrlFromIntent(@NonNull Intent intent) {
