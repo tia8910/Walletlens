@@ -37,6 +37,94 @@ export function relatedPosts(slug, n = 3) {
 
 const EVERGREEN = [
   {
+    slug: 'how-to-track-sell-targets-and-plan-your-exit-strategy',
+    title: 'How to Track Sell Targets and Plan Your Exit Strategy',
+    date: 'August 2026',
+    readTime: '7 min read',
+    summary: 'Learn how to set smart crypto and stock sell targets, track progress toward them, and build an exit strategy before emotions take over.',
+    content: `
+Most investors spend enormous energy deciding what to buy and almost no time planning how — or when — to sell. That asymmetry is expensive. Without a pre-defined exit strategy, the default is to either panic-sell during a dip or hold so long that a life-changing gain evaporates. Setting sell targets in advance is one of the simplest, most underrated disciplines in investing, and it works for crypto, stocks, ETFs, and precious metals alike.
+
+This article walks through how to think about exit planning, how to structure multiple price targets for a single asset, and how to track your progress without relying on gut feel or post-it notes on a monitor.
+
+## Why Most Investors Don't Have an Exit Plan
+
+The psychological pull of "just a little more" is powerful. When an asset is rising, selling feels like leaving money on the table. When it's falling, selling feels like confirming a loss. Both reactions are emotional, not strategic. The fix isn't willpower — it's structure. If you decide in advance that you'll sell 20% of your Bitcoin position at $120,000 and another 20% at $150,000, you've removed the in-the-moment decision entirely. The plan does the thinking.
+
+The problem is that most portfolio trackers don't help you build or monitor sell targets. They show you what your portfolio is worth right now, but they don't show you how far each asset is from your target, what you'd actually receive if you hit it, or how a partial exit would reshape your overall allocation.
+
+## The Case for Multiple Targets, Not One "Moon" Price
+
+Picking a single sell target is tempting but risky. If Bitcoin needs to hit $200,000 before you sell anything, you may ride it from $180,000 back down to $90,000 waiting for that last 11%. A tiered approach — sometimes called a laddered exit — distributes the risk across several price points.
+
+A practical structure might look like this:
+
+| Target | Price | % of Position to Sell | Rationale |
+|--------|-------|-----------------------|-----------|
+| Target 1 | $100,000 | 15% | Recover initial capital |
+| Target 2 | $130,000 | 20% | Take meaningful profit |
+| Target 3 | $160,000 | 25% | Sell into euphoria |
+| Target 4 | $200,000 | 20% | Peak-cycle target |
+| Target 5 | Trailing | Remainder | Let winners run |
+
+The exact numbers are yours to set based on your cost basis, tax situation, and financial goals. The principle — spreading exits across levels — applies universally. *(This is educational, not financial advice. Consult a qualified adviser before making investment decisions.)*
+
+## How to Calculate a Useful Sell Target
+
+A good sell target is grounded in something, not plucked from optimism. Common anchors include:
+
+- **Cost basis multiples**: "I want a 3x, 5x, or 10x return on this position."
+- **Previous cycle highs**: Historical resistance levels often attract selling pressure.
+- **Portfolio allocation rules**: "If this asset grows to 40% of my portfolio, I rebalance back to 25%."
+- **Personal financial goals**: "At $130,000 BTC, I can pay off my mortgage."
+- **Time-based targets**: "I want to reduce exposure before the end of the year regardless of price."
+
+Knowing your average cost basis is essential here. If you've bought Bitcoin at multiple prices over time, your "real" cost basis is the weighted average across all purchases — not the price of your first buy. That number tells you exactly where you are in profit and how far each target is from your entry point.
+
+## Tracking Targets Without Losing Your Mind
+
+A spreadsheet can handle this, but it requires constant manual updates and offers no live price feed. What you actually need is a system that knows your average cost basis, shows live prices, calculates how far each asset is from each target, and gives you a projected proceeds figure so you can plan cash flow.
+
+[WalletLens](https://walletlens.live) includes a dedicated **Sell Targets** feature that lets you set up to five price targets per asset. Each target shows a progress bar from your average cost basis to the target price, plus projected proceeds if that target is hit. Because the tool is entirely local — no account, no data sent to a server — your exit strategy stays completely private. No exchange, no analytics company, and no data broker ever sees where you plan to sell.
+
+You can add targets for Bitcoin, Ethereum, individual altcoins, stocks like NVIDIA or Apple, or any of the 10,000+ assets WalletLens tracks. If you hold gold and you believe it's heading toward $3,500 per ounce, you can set that as a target alongside your crypto targets and see everything in a single net-worth view.
+
+## Connecting Exit Targets to Portfolio Rebalancing
+
+Sell targets and rebalancing aren't the same thing, but they interact. When you hit a price target and sell a portion of an asset, you're suddenly holding more cash. What happens next matters as much as the sale itself. Options include:
+
+- **Parking in stablecoins or cash** to wait for the next opportunity
+- **Rotating into underweighted assets** to restore your target allocation
+- **Withdrawing to cover real-world goals** (the whole point of investing)
+- **Buying more of the same asset on a dip** if your thesis remains intact
+
+WalletLens's allocation donut and rebalance planner show exactly how a planned sale would affect your portfolio mix before you execute it. You can see, for instance, that selling 20% of your ETH position would drop crypto from 65% to 58% of your net worth and raise cash to 12% — useful information before you place the order.
+
+## Building Emotional Distance From Your Targets
+
+The hardest part of an exit strategy isn't setting targets — it's not changing them when the market feels different. A few habits help:
+
+**Write down your rationale.** When you set a target, note why you chose that price. When the temptation to move the target higher hits, re-read the original reasoning.
+
+**Use progress bars, not just numbers.** Seeing "Bitcoin is 73% of the way to Target 2" is more motivating and more concrete than watching a price ticker. Progress visualization keeps the plan front of mind.
+
+**Pre-decide what triggers a plan change.** "I'll only revise a target if the fundamental thesis changes" is a rule. "I'll revise when I feel like it" is not.
+
+**Separate targets from price predictions.** A sell target is not a forecast. You're not saying Bitcoin will reach $160,000. You're saying that if it does, this is how you'll respond. The distinction keeps ego out of the equation.
+
+## Tax Awareness in Exit Planning
+
+Sell targets also interact with tax outcomes, particularly for assets held less than one year versus more than one year. In many jurisdictions, long-term holdings receive preferential tax treatment. That may influence which lots you sell first when a target is hit, especially if you've accumulated a position across multiple purchases at different times.
+
+WalletLens tracks your average cost basis and unrealized P&L per asset, which gives you the raw numbers. For actual tax calculations specific to your country and situation, consult a tax professional. *(Educational note: nothing in this article constitutes tax advice.)*
+
+## Conclusion
+
+Exit planning is the quiet half of investing that most people ignore until they're already in the middle of an emotional decision. Setting multiple price targets per asset, grounding them in real numbers like your cost basis and portfolio allocation rules, and tracking progress with live data removes the need to make high-stakes calls under pressure. The sell happens because the plan said so — not because fear or greed won the moment. Tools like WalletLens make it straightforward to set up to five targets per asset, visualize progress, and see projected proceeds — all without creating an account or sharing your strategy with anyone. Build the exit before you need it, and you'll almost certainly make better decisions when prices move.
+    `
+  },
+
+  {
     slug: 'how-to-track-investments-as-a-beginner',
     title: 'How to Track Investments When You\'re Just Starting Out',
     date: 'August 2026',
