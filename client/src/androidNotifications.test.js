@@ -72,19 +72,26 @@ describe('the timer-driven notifications stay retired', () => {
   it('runs the cancel from every entry point', () => {
     // Cold start, launch and boot. Missing one leaves a device that only ever
     // arrives through that path still running the worker.
-    for (const f of ['WalletLensApp.java', 'LauncherActivity.java', 'BootReceiver.java']) {
+    // LauncherActivity was on this list until the TWA was removed; the paths
+    // that remain are the process starting and the device booting.
+    for (const f of ['WalletLensApp.java', 'BootReceiver.java']) {
       expect(read(f), `${f} must call NotificationScheduler.schedule`)
         .toMatch(/NotificationScheduler\.schedule\(/)
     }
   })
 
-  it('keeps NotificationHelper, which web push needs', () => {
-    // Easy to mistake for part of the same dead feature. DelegationService
-    // routes every web push into these channels; deleting them silences the
-    // system that replaced the timer.
-    const delegation = read('DelegationService.java')
-    expect(delegation).toMatch(/NotificationHelper/)
-    expect(delegation).toMatch(/CHANNEL_ALERTS_ID/)
+  it('keeps NotificationHelper, which the push path needs', () => {
+    // Easy to mistake for part of the same dead feature. Every push is drawn
+    // through these channels; deleting them silences the system that replaced
+    // the timer.
+    //
+    // This used to read DelegationService — the TWA service Chrome handed
+    // notifications to. That is gone with the rest of the TWA, and the
+    // messaging service draws them directly now, so the same invariant is
+    // asserted one link further down the chain.
+    const fcm = read('WalletLensMessagingService.java')
+    expect(fcm).toMatch(/NotificationHelper/)
+    expect(read('NotificationHelper.java')).toMatch(/CHANNEL_ALERTS_ID/)
   })
 })
 

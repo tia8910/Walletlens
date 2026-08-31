@@ -111,6 +111,11 @@ public class WalletLensMessagingService extends FirebaseMessagingService {
             case "move":
             case "level":
             case "zakat":
+            // The welcome notification, whose entire job is to demonstrate that
+            // notifications work. sw.js has always treated it as loud; this
+            // list did not, so on Android the one notification sent to prove
+            // the feature arrived silently — which proves the opposite.
+            case "test":
                 return true;
             default:
                 return false;

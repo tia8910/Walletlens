@@ -85,14 +85,16 @@ describe('every notification the app can post uses it', () => {
       .not.toMatch(/getIdentifier\("ic_notification/)
   })
 
-  it('the ones Firebase or the TWA service draw instead', () => {
-    // Two meta-data entries: the TWA delegation service's SMALL_ICON, and
-    // FCM's default for a message this app did not handle. Both were still
-    // pointing at the old drawable after the Java side moved, which would have
-    // left two icons in circulation.
+  it('the one Firebase draws instead', () => {
+    // There were two meta-data entries when this was written: the TWA
+    // delegation service's SMALL_ICON, and FCM's default for a message this
+    // app did not handle. The TWA is gone — dependency, activities and service
+    // — so only FCM's remains. The assertion counts them rather than just
+    // checking each, because an entry pointing at a drawable that no longer
+    // exists is the failure this case was written for.
     const manifest = read('AndroidManifest.xml')
     const refs = manifest.match(/android:resource="@drawable\/ic_notification[^"]*"/g) || []
-    expect(refs.length, 'both meta-data entries').toBe(2)
+    expect(refs.length, "FCM's default_notification_icon, and nothing else").toBe(1)
     for (const r of refs) expect(r).toContain('ic_notification_logo')
   })
 

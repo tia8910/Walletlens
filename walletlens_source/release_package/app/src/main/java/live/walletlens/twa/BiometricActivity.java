@@ -29,8 +29,8 @@ import java.util.concurrent.Executor;
  *
  * <p>The activity can be launched in two ways:
  * <ul>
- *   <li><b>Cold start</b> – triggered from {@link LauncherActivity} when
- *       the user has biometric lock enabled.</li>
+ *   <li><b>Cold start</b> – triggered when the app opens with biometric
+ *       lock enabled.</li>
  *   <li><b>In-app unlock</b> – triggered from the web app via a custom
  *       intent URL: {@code walletlens://biometric-auth}.</li>
  * </ul>
@@ -58,7 +58,7 @@ public class BiometricActivity extends AppCompatActivity {
     /** Intent extra: URL to return to after successful auth. */
     public static final String EXTRA_REDIRECT_URL = "redirect_url";
 
-    /** Values for the biometric_auth query parameter LauncherActivity reads. */
+    /** Values for the biometric_auth query parameter the redirect carries. */
     public static final String STATUS_SUCCESS     = "success";
     public static final String STATUS_CANCEL      = "cancel";
     public static final String STATUS_UNAVAILABLE = "unavailable";
@@ -118,7 +118,7 @@ public class BiometricActivity extends AppCompatActivity {
         // For enable/disable we only set/clear the SharedPreference — no prompt.
         //
         // These finish() straight away instead of calling redirectBack(). That
-        // matters more than it looks: redirectBack starts LauncherActivity with
+        // matters more than it looks: redirectBack starts the app with
         // FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP, which tears the
         // running task down and cold-starts the TWA on a fresh Custom Tab. The
         // web app is reloaded from its start URL with sessionStorage gone.
@@ -347,8 +347,8 @@ public class BiometricActivity extends AppCompatActivity {
      * <p>{@link BiometricPrompt} is implemented as a headless Fragment, so
      * {@code authenticate()} commits a fragment transaction and needs the host
      * activity to be at least STARTED for it to be honoured. On a cold start
-     * this activity is launched from {@code LauncherActivity.onCreate} while
-     * that activity is still tearing itself down, and the window has to be
+     * this activity is launched while the entry activity is still tearing
+     * itself down, and the window has to be
      * created, themed (translucent) and given focus before this one is
      * resumed. 400ms is a guess at how long all of that takes, and on the
      * first launch after install — the slowest one there is, with nothing warm
@@ -430,7 +430,7 @@ public class BiometricActivity extends AppCompatActivity {
 
     /**
      * @param status one of STATUS_SUCCESS, STATUS_CANCEL, STATUS_UNAVAILABLE.
-     *               LauncherActivity reads it back off the URL and must act on
+     *               The app reads it back off the URL and must act on
      *               all three differently — passing a bare boolean is what let
      *               "cancelled" and "no biometric hardware" collapse into the
      *               same answer, and neither could be told apart from "never
@@ -508,7 +508,7 @@ public class BiometricActivity extends AppCompatActivity {
         }
     }
 
-    // ── Static helpers for LauncherActivity ──────────────────────────────
+    // ── Static helpers for the entry path ────────────────────────────────
 
     /**
      * Check whether the user has biometric lock enabled.

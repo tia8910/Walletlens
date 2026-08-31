@@ -117,13 +117,13 @@ public class CrashLogActivity extends Activity {
     /**
      * Leaving this screen has to go on into the app, not out of it.
      *
-     * LauncherActivity finishes itself when it hands over to here, so a plain
+     * The entry activity finishes itself when it hands over to here, so a plain
      * finish() left nothing behind and the app simply vanished — which is
      * indistinguishable, from the outside, from the crash this screen exists to
      * explain. Reported as "started but closed by itself".
      *
      * The crash is marked seen as soon as it is displayed, so going back to
-     * LauncherActivity cannot bounce straight back here.
+     * it cannot bounce straight back here.
      */
     private void continueToApp() {
         try {

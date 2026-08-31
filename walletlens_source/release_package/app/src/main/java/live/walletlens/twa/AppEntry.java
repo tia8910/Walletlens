@@ -12,7 +12,7 @@ import androidx.annotation.Nullable;
  *
  * <h3>Why this exists</h3>
  *
- * Ten places built an Intent for {@code LauncherActivity} by name — every
+ * Ten places built an Intent for the old {@code LauncherActivity} by name — every
  * widget's tap target, the notification tap, the biometric unlock's hand-back,
  * the crash screen's "reopen", the review prompt, the vault restore. Each was
  * correct in isolation and collectively they were a decision about what this
