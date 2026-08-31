@@ -7,17 +7,46 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // Back on 8.9.1 — the toolchain the release Play is serving was built
-        // with. AGP 9.0.0 is the largest and least necessary change sitting
-        // between that release and the build that crashes on launch, and it
-        // also ships a newer R8, so reverting it tests the toolchain and the
-        // shrinker together.
+        // AGP 9, for the second time, and the first attempt is the reason
+        // this comment is long.
         //
-        // Everything the AGP 9 migration touched stays: `compileSdk`/`minSdk`/
-        // `targetSdk` (the non-deprecated spellings), the `lint {}` block,
-        // `layout.buildDirectory`, and `buildFeatures.resValues` are all valid
-        // on 8.9.1 — only the plugin version goes back.
-        classpath 'com.android.tools.build:gradle:8.9.1'
+        // ── WHAT HAPPENED BEFORE ─────────────────────────────────────────
+        //
+        // b56ab62e migrated to 9.0.0 as "the last item in Play's R8 advice" —
+        // the same item Play still reports. 434c262c reverted it during a
+        // launch-crash bisect: v2.8 had turned R8 optimisation and resource
+        // shrinking off and STILL crashed, so the fault was not the
+        // optimisation config, and AGP 9 was the largest remaining suspect.
+        // Builds have booted ever since, which by that bisect's own test made
+        // AGP 9 the cause. Its closing line was "8.9.1 is where we stay".
+        //
+        // ── WHY IT IS BACK ANYWAY ────────────────────────────────────────
+        //
+        // Re-applied deliberately, with the owner's decision recorded, and on
+        // one specific piece of new evidence: AGP 9 ships a NEWER R8, and the
+        // release it crashed on had no keep rule for the JavaScript bridge and
+        // none for Play In-App Update. Both were added in the commit before
+        // this one. A stronger R8 meeting a missing keep rule is exactly the
+        // shape of a launch crash that survives turning optimisation off —
+        // shrinking and renaming were still on throughout that bisect.
+        //
+        // So this is not a retry of the same experiment. It is the same
+        // toolchain against a keep-rule set that has since been repaired.
+        //
+        // ── IF IT CRASHES ON LAUNCH ──────────────────────────────────────
+        //
+        // Put this line back to 8.9.1 and the wrapper back to 8.11.1, together
+        // — they move as a pair. AGP 9.0.0 requires Gradle 9.1.0 or newer, and
+        // says so by name if the wrapper is older: the first attempt at this
+        // commit paired it with Gradle 9.0, exactly as the July migration had,
+        // and CI answered "Minimum supported Gradle version is 9.1.0". So the
+        // wrapper is on 9.1.0 rather than the 9.0 that migration used — which
+        // is also a hint about why that one behaved oddly. Nothing else needs
+        // reverting: everything the migration touched (compileSdk/minSdk/
+        // targetSdk, lint {}, layout.buildDirectory, buildFeatures.resValues)
+        // is valid on both. 6.13 is then the known-good fallback, and 6.12
+        // before it.
+        classpath 'com.android.tools.build:gradle:9.0.0'
 
         // Reads app/google-services.json and turns it into the resources the
         // Firebase SDK looks up at runtime. Groovy, not the Kotlin DSL the
