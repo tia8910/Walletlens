@@ -82,6 +82,20 @@ function isRealPushEndpoint(endpoint) {
  * Push subscription does not exist there. Every browser, desktop and iOS
  * home-screen install still uses Web Push and is untouched by this.
  */
+/**
+ * Record why a send was refused, on the row itself.
+ *
+ * Not persisted here. Every job that attempts a send goes on to write the row
+ * in the same pass — checkMoves refreshes its price snapshot on essentially
+ * every cycle, checkNews records the story whether or not it landed — so the
+ * value rides out on a write that was happening anyway rather than costing a
+ * D1 round trip per failure. A note lost to an isolate dying mid-run is an
+ * acceptable price for that; the next failure writes another one.
+ */
+function noteError(sub, code, now) {
+  sub.lastError = { at: now, code: String(code).slice(0, 160) }
+}
+
 async function sendViaFcm(env, store, sub, payload, { now }) {
   const { urgency, ttl } = deliveryFor(payload.channel)
   const token = sub.fcmToken
@@ -96,6 +110,7 @@ async function sendViaFcm(env, store, sub, payload, { now }) {
   }
   if (!account.project_id) {
     console.warn('FCM_SERVICE_ACCOUNT has no project_id; is the secret set?')
+    noteError(sub, 'fcm not configured on the server', now)
     return false
   }
 
@@ -117,13 +132,16 @@ async function sendViaFcm(env, store, sub, payload, { now }) {
         return false
       }
       console.warn('fcm rejected', res.status, text)
+      noteError(sub, `fcm ${res.status} ${text}`, now)
       return false
     }
 
     sub.sent = bumpSent(sub.sent, now, sub.tz)
+    sub.lastError = null
     return true
   } catch (e) {
     console.warn('fcm failed', String(e?.message || e).slice(0, 200))
+    noteError(sub, `fcm ${String(e?.message || e)}`, now)
     return false
   }
 }
@@ -182,13 +200,17 @@ export function makeSender(env, store) {
         return false
       }
       if (!res.ok) {
-        console.warn('push rejected', res.status, (await res.text()).slice(0, 200))
+        const text = (await res.text()).slice(0, 200)
+        console.warn('push rejected', res.status, text)
+        noteError(sub, `webpush ${res.status} ${text}`, now)
         return false
       }
       sub.sent = bumpSent(sub.sent, now, sub.tz)
+      sub.lastError = null
       return true
     } catch (e) {
       console.warn('push failed', String(e?.message || e).slice(0, 200))
+      noteError(sub, `webpush ${String(e?.message || e)}`, now)
       return false
     }
   }
@@ -263,6 +285,7 @@ async function handle(req, env, store) {
       lastSeen: sub.lastSeen,
       createdAt: sub.createdAt,
       sentToday: sub.sent?.day === day ? (sub.sent.n ?? 0) : 0,
+      lastError: sub.lastError,
     }, headers)
   }
 

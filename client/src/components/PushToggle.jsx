@@ -199,8 +199,33 @@ function PushStatusLine({ status, repair }) {
           Open the Dashboard once to sync your holdings.
         </div>
       )}
+      {status.lastError && (
+        // The other half of "0 sent today". A zero reads the same whether
+        // nothing was due or every attempt was refused, and those two want
+        // opposite fixes — so the refusal is shown verbatim rather than
+        // summarised. It is cleared by the next successful send, which means
+        // an error still on screen is one that has not been recovered from.
+        <div style={{ color: BAD }}>
+          The last delivery to this device was refused
+          {Number.isFinite(status.lastError.at) && <> {timeAgo(status.lastError.at)}</>}:
+          <div style={{ opacity: 0.8, fontFamily: 'monospace', fontSize: '0.85em',
+                        marginTop: '0.15rem', wordBreak: 'break-word' }}>
+            {status.lastError.code}
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+/** Rough, and deliberately so: the age of a failure matters, the minute does not. */
+function timeAgo(at) {
+  const mins = Math.max(0, Math.round((Date.now() - at) / 60000))
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins} min ago`
+  const hrs = Math.round(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.round(hrs / 24)}d ago`
 }
 
 /**

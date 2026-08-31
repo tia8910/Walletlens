@@ -1159,6 +1159,7 @@ export function normalizeSub(s = {}) {
     lastPrice: s.lastPrice ?? {},
     lastLevel: s.lastLevel ?? {},
     zakatDue: sanitizeZakatDue(s.zakatDue),
+    lastError: sanitizeLastError(s.lastError),
     zakatSent: trimZakatSent(s.zakatSent),
     seenRef: s.seenRef ?? null,
     newsSent: s.newsSent ?? {},
@@ -1264,6 +1265,30 @@ export function parseDayKey(s) {
   const back = new Date(t)
   if (back.getUTCMonth() !== m - 1 || back.getUTCDate() !== d) return NaN
   return t
+}
+
+/**
+ * The last time a send to this device was REFUSED, and what it said.
+ *
+ * Cron-owned, so it is deliberately absent from USER_OWNED_FIELDS: the
+ * senders write it and nothing on the request path does.
+ *
+ * It exists because `sent` answers only half the question. A zero count means
+ * "nothing was delivered", which is the same reading whether nothing was due
+ * or every attempt was rejected — and those two want opposite fixes. The
+ * rejection text is the only thing that separates them, and until now it went
+ * to a console.warn inside a Worker, where the one person who needs it cannot
+ * see it without attaching a live tail at the moment it happens.
+ *
+ * The code is truncated hard. It is a diagnostic shown in Settings, not a log,
+ * and an FCM error body can run to kilobytes of JSON.
+ */
+export function sanitizeLastError(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const at = Number(raw.at)
+  const code = String(raw.code ?? '').slice(0, 160)
+  if (!Number.isFinite(at) || !code) return null
+  return { at, code }
 }
 
 export function sanitizeZakatDue(raw) {

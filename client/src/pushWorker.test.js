@@ -816,6 +816,67 @@ describe('a token-addressed device reaches Firebase', () => {
     vi.restoreAllMocks()
   })
 
+  it('records WHY a send was refused, where the user can read it', async () => {
+    // The other half of the counter. "0 sent today" reads identically whether
+    // nothing was due or Firebase refused every attempt, and those two want
+    // opposite fixes — so the refusal text is kept on the row and reported by
+    // /status. Until now it went only to a console.warn inside the Worker,
+    // which nobody can see without attaching a live tail at the exact moment.
+    const now = Date.UTC(2026, 7, 31, 12, 0, 0)
+    const { store, jobs, fetchMock } = await harness({
+      'fcm:1': fcmRow({
+        alerts: [{ id: 7, coin_id: 'bitcoin', coin_symbol: 'BTC', condition: 'above', targetPrice: 100000 }],
+      }),
+    })
+    vi.spyOn(await import('../../push-api/markets.js'), 'fetchCryptoQuotes')
+      .mockResolvedValue({ bitcoin: { price: 101000, change24h: 3 } })
+    // A refusal that is NOT a dead token: 401 must leave the row in place, so
+    // there is still something to read the error off.
+    vi.stubGlobal('fetch', vi.fn(async (url, init) => {
+      if (String(url).includes('oauth2.googleapis.com')) return fetchMock(url, init)
+      return { ok: false, status: 401, async text() { return 'SENDER_ID_MISMATCH' } }
+    }))
+    vi.setSystemTime(now)
+
+    await runSchedule('* * * * *', jobs)
+
+    store.invalidate()
+    const rows = await store.all()
+    expect(rows, 'a refused send must not drop the device').toHaveLength(1)
+    expect(rows[0].sub.lastError).toEqual({ at: now, code: 'fcm 401 SENDER_ID_MISMATCH' })
+    expect(rows[0].sub.sent, 'and it must not be counted as sent').toEqual({ day: '', n: 0 })
+
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('clears the error once a send gets through', async () => {
+    // An error left on screen after recovery is worse than none: it sends the
+    // reader after a fault that has already gone.
+    const now = Date.UTC(2026, 7, 31, 12, 0, 0)
+    const { store, jobs, fetchMock } = await harness({
+      'fcm:1': fcmRow({
+        lastError: { at: now - 60_000, code: 'fcm 401 SENDER_ID_MISMATCH' },
+        alerts: [{ id: 7, coin_id: 'bitcoin', coin_symbol: 'BTC', condition: 'above', targetPrice: 100000 }],
+      }),
+    })
+    vi.spyOn(await import('../../push-api/markets.js'), 'fetchCryptoQuotes')
+      .mockResolvedValue({ bitcoin: { price: 101000, change24h: 3 } })
+    vi.stubGlobal('fetch', fetchMock)
+    vi.setSystemTime(now)
+
+    await runSchedule('* * * * *', jobs)
+
+    store.invalidate()
+    const [{ sub: after }] = await store.all()
+    expect(after.lastError, 'a successful send clears it').toBeNull()
+
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
   it('keeps the device addressable after a cron has written the row back', async () => {
     // save() merges the cron's copy over storage. If the address were not
     // user-owned, this write would be where a rotated token got clobbered —
