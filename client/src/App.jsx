@@ -712,7 +712,10 @@ export default function App() {
             >
               <span className="wl-stats-live" aria-hidden="true" />
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-              <span>{t('stats')}</span>
+              {/* Classed, so the narrow-screen rule can drop THIS and not the
+                  live dot beside it — both are spans, and the old selector
+                  took the dot with it. */}
+              <span className="wl-stats-label">{t('stats')}</span>
             </button>
           </div>
         </div>
