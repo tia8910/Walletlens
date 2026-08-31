@@ -111,7 +111,20 @@ public final class NotificationHelper {
                                   @NonNull String body,
                                   @Nullable String targetUrl,
                                   @Nullable String dataPayload) {
-        showNotification(CHANNEL_GENERAL_ID, 1001, title, body, targetUrl, dataPayload);
+        showNotification(title, body, targetUrl, dataPayload, null);
+    }
+
+    /**
+     * Show a push notification, kept distinct from other notifications by tag.
+     *
+     * @param tag the server's own tag for this notification, or null.
+     */
+    public void showNotification(@NonNull String title,
+                                  @NonNull String body,
+                                  @Nullable String targetUrl,
+                                  @Nullable String dataPayload,
+                                  @Nullable String tag) {
+        showNotification(CHANNEL_GENERAL_ID, 1001, title, body, targetUrl, dataPayload, tag);
     }
 
     /**
@@ -124,14 +137,22 @@ public final class NotificationHelper {
     public void showAlertNotification(@NonNull String title,
                                        @NonNull String body,
                                        @Nullable String targetUrl) {
-        showNotification(CHANNEL_ALERTS_ID, 1002, title, body, targetUrl, null);
+        showAlertNotification(title, body, targetUrl, null);
+    }
+
+    /** As above, kept distinct from other alerts by tag. */
+    public void showAlertNotification(@NonNull String title,
+                                       @NonNull String body,
+                                       @Nullable String targetUrl,
+                                       @Nullable String tag) {
+        showNotification(CHANNEL_ALERTS_ID, 1002, title, body, targetUrl, null, tag);
     }
 
     /**
      * Show a daily digest notification on the digest channel.
      */
     public void showDailyDigest(@NonNull String summaryBody) {
-        showNotification(CHANNEL_DIGEST_ID, 1003, "📊 Daily Market Summary", summaryBody, "https://walletlens.live/market-index", null);
+        showNotification(CHANNEL_DIGEST_ID, 1003, "📊 Daily Market Summary", summaryBody, "https://walletlens.live/market-index", null, null);
     }
 
     /**
@@ -142,13 +163,26 @@ public final class NotificationHelper {
                                    @NonNull String title,
                                    @NonNull String body,
                                    @Nullable String targetUrl,
-                                   @Nullable String dataPayload) {
+                                   @Nullable String dataPayload,
+                                   @Nullable String tag) {
 
         // Build the PendingIntent that opens the TWA when the notification is tapped.
         Intent tapIntent = createTapIntent(targetUrl, dataPayload);
+        // The request code must vary WITH THE TAG, not just the channel.
+        //
+        // FLAG_UPDATE_CURRENT rewrites the extras of any existing PendingIntent
+        // that matches on request code. Two notifications sharing one code
+        // therefore share one intent: the newer arrival silently repoints the
+        // older notification at its own URL, so tapping yesterday's BTC alert
+        // opens today's news story. Every deep link this app worked out is
+        // undone by that, and only for the notification already on screen —
+        // which is the one hardest to notice going wrong.
+        int requestCode = tag != null && !tag.isEmpty()
+                ? tag.hashCode()
+                : notificationId;
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context,
-                notificationId,
+                requestCode,
                 tapIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
@@ -184,9 +218,23 @@ public final class NotificationHelper {
                         : NotificationCompat.PRIORITY_DEFAULT)
                 .build();
 
-        notificationManager.notify(notificationId, notification);
+        // Posted UNDER THE SERVER'S TAG, which is the whole reason the server
+        // sets one.
+        //
+        // notify(id) alone replaces any notification with that id, and every
+        // push came through here with a per-channel constant: 1001 for
+        // everything, 1002 for price alerts. So the second alert of the day
+        // erased the first, the third erased the second, and a portfolio of
+        // five assets moving together produced ONE notification. Silently, and
+        // indistinguishably from never having been sent.
+        //
+        // notify(tag, id) keeps notifications with different tags apart while
+        // still letting the same tag replace itself — which is exactly the web
+        // semantics sw.js already had, and which the tags were named for:
+        // price-7, news-a3f, move-btc. Android was throwing them away.
+        notificationManager.notify(tag, notificationId, notification);
 
-        Log.d(TAG, "Notification shown: " + title + " | tap URL: " + targetUrl);
+        Log.d(TAG, "Notification shown: " + title + " | tag: " + tag + " | tap URL: " + targetUrl);
     }
 
     // ── Intent handling ───────────────────────────────────────────────────

@@ -79,17 +79,24 @@ public class WalletLensMessagingService extends FirebaseMessagingService {
         }
 
         String channel = data.get("channel");
+        // The server's own identity for this notification — price-7, news-a3f,
+        // move-btc. It decides which notifications are the SAME one (a repeat
+        // replaces its predecessor) and which are different (they sit side by
+        // side). Read here and passed down; it used to be dropped on the floor,
+        // and every push landed on one of two fixed ids, so each new one wiped
+        // out the last.
+        String tag = data.get("tag");
         try {
             NotificationHelper helper = new NotificationHelper(this);
             helper.createChannels();
             if (isPriceChannel(channel)) {
                 // The loud channel, for the things that are about a number and
                 // stale within the hour.
-                helper.showAlertNotification(title, body != null ? body : "", url);
+                helper.showAlertNotification(title, body != null ? body : "", url, tag);
             } else {
                 // The fourth argument is the tap intent's extra data payload,
                 // which a data-only push does not carry: the deep link is the url.
-                helper.showNotification(title, body != null ? body : "", url, null);
+                helper.showNotification(title, body != null ? body : "", url, null, tag);
             }
         } catch (Throwable e) {
             Log.w(TAG, "could not show push: " + e);

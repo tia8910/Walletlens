@@ -103,6 +103,44 @@ describe('push notifications land on a channel that matches their loudness', () 
     expect(fcm).toMatch(/catch \(Throwable e\)/)
   })
 
+  it('posts each notification under the server\u2019s own tag', () => {
+    // THE COLLAPSE. notify(id) replaces whatever already holds that id, and
+    // every push came through one of two per-channel constants — 1001 for
+    // everything, 1002 for price alerts. So the day's second alert erased the
+    // first, the third erased the second, and five assets moving together
+    // produced exactly one notification. Silently, and indistinguishable from
+    // never having been sent, which is what it was reported as.
+    //
+    // The server has always set a distinct tag per notification and sw.js has
+    // always honoured it. Android read the title, the body, the url and the
+    // channel out of the payload, and dropped the one field that says which
+    // notification this IS.
+    expect(fcm, 'the service must read the tag').toMatch(/data\.get\("tag"\)/)
+    expect(helper, 'and post under it').toMatch(/notify\(tag, notificationId, notification\)/)
+    expect(helper, 'never by id alone').not.toMatch(/notify\(notificationId, notification\)/)
+  })
+
+  it('gives each tag its own PendingIntent request code', () => {
+    // The quieter half of the same bug, and it survives the fix above on its
+    // own. FLAG_UPDATE_CURRENT rewrites the extras of any PendingIntent
+    // matching on request code, so two notifications sharing one code share
+    // one intent: the newer arrival repoints the older notification at its own
+    // URL. Every deep link the payload carries is undone by that, and only for
+    // the notification already on screen.
+    const fn = helper.slice(helper.indexOf('private void showNotification(@NonNull String channelId'))
+    expect(fn).toMatch(/int requestCode = tag != null && !tag\.isEmpty\(\)/)
+    expect(fn).toMatch(/PendingIntent\.getActivity\(\s*\n\s*context,\s*\n\s*requestCode,/)
+  })
+
+  it('always has a tag to post under', () => {
+    // The fix above degrades to the old behaviour for any payload with no tag,
+    // so the server must never send one. buildPayload falls back to the
+    // channel name, which is weaker than a per-asset tag but still keeps two
+    // different channels apart.
+    const logic = readFileSync(join(root, '../../push-api/notify-logic.js'), 'utf8')
+    expect(logic).toMatch(/tag:\s*tag \|\| channel/)
+  })
+
   it('gives the quiet channel an importance that is actually quiet', () => {
     expect(helper).toMatch(/CHANNEL_QUIET_ID\s*=\s*"walletlens_quiet"/)
     expect(helper).toMatch(/createChannel\(CHANNEL_QUIET_ID, CHANNEL_QUIET_NAME,\s*\n?\s*NotificationManager\.IMPORTANCE_LOW\)/)
