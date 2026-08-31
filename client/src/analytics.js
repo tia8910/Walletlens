@@ -5,6 +5,13 @@
 // text. Events describe WHICH features are used — never WHAT the user owns.
 // If you add an event, keep every param free of portfolio-derived data.
 
+// KNOWN GAP, recorded rather than quietly left: `page` below is the raw path,
+// and this app has routes that name an asset — /asset/bitcoin, /track/solana.
+// So for any event fired from those screens the asset reaches GA through the
+// path even when no param mentions it. That is ordinary web analytics and the
+// asset there may be one the user is merely browsing, not one they hold, which
+// is why it is left as it is rather than assumed to be a leak. If it should be
+// redacted, this line is the single place to do it.
 export function track(eventName, params = {}) {
   if (typeof window.gtag !== 'function') return
   gtag('event', eventName, {
@@ -216,6 +223,35 @@ export function trackProfileCreated({ method, source } = {}) {
   track('profile_created', {
     method,
     source: source || method,
+  })
+}
+
+// ── Import funnel ──────────────────────────────────────────────────────────
+// One event across all three importers, because the question worth asking is
+// comparative: does spreadsheet convert better than screenshot, and where does
+// each one lose people. Separate event names per method make that a join in
+// GA4; one name with a method param makes it a breakdown.
+//
+// The spreadsheet path had NO instrumentation at all before this — its only
+// trace in GA was the shared profile_created at the very end, so a parse that
+// failed, or a file whose columns were not recognised, was indistinguishable
+// from a user who never opened the tab.
+//
+// PARAMS ARE DELIBERATELY COUNT-FREE. The contract at the top of this file
+// forbids asset counts, and "how many rows were in your spreadsheet" is one.
+// Step and reason answer the funnel question without it; `format` is the file
+// extension, which describes the FILE and not the portfolio.
+//
+//   method: 'screenshot' | 'spreadsheet' | 'voice'
+//   step:   'opened' | 'started' | 'parsed' | 'saved' | 'failed'
+//   reason: a fixed code, never a message or user text — exception strings
+//           routinely carry filenames and cell contents.
+export function trackImport({ method, step, reason, format } = {}) {
+  track('import_step', {
+    import_method: method,
+    import_step: step,
+    ...(reason ? { failure_reason: reason } : {}),
+    ...(format ? { file_format: format } : {}),
   })
 }
 

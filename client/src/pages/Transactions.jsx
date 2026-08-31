@@ -558,9 +558,13 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       exchange:       form.exchange || 'unspecified',
       source:         'transactions_page',
     })
-    track('trade_submitted', { trade_type: form.type, asset_symbol: form.coin_symbol, trade_value_usd: valueUsd })
+    // WAS: asset_symbol + trade_value_usd — the ticker and the dollar size of
+    // every trade the user makes, to Google Analytics. The single largest leak
+    // in this file's history and a direct contradiction of the product's pitch.
+    // Which DIRECTION was traded is a feature signal and stays.
+    track('trade_submitted', { trade_type: form.type })
     if (isFirstHolding) {
-      trackProfileCreated({ method: 'manual_trade', assetCount: 1, source: 'transactions_page' })
+      trackProfileCreated({ method: 'manual_trade', source: 'transactions_page' })
       noteMoment('first_holding')
     }
 
@@ -577,11 +581,11 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     if (!window.confirm('Delete this transaction? This cannot be undone.')) return
     const tx = transactionsRef.current.find(t => t.id === id)
     await api.deleteTransaction(id)
+    // The deletion counterpart of trade_submitted, and it carried the same
+    // pair: the ticker and the dollar value of the trade being removed.
     track('trade_deleted', {
       trade_type:     tx?.type,
-      asset_symbol:   (tx?.coin_symbol || tx?.coin_id || '').toUpperCase(),
       asset_category: tx?.category || 'crypto',
-      value_usd:      tx ? Math.round((tx.amount || 0) * (tx.price_per_unit || 0)) : undefined,
     })
     loadDataRef.current()
   }, [])

@@ -1421,8 +1421,9 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
         price_usd:      Math.round(ppu),
         source:         'manage_tab',
       })
-      track('trade_submitted', { trade_type: type, asset_symbol: symbol.toUpperCase(), asset_category: 'crypto', trade_value_usd: valueUsd, source: 'manage_tab' })
-      if (isFirstHolding) trackProfileCreated({ method: 'manual_trade', assetCount: 1, source: 'manage_tab' })
+      // Same leak as the transactions page: ticker and USD value per trade.
+      track('trade_submitted', { trade_type: type, source: 'manage_tab' })
+      if (isFirstHolding) trackProfileCreated({ method: 'manual_trade', source: 'manage_tab' })
       setMsg(t('errTradeAdded')); setCoin(''); setSymbol(''); setAmount(''); setPrice('')
       onRefresh(); setTimeout(() => setMsg(''), 2500)
     } finally { setBusy(false) }
@@ -3990,12 +3991,13 @@ export default function Dashboard() {
     if (!loaded || !enriched.length) return
     const cats = new Set(enriched.map(h => categorizeAsset(h)))
     const assetTypes = [...cats].join('+')
-    trackPortfolioLoaded({
-      assetCount: enriched.length,
-      totalValue,
-      hasProfit: enriched.some(h => h.pnl > 0),
-      assetTypes,
-    })
+    // This call named every single thing the contract forbids — asset count,
+    // TOTAL VALUE, a profit signal and the asset-class mix — and was saved only
+    // by trackPortfolioLoaded() taking no arguments at all. Nothing leaked, and
+    // that is luck rather than design: one edit to the helper's signature and
+    // the user's net worth ships to Google Analytics with no call site changed
+    // and nothing to review.
+    trackPortfolioLoaded()
   }, [loaded])
 
   // Keep the weekly-report email snapshot fresh: if the user is subscribed, push
@@ -5167,7 +5169,7 @@ export default function Dashboard() {
                                   <li key={h.coin_id} className={`dvx-holding holo-card-v2${isSelected ? ' selected' : ''}`}
                                     style={{ opacity: isDimmed ? 0.3 : 1, transition: 'opacity 0.15s', '--row-col': CATEGORY_COLOR[categorizeAsset(h)] || 'var(--g)' }}
                                     {...(holdingLpItems.length ? bindLongPress((x, y) => showLp(x, y, holdingLpItems)) : {})}
-                                    onClick={() => { if (consumeLongPress()) return; if (!isDemo) { track('asset_click', { asset_id: h.coin_id, symbol: h.coin_symbol }); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
+                                    onClick={() => { if (consumeLongPress()) return; if (!isDemo) { track('asset_click'); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
                                     <input
                                       type="checkbox"
                                       checked={isSelected}

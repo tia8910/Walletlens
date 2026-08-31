@@ -151,7 +151,11 @@ export default function ZakatCalculator({ holdings = [], prices = {} }) {
     if (!z.dueAt) return
     const next = markPaid(hawl, z.dueAt)
     saveHawl(next); setHawl(next)
-    track('zakat_marked_paid', { amount: Math.round(z.amount) })
+    // THE AMOUNT IS THE USER'S NET WORTH. Zakat is 2.5% of it, so a rounded
+    // zakat figure multiplied by forty is what this was sending to Google
+    // Analytics every time someone marked it paid — from the one screen in the
+    // app that exists to handle a religious obligation privately.
+    track('zakat_marked_paid')
   }
 
   const classifiable = z.rows.filter(r => r.category === 'stocks' || r.category === 'realestate')

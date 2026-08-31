@@ -453,7 +453,10 @@ function ShareCardButton({ item, verdict }) {
     if (!v) {
       try { v = await getAiVerdict(item.coin_id, buildVerdictPayload(item)) } catch {}
     }
-    track('magic_card_share_x', { symbol: item.coin_symbol, hasVerdict: !!v })
+    // symbol dropped: which coin a user shares a card for is a holding of
+    // theirs, and the contract in analytics.js names symbols first. Whether a
+    // verdict was attached is a fact about the FEATURE and stays.
+    track('magic_card_share_x', { hasVerdict: !!v })
     const canvas = document.createElement('canvas')
     try { await drawShareCard(canvas, item, v) } catch { setSharing(false); return }
 
@@ -584,7 +587,11 @@ function AiVerdict({ item, onVerdictReady }) {
   async function run() {
     if (state === 'loading') return
     setState('loading')
-    trackAI({ action: 'magic_ai_verdict', symbol: item.coin_symbol })
+    // symbol dropped, same reason as the share event above. trackAI would not
+    // have forwarded it either, which is worse rather than better: the call
+    // site reads as if the ticker is being sent, so the next person to widen
+    // the helper ships the leak without touching this line.
+    trackAI({ action: 'magic_ai_verdict' })
     const v = await getAiVerdict(item.coin_id, buildVerdictPayload(item))
     if (v) {
       setVerdict(v)

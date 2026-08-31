@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { noteMoment, noteFriction } from '../reviewPrompt'
 import { api } from '../api'
 import { parseScreenshotWithClaude } from '../visionAi'
-import { track, trackProfileCreated } from '../analytics'
+import { track, trackImport, trackProfileCreated } from '../analytics'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
 
@@ -222,7 +222,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     if (!files.length) return
     clearMsg()
     setBusy(true)
-    track('screenshot_import_start', { count: files.length })
+    trackImport({ method: 'screenshot', step: 'started' })
 
     // Register all files as queued thumbnails first so the user sees them immediately
     const startIdx = previews.length
@@ -267,9 +267,16 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
         setPreviews(prev => prev.map((p, idx) => idx === thumbIdx ? { ...p, status: 'done', count: extracted.length } : p))
         totalAdded += extracted.length
 
-        track('screenshot_import_detected', { count: extracted.length, screenshot: i + 1 })
+        // Was { count: extracted.length } — how many holdings the OCR found in
+        // the user's exchange screenshot, which is an asset count and named in
+        // the contract. The step is the signal; the size of their portfolio is
+        // not ours to send.
+        trackImport({ method: 'screenshot', step: 'parsed' })
       } catch {
         setPreviews(prev => prev.map((p, idx) => idx === thumbIdx ? { ...p, status: 'error' } : p))
+        // Counted per screenshot, because a user can succeed on three and fail
+        // on one and the old events could not tell that from a clean run.
+        trackImport({ method: 'screenshot', step: 'failed', reason: 'read_error' })
         errors++
       }
     }
@@ -281,6 +288,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     } else if (totalAdded > 0) {
       showMsg(`Detected ${totalAdded} holding(s) — ${errors} screenshot${errors > 1 ? 's' : ''} could not be read. Review and edit below.`, 'ok')
     } else {
+      trackImport({ method: 'screenshot', step: 'failed', reason: 'nothing_detected' })
       showMsg(t('errNoHoldingsDetected'))
     }
   }
@@ -290,9 +298,17 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     clearMsg()
     setBusy(true)
     setRows([])
+    // The whole spreadsheet path was invisible in GA until here: its only
+    // event was the profile_created fired after a SUCCESSFUL save, so every
+    // way of failing looked identical to never having tried.
+    const format = (file?.name || '').split('.').pop()?.toLowerCase() || 'unknown'
+    trackImport({ method: 'spreadsheet', step: 'started', format })
     try {
       const raw = await parseSpreadsheet(file)
-      if (raw.length < 2) { showMsg(t('errFileEmpty')); return }
+      if (raw.length < 2) {
+        trackImport({ method: 'spreadsheet', step: 'failed', reason: 'empty_file', format })
+        showMsg(t('errFileEmpty')); return
+      }
 
       const headers   = raw[0].map(h => String(h).toLowerCase().trim())
       const colSymbol = detectColumn(headers, 'symbol')
@@ -303,6 +319,10 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       const colType   = detectColumn(headers, 'type')
 
       if (colSymbol === -1 && colName === -1) {
+        // The most actionable failure in the funnel: the file was readable and
+        // we could not find a symbol or name column. A run of these is a
+        // parser gap, not a user error.
+        trackImport({ method: 'spreadsheet', step: 'failed', reason: 'no_columns', format })
         showMsg(t('siNoColumns'))
         return
       }
@@ -324,10 +344,17 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
           date:   colDate  >= 0 && row[colDate] ? String(row[colDate]).trim() : today,
         })
       }
-      if (!parsed.length) { showMsg(t('errNoValidRows')); return }
+      if (!parsed.length) {
+        trackImport({ method: 'spreadsheet', step: 'failed', reason: 'no_valid_rows', format })
+        showMsg(t('errNoValidRows')); return
+      }
       setRows(parsed)
+      trackImport({ method: 'spreadsheet', step: 'parsed', format })
       showMsg(`Parsed ${parsed.length} row(s) — review and edit below.`, 'ok')
     } catch (e) {
+      // A fixed code, not e.message: parse exceptions routinely quote the
+      // filename and the offending cell, and neither belongs in GA.
+      trackImport({ method: 'spreadsheet', step: 'failed', reason: 'parse_error', format })
       noteFriction('import_failed')
       showMsg(t('errParsePrefix') + e.message)
     } finally {
@@ -363,9 +390,11 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       }
       trackProfileCreated({
         method: mode === 'screenshot' ? 'screenshot' : 'spreadsheet',
-        assetCount: valid.length,
         source: 'smart_import',
       })
+      // profile_created fires only on a user's FIRST portfolio; this fires on
+      // every import, which is what makes the funnel add up.
+      trackImport({ method: mode === 'screenshot' ? 'screenshot' : 'spreadsheet', step: 'saved' })
       showMsg(`Imported ${valid.length} transaction(s) successfully!`, 'ok')
       setRows([])
       setPreviews([])
@@ -376,6 +405,11 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     } catch (e) {
       // The write itself failed, which is the worst kind: they did the work
       // and got nothing. Stay off the review card for a while.
+      trackImport({
+        method: mode === 'screenshot' ? 'screenshot' : 'spreadsheet',
+        step: 'failed',
+        reason: 'save_error',
+      })
       noteFriction('import_failed')
       showMsg(t('errImportPrefix') + e.message)
     } finally {

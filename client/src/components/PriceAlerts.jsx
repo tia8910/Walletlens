@@ -130,7 +130,10 @@ export default function PriceAlerts({ enriched, prices }) {
         fireNotification(`${dir} ${a.coin_symbol}`, body)
         playAlarm()
         addToast(`${dir} ${a.coin_symbol?.toUpperCase()} — ${body}`)
-        track('alert_triggered', { coin_id: a.coin_id, coin_symbol: a.coin_symbol, condition: a.condition, target_price: a.targetPrice, triggered_price: cur })
+        // WAS: the coin, the user's own price target and the price it fired at
+        // — a holding and a trading intention, together, on every alert.
+        // Whether alerts fire at all is the signal worth keeping.
+        track('alert_triggered', { condition: a.condition })
       }
     }
     if (changed) setAlerts(updated)
@@ -159,7 +162,7 @@ export default function PriceAlerts({ enriched, prices }) {
 
   function deleteAlert(id) {
     const a = alerts.find(x => x.id === id)
-    track('alert_deleted', { coin_id: a?.coin_id, coin_symbol: a?.coin_symbol })
+    track('alert_deleted')
     setAlerts(prev => prev.filter(a => a.id !== id))
   }
 

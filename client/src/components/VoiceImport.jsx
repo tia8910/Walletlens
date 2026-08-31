@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Icon from './Icon'
 import { loadData, saveData, bumpId } from '../data/storage'
-import { track, trackProfileCreated } from '../analytics'
+import { track, trackProfileCreated, trackImport } from '../analytics'
 import { api } from '../api'
 import { useLanguage } from '../LanguageContext'
 import { parseTradesWithClaude } from '../voiceAi'
@@ -1735,7 +1735,10 @@ export default function VoiceImport({ hideTrigger = false, onImported, onClose }
       transactions.forEach((t, i) => { if (!t.coin && t.coinName) seed[i] = t.coinName })
       if (Object.keys(seed).length) setAssetQueries(seed)
       setReaction(getReaction(rawText, aiParsed.transactions[0] || {}))
-      track('voice_ai_fallback_used', { tx_count: transactions.length })
+      // tx_count removed with the symbols above — same contract, same reason.
+      // Whether the fallback ran at all is the signal; how much it returned is
+      // a description of the portfolio.
+      track('voice_ai_fallback_used', { lang })
     } catch {
       // Network / parse error — keep the local parse result
     } finally {
@@ -1870,15 +1873,22 @@ export default function VoiceImport({ hideTrigger = false, onImported, onClose }
       }
     }
     saveData('transactions', txs)
-    trackProfileCreated({ method: 'voice', assetCount: ready.length, source: 'voice_import' })
-    track('voice_import_saved', {
-      lang,
-      tx_count: ready.length,
-      multi_tx: ready.length > 1 ? 'yes' : 'no',
-      buy_count: ready.filter(t => t.type === 'buy').length,
-      sell_count: ready.filter(t => t.type === 'sell').length,
-      symbols: ready.map(t => t.coin.symbol?.toUpperCase()).join(','),
-    })
+    trackProfileCreated({ method: 'voice', source: 'voice_import' })
+    // THIS EVENT USED TO SEND THE USER'S HOLDINGS TO GOOGLE ANALYTICS.
+    //
+    //   symbols: ready.map(t => t.coin.symbol?.toUpperCase()).join(',')
+    //
+    // "BTC,ETH,SOL", on every voice import, alongside tx_count, buy_count and
+    // sell_count. The contract at the top of analytics.js names symbols and
+    // asset counts first among the things that may never leave the device, and
+    // this is an app whose entire pitch is that they do not. It is also what
+    // the Play Data Safety form is answered against.
+    //
+    // What is left is what the event was for: which language the speech
+    // recogniser ran in, which is a fact about the FEATURE and the only thing
+    // here that could inform a decision about it.
+    track('voice_import_saved', { lang })
+    trackImport({ method: 'voice', step: 'saved' })
     onImported?.()
     setConfirmed(true)
   }

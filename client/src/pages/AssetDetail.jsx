@@ -193,11 +193,15 @@ export default function AssetDetail() {
     await api.addCoinTarget(coinId, { price, quantity: qty })
     const currentPrice = coin?.price || 0
     const pctFromCurrent = currentPrice > 0 ? ((price - currentPrice) / currentPrice) * 100 : null
+    // WAS: the coin, its ticker, the user's target price and the price at the
+    // time — a named asset plus a stated expectation about where it is going.
+    // Together those are an investment thesis with a name on it, which is more
+    // than the holdings list gives away.
+    //
+    // What survives describes the FEATURE: how far out people set targets and
+    // in which direction, which is the question a product decision here would
+    // actually turn on, and neither one names an asset.
     track('target_set', {
-      coin_id:         coinId,
-      asset_symbol:    coin?.symbol?.toUpperCase() || coinId,
-      target_price:    price,
-      current_price:   Math.round(currentPrice * 100) / 100,
       pct_from_current: pctFromCurrent !== null ? Math.round(pctFromCurrent * 10) / 10 : undefined,
       direction:       pctFromCurrent !== null ? (pctFromCurrent >= 0 ? 'above' : 'below') : undefined,
       has_quantity:    qty !== null ? 'yes' : 'no',
@@ -208,10 +212,8 @@ export default function AssetDetail() {
 
   async function handleRemoveTarget(targetId) {
     await api.removeCoinTargetItem(coinId, targetId)
-    track('target_removed', {
-      coin_id:      coinId,
-      asset_symbol: coin?.symbol?.toUpperCase() || coinId,
-    })
+    // asset_symbol dropped; coin_id stays because the path already carries it.
+    track('target_removed', { coin_id: coinId })
     loadData()
   }
 

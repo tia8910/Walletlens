@@ -170,7 +170,7 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
     setOpen(true)
     setResult(null)
     setThinking(true)
-    track('ai_engine_trigger', { holdings_count: enriched?.length || 0 })
+    track('ai_engine_trigger')
 
     try {
       // Try Claude API first
