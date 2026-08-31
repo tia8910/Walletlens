@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react'
+import { useEffect, useState, useRef, useMemo, memo } from 'react'
 import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { isStablecoin } from '../stablecoins'
@@ -139,7 +139,7 @@ function corrBorder(r) {
 const MAX_ASSETS = 8
 let _cache = null, _cacheTime = 0
 
-export default function CorrelationMatrix({ enriched = [] }) {
+function CorrelationMatrix({ enriched = [] }) {
   const { t } = useLanguage()
   const [matrix, setMatrix]   = useState(null)
   const [loading, setLoading] = useState(false)
@@ -314,3 +314,5 @@ export default function CorrelationMatrix({ enriched = [] }) {
     </div>
   )
 }
+
+export default memo(CorrelationMatrix)
