@@ -614,10 +614,26 @@ const ARTICLE_CAT_COLORS = {
 }
 
 // ── HackCard ──────────────────────────────────────────────────────────────
-function HackCard({ hack, color }) {
+function HackCard({ hack, color, startOpen = false }) {
   const { t } = useLanguage()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(startOpen)
   const [sharing, setSharing] = useState(false)
+  const cardRef = useRef(null)
+
+  // Arrived from a notification about THIS hack. Opened above, and brought
+  // into view here — a card that expands off-screen looks like a tap that did
+  // nothing, which on this path is the second time the app has failed to take
+  // the reader where it said it would.
+  useEffect(() => {
+    if (!startOpen || !cardRef.current) return
+    // After paint: the list above this card is still laying out on mount, so
+    // scrolling now would aim at a position that is about to move.
+    const id = requestAnimationFrame(() => {
+      try { cardRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }) }
+      catch { /* older WebViews: the card is open, which is the main thing */ }
+    })
+    return () => cancelAnimationFrame(id)
+  }, [startOpen])
 
   async function handleShare(e) {
     e.stopPropagation()
@@ -628,7 +644,8 @@ function HackCard({ hack, color }) {
   }
 
   return (
-    <div className={`acad-hack-card ${open ? 'acad-hack-open' : ''}`}
+    <div ref={cardRef}
+      className={`acad-hack-card ${open ? 'acad-hack-open' : ''}`}
       onClick={() => { if (!open) track('hack_expand', { title: hack.title, cat: hack.cat }); setOpen(o => !o) }}
       style={{ '--hack-color': color }}>
       <div className="acad-hack-header">
@@ -675,6 +692,21 @@ export default function Academy() {
     } catch { /* no window/search */ }
     return 'challenge'
   }) // challenge | badges | wheel | game | hacks | articles
+
+  // Which hack a notification asked for, as an index into the list.
+  //
+  // The index is the one pickHack chose and hacksSent recorded on the server,
+  // so the link and the rotation cannot disagree about which hack was sent.
+  // Read once, on mount: this is where the user arrived, not a control they
+  // operate, and re-reading it would re-open the card every render.
+  const [deepLinkedHack] = useState(() => {
+    try {
+      const raw = new URLSearchParams(window.location.search).get('hack')
+      if (raw === null) return -1
+      const n = Number(raw)
+      return Number.isInteger(n) && n >= 0 ? n : -1
+    } catch { return -1 }
+  })
   const [articleFilter, setArticleFilter] = useState('All')
   const timerRef = useRef(null)
   const startTime = useRef(null)
@@ -1013,7 +1045,7 @@ export default function Academy() {
             const palette = isLight ? CAT_COLORS_LIGHT : CAT_COLORS
             const color = palette[h.cat] || (isLight ? '#15803d' : '#a78bfa')
             return (
-              <HackCard key={i} hack={h} color={color} />
+              <HackCard key={i} hack={h} color={color} startOpen={i === deepLinkedHack} />
             )
           })}
         </div>
