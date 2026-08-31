@@ -36,7 +36,12 @@ buildscript {
         // ── IF IT CRASHES ON LAUNCH ──────────────────────────────────────
         //
         // Put this line back to 8.9.1 and the wrapper back to 8.11.1, together
-        // — they move as a pair, AGP 9 requires Gradle 9. Nothing else needs
+        // — they move as a pair. AGP 9.0.0 requires Gradle 9.1.0 or newer, and
+        // says so by name if the wrapper is older: the first attempt at this
+        // commit paired it with Gradle 9.0, exactly as the July migration had,
+        // and CI answered "Minimum supported Gradle version is 9.1.0". So the
+        // wrapper is on 9.1.0 rather than the 9.0 that migration used — which
+        // is also a hint about why that one behaved oddly. Nothing else needs
         // reverting: everything the migration touched (compileSdk/minSdk/
         // targetSdk, lint {}, layout.buildDirectory, buildFeatures.resValues)
         // is valid on both. 6.13 is then the known-good fallback, and 6.12
