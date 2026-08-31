@@ -1750,7 +1750,7 @@ describe('the send-a-test control', () => {
     // switches the flag existed to prevent — or, added while still gated on a
     // const, is unreachable. Each row must be inside the one block.
     const open = toggle.indexOf('{channelsOpen && (')
-    const close = toggle.indexOf('{status && <PushStatusLine')
+    const close = toggle.indexOf('{enabled && status && <PushStatusLine')
     expect(open).toBeGreaterThan(-1)
     expect(close).toBeGreaterThan(open)
     const inside = toggle.slice(open, close)
@@ -1777,6 +1777,48 @@ describe('the send-a-test control', () => {
       expect(toggle).toContain(`{${cond} && (`)
       expect(toggle).not.toContain(`channelsOpen && ${cond}`)
     }
+  })
+
+  it('renders the status line outside the SHOW_CHANNELS wrapper', () => {
+    // THE REGRESSION THIS EXISTS FOR, and it shipped.
+    //
+    // SHOW_CHANNELS has been false since the per-channel switches were
+    // retired, and the whole tail of the card sat inside it — the status
+    // line included. So the one readout that says what the server holds for
+    // this device was never drawn on any device, while the case above
+    // reported it "ungated" and passed.
+    //
+    // That case only ever looked at the conditions written ON the warnings.
+    // The gate was the wrapper two hundred lines above them, which no check
+    // on an inner condition can see. This one matches the wrapper's own
+    // braces and asserts what is inside it, which is the only form that
+    // could have caught it.
+    const open = toggle.indexOf('{enabled && SHOW_CHANNELS && (')
+    expect(open, 'the SHOW_CHANNELS wrapper').toBeGreaterThan(-1)
+    let depth = 0, end = -1
+    for (let i = open; i < toggle.length; i++) {
+      if (toggle[i] === '{') depth++
+      else if (toggle[i] === '}' && --depth === 0) { end = i; break }
+    }
+    expect(end, 'the wrapper must close').toBeGreaterThan(open)
+    const gated = toggle.slice(open, end + 1)
+
+    // The channel rows belong in there. The diagnostic does not.
+    expect(gated, 'the channel rows stay behind the flag').toContain('moves: !prefs.moves')
+    expect(gated, 'the status line must NOT be behind the flag')
+      .not.toContain('PushStatusLine')
+  })
+
+  it('says something when the switch is on and nothing is registered', () => {
+    // The blank that started this: a device whose toggle reads On but which
+    // the server has no address for rendered NOTHING at all, because the
+    // summary is guarded by `!status.found` and an unregistered device has
+    // no `found` field. The most misleading state the card has, drawn as
+    // empty space.
+    expect(toggle).toContain('status.subscribed === false')
+    const at = toggle.indexOf('status.subscribed === false')
+    expect(at, 'and it must be decided BEFORE the silent return')
+      .toBeLessThan(toggle.indexOf('if (!status.found) return null'))
   })
 
   it('describes the defaults with the threshold that is actually shipping', () => {

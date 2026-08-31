@@ -150,6 +150,19 @@ function PushStatusLine({ status, repair }) {
       </div>
     )
   }
+  if (status.subscribed === false) {
+    // The switch reads On and there is no address to send to. In the app that
+    // means the OS granted the permission but no FCM token ever reached the
+    // server; in a browser, that the subscription is gone. Either way the
+    // server has nothing to deliver to, and this rendered NOTHING before —
+    // the most misleading state the card has, shown as a blank.
+    return (
+      <div className="settings-hint" style={{ marginTop: '0.5rem', color: BAD }}>
+        This device isn’t registered for notifications yet, so nothing can be
+        sent to it. Turn the switch off and on again to register it.
+      </div>
+    )
+  }
   if (!status.found) return null
 
   // The states that produce total silence while everything looks correct.
@@ -502,13 +515,27 @@ export default function PushToggle() {
             />
             </>
           )}
-
-          {status && <PushStatusLine status={status} repair={repair} />}
-          {SHOW_TEST_SEND && status?.found && <TestSend />}
-
-          <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>
         </>
       )}
+
+      {/*
+        OUTSIDE the SHOW_CHANNELS gate, and that is the entire point.
+
+        This block used to sit inside it. SHOW_CHANNELS has been false since
+        the eleven per-channel switches were retired, so the one line that
+        says what the server actually holds for this device — its watch
+        count, its targets, how many notifications it has had today, and why
+        the last one was refused — was never drawn on any device, ever.
+
+        The line's own comment claimed "nothing gates it". Something did: the
+        wrapper two hundred lines above it, whose name says channels and
+        whose reach was the whole card. A diagnostic nobody can see is worth
+        less than no diagnostic, because it is quietly counted as evidence.
+      */}
+      {enabled && status && <PushStatusLine status={status} repair={repair} />}
+      {SHOW_TEST_SEND && status?.found && <TestSend />}
+
+      {enabled && <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>}
 
       {error && <div className="settings-hint" style={{ color: BAD, marginTop: '0.4rem' }}>{error}</div>}
     </div>
