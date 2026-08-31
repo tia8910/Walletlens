@@ -166,6 +166,35 @@ describe('the Android release is uploadable', () => {
     }
   })
 
+  it('keeps the plugin and the wrapper on the same major', () => {
+    // AGP 9 REQUIRES Gradle 9, and AGP 8 does not run on it. So these two
+    // version strings, in two files that nothing else connects, have to move
+    // together — and the failure when they don't is a build error nobody sees
+    // until CI, or worse, a toolchain mismatch that builds and misbehaves.
+    //
+    // Deliberately NOT a pin to a specific version. Reverting to AGP 8.9.1 /
+    // Gradle 8.11.1 is the documented first response to a launch crash on this
+    // release; a test that named 9.0.0 would fail the moment someone did the
+    // right thing in a hurry. It checks the relationship, which holds either
+    // way round.
+    const root = readFileSync(join(nativeRoot, '..', '..', '..', 'build.gradle'), 'utf8')
+    const wrapper = readFileSync(
+      join(nativeRoot, '..', '..', '..', 'gradle/wrapper/gradle-wrapper.properties'), 'utf8')
+
+    const agp = root.match(/com\.android\.tools\.build:gradle:(\d+)\.\d+/)
+    const gradle = wrapper.match(/gradle-(\d+)\.[\d.]*-bin\.zip/)
+    expect(agp, 'an AGP version on the buildscript classpath').toBeTruthy()
+    expect(gradle, 'a Gradle distribution in the wrapper').toBeTruthy()
+
+    const agpMajor = Number(agp[1])
+    const gradleMajor = Number(gradle[1])
+    if (agpMajor >= 9) {
+      expect(gradleMajor, `AGP ${agpMajor} needs Gradle 9 or newer`).toBeGreaterThanOrEqual(9)
+    } else {
+      expect(gradleMajor, `AGP ${agpMajor} does not run on Gradle ${gradleMajor}`).toBeLessThan(9)
+    }
+  })
+
   it('runs R8 with optimisation and resource shrinking', () => {
     // Play's release dashboard asks for both. They are recorded here so that
     // turning either back off is a deliberate edit with a test in front of it,
