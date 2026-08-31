@@ -5754,16 +5754,22 @@ tr:last-child td { border-bottom: none; }
 .wl-topbar-brand-action { letter-spacing: 0.04em; }
 .wl-topbar-brand-actions { gap: 0.1rem; }
 
-/* Below this the fixed chrome — hamburger, mark, gear, Stats pill — leaves the
-   brand under ~100px, and "WalletLens.live" cannot be rendered legibly in it.
-   The name is the identity and the TLD is decoration, so the decoration goes
-   first. Dropping it is what makes the wordmark FIT; the ellipsis above only
-   ever made the overflow look tidy. */
+/* Tightening only, now that the Stats label is what gives way at 480px.
+   This block used to drop ".live" here too, on the reasoning that the fixed
+   chrome left the brand under ~100px and the TLD was the affordable loss.
+   That reasoning was sound and aimed at the wrong element: the chrome was
+   only that wide because it was carrying a translated word. */
 @media (max-width: 430px) {
-  .wl-live-tld { display: none; }
   .wl-topbar-inner { padding: 0.6rem 0.65rem; gap: 0.5rem; }
   .wl-topbar-brand { gap: 0.4rem; }
   .wl-topbar-right { gap: 0.35rem; }
+}
+/* Dropping the Stats label above gives the brand back ~60px in English and
+   ~90px in Arabic, which is more than "WalletLens.live" costs at any width
+   this app runs at. So the TLD survives now, and this is a backstop for the
+   genuinely tiny rather than the working answer it was an hour ago. */
+@media (max-width: 340px) {
+  .wl-live-tld { display: none; }
 }
 
 /* Not overflow:hidden. Clipping this row is what produced "GROV" — a word cut
@@ -15101,7 +15107,26 @@ button:not(:disabled):active,
 .wl-topbar-stats svg { display: block; }
 .wl-topbar-stats:hover { background: var(--surface-2); }
 .wl-topbar-stats:active { transform: scale(0.94); }
-@media (max-width: 380px) { .wl-topbar-stats span { display: none; } .wl-topbar-stats { padding: 0.32rem 0.42rem; } }
+/* THE HEADER'S WIDTH BUDGET IS SET BY A TRANSLATED STRING.
+   
+   This rule existed at 380px and targeted `span`, and both parts were wrong.
+   
+   380px is narrower than essentially every phone in use, so on a 412px device
+   the label stayed and took ~60px that the wordmark needed — which is why the
+   brand still read "WalletLens…" after the type was already fluid. And the bare
+   `span` selector also matched .wl-stats-live, so the pulsing dot disappeared
+   along with the word on the few screens narrow enough to trigger it.
+   
+   Arabic is what makes this structural rather than a tuning question: "Stats"
+   is 5 characters and "الإحصائيات" is 10, so the SAME phone has ~60px less room
+   for the wordmark after a language change. No amount of shrinking the brand
+   fixes that, because the thing eating the space is on the other side of the
+   bar. The label is the part that can go: the bar-chart icon is unambiguous,
+   and title + aria-label keep it named for screen readers and long-press. */
+@media (max-width: 480px) {
+  .wl-topbar-stats .wl-stats-label { display: none; }
+  .wl-topbar-stats { padding: 0.34rem 0.46rem; margin-left: 0.3rem; }
+}
 
 /* ============================================================
    Premium header polish (scoped to .wl-topbar so nothing else
