@@ -392,6 +392,60 @@ describe('scheduled content channels', () => {
 // A second, clearly-labelled kind of story fixes that without loosening the
 // match that keeps "GAS prices" from pushing to a GAS holder.
 
+describe('what a price alert actually reads like', () => {
+  it('puts symbol, direction, percentage and price in the headline', async () => {
+    // Through the real job, because the copy and the call site have to agree
+    // about argument order — and a mismatch there is silent: every argument is
+    // a string, so a swapped pair prints a plausible-looking wrong sentence.
+    const store = fakeStore([{
+      key: 'k1',
+      sub: sub({
+        watch: [{ id: 'bitcoin', symbol: 'BTC', kind: 'crypto' }],
+        ref: { 'crypto:bitcoin': { price: 100000, ts: Date.now() - 1000 } },
+        prefs: { ...DEFAULT_PREFS, movePct: 2 },
+      }),
+    }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s2, payload) => { sent.push(payload); return true } })
+    vi.spyOn(await import('../../push-api/markets.js'), 'fetchQuotes')
+      .mockResolvedValue({ 'crypto:bitcoin': { price: 106400, change24h: 8.42 } })
+
+    await jobs.checkMoves()
+
+    const move = sent.find(p => p.channel === 'move')
+    expect(move, 'a move notification').toBeTruthy()
+    // 📈 BTC +6.4% · $106,400
+    expect(move.title).toBe('📈 BTC +6.4% · $106,400')
+    // The day, which the title's percentage is not: that one is measured from
+    // a rolling reference, so on its own it has no sense of scale.
+    // 8.42 rounds to one decimal, as every percentage in this app does.
+    expect(move.body).toBe('BTC over 24h: +8.4%')
+    vi.restoreAllMocks()
+  })
+
+  it('shows a fall as a fall, with a minus sign that cannot be misread', async () => {
+    const store = fakeStore([{
+      key: 'k1',
+      sub: sub({
+        watch: [{ id: 'ethereum', symbol: 'ETH', kind: 'crypto' }],
+        ref: { 'crypto:ethereum': { price: 3000, ts: Date.now() - 1000 } },
+        prefs: { ...DEFAULT_PREFS, movePct: 2 },
+      }),
+    }])
+    const sent = []
+    const jobs = createJobs({ store, send: async (s2, payload) => { sent.push(payload); return true } })
+    vi.spyOn(await import('../../push-api/markets.js'), 'fetchQuotes')
+      .mockResolvedValue({ 'crypto:ethereum': { price: 2700, change24h: -11.2 } })
+
+    await jobs.checkMoves()
+
+    const move = sent.find(p => p.channel === 'move')
+    expect(move.title).toBe('📉 ETH −10% · $2,700')
+    expect(move.body).toBe('ETH over 24h: −11%')
+    vi.restoreAllMocks()
+  })
+})
+
 describe('news reaches a small watch list', () => {
   const story = (title, link) => ({
     title, link, description: '', pubDate: new Date().toISOString(),
