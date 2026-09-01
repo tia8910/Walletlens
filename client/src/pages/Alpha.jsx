@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { api } from '../api'
 import { track } from '../analytics'
+import { noteFeatureUse } from '../featureUse'
 import { calcAlphaScore, assetClass } from '../alphaScore'
 import CoinLogo from '../components/CoinLogo'
 import Icon from '../components/Icon'
@@ -114,6 +115,7 @@ export default function Alpha() {
   const refreshRef = useRef(null)
 
   useEffect(() => {
+    noteFeatureUse('alpha');
     let lastLoad = Date.now()
     loadAll()
     refreshRef.current = setInterval(() => { lastLoad = Date.now(); loadAll() }, CACHE_TTL)

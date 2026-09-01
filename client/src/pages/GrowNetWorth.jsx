@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
+import { noteFeatureUse } from '../featureUse'
 import Icon from '../components/Icon'
 
 const GrowthPlan = lazy(() => import('../components/GrowthPlan'))
@@ -20,6 +21,7 @@ export default function GrowNetWorth() {
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
+    noteFeatureUse('grow');
     track('grow_page_view')
     async function load() {
       const [p, txs] = await Promise.all([api.getPortfolio(), api.getTransactions()])

@@ -19,6 +19,7 @@ import MilestonePopup, { detectMilestone, dismissMilestone } from '../components
 import { applyMood } from '../moodEngine'
 import { getSoulGreeting } from '../soulGreeting'
 import { exportToExcel, exportToPDF } from '../exportHoldings'
+import { noteFeatureUse } from '../featureUse'
 import { LongPressMenu, bindLongPress, consumeLongPress } from '../components/LongPressMenu'
 import { useLanguage } from '../LanguageContext'
 import { CLASS_LABEL_KEYS, renderTip, renderMaybe } from '../data/walletEvalTips'
@@ -1599,6 +1600,8 @@ function DataPanel({ onRefresh, onImported, drive = false }) {
   async function doExport() {
     setBusy(true)
     try {
+      try { localStorage.setItem('wl_exported_at', String(Date.now())) } catch { /* private mode */ }
+      noteFeatureUse('exportdata')
       const { makeQrParts } = await _loadQrBackup()
       // QR deep-link and full backup run in parallel.
       const [result, qrUrl] = await Promise.all([

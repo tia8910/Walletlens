@@ -327,6 +327,11 @@ export function featureSetup() {
       academy: usedFeature('academy'),
       coach: usedFeature('coach'),
       rebalance: usedFeature('rebalance'),
+      calendar: usedFeature('calendar'),
+      alpha: usedFeature('alpha'),
+      marketindex: usedFeature('marketindex'),
+      grow: usedFeature('grow'),
+      exportdata: !!localStorage.getItem('wl_exported_at'),
     }
   } catch {
     // An unreadable store must not claim things are unconfigured — that would
@@ -335,6 +340,8 @@ export function featureSetup() {
       guardian: true, vision: true, watchlist: true, weekly: true,
       coinTargets: true, backup: true, applock: true, technicals: true,
       whales: true, academy: true, coach: true, rebalance: true,
+      calendar: true, alpha: true, marketindex: true, grow: true,
+      exportdata: true,
     }
   }
 }

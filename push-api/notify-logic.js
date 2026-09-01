@@ -622,6 +622,91 @@ export const COPY = {
     it: () => 'Azioni, oro, argento, liquidità e immobili stanno accanto alle tue monete — un’unica dashboard patrimoniale, sempre senza account.',
   },
 
+  featCalendarTitle: {
+    en: () => '📅 See what moves the market this week',
+    ar: () => '📅 تعرّف على ما يحرّك السوق هذا الأسبوع',
+    fr: () => '📅 Voyez ce qui anime les marchés cette semaine',
+    es: () => '📅 Mira qué mueve el mercado esta semana',
+    de: () => '📅 Sehen Sie, was diese Woche den Markt bewegt',
+    it: () => '📅 Scopri cosa muove il mercato questa settimana',
+  },
+  featCalendarBody: {
+    en: () => 'The economic calendar maps every CPI, rate decision and earnings day to your own holdings — so you see what is coming before it moves you.',
+    ar: () => 'خريطة التقويم الاقتصادي لكل قرار وأرقام تضخم وأرباح حسب أصولك — لترى ما هو قادم قبل أن يحرّكك.',
+    fr: () => 'Le calendrier économique relie chaque CPI, décision de taux et journée de résultats à vos actifs — voyez ce qui arrive avant que cela ne vous touche.',
+    es: () => 'El calendario económico vincula cada IPC, decisión de tasas y día de resultados a tus activos: ve lo que viene antes de que te afecte.',
+    de: () => 'Der Wirtschaftskalender verknüpft jede Zinsentscheidung und jeden Ergebnistag mit Ihren Werten — sehen Sie, was kommt, bevor es Sie bewegt.',
+    it: () => 'Il calendario economico collega ogni dato, decisione sui tassi e trimestrale ai tuoi asset — vedi cosa arriva prima che ti tocchi.',
+  },
+
+  featAlphaTitle: {
+    en: () => '🧭 Where is each holding heading?',
+    ar: () => '🧭 إلى أين يتّجه كل أصل؟',
+    fr: () => '🧭 Vers quoi se dirige chaque actif ?',
+    es: () => '🧭 ¿Hacia dónde va cada activo?',
+    de: () => '🧭 Wohin steuert jede Position?',
+    it: () => '🧭 Verso dove va ogni posizione?',
+  },
+  featAlphaBody: {
+    en: () => 'Alpha Score fuses on-chain, technical and market factors into one direction per asset — so you are not choosing on a single signal.',
+    ar: () => 'تجمع «نقاط ألفا» عوامل السلسلة والفنية والسوق في اتجاه واحد لكل أصل — فلا تختار على إشارة واحدة.',
+    fr: () => 'Le score Alpha combine signaux on-chain, techniques et de marché en une direction par actif — pas de choix sur un seul signal.',
+    es: () => 'El Alpha Score fusiona señales on-chain, técnicas y de mercado en una dirección por activo: no elijas con una sola señal.',
+    de: () => 'Der Alpha-Score bündelt On-Chain-, technische und Markt-Signale in eine Richtung pro Asset — keine Entscheidung nur auf ein Signal gestützt.',
+    it: () => 'L\'Alpha Score fonde segnali on-chain, tecnici e di mercato in una direzione per asset — non scegli su un solo segnale.',
+  },
+
+  featMarketindexTitle: {
+    en: () => '📈 Your whole market, one number',
+    ar: () => '📈 سوقك كاملاً في رقم واحد',
+    fr: () => '📈 Tout votre marché en un chiffre',
+    es: () => '📈 Todo tu mercado en un solo número',
+    de: () => '📈 Ihr ganzer Markt in einer Zahl',
+    it: () => '📈 Tutto il tuo mercato in un numero',
+  },
+  featMarketindexBody: {
+    en: () => 'The Market Index blends crypto, stocks and metals into one live breadth read — a faster glance than scrolling every ticker.',
+    ar: () => 'يدمج مؤشر السوق العملات الرقمية والأسهم والمعادن في قراءة حيّة واحدة — نظرة أسرع من تصفّح كل شريط.',
+    fr: () => 'L’indice de marché rassemble crypto, actions et métaux en une lecture unique — plus rapide que de parcourir chaque ticker.',
+    es: () => 'El Índice de Mercado reúne cripto, acciones y metales en una sola lectura en vivo: más rápido que revisar cada ticker.',
+    de: () => 'Der Marktindex bündelt Krypto, Aktien und Metalle in einer Live-Übersicht — schneller als jeder Ticker einzeln.',
+    it: () => 'L\'indice di mercato unisce cripto, azioni e metalli in un\'unica lettura dal vivo — pi\'u rapido che scorrere ogni ticker.',
+  },
+
+  featGrowTitle: {
+    en: () => '🌱 Ideas for growing your net worth',
+    ar: () => '🌱 أفكار لتنمية صافي ثروتك',
+    fr: () => '🌱 Des idées pour faire grandir votre patrimoine',
+    es: () => '🌱 Ideas para hacer crecer tu patrimonio',
+    de: () => '🌱 Ideen, um Ihr Vermögen zu mehren',
+    it: () => '🌱 Idee per far crescere il tuo patrimonio',
+  },
+  featGrowBody: {
+    en: () => 'Grow Net Worth turns your holdings into practical levers — rebalancing, adding, and the moves that actually move the needle.',
+    ar: () => 'يحوّل «تنمية صافي الثروة» أصولك إلى أدوات عملية — إعادة التوازن والإضافة والخطوات التي تصنع الفرق فعلاً.',
+    fr: () => 'Grow Net Worth transforme vos avoirs en leviers concrets — rééquilibrage, apports et mouvements qui comptent vraiment.',
+    es: () => 'Grow Net Worth convierte tus activos en palancas prácticas: reequilibrio, aportes y movimientos que sí importan.',
+    de: () => 'Grow Net Worth macht aus Ihren Werten praktische Hebel — Rebalancing, Nachschicht und die Schritte, die wirklich etwas bewegen.',
+    it: () => 'Grow Net Worth trasforma i tuoi asset in leve pratiche — ribilanciamento, versamenti e le mosse che contano davvero.',
+  },
+
+  featExportTitle: {
+    en: () => '📤 Take your data with you',
+    ar: () => '📤 خذ بياناتك معك',
+    fr: () => '📤 Emportez vos données avec vous',
+    es: () => '📤 Lleva tus datos contigo',
+    de: () => '📤 Nehmen Sie Ihre Daten mit',
+    it: () => '📤 Porta i tuoi dati con te',
+  },
+  featExportBody: {
+    en: () => 'Export your holdings to a local .json or .csv with a QR code — saved to your Downloads, never to the cloud.',
+    ar: () => 'صدّر أصولك إلى ملف .json أو .csv مع رمز QR — محفوظ في تنزيلاتك، وليس في السحابة أبداً.',
+    fr: () => 'Exportez vos avoirs en .json ou .csv avec un QR code — enregistré dans vos téléchargements, jamais dans le cloud.',
+    es: () => 'Exporta tus activos a .json o .csv con un código QR: guardado en tus Descargas, nunca a la nube.',
+    de: () => 'Exportieren Sie Ihre Werte als .json oder .csv mit QR-Code — aufs Gerät, nie in die Cloud.',
+    it: () => 'Esporta i tuoi asset in .json o .csv con un QR code — salvato nei Download, mai sul cloud.',
+  },
+
   // — Win-back for users who stopped opening the app —
   retentionTitle: {
     en: (step) => step <= 3 ? 'Markets moved while you were away'
@@ -727,7 +812,7 @@ export const FEATURE_TIP_GAP_MS = 3 * 24 * 60 * 60 * 1000
  * unreachable — which is exactly what happened when the list outgrew the cap.
  * The guard test asserts the relationship rather than the number.
  */
-export const MAX_FEATURE_TIPS = 17
+export const MAX_FEATURE_TIPS = 23
 
 export const FEATURE_TIPS = [
   {
@@ -860,6 +945,44 @@ export const FEATURE_TIPS = [
     // users the server knows nothing about.
     when: (st) => st.watchCount >= 2 && Object.keys(st.setup).length > 0,
   },
+  {
+    // The economic calendar is the one scheduled-features reminder that is
+    // broadly useful, and it is the newest flagship screen most users have
+    // not found. Gated on an actual portfolio like the rest.
+    id: 'calendar',
+    url: '/calendar',
+    when: (st) => st.watchCount > 0 && st.setup.calendar === false,
+  },
+  {
+    // Alpha score projects a direction from on-chain, technicals and market
+    // factors per asset. Worth one sentence to anyone holding anything.
+    id: 'alpha',
+    url: '/alpha',
+    when: (st) => st.watchCount > 0 && st.setup.alpha === false,
+  },
+  {
+    // The market index is the quick all-in-one read on crypto, stocks and
+    // metals in one number. Two or more holdings make the breadth worth it.
+    id: 'marketindex',
+    url: '/market-index',
+    when: (st) => st.watchCount >= 2 && st.setup.marketindex === false,
+  },
+  {
+    // Grow Net Worth is the actionable counterpart to the passive dashboard:
+    // ideas and levers for adding to the portfolio. Offered once someone has
+    // something to grow.
+    id: 'grow',
+    url: '/grow',
+    when: (st) => st.watchCount >= 1 && st.setup.grow === false,
+  },
+  {
+    // Export holdings to a local .json/.csv with a QR code. Privacy-first by
+    // construction, and the only tip that points at a concrete file the user
+    // can hold in their hands.
+    id: 'export',
+    url: '/dashboard?tab=data',
+    when: (st) => st.watchCount >= 1 && st.setup.exportdata === false,
+  },
 ]
 
 /**
@@ -879,6 +1002,7 @@ export function sanitizeSetup(raw) {
   for (const k of [
     'guardian', 'vision', 'watchlist', 'weekly', 'coinTargets', 'backup',
     'applock', 'technicals', 'whales', 'academy', 'coach', 'rebalance',
+    'calendar', 'alpha', 'marketindex', 'grow', 'exportdata',
   ]) {
     if (typeof raw[k] === 'boolean') out[k] = raw[k]
   }

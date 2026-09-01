@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLanguage } from '../LanguageContext'
 import { api } from '../api'
 import { track } from '../analytics'
+import { noteFeatureUse } from '../featureUse'
 
 const CAL_FLAGS = {
   USD: '🇺🇸', EUR: '🇪🇺', GBP: '🇬🇧', JPY: '🇯🇵', CNY: '🇨🇳',
@@ -39,7 +40,7 @@ export default function EconomicCalendar() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
 
-  useEffect(() => { track('calendar_view'); load() }, [])
+  useEffect(() => { track('calendar_view'); noteFeatureUse('calendar'); load() }, [])
 
   async function load() {
     setLoading(true)

@@ -3,6 +3,7 @@ import Icon from '../components/Icon'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
+import { noteFeatureUse } from '../featureUse'
 import { computeIndex, band } from '../marketIndexModel'
 
 // ── WalletLens Market Index ────────────────────────────────────────────────
@@ -131,6 +132,7 @@ export default function MarketIndex() {
   const timerRef = useRef(null)
 
   useEffect(() => {
+    noteFeatureUse('marketindex');
     document.title = 'WalletLens Market Index — Live Cross-Asset Risk Appetite Score'
     track('market_index_view')
     let lastLoad = Date.now()

@@ -989,7 +989,8 @@ describe('feature tips', () => {
     // the rotation stops short of the cap for the wrong reason.
     const everything = Object.fromEntries(
       ['guardian', 'vision', 'watchlist', 'weekly', 'coinTargets', 'backup',
-       'applock', 'technicals', 'whales', 'academy', 'coach', 'rebalance']
+       'applock', 'technicals', 'whales', 'academy', 'coach', 'rebalance',
+       'calendar', 'alpha', 'marketindex', 'grow', 'exportdata']
         .map(k => [k, false])
     )
     const sent = []

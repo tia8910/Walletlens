@@ -333,6 +333,7 @@ export function createJobs({ store, send }) {
         )
 
         if (headline) {
+          const headAsset = sub.watch.find(a => a.symbol === headline.symbol)
           await send(sub, buildPayload({
             channel: "digest",
             title: copy("digestTitle", sub.lang)(),
@@ -340,6 +341,10 @@ export function createJobs({ store, send }) {
               headline.symbol, fmtPct(headline.pct), headline.pct > 0, sub.watch.length,
             ),
             tag: "digest",
+            sym: headline.symbol,
+            // The headline asset, not the dashboard: the brief is about a
+            // holding that moved, and the tap should open exactly that page.
+            url: headAsset ? assetUrl(headAsset) : undefined,
           }), { now })
         }
         // Either way the day has been evaluated — checking again at 10:00 would
@@ -396,12 +401,17 @@ export function createJobs({ store, send }) {
           const body = copy("retentionMoverBody", sub.lang)(
             mover.symbol, fmtPct(mover.pct), mover.pct > 0,
           )
+          const moveAsset = sub.watch.find(a => a.symbol === mover.symbol)
 
           const sent = await send(sub, buildPayload({
             channel: "retention",
             title: copy("retentionTitle", sub.lang)(step),
             body,
             tag: `winback-${step}`,
+            sym: mover.symbol,
+            // The nudge is "BTC is up since you were here" — the asset page
+            // is the one screen that answers why anyone should come back.
+            url: moveAsset ? assetUrl(moveAsset) : undefined,
           }), { now })
           // Only burn the step if it actually went out. Unlike the morning brief,
           // a win-back nudge is not tied to a particular day — tomorrow is a
@@ -424,6 +434,7 @@ export function createJobs({ store, send }) {
           PULSE_MIN_PCT,
         )
         if (pulse) {
+          const leadAsset = sub.watch.find(a => a.symbol === pulse.leader.symbol)
           await send(sub, buildPayload({
             channel: "portfolio",
             title: copy("portfolioTitle", sub.lang)(),
@@ -432,6 +443,8 @@ export function createJobs({ store, send }) {
               fmtPct(pulse.leader.pct), pulse.leader.pct > 0,
             ),
             tag: "portfolio",
+            sym: pulse.leader.symbol,
+            url: leadAsset ? assetUrl(leadAsset) : undefined,
           }), { now })
           // Only a day that actually produced a pulse is marked done. A flat
           // day leaves the slot unspent, but the hour has passed either way —
