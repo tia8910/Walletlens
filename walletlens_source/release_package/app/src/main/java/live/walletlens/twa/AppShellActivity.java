@@ -146,21 +146,21 @@ public class AppShellActivity extends ComponentActivity {
     private boolean handoffChecked;
 
     /**
-     * How long the app must have been in front of the user, this launch, before
-     * the rating card may appear.
+     * How long the CURRENT session must have been on screen before the card
+     * may appear.
      *
-     * <p>Play's guidance is to ask once the user has experienced enough of the
-     * app to have an opinion, and a card drawn over a cold start is the exact
-     * opposite: it lands on a screen the user has not read yet, from an app
-     * they were trying to open. A minute of foreground time is not a proxy for
-     * satisfaction — nothing here screens on sentiment, which Play forbids — it
-     * is simply the point past which the interruption is not stealing the
-     * launch.
+     * <p>This is only the "don't steal the launch" guard: a card drawn over a
+     * cold start lands on a screen the user has not read yet, from an app they
+     * were trying to open. It is deliberately short, because the real
+     * eligibility test is {@link ReviewGate#MIN_FOREGROUND_MS} — lifetime
+     * attention across launches — and holding BOTH thresholds at a minute
+     * meant the daily twenty-second price-checkers, the most engaged users
+     * this app has, could never be asked at all.
      *
-     * <p>Counted as accumulated foreground time rather than wall clock, so an
-     * app left open in the background does not quietly qualify.
+     * <p>Nothing here screens on sentiment, which Play forbids; both numbers
+     * are clocks, not opinions.
      */
-    private static final long REVIEW_DWELL_MS = 60_000L;
+    private static final long REVIEW_SETTLE_MS = 20_000L;
 
     /** Foreground milliseconds accumulated so far this launch. */
     private long foregroundMs;
@@ -409,7 +409,12 @@ public class AppShellActivity extends ComponentActivity {
     protected void onPause() {
         super.onPause();
         if (resumedAt != 0) {
-            foregroundMs += SystemClock.elapsedRealtime() - resumedAt;
+            long stretch = SystemClock.elapsedRealtime() - resumedAt;
+            foregroundMs += stretch;
+            // Into the lifetime total too: the gate's eligibility is attention
+            // across launches, and a stretch that is not flushed here is a
+            // stretch the next session cannot count.
+            ReviewGate.noteForeground(this, stretch);
             resumedAt = 0;
         }
         // The card must never be started from the background: Android 10+
@@ -435,8 +440,14 @@ public class AppShellActivity extends ComponentActivity {
      */
     private void scheduleReviewCheck() {
         if (reviewAsked) return;
-        long remaining = REVIEW_DWELL_MS - foregroundMs;
-        if (remaining < 0) remaining = 0;
+        // Fire at whichever comes later: the settle guard for THIS session, or
+        // the moment the lifetime total crosses the gate's threshold. Both are
+        // measured in foreground time, so from a resume they both count down
+        // in real time and one postDelayed covers the pair.
+        long settleRemaining = REVIEW_SETTLE_MS - foregroundMs;
+        long totalRemaining = ReviewGate.MIN_FOREGROUND_MS
+                - (ReviewGate.foregroundTotal(this) + foregroundMs);
+        long remaining = Math.max(0, Math.max(settleRemaining, totalRemaining));
         if (reviewTimer == null) reviewTimer = new Handler(getMainLooper());
         reviewTimer.removeCallbacksAndMessages(null);
         reviewTimer.postDelayed(this::maybeAskForReview, remaining);
@@ -453,6 +464,19 @@ public class AppShellActivity extends ComponentActivity {
      */
     private void maybeAskForReview() {
         if (reviewAsked || isFinishing() || isDestroyed()) return;
+
+        // Flush the running stretch into the lifetime total before consulting
+        // the gate, so shouldAsk() judges one authoritative number rather than
+        // a stored total that is always one session behind. The stretch
+        // restarts from now, which onPause's arithmetic then continues.
+        if (resumedAt != 0) {
+            long now = SystemClock.elapsedRealtime();
+            long stretch = now - resumedAt;
+            foregroundMs += stretch;
+            ReviewGate.noteForeground(this, stretch);
+            resumedAt = now;
+        }
+
         if (!ReviewGate.shouldAsk(this)) return;
 
         reviewAsked = true;

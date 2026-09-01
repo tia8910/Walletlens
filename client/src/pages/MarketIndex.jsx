@@ -19,16 +19,29 @@ const ch24 = c => c.price_change_percentage_24h ?? c.price_change_percentage_24h
 const num = (d = 2) => n => n.toLocaleString(undefined, { maximumFractionDigits: d })
 const usd = (d = 2) => n => `$${n.toLocaleString(undefined, { maximumFractionDigits: d })}`
 
-const INDICES = [
+// Equity indices, grouped the way a reader thinks of them — by region, the
+// way Google Finance lays out its tab row — rather than as one flat list.
+// A symbol Stooq does not answer for simply never renders (rows are filtered
+// on arrival), so regional coverage can be grown without a failed ticker
+// leaving a hole on the page.
+const US_INDICES = [
   { sym: '^spx',  label: 'S&P 500',      fmt: num(2) },
   { sym: '^ndq',  label: 'Nasdaq',       fmt: num(2) },
   { sym: '^dji',  label: 'Dow Jones',    fmt: num(0) },
   { sym: '^rut',  label: 'Russell 2000', fmt: num(2) },
   { sym: '^vix',  label: 'VIX',          fmt: num(2) },
+]
+const EU_INDICES = [
   { sym: '^ukx',  label: 'FTSE 100',     fmt: num(2) },
   { sym: '^dax',  label: 'DAX',          fmt: num(2) },
-  { sym: '^nkx',  label: 'Nikkei 225',   fmt: num(0) },
+  { sym: '^cac',  label: 'CAC 40',       fmt: num(2) },
 ]
+const ASIA_INDICES = [
+  { sym: '^nkx',  label: 'Nikkei 225',   fmt: num(0) },
+  { sym: '^hsi',  label: 'Hang Seng',    fmt: num(0) },
+  { sym: '^shc',  label: 'Shanghai',     fmt: num(2) },
+]
+const INDICES = [...US_INDICES, ...EU_INDICES, ...ASIA_INDICES]
 const METALS = [
   { sym: 'xauusd', label: 'Gold (oz)',      fmt: usd(2) },
   { sym: 'xagusd', label: 'Silver (oz)',    fmt: usd(2) },
@@ -82,7 +95,17 @@ async function fetchStooqQuotes(symbols) {
     const close = parseFloat(row.Close)
     const open  = parseFloat(row.Open)
     if (!sym || !isFinite(close) || close <= 0) continue
-    out[sym] = { close, change: isFinite(open) && open > 0 ? ((close - open) / open) * 100 : null }
+    const high = parseFloat(row.High)
+    const low  = parseFloat(row.Low)
+    out[sym] = {
+      close,
+      change: isFinite(open) && open > 0 ? ((close - open) / open) * 100 : null,
+      // The session's range, kept for the cards' meter. No intraday history
+      // is available through this feed, so the meter is the honest version
+      // of a sparkline: where in today's travel the price currently sits.
+      high: isFinite(high) && high > 0 ? high : null,
+      low:  isFinite(low)  && low  > 0 ? low  : null,
+    }
   }
   return out
 }
@@ -104,6 +127,7 @@ export default function MarketIndex() {
   const [loading, setLoading]   = useState(true)
   const [updated, setUpdated]   = useState(null)
   const [copied, setCopied]     = useState(false)
+  const [tab, setTab]           = useState('all')
   const timerRef = useRef(null)
 
   useEffect(() => {
@@ -291,19 +315,32 @@ export default function MarketIndex() {
               <Stat label="24h losers" value={`${idx.losers}`} accent="#f87171" />
             </section>
 
-            {/* Global markets — equities, metals, forex, commodities */}
-            {markets && ALL_STOOQ.some(x => markets[x.sym]) && (
-              <>
-                <div className="mki-markets-head">
-                  <Icon name="globe" size={16} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />Global markets
-                  <span className="mki-markets-sub">live · alongside crypto</span>
-                </div>
-                <MarketBoard icon="building" title="Equity Indices"  items={INDICES}     markets={markets} />
-                <MarketBoard icon="award"    title="Precious Metals" items={METALS}      markets={markets} />
-                <MarketBoard icon="exchange" title="Forex"           items={FOREX}       markets={markets} />
-                <MarketBoard icon="droplet"  title="Commodities"     items={COMMODITIES} markets={markets} />
-              </>
-            )}
+            {/* Global markets — one tab row over regional boards, the way
+                Google Finance arranges its front page. "All" stacks every
+                board; a region tab shows just its own. Tabs for regions the
+                feed did not answer for still render, but their panel says so
+                instead of showing an empty stretch of page. */}
+            <div className="mki-markets-head">
+              <Icon name="globe" size={16} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />Global markets
+              <span className="mki-markets-sub">live · alongside crypto</span>
+            </div>
+            <div className="mki-tabs" role="tablist" aria-label="Market region">
+              {TABS.map(td => (
+                <button
+                  key={td.id}
+                  role="tab"
+                  aria-selected={tab === td.id}
+                  className={`mki-tab${tab === td.id ? ' mki-tab-on' : ''}`}
+                  onClick={() => { setTab(td.id); track('market_index_tab', { tab: td.id }) }}
+                >{td.label}</button>
+              ))}
+            </div>
+            {TABS.filter(td => tab === 'all' ? td.id !== 'all' : td.id === tab).map(td => (
+              td.id === 'crypto'
+                ? <CryptoBoard key="crypto" coins={idx.coins} />
+                : <MarketBoard key={td.id} icon={td.icon} title={td.title} items={td.items}
+                    markets={markets} standalone={tab !== 'all'} />
+            ))}
 
             {/* Movers */}
             <div className="mki-movers">
@@ -339,8 +376,9 @@ export default function MarketIndex() {
               <ul className="mki-method-list">
                 <li><strong>Crypto — 30%.</strong> The share of the top 100 coins up over 24h, with the average
                   24h move of the top 50.</li>
-                <li><strong>Equities — 30%.</strong> How many of the S&amp;P 500, Nasdaq, Dow, Russell 2000,
-                  FTSE 100, DAX and Nikkei 225 are up, and by how much.</li>
+                <li><strong>Equities — 30%.</strong> How many of ten major indices across the US, Europe
+                  and Asia are up — S&amp;P 500, Nasdaq, Dow, Russell 2000, FTSE 100, DAX, CAC 40,
+                  Nikkei 225, Hang Seng, Shanghai — and by how much.</li>
                 <li><strong>Volatility &amp; havens — 20%.</strong> The VIX <em>level</em> (12 is calm, 35 is a
                   scare) and gold read as a safe-haven bid — a gold rally lowers the score.</li>
                 <li><strong>Dollar &amp; growth — 20%.</strong> Dollar weakness across the major pairs, and
@@ -365,11 +403,55 @@ export default function MarketIndex() {
   )
 }
 
+// The tab row over the global-markets boards. 'all' stacks every board;
+// 'crypto' is drawn from the CoinGecko snapshot rather than Stooq.
+const TABS = [
+  { id: 'all',         label: 'All' },
+  { id: 'us',          label: 'US',          icon: 'building', title: 'US Indices',      items: US_INDICES },
+  { id: 'europe',      label: 'Europe',      icon: 'building', title: 'Europe',          items: EU_INDICES },
+  { id: 'asia',        label: 'Asia',        icon: 'building', title: 'Asia',            items: ASIA_INDICES },
+  { id: 'metals',      label: 'Metals',      icon: 'award',    title: 'Precious Metals', items: METALS },
+  { id: 'forex',       label: 'Forex',       icon: 'exchange', title: 'Forex',           items: FOREX },
+  { id: 'commodities', label: 'Commodities', icon: 'droplet',  title: 'Commodities',     items: COMMODITIES },
+  { id: 'crypto',      label: 'Crypto' },
+]
+
+/**
+ * Where in today's travel the price currently sits.
+ *
+ * The honest stand-in for a sparkline: this page's quote feed carries a
+ * session's open/high/low/last and no intraday history, so a line would have
+ * to be invented. A position marker on the day's range is the same glanceable
+ * "how is it going" without fabricating a shape. Neutral ink on a recessive
+ * track — the range is position, not polarity; the ▲/▼ chip above it already
+ * carries direction, with a glyph as well as a colour.
+ */
+function RangeMeter({ low, high, value }) {
+  if (!Number.isFinite(low) || !Number.isFinite(high) || !Number.isFinite(value) || high <= low) return null
+  const pos = clamp01((value - low) / (high - low)) * 100
+  return (
+    <div className="mki-range" title={`Day range ${low} – ${high}`}>
+      <span className="mki-range-track"><span className="mki-range-marker" style={{ left: `${pos}%` }} /></span>
+    </div>
+  )
+}
+const clamp01 = n => Math.max(0, Math.min(1, n))
+
 // Reusable "global markets" board — one asset class per card, premium cells
-// with a coloured ▲/▼ move. Only symbols the data source returned are shown.
-function MarketBoard({ icon, title, items, markets }) {
+// with a coloured ▲/▼ move over a day-range meter. Only symbols the data
+// source returned are shown; a standalone (single-tab) board says when the
+// feed gave it nothing, because an empty pane otherwise reads as a bug.
+function MarketBoard({ icon, title, items, markets, standalone = false }) {
   const rows = items.filter(x => markets?.[x.sym])
-  if (!rows.length) return null
+  if (!rows.length) {
+    if (!standalone) return null
+    return (
+      <section className="mki-ext-section glass-card">
+        <div className="mki-section-title"><Icon name={icon} size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{title}</div>
+        <p className="mki-ext-empty">No live quotes right now — the market data feed did not answer. It retries on the next refresh.</p>
+      </section>
+    )
+  }
   return (
     <section className="mki-ext-section glass-card">
       <div className="mki-section-title"><Icon name={icon} size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{title}</div>
@@ -386,6 +468,44 @@ function MarketBoard({ icon, title, items, markets }) {
               {chg != null && (
                 <div className="mki-ext-chg" style={{ color: chgColor }}>{up ? '▲' : '▼'} {Math.abs(chg).toFixed(2)}%</div>
               )}
+              <RangeMeter low={d.low} high={d.high} value={d.close} />
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+// The crypto tab's board: the top of the market by cap, in the same cell
+// shape as the Stooq boards so the tabs feel like one surface. Range comes
+// from CoinGecko's own 24h high/low.
+function CryptoBoard({ coins }) {
+  const rows = (coins || []).slice(0, 12)
+  if (!rows.length) {
+    return (
+      <section className="mki-ext-section glass-card">
+        <div className="mki-section-title"><Icon name="coins" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Crypto</div>
+        <p className="mki-ext-empty">No live prices right now — retrying on the next refresh.</p>
+      </section>
+    )
+  }
+  return (
+    <section className="mki-ext-section glass-card">
+      <div className="mki-section-title"><Icon name="coins" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Crypto · top of the market</div>
+      <div className="mki-ext-grid">
+        {rows.map(c => {
+          const chg = ch24(c)
+          const up = chg >= 0
+          return (
+            <div key={c.id} className="mki-ext-cell">
+              <div className="mki-ext-label">
+                {c.image && <img src={c.image} alt="" width="14" height="14" loading="lazy" decoding="async" style={{ verticalAlign:'-2px', marginRight:'0.35em', borderRadius:'50%' }} />}
+                {(c.symbol || '').toUpperCase()}
+              </div>
+              <div className="mki-ext-val">{fmtPrice(c.current_price ?? 0)}</div>
+              <div className="mki-ext-chg" style={{ color: up ? '#10b981' : '#f87171' }}>{up ? '▲' : '▼'} {Math.abs(chg).toFixed(2)}%</div>
+              <RangeMeter low={c.low_24h} high={c.high_24h} value={c.current_price} />
             </div>
           )
         })}

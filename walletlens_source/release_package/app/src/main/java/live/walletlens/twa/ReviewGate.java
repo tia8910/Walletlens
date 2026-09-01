@@ -58,6 +58,7 @@ final class ReviewGate {
 
     private static final String KEY_FIRST_SEEN = "first_seen";
     private static final String KEY_LAUNCHES   = "launches";
+    private static final String KEY_FG_MS      = "foreground_ms";
     private static final String KEY_LAST_ASKED = "last_asked";
     private static final String KEY_ASK_COUNT  = "ask_count";
 
@@ -122,6 +123,20 @@ final class ReviewGate {
 
     /** The gap once settled. Longer, but never infinite. */
     private static final int SETTLED_REASK_DAYS = 180;
+
+    /**
+     * Total time the app must have been in front of the user, ACROSS launches,
+     * before the first ask.
+     *
+     * <p>Why lifetime and not per-session: the most common session in a
+     * portfolio app is a twenty-second price check, and the people who do that
+     * every day are precisely the users most worth asking. A per-session dwell
+     * of a minute — the first design — would have skipped every one of them,
+     * for ever, while asking only whoever happened to linger once. Ninety
+     * seconds of accumulated attention is two or three quick checks or one
+     * unhurried session, whichever comes first.
+     */
+    static final long MIN_FOREGROUND_MS = 90_000L;
 
     private ReviewGate() {}
 
@@ -217,6 +232,31 @@ final class ReviewGate {
      * waiting period later is a constant change, rather than a rule that has to
      * wait for everyone's clock to begin again.
      */
+    /**
+     * Add a stretch of foreground time to the lifetime total.
+     *
+     * <p>Called from the shell's onPause with the length of the stretch that
+     * just ended. Kept as a total rather than per-session numbers because the
+     * question the gate asks is "has this person used the app enough to have
+     * an opinion", and attention across five short sessions answers it exactly
+     * as well as one long one.
+     */
+    static void noteForeground(Context c, long deltaMs) {
+        if (deltaMs <= 0) return;
+        try {
+            SharedPreferences p = prefs(c);
+            p.edit().putLong(KEY_FG_MS, p.getLong(KEY_FG_MS, 0) + deltaMs).apply();
+        } catch (Throwable t) {
+            Log.w(TAG, "could not record foreground time: " + t);
+        }
+    }
+
+    /** Lifetime foreground milliseconds, for the shell's timer arithmetic. */
+    static long foregroundTotal(Context c) {
+        try { return prefs(c).getLong(KEY_FG_MS, 0); }
+        catch (Throwable t) { return 0; }
+    }
+
     static void noteLaunch(Context c) {
         try {
             SharedPreferences p = prefs(c);
@@ -246,6 +286,11 @@ final class ReviewGate {
 
             int needed = isUpdatedInstall(c) ? MIN_LAUNCHES_UPDATED : MIN_LAUNCHES_FRESH;
             if (p.getInt(KEY_LAUNCHES, 0) < needed) return false;
+
+            // Enough accumulated attention, across however many sessions it
+            // took. The caller flushes the current stretch into the total
+            // before asking, so this reads one number and stays authoritative.
+            if (p.getLong(KEY_FG_MS, 0) < MIN_FOREGROUND_MS) return false;
 
             long first = p.getLong(KEY_FIRST_SEEN, 0);
             if (first == 0 || now - first < MIN_DAYS * DAY_MS) return false;
