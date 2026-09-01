@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 import CoinLogo from './CoinLogo'
@@ -380,31 +380,44 @@ async function scoreToken(coinId, forceRefresh = false, symbol = '') {
 // ── Portfolio summary ─────────────────────────────────────────────────────
 function PortfolioRiskSummary({ results, holdings }) {
   const { t } = useLanguage()
-  if (!results || Object.keys(results).length === 0) return null
 
-  const scanned = holdings.filter(h => results[h.coin_id] && results[h.coin_id].score != null)
-  if (scanned.length === 0) return null
+  // Every RiskCard resolves its scan independently and reports back into this
+  // component's `results` prop one coin at a time, so this recomputes on every
+  // single arrival. Without memoization it re-filters/re-reduces the whole
+  // holdings list from scratch on each of those N arrivals — O(n) work times
+  // N results, i.e. O(n^2) over the course of one scan for a large portfolio.
+  // useMemo still recomputes when `results` changes (each arrival does change
+  // it), but skips the work on re-renders that aren't a new scan result.
+  const summary = useMemo(() => {
+    if (!results || Object.keys(results).length === 0) return null
+    const scanned = holdings.filter(h => results[h.coin_id] && results[h.coin_id].score != null)
+    if (scanned.length === 0) return null
 
-  const totalValue = scanned.reduce((s, h) => s + (h.value || 0), 0)
+    const totalValue = scanned.reduce((s, h) => s + (h.value || 0), 0)
 
-  // Weighted average score by portfolio value
-  let weightedScore = 0
-  scanned.forEach(h => {
-    const r = results[h.coin_id]
-    const weight = totalValue > 0 ? (h.value || 0) / totalValue : 1 / scanned.length
-    weightedScore += r.score * weight
-  })
-  weightedScore = Math.round(weightedScore)
+    // Weighted average score by portfolio value
+    let weightedScore = 0
+    scanned.forEach(h => {
+      const r = results[h.coin_id]
+      const weight = totalValue > 0 ? (h.value || 0) / totalValue : 1 / scanned.length
+      weightedScore += r.score * weight
+    })
+    weightedScore = Math.round(weightedScore)
 
-  const gradeCounts = { SAFE: 0, MODERATE: 0, 'HIGH RISK': 0, DANGER: 0 }
-  scanned.forEach(h => { gradeCounts[results[h.coin_id].grade]++ })
+    const gradeCounts = { SAFE: 0, MODERATE: 0, 'HIGH RISK': 0, DANGER: 0 }
+    scanned.forEach(h => { gradeCounts[results[h.coin_id].grade]++ })
+
+    // Most dangerous holding
+    const worst = scanned.reduce((a, h) => results[h.coin_id].score < results[a.coin_id].score ? h : a, scanned[0])
+
+    return { weightedScore, gradeCounts, worst, worstResult: results[worst.coin_id] }
+  }, [results, holdings])
+
+  if (!summary) return null
+  const { weightedScore, gradeCounts, worst, worstResult } = summary
 
   const gradeColor = weightedScore >= 80 ? 'var(--g)' : weightedScore >= 60 ? '#f59e0b' : weightedScore >= 35 ? '#f87171' : '#ef4444'
   const gradeLabel = weightedScore >= 80 ? 'SAFE' : weightedScore >= 60 ? 'MODERATE' : weightedScore >= 35 ? 'HIGH RISK' : 'DANGER'
-
-  // Most dangerous holding
-  const worst = scanned.reduce((a, h) => results[h.coin_id].score < results[a.coin_id].score ? h : a, scanned[0])
-  const worstResult = results[worst.coin_id]
 
   return (
     <div className="glass-card risk-portfolio-summary">
@@ -727,6 +740,8 @@ function ScamCatcher() {
   )
 }
 
+const NON_CRYPTO = ['metal:', 'stock:', 'fiat:', 'cash:', 'bond:', 'real:', 'other:']
+
 // ── Legend ────────────────────────────────────────────────────────────────
 const LEGEND = [
   { grade: 'SAFE',      color: 'var(--g-ink)', fontWeight: 700, range: '80–100', desc: 'Established, liquid, low contract risk' },
@@ -740,19 +755,23 @@ export default function RiskScanner({ enriched }) {
   const [results, setResults]   = useState({})
   const [scanGen, setScanGen]   = useState(0) // bump to force re-scan all
 
-  const NON_CRYPTO = ['metal:', 'stock:', 'fiat:', 'cash:', 'bond:', 'real:', 'other:']
-  const cryptoHoldings = enriched.filter(h => {
+  // `enriched` doesn't depend on scan results, but each of the N RiskCards
+  // reports its result back into `results` independently, re-rendering
+  // RiskScanner N times per scan. Without memoizing this filter, that O(n)
+  // pass over holdings re-ran on every one of those N arrivals — O(n^2)
+  // total for a large portfolio, for a value that never changes mid-scan.
+  const cryptoHoldings = useMemo(() => enriched.filter(h => {
     const id = (h.coin_id || '').toLowerCase()
     return !NON_CRYPTO.some(p => id.startsWith(p)) &&
            !id.includes('appartment') && !id.includes('apartment') && !id.includes('property')
-  })
+  }), [enriched])
 
   // Sort by score ascending (most risky first) once results come in
-  const sorted = [...cryptoHoldings].sort((a, b) => {
+  const sorted = useMemo(() => [...cryptoHoldings].sort((a, b) => {
     const sa = results[a.coin_id]?.score ?? 999
     const sb = results[b.coin_id]?.score ?? 999
     return sa - sb
-  })
+  }), [cryptoHoldings, results])
 
   function handleResult(coinId, r) {
     setResults(prev => ({ ...prev, [coinId]: r }))
