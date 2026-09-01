@@ -326,16 +326,28 @@ final class ReviewGate {
     }
 
     /**
-     * Whether a review flow has ever completed on this device, from either path.
+     * Whether a review flow has completed recently on this device, from either
+     * path.
      *
      * <p>ReviewActivity writes this on every completion, including the ones the
-     * web app triggers — those still run through this process to reach Play.
+     * web app triggers -- those still run through this process to reach Play.
      * It is the only state the two sides share.
+     *
+     * <p>Unlike the previous permanent block, this now resets after
+     * {@link #SETTLED_REASK_DAYS} days.  The permanent block assumed Play's
+     * per-user quota was spent for good, but the quota refreshes over time.
+     * Blocking forever meant users who completed one review could never be
+     * asked again -- even months later when Play would happily show a new card.
+     * A time-limited window keeps the "don't re-ask right away" protection
+     * while allowing the gate to reopen when a fresh ask has a real chance.
      */
     private static boolean alreadyRan(Context c) {
         try {
-            return c.getSharedPreferences("walletlens_review", Context.MODE_PRIVATE)
-                    .getLong("review_flow_completed_at", 0) > 0;
+            long completedAt = c.getSharedPreferences("walletlens_review", Context.MODE_PRIVATE)
+                    .getLong("review_flow_completed_at", 0);
+            if (completedAt == 0) return false;
+            long elapsed = System.currentTimeMillis() - completedAt;
+            return elapsed < (long) SETTLED_REASK_DAYS * DAY_MS;
         } catch (Throwable t) {
             // Unreadable prefs must not turn into a duplicate ask.
             return true;
