@@ -523,6 +523,13 @@ const COIN_MAP = (() => {
   return c
 })()
 
+// Longest-alias-first order, computed once. findAllCoinPositions and
+// parseOneSegment both need this order (so "usdc coin" isn't matched as
+// "usd" first) and used to re-sort COIN_MAP's ~600+ keys on every call —
+// including on every interim speech-recognition result, i.e. several times
+// a second while the user is talking.
+const COIN_ALIASES_BY_LENGTH = Object.keys(COIN_MAP).sort((a, b) => b.length - a.length)
+
 // ── Intent vocabulary — verbs and slang for buy/sell ───────────────────────
 // Arabic entries cover MSA + Gulf (Saudi/Emirati/Kuwaiti/Qatari) + Levantine
 // (Syrian/Lebanese/Jordanian/Palestinian) + Egyptian + Maghrebi (Moroccan/
@@ -1117,7 +1124,7 @@ function findIntentPositions(normalized) {
 // Locate every non-overlapping coin alias mention in the normalized text.
 function findAllCoinPositions(normalized) {
   const found = []
-  const aliases = Object.keys(COIN_MAP).sort((a, b) => b.length - a.length)
+  const aliases = COIN_ALIASES_BY_LENGTH
   const taken = new Array(normalized.length).fill(false)
   for (const alias of aliases) {
     const needle = ' ' + alias + ' '
@@ -1159,7 +1166,7 @@ function parseOneSegment(normalized, forcedType, forcedMatchedWord) {
 
   // Coin — exact / substring / fuzzy
   let coin = null
-  const aliases = Object.keys(COIN_MAP).sort((a, b) => b.length - a.length)
+  const aliases = COIN_ALIASES_BY_LENGTH
   for (const alias of aliases) {
     if (normalized.includes(' ' + alias + ' ')) { coin = COIN_MAP[alias]; break }
   }
