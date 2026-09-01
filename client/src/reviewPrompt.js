@@ -188,6 +188,22 @@ function requestNativeReview(source, fallbackStore) {
   } catch { return false }
 }
 
+/**
+ * What the native side saw the last time it asked Play, and who installed us.
+ *
+ * Returns null off Android or on a build without the bridge method, so the
+ * Settings line simply omits it rather than claiming anything.
+ */
+export function nativeReviewStatus() {
+  try {
+    const b = typeof window !== 'undefined' ? window.AndroidBridge : null
+    if (!b || typeof b.reviewStatus !== 'function') return null
+    const raw = b.reviewStatus()
+    const s = raw ? JSON.parse(raw) : null
+    return s && s.installer ? s : null
+  } catch { return null }
+}
+
 function readState() {
   try {
     const raw = localStorage.getItem(STATE_KEY)

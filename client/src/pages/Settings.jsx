@@ -14,7 +14,6 @@ import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import DriveBackup from '../components/DriveBackup'
 import DeviceVault from '../components/DeviceVault'
 import { isAndroidTWA } from '../nativeBridge'
-import { requestReviewNow, reviewDiagnostics } from '../reviewPrompt'
 import { effectSettings, setEffectSettings, primeEffectAudio } from '../screenEffectsRuntime'
 import { widgetSyncDiagnostics, forceSyncWidgets } from '../nativeWidgets'
 
@@ -45,18 +44,6 @@ function widgetStatusText({ diag, hasPayload, lastSync }, t) {
 // Same job as widgetStatusText: the automatic rating card is invisible when it
 // doesn't fire, and Play deliberately never says whether it showed one. This
 // line is the only place a user — or we — can see which rule is still open.
-function reviewStatusText(d, t) {
-  if (!d) return ''
-  if (d.pendingAsk) return t('rvPending')
-  switch (d.blockedBy) {
-    case 'friction':   return t('rvQuiet')
-    case 'max-asks':   return t('rvDone')
-    case 'recent-ask': return t('rvAsked')
-    case 'few-opens':  return t('rvOpens')(d.opensLeft)
-    case 'too-new':    return t('rvDays')(d.daysLeft)
-    default:           return t('rvReady')
-  }
-}
 
 const SETTINGS_KEY = 'wl_settings'
 
@@ -95,7 +82,6 @@ export default function Settings() {
   const [editInterests, setEditInterests] = useState(false)
   const [wdiag, setWdiag] = useState(() => widgetSyncDiagnostics())
   const [fx, setFx] = useState(() => effectSettings())
-  const [rdiag] = useState(() => reviewDiagnostics())
 
   return (
     <div className="page settings-page">
@@ -332,25 +318,20 @@ export default function Settings() {
         )}
       </div>
 
-      {/* ── Rate the app ── Android only: this opens Play's own review card,
-           which does not exist on the web. */}
-      {isAndroidTWA() && (
-        <div className="settings-section glass-card">
-          <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="star" size={16} />{t('setRate')}</h3>
-          <div className="settings-row">
-            <div className="settings-label">
-              <span>{t('setReview')}</span>
-              <span className="settings-hint">{t('setReviewHint')}</span>
-              <span className="settings-hint">{reviewStatusText(rdiag, t)}</span>
-            </div>
-            <button className="settings-chip"
-              onClick={() => { track('rate_app_click', { source: 'settings' }); requestReviewNow('settings') }}
-              style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
-              <Icon name="star" size={14} /> {t('setRate')}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* The Rate section that stood here is gone, by product decision.
+           Play's card now arrives on its own or not at all.
+
+           maybeAskForReview still runs from the dashboard — 18s after load and
+           every 90s after — so the automatic path is untouched; only the manual
+           entry point is. Someone who wants to rate without being asked uses
+           the Play listing, which is where a rating is left anyway.
+
+           Worth knowing what left with it: this section carried the only
+           readout of Play's own answer (installer package, last outcome).
+           ReviewGate still RECORDS both, so they survive in logcat and can be
+           resurfaced anywhere — but nothing in the UI shows them now, so
+           "the card did not appear" is once again a question without a
+           visible answer. That is the accepted cost of the removal. */}
 
       <DriveBackup />
 

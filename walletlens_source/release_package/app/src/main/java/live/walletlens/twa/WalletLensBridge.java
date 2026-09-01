@@ -421,6 +421,28 @@ public class WalletLensBridge {
      * @param fallbackStore open the store listing if Play shows nothing —
      *                      true only when the user went looking for it
      */
+    /**
+     * What Play did the last time it was asked, and who installed this build.
+     *
+     * <p>The in-app review card is invisible when it works and invisible when
+     * it fails — Play returns success either way and never says whether it drew
+     * anything. So "it still doesn't appear" has been unanswerable from the
+     * outside for three rounds. This is the answer: the raw outcome string, and
+     * the installing package, which decides whether a card was ever possible.
+     */
+    @JavascriptInterface
+    public String reviewStatus() {
+        Activity a = activity();
+        if (a == null) return "{}";
+        try {
+            return "{\"installer\":\"" + ReviewGate.installer(a)
+                    + "\",\"outcome\":\"" + ReviewGate.lastOutcome(a)
+                    + "\",\"at\":" + ReviewGate.lastOutcomeAt(a) + "}";
+        } catch (Throwable e) {
+            return "{}";
+        }
+    }
+
     @JavascriptInterface
     public void requestReview(String source, boolean fallbackStore) {
         Activity a = activity();

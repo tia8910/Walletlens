@@ -136,6 +136,7 @@ public class ReviewActivity extends Activity {
                     // Typically: sideloaded build, no Play Store, or an
                     // internal Play error. Nothing the user should see.
                     Log.w(TAG, "requestReviewFlow failed: " + task.getException());
+                    ReviewGate.noteOutcome(ReviewActivity.this, "request_failed");
                     finishFlow(openStoreOnFailure);
                     return;
                 }
@@ -160,6 +161,8 @@ public class ReviewActivity extends Activity {
                                 long shownFor = SystemClock.elapsedRealtime() - startedAt;
                                 boolean looksUnshown = shownFor < NO_CARD_THRESHOLD_MS;
                                 Log.d(TAG, "review flow returned after " + shownFor + "ms");
+                                ReviewGate.noteOutcome(ReviewActivity.this,
+                                        (looksUnshown ? "no_card_" : "shown_") + shownFor + "ms");
                                 if (looksUnshown) {
                                     // Play answered so fast the card cannot
                                     // have been on screen — quota spent, most
@@ -186,6 +189,7 @@ public class ReviewActivity extends Activity {
                             });
                 } catch (Throwable t) {
                     Log.w(TAG, "launchReviewFlow threw: " + t);
+                    ReviewGate.noteOutcome(ReviewActivity.this, "launch_threw");
                     finishFlow(openStoreOnFailure);
                 }
             });

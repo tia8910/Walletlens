@@ -2,6 +2,7 @@ package live.walletlens.twa;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.util.Log;
 
 /**
@@ -101,6 +102,64 @@ final class ReviewGate {
     private static final int SETTLED_REASK_DAYS = 180;
 
     private ReviewGate() {}
+
+    /** The last thing Play actually did, for the readout in Settings. */
+    private static final String KEY_LAST_OUTCOME    = "last_outcome";
+    private static final String KEY_LAST_OUTCOME_AT = "last_outcome_at";
+
+    /**
+     * Record what came back from Play.
+     *
+     * <p>Three rounds of "the rate card still doesn't appear" have now gone by
+     * with no way to tell which of these happened, because the whole feature is
+     * invisible when it works AND when it fails. Play returns success whether
+     * or not it drew anything, so the only honest report is the raw outcome:
+     * whether the request failed, how long the flow took, and whether this
+     * build even came from Play.
+     */
+    static void noteOutcome(Context c, String outcome) {
+        try {
+            prefs(c).edit()
+                    .putString(KEY_LAST_OUTCOME, outcome)
+                    .putLong(KEY_LAST_OUTCOME_AT, System.currentTimeMillis())
+                    .apply();
+        } catch (Throwable e) {
+            Log.w(TAG, "could not record the review outcome: " + e);
+        }
+    }
+
+    static String lastOutcome(Context c) {
+        try { return prefs(c).getString(KEY_LAST_OUTCOME, ""); }
+        catch (Throwable e) { return ""; }
+    }
+
+    static long lastOutcomeAt(Context c) {
+        try { return prefs(c).getLong(KEY_LAST_OUTCOME_AT, 0L); }
+        catch (Throwable e) { return 0L; }
+    }
+
+    /**
+     * Who installed this build.
+     *
+     * <p>"com.android.vending" is Play. Anything else — a shell install, a file
+     * manager, null for adb — means the in-app review card CANNOT be shown, no
+     * matter how long the gates have been satisfied. That single fact would
+     * have answered this question days ago.
+     */
+    static String installer(Context c) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                String s = c.getPackageManager()
+                        .getInstallSourceInfo(c.getPackageName())
+                        .getInstallingPackageName();
+                return s == null ? "sideload" : s;
+            }
+            String s = c.getPackageManager().getInstallerPackageName(c.getPackageName());
+            return s == null ? "sideload" : s;
+        } catch (Throwable e) {
+            return "unknown";
+        }
+    }
 
     private static SharedPreferences prefs(Context c) {
         return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
