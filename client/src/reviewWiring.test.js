@@ -138,3 +138,105 @@ describe('the ask waits for the app to be in front of the user', () => {
     expect(app).toMatch(/setAppInteractive\(!locked\)/)
   })
 })
+
+describe('the native rating gate is actually called by something', () => {
+  // THE BUG THIS EXISTS FOR. ReviewGate.noteLaunch() and ReviewGate.shouldAsk()
+  // were written, documented in detail, reviewed and shipped — and no line of
+  // code anywhere called either of them. The gate counted launches that were
+  // never counted and consulted a date that was never stamped, so shouldAsk()
+  // could not have returned true on any device, ever. Three rounds of "the rate
+  // card still doesn't appear" went by with the answer sitting in plain sight
+  // in a file that read as finished.
+  //
+  // A gate is not wired because it exists. These assert the call sites.
+  const JAVA = join(src, '..', '..', 'walletlens_source/release_package/app/src/main/java/live/walletlens/twa')
+  const shell = readFileSync(join(JAVA, 'AppShellActivity.java'), 'utf8')
+  const gate = readFileSync(join(JAVA, 'ReviewGate.java'), 'utf8')
+  const activity = readFileSync(join(JAVA, 'ReviewActivity.java'), 'utf8')
+
+  it('counts every cold start', () => {
+    expect(shell).toMatch(/ReviewGate\.noteLaunch\(this\)/)
+  })
+
+  it('counts a cold start, not a rotation', () => {
+    // onCreate runs again on every configuration change. Counting there
+    // unguarded turns "launches" into "times the user turned the phone", which
+    // clears MIN_LAUNCHES for somebody who has opened the app exactly once.
+    const create = /protected void onCreate\([\s\S]*?\n    \}/.exec(shell)[0]
+    const guard = create.indexOf('if (savedInstanceState == null) {\n            // A cold start')
+    expect(guard, 'noteLaunch must sit behind a savedInstanceState == null check').toBeGreaterThan(-1)
+    expect(create.indexOf('ReviewGate.noteLaunch')).toBeGreaterThan(guard)
+  })
+
+  it('consults the gate and starts the card', () => {
+    expect(shell).toMatch(/ReviewGate\.shouldAsk\(this\)/)
+    expect(shell).toMatch(/ReviewGate\.markAsked\(this\)/)
+    expect(shell).toMatch(/new Intent\(this, ReviewActivity\.class\)/)
+  })
+
+  it('spends the ask before starting the flow, never after', () => {
+    // A flow that crashes or is killed must not come back on the next launch
+    // and every launch after it. ReviewActivity hands the ask back when Play
+    // shows nothing, so this ordering costs nothing in the case it guards.
+    const ask = /private void maybeAskForReview\(\) \{[\s\S]*?\n    \}/.exec(shell)[0]
+    expect(ask.indexOf('markAsked')).toBeLessThan(ask.indexOf('startActivity'))
+  })
+
+  it('waits for the app to be in front of the user first', () => {
+    // A card drawn over a cold start lands on a screen the user has not read
+    // yet, from an app they were trying to open.
+    expect(shell).toMatch(/REVIEW_DWELL_MS = 60_000L/)
+    expect(shell).toMatch(/postDelayed\(this::maybeAskForReview, remaining\)/)
+  })
+
+  it('cancels the pending ask when the app goes to the background', () => {
+    // Android 10+ blocks a background activity launch outright, so a timer that
+    // survives onPause is at best a no-op and at worst a rating card over
+    // whatever the user switched to.
+    const pause = /protected void onPause\(\) \{[\s\S]*?\n    \}/.exec(shell)[0]
+    expect(pause).toMatch(/reviewTimer.*removeCallbacksAndMessages\(null\)/)
+  })
+
+  it('asks at most once per launch', () => {
+    expect(shell).toMatch(/if \(reviewAsked.*\) return;/)
+  })
+
+  it('does not ask a first-install user during their first session', () => {
+    expect(gate).toMatch(/MIN_LAUNCHES_FRESH = 2/)
+    expect(gate).toMatch(/isUpdatedInstall\(c\) \? MIN_LAUNCHES_UPDATED : MIN_LAUNCHES_FRESH/)
+  })
+
+  it('times out the request, and only the request', () => {
+    // The watchdog was armed for the launch hand-off alone — the one path
+    // nothing ever took — leaving the path that IS taken with no timeout at
+    // all. Arming it always is only safe if it stops the moment Play answers:
+    // past that point the elapsed time belongs to a user reading a card, and
+    // four seconds is not long to read one.
+    expect(activity).toMatch(/watchdog\.postDelayed\(/)
+    const create = /protected void onCreate\([\s\S]*?\n    \}\n/.exec(activity)[0]
+    expect(create.indexOf('cancelWatchdog()')).toBeGreaterThan(create.indexOf('watchdog.postDelayed('))
+    expect(create).toMatch(/addOnCompleteListener\(task -> \{\n(\s*\/\/.*\n)*\s*cancelWatchdog\(\);/)
+  })
+
+  it('only hands back an ask the native gate actually spent', () => {
+    // The web path keeps its own ledger in localStorage and calls neither
+    // markAsked nor rollbackAsk, so rolling back for a web-triggered flow
+    // clears a native cooldown belonging to a different ask entirely.
+    expect(activity).toMatch(/private void giveTheAskBack\(\) \{\s*\n\s*if \(fromGate\) ReviewGate\.rollbackAsk\(this\);/)
+    expect(activity).not.toMatch(/^\s*ReviewGate\.rollbackAsk\(ReviewActivity\.this\)/m)
+    expect(shell).toMatch(/putExtra\(ReviewActivity\.EXTRA_FROM_GATE, true\)/)
+  })
+})
+
+describe('the native ask respects App Lock', () => {
+  // The web gate learned this the expensive way — its dwell clock ran behind
+  // the lock screen and the card landed on the fingerprint prompt. The native
+  // gate has the same exposure, because the lock is drawn as a page inside the
+  // shell and the shell stays resumed the whole time it is up.
+  const JAVA = join(src, '..', '..', 'walletlens_source/release_package/app/src/main/java/live/walletlens/twa')
+  const gate = readFileSync(join(JAVA, 'ReviewGate.java'), 'utf8')
+
+  it('refuses while the app is locked', () => {
+    expect(gate).toMatch(/BiometricActivity\.isEnabled\(c\) && !BiometricActivity\.isSessionValid\(c\)/)
+  })
+})

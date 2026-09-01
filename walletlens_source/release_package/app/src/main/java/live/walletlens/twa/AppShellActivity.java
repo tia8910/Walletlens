@@ -9,6 +9,8 @@ import android.content.pm.PackageInfo;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -142,6 +144,34 @@ public class AppShellActivity extends ComponentActivity {
 
     /** onResume runs on every return to the app; the handoff must not. */
     private boolean handoffChecked;
+
+    /**
+     * How long the app must have been in front of the user, this launch, before
+     * the rating card may appear.
+     *
+     * <p>Play's guidance is to ask once the user has experienced enough of the
+     * app to have an opinion, and a card drawn over a cold start is the exact
+     * opposite: it lands on a screen the user has not read yet, from an app
+     * they were trying to open. A minute of foreground time is not a proxy for
+     * satisfaction — nothing here screens on sentiment, which Play forbids — it
+     * is simply the point past which the interruption is not stealing the
+     * launch.
+     *
+     * <p>Counted as accumulated foreground time rather than wall clock, so an
+     * app left open in the background does not quietly qualify.
+     */
+    private static final long REVIEW_DWELL_MS = 60_000L;
+
+    /** Foreground milliseconds accumulated so far this launch. */
+    private long foregroundMs;
+
+    /** When the current foreground stretch began, or 0 while paused. */
+    private long resumedAt;
+
+    /** At most one rating ask per launch, however many times we resume. */
+    private boolean reviewAsked;
+
+    private Handler reviewTimer;
 
     /**
      * The page's pending <input type="file">, waiting on the system picker.
@@ -286,6 +316,14 @@ public class AppShellActivity extends ComponentActivity {
             // first load rather than only to navigations after it.
             web.loadUrl(ourUrl(getIntent()));
         }
+
+        if (savedInstanceState == null) {
+            // A cold start, not a rotation. ReviewGate counts launches and
+            // stamps the install date off this call and nothing else; without
+            // it the whole native rating gate reads zero for ever, which is
+            // precisely how it spent months looking wired and doing nothing.
+            ReviewGate.noteLaunch(this);
+        }
     }
 
     /**
@@ -362,6 +400,74 @@ public class AppShellActivity extends ComponentActivity {
         // an install that did not come from Play, so this is safe on every
         // resume — see PlayUpdate.
         PlayUpdate.check(this);
+
+        resumedAt = SystemClock.elapsedRealtime();
+        scheduleReviewCheck();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (resumedAt != 0) {
+            foregroundMs += SystemClock.elapsedRealtime() - resumedAt;
+            resumedAt = 0;
+        }
+        // The card must never be started from the background: Android 10+
+        // blocks a background activity launch outright, and on the versions
+        // that would allow it, drawing a rating card over whatever the user
+        // switched to is worse than not asking at all.
+        if (reviewTimer != null) reviewTimer.removeCallbacksAndMessages(null);
+    }
+
+    // ── The rating card ─────────────────────────────────────────────────────
+
+    /**
+     * Arm the rating check for whatever is left of the dwell.
+     *
+     * <p>WHY THIS IS HERE AND NOT AT LAUNCH. {@link ReviewGate} was written for
+     * the Trusted Web Activity, where the page ran in Chrome and this app had
+     * no foreground activity of its own once it was up — so the only window
+     * native code got was the instant before launch, and ReviewActivity grew a
+     * whole hand-off path to give the launch back afterwards. None of that was
+     * ever wired, and it no longer needs to be: this shell IS a foreground
+     * activity for as long as the user is in the app, so the card can be shown
+     * at a sensible moment instead of over a cold start.
+     */
+    private void scheduleReviewCheck() {
+        if (reviewAsked) return;
+        long remaining = REVIEW_DWELL_MS - foregroundMs;
+        if (remaining < 0) remaining = 0;
+        if (reviewTimer == null) reviewTimer = new Handler(getMainLooper());
+        reviewTimer.removeCallbacksAndMessages(null);
+        reviewTimer.postDelayed(this::maybeAskForReview, remaining);
+    }
+
+    /**
+     * Show Play's rating card, if this launch has earned one.
+     *
+     * <p>{@link ReviewGate#markAsked} runs BEFORE the activity starts, on
+     * purpose: a flow that crashes or is killed must not come back on the next
+     * launch and every launch after it. When Play declines silently
+     * ReviewActivity hands the ask back through rollbackAsk, so the ordering
+     * costs nothing in the case it is there to guard.
+     */
+    private void maybeAskForReview() {
+        if (reviewAsked || isFinishing() || isDestroyed()) return;
+        if (!ReviewGate.shouldAsk(this)) return;
+
+        reviewAsked = true;
+        ReviewGate.markAsked(this);
+        try {
+            // No EXTRA_CONTINUE_TO_APP: the app is already open behind this
+            // translucent activity, and asking it to reopen the launcher on the
+            // way out would cold-start a second copy over the user's dashboard.
+            Intent card = new Intent(this, ReviewActivity.class);
+            card.putExtra(ReviewActivity.EXTRA_FROM_GATE, true);
+            startActivity(card);
+        } catch (Throwable t) {
+            Log.w(TAG, "could not start the rating card: " + t);
+            ReviewGate.rollbackAsk(this);
+        }
     }
 
     // ── The handoff ─────────────────────────────────────────────────────────
@@ -850,6 +956,7 @@ public class AppShellActivity extends ComponentActivity {
 
     @Override
     protected void onDestroy() {
+        if (reviewTimer != null) reviewTimer.removeCallbacksAndMessages(null);
         // A WebView outliving its Activity is the classic leak in this file's
         // shape. Detach it from the view tree before destroying, or the
         // destroy itself can throw on some OEM builds.
