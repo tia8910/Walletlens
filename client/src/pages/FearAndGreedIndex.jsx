@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import Icon from '../components/Icon'
 import { Link } from 'react-router-dom'
+import { noteFeatureUse } from '../featureUse'
 import { api } from '../api'
 import { track } from '../analytics'
 import Logo from '../components/Logo'
@@ -42,6 +43,7 @@ export default function FearAndGreedIndex() {
   useEffect(() => {
     document.title = `${doc.title} — WalletLens`
     track('fear_greed_page_view')
+    noteFeatureUse('feargreed')
     api.getWhaleMarketSnapshot().then(coins => {
       if (coins?.length) setScore(computeScore(coins))
     }).catch(() => {}).finally(() => setLoading(false))

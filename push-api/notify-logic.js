@@ -707,6 +707,57 @@ export const COPY = {
     it: () => 'Esporta i tuoi asset in .json o .csv con un QR code — salvato nei Download, mai sul cloud.',
   },
 
+  featTransactionsTitle: {
+    en: () => '🧾 Your trades, one ledger',
+    ar: () => '🧾 صفقاتك في دفتر واحد',
+    fr: () => '🧾 Un journal complet de vos transactions',
+    es: () => '🧾 Un solo libro de tus operaciones',
+    de: () => '🧾 Ihr Handelstagebuch an einem Ort',
+    it: () => '🧾 Tutte le tue operazioni in un unico registro',
+  },
+  featTransactionsBody: {
+    en: () => 'Log every buy and sell in Transactions — P&L, totals and per-asset history stay accurate and always at hand.',
+    ar: () => 'سجّل كل عملية شراء وبيع في «المعاملات» — أرباحك وخسائرك وإجمالياتك وتاريخ كل أصل دقيقة وفي متناولك.',
+    fr: () => 'Enregistrez chaque achat et vente dans Transactions — plus-values, totaux et historique par actif restent exacts et à portée de main.',
+    es: () => 'Registra cada compra y venta en Transacciones: ganancias, totales e historial por activo siempre exactos y a mano.',
+    de: () => 'Erfassen Sie jeden Kauf und Verkauf in „Transaktionen“ — Gewinne, Summen und Verlauf pro Asset bleiben präzise und griffbereit.',
+    it: () => 'Registra ogni acquisto e vendita in Transazioni — profitti, totali e storico per asset restano precisi e sempre a portata di mano.',
+  },
+
+  featFeargreedTitle: {
+    en: () => '😱 Fear or greed — right now',
+    ar: () => '😱 خوف أم طمع — الآن',
+    fr: () => '😱 Peur ou euphorie — en ce moment',
+    es: () => '😱 ¿Miedo o codicia? Ahora mismo',
+    de: () => '😱 Angst oder Gier — jetzt',
+    it: () => '😱 Paura o avidità — adesso',
+  },
+  featFeargreedBody: {
+    en: () => 'The Fear & Greed Index reads market mood from real on-chain and price data — see when the crowd is panicking or getting ahead of itself.',
+    ar: () => 'يقرأ مؤشر الخوف والطمع مزاج السوق من بيانات السلسلة والأسعار الحقيقية — لترى متى يذعر الجمهور أو يبالغ في التفاؤل.',
+    fr: () => 'L\u2019indice de peur et d\u2019avidit\u00e9 lit l\u2019humeur du march\u00e9 \u00e0 partir de donn\u00e9es on-chain et de prix r\u00e9elles — voyez quand la foule panique ou s\u2019emballe.',
+    es: () => 'El Índice de Miedo y Codicia lee el ánimo del mercado con datos on-chain y de precio reales: ve cuándo la multitud entra en pánico o se adelanta.',
+    de: () => 'Der Angst-und-Gier-Index liest die Marktstimmung aus echten On-Chain- und Kursdaten — sehen Sie, wann die Menge panisch oder zu euphorisch ist.',
+    it: () => 'L\u2019indice di paura e avidit\u00e0 legge l\u2019umore del mercato da dati on-chain e prezzi reali — vedi quando la folla \u00e8 nel panico o si sta spingendo troppo.',
+  },
+
+  featRiskTitle: {
+    en: () => '🛡️ How risky is your portfolio?',
+    ar: () => '🛡️ ما مدى خطورة محفظتك؟',
+    fr: () => '🛡️ Quel est le risque de votre portefeuille ?',
+    es: () => '🛡️ ¿Cuán riesgosa es tu cartera?',
+    de: () => '🛡️ Wie riskant ist Ihr Portfolio?',
+    it: () => '🛡️ Quanto è rischioso il tuo portafoglio?',
+  },
+  featRiskBody: {
+    en: () => 'The Risk Scanner stress-tests concentration, drawdown and exposure — one look at where your net worth could hurt most.',
+    ar: () => 'يختبر «ماسح المخاطر» التركيز والانخفاضات والانكشاف — نظرة واحدة على أكثر ما قد يؤلم صافي ثروتك.',
+    fr: () => 'Le scanner de risque met \u00e0 l\u2019\u00e9preuve concentration, baisses et exposition — un coup d\u2019\u0153il aux points de vuln\u00e9rabilit\u00e9 de votre patrimoine.',
+    es: () => 'El Escáner de Riesgo pone a prueba concentración, caídas y exposición: un vistazo a lo que más podría afectar tu patrimonio.',
+    de: () => 'Der Risiko-Scanner prüft Konzentration, Drawdowns und Exposure — ein Blick auf die Stellen, an denen Ihr Vermögen am meisten wehtut.',
+    it: () => 'Lo scanner di rischio verifica concentrazione, drawdown ed esposizione — uno sguardo a dove il tuo patrimonio potrebbe far più male.',
+  },
+
   // — Win-back for users who stopped opening the app —
   retentionTitle: {
     en: (step) => step <= 3 ? 'Markets moved while you were away'
@@ -812,7 +863,7 @@ export const FEATURE_TIP_GAP_MS = 3 * 24 * 60 * 60 * 1000
  * unreachable — which is exactly what happened when the list outgrew the cap.
  * The guard test asserts the relationship rather than the number.
  */
-export const MAX_FEATURE_TIPS = 23
+export const MAX_FEATURE_TIPS = 25
 
 export const FEATURE_TIPS = [
   {
@@ -983,6 +1034,31 @@ export const FEATURE_TIPS = [
     url: '/dashboard?tab=data',
     when: (st) => st.watchCount >= 1 && st.setup.exportdata === false,
   },
+  {
+    // The full trade ledger. Anyone who tracks holdings has somewhere to log
+    // the history behind them, and the P&L, totals and per-asset breakdowns
+    // only exist once the trades do. Gated on the page having never opened,
+    // like the other page-based tips below.
+    id: 'transactions',
+    url: '/transactions',
+    when: (st) => st.watchCount > 0 && st.setup.transactions === false,
+  },
+  {
+    // Market mood in one number, drawn from real on-chain and price data.
+    // Only for someone actually holding crypto: Fear & Greed is a crypto
+    // read, and offering it to a stocks-and-metals-only portfolio is noise.
+    id: 'feargreed',
+    url: '/fear-and-greed-index',
+    when: (st) => st.kinds.includes('crypto') && st.setup.feargreed === false,
+  },
+  {
+    // The Risk Scanner inside the dashboard's tools tab — concentration,
+    // drawdown and exposure on the same numbers the user already watches.
+    // Deep-links straight to the risk tool rather than the tab's default.
+    id: 'risk',
+    url: '/dashboard?tab=tools&tool=risk',
+    when: (st) => st.watchCount > 0 && st.setup.risk === false,
+  },
 ]
 
 /**
@@ -1003,6 +1079,7 @@ export function sanitizeSetup(raw) {
     'guardian', 'vision', 'watchlist', 'weekly', 'coinTargets', 'backup',
     'applock', 'technicals', 'whales', 'academy', 'coach', 'rebalance',
     'calendar', 'alpha', 'marketindex', 'grow', 'exportdata',
+    'transactions', 'feargreed', 'risk',
   ]) {
     if (typeof raw[k] === 'boolean') out[k] = raw[k]
   }

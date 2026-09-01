@@ -2691,6 +2691,9 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
 function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLoading, coinTargets, initialTool }) {
   const { t } = useLanguage()
   const [tool, setTool] = useState(initialTool || 'ai')
+  // A push deep-link can land directly on the risk scanner; record that the
+  // user has actually found it, so the feature tip stays quiet afterwards.
+  useEffect(() => { if (tool === 'risk') noteFeatureUse('risk') }, [tool])
   const subTabs = [
     { id: 'ai',     label: t('portfolioAnalysisNav') },
     { id: 'ta',     label: t('dashTechnicals') },
@@ -3240,6 +3243,12 @@ const PortfolioBrief = memo(function PortfolioBrief({ enriched, totalValue, tota
 export default function Dashboard() {
   const navigate = useNavigate()
   const location = useLocation()
+  // ?tool= is the URL-form deep link a push notification can carry (router
+  // state does not survive a cold launch from the lock screen), for tools that
+  // live inside the tools tab rather than being a tab of their own.
+  const toolFromSearch = (() => {
+    try { return new URLSearchParams(location.search).get('tool') } catch { return null }
+  })()
   const { t, lang } = useLanguage()
   const [isTabPending, startTabTransition] = useTransition()
   const [portfolio, setPortfolio]         = useState([])
@@ -5576,7 +5585,7 @@ export default function Dashboard() {
           isDemo={isDemo}
           pricesLoading={pricesLoading}
           coinTargets={coinTargets}
-          initialTool={location.state?.tool}
+          initialTool={location.state?.tool || toolFromSearch}
         />
       )}
 

@@ -990,7 +990,8 @@ describe('feature tips', () => {
     const everything = Object.fromEntries(
       ['guardian', 'vision', 'watchlist', 'weekly', 'coinTargets', 'backup',
        'applock', 'technicals', 'whales', 'academy', 'coach', 'rebalance',
-       'calendar', 'alpha', 'marketindex', 'grow', 'exportdata']
+       'calendar', 'alpha', 'marketindex', 'grow', 'exportdata',
+       'transactions', 'feargreed', 'risk']
         .map(k => [k, false])
     )
     const sent = []

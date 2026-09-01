@@ -6,6 +6,7 @@ import { api, ASSET_CATEGORIES, PRESET_ASSETS, POPULAR_TICKERS, POPULAR_FIAT, ST
 import CoinLogo from '../components/CoinLogo'
 import { track, trackProfileCreated } from '../analytics'
 import { useLanguage } from '../LanguageContext'
+import { noteFeatureUse } from '../featureUse'
 
 const TradeSheet = lazy(() => import('../components/TradeSheet'))
 
@@ -239,7 +240,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   loadDataRef.current = loadData
 
   useEffect(() => { loadData(); setVisibleCount(50) }, [filterWallet])
-  useEffect(() => { track('transactions_view') }, [])
+  useEffect(() => { track('transactions_view'); noteFeatureUse('transactions') }, [])
 
   useEffect(() => {
     if (location.state?.openAdd) {
