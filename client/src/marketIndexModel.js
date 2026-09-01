@@ -60,7 +60,10 @@ export function avg(list) {
 const ch24 = c => c.price_change_percentage_24h ?? c.price_change_percentage_24h_in_currency ?? 0
 
 // Symbols each pillar reads, by the lowercase Stooq ticker the fetch returns.
-export const EQUITY_SYMS = ['^spx', '^ndq', '^dji', '^rut', '^ukx', '^dax', '^nkx']
+// Ten indices across three regions. Breadth is computed over whichever of
+// them answered, so a ticker the feed cannot serve narrows the sample rather
+// than distorting it.
+export const EQUITY_SYMS = ['^spx', '^ndq', '^dji', '^rut', '^ukx', '^dax', '^cac', '^nkx', '^hsi', '^shc']
 export const GROWTH_SYMS = ['cl.f', 'bz.f', 'hg.f']       // WTI, Brent, copper
 // Pairs quoted with the dollar on the RIGHT: a rise is the dollar weakening.
 export const USD_QUOTE_SYMS = ['eurusd', 'gbpusd', 'audusd']

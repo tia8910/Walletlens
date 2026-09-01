@@ -1799,7 +1799,7 @@ write('/market-index', buildPage({
 <h2>How the score is calculated</h2>
 <ul>
 <li><strong>Crypto — 30%:</strong> the share of the top 100 coins up over 24h, with the average 24h move of the top 50.</li>
-<li><strong>Equities — 30%:</strong> how many of the S&amp;P 500, Nasdaq, Dow Jones, Russell 2000, FTSE 100, DAX and Nikkei 225 are up, and by how much.</li>
+<li><strong>Equities — 30%:</strong> how many of ten major indices across the US, Europe and Asia are up — S&amp;P 500, Nasdaq, Dow Jones, Russell 2000, FTSE 100, DAX, CAC 40, Nikkei 225, Hang Seng and Shanghai Composite — and by how much.</li>
 <li><strong>Volatility &amp; havens — 20%:</strong> the VIX level (12 is calm, 35 is a scare) and gold read as a safe-haven bid.</li>
 <li><strong>Dollar &amp; growth — 20%:</strong> dollar weakness across the major currency pairs, plus copper and oil as a read on industrial demand.</li>
 </ul>

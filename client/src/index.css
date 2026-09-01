@@ -14020,6 +14020,31 @@ button:not(:disabled):active,
 .mki-stat-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.3rem; }
 .mki-stat-value { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; }
 
+/* The Google-Finance-style region tabs over the global markets boards. */
+.mki-tabs { display: flex; gap: 0.4rem; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 0 0.85rem; padding-bottom: 2px; }
+.mki-tabs::-webkit-scrollbar { display: none; }
+.mki-tab {
+  flex: 0 0 auto; font: inherit; font-size: 0.78rem; font-weight: 600;
+  color: var(--text-muted); background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09); border-radius: 999px;
+  padding: 0.34rem 0.85rem; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.mki-tab:hover { background: rgba(255,255,255,0.09); }
+.mki-tab-on { color: #071a0c; background: var(--g, #10b981); border-color: transparent; }
+.mki-tab-on:hover { background: var(--g, #10b981); }
+.mki-tab:focus-visible { outline: 2px solid var(--g, #10b981); outline-offset: 2px; }
+
+/* Day-range meter on the quote cells: neutral ink on a recessive track —
+   it shows position in today's travel, not good/bad, which the ▲/▼ chip
+   above it already carries with a glyph as well as a colour. */
+.mki-range { margin-top: 0.45rem; }
+.mki-range-track { position: relative; display: block; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.1); }
+.mki-range-marker {
+  position: absolute; top: 50%; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--text-muted); transform: translate(-50%, -50%);
+}
+.mki-ext-empty { font-size: 0.8rem; color: var(--text-sub); margin: 0.35rem 0 0.15rem; line-height: 1.5; }
+
 .mki-ext-section { padding: 1rem 1.25rem; margin-bottom: 1rem; }
 .mki-ext-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 0.6rem; }
 .mki-ext-cell {

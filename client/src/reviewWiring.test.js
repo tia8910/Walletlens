@@ -185,8 +185,30 @@ describe('the native rating gate is actually called by something', () => {
   it('waits for the app to be in front of the user first', () => {
     // A card drawn over a cold start lands on a screen the user has not read
     // yet, from an app they were trying to open.
-    expect(shell).toMatch(/REVIEW_DWELL_MS = 60_000L/)
+    expect(shell).toMatch(/REVIEW_SETTLE_MS = 20_000L/)
     expect(shell).toMatch(/postDelayed\(this::maybeAskForReview, remaining\)/)
+  })
+
+  it('counts attention across launches, not per session', () => {
+    // The most common session in a portfolio app is a twenty-second price
+    // check, and the people who do that daily are exactly the users worth
+    // asking. A per-session minute — the first design — could never ask them.
+    expect(gate).toMatch(/MIN_FOREGROUND_MS = 90_000L/)
+    expect(gate).toMatch(/KEY_FG_MS, 0\) < MIN_FOREGROUND_MS\) return false/)
+    // Every ended stretch reaches the lifetime total…
+    const pause = /protected void onPause\(\) \{[\s\S]*?\n    \}/.exec(shell)[0]
+    expect(pause).toMatch(/ReviewGate\.noteForeground\(this, stretch\)/)
+    // …and the running one is flushed before the gate is consulted, so
+    // shouldAsk() judges a total that is not one session behind.
+    const ask = /private void maybeAskForReview\(\) \{[\s\S]*?\n    \}/.exec(shell)[0]
+    expect(ask.indexOf('ReviewGate.noteForeground')).toBeLessThan(ask.indexOf('ReviewGate.shouldAsk'))
+  })
+
+  it('schedules for whichever threshold lands later', () => {
+    // Two clocks, one timer: the session settle and the lifetime total. Taking
+    // the max is what lets a third quick session ask mid-session instead of
+    // waiting out a full minute that will never come.
+    expect(shell).toMatch(/Math\.max\(settleRemaining, totalRemaining\)/)
   })
 
   it('cancels the pending ask when the app goes to the background', () => {
