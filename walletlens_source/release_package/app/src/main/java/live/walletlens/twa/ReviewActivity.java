@@ -21,21 +21,31 @@ import com.google.android.play.core.review.ReviewManagerFactory;
 /**
  * Shows Google Play's in-app review card.
  *
- * <p>THREE WAYS IN
+ * <p>TWO WAYS IN
  * <ol>
- *   <li><b>{@link ReviewGate}, at launch</b>, with {@link #EXTRA_CONTINUE_TO_APP}
- *       set. The first ask, from the first launch. Native because it has to be:
- *       once the Custom Tab is up this app has no foreground activity, so
- *       starting one is a background activity launch, which Android 10+ blocks.
- *       That is also why it can only fire before the app opens.</li>
- *   <li><b>The web app's automatic ask</b>, via {@code walletlens://review}.
- *       The second attempt, and the better-placed one — it lands while the user
- *       is looking at their portfolio. It arms on a timer and fires on the next
- *       tap; the tap is not decoration, it is the user activation without which
- *       Chrome refuses to navigate to an external scheme at all.</li>
- *   <li><b>"Rate WalletLens" in Settings</b>, the same web route with
+ *   <li><b>{@link ReviewGate}, natively</b>, started by {@link AppShellActivity}
+ *       once the app has been in front of the user for a while. This is the
+ *       primary ask, and it is native for a reason that took three rounds of
+ *       "the card still doesn't appear" to pin down: the web path can only
+ *       reach Play by navigating to an external scheme, which needs a user
+ *       gesture, and its whole clock lives in localStorage — the one store that
+ *       gets wiped by the reinstalls people use to test this. Native state is
+ *       SharedPreferences, which survives updates and does not need a tap.</li>
+ *   <li><b>The web app's automatic ask</b>, via {@code walletlens://review},
+ *       kept as the second attempt for the case that matters most: Play
+ *       declining silently. It arms on a timer and fires on the next tap; the
+ *       tap is not decoration, it is the user activation without which the
+ *       WebView refuses to navigate to an external scheme at all. It may carry
  *       {@code fallback=store}.</li>
  * </ol>
+ *
+ * <p>The older design had ReviewGate divert the LAUNCH itself, because as a
+ * Trusted Web Activity the app had no foreground activity of its own once
+ * Chrome was up, and starting one would have been a background activity launch.
+ * That is what {@link #EXTRA_CONTINUE_TO_APP} and the hand-off below are for.
+ * The shell ended that constraint — the app is now a real foreground activity
+ * the whole time the user is in it — so the card is shown over the running app
+ * instead, and nothing sets that extra any more.</p>
  *
  * <p>Once a card has actually been shown, {@link #markCompleted} stamps native
  * SharedPreferences and ReviewGate stops asking. Crucially that stamp is only
@@ -81,6 +91,19 @@ public class ReviewActivity extends Activity {
      */
     public static final String EXTRA_CONTINUE_TO_APP = "continue_to_app";
 
+    /**
+     * Intent extra: {@link ReviewGate} started this, so it has already spent an
+     * ask and is owed it back if Play shows nothing.
+     *
+     * <p>Only the native gate keeps that ledger. The web path has its own, in
+     * localStorage, and calls neither markAsked nor rollbackAsk — so rolling
+     * back for a web-triggered flow would clear a cooldown that belongs to a
+     * different ask entirely. Read from an explicit extra rather than inferred
+     * from the log source string, which anything on the device can set: this
+     * activity is BROWSABLE.
+     */
+    public static final String EXTRA_FROM_GATE = "from_gate";
+
     /** Set once the flow has actually run, so the web side can stop asking. */
     private static final String KEY_COMPLETED_AT = "review_flow_completed_at";
 
@@ -88,17 +111,24 @@ public class ReviewActivity extends Activity {
     private static final long NO_CARD_THRESHOLD_MS = 1200L;
 
     /**
-     * How long the launch path will wait on Play before opening the app anyway.
+     * How long to wait on Play before giving up and closing this activity.
      *
-     * <p>Only armed when we are holding up startup. Play normally answers in
-     * well under a second, but it is a cross-process call to another app that
-     * can be updating, disabled or wedged, and none of those may cost the user
-     * their launch — a translucent activity that never finishes looks exactly
-     * like the app failing to open.
+     * <p>Play normally answers in well under a second, but it is a cross-process
+     * call to another app that can be updating, disabled or wedged, and this
+     * activity is translucent with no UI of its own — so a call that never
+     * comes back leaves an invisible window sitting on top of the app,
+     * swallowing every touch. Indistinguishable, from the user's side, from the
+     * app having frozen.
+     *
+     * <p>Armed on EVERY path, not only the old launch hand-off. It used to be
+     * conditional on {@code continueToApp}, which meant the one case it fired
+     * in is the case that no longer exists, and the case it now runs in — a
+     * card started over the user's dashboard — had no timeout at all.
      */
-    private static final long HANDOFF_WATCHDOG_MS = 4000L;
+    private static final long WATCHDOG_MS = 4000L;
 
     private boolean continueToApp = false;
+    private boolean fromGate = false;
     private boolean handedOff = false;
     private android.os.Handler watchdog;
 
@@ -110,20 +140,27 @@ public class ReviewActivity extends Activity {
         boolean fallbackToStore = false;
         Intent intent = getIntent();
         continueToApp = intent != null && intent.getBooleanExtra(EXTRA_CONTINUE_TO_APP, false);
+        // An extra survives only an explicit Intent from inside this app; a
+        // walletlens://review URL from the WebView cannot carry one.
+        fromGate = intent != null && intent.getBooleanExtra(EXTRA_FROM_GATE, false);
+        if (fromGate) source = "gate";
         if (intent != null && intent.getData() != null) {
             Uri uri = intent.getData();
             String s = uri.getQueryParameter("source");
             if (s != null && !s.isEmpty()) source = s;
             fallbackToStore = "store".equals(uri.getQueryParameter("fallback"));
         }
-        if (continueToApp) {
-            source = "launch";
-            watchdog = new android.os.Handler(getMainLooper());
-            watchdog.postDelayed(() -> {
-                Log.w(TAG, "Play did not answer in time; opening the app");
-                handOff();
-            }, HANDOFF_WATCHDOG_MS);
-        }
+        if (continueToApp) source = "launch";
+        watchdog = new android.os.Handler(getMainLooper());
+        watchdog.postDelayed(() -> {
+            Log.w(TAG, "Play did not answer in time; closing the review flow");
+            ReviewGate.noteOutcome(ReviewActivity.this, "no_answer_from_play");
+            // Play never answered, so nothing was shown. Charging the user a
+            // 60-day cooldown for a card that did not exist is the mistake
+            // rollbackAsk exists to undo.
+            giveTheAskBack();
+            handOff();
+        }, WATCHDOG_MS);
 
         final boolean openStoreOnFailure = fallbackToStore;
         Log.d(TAG, "Review requested from " + source);
@@ -132,6 +169,12 @@ public class ReviewActivity extends Activity {
             ReviewManager manager = ReviewManagerFactory.create(this);
             Task<ReviewInfo> request = manager.requestReviewFlow();
             request.addOnCompleteListener(task -> {
+                // Play has answered. Everything past this point is either an
+                // immediate finish or a card the USER is reading, and the user
+                // is allowed to take longer than four seconds over it — a
+                // watchdog still running here would finish the activity out
+                // from under a card that was displaying correctly.
+                cancelWatchdog();
                 if (!task.isSuccessful()) {
                     // Typically: sideloaded build, no Play Store, or an
                     // internal Play error. Nothing the user should see.
@@ -180,7 +223,7 @@ public class ReviewActivity extends Activity {
                                     // of the 60-day cooldown markAsked() has
                                     // already started. Give the ask back
                                     // instead, and try again next launch.
-                                    ReviewGate.rollbackAsk(ReviewActivity.this);
+                                    giveTheAskBack();
                                     handOff();
                                     return;
                                 }
@@ -200,6 +243,24 @@ public class ReviewActivity extends Activity {
             Log.w(TAG, "Play review unavailable: " + t);
             finishFlow(openStoreOnFailure);
         }
+    }
+
+    /** Stop the request timeout. Safe to call more than once. */
+    private void cancelWatchdog() {
+        if (watchdog != null) {
+            watchdog.removeCallbacksAndMessages(null);
+            watchdog = null;
+        }
+    }
+
+    /**
+     * Return the ask the gate spent, when Play showed nothing.
+     *
+     * <p>A no-op for a web-triggered flow, which never spent one: the two paths
+     * keep separate ledgers and only this one is native.
+     */
+    private void giveTheAskBack() {
+        if (fromGate) ReviewGate.rollbackAsk(this);
     }
 
     /** Close out, optionally sending the user to the listing instead. */
@@ -238,7 +299,7 @@ public class ReviewActivity extends Activity {
     private void handOff() {
         if (handedOff) return;
         handedOff = true;
-        if (watchdog != null) watchdog.removeCallbacksAndMessages(null);
+        cancelWatchdog();
 
         if (continueToApp) {
             try {

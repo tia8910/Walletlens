@@ -8,22 +8,26 @@ import android.util.Log;
 /**
  * Decides whether this launch should show Google Play's in-app review card.
  *
- * <p>THIS IS THE FIRST ASK
- * It runs at launch, from the very first one, before the TWA opens. Launch is
- * the only window native code gets: once the Custom Tab is up this app has no
- * foreground activity, and starting one would be a background activity launch,
- * which Android 10+ blocks.
+ * <p>THIS IS THE PRIMARY ASK
+ * {@link AppShellActivity} counts launches here on every cold start and calls
+ * {@link #shouldAsk} once the app has been in front of the user long enough
+ * for the card not to be interrupting a launch. What that buys over the web
+ * app's own ask is an attempt that needs no tap, does not depend on the web
+ * deploy having reached the device, and — the part that actually mattered —
+ * keeps its clock in SharedPreferences rather than localStorage. Every attempt
+ * to test the web gate by reinstalling wiped the very state the gate was
+ * counting, so it could never reach three opens across two days.
  *
- * <p>The cost of that is real and was accepted deliberately — on a new install
- * the card appears before the user has seen the dashboard. What it buys is an
- * ask that needs no tap, does not depend on the web deploy having reached the
- * device, and cannot be lost to a session that ends early.
+ * <p>This used to divert the LAUNCH itself, because as a Trusted Web Activity
+ * the app had no foreground activity of its own once Chrome was up. It was
+ * never wired, and it no longer needs to be: the shell is a real activity for
+ * as long as the user is in the app.
  *
  * <p>The web app keeps its own in-session ask as the second attempt, for the
  * case that matters most: Play declining. Play returns success and shows
  * nothing when its per-user quota is spent, and there is no way to tell that
  * apart from success — so rather than guess, the web path simply tries again
- * later, in-session, where the card would land better anyway.
+ * later.
  *
  * <p>They do not double-ask when the first one worked. {@link ReviewActivity}
  * stamps {@code review_flow_completed_at} whenever a flow completes, whichever
@@ -62,8 +66,26 @@ final class ReviewGate {
     /** No waiting period: eligible from the first launch. */
     private static final int MIN_DAYS = 0;
 
-    /** Cold starts, including this one. 1 = the very first launch. */
-    private static final int MIN_LAUNCHES = 1;
+    /**
+     * Cold starts, including this one, on an install that arrived as an UPDATE.
+     *
+     * <p>One is right for these: the person has already been using the app, for
+     * however long, and the counter only started at zero because nothing was
+     * calling {@link #noteLaunch} before. Making them wait a launch would be
+     * asking them to prove something they have already proved.
+     */
+    private static final int MIN_LAUNCHES_UPDATED = 1;
+
+    /**
+     * Cold starts required on a FIRST install.
+     *
+     * <p>Sixty seconds into somebody's very first session is the middle of
+     * onboarding — they are typing in their first holding, not forming a view
+     * of the app. Coming back a second time is the smallest honest signal that
+     * there is anything to have an opinion about, and unlike a longer wait it
+     * does not depend on a clock the user cannot see.
+     */
+    private static final int MIN_LAUNCHES_FRESH = 2;
 
     /**
      * Our own cooldown. Play applies an undisclosed per-user quota on top and
@@ -161,6 +183,28 @@ final class ReviewGate {
         }
     }
 
+    /**
+     * Whether this install arrived as an update rather than a first install.
+     *
+     * <p>Play sets both timestamps on a first install and moves only the second
+     * on an update, so they are equal exactly once in an install's life. A few
+     * seconds of slack because the two are written by different steps of the
+     * install and are not guaranteed to land in the same millisecond.
+     *
+     * <p>Unknown counts as fresh here, which is the cautious direction: it
+     * costs one extra launch before the first ask, rather than an ask landing
+     * on somebody's first-ever screen.
+     */
+    private static boolean isUpdatedInstall(Context c) {
+        try {
+            android.content.pm.PackageInfo info =
+                    c.getPackageManager().getPackageInfo(c.getPackageName(), 0);
+            return info.lastUpdateTime - info.firstInstallTime > 10_000L;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     private static SharedPreferences prefs(Context c) {
         return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
@@ -187,13 +231,21 @@ final class ReviewGate {
         }
     }
 
-    /** True when this launch should divert through {@link ReviewActivity}. */
+    /**
+     * True when this launch has earned an ask.
+     *
+     * <p>Called from {@link AppShellActivity} after the dwell, never at launch:
+     * every gate here is about the launch's HISTORY, and none of them knows
+     * whether the user is currently reading the dashboard or still watching it
+     * paint. That part is the caller's to judge.
+     */
     static boolean shouldAsk(Context c) {
         try {
             SharedPreferences p = prefs(c);
             long now = System.currentTimeMillis();
 
-            if (p.getInt(KEY_LAUNCHES, 0) < MIN_LAUNCHES) return false;
+            int needed = isUpdatedInstall(c) ? MIN_LAUNCHES_UPDATED : MIN_LAUNCHES_FRESH;
+            if (p.getInt(KEY_LAUNCHES, 0) < needed) return false;
 
             long first = p.getLong(KEY_FIRST_SEEN, 0);
             if (first == 0 || now - first < MIN_DAYS * DAY_MS) return false;
@@ -204,6 +256,14 @@ final class ReviewGate {
             int gapDays = askCount >= SETTLED_ASKS ? SETTLED_REASK_DAYS : REASK_AFTER_DAYS;
             long asked = p.getLong(KEY_LAST_ASKED, 0);
             if (asked != 0 && now - asked < (long) gapDays * DAY_MS) return false;
+
+            // App Lock on, and this session has not been unlocked. The web
+            // side learned this the expensive way: its dwell clock ran behind
+            // the lock screen, so the card arrived on the fingerprint prompt
+            // itself — the one moment the user is certainly not admiring the
+            // app. Native has the same exposure, because the lock is also drawn
+            // as a page inside the shell, which stays resumed the whole time.
+            if (BiometricActivity.isEnabled(c) && !BiometricActivity.isSessionValid(c)) return false;
 
             // A flow has already completed on this device, from either side.
             // Not a tidiness nicety: Play's per-user quota is small and
