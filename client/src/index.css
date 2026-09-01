@@ -1391,7 +1391,18 @@ input, select, textarea {
 [data-wl-light] .alpha-breakdown-bar-wrap { background: rgba(0,0,0,0.08); }
 [data-wl-light] .alpha-loading-row    { color: var(--text-muted); }
 [data-wl-light] .alpha-disclaimer     { color: var(--text-sub); }
-[data-wl-light] .alpha-empty-hint     { color: var(--text-muted); }
+[data-wl-light] /* The asset-class mix under the Alpha breakdown. Wraps rather than scrolls:
+   a portfolio can hold five classes and none of them should be cut off. */
+.alpha-score-mix { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.7rem; }
+.alpha-mix-chip {
+  font-size: 0.66rem; font-weight: 700; letter-spacing: 0.01em;
+  padding: 0.2rem 0.5rem; border-radius: 999px;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.055);
+  border: 1px solid rgba(255,255,255,0.09);
+  white-space: nowrap;
+}
+.alpha-empty-hint     { color: var(--text-muted); }
 [data-wl-light] .alpha-score-empty    { color: var(--text-muted); }
 
 /* ── AI Insights rows ── */
