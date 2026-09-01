@@ -5427,9 +5427,123 @@ tr:last-child td { border-bottom: none; }
   22%  { transform: scale(1.022); text-shadow: 0 0 56px rgba(var(--g-rgb),0.38); }
   100% { transform: scale(1); }
 }
+/* ══ Live Portfolio Heartbeat ═══════════════════════════════════════════════
+   The hero card breathes in sync with market activity.  Four volatility
+   levels driven by the weighted RMS of individual asset 24h changes:
+
+   v0  calm        → 3.5s  subtle glow
+   v1  normal      → 2.2s  gentle pulse
+   v2  elevated    → 1.4s  visible pulse
+   v3  high        → 0.8s  fast, urgent pulse
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.heartbeat {
+  position: relative;
+  transition: box-shadow 1.2s ease, border-color 1.2s ease;
+}
+
+/* ── Calm markets: barely-there breathing glow ── */
+.heartbeat-v0.heartbeat {
+  animation: heartbeat-calm 3.5s ease-in-out infinite;
+}
+@keyframes heartbeat-calm {
+  0%, 100% { box-shadow: 0 0 0 rgba(var(--g-rgb), 0.0); }
+  50%      { box-shadow: 0 0 18px rgba(var(--g-rgb), 0.06); }
+}
+
+/* ── Normal: steady gentle pulse ── */
+.heartbeat-v1.heartbeat {
+  animation: heartbeat-normal 2.2s ease-in-out infinite;
+}
+@keyframes heartbeat-normal {
+  0%, 100% { box-shadow: 0 0 0 rgba(var(--g-rgb), 0.0); }
+  50%      { box-shadow: 0 0 24px rgba(var(--g-rgb), 0.12); }
+}
+
+/* ── Elevated: visible pulse, card feels alive ── */
+.heartbeat-v2.heartbeat {
+  animation: heartbeat-elevated 1.4s ease-in-out infinite;
+}
+@keyframes heartbeat-elevated {
+  0%, 100% { box-shadow: 0 0 4px rgba(var(--g-rgb), 0.05); }
+  50%      { box-shadow: 0 0 32px rgba(var(--g-rgb), 0.22), inset 0 0 12px rgba(var(--g-rgb), 0.04); }
+}
+
+/* ── High volatility: urgent, fast pulse ── */
+.heartbeat-v3.heartbeat {
+  animation: heartbeat-high 0.8s ease-in-out infinite;
+}
+@keyframes heartbeat-high {
+  0%, 100% { box-shadow: 0 0 8px rgba(var(--g-rgb), 0.1); }
+  50%      { box-shadow: 0 0 44px rgba(var(--g-rgb), 0.32), inset 0 0 18px rgba(var(--g-rgb), 0.08); }
+}
+
+/* ══ Mood Ring ══════════════════════════════════════════════════════════════
+   A subtle glowing ring around the net-worth number.  The color shifts with
+   the day's direction: green gradient for gains, warm amber for losses,
+   cool blue when flat.  Applied as a text-shadow + a soft box-shadow on the
+   containing <h2> for a natural halo effect.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.mood-ring { transition: text-shadow 1.5s ease; }
+
+/* ── Up: green glow ── */
+.mood-ring-up {
+  text-shadow:
+    0 0 30px rgba(16, 185, 129, 0.25),
+    0 0 60px rgba(16, 185, 129, 0.10);
+}
+
+/* ── Down: warm amber glow ── */
+.mood-ring-down {
+  text-shadow:
+    0 0 30px rgba(251, 146, 60, 0.30),
+    0 0 60px rgba(245, 158, 11, 0.12);
+}
+
+/* ── Flat: cool blue glow ── */
+.mood-ring-flat {
+  text-shadow:
+    0 0 24px rgba(59, 130, 246, 0.18),
+    0 0 50px rgba(59, 130, 246, 0.07);
+}
+
+/* ── Mood-tinted hero card border ── */
+.mood-up.heartbeat {
+  border-color: rgba(16, 185, 129, 0.18);
+}
+.mood-down.heartbeat {
+  border-color: rgba(251, 146, 60, 0.18);
+}
+.mood-flat.heartbeat {
+  border-color: rgba(59, 130, 246, 0.12);
+}
+
+/* ── Light mode adjustments ── */
+[data-wl-light] .mood-ring-up {
+  text-shadow:
+    0 0 20px rgba(16, 185, 129, 0.18),
+    0 0 44px rgba(16, 185, 129, 0.06);
+}
+[data-wl-light] .mood-ring-down {
+  text-shadow:
+    0 0 20px rgba(245, 158, 11, 0.20),
+    0 0 44px rgba(245, 158, 11, 0.07);
+}
+[data-wl-light] .mood-ring-flat {
+  text-shadow:
+    0 0 16px rgba(59, 130, 246, 0.14),
+    0 0 36px rgba(59, 130, 246, 0.05);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dvx-soul { animation: none; }
   .dvx-value-beat { animation: none; }
+  .heartbeat-v0.heartbeat,
+  .heartbeat-v1.heartbeat,
+  .heartbeat-v2.heartbeat,
+  .heartbeat-v3.heartbeat { animation: none; box-shadow: none; }
+  .mood-ring, .mood-ring-up, .mood-ring-down, .mood-ring-flat { text-shadow: none; }
   .ms-confetti { display: none; }
 }
 .dvx-currency-switcher { display: flex; gap: 0.4rem; margin: 0.6rem 0 0; flex-wrap: wrap; align-items: center; }

@@ -3404,6 +3404,12 @@ export default function Dashboard() {
   // Brief "heartbeat" on the net-worth figure whenever a fresh price tick moves
   // it — a small sign of life so the number feels live, not frozen.
   const [valuePulse, setValuePulse] = useState(false)
+  // ── Live Heartbeat: market volatility drives a breathing animation ──
+  // volatilityLevel: 0=calm, 1=normal, 2=elevated, 3=high
+  // mood: 'up' | 'down' | 'flat' — drives the mood-ring color
+  const [volatilityLevel, setVolatilityLevel] = useState(0)
+  const [mood, setMood] = useState('flat')
+  const recentPctChgRef = useRef([])
   const [refreshing, setRefreshing] = useState(false)
   const [displayCurrency, setDisplayCurrency] = useState(() => {
     try { return JSON.parse(localStorage.getItem('wl_settings') || '{}').displayCurrency || 'USD' } catch { return 'USD' }
@@ -3935,6 +3941,39 @@ export default function Dashboard() {
     const id = setTimeout(() => setValuePulse(false), 900)
     return () => clearTimeout(id)
   }, [loaded, totalValue])
+
+  // ── Live Heartbeat: compute volatility from recent price ticks ───────
+  // Every time enriched changes (price poll), compute a weighted RMS of
+  // individual asset 24h changes. Large moves = high volatility = fast beat.
+  useEffect(() => {
+    if (!loaded || !enriched.length || totalValue <= 0) return
+    // Weighted RMS of individual asset pct changes, by portfolio weight
+    const rms = Math.sqrt(
+      enriched.reduce((s, h) => {
+        const w = totalValue > 0 ? h.value / totalValue : 1 / enriched.length
+        const chg = Math.abs(h.pct24h || 0)
+        return s + w * chg * chg
+      }, 0)
+    )
+    // Track the last 8 readings for a rolling average (smooth transitions)
+    const hist = recentPctChgRef.current
+    hist.push(rms)
+    if (hist.length > 8) hist.splice(0, hist.length - 8)
+    const avg = hist.reduce((a, b) => a + b, 0) / hist.length
+    // Map average RMS to volatility level: <3 calm, <8 normal, <15 elevated, else high
+    const level = avg < 3 ? 0 : avg < 8 ? 1 : avg < 15 ? 2 : 3
+    setVolatilityLevel(level)
+  }, [loaded, enriched, totalValue])
+
+  // ── Mood ring: derive portfolio direction from day P&L ───────────────
+  useEffect(() => {
+    if (!loaded || totalValue <= 0) { setMood('flat'); return }
+    const dayBase = totalValue - todayPnLVal
+    const dayPct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
+    if (dayPct >= 0.5)      setMood('up')
+    else if (dayPct <= -0.5) setMood('down')
+    else                     setMood('flat')
+  }, [loaded, totalValue, todayPnLVal])
 
   useEffect(() => {
     if (loaded && totalValue > 0) saveSnapshot(totalValue, totalInvested)
@@ -4476,7 +4515,7 @@ export default function Dashboard() {
           )}
 
           {/* Hero + stats — only shown when portfolio has holdings */}
-          {enriched.length > 0 && <div className="dvx-hero glass-card lens-pulse" {...bindLongPress((x, y) => showLp(x, y, heroLpItems))}>
+          {enriched.length > 0 && <div className={`dvx-hero glass-card heartbeat heartbeat-v${volatilityLevel} mood-${mood}`} {...bindLongPress((x, y) => showLp(x, y, heroLpItems))}>
             {!hidden && !isDemo && (() => {
               const dayBase = totalValue - todayPnLVal
               const dayChangePct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
@@ -4540,7 +4579,7 @@ export default function Dashboard() {
               </button>
               <GuardianBadge />
             </p>
-            <h2 className={`dvx-hero-value ${hidden ? 'dvx-hidden-val' : ''} ${valuePulse ? 'dvx-value-beat' : ''}`}>
+            <h2 className={`dvx-hero-value ${hidden ? 'dvx-hidden-val' : ''} ${valuePulse ? 'dvx-value-beat' : ''} mood-ring mood-ring-${mood}`}>
               {hidden ? '••••••' : cv(loaded ? (perfCat === 'all' ? tickerValue : perfCatValue) : 0)}
             </h2>
             {perfCat !== 'all' && !hidden && (
