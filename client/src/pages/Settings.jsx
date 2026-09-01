@@ -14,7 +14,7 @@ import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import DriveBackup from '../components/DriveBackup'
 import DeviceVault from '../components/DeviceVault'
 import { isAndroidTWA } from '../nativeBridge'
-import { requestReviewNow, reviewDiagnostics } from '../reviewPrompt'
+import { requestReviewNow, reviewDiagnostics, nativeReviewStatus } from '../reviewPrompt'
 import { effectSettings, setEffectSettings, primeEffectAudio } from '../screenEffectsRuntime'
 import { widgetSyncDiagnostics, forceSyncWidgets } from '../nativeWidgets'
 
@@ -96,6 +96,9 @@ export default function Settings() {
   const [wdiag, setWdiag] = useState(() => widgetSyncDiagnostics())
   const [fx, setFx] = useState(() => effectSettings())
   const [rdiag] = useState(() => reviewDiagnostics())
+  // Read once on mount, like rdiag: this is a snapshot of what Play last did,
+  // not something that changes while the screen is open.
+  const [rnative] = useState(() => nativeReviewStatus())
 
   return (
     <div className="page settings-page">
@@ -342,6 +345,30 @@ export default function Settings() {
               <span>{t('setReview')}</span>
               <span className="settings-hint">{t('setReviewHint')}</span>
               <span className="settings-hint">{reviewStatusText(rdiag, t)}</span>
+              {/*
+                The countdown above says when WE will next ask. It cannot say
+                whether Play would show anything if we did, and that is the half
+                that has been missing: the in-app review card is invisible when
+                it works and invisible when it fails, because Play reports
+                success either way.
+
+                Not translated, deliberately. This is a diagnostic line — the
+                strings in it are Play's own package name and its raw outcome,
+                and a translated wrapper around an untranslated payload reads
+                worse than plain English does.
+              */}
+              {rnative && rnative.installer !== 'com.android.vending' && (
+                <span className="settings-hint" style={{ color: 'var(--red)' }}>
+                  Installed by “{rnative.installer}”, not Google Play — Play’s
+                  rating card cannot appear on this build. Install from the Play
+                  listing to test it.
+                </span>
+              )}
+              {rnative?.outcome && (
+                <span className="settings-hint" style={{ opacity: 0.75 }}>
+                  Last asked Play: {rnative.outcome}
+                </span>
+              )}
             </div>
             <button className="settings-chip"
               onClick={() => { track('rate_app_click', { source: 'settings' }); requestReviewNow('settings') }}
