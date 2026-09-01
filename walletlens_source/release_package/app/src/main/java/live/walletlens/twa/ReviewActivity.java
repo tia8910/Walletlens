@@ -108,7 +108,7 @@ public class ReviewActivity extends Activity {
     private static final String KEY_COMPLETED_AT = "review_flow_completed_at";
 
     /** Below this, the rating card cannot have been on screen. */
-    private static final long NO_CARD_THRESHOLD_MS = 1200L;
+    private static final long NO_CARD_THRESHOLD_MS = 800L;
 
     /**
      * How long to wait on Play before giving up and closing this activity.

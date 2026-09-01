@@ -61,6 +61,7 @@ final class ReviewGate {
     private static final String KEY_FG_MS      = "foreground_ms";
     private static final String KEY_LAST_ASKED = "last_asked";
     private static final String KEY_ASK_COUNT  = "ask_count";
+    private static final String KEY_FEATURE_USED = "feature_used";
 
     private static final long DAY_MS = 24L * 60 * 60 * 1000;
 
