@@ -1789,37 +1789,46 @@ ${faqPageSections.map(s => `<h2>${esc(s.title)}</h2>\n` + s.faqs.map(f => `<h3>$
 // ── Market Index (data page — press & citation magnet) ───────────────────────
 write('/market-index', buildPage({
   path: '/market-index',
-  title: 'WalletLens Market Index — Live Crypto Sentiment Data',
-  description: 'A free, citable live crypto market sentiment dataset — a 0–100 score from market breadth, momentum and large-cap leadership across the top 250 coins. Open data for journalists and researchers.',
+  title: 'WalletLens Market Index — Live Cross-Asset Risk Appetite Score',
+  description: 'A free, citable live market dataset — a 0–100 risk-appetite score across crypto, global equity indices, the VIX, gold, forex and commodities. Open data for journalists and researchers.',
   bodyHtml: `
-<h1>Crypto Fear & Greed Index — WalletLens Market Sentiment Score</h1>
-<p>The WalletLens Market Index is a live <strong>0–100 fear and greed score</strong> for the crypto market — updated continuously from three public-data signals across the top 250 cryptocurrencies. It is free for anyone to read, cite, and link.</p>
-<h2>How the fear and greed score is calculated</h2>
-<p>The score is a weighted blend of <strong>market breadth</strong> (45%, the share of the top 100 coins up over 24h), <strong>momentum</strong> (35%, the average normalised 24h move of the top 50), and <strong>large-cap leadership</strong> (20%, the share of the top 10 by market cap that are up). All inputs are public market data.</p>
+<h1>WalletLens Market Index — Live Cross-Asset Risk Appetite Score</h1>
+<p>The WalletLens Market Index is a live <strong>0–100 risk-appetite score</strong> covering every major market on one page — crypto, global equity indices, volatility, precious metals, forex and commodities — updated continuously from public market data. It is free for anyone to read, cite, and link.</p>
+<h2>What the score measures</h2>
+<p>The index measures <strong>risk appetite</strong>, not how much of the market happens to be green. That distinction decides the arithmetic: gold rising is money running <em>from</em> risk, and a strengthening dollar tightens financial conditions for every risk asset — so both push the score <em>down</em>. Each group below is scored 0–100 in the risk-on direction, then blended.</p>
+<h2>How the score is calculated</h2>
+<ul>
+<li><strong>Crypto — 30%:</strong> the share of the top 100 coins up over 24h, with the average 24h move of the top 50.</li>
+<li><strong>Equities — 30%:</strong> how many of the S&amp;P 500, Nasdaq, Dow Jones, Russell 2000, FTSE 100, DAX and Nikkei 225 are up, and by how much.</li>
+<li><strong>Volatility &amp; havens — 20%:</strong> the VIX level (12 is calm, 35 is a scare) and gold read as a safe-haven bid.</li>
+<li><strong>Dollar &amp; growth — 20%:</strong> dollar weakness across the major currency pairs, plus copper and oil as a read on industrial demand.</li>
+</ul>
+<p>When a market data source does not answer, that group is dropped and the remaining weights are rebalanced rather than counted as zero. The live page states whenever a score was built from partial data.</p>
 <h2>How to read the score</h2>
 <ul>
-<li><strong>0–24 — Extreme Fear:</strong> most participants are selling. Historically a contrarian buy signal.</li>
-<li><strong>25–49 — Fear:</strong> market pessimistic; may be oversold.</li>
-<li><strong>50 — Neutral:</strong> balanced sentiment.</li>
-<li><strong>51–74 — Greed:</strong> positive momentum; watch for overextension.</li>
-<li><strong>75–100 — Extreme Greed:</strong> often precedes corrections.</li>
+<li><strong>0–24 — Extreme Caution:</strong> broad flight from risk, volatility elevated and safe havens leading.</li>
+<li><strong>25–44 — Caution:</strong> risk appetite fading; defensive assets bid over growth.</li>
+<li><strong>45–55 — Neutral:</strong> mixed signals across asset classes, no clear directional edge.</li>
+<li><strong>56–74 — Constructive:</strong> money moving into risk in most markets, volatility contained.</li>
+<li><strong>75–100 — Overheated:</strong> broad risk-taking; historically a time for caution, not chasing.</li>
 </ul>
 <h2>Citing the WalletLens Market Index</h2>
 <p>Journalists, researchers and bloggers may cite the index freely. Use the format: "WalletLens Market Index: [score]/100 ([label])" and link <a href="/market-index">walletlens.live/market-index</a>.</p>
+<p>Looking for the crypto-only fear and greed reading? See the <a href="/fear-and-greed-index">Fear and Greed Index guide</a>.</p>
 <p><a href="/fear-and-greed-index">Fear and Greed Index guide</a> · <a href="/dashboard">Open WalletLens free</a> · <a href="/blog">Blog</a> · <a href="/">Home</a></p>
 `,
   jsonLd: [
     {
       '@context': 'https://schema.org',
       '@type': 'Dataset',
-      name: 'WalletLens Crypto Fear & Greed Index',
-      description: 'A live 0–100 crypto fear and greed index built from market breadth, momentum and large-cap leadership across the top 250 cryptocurrencies.',
+      name: 'WalletLens Market Index',
+      description: 'A live 0-100 cross-asset risk-appetite index built from crypto breadth and momentum, global equity indices, the VIX and gold, and the dollar, copper and oil.',
       url: `${ORIGIN}/market-index`,
       creator: { '@type': 'Organization', name: 'WalletLens', url: ORIGIN },
       license: `${ORIGIN}/terms`,
       isAccessibleForFree: true,
-      variableMeasured: 'Crypto Fear and Greed Index (0–100)',
-      keywords: 'fear and greed index, crypto sentiment, market mood, crypto fear greed',
+      variableMeasured: 'Cross-asset risk appetite (0-100)',
+      keywords: 'market index, risk appetite, cross-asset sentiment, crypto sentiment, equity breadth, VIX, dollar index',
     },
   ],
 }))

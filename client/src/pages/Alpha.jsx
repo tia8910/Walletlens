@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { api } from '../api'
 import { track } from '../analytics'
+import { calcAlphaScore, assetClass } from '../alphaScore'
 import CoinLogo from '../components/CoinLogo'
 import Icon from '../components/Icon'
 import { useLanguage } from '../LanguageContext'
@@ -23,49 +24,6 @@ function loadCache() {
 function saveCache(data) { try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })) } catch {} }
 
 // ── Portfolio Alpha Score ──────────────────────────────────────────────────
-function calcAlphaScore(enriched, prices) {
-  if (!enriched?.length) return null
-  const totalValue = enriched.reduce((s, h) => s + (h.value || 0), 0)
-  if (totalValue === 0) return null
-
-  const weights = enriched.map(h => h.value / totalValue)
-
-  // Momentum (0–30): weighted 24h change, clamped -20 to +20
-  let momentum = 0
-  enriched.forEach((h, i) => {
-    const chg = prices[h.coin_id]?.usd_24h_change ?? 0
-    momentum += chg * weights[i]
-  })
-  const momentumScore = Math.round(((Math.max(-20, Math.min(20, momentum)) + 20) / 40) * 30)
-
-  // P&L health (0–30): % of holdings in profit, weighted by value
-  let inProfitWeight = 0
-  enriched.forEach((h, i) => {
-    if ((h.pnlPct || 0) > 0) inProfitWeight += weights[i]
-  })
-  const pnlScore = Math.round(inProfitWeight * 30)
-
-  // Diversification (0–20): penalise concentration
-  const maxWeight = Math.max(...weights)
-  const divScore = Math.round(Math.max(0, 1 - maxWeight) * 20)
-
-  // Opportunity (0–20): holdings significantly below ATH but with positive momentum = upside potential
-  const upCount = enriched.filter((h) => {
-    const chg = prices[h.coin_id]?.usd_24h_change ?? 0
-    return chg > 0 && (h.pnlPct || 0) < 100
-  }).length
-  const oppScore = Math.round((upCount / Math.max(enriched.length, 1)) * 20)
-
-  const total = momentumScore + pnlScore + divScore + oppScore
-  // A key, not a word: the grade is rendered through t() by the caller. This
-  // function has no hook to call it from and is also used for scoring, so it
-  // must stay language-independent.
-  const gradeKey = total >= 80 ? 'axGradeStrong' : total >= 60 ? 'axGradeGood'
-    : total >= 40 ? 'axGradeNeutral' : total >= 20 ? 'axGradeWeak' : 'axGradePoor'
-  const color = total >= 80 ? 'var(--g)' : total >= 60 ? '#60a5fa' : total >= 40 ? '#f59e0b' : '#f87171'
-  return { total, gradeKey, color, momentum, momentumScore, pnlScore, divScore, oppScore }
-}
-
 // ── Alpha Score Ring ──────────────────────────────────────────────────────
 function AlphaRing({ score, color }) {
   const r = 52, circ = 2 * Math.PI * r
@@ -201,9 +159,14 @@ export default function Alpha() {
 
       if (!portfolio?.length) return
 
-      const ids = [...new Set(portfolio.map(h => h.coin_id).filter(id =>
-        !id.startsWith('metal:') && !id.startsWith('stock:') && !id.startsWith('fiat:')
-      ))]
+      // Every id, including stock:, metal: and fiat:. This filter used to
+      // strip them, and that one line was the whole reason the Alpha score
+      // was crypto-only: unfiltered ids never got a price, holdings without a
+      // price were dropped below, and what reached the score was the crypto
+      // slice of the portfolio wearing the name of the whole thing.
+      // api.getPrices() routes stock: to Stooq and metal: to a spot feed — the
+      // support was already there and was simply not being asked for.
+      const ids = [...new Set(portfolio.map(h => h.coin_id).filter(Boolean))]
 
       if (!ids.length) return
 
@@ -297,28 +260,35 @@ export default function Alpha() {
 
   const alphaScore = calcAlphaScore(enriched, prices)
 
-  // My portfolio signals — only crypto holdings with confirmed live price
-  const cryptoHoldings = enriched.filter(h =>
-    !h.coin_id.startsWith('metal:') && !h.coin_id.startsWith('stock:') && !h.coin_id.startsWith('fiat:') &&
-    (prices[h.coin_id]?.usd ?? 0) > 0
-  )
+  // My portfolio signals — every holding with a confirmed live price, of any
+  // asset class. A stock down 9% on the day is exactly the thing this panel
+  // exists to surface, and it was silently excluded.
+  const pricedHoldings = enriched.filter(h => (prices[h.coin_id]?.usd ?? 0) > 0)
 
-  const warnings = cryptoHoldings.filter(h => {
+  // Thresholds scale with the asset class. -8% in a day is a routine crypto
+  // wobble and a serious event for a share, so one number for both would
+  // either spam crypto warnings or never fire on a stock at all.
+  const DAILY_ALARM = { crypto: -8, equity: -4, metal: -3, realestate: -3, bond: -2, other: -4, cash: -2 }
+
+  const warnings = pricedHoldings.filter(h => {
     const chg = prices[h.coin_id]?.usd_24h_change ?? 0
     const pnl = h.pnlPct || 0
     // Skip if pnlPct is suspiciously at exactly -100 (no real price loaded)
     if (pnl <= -99 && (prices[h.coin_id]?.usd ?? 0) <= 0) return false
-    return chg < -8 || pnl < -30
+    return chg < (DAILY_ALARM[assetClass(h.coin_id)] ?? -8) || pnl < -30
   })
 
-  const opportunities = cryptoHoldings.filter(h => {
+  const DAILY_POP  = { crypto: 5, equity: 2.5, metal: 2, realestate: 2, bond: 1, other: 2.5, cash: 1 }
+  const DAILY_TREND = { crypto: 2, equity: 1, metal: 0.8, realestate: 0.8, bond: 0.5, other: 1, cash: 0.5 }
+
+  const opportunities = pricedHoldings.filter(h => {
     const chg = prices[h.coin_id]?.usd_24h_change ?? 0
-    return chg > 5 && (h.pnlPct || 0) > 0
+    return chg > (DAILY_POP[assetClass(h.coin_id)] ?? 5) && (h.pnlPct || 0) > 0
   })
 
-  const strongHoldings = cryptoHoldings.filter(h => {
+  const strongHoldings = pricedHoldings.filter(h => {
     const chg = prices[h.coin_id]?.usd_24h_change ?? 0
-    return chg > 2 && (h.pnlPct || 0) > 20
+    return chg > (DAILY_TREND[assetClass(h.coin_id)] ?? 2) && (h.pnlPct || 0) > 20
   })
 
   return (
@@ -385,6 +355,17 @@ export default function Alpha() {
                   <span style={{ color: '#fbbf24' }}>{alphaScore.oppScore}/20</span>
                 </div>
               </div>
+              {/* What was actually scored. Shown because this number spent a
+                  long time claiming to cover a portfolio while reading only
+                  the crypto in it — a reader deserves to see the classes it
+                  weighed rather than having to trust the label. */}
+              <div className="alpha-score-mix">
+                {alphaScore.mix.map(m => (
+                  <span key={m.name} className="alpha-mix-chip">
+                    {t(`axClass_${m.name}`)} {Math.round(m.weight * 100)}%
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -396,7 +377,7 @@ export default function Alpha() {
       )}
 
       {/* ── My Holdings Signals ── */}
-      {cryptoHoldings.length > 0 && (warnings.length > 0 || opportunities.length > 0 || strongHoldings.length > 0) && (
+      {pricedHoldings.length > 0 && (warnings.length > 0 || opportunities.length > 0 || strongHoldings.length > 0) && (
         <div className="glass-card alpha-section-card">
           <SectionHead icon={<Icon name="bar-chart" size={20} />} title={t('axYourSignals')} sub={t('axYourSignalsSub')} />
           <div className="alpha-signal-list">
