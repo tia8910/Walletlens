@@ -60,7 +60,19 @@ final class PlayUpdate {
      * uninstall over. A day is also faster than any release cadence this app
      * has ever had, so nothing is missed by waiting.
      */
-    private static final long CHECK_EVERY_MS = 24 * 60 * 60 * 1000L;
+    private static final long CHECK_EVERY_MS = 6 * 60 * 60 * 1000L;
+
+    /**
+     * Force a check on the next resume, bypassing the daily gate.
+     * Called after an install completes so the user sees the update
+     * dialog immediately rather than waiting for the next 6-hour window.
+     */
+    static void forceNextCheck(@NonNull Activity activity) {
+        try {
+            activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
+                    .edit().putLong(KEY_LAST_CHECK, 0L).apply();
+        } catch (Throwable ignored) {}
+    }
 
     /**
      * How stale an update has to be before the download is offered.
@@ -70,7 +82,7 @@ final class PlayUpdate {
      * the minutes after a release — including, sometimes, before the staged
      * rollout has actually reached them. One day lets a release settle.
      */
-    private static final int STALENESS_DAYS = 1;
+    private static final int STALENESS_DAYS = 0;
 
     private PlayUpdate() {}
 
@@ -120,6 +132,11 @@ final class PlayUpdate {
             // there for ever.
             if (info.installStatus() == InstallStatus.DOWNLOADED) {
                 promptInstall(activity, manager);
+                return;
+            }
+
+            // Download in progress — just let it finish silently.
+            if (info.installStatus() == InstallStatus.DOWNLOADING) {
                 return;
             }
 
