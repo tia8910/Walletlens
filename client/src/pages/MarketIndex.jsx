@@ -3,6 +3,7 @@ import Icon from '../components/Icon'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
+import { computeIndex, band } from '../marketIndexModel'
 
 // ── WalletLens Market Index ────────────────────────────────────────────────
 // A public, auto-updating, *citable* data page. It distills the whole crypto
@@ -13,7 +14,6 @@ import { track } from '../analytics'
 
 const REFRESH_MS = 3 * 60 * 1000 // 3 min
 
-const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n))
 const ch24 = c => c.price_change_percentage_24h ?? c.price_change_percentage_24h_in_currency ?? 0
 
 const num = (d = 2) => n => n.toLocaleString(undefined, { maximumFractionDigits: d })
@@ -87,55 +87,6 @@ async function fetchStooqQuotes(symbols) {
   return out
 }
 
-// Composite index from a market snapshot. Three transparent, citable pillars:
-//   • Breadth      — % of the top 100 coins green over 24h
-//   • Momentum     — average 24h move of the top 50, mapped from [-8%,+8%]
-//   • Leadership   — % of the top 10 by market cap that are green
-function computeIndex(snapshot) {
-  if (!snapshot?.length) return null
-  const byCap = [...snapshot].sort((a, b) => (b.market_cap || 0) - (a.market_cap || 0))
-  const top100 = byCap.slice(0, 100)
-  const top50  = byCap.slice(0, 50)
-  const top10  = byCap.slice(0, 10)
-
-  const breadth = (top100.filter(c => ch24(c) > 0).length / top100.length) * 100
-  const avgMom  = top50.reduce((s, c) => s + ch24(c), 0) / top50.length
-  const momentum = clamp(((avgMom + 8) / 16) * 100, 0, 100)
-  const leadership = (top10.filter(c => ch24(c) > 0).length / top10.length) * 100
-
-  const score = Math.round(0.45 * breadth + 0.35 * momentum + 0.20 * leadership)
-
-  const totalMcap = snapshot.reduce((s, c) => s + (c.market_cap || 0), 0)
-  const btc = snapshot.find(c => (c.symbol || '').toLowerCase() === 'btc')
-  const btcDom = btc && totalMcap > 0 ? (btc.market_cap / totalMcap) * 100 : null
-
-  const gainers = top100.filter(c => ch24(c) > 0).length
-  const losers  = top100.length - gainers
-
-  return {
-    score,
-    pillars: {
-      breadth: Math.round(breadth),
-      momentum: Math.round(momentum),
-      leadership: Math.round(leadership),
-    },
-    avgMom,
-    totalMcap,
-    btcDom,
-    gainers,
-    losers,
-    coins: byCap,
-  }
-}
-
-function band(score) {
-  if (score >= 75) return { label: 'Overheated',      color: '#fbbf24', note: 'Broad euphoria — historically a time for caution, not chasing.' }
-  if (score >= 56) return { label: 'Constructive',    color: '#10b981', note: 'Healthy participation — the market is broadly trending up.' }
-  if (score >= 45) return { label: 'Neutral',         color: '#94a3b8', note: 'Mixed signals — no clear directional edge right now.' }
-  if (score >= 25) return { label: 'Caution',         color: '#fb923c', note: 'Weak breadth — most coins are under pressure.' }
-  return                   { label: 'Extreme Caution', color: '#f87171', note: 'Widespread selling — fear dominates the market.' }
-}
-
 function fmtBig(n) {
   if (!Number.isFinite(n)) return '—'
   if (n >= 1e12) return `$${(n / 1e12).toFixed(2)}T`
@@ -156,7 +107,7 @@ export default function MarketIndex() {
   const timerRef = useRef(null)
 
   useEffect(() => {
-    document.title = 'WalletLens Market Index — Live Crypto Market Sentiment Score'
+    document.title = 'WalletLens Market Index — Live Cross-Asset Risk Appetite Score'
     track('market_index_view')
     let lastLoad = Date.now()
     load()
@@ -198,7 +149,11 @@ export default function MarketIndex() {
     }
   }
 
-  const idx = useMemo(() => computeIndex(snapshot), [snapshot])
+  // `markets` is in the dependency list because the score now reads it. It
+  // was not, when the index was crypto-only, and leaving it out would have
+  // been the quietest possible way to ship a cross-asset score that never
+  // recomputed when the non-crypto quotes landed.
+  const idx = useMemo(() => computeIndex(snapshot, markets), [snapshot, markets])
   const b = idx ? band(idx.score) : null
 
   const topGainers = useMemo(
@@ -224,7 +179,7 @@ export default function MarketIndex() {
   }
   function shareX() {
     if (!idx) return
-    const text = `WalletLens Market Index: ${idx.score}/100 — ${b.label}.\nLive crypto market sentiment, updated continuously:`
+    const text = `WalletLens Market Index: ${idx.score}/100 — ${b.label}.\nLive cross-asset risk appetite — crypto, equities, metals, forex and commodities:`
     track('market_index_share', { network: 'x' })
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent('https://walletlens.live/market-index')}`, '_blank', 'noopener')
   }
@@ -240,12 +195,12 @@ export default function MarketIndex() {
       '@context': 'https://schema.org',
       '@type': 'Dataset',
       name: 'WalletLens Market Index',
-      description: 'A live 0–100 crypto market sentiment index built from market breadth, momentum and large-cap leadership across the top 250 cryptocurrencies.',
+      description: 'A live 0–100 cross-asset risk-appetite index built from crypto breadth and momentum, global equity indices, the VIX and gold, and the dollar, copper and oil.',
       url: 'https://walletlens.live/market-index',
       creator: { '@type': 'Organization', name: 'WalletLens', url: 'https://walletlens.live' },
       license: 'https://walletlens.live/terms',
       isAccessibleForFree: true,
-      variableMeasured: 'WalletLens Market Index (0–100)',
+      variableMeasured: 'WalletLens Market Index — cross-asset risk appetite (0–100)',
       temporalCoverage: new Date().toISOString().slice(0, 10),
     })
     document.head.appendChild(ld)
@@ -261,8 +216,8 @@ export default function MarketIndex() {
           <div className="mki-eyebrow"><Icon name="bar-chart" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />WALLETLENS MARKET INDEX</div>
           <h1 className="mki-h1">All markets, one page.</h1>
           <p className="mki-lede">
-            Crypto sentiment score (0–100) plus live equity indices, precious metals, forex and commodities —
-            all markets on one page, updated continuously. Free to read, free to cite.
+            One 0–100 risk-appetite score built from crypto, equity indices, volatility, precious metals,
+            forex and commodities — all markets on one page, updated continuously. Free to read, free to cite.
           </p>
         </header>
 
@@ -287,12 +242,33 @@ export default function MarketIndex() {
               </div>
             </section>
 
-            {/* Pillars */}
+            {/* Pillars — one per asset group, each 0-100 in the risk-on direction */}
             <section className="mki-pillars">
-              <PillarBar label="Market Breadth" value={idx.pillars.breadth} sub={`${idx.gainers} of top 100 green`} />
-              <PillarBar label="Momentum"       value={idx.pillars.momentum} sub={`avg 24h ${fmtPct(idx.avgMom)}`} />
-              <PillarBar label="Large-Cap Leadership" value={idx.pillars.leadership} sub="top-10 trend" />
+              <PillarBar label="Crypto" value={idx.scores.crypto}
+                sub={idx.scores.crypto == null ? 'no data' : `${idx.gainers} of top 100 green · avg ${fmtPct(idx.avgMom)}`} />
+              <PillarBar label="Equities" value={idx.scores.equities}
+                sub={idx.scores.equities == null ? 'no data' : `${idx.pillars.equities.detail.covered} indices · avg ${fmtPct(idx.pillars.equities.detail.avgMove)}`} />
+              <PillarBar label="Volatility & Havens" value={idx.scores.volatility}
+                sub={idx.scores.volatility == null ? 'no data'
+                  : idx.pillars.volatility.detail.vixLevel != null
+                    ? `VIX ${idx.pillars.volatility.detail.vixLevel.toFixed(2)}`
+                    : 'gold bid'} />
+              <PillarBar label="Dollar & Growth" value={idx.scores.macro}
+                sub={idx.scores.macro == null ? 'no data' : 'forex · copper · oil'} />
             </section>
+
+            {/* What the score was actually built from.
+                Only shown when a source is missing, and shown then without
+                fail: a number from one pillar out of four is a different claim
+                from one built on all of them, and a reader about to cite it is
+                owed the difference. */}
+            {idx.coverage < 0.999 && (
+              <p className="mki-coverage">
+                Partial data — scored from {idx.live.length} of 4 signal groups
+                ({idx.live.join(', ')}). The market data feed did not answer for the rest;
+                weights are rebalanced across what is live rather than counting the gaps as zero.
+              </p>
+            )}
 
             {/* Cite / share */}
             <section className="mki-cite glass-card">
@@ -354,12 +330,28 @@ export default function MarketIndex() {
             <section className="mki-method glass-card">
               <div className="mki-section-title">How it's calculated</div>
               <p>
-                The WalletLens Market Index is a weighted blend of three signals across the top 250
-                cryptocurrencies: <strong>market breadth</strong> (45%, the share of the top 100 coins up over 24h),
-                <strong> momentum</strong> (35%, the average 24h move of the top 50, normalised), and
-                <strong> large-cap leadership</strong> (20%, the share of the top 10 by market cap that are up).
-                Scores above 75 signal an overheated market; below 25 signals extreme caution. All inputs are public
-                market data — WalletLens stores no personal portfolio data on any server.
+                The index measures <strong>risk appetite across every market on this page</strong>, not how much of
+                it happens to be green. That distinction decides the arithmetic: gold rising is money running
+                <em> from</em> risk, and a strengthening dollar tightens conditions for every risk asset there is —
+                so both push the score <em>down</em>. Each of the four groups below is scored 0–100 in the
+                risk-on direction, then blended:
+              </p>
+              <ul className="mki-method-list">
+                <li><strong>Crypto — 30%.</strong> The share of the top 100 coins up over 24h, with the average
+                  24h move of the top 50.</li>
+                <li><strong>Equities — 30%.</strong> How many of the S&amp;P 500, Nasdaq, Dow, Russell 2000,
+                  FTSE 100, DAX and Nikkei 225 are up, and by how much.</li>
+                <li><strong>Volatility &amp; havens — 20%.</strong> The VIX <em>level</em> (12 is calm, 35 is a
+                  scare) and gold read as a safe-haven bid — a gold rally lowers the score.</li>
+                <li><strong>Dollar &amp; growth — 20%.</strong> Dollar weakness across the major pairs, and
+                  copper and oil as a read on industrial demand.</li>
+              </ul>
+              <p>
+                Scores above 75 mean broad risk-taking — historically a time for caution, not chasing; below 25
+                means a broad flight from risk. When a market data source does not answer, its group is dropped
+                and the remaining weights are rebalanced, rather than being counted as zero — the page says so
+                above the score whenever that happens. All inputs are public market data, and WalletLens stores
+                no personal portfolio data on any server.
               </p>
               <p className="mki-foot-cta">
                 Want your own portfolio scored against the market?{' '}
@@ -402,15 +394,24 @@ function MarketBoard({ icon, title, items, markets }) {
   )
 }
 
+// One asset group's contribution, 0-100 in the risk-on direction.
+//
+// `value` is null when that group's data source did not answer. It renders as
+// an em dash over an empty track, deliberately distinct from a score of 0 —
+// zero is a real reading here (a broad flight from risk) and a feed outage
+// must never be able to impersonate one.
 function PillarBar({ label, value, sub }) {
-  const color = value >= 56 ? '#10b981' : value >= 45 ? '#94a3b8' : '#fb923c'
+  const missing = value == null || !Number.isFinite(value)
+  const color = missing ? 'var(--text-sub)' : value >= 56 ? '#10b981' : value >= 45 ? '#94a3b8' : '#fb923c'
   return (
-    <div className="mki-pillar glass-card">
+    <div className={`mki-pillar glass-card${missing ? ' mki-pillar-off' : ''}`}>
       <div className="mki-pillar-top">
         <span className="mki-pillar-label">{label}</span>
-        <span className="mki-pillar-val" style={{ color }}>{value}</span>
+        <span className="mki-pillar-val" style={{ color }}>{missing ? '—' : value}</span>
       </div>
-      <div className="mki-pillar-track"><div className="mki-pillar-fill" style={{ width: `${value}%`, background: color }} /></div>
+      <div className="mki-pillar-track">
+        <div className="mki-pillar-fill" style={{ width: missing ? '0%' : `${value}%`, background: color }} />
+      </div>
       <div className="mki-pillar-sub">{sub}</div>
     </div>
   )
