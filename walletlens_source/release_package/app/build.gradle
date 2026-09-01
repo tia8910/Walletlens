@@ -111,12 +111,12 @@ android {
         // androidx.browser invents, which is what decides whether a price
         // alert makes a sound. Native code, so it reaches nobody without a
         // new build. androidRelease.test.js holds this at 74 or above.
-        versionCode 101
+        versionCode 102
         // TODO(tarek): unverified. "2" cannot be right next to versionCode 73
         // — this file's own comments track v2.7 and v2.8 — but the real string
         // is not recoverable from the repo. Set it to the version shown for
         // release 73 in the Play Console.
-        versionName "7.1"
+        versionName "7.2"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name
