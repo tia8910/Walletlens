@@ -402,6 +402,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       // moment for the feature people are most impressed by.
       noteMoment('import_success')
       onImported?.()
+      window.dispatchEvent(new Event("wl:portfolio-updated"))
     } catch (e) {
       // The write itself failed, which is the worst kind: they did the work
       // and got nothing. Stay off the review card for a while.

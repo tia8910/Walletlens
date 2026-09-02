@@ -576,6 +576,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     setManualAsset({ symbol: '', name: '' })
     setShowForm(false)
     loadData()
+    window.dispatchEvent(new Event("wl:portfolio-updated"))
   }
 
   const handleDelete = useCallback(async (id) => {
@@ -589,6 +590,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       asset_category: tx?.category || 'crypto',
     })
     loadDataRef.current()
+    window.dispatchEvent(new Event("wl:portfolio-updated"))
   }, [])
 
   const totalCalc = form.amount && form.price_per_unit

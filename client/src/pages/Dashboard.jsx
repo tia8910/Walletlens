@@ -1427,6 +1427,7 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
       if (isFirstHolding) trackProfileCreated({ method: 'manual_trade', source: 'manage_tab' })
       setMsg(t('errTradeAdded')); setCoin(''); setSymbol(''); setAmount(''); setPrice('')
       onRefresh(); setTimeout(() => setMsg(''), 2500)
+      window.dispatchEvent(new Event("wl:portfolio-updated"))
     } finally { setBusy(false) }
   }
 

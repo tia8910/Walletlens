@@ -1890,6 +1890,7 @@ export default function VoiceImport({ hideTrigger = false, onImported, onClose }
     track('voice_import_saved', { lang })
     trackImport({ method: 'voice', step: 'saved' })
     onImported?.()
+    window.dispatchEvent(new Event("wl:portfolio-updated"))
     setConfirmed(true)
   }
 
