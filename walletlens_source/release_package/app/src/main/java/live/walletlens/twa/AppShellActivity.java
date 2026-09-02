@@ -301,6 +301,8 @@ public class AppShellActivity extends ComponentActivity {
         web.addJavascriptInterface(new WalletLensBridge(this), WalletLensBridge.NAME);
         web.setWebViewClient(new ShellClient());
         web.setWebChromeClient(new ShellChrome());
+        // Check for updates on fresh launch, not just on resume.
+        PlayUpdate.check(this);
 
         if (savedInstanceState != null) {
             // Rotation and process death. Restoring beats reloading: a reload

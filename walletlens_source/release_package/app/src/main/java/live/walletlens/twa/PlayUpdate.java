@@ -60,7 +60,7 @@ final class PlayUpdate {
      * uninstall over. A day is also faster than any release cadence this app
      * has ever had, so nothing is missed by waiting.
      */
-    private static final long CHECK_EVERY_MS = 6 * 60 * 60 * 1000L;
+    private static final long CHECK_EVERY_MS = 1 * 60 * 60 * 1000L;
 
     /**
      * Force a check on the next resume, bypassing the daily gate.
