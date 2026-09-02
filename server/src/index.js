@@ -10,7 +10,14 @@ import aiRouter from './routes/ai.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(compression());
+// Skip compression for SSE streams: gzip/deflate buffers chunks internally,
+// which delays flushes and defeats the point of token-by-token streaming.
+app.use(compression({
+  filter: (req, res) => {
+    if (res.getHeader('Content-Type')?.toString().includes('text/event-stream')) return false;
+    return compression.filter(req, res);
+  },
+}));
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'http://localhost:5173';
 app.use(cors({ origin: ALLOWED_ORIGIN, credentials: false }));
 app.use(express.json({ limit: '100kb' }));

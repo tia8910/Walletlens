@@ -11,7 +11,8 @@ import { isStablecoin } from '../stablecoins'
 import { observe, primeEffectAudio } from '../screenEffectsRuntime'
 import { EXPLODE, ROCKET, ATH } from '../screenEffects'
 import ScreenEffect from '../components/ScreenEffect'
-import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset, GOLD_ID, SILVER_ID } from '../data/assets'
+import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset, GOLD_ID, SILVER_ID, CATEGORY_COLOR, getAssetCategoryBadge } from '../data/assets'
+import HoldingRow from '../components/HoldingRow'
 import CoinLogo from '../components/CoinLogo'
 import Logo from '../components/Logo'
 import Icon from '../components/Icon'
@@ -20,7 +21,7 @@ import { applyMood } from '../moodEngine'
 import { getSoulGreeting } from '../soulGreeting'
 import { exportToExcel, exportToPDF } from '../exportHoldings'
 import { noteFeatureUse } from '../featureUse'
-import { LongPressMenu, bindLongPress, consumeLongPress } from '../components/LongPressMenu'
+import { LongPressMenu, bindLongPress } from '../components/LongPressMenu'
 import { useLanguage } from '../LanguageContext'
 import { CLASS_LABEL_KEYS, renderTip, renderMaybe } from '../data/walletEvalTips'
 import { useTheme, THEMES } from '../ThemeContext'
@@ -187,19 +188,6 @@ function rebalBucket(h) {
   return 'small'
 }
 
-// Returns { label, color } category badge for a holding
-function getAssetCategoryBadge(h) {
-  const id = h.coin_id || ''
-  if (id.startsWith('xstock:')) return { label: 'xStock', color: '#f0b90b' }
-  if (id.startsWith('stock:')) {
-    const sector = getStockSector(id) || 'Stock'
-    return { label: sector, color: STOCK_SECTOR_COLORS[sector] || '#6366f1' }
-  }
-  const cat = getCryptoCategory(id)
-  if (cat) return { label: cat, color: CRYPTO_CATEGORY_COLORS[cat] || '#6366f1' }
-  return null
-}
-
 const CATEGORY_ORDER = ['crypto', 'metals', 'stocks', 'realestate', 'cash']
 // Keys, not words. These name the donut slices and the legend, so they are
 // read by the user, but the object is also indexed by category id all over
@@ -214,7 +202,6 @@ const CATEGORY_LABELS = {
 }
 // SVG icon per category (crypto keeps the elegant ₿ symbol). Premium, no emoji.
 const CATEGORY_ICON = { metals: 'diamond', stocks: 'trend-up', realestate: 'building', cash: 'banknote' }
-const CATEGORY_COLOR = { crypto: 'var(--g)', metals: '#e8b825', stocks: '#3b82f6', realestate: '#a78bfa', cash: '#64748b' }
 
 function CatLabel({ cat, className, iconSize = 14 }) {
   const { t } = useLanguage()
@@ -3445,12 +3432,18 @@ export default function Dashboard() {
   const [showCardConfig, setShowCardConfig] = useState(false)
   const [lpMenu, setLpMenu] = useState(null)
   const closeLpMenu = useCallback(() => setLpMenu(null), [])
-  function showLp(cx, cy, items) {
+  const showLp = useCallback((cx, cy, items) => {
     // Clamping lives in <LongPressMenu>; just hand it the raw press point.
     if (!items || !items.length) return
     setLpMenu({ x: cx, y: cy, items })
     track('longpress_menu', { area: items[0]?.label || 'unknown' })
-  }
+  }, [])
+  const toggleSelectedAsset = useCallback(coinId => {
+    setSelectedAssets(prev => { const n = new Set(prev); if (n.has(coinId)) n.delete(coinId); else n.add(coinId); return n })
+  }, [])
+  const toggleExpandedActions = useCallback(coinId => {
+    setExpandedActions(prev => { const n = new Set(prev); if (n.has(coinId)) n.delete(coinId); else n.add(coinId); return n })
+  }, [])
   const heroLpItems = useMemo(() => [
     { icon: '📤', label: 'Export Portfolio', onClick: () => navigate('/dashboard', { state: { tab: 'manage' } }) },
     { icon: '🔄', label: 'Refresh Prices', onClick: async () => { try { await refreshPrices() } catch {} } },
@@ -5195,137 +5188,25 @@ export default function Dashboard() {
                                 const symCount = {}
                                 grouped[cat].forEach(h => { const s = (h.coin_symbol||'').toUpperCase(); symCount[s] = (symCount[s]||0) + 1 })
                                 const dupSymbols = new Set(Object.keys(symCount).filter(s => symCount[s] > 1))
-                                return grouped[cat].map(h => {
-                                const isDupTicker = dupSymbols.has((h.coin_symbol||'').toUpperCase())
-                                const displayValue  = h.value > 0 ? h.value : h.total_invested
-                                const isStable          = categorizeAsset(h) === 'cash' || isStablecoin(h.coin_id, h.coin_symbol)
-                                const isCryptoOnly      = !isStable && categorizeAsset(h) === 'crypto'
-                                const hasPnl        = h.pnl !== 0 && !pricesFailed && !isStable
-                                const breakEvenPrice = h.amount > 0 ? h.total_invested / h.amount : 0
-                                const beDistance     = h.price > 0 && breakEvenPrice > 0
-                                  ? ((h.price - breakEvenPrice) / breakEvenPrice) * 100 : 0
-                                const bePct = h.price > 0 && breakEvenPrice > 0
-                                  ? Math.min(100, (h.price / breakEvenPrice) * 100) : 0
-                                const isSelected = selectedAssets.has(h.coin_id)
-                                const isDimmed   = selectedAssets.size > 0 && !isSelected
-                                const holdingLpItems = isDemo ? [] : [
-                                  { icon: '📊', label: 'Technical Analysis', onClick: () => navigate('/technicals') },
-                                  { icon: '🎯', label: 'Set Sell Target', onClick: () => navigate('/dashboard', { state: { tab: 'targets' } }) },
-                                  { icon: '🔔', label: 'Set Price Alert', onClick: () => navigate('/dashboard', { state: { tab: 'alerts' } }) },
-                                  { icon: '📈', label: 'Portfolio Analysis', onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'ai' } }) },
-                                  { divider: true },
-                                  { icon: '📋', label: 'Copy Details', onClick: () => { try { navigator.clipboard?.writeText(h.coin_symbol?.toUpperCase() + ' — ' + cv(h.value) + ' (' + pct(h.pnlPct) + ' P&L)'); } catch {} } },
-                                ]
-                                return (
-                                  <li key={h.coin_id} className={`dvx-holding holo-card-v2${isSelected ? ' selected' : ''}`}
-                                    style={{ opacity: isDimmed ? 0.3 : 1, transition: 'opacity 0.15s', '--row-col': CATEGORY_COLOR[categorizeAsset(h)] || 'var(--g)' }}
-                                    {...(holdingLpItems.length ? bindLongPress((x, y) => showLp(x, y, holdingLpItems)) : {})}
-                                    onClick={() => { if (consumeLongPress()) return; if (!isDemo) { track('asset_click'); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
-                                    <input
-                                      type="checkbox"
-                                      checked={isSelected}
-                                      onClick={e => e.stopPropagation()}
-                                      onChange={() => setSelectedAssets(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n })}
-                                      style={{ flexShrink:0, width:'16px', height:'16px', marginRight:'0.5rem', cursor:'pointer', accentColor:'var(--g)' }}
-                                    />
-                                    <CoinLogo image={h.coin_image} symbol={h.coin_symbol} coinId={h.coin_id} size={36} className="dvx-holding-icon" />
-                                    <div className="dvx-holding-body">
-                                      <div className="dvx-holding-line1">
-                                        <div className="dvx-holding-meta">
-                                          <strong>{h.coin_symbol?.toUpperCase()}</strong>
-                                          {isStable && <span className="dvx-stable-badge">{t('dsStable')}</span>}
-                                          {!isStable && (() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
-                                          {isDupTicker && <span className="dvx-cat-badge" style={{ background:'#f59e0b22', color:'#f59e0b', borderColor:'#f59e0b44', cursor:'help' }} title={`Two holdings share the ticker ${(h.coin_symbol||'').toUpperCase()} — one may have a wrong ID. Delete the one with no price and re-add it.`}><Icon name="warning" size={11} style={{ verticalAlign:'-1px', marginRight:'0.25em' }} />dup</span>}
-                                        </div>
-                                        <div className="dvx-holding-valblock">
-                                          <div className="dvx-holding-val">{cv(displayValue)}</div>
-                                          {!showBreakEven && hasPnl && (
-                                            <span className={`dvx-holding-pnl-pill ${h.pnl >= 0 ? 'pos' : 'neg'}`}>
-                                              {h.pnl >= 0 ? '▲' : '▼'} {cv(h.pnl)} ({pct(h.pnlPct)})
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-                                      {showBreakEven ? (
-                                        <span className="muted dvx-holding-detail" style={{ fontSize:'0.72rem' }}>
-                                          {t('dsBreakEvenAt')} <span style={{ color: beDistance >= 0 ? 'var(--g-ink)' : '#f87171', fontWeight:700 }}>
-                                            {cv(breakEvenPrice)}
-                                          </span>
-                                          {h.price > 0 && <span style={{ color: beDistance >= 0 ? 'var(--g-ink)' : '#f87171' }}>
-                                            {' '}{beDistance >= 0 ? '↑ ' : '↓ '}{Math.abs(beDistance).toFixed(1)}% {beDistance >= 0 ? 'above' : 'below'}
-                                          </span>}
-                                        </span>
-                                      ) : (
-                                        <div className="dvx-holding-stats">
-                                          {h.price > 0 ? (() => {
-                                            const ch = Number(h.pct24h) || 0
-                                            const priceColor = ch > 0 ? 'var(--g-ink)' : ch < 0 ? '#f87171' : undefined
-                                            return <span className="dvx-hstat"><em>{t('wtPrice')}</em><b style={{ color: priceColor }}>{cv(h.price)}</b></span>
-                                          })() : <span className="dvx-hstat"><em>{t('invested')}</em><b>{cv(h.total_invested)}</b></span>}
-                                          {breakEvenPrice > 0 && categorizeAsset(h) !== 'cash' && (
-                                            <span className="dvx-hstat"><em>Avg</em><b>{cv(breakEvenPrice)}</b></span>
-                                          )}
-                                          <span className="dvx-hstat dvx-hstat-qty"><em>Qty</em><b>{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {Number(h.amount) === 1 ? 'unit' : 'units'}</b></span>
-                                        </div>
-                                      )}
-                                      {showBreakEven && h.price > 0 && breakEvenPrice > 0 && (
-                                        <div className="dvx-be-bar-wrap">
-                                          <div className="dvx-be-bar-track">
-                                            <div className="dvx-be-bar-fill" style={{
-                                              width: `${bePct}%`,
-                                              background: beDistance >= 0 ? 'var(--g)' : '#f87171',
-                                            }} />
-                                            <div className="dvx-be-bar-marker" />
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                    {!isDemo && (() => {
-                                      const actionsOpen = expandedActions.has(h.coin_id)
-                                      return (<>
-                                      <button
-                                        className={`dvx-ha-toggle${actionsOpen ? ' open' : ''}`}
-                                        aria-label={t('atAssetActions')} title={t('atActions')}
-                                        aria-expanded={actionsOpen}
-                                        onClick={e => { e.stopPropagation(); setExpandedActions(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n }) }}>
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
-                                      </button>
-                                      <div className={`dvx-holding-actions${actionsOpen ? ' open' : ''}`} onClick={e => e.stopPropagation()}>
-                                        {!isStable && (
-                                          <button className="dvx-ha-btn"
-                                            onClick={() => navigate('/dashboard', { state: { tab: 'targets' } })}>
-                                            <Icon name="target" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />{t('dsSetTarget')}
-                                          </button>
-                                        )}
-                                        <button className="dvx-ha-btn"
-                                          onClick={() => navigate('/vision', { state: { linkAsset: h.coin_id } })}>
-                                          <Icon name="map" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />{t('dsSetVision')}
-                                        </button>
-                                        {isCryptoOnly && (
-                                          <button className="dvx-ha-btn"
-                                            onClick={() => navigate('/technicals')}>
-                                            <Icon name="ruler" size={13} style={{ verticalAlign:'-2px', marginInlineEnd:'0.4em' }} />{t('dashTechnicals')}
-                                          </button>
-                                        )}
-                                        {isCryptoOnly && (
-                                          <button className="dvx-ha-btn"
-                                            onClick={() => navigate('/dashboard', { state: { tab: 'tools', tool: 'ta' } })}>
-                                            <Icon name="sparkles" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />{t('dsMagicScore')}
-                                          </button>
-                                        )}
-                                        {!isStable && (
-                                          <button className="dvx-ha-btn"
-                                            onClick={() => navigate('/dashboard', { state: { tab: 'tools', tool: 'risk' } })}>
-                                            <Icon name="search" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />{t('dsRiskScan')}
-                                          </button>
-                                        )}
-                                      </div>
-                                      </>)
-                                    })()}
-                                  </li>
-                                )
-                              })
-                            })()}
+                                return grouped[cat].map(h => (
+                                  <HoldingRow
+                                    key={h.coin_id}
+                                    h={h}
+                                    isDupTicker={dupSymbols.has((h.coin_symbol||'').toUpperCase())}
+                                    isDemo={isDemo}
+                                    pricesFailed={pricesFailed}
+                                    showBreakEven={showBreakEven}
+                                    isSelected={selectedAssets.has(h.coin_id)}
+                                    hasSelection={selectedAssets.size > 0}
+                                    isActionsOpen={expandedActions.has(h.coin_id)}
+                                    cv={cv}
+                                    navigate={navigate}
+                                    showLp={showLp}
+                                    onToggleSelect={toggleSelectedAsset}
+                                    onToggleActions={toggleExpandedActions}
+                                  />
+                                ))
+                              })()}
                             </ul>
                           </div>
                         )})
