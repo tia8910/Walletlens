@@ -218,12 +218,13 @@ describe('canAutoBackup', () => {
 })
 
 
-describe('autoBackup never asks Google for anything', () => {
-  // The loop this closes: getAccessToken({interactive:false}) is not silent in
-  // the Android app. GIS has no opener to answer, so it opened a visible
-  // accounts.google.com tab that span forever — and closing it fired
-  // visibilitychange, which started another backup, which opened it again.
-  // Roughly once a minute, backing up nothing.
+describe('autoBackup silently refreshes tokens but never shows UI', () => {
+  // The old loop this closed: getAccessToken({interactive:false}) is not
+  // silent in the Android app — GIS has no opener to answer, so it opened a
+  // visible tab that spun forever. The fix is the auth code + refresh-token
+  // flow: autoBackup now calls getAccessToken({interactive:false}), which
+  // silently refreshes via the Cloudflare Worker when the stored token is
+  // near expiry. The critical invariant is that it is NEVER interactive.
   const key = 'paWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaU='
 
   beforeEach(() => {
@@ -237,32 +238,54 @@ describe('autoBackup never asks Google for anything', () => {
     ]))
   })
 
-  it('gives up quietly when no token is already held', async () => {
+  it('gives up quietly when no token is available even after refresh attempt', async () => {
     storedAccessToken.mockReturnValue(null)
+    getAccessToken.mockResolvedValue(null)
     const res = await autoBackup()
     expect(res).toEqual({ ok: false, reason: 'signed-out' })
   })
 
-  it('does not call getAccessToken at all', async () => {
-    // The heart of it. Any call here can surface Google UI, and a backup
-    // nobody asked for must never do that — interactive or otherwise.
+  it('calls getAccessToken with interactive:false for silent refresh', async () => {
+    // Now that sessions are fixed via refresh tokens, autoBackup attempts a
+    // silent token refresh. The critical invariant: it must NEVER be
+    // interactive — no popup, no Custom Tab, no user gesture.
     storedAccessToken.mockReturnValue(null)
+    getAccessToken.mockResolvedValue(null)
     await autoBackup()
-    expect(getAccessToken).not.toHaveBeenCalled()
+    expect(getAccessToken).toHaveBeenCalled()
+    expect(getAccessToken).toHaveBeenCalledWith({ interactive: false })
+    // Must never call with interactive:true — that would open a tab in the TWA.
+    for (const call of getAccessToken.mock.calls) {
+      expect(call[0]?.interactive).not.toBe(true)
+    }
   })
 
-  it('still does not call it when a token IS held', async () => {
-    storedAccessToken.mockReturnValue('ya29.token')
-    await autoBackup().catch(() => {})
-    expect(getAccessToken).not.toHaveBeenCalled()
+  it('uses the stored token directly when it is still valid', async () => {
+    storedAccessToken.mockReturnValue('ya29.valid')
+    // Mock drive I/O to succeed.
+    const mod = await import('./driveSync')
+    // force fingerprint to change by using different transactions
+    localStorage.setItem('crypto_tracker_transactions', JSON.stringify([
+      { coin_id: 'bitcoin', coin_symbol: 'BTC', type: 'buy', amount: 2 },
+    ]))
+    await mod.autoBackup().catch(() => {})
+    // getAccessToken may be called with interactive:false (silently returns
+    // the cached token), but must never be interactive.
+    for (const call of getAccessToken.mock.calls) {
+      expect(call[0]?.interactive).not.toBe(true)
+    }
   })
 
   it('is safe to call repeatedly, as visibilitychange does', async () => {
     // Every foreground event runs this. If any of them could open a tab, the
     // tab closing would trigger the next one.
     storedAccessToken.mockReturnValue(null)
+    getAccessToken.mockResolvedValue(null)
     for (let i = 0; i < 5; i++) await autoBackup()
-    expect(getAccessToken).not.toHaveBeenCalled()
+    // Called multiple times, but never with interactive:true.
+    for (const call of getAccessToken.mock.calls) {
+      expect(call[0]?.interactive).not.toBe(true)
+    }
   })
 })
 

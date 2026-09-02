@@ -263,19 +263,31 @@ export async function autoBackup() {
   const hash = await fingerprint(code)
   if (hash === readKey(LAST_HASH)) return { ok: false, reason: 'unchanged' }
 
-  // A token we already hold, or nothing. This never contacts Google.
+  // The token, refreshed if needed.
   //
-  // It used to call getAccessToken({interactive:false}), on the understanding
-  // that prompt:'none' is silent. In the Android app it is not — GIS has no
-  // opener to answer, so it surfaces a visible accounts.google.com tab that
-  // spins forever. Closing that tab fired visibilitychange, which started
-  // another backup, which opened it again: a loop about once a minute that
-  // never backed anything up and made the app unusable.
+  // Historically this called getAccessToken({interactive:false}) and, before
+  // that, read a memory-only token. The implicit grant flow handed back only a
+  // one-hour access token, and inside the TWA there was no way to silently
+  // renew it, so auto-backup quietly stopped an hour after the last manual
+  // sign-in — the "Drive session expired" reports.
   //
-  // An automatic backup is not allowed to ask for anything. If there is no
-  // usable token it gives up until the user next does something that
-  // legitimately involves Google — Connect, Back up now, Restore.
-  if (!storedAccessToken()) return { ok: false, reason: 'signed-out' }
+  // Now that the auth code + refresh-token flow is in place, getAccessToken
+  // with interactive:false silently obtains a fresh token through the
+  // Cloudflare Worker whenever the stored one is near expiry. No popup, no
+  // Custom Tab, no user gesture. This is what keeps automatic backups
+  // sustainable indefinitely.
+  //
+  // An automatic backup is still never allowed to raise a sign-in UI. If the
+  // refresh genuinely fails (revoked token, offline), it gives up quietly and
+  // waits for the user to reconnect.
+  const token = await (async () => {
+    try {
+      return await getAccessToken({ interactive: false })
+    } catch {
+      return null
+    }
+  })()
+  if (!token) return { ok: false, reason: 'signed-out' }
 
   try {
     const payload = await encryptBackupWithWrap(code, key, readKey(WRAP))

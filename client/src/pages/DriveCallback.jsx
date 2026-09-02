@@ -1,31 +1,60 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { completeRedirectSignIn } from '../googleDrive'
 
-// Landing point for the Google OAuth redirect flow. Google sends the browser
-// back here with the access token in the URL fragment. This page's whole job
-// is to get that token out of the URL and out of history as fast as possible,
-// then put the user back where they started.
+// Landing point for the Google OAuth redirect flow.
 //
-// The fragment never reaches any server (fragments aren't sent in requests),
-// but it WOULD sit in browser history if left alone — hence the immediate
+// In the authorization code flow, Google sends the browser back here with
+// ?code=...&state=... in the query string.  The old implicit grant sent
+// #access_token=... in the fragment — we still handle that as a fallback
+// for any sessions that were mid-flight during the upgrade.
+//
+// The code/query must never reach any server except the Drive token worker,
+// and must never sit in browser history — hence the immediate
 // replaceState before anything else happens.
 
 export default function DriveCallback() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    const hash = window.location.hash
-    // Scrub first, validate second: even a failed sign-in should not leave
-    // token-shaped strings in the history.
+    // Scrub immediately: even a failed sign-in should not leave tokens
+    // or authorization codes in the address bar or history.
     try { window.history.replaceState(null, '', window.location.pathname) } catch { /* fine */ }
-    try {
-      const { returnTo } = completeRedirectSignIn(hash)
-      navigate(returnTo || '/settings', { replace: true, state: { driveConnected: true } })
-    } catch (e) {
-      setError(e.message || 'Sign-in failed')
+
+    // The authorization code arrives as a query parameter (?code=...&state=...)
+    // or, in the legacy implicit grant path, as a hash fragment (#access_token=...).
+    const search = location.search
+    const hash = window.location.hash
+
+    // Check for error first (Google redirects with ?error=access_denied etc.)
+    const errParams = new URLSearchParams(search || hash || '')
+    const err = errParams.get('error')
+    if (err) {
+      setError(err === 'access_denied' ? 'Sign-in was cancelled' : `Google sign-in failed: ${err}`)
+      return
     }
+
+    // New auth code flow: ?code=...&state=...
+    if (search && search.includes('code=')) {
+      const params = new URLSearchParams(search)
+      const code = params.get('code')
+      if (code) {
+        completeRedirectSignInWithCode(code, navigate, setError)
+        return
+      }
+    }
+
+    // Legacy implicit grant fallback: #access_token=...
+    if (hash && hash.includes('access_token=')) {
+      completeRedirectSignIn(hash).then(({ returnTo }) => {
+        navigate(returnTo || '/settings', { replace: true, state: { driveConnected: true } })
+      }).catch(e => setError(e.message || 'Sign-in failed'))
+      return
+    }
+
+    setError('No authorization received from Google')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -44,4 +73,13 @@ export default function DriveCallback() {
       )}
     </div>
   )
+}
+
+async function completeRedirectSignInWithCode(code, navigate, setError) {
+  try {
+    const { returnTo } = await completeRedirectSignIn(code)
+    navigate(returnTo || '/settings', { replace: true, state: { driveConnected: true } })
+  } catch (e) {
+    setError(e.message || 'Sign-in failed')
+  }
 }

@@ -6,48 +6,65 @@
 //
 // The backup lands in the user's Drive, encrypted (see backupEncryption.js).
 // We run no server, store nothing, and never see the contents.
+//
+// WHY THE SESSION USED TO EXPIRE
+//
+// The old flow used Google's implicit grant (response_type=token), which
+// hands back a one-hour access token and NO refresh token.  On the web
+// Google silently renews it behind the scenes via a hidden iframe, but
+// inside the Android TWA there is no opener for that iframe to talk to —
+// so every automatic backup after the first hour silently failed, and the
+// only fix was a manual re-sign-in.
+//
+// THE FIX: Authorization code flow + lightweight Cloudflare Worker proxy.
+//
+// Google now returns a one-time authorization code.  A tiny Cloudflare
+// Worker (workers/drive-auth) holds the OAuth client_secret and exchanges
+// the code for an access_token AND a long-lived refresh_token.  The
+// refresh_token is stored on the device and is used by the worker to
+// silently obtain fresh access_tokens indefinitely — no user interaction,
+// no popup, no Custom Tab spin, no session expiry.
+//
+// Privacy is preserved: the worker sees only OAuth tokens, never holdings.
+// The refresh_token never leaves the device except to this one endpoint.
+// Nothing is stored server-side.
 
 const CLIENT_ID = import.meta.env?.VITE_GOOGLE_CLIENT_ID
-  // Web OAuth client IDs are public by design: they appear in the page source of
-  // every site that uses Google sign-in. There is no client secret in the token
-  // flow. What actually guards this is the authorized JavaScript origin list in
-  // the Cloud console, which is why the ID being visible here is not a leak.
   || '630094688874-rilioqqic8004hk57skqi6oi2bs0g078.apps.googleusercontent.com'
 
 const SCOPE = 'https://www.googleapis.com/auth/drive.file'
-const GIS_SRC = 'https://accounts.google.com/gsi/client'
 const FILE_NAME = 'walletlens-backup.wl3'
 const API = 'https://www.googleapis.com/drive/v3/files'
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files'
+
+// The worker that holds GOOGLE_CLIENT_SECRET and does the token dance.
+const AUTH_WORKER = import.meta.env?.VITE_DRIVE_AUTH_URL
+  || 'https://walletlens-drive-auth.tarek-abdelhameed.workers.dev'
 
 /** Feature switch: without a client ID the whole thing stays invisible. */
 export function isDriveConfigured() {
   return typeof CLIENT_ID === 'string' && CLIENT_ID.endsWith('.apps.googleusercontent.com')
 }
 
-// The token is persisted, and that reversed an earlier decision. The old note
-// here said memory-only was free because "Google hands out a fresh one
-// silently while the session is alive" — true in a normal browser, false in
-// the Android app.
+// ── Token storage ───────────────────────────────────────────────────────────
 //
-// Inside a TWA there is no opener for GIS to postMessage back to, so its
-// "silent" prompt:'none' call surfaces as a visible accounts.google.com tab
-// that spins and never completes. With the token discarded on every app start,
-// every automatic backup reached for a new one and opened that tab — and
-// closing it fired visibilitychange, which triggered another backup, which
-// opened it again. A loop, roughly once a minute, that never backed anything
-// up.
-//
-// So the token now survives a restart and is used until it expires. It is a
-// bearer credential on disk for up to an hour, scoped to drive.file — only
-// files this app created. The device already stores the key that decrypts the
-// backup itself, so this does not widen what a compromised device gives up,
-// and it is what makes an uninterrupted automatic backup possible at all.
-const TOKEN_KEY = 'wl_drive_token'
+// access_token:  ~1-hour bearer credential, kept in memory + localStorage.
+// refresh_token: long-lived credential issued by Google on first sign-in.
+//   Used ONLY to obtain fresh access tokens via the worker.  Never stored
+//   outside this file, never sent anywhere except the worker /refresh
+//   endpoint.  This is what makes automatic backups可持续 (sustainable)
+//   across hours, days, and device restarts.
 
-let accessToken = null
-let tokenExpiry = 0
-let tokenClient = null
+const TOKEN_KEY    = 'wl_drive_token'
+const REFRESH_KEY  = 'wl_drive_refresh'
+const STATE_KEY    = 'wl_drive_oauth_state'
+const RETURN_KEY   = 'wl_drive_return'
+const REDIRECT_PATH = '/drive-callback'
+
+let accessToken   = null
+let tokenExpiry   = 0
+let refreshToken  = null
+let refreshing    = null   // dedup concurrent refresh calls
 
 try {
   const saved = JSON.parse(localStorage.getItem(TOKEN_KEY) || 'null')
@@ -55,108 +72,124 @@ try {
     accessToken = saved.token
     tokenExpiry = saved.expiry
   }
-} catch { /* unreadable or private mode: carry on tokenless */ }
+} catch { /* unreadable or private mode */ }
+
+try { refreshToken = localStorage.getItem(REFRESH_KEY) || null } catch { /* private mode */ }
 
 function rememberToken(token, expiresInSec) {
   accessToken = token
   tokenExpiry = Date.now() + Number(expiresInSec || 3600) * 1000
   try {
     localStorage.setItem(TOKEN_KEY, JSON.stringify({ token, expiry: tokenExpiry }))
-  } catch { /* private mode: it still works for this session */ }
+  } catch { /* private mode */ }
 }
 
-function forgetToken() {
+function rememberRefreshToken(rt) {
+  refreshToken = rt
+  try { localStorage.setItem(REFRESH_KEY, rt) } catch { /* private mode */ }
+}
+
+function forgetTokens() {
   accessToken = null
   tokenExpiry = 0
-  try { localStorage.removeItem(TOKEN_KEY) } catch { /* nothing to clear */ }
-}
-
-/**
- * A token we already hold, or null. Never contacts Google.
- *
- * This is the only door an automatic background task may use. Everything else
- * can show UI, and a backup nobody asked for must never do that.
- */
-export function storedAccessToken() {
-  return haveValidToken() ? accessToken : null
-}
-
-let gisPromise = null
-function loadGis() {
-  if (gisPromise) return gisPromise
-  gisPromise = new Promise((resolve, reject) => {
-    if (window.google?.accounts?.oauth2) return resolve()
-    const s = document.createElement('script')
-    s.src = GIS_SRC
-    s.async = true
-    s.defer = true
-    s.onload = () => resolve()
-    s.onerror = () => reject(new Error('Could not reach Google sign-in'))
-    document.head.appendChild(s)
-  })
-  return gisPromise
+  refreshToken = null
+  try {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(REFRESH_KEY)
+  } catch { /* nothing to clear */ }
 }
 
 function haveValidToken() {
   return accessToken && Date.now() < tokenExpiry - 60_000
 }
 
-// ── Redirect flow ───────────────────────────────────────────────────────────
-// Google's identity library completes its popup flow with a postMessage back
-// to the window that opened it. Mobile browsers routinely open the "popup" as
-// a full tab and drop the opener, at which point the token has nowhere to
-// return and the library reports "Popup window closed" — which is exactly what
-// happened on the first real device test. A TWA Custom Tab has the same shape.
-//
-// So on touch devices the interactive sign-in is a full-page navigation to
-// Google and back to /drive-callback (the redirect URI registered on the OAuth
-// client). No popup, no opener, nothing for the browser to lose.
-
-const REDIRECT_PATH = '/drive-callback'
-const STATE_KEY = 'wl_drive_oauth_state'
-const RETURN_KEY = 'wl_drive_return'
+/**
+ * A token we already hold, or null.  Never contacts Google or the worker.
+ * This is the only door an automatic background task may use.
+ */
+export function storedAccessToken() {
+  return haveValidToken() ? accessToken : null
+}
 
 function isLikelyMobile() {
   if (typeof navigator === 'undefined') return false
   return /android|iphone|ipad|mobile/i.test(navigator.userAgent || '')
 }
 
-/** Exported for tests; beginRedirectSignIn is just this plus a navigation. */
+// ── Silent refresh via the Cloudflare Worker ────────────────────────────────
+//
+// This is the whole reason sessions stopped expiring.  The worker holds the
+// client_secret (which must never live in a browser) and uses the
+// refresh_token to obtain a fresh access_token.  The token is returned
+// directly to this page; the worker sees nothing else.
+
+async function silentRefresh() {
+  if (!refreshToken) return false
+  // Dedup: if two callers hit this at the same time, only one network round
+  // trip happens.
+  if (refreshing) return refreshing
+  refreshing = (async () => {
+    try {
+      const res = await fetch(`${AUTH_WORKER}/refresh`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.access_token) {
+        // Refresh token revoked or expired — user must re-sign-in.
+        forgetTokens()
+        return false
+      }
+      rememberToken(data.access_token, data.expires_in)
+      return true
+    } catch {
+      // Network error — try again next time, don't nuke the token.
+      return false
+    } finally {
+      refreshing = null
+    }
+  })()
+  return refreshing
+}
+
+// ── Redirect sign-in flow ──────────────────────────────────────────────────
+//
+// On mobile/TWA, Google's GIS library cannot complete its popup flow: there
+// is no opener for postMessage, so the popup spins forever.  The redirect
+// flow is a full-page navigation to Google and back to /drive-callback.
+// Google sends the authorization code as a query parameter, not a fragment.
+
+/** Exported for tests */
 export function buildAuthUrl(state) {
   const p = new URLSearchParams({
     client_id: CLIENT_ID,
     redirect_uri: window.location.origin + REDIRECT_PATH,
-    response_type: 'token',
+    response_type: 'code',                          // ← authorization code, not token
     scope: SCOPE,
     state,
-    include_granted_scopes: 'true',
+    access_type: 'offline',                         // ← ask Google for a refresh_token
+    prompt: 'consent',                              // ← force consent so refresh_token is always issued
   })
   return 'https://accounts.google.com/o/oauth2/v2/auth?' + p.toString()
 }
 
 export function beginRedirectSignIn() {
-  // The state parameter round-trips through Google and is checked on return,
-  // so a token fragment planted by someone else's page is rejected.
   const state = (crypto.randomUUID && crypto.randomUUID()) || Math.random().toString(36).slice(2)
   try {
     sessionStorage.setItem(STATE_KEY, state)
     sessionStorage.setItem(RETURN_KEY, window.location.pathname || '/settings')
-  } catch { /* private mode: state check will fail closed on return */ }
+  } catch { /* private mode */ }
 
   const url = buildAuthUrl(state)
 
-  // Inside the app's own WebView this navigation must leave the WebView.
-  //
-  // Google REFUSES OAuth in an embedded WebView — accounts.google.com answers
-  // `disallowed_useragent`, deliberately, so that an app cannot watch its users
-  // type a Google password into a view it controls. Navigating there in-place
-  // does not fail subtly; it fails with a page nobody can get past.
-  //
+  // In a TWA the navigation must leave the WebView — Google REFUSES OAuth
+  // inside a WebView (accounts.google.com answers disallowed_useragent).
   // The bridge opens a Custom Tab, which IS the user's browser and which
-  // Google accepts. Google redirects back to /drive-callback, the app catches
-  // that deep link, and the shell loads it into this same WebView — so the
-  // sessionStorage state written just above is still here to check against,
-  // and completeRedirectSignIn below runs exactly as it does in a browser.
+  // Google accepts.  Google redirects back to /drive-callback; the app
+  // catches that deep link and loads it into this WebView — so
+  // sessionStorage is still here, and the DriveCallback page picks up the
+  // authorization code.
   try {
     const bridge = typeof window !== 'undefined' ? window.AndroidBridge : null
     if (bridge && typeof bridge.openExternal === 'function' && bridge.openExternal(url)) return
@@ -166,12 +199,11 @@ export function beginRedirectSignIn() {
 }
 
 /**
- * Called by the /drive-callback route with location.hash. Validates state,
- * stores the token in memory, and says where to send the user back to.
- * The caller must scrub the hash from the URL and history immediately.
+ * Called by the DriveCallback page once it has the authorization code.
+ * Exchanges it for tokens via the worker, stores them, and says where
+ * to send the user back to.
  */
-export function completeRedirectSignIn(hash) {
-  const params = new URLSearchParams(String(hash || '').replace(/^#/, ''))
+export async function completeRedirectSignInWithCode(code) {
   let expected = null
   let returnTo = '/settings'
   try {
@@ -179,93 +211,148 @@ export function completeRedirectSignIn(hash) {
     returnTo = sessionStorage.getItem(RETURN_KEY) || '/settings'
     sessionStorage.removeItem(STATE_KEY)
     sessionStorage.removeItem(RETURN_KEY)
-  } catch { /* fall through: no stored state means the check below fails */ }
+  } catch { /* private mode */ }
 
-  const err = params.get('error')
-  if (err) throw new Error(err === 'access_denied' ? 'Sign-in was cancelled' : `Google sign-in failed: ${err}`)
-  if (!expected || params.get('state') !== expected) {
-    throw new Error('Sign-in state mismatch — please try connecting again')
-  }
-  const token = params.get('access_token')
-  if (!token) throw new Error('Google did not return a token')
-  rememberToken(token, params.get('expires_in'))
+  const redirectUri = window.location.origin + REDIRECT_PATH
+  const res = await fetch(`${AUTH_WORKER}/exchange`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ code, redirectUri }),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error_description || data.error || 'Token exchange failed')
+
+  rememberToken(data.access_token, data.expires_in)
+  if (data.refresh_token) rememberRefreshToken(data.refresh_token)
+
   return { returnTo }
 }
 
+// Keep the old hash-based entry point for backward compat (in case any
+// code path or cached page still sends a fragment).  Stripped of the
+// implicit grant logic; it now tries to read a code from the hash.
 /**
- * Get an access token, prompting the user only when necessary.
+ * Exchange an authorization code or handle a legacy hash fragment for tokens.
  *
- * @param {boolean} interactive false to attempt a silent refresh and give up
- *                              quietly, which is what a background auto-backup
- *                              wants: it must never throw a consent popup at
- *                              someone who didn't tap anything.
+ * Accepts:
+ *   - A raw authorization code string ("4/0AX4XfWh...")
+ *   - A query string "code=...&state=..."
+ *   - A fragment "#access_token=...&expires_in=..."  (legacy implicit grant)
+ *
+ * Always returns { returnTo } where to redirect the user after sign-in.
  */
-export async function getAccessToken({ interactive = true } = {}) {
-  if (haveValidToken()) return accessToken
-  if (!isDriveConfigured()) throw new Error('Google Drive is not configured')
+export async function completeRedirectSignIn(codeOrHash) {
+  if (!codeOrHash) throw new Error('No authorization code received from Google')
 
-  // Interactive sign-in on a touch device: navigate, don't pop up. The
-  // returned promise never settles because the page is about to unload.
-  if (interactive && isLikelyMobile()) {
-    beginRedirectSignIn()
-    return new Promise(() => {})
+  // ── Legacy implicit grant fallback ──────────────────────────────────
+  // Fragment like #access_token=...&expires_in=...
+  // This path is kept only for backward compat with sessions that started
+  // under the old implicit grant.  It does not get a refresh_token.
+  if (codeOrHash.startsWith('#') && codeOrHash.includes('access_token=')) {
+    const params = new URLSearchParams(codeOrHash.slice(1))
+
+    // State check — prevents a token planted by another page.
+    let expected = null
+    try { expected = sessionStorage.getItem(STATE_KEY) } catch { /* private mode */ }
+    if (!expected || params.get('state') !== expected) {
+      throw new Error('Sign-in state mismatch — please try connecting again')
+    }
+
+    const token = params.get('access_token')
+    if (token) {
+      rememberToken(token, params.get('expires_in') || 3600)
+      let returnTo = '/settings'
+      try {
+        returnTo = sessionStorage.getItem(RETURN_KEY) || '/settings'
+        sessionStorage.removeItem(RETURN_KEY)
+        sessionStorage.removeItem(STATE_KEY)
+      } catch { /* private mode */ }
+      return { returnTo }
+    }
+    throw new Error('No authorization code received from Google')
   }
 
-  await loadGis()
-
-  return new Promise((resolve, reject) => {
-    tokenClient = window.google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: SCOPE,
-      callback: (res) => {
-        if (res.error) return reject(new Error(res.error_description || res.error))
-        rememberToken(res.access_token, res.expires_in)
-        resolve(accessToken)
-      },
-      error_callback: (err) => {
-        // Desktop popup blocked or torn down: fall back to the redirect flow
-        // rather than surfacing "Popup window closed" at the user.
-        if (interactive && /popup/i.test(err?.type || err?.message || '')) {
-          beginRedirectSignIn()
-          return // navigating away; leave the promise pending
-        }
-        reject(new Error(err?.message || 'Sign-in was cancelled'))
-      },
-    })
-    // prompt:'' reuses an existing grant without showing anything. On the very
-    // first run there is no grant, so a non-interactive call correctly fails
-    // instead of silently doing nothing the caller can detect.
-    tokenClient.requestAccessToken({ prompt: interactive ? '' : 'none' })
-  })
+  // ── New authorization code flow ─────────────────────────────────────
+  // Could be a raw code string or a query string "code=...&state=..."
+  let code = codeOrHash
+  if (codeOrHash.startsWith('?') || codeOrHash.includes('code=')) {
+    const params = new URLSearchParams(
+      codeOrHash.startsWith('?') ? codeOrHash.slice(1) : codeOrHash
+    )
+    code = params.get('code') || codeOrHash
+  }
+  return completeRedirectSignInWithCode(code)
 }
 
+// ── getAccessToken: the single source of truth ──────────────────────────────
+//
+// Returns a valid access token.  Order of attempts:
+//   1. Already have a valid token (cached from <1 h ago)
+//   2. Silent refresh via the Cloudflare Worker (uses refresh_token — silent, fast, no UI)
+//   3. Interactive sign-in (user sees Google consent screen)
+
+export async function getAccessToken({ interactive = true } = {}) {
+  // Fast path: token still valid
+  if (haveValidToken()) return accessToken
+
+  // Have a refresh token?  Try silent refresh first — no UI, no redirect,
+  // no Custom Tab.  This is the fix for sessions expiring.
+  if (refreshToken) {
+    const ok = await silentRefresh()
+    if (ok) return accessToken
+  }
+
+  if (!isDriveConfigured()) throw new Error('Google Drive is not configured')
+
+  // Background tasks (auto-backup) must never show a sign-in prompt.
+  if (!interactive) return null
+
+  // Interactive sign-in on a touch device: navigate, don't pop up.
+  beginRedirectSignIn()
+  return new Promise(() => {})
+}
+
+// ── Public API ──────────────────────────────────────────────────────────────
+
 export function signOut() {
-  const t = accessToken
-  forgetToken()
-  try { if (t) window.google?.accounts?.oauth2?.revoke(t, () => {}) } catch { /* already gone */ }
+  forgetTokens()
 }
 
 export function isSignedIn() {
-  return haveValidToken()
+  return haveValidToken() || !!refreshToken   // can refresh next time backup runs
 }
 
 /** Thrown when Drive work needs a sign-in that only a user gesture may start. */
 export const NEEDS_SIGNIN = 'NEEDS_SIGNIN'
 
 async function driveFetch(url, init = {}) {
-  // Silent only, deliberately. Escalating to interactive here would navigate
-  // the page to Google in the middle of a backup, losing the passphrase the
-  // user just typed and completing nothing. Sign-in belongs to Connect, which
-  // is a button press with nothing else in flight.
-  const token = await getAccessToken({ interactive: false })
-    .catch(() => { throw new Error(NEEDS_SIGNIN) })
+  // If the token is expired but we have a refresh token, try refresh first.
+  // This is the code path that previously returned null and broke auto-backup.
+  let token = storedAccessToken()
+  if (!token && refreshToken) {
+    const ok = await silentRefresh()
+    if (ok) token = storedAccessToken()
+  }
+  if (!token) throw new Error(NEEDS_SIGNIN)
+
   const res = await fetch(url, {
     ...init,
     headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` },
   })
   if (res.status === 401) {
-    // Rejected by Drive: the stored copy is no better than none.
-    forgetToken()
+    // Rejected by Drive — try one refresh, then give up.
+    if (refreshToken) {
+      const ok = await silentRefresh()
+      if (ok) {
+        token = storedAccessToken()
+        const retry = await fetch(url, {
+          ...init,
+          headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` },
+        })
+        if (retry.ok) return retry
+      }
+    }
+    forgetTokens()
     throw new Error('Google sign-in expired, please connect again')
   }
   if (!res.ok) {
