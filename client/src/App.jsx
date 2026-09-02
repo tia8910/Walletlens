@@ -535,6 +535,10 @@ export default function App() {
   // startup — in Android's app settings, say — would otherwise not subscribe
   // anything until the next cold start.
   useEffect(() => {
+    // Wait for biometric unlock before asking for notification permission
+    // or registering with the push server — the native permission dialog
+    // must not appear on top of the fingerprint prompt.
+    if (locked) return
     let stop = () => {}
     import('./push').then(m => {
       m.autoEnablePush?.()
@@ -546,7 +550,7 @@ export default function App() {
       stop = m.watchPermission?.(() => {}) || stop
     }).catch(() => {})
     return () => stop()
-  }, [])
+  }, [locked])
 
   // Any part of the app can open the Help guide by dispatching `wl:open-help`
   // (e.g. an on-screen tip's "how it works" link).
