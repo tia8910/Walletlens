@@ -432,3 +432,19 @@ export function getCryptoCategory(coinId) {
   if (!coinId) return null
   return CRYPTO_CATEGORIES[coinId.toLowerCase()] || null
 }
+
+// Portfolio category → accent color, keyed by categorizeAsset() output.
+export const CATEGORY_COLOR = { crypto: 'var(--g)', metals: '#e8b825', stocks: '#3b82f6', realestate: '#a78bfa', cash: '#64748b' }
+
+// Returns { label, color } category badge for a holding
+export function getAssetCategoryBadge(h) {
+  const id = h.coin_id || ''
+  if (id.startsWith('xstock:')) return { label: 'xStock', color: '#f0b90b' }
+  if (id.startsWith('stock:')) {
+    const sector = getStockSector(id) || 'Stock'
+    return { label: sector, color: STOCK_SECTOR_COLORS[sector] || '#6366f1' }
+  }
+  const cat = getCryptoCategory(id)
+  if (cat) return { label: cat, color: CRYPTO_CATEGORY_COLORS[cat] || '#6366f1' }
+  return null
+}

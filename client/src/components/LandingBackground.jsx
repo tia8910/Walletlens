@@ -258,7 +258,14 @@ export default function LandingBackground({ light = false }) {
     if (reduceMotion) renderStatic()
     else raf = requestAnimationFrame(draw)
 
-    function onResize() { resize(); makeOrbs(); if (reduceMotion) renderStatic() }
+    let resizeRaf = 0
+    function onResize() {
+      if (resizeRaf) return
+      resizeRaf = requestAnimationFrame(() => {
+        resizeRaf = 0
+        resize(); makeOrbs(); if (reduceMotion) renderStatic()
+      })
+    }
     function onVisibility() {
       if (reduceMotion) return
       if (document.hidden) { cancelAnimationFrame(raf); raf = 0 }
@@ -269,6 +276,7 @@ export default function LandingBackground({ light = false }) {
 
     return () => {
       cancelAnimationFrame(raf)
+      if (resizeRaf) cancelAnimationFrame(resizeRaf)
       window.removeEventListener('resize', onResize)
       document.removeEventListener('visibilitychange', onVisibility)
     }
