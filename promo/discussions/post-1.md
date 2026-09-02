@@ -37,4 +37,4 @@ All analysis runs locally on your device. No data leaves your phone. No cloud pr
 
 ---
 
-Try it: [walletlens.live](https://walletlens.live) | [Google Play](https://play.google.com/store/apps/details?id=live.walletlens)
+Try it: [walletlens.live](https://walletlens.live) | [Google Play](https://play.google.com/store/apps/details?id=live.walletlens.twa)

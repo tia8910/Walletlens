@@ -42,4 +42,4 @@ All of this is triggered by market data, not by your behavior.
 
 **Your portfolio is yours. Your notifications are yours.**
 
-Try it: [walletlens.live](https://walletlens.live) | [Google Play](https://play.google.com/store/apps/details?id=live.walletlens)
+Try it: [walletlens.live](https://walletlens.live) | [Google Play](https://play.google.com/store/apps/details?id=live.walletlens.twa)

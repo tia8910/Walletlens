@@ -44,7 +44,7 @@ I tried every portfolio tracker out there. Here is what I found:
 ## Try It
 
 - 🌐 [walletlens.live](https://walletlens.live)
-- 📱 [Google Play](https://play.google.com/store/apps/details?id=live.walletlens)
+- 📱 [Google Play](https://play.google.com/store/apps/details?id=live.walletlens.twa)
 
 ---
 

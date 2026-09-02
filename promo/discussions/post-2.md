@@ -36,4 +36,4 @@ Every notification opens the **exact page** it is about:
 
 **No Firebase. No tracking. Just useful notifications.**
 
-Try it: [walletlens.live](https://walletlens.live) | [Google Play](https://play.google.com/store/apps/details?id=live.walletlens)
+Try it: [walletlens.live](https://walletlens.live) | [Google Play](https://play.google.com/store/apps/details?id=live.walletlens.twa)

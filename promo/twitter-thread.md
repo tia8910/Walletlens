@@ -71,7 +71,7 @@ All open source on GitHub.
 ## Tweet 8 (CTA)
 Try it:
 🌐 walletlens.live
-📱 Google Play: play.google.com/store/apps/details?id=live.walletlens
+📱 Google Play: play.google.com/store/apps/details?id=live.walletlens.twa
 ⭐ GitHub: github.com/tia8910/Walletlens
 
 If you find it useful, a star helps others discover it! 🙏

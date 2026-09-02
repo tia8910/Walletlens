@@ -32,6 +32,6 @@ Auto-calculate your 2.5% Nisab with live gold/silver prices.
 
 **Try it now:**
 - 🌐 [walletlens.live](https://walletlens.live)
-- 📱 [Google Play](https://play.google.com/store/apps/details?id=live.walletlens)
+- 📱 [Google Play](https://play.google.com/store/apps/details?id=live.walletlens.twa)
 
 ⭐ Star the repo if you find it useful!

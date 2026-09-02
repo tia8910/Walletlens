@@ -1,7 +1,7 @@
 ## Quick Start
 
 ### 1. Open the App
-No account needed. Just open [walletlens.live](https://walletlens.live) or install from [Google Play](https://play.google.com/store/apps/details?id=live.walletlens).
+No account needed. Just open [walletlens.live](https://walletlens.live) or install from [Google Play](https://play.google.com/store/apps/details?id=live.walletlens.twa).
 
 ### 2. Add Your First Asset
 - Tap the **+** button on the dashboard

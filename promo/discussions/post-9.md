@@ -38,4 +38,4 @@ We built a **Zakat Calculator** directly into WalletLens because no privacy-firs
 
 Built with respect for the community. Free forever. No ads.
 
-Try it: [walletlens.live](https://walletlens.live) | [Google Play](https://play.google.com/store/apps/details?id=live.walletlens)
+Try it: [walletlens.live](https://walletlens.live) | [Google Play](https://play.google.com/store/apps/details?id=live.walletlens.twa)

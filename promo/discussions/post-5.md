@@ -31,4 +31,4 @@ What would make WalletLens the perfect portfolio tracker for you? Drop your idea
 
 ---
 
-Try it: [walletlens.live](https://walletlens.live) | [Google Play](https://play.google.com/store/apps/details?id=live.walletlens)
+Try it: [walletlens.live](https://walletlens.live) | [Google Play](https://play.google.com/store/apps/details?id=live.walletlens.twa)
