@@ -800,7 +800,20 @@ export async function autoEnablePush() {
     // Push, and requiring it would make this return 'unsupported' on the one
     // platform that needs it most.
     if (inAppShell()) {
-      if (!shellNotificationsAllowed()) return { ok: false, reason: 'not-granted' }
+      // In the native shell, notifications are delivered over FCM — no
+      // service worker, no Web Push subscription.  The OS must have granted
+      // POST_NOTIFICATIONS for anything to appear.
+      if (!shellNotificationsAllowed()) {
+        // The permission is NOT granted.  This is the FIRST thing the app does
+        // after startup — ask the user for permission right away, rather than
+        // silently giving up and waiting for them to discover a toggle buried
+        // in Settings.
+        try {
+          const native = await import('./nativePush.js')
+          native.requestNativeNotificationPermission()
+        } catch { /* best effort */ }
+        return { ok: false, reason: 'asking' }
+      }
       if (localStorage.getItem(OPTOUT_KEY)) return { ok: false, reason: 'opted-out' }
       if (shellRegistered()) return { ok: false, reason: 'already-on' }
       const native = await import('./nativePush.js')

@@ -238,7 +238,7 @@ public class AppShellActivity extends ComponentActivity {
         // Painted before the page loads. A white flash on a dark app is the
         // most visible difference between a shell that feels native and one
         // that feels like a browser someone hid the chrome on.
-        web.setBackgroundColor(Color.parseColor("#0b0f1a"));
+        web.setBackgroundColor(Color.parseColor("#0d2015"));
 
         // The WebView sits inside a root that paints the bars' background, so
         // the inset strips are brand-coloured rather than transparent gaps.
@@ -303,6 +303,11 @@ public class AppShellActivity extends ComponentActivity {
         web.setWebChromeClient(new ShellChrome());
         // Check for updates on fresh launch, not just on resume.
         PlayUpdate.check(this);
+        // Eagerly request the FCM token so the web layer can register
+        // without waiting for the lazy ensurePushToken() call.  onNewToken
+        // only fires on creation or rotation — a device that already had a
+        // token before this code shipped would never hear about it otherwise.
+        WalletLensMessagingService.ensureToken(this);
 
         if (savedInstanceState != null) {
             // Rotation and process death. Restoring beats reloading: a reload
