@@ -763,6 +763,7 @@ export default function App() {
       </PullToRefresh>
 
       <AppFooter />
+      <GitHubStarButton />
 
       {!isLanding && isStandalone && shellReady && <BottomNav />}
 

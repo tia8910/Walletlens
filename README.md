@@ -1,8 +1,10 @@
 <div align="center">
 
-<img src="https://walletlens.live/icon-192.png" alt="WalletLens Logo" width="88" height="88" />
+<a href="https://walletlens.live">
+<img src="https://walletlens.live/icon-512.png" alt="WalletLens Logo" width="120" height="120" />
+</a>
 
-# WalletLens
+# 🔒 WalletLens
 
 ### The free, private, no-account portfolio tracker with AI analysis
 
@@ -10,93 +12,102 @@ Track **crypto, stocks, gold, real estate and cash** in one unified net-worth da
 **Add holdings by voice, screenshot, Excel/CSV or wallet address — then export to Excel or a tax-ready CSV.**  
 Live P&L · Technical Analysis · Magic Indicator · AI Coach
 
-[![Live App](https://img.shields.io/badge/🌐%20Live%20App-walletlens.live-00c853?style=for-the-badge)](https://walletlens.live)
-[![Stars](https://img.shields.io/github/stars/tia8910/Walletlens?style=for-the-badge&color=fbbf24&label=⭐%20Stars)](https://github.com/tia8910/Walletlens/stargazers)
-[![Forks](https://img.shields.io/github/forks/tia8910/Walletlens?style=for-the-badge&color=60a5fa)](https://github.com/tia8910/Walletlens/forks)
-[![Google Play](https://img.shields.io/badge/📱%20Google%20Play-Get%20it%20now-414141?style=for-the-badge&logo=google-play)](https://play.google.com/store/apps/details?id=live.walletlens.twa)
-[![Privacy](https://img.shields.io/badge/🛡️%20Privacy-100%25%20Local-10b981?style=for-the-badge)](https://walletlens.live/privacy)
-[![AI Powered](https://img.shields.io/badge/🤖%20AI-Claude%20Vision-purple?style=for-the-badge)](https://walletlens.live)
-[![Deploy](https://img.shields.io/github/actions/workflow/status/tia8910/Walletlens/deploy.yml?style=for-the-badge&label=Deploy)](https://github.com/tia8910/Walletlens/actions/workflows/deploy.yml)
+---
+
+[![Live App](https://img.shields.io/badge/🌐%20Try%20It%20Now-walletlens.live-00c853?style=for-the-badge&logo=vercel&logoColor=white)](https://walletlens.live)
+[![Google Play](https://img.shields.io/badge/📱%20Google%20Play-Download-414141?style=for-the-badge&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=live.walletlens.twa)
+[![Stars](https://img.shields.io/github/stars/tia8910/Walletlens?style=for-the-badge&color=fbbf24&label=⭐%20Stars&logo=github)](https://github.com/tia8910/Walletlens/stargazers)
+[![Forks](https://img.shields.io/github/forks/tia8910/Walletlens?style=for-the-badge&color=60a5fa&logo=github)](https://github.com/tia8910/Walletlens/forks)
 [![License](https://img.shields.io/github/license/tia8910/Walletlens?style=for-the-badge&color=a78bfa)](LICENSE)
 [![PWA](https://img.shields.io/badge/PWA-Installable-3b82f6?style=for-the-badge)](https://walletlens.live)
+[![Deploy](https://img.shields.io/github/actions/workflow/status/tia8910/Walletlens/deploy.yml?style=for-the-badge&label=Deploy&logo=github-actions)](https://github.com/tia8910/Walletlens/actions)
 
-> **⭐ If WalletLens helps you track your wealth, a GitHub star helps others find it — thank you!**
+<br>
+
+**⚠️ Most portfolio trackers require an account and sell your data.**  
+**WalletLens is different: zero accounts, zero tracking, zero cloud.**  
+**Your portfolio data never leaves your device. Period.**
+
+> ⭐ **If this helps you, a star helps others find it — thank you!** ⭐
 
 </div>
 
 ---
 
-## Why WalletLens?
+## 🎯 One-Line Pitch
 
-| | WalletLens | Most trackers |
-|---|---|---|
-| Account required | ❌ None | ✅ Sign-up required |
-| Data leaves device | ❌ Never | ✅ Stored on servers |
-| Free | ✅ Forever | ⚠️ Freemium / paywalled |
-| Add holdings by | 🎙️ Voice · 📸 Screenshot · 📄 Excel/CSV · 🔗 Wallet address · ⌨️ Manual | ⌨️ Manual or exchange API only |
-| Export | ✅ Excel/CSV + tax-ready transaction CSV | ⚠️ Often paywalled |
-| Asset types | Crypto · Stocks · Metals · Real Estate · Cash | Usually crypto only |
-| AI analysis | ✅ Built-in | ❌ Paid add-on |
-| Offline support | ✅ PWA | ❌ |
-| Open source | ✅ | ❌ |
+> *"A free, open-source, privacy-first portfolio tracker that supports crypto, stocks, gold, silver, real estate and cash — with AI analysis, voice import, and zero accounts."*
 
 ---
 
-## Features
+## 📊 Why WalletLens?
 
-### 📥 Smart Import & Export — the features no other tracker has
-> You never have to type holdings one by one. WalletLens gives you **five ways to add holdings and two ways to export** — none of which require an account, an exchange API key, or a paid plan. Manual entry is *optional*, not the default.
-
-- **🎙️ AI Voice Import (English & Arabic)** — say *"I bought half a Bitcoin at 65K and twenty Apple shares"* and Claude parses multiple trades from one sentence. The only free tracker with multilingual voice input. → [add-holdings-by-voice](https://walletlens.live/add-holdings-by-voice)
-- **📸 AI Screenshot Import** — screenshot your holdings on **any** exchange, broker or wallet (Binance, Coinbase, MetaMask, Robinhood, a broker statement — even a handwritten list) and Claude vision reads each asset, amount and price into your portfolio. No API key, no connection. → [import-portfolio-from-screenshot](https://walletlens.live/import-portfolio-from-screenshot)
-- **📄 Excel / CSV Import** — bulk-import your holdings or transaction history from a spreadsheet in seconds.
-- **🔗 On-chain Wallet Import** — paste any Ethereum, Bitcoin or Solana address and WalletLens auto-fetches live balances. No API key.
-- **⌨️ Manual Entry** — precise control when you want it, with exact dates and cost basis.
-- **📤 Export to Excel / CSV** — download your full portfolio (holdings, cost basis, P&L, allocation) for Excel or Google Sheets. → [export-portfolio-to-excel](https://walletlens.live/export-portfolio-to-excel)
-- **🧾 Crypto Tax Report Export** — export your complete transaction history as a CSV ready for Koinly, CoinTracker, TurboTax, or your accountant. → [crypto-portfolio-tax-report](https://walletlens.live/crypto-portfolio-tax-report)
-
-### 📊 Portfolio Dashboard
-- **All-asset net worth** — crypto, US stocks, gold/silver/platinum, fiat currencies, real estate and cash in one view
-- **Live P&L** — realized/unrealized gains, average cost basis, and portfolio health score
-- **Multi-wallet** — track multiple portfolios separately or combined
-- **Performance charts** — 4H · 1D · 7D · 30D with real historical snapshots
-- **Category breakdown** — allocation donut, per-category cards and sector heatmap
-
-### 🤖 AI & Analysis
-- **Magic Indicator** — one composite signal per holding (Strong Buy → Distribute) merging 5 pillars: technical, on-chain, volume, whale flow, and fundamentals
-- **Technical Analysis** — RSI, MACD, Bollinger Bands, moving averages, ATR, support/resistance from daily candles
-- **AI Sell Plans** — auto-generated exit ladders based on real S/R levels and momentum
-- **Risk Scanner** — concentration risk, liquidity risk, and portfolio health insights
-- **AI Coach** — personalized portfolio advice powered by Claude AI
-- **Voice / typed import** — *"I bought 2 ETH at $3200 and 0.5 BTC"* — Claude parses multi-trade sentences in English or Arabic
-
-### 🐋 Markets & Alerts
-- **Whale tracker** — live large on-chain BTC/ETH moves and exchange flows
-- **Price alerts** — PWA push notifications when targets are hit
-- **Smart alerts** — volatility and momentum-based notifications
-- **Live news** — crypto news feed with sentiment scoring
-- **Fear & Greed index** — real-time market sentiment
-
-### 🎯 Goals & Planning
-- **Vision Goals** — bucket-based financial planning (Emergency Fund, Retirement, Down Payment…)
-- **Price Targets** — per-asset take-profit and stop-loss targets
-- **Goal completion tracking** — auto-detect when a bucket hits its target
-- **Weekly Report** — shareable portfolio summary card
+| | WalletLens | CoinGecko | Delta | CoinStats |
+|---|:---:|:---:|:---:|:---:|
+| **Account required** | ❌ None | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Data leaves device** | ❌ Never | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Free forever** | ✅ | ⚠️ Freemium | ⚠️ Freemium | ⚠️ Freemium |
+| **Stocks + Gold + Crypto** | ✅ | ❌ Crypto only | ⚠️ Limited | ❌ Crypto only |
+| **AI Voice Import** | ✅ | ❌ | ❌ | ❌ |
+| **AI Screenshot Import** | ✅ | ❌ | ❌ | ❌ |
+| **Tax Report Export** | ✅ Free | ❌ | 💰 Paid | 💰 Paid |
+| **Open Source** | ✅ | ❌ | ❌ | ❌ |
+| **Works Offline** | ✅ | ❌ | ❌ | ❌ |
+| **AI Analysis** | ✅ Free | ❌ | ❌ | 💰 Paid |
 
 ---
 
-## Screenshots
+## ✨ Features That No Other Free Tracker Has
 
-| Dashboard | AI Analysis | Goals |
+### 🎙️ Voice Import
+> Say: *"I bought half a Bitcoin at 65K and twenty Apple shares"*
+> WalletLens parses multiple trades from one sentence. English & Arabic.
+
+### 📸 Screenshot Import
+> Screenshot your holdings from **any** exchange, broker or wallet (Binance, Coinbase, MetaMask, Robinhood — even a handwritten list) and AI reads each asset.
+
+### 📄 Excel/CSV Import + Export
+> Bulk-import from spreadsheets. Export to Excel, CSV, or tax-ready transaction CSV for Koinly/CoinTracker/TurboTax.
+
+### 🔗 Wallet Address Import
+> Paste any ETH, BTC or Solana address — auto-fetches live balances. No API key.
+
+### 🤖 AI Magic Indicator
+> One composite signal per holding merging **5 pillars**: technical, on-chain, volume, whale flow, and fundamentals. Shows: 🟢 Strong Buy → 🔴 Distribute.
+
+### 🛡️ Portfolio Guardian
+> AI monitors your holdings for anomalies, concentration risk, and volatility spikes.
+
+### 💰 Zakat Calculator
+> Auto-calculate 2.5% Nisab with live gold/silver prices. Multi-currency support.
+
+---
+
+## 📸 Screenshots
+
+<div align="center">
+
+| Dashboard | Analysis | Goals |
 |:---:|:---:|:---:|
-| [![Dashboard](https://walletlens.live/og-image.png)](https://walletlens.live) | | |
+| ![Dashboard](https://walletlens.live/og-image.png) | | |
 
-> 📸 **[See the live app →](https://walletlens.live)**
+**[🌐 See the live app →](https://walletlens.live)**
+
+</div>
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
+### Web (Instant)
+1. Open [walletlens.live](https://walletlens.live)
+2. Click "Install" to add to your home screen
+3. Start adding holdings — no account needed!
+
+### Android App
+[![Google Play](https://img.shields.io/badge/📱%20Download%20on%20Google%20Play-414141?style=for-the-badge&logo=google-play)](https://play.google.com/store/apps/details?id=live.walletlens.twa)
+
+### Developer
 ```bash
 git clone https://github.com/tia8910/Walletlens.git
 cd Walletlens/client
@@ -104,40 +115,32 @@ npm install
 npm run dev        # → http://localhost:5173
 ```
 
-Build for production:
-```bash
-npm run build      # Vite build + static prerender → client/dist
-npm test           # Vitest
-```
-
 ---
 
-## Tech Stack
+## 🏗️ Tech Stack
 
 | Layer | Technology |
 |---|---|
 | Frontend | React 18 · React Router 6 · Recharts · Vite |
-| Storage | localStorage / IndexedDB — **100% client-side, no backend** |
-| Hosting | GitHub Pages (custom domain `walletlens.live`) |
-| AI | Claude `claude-sonnet-4-6` via serverless Deno Deploy endpoint |
-| Service Worker | Custom tiered caching (offline-first for assets, SWR for prices) |
-| Tests | Vitest |
+| Storage | localStorage / IndexedDB — **100% client-side** |
+| Hosting | Cloudflare Pages (custom domain `walletlens.live`) |
+| AI | Claude `claude-sonnet-4-6` via Deno Deploy |
+| Mobile | Capacitor (Android native shell) |
+| Tests | Vitest (1,500+ tests) |
 
-### Live data sources (all free, no API key required)
+### Live Data Sources (all free, no API key)
 **Crypto:** CoinGecko · Binance · CryptoCompare · CoinCap  
-**Stocks:** Stooq  
+**Stocks:** Stooq · Yahoo Finance  
 **Metals:** gold-api.com  
 **FX/Fiat:** open.er-api · Frankfurter (ECB)
 
-Each has cascading fallbacks — the app never shows a blank panel.
-
 ---
 
-## Project Structure
+## 🗂️ Project Structure
 
 ```
 Walletlens/
-├── client/                    # React + Vite app (ships to production)
+├── client/                    # React + Vite app
 │   └── src/
 │       ├── pages/             # Dashboard, Technicals, Whales, Vision, Coach…
 │       ├── components/        # TradeSheet, MagicAnalysisPanel, VoiceImport…
@@ -145,26 +148,38 @@ Walletlens/
 │       ├── technicals.js      # Pure TA math (RSI, MACD, Bollinger, S/R)
 │       ├── magicIndicator.js  # Five-pillar composite → direction + confidence
 │       └── magicAi.js         # Claude AI verdict per asset
-├── voice-api/                 # Deno Deploy serverless endpoint (voice + AI)
+├── voice-api/                 # Deno Deploy endpoint (voice + AI)
 ├── scripts/                   # Static prerender for SEO
 └── .github/workflows/         # Deploy, price/news updaters, social posting
 ```
 
 ---
 
-## AI Endpoint (Optional)
+## 🔒 Privacy
 
-Voice import and the Magic AI Verdict use Claude. Since the app is fully static, the API key lives in a tiny [Deno Deploy](https://deno.com/deploy) function under [`voice-api/`](voice-api/). The app works fully without it — all TA indicators, P&L and portfolio tracking are 100% on-device.
+> **Your portfolio data never leaves your device.**
+
+- ❌ No accounts, no sign-ups
+- ❌ No analytics, no tracking
+- ❌ No cloud storage
+- ❌ No third-party data sharing
+- ✅ All data stored locally (localStorage/IndexedDB)
+- ✅ Open source — verify every line of code
+- ✅ Works fully offline
 
 ---
 
-## Privacy
+## 🤝 Contributing
 
-WalletLens **never** collects, stores or transmits your holdings. Portfolio data never leaves your browser. The only outbound calls are to public market-data APIs for prices — and optionally the Claude endpoint for voice/AI features (it receives only the text you type, nothing about your identity or full portfolio).
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+- 🐛 **Bug?** [Open an issue](https://github.com/tia8910/Walletlens/issues/new?template=bug_report.yml)
+- 💡 **Feature idea?** [Request it](https://github.com/tia8910/Walletlens/issues/new?template=feature_request.yml)
+- 🔀 **PR?** Fork → Branch → PR → Merge
 
 ---
 
-## Related Links
+## 📚 Related Links
 
 | Resource | Link |
 |---|---|
@@ -172,24 +187,14 @@ WalletLens **never** collects, stores or transmits your holdings. Portfolio data
 | 📱 Google Play | [Download](https://play.google.com/store/apps/details?id=live.walletlens.twa) |
 | 📖 Blog | [walletlens.live/blog](https://walletlens.live/blog) |
 | 🎓 Academy | [walletlens.live/academy](https://walletlens.live/academy) |
-| 📊 Fear & Greed Index | [walletlens.live/fear-and-greed-index](https://walletlens.live/fear-and-greed-index) |
+| 📊 Fear & Greed | [walletlens.live/fear-and-greed-index](https://walletlens.live/fear-and-greed-index) |
 | 🐋 Whale Tracker | [walletlens.live/whales](https://walletlens.live/whales) |
-| 📸 Import from Screenshot | [walletlens.live/import-portfolio-from-screenshot](https://walletlens.live/import-portfolio-from-screenshot) |
-| 🎙️ Add Holdings by Voice | [walletlens.live/add-holdings-by-voice](https://walletlens.live/add-holdings-by-voice) |
+| 🎙️ Voice Import | [walletlens.live/add-holdings-by-voice](https://walletlens.live/add-holdings-by-voice) |
+| 📸 Screenshot Import | [walletlens.live/import-portfolio-from-screenshot](https://walletlens.live/import-portfolio-from-screenshot) |
 
 ---
 
-## Contributing
-
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-- 🐛 **Bug?** [Open an issue](https://github.com/tia8910/Walletlens/issues/new?template=bug_report.yml)
-- 💡 **Feature idea?** [Request it here](https://github.com/tia8910/Walletlens/issues/new?template=feature_request.yml)
-- ⭐ **Find it useful?** A star goes a long way!
-
----
-
-## Disclaimer
+## ⚠️ Disclaimer
 
 WalletLens is a tracking and analysis tool — **not financial advice**. Indicators, sell plans and AI verdicts are informational only. Always do your own research.
 
@@ -201,6 +206,8 @@ WalletLens is a tracking and analysis tool — **not financial advice**. Indicat
 
 Made with ❤️ — Free forever, open source, private by design.
 
-⭐ **Star this repo to help others discover WalletLens!** ⭐
+### ⭐ If WalletLens helps you manage your wealth, please star this repo — it helps others discover it! ⭐
+
+[![Star History Chart](https://api.star-history.com/svg?repos=tia8910/Walletlens&type=Date)](https://star-history.com/#tia8910/Walletlens&Date)
 
 </div>

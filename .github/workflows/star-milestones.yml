@@ -1,0 +1,67 @@
+name: Star Milestones
+
+# Celebrates star milestones and posts updates
+
+on:
+  schedule:
+    - cron: '0 12 * * *'   # Daily check
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  discussions: write
+
+jobs:
+  check-and-celebrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Check star count and post milestones
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          STARS=$(curl -s "https://api.github.com/repos/tia8910/Walletlens" | jq -r '.stargazers_count')
+          echo "Current stars: $STARS"
+          
+          # Check if we hit a milestone
+          MILESTONES="1 5 10 25 50 100 250 500 1000"
+          STATE_FILE="promo/star-milestones.json"
+          
+          if [ ! -f "$STATE_FILE" ]; then
+            echo '{"celebrated": []}' > "$STATE_FILE"
+          fi
+          
+          for M in $MILESTONES; do
+            if [ "$STARS" -ge "$M" ]; then
+              if ! jq -e ".celebrated | index($M)" "$STATE_FILE" > /dev/null 2>&1; then
+                echo "🎉 Milestone $M reached! ($STARS stars)"
+                
+                # Post celebration discussion
+                gh api graphql -f query="
+                  mutation {
+                    createDiscussion(input: {
+                      repositoryId: \"R_kgDOSFcLqw\",
+                      categoryId: \"DIC_kwDOSFcLq84C_EyW\",
+                      title: \"🎉 We hit $M stars on GitHub!\",
+                      body: \"WalletLens just reached **$M stars** on GitHub! 🎉\n\nThank you to everyone who found this project useful. Your stars help other privacy-conscious investors discover a free, open-source alternative to paid portfolio trackers.\n\n**What is WalletLens?**\n- Free, open-source portfolio tracker\n- Zero accounts, zero tracking, zero cloud\n- AI-powered analysis\n- Crypto, stocks, gold, silver, real estate\n\n**Next milestone:** We are working toward the next goal. Stay tuned!\n\n⭐ Star the repo: https://github.com/tia8910/Walletlens\n🌐 Try the app: https://walletlens.live\"
+                    }) { discussion { number url } }
+                  }
+                "
+                
+                # Update state
+                jq ".celebrated += [$M]" "$STATE_FILE" > "${STATE_FILE}.tmp"
+                mv "${STATE_FILE}.tmp" "$STATE_FILE"
+              fi
+            fi
+          done
+
+      - name: Commit state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add promo/star-milestones.json
+          git diff --staged --quiet || git commit -m "chore: update star milestone state [skip ci]"
+          git push
