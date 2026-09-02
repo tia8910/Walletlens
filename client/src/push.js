@@ -1256,3 +1256,34 @@ export function vapidKeyMatches(serverKey) {
   if (!serverKey || !VAPID_PUBLIC) return null
   return serverKey === VAPID_PUBLIC
 }
+
+/**
+ * Re-arms the server's watch list whenever the portfolio changes, no matter
+ * which page the change happened on.
+ *
+ * The Dashboard's syncWatch() only fires while the Dashboard is mounted. Add
+ * or remove a holding from the Transactions page, a trade sheet, or an import
+ * and the Dashboard is unmounted — so the server keeps watching the OLD asset
+ * list, and a newly added asset stays silent until the next Dashboard visit.
+ *
+ * This listens for the same wl:portfolio-updated event driveAutoBackup uses
+ * and re-syncs the watch list from storage, so a price channel turns on for a
+ * new holding immediately rather than whenever the user next lands somewhere.
+ */
+let _watchSyncBound = false
+export function bindWatchSync() {
+  if (_watchSyncBound || typeof window === 'undefined') return () => {}
+  _watchSyncBound = true
+  const onUpdated = () => {
+    // Reads holdings from storage; works whether or not the Dashboard is up.
+    const watch = watchFromStorage()
+    if (!watch.length) return
+    const cache = readCachedWatch()
+    const same = cache.length === watch.length &&
+      cache.every((a, i) => a.id === watch[i].id && a.kind === watch[i].kind)
+    if (same) return
+    syncWatch()
+  }
+  window.addEventListener('wl:portfolio-updated', onUpdated)
+  return () => { window.removeEventListener('wl:portfolio-updated', onUpdated) }
+}

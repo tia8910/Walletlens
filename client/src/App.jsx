@@ -542,6 +542,7 @@ export default function App() {
       // returns early whenever the browser holds one, so without this a device
       // the server has lost stays silent forever while every switch reads On.
       m.ensureRegistered?.()
+      m.bindWatchSync?.()
       stop = m.watchPermission?.(() => {}) || stop
     }).catch(() => {})
     return () => stop()

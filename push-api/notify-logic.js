@@ -1290,10 +1290,10 @@ export const DEFAULT_PREFS = {
   hacks: true,      // one investment hack every other day
   academy: true,    // the daily Academy challenge
   portfolio: true,  // a daily breadth read on the holdings, no amounts
-  movePct: 2,       // swing threshold, percent
+  movePct: 1,       // swing threshold, percent
 }
 
-const MIN_MOVE_PCT = 1
+const MIN_MOVE_PCT = 0.5
 const MAX_MOVE_PCT = 50
 
 export function sanitizePrefs(raw) {
@@ -1641,7 +1641,7 @@ export function bumpSent(sent, nowMs, tzOffsetMin) {
 // rebasing after a day is what stops a week-old reference from making a normal
 // market look like a crash.
 export const MOVE_REF_MAX_AGE_MS = 24 * 60 * 60 * 1000
-export const MOVE_COOLDOWN_MS = 3 * 60 * 60 * 1000
+export const MOVE_COOLDOWN_MS = 1 * 60 * 60 * 1000
 
 /**
  * Where an asset was 24h ago, for the first reference point of a new watcher.
