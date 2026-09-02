@@ -13,6 +13,9 @@ Live P&L · Technical Analysis · Magic Indicator · AI Coach
 [![Live App](https://img.shields.io/badge/🌐%20Live%20App-walletlens.live-00c853?style=for-the-badge)](https://walletlens.live)
 [![Stars](https://img.shields.io/github/stars/tia8910/Walletlens?style=for-the-badge&color=fbbf24&label=⭐%20Stars)](https://github.com/tia8910/Walletlens/stargazers)
 [![Forks](https://img.shields.io/github/forks/tia8910/Walletlens?style=for-the-badge&color=60a5fa)](https://github.com/tia8910/Walletlens/forks)
+[![Google Play](https://img.shields.io/badge/📱%20Google%20Play-Get%20it%20now-414141?style=for-the-badge&logo=google-play)](https://play.google.com/store/apps/details?id=live.walletlens.twa)
+[![Privacy](https://img.shields.io/badge/🛡️%20Privacy-100%25%20Local-10b981?style=for-the-badge)](https://walletlens.live/privacy)
+[![AI Powered](https://img.shields.io/badge/🤖%20AI-Claude%20Vision-purple?style=for-the-badge)](https://walletlens.live)
 [![Deploy](https://img.shields.io/github/actions/workflow/status/tia8910/Walletlens/deploy.yml?style=for-the-badge&label=Deploy)](https://github.com/tia8910/Walletlens/actions/workflows/deploy.yml)
 [![License](https://img.shields.io/github/license/tia8910/Walletlens?style=for-the-badge&color=a78bfa)](LICENSE)
 [![PWA](https://img.shields.io/badge/PWA-Installable-3b82f6?style=for-the-badge)](https://walletlens.live)
@@ -158,6 +161,21 @@ Voice import and the Magic AI Verdict use Claude. Since the app is fully static,
 ## Privacy
 
 WalletLens **never** collects, stores or transmits your holdings. Portfolio data never leaves your browser. The only outbound calls are to public market-data APIs for prices — and optionally the Claude endpoint for voice/AI features (it receives only the text you type, nothing about your identity or full portfolio).
+
+---
+
+## Related Links
+
+| Resource | Link |
+|---|---|
+| 🌐 Live App | [walletlens.live](https://walletlens.live) |
+| 📱 Google Play | [Download](https://play.google.com/store/apps/details?id=live.walletlens.twa) |
+| 📖 Blog | [walletlens.live/blog](https://walletlens.live/blog) |
+| 🎓 Academy | [walletlens.live/academy](https://walletlens.live/academy) |
+| 📊 Fear & Greed Index | [walletlens.live/fear-and-greed-index](https://walletlens.live/fear-and-greed-index) |
+| 🐋 Whale Tracker | [walletlens.live/whales](https://walletlens.live/whales) |
+| 📸 Import from Screenshot | [walletlens.live/import-portfolio-from-screenshot](https://walletlens.live/import-portfolio-from-screenshot) |
+| 🎙️ Add Holdings by Voice | [walletlens.live/add-holdings-by-voice](https://walletlens.live/add-holdings-by-voice) |
 
 ---
 

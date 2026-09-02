@@ -1108,7 +1108,27 @@ ${arFaq.html}
 }
 console.log(`Prerendered Arabic pages (features + landing + ${Object.keys(AR_COMPARISONS).length} /vs).`)
 
+// Top 25 track pages to index — the highest-traffic assets across crypto,
+// stocks and metals.  Remaining track pages stay noindex to avoid scaled-
+// content flags while still passing link equity (follow).
+const TOP_INDEXED_SLUGS = new Set([
+  // Crypto — top 15 by market cap
+  'bitcoin', 'ethereum', 'solana', 'xrp', 'bnb', 'cardano', 'dogecoin',
+  'polkadot', 'chainlink', 'litecoin', 'avalanche', 'polygon', 'tron',
+  'uniswap', 'near',
+  // Stocks — top 5 names + 3 ETFs
+  'apple-stock', 'microsoft-stock', 'nvidia-stock', 'tesla-stock', 'amazon-stock',
+  'sp500-etf', 'nasdaq-etf', 'voo-etf',
+  // Metals — all 3
+  'gold', 'silver', 'platinum',
+])
+
 // ── Per-asset landing pages (/track/:slug) ───────────────────────────────────
+// Programmatic SEO: one focused page per top asset targeting "[asset] portfolio
+// tracker" / "track [asset] free" searches. Covers crypto, US stocks/ETFs, and
+// precious metals. Each is distinct (unique blurb, FAQ, title) to avoid
+// thin/doorway-content penalties.
+
 // Programmatic SEO: one focused page per top asset targeting "[asset] portfolio
 // tracker" / "track [asset] free" searches. Covers crypto, US stocks/ETFs, and
 // precious metals. Each is distinct (unique blurb, FAQ, title) to avoid
@@ -1225,7 +1245,7 @@ ${aiBullet}
     title: pageTitle,
     description: pageDesc,
     bodyHtml: assetBody,
-    noindex: true,
+    noindex: !TOP_INDEXED_SLUGS.has(c.slug),
     jsonLd: [
       {
         '@context': 'https://schema.org',
@@ -1238,7 +1258,7 @@ ${aiBullet}
     ],
   }))
 }
-console.log(`Prerendered ${ALL_TRACK_ASSETS.length} /track asset pages (${TRACK_COINS.length} crypto, ${TRACK_STOCKS.length} stocks, ${TRACK_METALS.length} metals).`)
+console.log(`Prerendered ${ALL_TRACK_ASSETS.length} /track asset pages (${TRACK_COINS.length} crypto, ${TRACK_STOCKS.length} stocks, ${TRACK_METALS.length} metals) — ${TOP_INDEXED_SLUGS.size} indexed.`)
 
 // ── Calculator landing pages (/calculator/:slug) ──────────────────────────
 // Targets "[asset] profit calculator" searches. Each page has a working
@@ -2180,6 +2200,8 @@ function writeRedirect(fromPath, toPath, title) {
 
 writeRedirect('/market', '/dashboard', 'Market — WalletLens')
 console.log('Prerendered /market redirect stub → /dashboard.')
+writeRedirect('/ar', '/ar/free-net-worth-tracker', 'WalletLens — متتبّع الثروة')
+console.log('Prerendered /ar redirect stub → /ar/free-net-worth-tracker.')
 
 // ── sitemap.xml ────────────────────────────────────────────────────────────
 // Only list pages with prerendered content and their own canonical tags.
@@ -2216,11 +2238,11 @@ const AR_ROUTES = [
   // /ar/vs/* excluded: they canonicalize to the English pages (see above).
   ...AR_POSTS.map(p => `/ar/blog/${p.slug}`),
 ]
-// NOTE: /track, /calculator and /price are intentionally EXCLUDED from the
-// sitemap and marked noindex in their prerendered HTML. They are templated SEO
-// pages (same structure, only the asset name changes) — listing them dilutes
-// the site's indexed quality and triggers "scaled content" / low-value flags
-// (Google Search quality + AdSense). They remain live and usable for direct
+// NOTE: /calculator and /price pages are intentionally EXCLUDED from the
+// sitemap and marked noindex.  The top 25 /track pages (TOP_INDEXED_SLUGS)
+// are indexed and included above; the remaining track pages stay noindex to
+// avoid scaled-content flags while still passing link equity (follow).  All
+// track/calculator/price pages remain live and usable for direct
 // visitors. Only genuinely unique content (articles, glossary, comparisons,
 // core pages) is submitted for indexing.
 const sitemapUrls = [
@@ -2229,10 +2251,13 @@ const sitemapUrls = [
   ...COMPARISONS.map(c => urlEntry({ loc: `${ORIGIN}/vs/${c.slug}/`, lastmod: TODAY, changefreq: 'monthly', priority: '0.75' })),
   ...GLOSSARY.map(t => urlEntry({ loc: `${ORIGIN}/learn/${t.slug}/`, lastmod: TODAY, changefreq: 'monthly', priority: '0.6' })),
   ...AR_ROUTES.map(p => urlEntry({ loc: ORIGIN + withSlash(p), lastmod: TODAY, changefreq: 'monthly', priority: '0.85' })),
+  // Top track pages — the only indexed asset pages; rest stay noindex.
+  ...ALL_TRACK_ASSETS.filter(c => TOP_INDEXED_SLUGS.has(c.slug)).map(c =>
+    urlEntry({ loc: `${ORIGIN}/track/${c.slug}/`, lastmod: TODAY, changefreq: 'weekly', priority: '0.8' })),
 ]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls.join('\n')}\n</urlset>\n`
 writeFileSync(resolve(DIST, 'sitemap.xml'), sitemap, 'utf8')
-console.log(`Wrote sitemap.xml (${sitemapUrls.length} urls; track/calculator/price excluded as noindex).`)
+console.log(`Wrote sitemap.xml (${sitemapUrls.length} urls; track pages ${TOP_INDEXED_SLUGS.size} indexed / ${ALL_TRACK_ASSETS.length} total).`)
 
 // ── rss.xml (blog feed) ──────────────────────────────────────────────────────
 // A real RSS 2.0 feed of every article. Feed readers, news aggregators, AI
@@ -2296,3 +2321,4 @@ try {
 } catch (e) {
   console.warn('llms.txt generation skipped:', e.message)
 }
+// ── Per-asset landing pages (/track/:slug) ───────────────────────────────────
