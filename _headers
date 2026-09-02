@@ -7,7 +7,7 @@
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
   X-Permitted-Cross-Domain-Policies: none
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co; frame-src 'none'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://*.workers.dev https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://api.rss2json.com https://wsrv.nl https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co; frame-src https://accounts.google.com intent:; frame-ancestors 'none'; form-action 'self'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests
   Cache-Control: no-cache
   Timing-Allow-Origin: *
 
@@ -27,7 +27,16 @@
 /stock-prices.json
   Cache-Control: public, max-age=1800, stale-while-revalidate=3600
 
+/stocks.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
 /news.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
+/economic-calendar.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
+/economy.json
   Cache-Control: public, max-age=1800, stale-while-revalidate=3600
 
 /rss.xml
@@ -60,6 +69,15 @@
 /market.json
   Cache-Control: public, max-age=1800, stale-while-revalidate=3600
 
+/economic-calendar.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
+/stocks.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
+/economy.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+
 /llms.txt
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
@@ -71,9 +89,6 @@
 
 /humans.txt
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
-
-/ads.txt
-  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
 
 /*.woff2
   Cache-Control: public, max-age=31536000, immutable

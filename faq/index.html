@@ -80,12 +80,27 @@
          browser opens a separate anonymous connection that cannot be reused. -->
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="dns-prefetch" href="https://www.google-analytics.com" />
-    <!-- Deno proxy — first CORS fallback tried for every price/API fetch; pre-warming
-         the TLS connection shaves ~150-200 ms off the very first price load. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- The Workers proxy — first CORS fallback tried for every price/API fetch,
+         and the endpoint voice import and AI analysis go through. Pre-warming
+         the TLS connection shaves ~150-200 ms off the very first price load.
+         Preconnected once, here, because it is the earliest point in <head>;
+         repeating it further down is a no-op. -->
+    <link rel="preconnect" href="https://walletlens-voice.tarek-abdelhameed.workers.dev" crossorigin />
     <!-- Twitter/X pixel CDN and tracking endpoint -->
     <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
     <link rel="dns-prefetch" href="https://analytics.twitter.com" />
+
+    <!-- TWA (Google Play app) detection — must run before any ad/marketing
+         pixel loads. The Play app launches with an android-app:// referrer on
+         the first navigation only, so the flag is persisted for later visits.
+         Read via client/src/twa.js. -->
+    <script>
+      try {
+        if (document.referrer.indexOf('android-app://live.walletlens.twa') === 0) {
+          localStorage.setItem('wl_twa', '1');
+        }
+      } catch (e) {}
+    </script>
 
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB"></script>
@@ -103,14 +118,17 @@
       gtag('config', 'G-69L5NCXNGB', { send_page_view: false });
     </script>
 
-    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority -->
+    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority.
+         Skipped inside the Google Play (TWA) app: shipping an ads pixel there
+         would force an "Advertising or marketing" declaration in the Play
+         Data safety form. Web visitors are unaffected. -->
     <script>
-      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
-      twq('config','rc7yj');
+      (function () {
+        try { if (localStorage.getItem('wl_twa') === '1') return; } catch (e) {}
+        !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+        twq('config','rc7yj');
+      })();
     </script>
-
-    <!-- AdSense -->
-    <meta name="google-adsense-account" content="ca-pub-0031050817995085" />
 
     <!-- Referrer policy (settable via meta) -->
     <meta name="referrer" content="strict-origin-when-cross-origin" />
@@ -122,12 +140,12 @@
          a meta tag, so it is intentionally omitted here. -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
-      script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
+      script-src 'self' 'unsafe-inline' https://accounts.google.com https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
       style-src 'self' 'unsafe-inline';
       font-src 'self' data:;
       img-src 'self' data: blob: https:;
-      connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
-      frame-src 'none';
+      connect-src 'self' https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://*.workers.dev https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://api.rss2json.com https://wsrv.nl https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
+      frame-src https://accounts.google.com intent:;
       form-action 'self';
       object-src 'none';
       base-uri 'self';
@@ -150,14 +168,12 @@
     <!-- LiveCoinWatch coin icon CDN — primary fallback for coin logos -->
     <link rel="preconnect" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" crossorigin />
 
-    <!-- Deno proxy is the first CORS proxy tried for every external price fetch;
-         full preconnect (TLS included) cuts ~200 ms off the first API call. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
     <!-- corsproxy.io is the fallback CORS proxy; preconnect ensures TLS is ready. -->
     <link rel="preconnect" href="https://corsproxy.io" crossorigin />
     <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
     <link rel="dns-prefetch" href="https://rest.coincap.io" />
-    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked -->
+    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked;
+         primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
     <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
     <link rel="dns-prefetch" href="https://api.gold-api.com" />
     <link rel="dns-prefetch" href="https://stooq.com" />
@@ -165,21 +181,12 @@
     <link rel="dns-prefetch" href="https://api.frankfurter.app" />
     <link rel="dns-prefetch" href="https://finnhub.io" />
     <link rel="dns-prefetch" href="https://api.allorigins.win" />
-    <!-- CryptoCompare — primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
-    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
     <!-- Coin icon CDN fallbacks -->
     <link rel="dns-prefetch" href="https://assets.coincap.io" />
     <link rel="dns-prefetch" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" />
     <!-- Public CORS-proxy fallbacks tried after the Deno proxy -->
     <link rel="dns-prefetch" href="https://cors.eu.org" />
     <link rel="dns-prefetch" href="https://api.codetabs.com" />
-
-    <!-- Deno AI / CORS-proxy endpoint — used by voice import, AI analysis, and
-         stock price proxy. This is one of the highest-latency origins because
-         Deno Deploy cold-starts; an early TLS handshake cuts ~200–400 ms off
-         the first AI or proxied fetch. crossorigin because all requests are CORS. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
-    <link rel="dns-prefetch" href="https://walletlens.tia8910.deno.net" />
 
     <!-- Structured data — WebApplication. Surfaces in Google rich results
          and gives LLM answer engines a clean fact card to cite. -->
@@ -231,6 +238,36 @@
     }
     </script>
 
+    <!-- Structured data — MobileApplication. WalletLens now ships as a real
+         Android app on Google Play alongside the web app and the Chrome
+         extension; this is the entity Search uses to link the domain to the
+         Play listing (app rich results, "official app" attribution). -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "MobileApplication",
+      "name": "WalletLens — Portfolio Tracker",
+      "url": "https://walletlens.live/",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Android 8.0+",
+      "installUrl": "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+      "downloadUrl": "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+      "isAccessibleForFree": true,
+      "inLanguage": ["en", "ar"],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/"
+      }
+    }
+    </script>
+
     <!-- Structured data — WebSite. This is the entity Google reads to attribute
          the canonical site name + domain (prevents wrong-domain attribution in
          Search & AI Overviews). Reinforces walletlens.live as the official URL. -->
@@ -263,6 +300,8 @@
       "slogan": "Zoom in your wealth",
       "foundingDate": "2024",
       "sameAs": [
+        "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+        "https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn",
         "https://github.com/tia8910/walletlens",
         "https://x.com/wallet_lens",
         "https://t.me/walletlenss",
@@ -294,25 +333,38 @@
     }
     </script>
 
-   <script type="module" crossorigin src="/assets/index-JlQXN2dk.js"></script>
-   <link rel="modulepreload" crossorigin href="/assets/react-vendor-N-h61jBm.js">
-   <link rel="modulepreload" crossorigin href="/assets/asset-data-Ho_VMknH.js">
-   <link rel="modulepreload" crossorigin href="/assets/technicals-utils-DK6187wm.js">
-   <link rel="modulepreload" crossorigin href="/assets/api-core-CWhJl43X.js">
-   <link rel="modulepreload" crossorigin href="/assets/i18n-Bnvao6TC.js">
-   <link rel="stylesheet" crossorigin href="/assets/index-BSpClZaa.css">
-   <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is WalletLens really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. You can track unlimited assets, use the AI analysis, and export backups without ever paying. The app is sustained by unobtrusive advertising."}},{"@type":"Question","name":"Do I need an account or email to use it?","acceptedAnswer":{"@type":"Answer","text":"No. There is no sign-up, no email, and no password. You open the app and start tracking immediately. Because there is no account, there is nothing to hack, leak, or lock you out of."}},{"@type":"Question","name":"How do I add my first holding?","acceptedAnswer":{"@type":"Answer","text":"Open the dashboard and tap \"Add Trade\". Search for the asset, enter the amount and the price you paid, and save. You can also speak a trade with voice input, import a screenshot of an exchange or broker app, or paste a backup code from another device."}},{"@type":"Question","name":"Can I use WalletLens on my phone?","acceptedAnswer":{"@type":"Answer","text":"Yes. WalletLens is a Progressive Web App (PWA) — install it to your home screen on iOS, Android, or desktop for a fast, app-like experience that works offline. There is also a Chrome browser extension for quick portfolio checks."}},{"@type":"Question","name":"Does WalletLens support languages other than English?","acceptedAnswer":{"@type":"Answer","text":"Yes — the interface and blog are available in Arabic with full right-to-left layout, and more languages are planned."}},{"@type":"Question","name":"Where is my portfolio data stored?","acceptedAnswer":{"@type":"Answer","text":"Entirely in your own browser's localStorage on your device. WalletLens has no backend database and no database of user portfolios. Your holdings stay on your device unless you export a backup or run an optional AI feature, which processes a transient snapshot and stores nothing."}},{"@type":"Question","name":"Can WalletLens see my portfolio?","acceptedAnswer":{"@type":"Answer","text":"No. The only network calls the app makes are to public price APIs (CoinGecko, Binance, Stooq, Gold-API and similar) to fetch market prices, and those requests never include your holdings, amounts, or any identity. Optional AI analysis sends only anonymous aggregates."}},{"@type":"Question","name":"How do I back up my portfolio?","acceptedAnswer":{"@type":"Answer","text":"Open Settings → Backup and copy your WLZ backup code (or show it as a QR code). The code is a compressed snapshot of your whole portfolio. Store it somewhere safe — because there is no cloud account, the backup code is the only way to restore your data if you clear your browser."}},{"@type":"Question","name":"How do I move my portfolio to a new device?","acceptedAnswer":{"@type":"Answer","text":"Export a backup code (or QR) on the old device, then paste or scan it on the new one. The import takes seconds and nothing passes through any server."}},{"@type":"Question","name":"How do I delete all my data?","acceptedAnswer":{"@type":"Answer","text":"Clearing your browser's site data for walletlens.live removes everything, because everything lives in your browser. There is no server-side copy to ask us to delete."}},{"@type":"Question","name":"What assets can I track in one place?","acceptedAnswer":{"@type":"Answer","text":"Crypto (10,000+ coins), US stocks and ETFs, gold, silver, platinum, fiat currencies, cash, bonds, and custom assets like real estate — all in a single net worth dashboard with live prices, cost basis, and profit/loss."}},{"@type":"Question","name":"Where do the live prices come from?","acceptedAnswer":{"@type":"Answer","text":"Crypto prices come from CoinGecko with Binance, CryptoCompare, CoinCap and CoinPaprika as automatic fallbacks. US stocks come from Stooq, precious metals from Gold-API, and currency rates from open exchange-rate APIs. If your network blocks these sources, the app falls back to a snapshot served from walletlens.live itself."}},{"@type":"Question","name":"Why is a price missing or showing zero?","acceptedAnswer":{"@type":"Answer","text":"Usually the asset is custom (bonds, real estate) and needs a manual price — edit the holding to set its current value. For listed assets, a hard refresh typically restores live prices; the app retries several sources automatically."}},{"@type":"Question","name":"How is my profit & loss calculated?","acceptedAnswer":{"@type":"Answer","text":"WalletLens tracks your cost basis per asset from your buy and sell transactions using the average-cost method. Unrealized P&L is the difference between current market value and the cost basis of what you still hold."}},{"@type":"Question","name":"What does the AI analysis do?","acceptedAnswer":{"@type":"Answer","text":"The AI Decision Engine reviews each position — momentum, portfolio weight, profit/loss — and suggests an action (hold, add, trim, sell) with reasons. There is also a wallet health evaluation, a risk scanner, stress tests, a sell-plan generator, and price-target tracking. None of it is financial advice."}},{"@type":"Question","name":"Can I set price alerts?","acceptedAnswer":{"@type":"Answer","text":"Yes. Set \"rises above\" or \"falls below\" alerts on any holding. With notifications enabled you get alerted even when WalletLens is in a background tab, complete with a sound."}},{"@type":"Question","name":"What is the voice import?","acceptedAnswer":{"@type":"Answer","text":"Tap the microphone and say something like \"I bought half a Bitcoin at sixty thousand dollars in January\" — the AI parses it into a structured transaction for you to confirm. It works in English and Arabic."}},{"@type":"Question","name":"What is the screenshot import?","acceptedAnswer":{"@type":"Answer","text":"Upload a screenshot of any exchange, broker, or bank app and the AI reads the holdings from the image and adds them to your portfolio — useful for migrating from another tracker in one step."}},{"@type":"Question","name":"What does the Chrome extension do?","acceptedAnswer":{"@type":"Answer","text":"The WalletLens extension shows your portfolio total, all holdings with live prices, market data, the Fear & Greed index, news, and technical signals from your browser toolbar. It syncs with the web app through your local data — no account needed."}},{"@type":"Question","name":"How is WalletLens different from CoinStats, Empower, or Kubera?","acceptedAnswer":{"@type":"Answer","text":"Most trackers focus only on crypto, charge a subscription, require you to connect exchange or bank logins, or store your data on their servers. WalletLens covers every asset class, is free forever, needs no logins, and keeps all data on your device."}},{"@type":"Question","name":"The app loads but data is empty — what do I do?","acceptedAnswer":{"@type":"Answer","text":"First hard-refresh (Ctrl+Shift+R on desktop, pull-to-refresh on mobile) to pick up the latest version. If market sections stay empty, your network may block crypto price APIs — WalletLens automatically falls back to a same-origin price snapshot within a few seconds."}},{"@type":"Question","name":"I cleared my browser and lost my portfolio. Can you restore it?","acceptedAnswer":{"@type":"Answer","text":"Only if you saved a WLZ backup code — paste it in Settings → Backup to restore everything instantly. There is no server-side copy, which is the price of true privacy, so export a backup regularly."}},{"@type":"Question","name":"Is WalletLens open source?","acceptedAnswer":{"@type":"Answer","text":"Yes. You can inspect the code, report issues, or contribute on GitHub at github.com/tia8910/walletlens."}},{"@type":"Question","name":"How do I report a bug or request a feature?","acceptedAnswer":{"@type":"Answer","text":"Email contact@walletlens.live or open an issue on GitHub — we read everything."}}]}</script>
+   <script type="module" crossorigin src="/assets/index-MD0YFg1B.js"></script>
+   <link rel="modulepreload" crossorigin href="/assets/i18n-7QXy5Tcc.js">
+   <link rel="modulepreload" crossorigin href="/assets/react-vendor-CnWH-kl4.js">
+   <link rel="preload" as="style" crossorigin href="/assets/index-DnjWlTf-.css" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" crossorigin href="/assets/index-DnjWlTf-.css"></noscript>
+   <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is WalletLens really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. You can track unlimited assets, use the AI analysis, and export backups without ever paying. There is no advertising in the app."}},{"@type":"Question","name":"Do I need an account or email to use it?","acceptedAnswer":{"@type":"Answer","text":"No. There is no sign-up, no email, and no password. You open the app and start tracking immediately. Because there is no account, there is nothing to hack, leak, or lock you out of."}},{"@type":"Question","name":"How do I add my first holding?","acceptedAnswer":{"@type":"Answer","text":"Open the dashboard and tap \"Add Trade\". Search for the asset, enter the amount and the price you paid, and save. You can also speak a trade with voice input, import a screenshot of an exchange or broker app, or paste a backup code from another device."}},{"@type":"Question","name":"Can I use WalletLens on my phone?","acceptedAnswer":{"@type":"Answer","text":"Yes. WalletLens is a Progressive Web App (PWA) — install it to your home screen on iOS, Android, or desktop for a fast, app-like experience that works offline. There is also a Chrome browser extension for quick portfolio checks."}},{"@type":"Question","name":"Does WalletLens support languages other than English?","acceptedAnswer":{"@type":"Answer","text":"Yes — the interface and blog are available in Arabic with full right-to-left layout, and more languages are planned."}},{"@type":"Question","name":"Where is my portfolio data stored?","acceptedAnswer":{"@type":"Answer","text":"Entirely in your own browser's localStorage on your device. WalletLens has no backend database and no database of user portfolios. Your holdings stay on your device unless you export a backup or run an optional AI feature, which processes a transient snapshot and stores nothing."}},{"@type":"Question","name":"Can WalletLens see my portfolio?","acceptedAnswer":{"@type":"Answer","text":"No. The only network calls the app makes are to public price APIs (CoinGecko, Binance, Stooq, Gold-API and similar) to fetch market prices, and those requests never include your holdings, amounts, or any identity. Optional AI analysis sends only anonymous aggregates."}},{"@type":"Question","name":"How do I back up my portfolio?","acceptedAnswer":{"@type":"Answer","text":"Open Settings → Backup and copy your WLZ backup code (or show it as a QR code). The code is a compressed snapshot of your whole portfolio. Store it somewhere safe — because there is no cloud account, the backup code is the only way to restore your data if you clear your browser."}},{"@type":"Question","name":"How do I move my portfolio to a new device?","acceptedAnswer":{"@type":"Answer","text":"Export a backup code (or QR) on the old device, then paste or scan it on the new one. The import takes seconds and nothing passes through any server."}},{"@type":"Question","name":"How do I delete all my data?","acceptedAnswer":{"@type":"Answer","text":"Clearing your browser's site data for walletlens.live removes everything, because everything lives in your browser. There is no server-side copy to ask us to delete."}},{"@type":"Question","name":"What assets can I track in one place?","acceptedAnswer":{"@type":"Answer","text":"Crypto (10,000+ coins), US stocks and ETFs, gold, silver, platinum, fiat currencies, cash, bonds, and custom assets like real estate — all in a single net worth dashboard with live prices, cost basis, and profit/loss."}},{"@type":"Question","name":"Where do the live prices come from?","acceptedAnswer":{"@type":"Answer","text":"Crypto prices come from CoinGecko with Binance, CryptoCompare, CoinCap and CoinPaprika as automatic fallbacks. US stocks come from Stooq, precious metals from Gold-API, and currency rates from open exchange-rate APIs. If your network blocks these sources, the app falls back to a snapshot served from walletlens.live itself."}},{"@type":"Question","name":"Why is a price missing or showing zero?","acceptedAnswer":{"@type":"Answer","text":"Usually the asset is custom (bonds, real estate) and needs a manual price — edit the holding to set its current value. For listed assets, a hard refresh typically restores live prices; the app retries several sources automatically."}},{"@type":"Question","name":"How is my profit & loss calculated?","acceptedAnswer":{"@type":"Answer","text":"WalletLens tracks your cost basis per asset from your buy and sell transactions using the average-cost method. Unrealized P&L is the difference between current market value and the cost basis of what you still hold."}},{"@type":"Question","name":"What does the AI analysis do?","acceptedAnswer":{"@type":"Answer","text":"The AI Decision Engine reviews each position — momentum, portfolio weight, profit/loss — and suggests an action (hold, add, trim, sell) with reasons. There is also a wallet health evaluation, a risk scanner, stress tests, a sell-plan generator, and price-target tracking. None of it is financial advice."}},{"@type":"Question","name":"Can I set price alerts?","acceptedAnswer":{"@type":"Answer","text":"Yes. Set \"rises above\" or \"falls below\" alerts on any holding. With notifications enabled you get alerted even when WalletLens is in a background tab, complete with a sound."}},{"@type":"Question","name":"What is the voice import?","acceptedAnswer":{"@type":"Answer","text":"Tap the microphone and say something like \"I bought half a Bitcoin at sixty thousand dollars in January\" — the AI parses it into a structured transaction for you to confirm. It works in English and Arabic."}},{"@type":"Question","name":"What is the screenshot import?","acceptedAnswer":{"@type":"Answer","text":"Upload a screenshot of any exchange, broker, or bank app and the AI reads the holdings from the image and adds them to your portfolio — useful for migrating from another tracker in one step."}},{"@type":"Question","name":"What does the Chrome extension do?","acceptedAnswer":{"@type":"Answer","text":"The WalletLens extension shows your portfolio total, all holdings with live prices, market data, the Fear & Greed index, news, and technical signals from your browser toolbar. It syncs with the web app through your local data — no account needed."}},{"@type":"Question","name":"How is WalletLens different from CoinStats, Empower, or Kubera?","acceptedAnswer":{"@type":"Answer","text":"Most trackers focus only on crypto, charge a subscription, require you to connect exchange or bank logins, or store your data on their servers. WalletLens covers every asset class, is free forever, needs no logins, and keeps all data on your device."}},{"@type":"Question","name":"The app loads but data is empty — what do I do?","acceptedAnswer":{"@type":"Answer","text":"First hard-refresh (Ctrl+Shift+R on desktop, pull-to-refresh on mobile) to pick up the latest version. If market sections stay empty, your network may block crypto price APIs — WalletLens automatically falls back to a same-origin price snapshot within a few seconds."}},{"@type":"Question","name":"I cleared my browser and lost my portfolio. Can you restore it?","acceptedAnswer":{"@type":"Answer","text":"Only if you saved a WLZ backup code — paste it in Settings → Backup to restore everything instantly. There is no server-side copy, which is the price of true privacy, so export a backup regularly."}},{"@type":"Question","name":"Is WalletLens open source?","acceptedAnswer":{"@type":"Answer","text":"Yes. You can inspect the code, report issues, or contribute on GitHub at github.com/tia8910/walletlens."}},{"@type":"Question","name":"How do I report a bug or request a feature?","acceptedAnswer":{"@type":"Answer","text":"Email contact@walletlens.live or open an issue on GitHub — we read everything."}}]}</script>
   </head>
   <body>
-    <!-- Earliest-possible dark background: set before any CSS or JS runs so
-         first-paint matches the app theme on all browsers/OSes. -->
-    <style>html,body{background:#081209;margin:0}</style>
+    <!-- Earliest-possible background: set before any CSS or JS runs so
+         first-paint matches the theme on all browsers/OSes. The app is dark,
+         but the marketing landing is light, so the handful of routes that
+         render Landing get the light value — otherwise they flash dark green
+         before the stylesheet arrives. Keep this list in sync with the
+         Landing routes in App.jsx. -->
+    <style id="wl-first-paint">html,body{background:#081209;margin:0}</style>
+    <script>
+      (function () {
+        var p = location.pathname.replace(/\/+$/, '') || '/'
+        var landing = ['/', '/free-net-worth-tracker', '/crypto-and-stock-portfolio-tracker',
+          '/portfolio-tracker-no-account', '/import-portfolio-from-screenshot',
+          '/add-holdings-by-voice', '/ar/free-net-worth-tracker',
+          '/ar/import-portfolio-from-screenshot', '/ar/add-holdings-by-voice']
+        if (landing.indexOf(p) !== -1) {
+          document.getElementById('wl-first-paint').textContent = 'html,body{background:#eef6f1;margin:0}'
+        }
+      })()
+    </script>
     <div id="root"><div id="prerender-content" dir="ltr" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">
 <h1>Frequently Asked Questions</h1>
 <p>Everything about tracking your net worth with WalletLens — free, private, no account. Can't find your answer? Email <a href="mailto:contact@walletlens.live">contact@walletlens.live</a>.</p>
 <h2>Getting Started</h2>
 <h3>Is WalletLens really free?</h3>
-<p>Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. You can track unlimited assets, use the AI analysis, and export backups without ever paying. The app is sustained by unobtrusive advertising.</p>
+<p>Yes. WalletLens is 100% free with no paid tiers, no premium paywall, and no freemium limits. You can track unlimited assets, use the AI analysis, and export backups without ever paying. There is no advertising in the app.</p>
 <h3>Do I need an account or email to use it?</h3>
 <p>No. There is no sign-up, no email, and no password. You open the app and start tracking immediately. Because there is no account, there is nothing to hack, leak, or lock you out of.</p>
 <h3>How do I add my first holding?</h3>

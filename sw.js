@@ -4,7 +4,7 @@
 // • Google Fonts: cache-first (immutable font files, long-lived stylesheet)
 // • Price APIs: stale-while-revalidate with 5-min TTL for offline use
 // • Everything else: network with cache fallback
-const SW_VERSION = 'vti8kuq'
+const SW_VERSION = 'vtkr8th'
 const STATIC = `walletlens-static-${SW_VERSION}`
 const API_CACHE = `walletlens-api-${SW_VERSION}`
 // CDN assets (coin icons, Google Fonts) are content-addressed and never change,
@@ -30,6 +30,9 @@ const PRECACHE_URLS = [
   '/favicon.svg',
   '/icon-192.png',
   '/icon-512.png',
+  // Pushes arrive with the app closed, sometimes with no usable network. A
+  // badge that fails to load falls back to the platform's own glyph.
+  '/badge-96.png',
 ]
 
 // Price/market API origins we want to cache for offline fallback
@@ -46,10 +49,18 @@ const PRICE_API_PATTERNS = [
   'stooq.com',
   'min-api.cryptocompare.com',
   'blockchain.info',
+  'query1.finance.yahoo.com',
+  'query2.finance.yahoo.com',
   // Deno proxy — first CORS proxy tried for every external price fetch;
   // caching its responses means the SW serves repeat requests from cache
   // rather than round-tripping through the proxy on every price poll.
-  'walletlens-voice-parse.tia8910.deno.net',
+  'walletlens-voice.tarek-abdelhameed.workers.dev',
+  // Generic CORS proxies (corsProxies in client/src/api.js) — used to relay
+  // Stooq and other no-CORS price sources when the direct and proxy paths
+  // both fail.
+  'corsproxy.io',
+  'api.allorigins.win',
+  'api.codetabs.com',
 ]
 
 // Static CDN assets (coin icons, images) — cached indefinitely in version-independent
@@ -152,7 +163,11 @@ self.addEventListener('fetch', e => {
   // ── HTML: always network-first, offline fallback to cached shell
   if (req.headers.get('accept')?.includes('text/html') || url.pathname === '/' || url.pathname.endsWith('.html')) {
     e.respondWith(
-      fetch(req)
+      // A bare fetch() has no time limit — on a slow/hanging connection it
+      // would leave the tab blank far longer than the cached-shell fallback
+      // below is meant to allow. Cap it so a stalled network falls through
+      // to the cache almost as fast as an outright network error would.
+      fetch(req, { signal: AbortSignal.timeout(10000) })
         .then(res => { if (res?.ok) caches.open(STATIC).then(c => c.put(req, res.clone())); return res })
         .catch(() =>
           caches.match(req)
@@ -287,33 +302,104 @@ self.addEventListener('fetch', e => {
 })
 
 // ── Web Push: show a notification even when the app is fully closed ──────────
-// The push-api Deno service sends a JSON payload { title, body, tag, url }.
+// The push-api Deno service sends { title, body, tag, url, channel, sym }.
+// `channel` is one of target | move | level | news | digest | retention |
+// feature | test and decides how loud the notification is allowed to be.
+
+// Channels the user asked for by name earn a buzz; the ones we initiated on
+// their behalf (a daily brief, a come-back nudge) arrive silently. Same
+// notification tray, very different level of consent.
+//
+// The dividing line is the server's own: notify-logic.js marks exactly the
+// price channels `urgency: 'high'`, because a price that has already moved is
+// the only thing here that goes stale in minutes. This set must stay equal to
+// that one — `level` was missing from it, so the round-number alerts ("BTC
+// drops below $77,000") were pushed at high urgency and then rendered mute:
+// no sound, no buzz, nothing until the phone was picked up and unlocked. A
+// price alert nobody hears is not a price alert. notificationSound.test.js
+// now derives the set from CHANNEL_DELIVERY so the two cannot drift again.
+const LOUD_CHANNELS = new Set(['target', 'move', 'level', 'zakat', 'test'])
+
 self.addEventListener('push', e => {
   let data = {}
   try { data = e.data ? e.data.json() : {} } catch { data = { body: e.data && e.data.text() } }
   const title = data.title || 'WalletLens'
+  const channel = data.channel || 'walletlens'
+  const loud = LOUD_CHANNELS.has(channel)
+
   e.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || '',
       icon: '/icon-192.png',
-      badge: '/icon-192.png',
-      tag: data.tag || 'walletlens',
+      // The badge is a MASK, not a picture: Android discards the colour and
+      // keeps only the alpha channel, then tints what survives. icon-192.png
+      // is 95% opaque — a rounded plate with the mark on top — so the mask was
+      // the plate, and the status bar showed a plain grey square. badge-96.png
+      // is the mark alone on transparency.
+      badge: '/badge-96.png',
+      tag: data.tag || channel,
+      // Same tag replaces an older notification rather than stacking; renotify
+      // makes the replacement still alert, so a second BTC move isn't silent.
       renotify: true,
-      data: { url: data.url || '/' },
+      silent: !loud,
+      vibrate: loud ? [80, 40, 80] : undefined,
+      timestamp: Date.now(),
+      data: { url: data.url || '/', channel, sym: data.sym || '' },
     })
   )
 })
 
-// Tapping a notification focuses an open tab (navigating it) or opens a new one.
+// Tapping a notification deep-links into the app.
+//
+// Two things this has to get right:
+//  • Payloads carry either a path ("/alerts") or an absolute URL
+//    ("https://walletlens.live/alerts"). The old code compared a *pathname*
+//    against whatever came in, so an absolute URL never matched an open window
+//    and every tap opened a duplicate.
+//  • Inside the installed Android app there is exactly one window. Calling
+//    openWindow() there launches a browser tab *outside* the app instead of
+//    deep-linking it, which is the "notification opens the website, not the
+//    app" complaint. So navigate the window we already have whenever there is
+//    one, and only open a new one as a last resort.
 self.addEventListener('notificationclick', e => {
   e.notification.close()
-  const target = (e.notification.data && e.notification.data.url) || '/'
+  const info = e.notification.data || {}
+  const raw = info.url || '/'
+  let target
+  try { target = new URL(raw, self.location.origin) }
+  catch { target = new URL('/', self.location.origin) }
+
+  // Tag the landing URL so re-engagement is measurable. Without this a
+  // win-back push that works looks identical in analytics to one that doesn't,
+  // and there is no way to tell which channel is worth keeping.
+  if (info.channel) {
+    target.searchParams.set('utm_source', 'push')
+    target.searchParams.set('utm_medium', 'notification')
+    target.searchParams.set('utm_campaign', info.channel)
+  }
+  target = target.href
+
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      // Prefer a tab already showing the target; otherwise open a new one
-      // rather than yanking an unrelated tab away from what the user had open.
-      const existing = list.find(c => { try { return new URL(c.url).pathname === target } catch { return false } })
-      if (existing && 'focus' in existing) return existing.focus()
+      const mine = list.filter(c => {
+        try { return new URL(c.url).origin === self.location.origin } catch { return false }
+      })
+      // Already on the exact page — just bring it forward.
+      const exact = mine.find(c => c.url === target)
+      if (exact) return 'focus' in exact ? exact.focus() : undefined
+
+      const open = mine[0]
+      if (open) {
+        // navigate() is only allowed on clients this worker controls; fall back
+        // to focusing the window if it refuses rather than losing the tap.
+        const nav = 'navigate' in open
+          ? open.navigate(target).catch(() => open)
+          : Promise.resolve(open)
+        return nav.then(c => {
+          const win = c || open
+          return win && 'focus' in win ? win.focus() : undefined
+        })
+      }
       return self.clients.openWindow(target)
     })
   )

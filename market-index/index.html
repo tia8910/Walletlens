@@ -18,8 +18,8 @@
     </script>
 
     <!-- Primary -->
-    <title>WalletLens Market Index — Live Crypto Sentiment Data</title>
-    <meta name="description" content="A free, citable live crypto market sentiment dataset — a 0–100 score from market breadth, momentum and large-cap leadership across the top 250 coins." />
+    <title>WalletLens Market Index — Live Cross-Asset Risk Appetite Score</title>
+    <meta name="description" content="A free, citable live market dataset — a 0–100 risk-appetite score across crypto, global equity indices, the VIX, gold, forex and commodities." />
     <meta name="keywords" content="net worth tracker, free net worth tracker, investment tracker, investment management app, track all investments in one place, crypto portfolio tracker, free portfolio tracker, no account portfolio tracker, all-asset tracker, crypto stocks tracker, gold silver tracker, AI portfolio analysis, net worth app, walletlens, portfolio tracker, free investment portfolio tracker, multi-asset portfolio tracker, portfolio p&l tracker, bitcoin portfolio tracker, DeFi portfolio tracker, AI portfolio tracker, portfolio health score, crypto portfolio diversification, portfolio risk analyzer, sell price targets crypto, net worth dashboard, personal net worth calculator, net worth tracker no bank account, free alternative to Personal Capital, free alternative to Kubera, free alternative to CoinStats, best free portfolio app, stock and crypto portfolio tracker, fear and greed index tracker, whale tracker Bitcoin, crypto portfolio no login, privacy portfolio tracker, local portfolio tracker, portfolio tracker no sign up, investment performance tracker, ROI tracker, portfolio rebalancing, crypto and stocks in one place" />
     <meta name="author" content="WalletLens" />
     <link rel="canonical" href="https://walletlens.live/market-index/" />
@@ -39,8 +39,8 @@
     <!-- Open Graph (Facebook, LinkedIn, Discord, Slack, …) -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="WalletLens" />
-    <meta property="og:title" content="WalletLens Market Index — Live Crypto Sentiment Data" />
-    <meta property="og:description" content="A free, citable live crypto market sentiment dataset — a 0–100 score from market breadth, momentum and large-cap leadership across the top 250 coins." />
+    <meta property="og:title" content="WalletLens Market Index — Live Cross-Asset Risk Appetite Score" />
+    <meta property="og:description" content="A free, citable live market dataset — a 0–100 risk-appetite score across crypto, global equity indices, the VIX, gold, forex and commodities." />
     <meta property="og:url" content="https://walletlens.live/market-index/" />
     <meta property="og:image" content="https://walletlens.live/og-image.png" />
     <meta property="og:image:type" content="image/png" />
@@ -53,8 +53,8 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@wallet_lens" />
     <meta name="twitter:creator" content="@wallet_lens" />
-    <meta name="twitter:title" content="WalletLens Market Index — Live Crypto Sentiment Data" />
-    <meta name="twitter:description" content="A free, citable live crypto market sentiment dataset — a 0–100 score from market breadth, momentum and large-cap leadership across the top 250 coins." />
+    <meta name="twitter:title" content="WalletLens Market Index — Live Cross-Asset Risk Appetite Score" />
+    <meta name="twitter:description" content="A free, citable live market dataset — a 0–100 risk-appetite score across crypto, global equity indices, the VIX, gold, forex and commodities." />
     <meta name="twitter:image" content="https://walletlens.live/og-image.png" />
     <meta name="twitter:image:alt" content="WalletLens portfolio dashboard showing crypto holdings, P&L, and AI insights" />
 
@@ -80,12 +80,27 @@
          browser opens a separate anonymous connection that cannot be reused. -->
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="dns-prefetch" href="https://www.google-analytics.com" />
-    <!-- Deno proxy — first CORS fallback tried for every price/API fetch; pre-warming
-         the TLS connection shaves ~150-200 ms off the very first price load. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- The Workers proxy — first CORS fallback tried for every price/API fetch,
+         and the endpoint voice import and AI analysis go through. Pre-warming
+         the TLS connection shaves ~150-200 ms off the very first price load.
+         Preconnected once, here, because it is the earliest point in <head>;
+         repeating it further down is a no-op. -->
+    <link rel="preconnect" href="https://walletlens-voice.tarek-abdelhameed.workers.dev" crossorigin />
     <!-- Twitter/X pixel CDN and tracking endpoint -->
     <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
     <link rel="dns-prefetch" href="https://analytics.twitter.com" />
+
+    <!-- TWA (Google Play app) detection — must run before any ad/marketing
+         pixel loads. The Play app launches with an android-app:// referrer on
+         the first navigation only, so the flag is persisted for later visits.
+         Read via client/src/twa.js. -->
+    <script>
+      try {
+        if (document.referrer.indexOf('android-app://live.walletlens.twa') === 0) {
+          localStorage.setItem('wl_twa', '1');
+        }
+      } catch (e) {}
+    </script>
 
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB"></script>
@@ -103,14 +118,17 @@
       gtag('config', 'G-69L5NCXNGB', { send_page_view: false });
     </script>
 
-    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority -->
+    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority.
+         Skipped inside the Google Play (TWA) app: shipping an ads pixel there
+         would force an "Advertising or marketing" declaration in the Play
+         Data safety form. Web visitors are unaffected. -->
     <script>
-      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
-      twq('config','rc7yj');
+      (function () {
+        try { if (localStorage.getItem('wl_twa') === '1') return; } catch (e) {}
+        !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+        twq('config','rc7yj');
+      })();
     </script>
-
-    <!-- AdSense -->
-    <meta name="google-adsense-account" content="ca-pub-0031050817995085" />
 
     <!-- Referrer policy (settable via meta) -->
     <meta name="referrer" content="strict-origin-when-cross-origin" />
@@ -122,12 +140,12 @@
          a meta tag, so it is intentionally omitted here. -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
-      script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
+      script-src 'self' 'unsafe-inline' https://accounts.google.com https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
       style-src 'self' 'unsafe-inline';
       font-src 'self' data:;
       img-src 'self' data: blob: https:;
-      connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
-      frame-src 'none';
+      connect-src 'self' https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://*.workers.dev https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://api.rss2json.com https://wsrv.nl https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
+      frame-src https://accounts.google.com intent:;
       form-action 'self';
       object-src 'none';
       base-uri 'self';
@@ -150,14 +168,12 @@
     <!-- LiveCoinWatch coin icon CDN — primary fallback for coin logos -->
     <link rel="preconnect" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" crossorigin />
 
-    <!-- Deno proxy is the first CORS proxy tried for every external price fetch;
-         full preconnect (TLS included) cuts ~200 ms off the first API call. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
     <!-- corsproxy.io is the fallback CORS proxy; preconnect ensures TLS is ready. -->
     <link rel="preconnect" href="https://corsproxy.io" crossorigin />
     <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
     <link rel="dns-prefetch" href="https://rest.coincap.io" />
-    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked -->
+    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked;
+         primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
     <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
     <link rel="dns-prefetch" href="https://api.gold-api.com" />
     <link rel="dns-prefetch" href="https://stooq.com" />
@@ -165,21 +181,12 @@
     <link rel="dns-prefetch" href="https://api.frankfurter.app" />
     <link rel="dns-prefetch" href="https://finnhub.io" />
     <link rel="dns-prefetch" href="https://api.allorigins.win" />
-    <!-- CryptoCompare — primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
-    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
     <!-- Coin icon CDN fallbacks -->
     <link rel="dns-prefetch" href="https://assets.coincap.io" />
     <link rel="dns-prefetch" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" />
     <!-- Public CORS-proxy fallbacks tried after the Deno proxy -->
     <link rel="dns-prefetch" href="https://cors.eu.org" />
     <link rel="dns-prefetch" href="https://api.codetabs.com" />
-
-    <!-- Deno AI / CORS-proxy endpoint — used by voice import, AI analysis, and
-         stock price proxy. This is one of the highest-latency origins because
-         Deno Deploy cold-starts; an early TLS handshake cuts ~200–400 ms off
-         the first AI or proxied fetch. crossorigin because all requests are CORS. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
-    <link rel="dns-prefetch" href="https://walletlens.tia8910.deno.net" />
 
     <!-- Structured data — WebApplication. Surfaces in Google rich results
          and gives LLM answer engines a clean fact card to cite. -->
@@ -231,6 +238,36 @@
     }
     </script>
 
+    <!-- Structured data — MobileApplication. WalletLens now ships as a real
+         Android app on Google Play alongside the web app and the Chrome
+         extension; this is the entity Search uses to link the domain to the
+         Play listing (app rich results, "official app" attribution). -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "MobileApplication",
+      "name": "WalletLens — Portfolio Tracker",
+      "url": "https://walletlens.live/",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Android 8.0+",
+      "installUrl": "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+      "downloadUrl": "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+      "isAccessibleForFree": true,
+      "inLanguage": ["en", "ar"],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/"
+      }
+    }
+    </script>
+
     <!-- Structured data — WebSite. This is the entity Google reads to attribute
          the canonical site name + domain (prevents wrong-domain attribution in
          Search & AI Overviews). Reinforces walletlens.live as the official URL. -->
@@ -263,6 +300,8 @@
       "slogan": "Zoom in your wealth",
       "foundingDate": "2024",
       "sameAs": [
+        "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+        "https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn",
         "https://github.com/tia8910/walletlens",
         "https://x.com/wallet_lens",
         "https://t.me/walletlenss",
@@ -294,34 +333,56 @@
     }
     </script>
 
-   <script type="module" crossorigin src="/assets/index-JlQXN2dk.js"></script>
-   <link rel="modulepreload" crossorigin href="/assets/react-vendor-N-h61jBm.js">
-   <link rel="modulepreload" crossorigin href="/assets/asset-data-Ho_VMknH.js">
-   <link rel="modulepreload" crossorigin href="/assets/technicals-utils-DK6187wm.js">
-   <link rel="modulepreload" crossorigin href="/assets/api-core-CWhJl43X.js">
-   <link rel="modulepreload" crossorigin href="/assets/i18n-Bnvao6TC.js">
-   <link rel="stylesheet" crossorigin href="/assets/index-BSpClZaa.css">
-   <script type="application/ld+json">{"@context":"https://schema.org","@type":"Dataset","name":"WalletLens Crypto Fear & Greed Index","description":"A live 0–100 crypto fear and greed index built from market breadth, momentum and large-cap leadership across the top 250 cryptocurrencies.","url":"https://walletlens.live/market-index","creator":{"@type":"Organization","name":"WalletLens","url":"https://walletlens.live"},"license":"https://walletlens.live/terms","isAccessibleForFree":true,"variableMeasured":"Crypto Fear and Greed Index (0–100)","keywords":"fear and greed index, crypto sentiment, market mood, crypto fear greed"}</script>
+   <script type="module" crossorigin src="/assets/index-MD0YFg1B.js"></script>
+   <link rel="modulepreload" crossorigin href="/assets/i18n-7QXy5Tcc.js">
+   <link rel="modulepreload" crossorigin href="/assets/react-vendor-CnWH-kl4.js">
+   <link rel="preload" as="style" crossorigin href="/assets/index-DnjWlTf-.css" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" crossorigin href="/assets/index-DnjWlTf-.css"></noscript>
+   <script type="application/ld+json">{"@context":"https://schema.org","@type":"Dataset","name":"WalletLens Market Index","description":"A live 0-100 cross-asset risk-appetite index built from crypto breadth and momentum, global equity indices, the VIX and gold, and the dollar, copper and oil.","url":"https://walletlens.live/market-index","creator":{"@type":"Organization","name":"WalletLens","url":"https://walletlens.live"},"license":"https://walletlens.live/terms","isAccessibleForFree":true,"variableMeasured":"Cross-asset risk appetite (0-100)","keywords":"market index, risk appetite, cross-asset sentiment, crypto sentiment, equity breadth, VIX, dollar index"}</script>
   </head>
   <body>
-    <!-- Earliest-possible dark background: set before any CSS or JS runs so
-         first-paint matches the app theme on all browsers/OSes. -->
-    <style>html,body{background:#081209;margin:0}</style>
+    <!-- Earliest-possible background: set before any CSS or JS runs so
+         first-paint matches the theme on all browsers/OSes. The app is dark,
+         but the marketing landing is light, so the handful of routes that
+         render Landing get the light value — otherwise they flash dark green
+         before the stylesheet arrives. Keep this list in sync with the
+         Landing routes in App.jsx. -->
+    <style id="wl-first-paint">html,body{background:#081209;margin:0}</style>
+    <script>
+      (function () {
+        var p = location.pathname.replace(/\/+$/, '') || '/'
+        var landing = ['/', '/free-net-worth-tracker', '/crypto-and-stock-portfolio-tracker',
+          '/portfolio-tracker-no-account', '/import-portfolio-from-screenshot',
+          '/add-holdings-by-voice', '/ar/free-net-worth-tracker',
+          '/ar/import-portfolio-from-screenshot', '/ar/add-holdings-by-voice']
+        if (landing.indexOf(p) !== -1) {
+          document.getElementById('wl-first-paint').textContent = 'html,body{background:#eef6f1;margin:0}'
+        }
+      })()
+    </script>
     <div id="root"><div id="prerender-content" dir="ltr" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">
-<h1>Crypto Fear & Greed Index — WalletLens Market Sentiment Score</h1>
-<p>The WalletLens Market Index is a live <strong>0–100 fear and greed score</strong> for the crypto market — updated continuously from three public-data signals across the top 250 cryptocurrencies. It is free for anyone to read, cite, and link.</p>
-<h2>How the fear and greed score is calculated</h2>
-<p>The score is a weighted blend of <strong>market breadth</strong> (45%, the share of the top 100 coins up over 24h), <strong>momentum</strong> (35%, the average normalised 24h move of the top 50), and <strong>large-cap leadership</strong> (20%, the share of the top 10 by market cap that are up). All inputs are public market data.</p>
+<h1>WalletLens Market Index — Live Cross-Asset Risk Appetite Score</h1>
+<p>The WalletLens Market Index is a live <strong>0–100 risk-appetite score</strong> covering every major market on one page — crypto, global equity indices, volatility, precious metals, forex and commodities — updated continuously from public market data. It is free for anyone to read, cite, and link.</p>
+<h2>What the score measures</h2>
+<p>The index measures <strong>risk appetite</strong>, not how much of the market happens to be green. That distinction decides the arithmetic: gold rising is money running <em>from</em> risk, and a strengthening dollar tightens financial conditions for every risk asset — so both push the score <em>down</em>. Each group below is scored 0–100 in the risk-on direction, then blended.</p>
+<h2>How the score is calculated</h2>
+<ul>
+<li><strong>Crypto — 30%:</strong> the share of the top 100 coins up over 24h, with the average 24h move of the top 50.</li>
+<li><strong>Equities — 30%:</strong> how many of ten major indices across the US, Europe and Asia are up — S&amp;P 500, Nasdaq, Dow Jones, Russell 2000, FTSE 100, DAX, CAC 40, Nikkei 225, Hang Seng and Shanghai Composite — and by how much.</li>
+<li><strong>Volatility &amp; havens — 20%:</strong> the VIX level (12 is calm, 35 is a scare) and gold read as a safe-haven bid.</li>
+<li><strong>Dollar &amp; growth — 20%:</strong> dollar weakness across the major currency pairs, plus copper and oil as a read on industrial demand.</li>
+</ul>
+<p>When a market data source does not answer, that group is dropped and the remaining weights are rebalanced rather than counted as zero. The live page states whenever a score was built from partial data.</p>
 <h2>How to read the score</h2>
 <ul>
-<li><strong>0–24 — Extreme Fear:</strong> most participants are selling. Historically a contrarian buy signal.</li>
-<li><strong>25–49 — Fear:</strong> market pessimistic; may be oversold.</li>
-<li><strong>50 — Neutral:</strong> balanced sentiment.</li>
-<li><strong>51–74 — Greed:</strong> positive momentum; watch for overextension.</li>
-<li><strong>75–100 — Extreme Greed:</strong> often precedes corrections.</li>
+<li><strong>0–24 — Extreme Caution:</strong> broad flight from risk, volatility elevated and safe havens leading.</li>
+<li><strong>25–44 — Caution:</strong> risk appetite fading; defensive assets bid over growth.</li>
+<li><strong>45–55 — Neutral:</strong> mixed signals across asset classes, no clear directional edge.</li>
+<li><strong>56–74 — Constructive:</strong> money moving into risk in most markets, volatility contained.</li>
+<li><strong>75–100 — Overheated:</strong> broad risk-taking; historically a time for caution, not chasing.</li>
 </ul>
 <h2>Citing the WalletLens Market Index</h2>
 <p>Journalists, researchers and bloggers may cite the index freely. Use the format: "WalletLens Market Index: [score]/100 ([label])" and link <a href="/market-index/">walletlens.live/market-index</a>.</p>
+<p>Looking for the crypto-only fear and greed reading? See the <a href="/fear-and-greed-index/">Fear and Greed Index guide</a>.</p>
 <p><a href="/fear-and-greed-index/">Fear and Greed Index guide</a> · <a href="/dashboard/">Open WalletLens free</a> · <a href="/blog/">Blog</a> · <a href="/">Home</a></p>
 </div>
       <!-- Brand-matching loading splash. React replaces #root on mount; this

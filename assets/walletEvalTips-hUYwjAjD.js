@@ -1,0 +1,1 @@
+const s={crypto:"clsCrypto",stock:"clsStock",metal:"clsMetal",cash:"clsCash",bond:"clsBond",other:"clsOther"};function e(r,t){if(!Array.isArray(r)||!r.length)return"";const c=t(r[0]);return typeof c!="function"?c:c(...r.slice(1).map(n=>n&&typeof n=="object"&&n.k?t(n.k):n))}function o(r,t){return Array.isArray(r)?e(r,t):r??""}export{s as C,o as a,e as r};

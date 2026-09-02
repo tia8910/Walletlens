@@ -1,0 +1,1 @@
+const r="wl_feature_use";function n(){try{return JSON.parse(localStorage.getItem(r)||"{}")||{}}catch{return{}}}function a(e){if(e)try{const t=n();if(t[e])return;t[e]=Date.now(),localStorage.setItem(r,JSON.stringify(t))}catch{}}function u(e){return!!n()[e]}export{a as n,u};

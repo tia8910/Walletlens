@@ -80,12 +80,27 @@
          browser opens a separate anonymous connection that cannot be reused. -->
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="dns-prefetch" href="https://www.google-analytics.com" />
-    <!-- Deno proxy — first CORS fallback tried for every price/API fetch; pre-warming
-         the TLS connection shaves ~150-200 ms off the very first price load. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
+    <!-- The Workers proxy — first CORS fallback tried for every price/API fetch,
+         and the endpoint voice import and AI analysis go through. Pre-warming
+         the TLS connection shaves ~150-200 ms off the very first price load.
+         Preconnected once, here, because it is the earliest point in <head>;
+         repeating it further down is a no-op. -->
+    <link rel="preconnect" href="https://walletlens-voice.tarek-abdelhameed.workers.dev" crossorigin />
     <!-- Twitter/X pixel CDN and tracking endpoint -->
     <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
     <link rel="dns-prefetch" href="https://analytics.twitter.com" />
+
+    <!-- TWA (Google Play app) detection — must run before any ad/marketing
+         pixel loads. The Play app launches with an android-app:// referrer on
+         the first navigation only, so the flag is persisted for later visits.
+         Read via client/src/twa.js. -->
+    <script>
+      try {
+        if (document.referrer.indexOf('android-app://live.walletlens.twa') === 0) {
+          localStorage.setItem('wl_twa', '1');
+        }
+      } catch (e) {}
+    </script>
 
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB"></script>
@@ -103,14 +118,17 @@
       gtag('config', 'G-69L5NCXNGB', { send_page_view: false });
     </script>
 
-    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority -->
+    <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority.
+         Skipped inside the Google Play (TWA) app: shipping an ads pixel there
+         would force an "Advertising or marketing" declaration in the Play
+         Data safety form. Web visitors are unaffected. -->
     <script>
-      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
-      twq('config','rc7yj');
+      (function () {
+        try { if (localStorage.getItem('wl_twa') === '1') return; } catch (e) {}
+        !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+        twq('config','rc7yj');
+      })();
     </script>
-
-    <!-- AdSense -->
-    <meta name="google-adsense-account" content="ca-pub-0031050817995085" />
 
     <!-- Referrer policy (settable via meta) -->
     <meta name="referrer" content="strict-origin-when-cross-origin" />
@@ -122,12 +140,12 @@
          a meta tag, so it is intentionally omitted here. -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
-      script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
+      script-src 'self' 'unsafe-inline' https://accounts.google.com https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
       style-src 'self' 'unsafe-inline';
       font-src 'self' data:;
       img-src 'self' data: blob: https:;
-      connect-src 'self' https://*.deno.net https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
-      frame-src 'none';
+      connect-src 'self' https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://*.workers.dev https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://api.rss2json.com https://wsrv.nl https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
+      frame-src https://accounts.google.com intent:;
       form-action 'self';
       object-src 'none';
       base-uri 'self';
@@ -150,14 +168,12 @@
     <!-- LiveCoinWatch coin icon CDN — primary fallback for coin logos -->
     <link rel="preconnect" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" crossorigin />
 
-    <!-- Deno proxy is the first CORS proxy tried for every external price fetch;
-         full preconnect (TLS included) cuts ~200 ms off the first API call. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
     <!-- corsproxy.io is the fallback CORS proxy; preconnect ensures TLS is ready. -->
     <link rel="preconnect" href="https://corsproxy.io" crossorigin />
     <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
     <link rel="dns-prefetch" href="https://rest.coincap.io" />
-    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked -->
+    <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked;
+         primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
     <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
     <link rel="dns-prefetch" href="https://api.gold-api.com" />
     <link rel="dns-prefetch" href="https://stooq.com" />
@@ -165,21 +181,12 @@
     <link rel="dns-prefetch" href="https://api.frankfurter.app" />
     <link rel="dns-prefetch" href="https://finnhub.io" />
     <link rel="dns-prefetch" href="https://api.allorigins.win" />
-    <!-- CryptoCompare — primary fallback for Binance-blocked regions (Egypt, Turkey…) -->
-    <link rel="dns-prefetch" href="https://min-api.cryptocompare.com" />
     <!-- Coin icon CDN fallbacks -->
     <link rel="dns-prefetch" href="https://assets.coincap.io" />
     <link rel="dns-prefetch" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" />
     <!-- Public CORS-proxy fallbacks tried after the Deno proxy -->
     <link rel="dns-prefetch" href="https://cors.eu.org" />
     <link rel="dns-prefetch" href="https://api.codetabs.com" />
-
-    <!-- Deno AI / CORS-proxy endpoint — used by voice import, AI analysis, and
-         stock price proxy. This is one of the highest-latency origins because
-         Deno Deploy cold-starts; an early TLS handshake cuts ~200–400 ms off
-         the first AI or proxied fetch. crossorigin because all requests are CORS. -->
-    <link rel="preconnect" href="https://walletlens-voice-parse.tia8910.deno.net" crossorigin />
-    <link rel="dns-prefetch" href="https://walletlens.tia8910.deno.net" />
 
     <!-- Structured data — WebApplication. Surfaces in Google rich results
          and gives LLM answer engines a clean fact card to cite. -->
@@ -231,6 +238,36 @@
     }
     </script>
 
+    <!-- Structured data — MobileApplication. WalletLens now ships as a real
+         Android app on Google Play alongside the web app and the Chrome
+         extension; this is the entity Search uses to link the domain to the
+         Play listing (app rich results, "official app" attribution). -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "MobileApplication",
+      "name": "WalletLens — Portfolio Tracker",
+      "url": "https://walletlens.live/",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Android 8.0+",
+      "installUrl": "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+      "downloadUrl": "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+      "isAccessibleForFree": true,
+      "inLanguage": ["en", "ar"],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/"
+      }
+    }
+    </script>
+
     <!-- Structured data — WebSite. This is the entity Google reads to attribute
          the canonical site name + domain (prevents wrong-domain attribution in
          Search & AI Overviews). Reinforces walletlens.live as the official URL. -->
@@ -263,6 +300,8 @@
       "slogan": "Zoom in your wealth",
       "foundingDate": "2024",
       "sameAs": [
+        "https://play.google.com/store/apps/details?id=live.walletlens.twa",
+        "https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn",
         "https://github.com/tia8910/walletlens",
         "https://x.com/wallet_lens",
         "https://t.me/walletlenss",
@@ -294,19 +333,32 @@
     }
     </script>
 
-   <script type="module" crossorigin src="/assets/index-JlQXN2dk.js"></script>
-   <link rel="modulepreload" crossorigin href="/assets/react-vendor-N-h61jBm.js">
-   <link rel="modulepreload" crossorigin href="/assets/asset-data-Ho_VMknH.js">
-   <link rel="modulepreload" crossorigin href="/assets/technicals-utils-DK6187wm.js">
-   <link rel="modulepreload" crossorigin href="/assets/api-core-CWhJl43X.js">
-   <link rel="modulepreload" crossorigin href="/assets/i18n-Bnvao6TC.js">
-   <link rel="stylesheet" crossorigin href="/assets/index-BSpClZaa.css">
+   <script type="module" crossorigin src="/assets/index-MD0YFg1B.js"></script>
+   <link rel="modulepreload" crossorigin href="/assets/i18n-7QXy5Tcc.js">
+   <link rel="modulepreload" crossorigin href="/assets/react-vendor-CnWH-kl4.js">
+   <link rel="preload" as="style" crossorigin href="/assets/index-DnjWlTf-.css" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" crossorigin href="/assets/index-DnjWlTf-.css"></noscript>
    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://walletlens.live/"},{"@type":"ListItem","position":2,"name":"Track Tezos","item":"https://walletlens.live/track/tezos/"}]}</script>
   </head>
   <body>
-    <!-- Earliest-possible dark background: set before any CSS or JS runs so
-         first-paint matches the app theme on all browsers/OSes. -->
-    <style>html,body{background:#081209;margin:0}</style>
+    <!-- Earliest-possible background: set before any CSS or JS runs so
+         first-paint matches the theme on all browsers/OSes. The app is dark,
+         but the marketing landing is light, so the handful of routes that
+         render Landing get the light value — otherwise they flash dark green
+         before the stylesheet arrives. Keep this list in sync with the
+         Landing routes in App.jsx. -->
+    <style id="wl-first-paint">html,body{background:#081209;margin:0}</style>
+    <script>
+      (function () {
+        var p = location.pathname.replace(/\/+$/, '') || '/'
+        var landing = ['/', '/free-net-worth-tracker', '/crypto-and-stock-portfolio-tracker',
+          '/portfolio-tracker-no-account', '/import-portfolio-from-screenshot',
+          '/add-holdings-by-voice', '/ar/free-net-worth-tracker',
+          '/ar/import-portfolio-from-screenshot', '/ar/add-holdings-by-voice']
+        if (landing.indexOf(p) !== -1) {
+          document.getElementById('wl-first-paint').textContent = 'html,body{background:#eef6f1;margin:0}'
+        }
+      })()
+    </script>
     <div id="root"><div id="prerender-content" dir="ltr" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">
 <h1>Track Tezos (XTZ) — Free, No Account</h1>
 <p>Add Tezos to your free WalletLens portfolio and watch its live price, your cost basis, and your profit/loss update automatically — alongside the rest of your net worth. No sign-up, no wallet connection, and your data stays on your device.</p>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 64 64">
+  <!--
+    Android's notification badge is a MASK, not a picture: the platform throws
+    away colour and keeps only the alpha channel, then tints what is left.
+    icon-192.png was being used here, and its opaque rounded-square plate meant
+    the whole canvas was solid alpha — which Android drew, correctly, as a grey
+    square.
+
+    So this is the mark alone, in flat white on transparency: the lens ring,
+    the three bars inside it, the pip and the handle. No plate, no gradient,
+    nothing that only reads in colour.
+  -->
+  <g fill="none" transform="translate(32 33) scale(0.92) translate(-25 -30.5)">
+    <circle cx="27" cy="25" r="19" stroke="#fff" stroke-width="5.5"/>
+    <circle cx="40.5" cy="11.5" r="3.8" fill="#fff"/>
+    <rect x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="#fff"/>
+    <rect x="21.5" y="21" width="5" height="13" rx="1.2" fill="#fff"/>
+    <rect x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="#fff"/>
+    <line x1="13.5" y1="39" x2="4" y2="55" stroke="#fff" stroke-width="5.5" stroke-linecap="round"/>
+  </g>
+</svg>

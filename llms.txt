@@ -5,7 +5,7 @@
 ## Key facts
 
 - **Website**: https://walletlens.live
-- **Cost**: 100% free, forever. No paid tier, no premium paywall, no freemium limits, no credit card. The app is sustained by unobtrusive advertising (Google AdSense).
+- **Cost**: 100% free, forever. No paid tier, no premium paywall, no freemium limits, no credit card. There is no advertising in the app.
 - **Account required**: No. Open the app and start tracking — no sign-up, email, or wallet connection.
 - **Data privacy**: All portfolio and holdings data is stored locally in the browser's localStorage. Holdings are never stored on any WalletLens server (there is no backend database for user data). Optional AI features (screenshot import, AI analysis, voice import) send a transient snapshot for processing and retain nothing. Aggregate site analytics (Google Analytics / GA4) count feature usage only — no symbols, amounts, values, or portfolio composition are ever collected.
 - **Supported assets**: Cryptocurrencies (Bitcoin, Ethereum, Solana, BNB, XRP, Cardano, and 10,000+ more via CoinGecko), US stocks and ETFs (Apple, Tesla, Nvidia, etc.), precious metals (gold, silver, platinum, copper), fiat currencies, cash, bonds, and FX pairs.
@@ -74,6 +74,13 @@ These two capabilities are WalletLens's strongest differentiators — no mainstr
 
 ## Blog articles
 
+- [How to Track Sell Targets and Plan Your Exit Strategy](https://walletlens.live/blog/how-to-track-sell-targets-and-plan-your-exit-strategy/): Learn how to set smart crypto and stock sell targets, track progress toward them, and build an exit strategy before emotions take over.
+- [How to Track Investments When You're Just Starting Out](https://walletlens.live/blog/how-to-track-investments-as-a-beginner/): New to investing? Learn exactly how to track your first portfolio across crypto, stocks, and cash — without spreadsheets or expensive tools.
+- [How to Track Investments When You Hold Cash and Crypto](https://walletlens.live/blog/how-to-track-cash-and-crypto-together/): Learn how to track cash savings alongside crypto and stocks in one net-worth view — without spreadsheets, accounts, or privacy risks.
+- [How to Track Dividend Income Alongside Capital Gains](https://walletlens.live/blog/how-to-track-dividend-income-alongside-capital-gains/): Learn how to track dividend income and capital gains together in one portfolio view — so you always know your true total return.
+- [How to Track Your Portfolio Health Score (And What It Means)](https://walletlens.live/blog/how-to-track-portfolio-health-score/): Learn what a portfolio health score measures, why it matters for investors in 2026, and how to use it to make smarter decisions about risk and allocation.
+- [How to Track Crypto Portfolio Performance Over Time](https://walletlens.live/blog/how-to-track-crypto-portfolio-performance-over-time/): Learn how to measure, record, and improve your crypto portfolio performance over time — without spreadsheets or giving up your privacy.
+- [How to Track a Portfolio When You Have Multiple Brokers](https://walletlens.live/blog/how-to-track-portfolio-multiple-brokers/): Juggling investments across several brokers and exchanges? Learn how to unify everything into one clear net-worth view without spreadsheet chaos.
 - [How to Track Average Cost Basis Across Multiple Buys](https://walletlens.live/blog/how-to-track-average-cost-basis-across-multiple-buys/): Learn how average cost basis works when you buy an asset multiple times, why it matters for P&L, and how to track it automatically for free.
 - [How to Track Real Estate Alongside Crypto and Stocks](https://walletlens.live/blog/track-real-estate-alongside-crypto-and-stocks/): Learn how to include property in your net-worth picture and track real estate alongside crypto and stocks in one unified portfolio view.
 - [How to Stress-Test Your Investment Portfolio Before a Crash](https://walletlens.live/blog/how-to-stress-test-your-investment-portfolio/): Learn how to stress-test your portfolio against market crashes before they happen, so you can protect gains and sleep at night.
