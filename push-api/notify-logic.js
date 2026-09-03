@@ -1779,6 +1779,27 @@ export function evaluateMove({ price, ref, thresholdPct, now, lastFired = 0, coo
 // Symbols that are also ordinary English words, or news-page furniture. Left
 // unfiltered, "GAS prices" and "ONE more thing" push a crypto alert to anyone
 // holding those tickers, and the channel loses all credibility.
+
+/**
+ * Stablecoins and fiat-pegged tokens.  These are excluded from move
+ * notifications because a 0.01% fluctuation in USDT is noise, not signal.
+ * A user holding $500 of USDC would get spammed every cycle if the peg
+ * wobbled by the 1% threshold — and every one of those notifications
+ * erodes trust in the feature.
+ */
+export const STABLECOINS = new Set([
+  'usdt', 'usdc', 'dai', 'tusd', 'busd', 'usdp', 'frax', 'gusd',
+  'usdn', 'susd', 'lusd', 'cusd', 'musd', 'husd', 'bsd',
+  'eurc', 'eurs', 'gbpt', 'cEUR', 'xsgd', 'brl',  // fiat-pegged
+  'pyusd', 'crvusd', 'mkusd', 'usde', 'usds',
+  'fdusd', 'usdb', 'usdd', 'ust', 'eusd',
+])
+
+/** Whether an asset is a stablecoin or fiat-pegged token. */
+export function isStablecoin(symbol) {
+  return STABLECOINS.has(String(symbol || '').toLowerCase())
+}
+
 const AMBIGUOUS_SYMBOLS = new Set([
   'all', 'any', 'one', 'two', 'for', 'not', 'can', 'the', 'and', 'you', 'new',
   'now', 'top', 'buy', 'win', 'get', 'use', 'max', 'big', 'hot', 'key', 'pay',

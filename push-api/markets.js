@@ -20,7 +20,7 @@ export function quoteKey(kind, id) {
 
 async function getJson(url, headers = {}) {
   const r = await fetch(url, {
-    headers: { Accept: 'application/json', ...headers },
+    headers: { 'User-Agent': 'WalletLens/1.0', Accept: 'application/json', ...headers },
     signal: AbortSignal.timeout(TIMEOUT_MS),
   })
   if (!r.ok) throw new Error(`HTTP ${r.status}`)
@@ -61,7 +61,7 @@ export function parseCoinGecko(json, ids) {
 const CG_TO_YAHOO = {
   'bitcoin': 'BTC-USD', 'ethereum': 'ETH-USD', 'tether': 'USDT-USD',
   'binancecoin': 'BNB-USD', 'solana': 'SOL-USD', 'ripple': 'XRP-USD',
-  'usd-coin': 'USDC-USD', 'dogecoin': 'DOGE-USD', 'cardano': 'ADA-USD',
+  'usd-coin': 'USDC-USD', 'usdc': 'USDC-USD', 'dogecoin': 'DOGE-USD', 'cardano': 'ADA-USD',
   'tron': 'TRX-USD', 'chainlink': 'LINK-USD', 'avalanche-2': 'AVAX-USD',
   'stellar': 'XLM-USD', 'the-open-network': 'TON-USD',
   'shiba-inu': 'SHIB-USD', 'hedera-hashgraph': 'HBAR-USD',
@@ -106,6 +106,20 @@ const CG_TO_YAHOO = {
 }
 
 /** Try Yahoo Finance first (works from CF Workers), fall back to CoinGecko. */
+/**
+ * Verified CoinGecko-ID → Coinbase-symbol map.
+ *
+ * Coinbase works from CF Workers (Binance and CoinGecko are blocked).
+ * Only coins whose Coinbase symbol matches are listed here.
+ * Coinbase uses TICKER-USD format.
+ */
+const COINBASE_MAP = {
+  'aptos': 'APT',
+  'sei-network': 'SEI',
+  'moodeng': 'MOODENG',
+  'dog': 'DOG',
+}
+
 export async function fetchCryptoQuotes(ids) {
   const unique = [...new Set(ids)].filter(Boolean)
   const out = {}
@@ -118,8 +132,9 @@ export async function fetchCryptoQuotes(ids) {
     else cgOnly.push(id)
   }
 
-  // Yahoo Finance chart API — one request per symbol, parallelised.
-  await mapLimited(yahooIds, STOCK_CONCURRENCY, async (id) => {
+  // Run all three sources in parallel so a CoinGecko timeout does not
+  // delay Binance or Yahoo.
+  const yahooPromise = mapLimited(yahooIds, STOCK_CONCURRENCY, async (id) => {
     const sym = CG_TO_YAHOO[id]
     try {
       const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=2d`
@@ -128,19 +143,37 @@ export async function fetchCryptoQuotes(ids) {
     } catch { /* symbol skipped this cycle */ }
   })
 
-  // CoinGecko fallback for coins not in our Yahoo map
-  if (cgOnly.length) {
+  const cgPromise = (async () => {
+    if (!cgOnly.length) return
     for (const group of chunk(cgOnly, CG_BATCH)) {
       try {
         const url = 'https://api.coingecko.com/api/v3/simple/price'
           + `?ids=${encodeURIComponent(group.join(','))}&vs_currencies=usd&include_24hr_change=true`
-        Object.assign(out, parseCoinGecko(await getJson(url), group))
+        const cgResult = await getJson(url)
+        const parsed = parseCoinGecko(cgResult, group)
+        Object.assign(out, parsed)
       } catch (e) {
         console.error('coingecko fetch failed:', e instanceof Error ? e.message : e)
       }
     }
-  }
+  })()
 
+  const coinbasePromise = (async () => {
+    const coinbaseIds = cgOnly.filter(id => COINBASE_MAP[id])
+    if (!coinbaseIds.length) return
+    await mapLimited(coinbaseIds, STOCK_CONCURRENCY, async (id) => {
+      try {
+        const sym = COINBASE_MAP[id]
+        const url = `https://api.coinbase.com/v2/prices/${encodeURIComponent(sym)}-USD/spot`
+        const j = await getJson(url)
+        const price = Number(j?.data?.amount)
+        if (!Number.isFinite(price) || price <= 0) return
+        out[id] = { price, change24h: 0 }
+      } catch { /* coin not on Coinbase */ }
+    })
+  })()
+
+  await Promise.all([yahooPromise, cgPromise, coinbasePromise])
   return out
 }
 

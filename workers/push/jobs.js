@@ -24,7 +24,7 @@ import {
   FEATURE_TIP_GAP_MS, RETENTION_HOUR, RETENTION_MIN_PCT, DIGEST_MIN_PCT,
   fmtPct, fmtPrice, signedPct, dueZakatReminder, trimZakatSent,
   isMarketStory, pickHack, pickChallenge, portfolioPulse, assetUrl,
-  HACK_GAP_MS, HACK_HOUR, ACADEMY_HOUR, PORTFOLIO_HOUR, PULSE_MIN_PCT,
+  HACK_GAP_MS, HACK_HOUR, ACADEMY_HOUR, PORTFOLIO_HOUR, PULSE_MIN_PCT, isStablecoin,
 } from '../../push-api/notify-logic.js'
 import { assetKey, fetchCryptoQuotes, fetchNews, fetchQuotes, quoteFor } from '../../push-api/markets.js'
 // The Academy's own teaching material, in the six languages the app ships.
@@ -92,7 +92,14 @@ export function createJobs({ store, send }) {
 
   async function checkMoves({ kinds = null, refreshSeen = true } = {}) {
     const subs = await store.all()
-    const inPass = (a) => !kinds || kinds.includes(a.kind)
+    const inPass = (a) => {
+      if (kinds && !kinds.includes(a.kind)) return false
+      // Stablecoins (USDT, USDC, DAI, etc.) are excluded from move notifications.
+      // A 0.01% USDT wobble is noise, not signal — spamming users with it
+      // erodes trust in the entire notification feature.
+      if (isStablecoin(a.symbol)) return false
+      return true
+    }
     const watching = subs.filter(s => s.sub.watch.some(inPass))
     if (!watching.length) return
 
@@ -157,6 +164,8 @@ export function createJobs({ store, send }) {
         // matters most precisely when no percentage threshold has been hit: a
         // 0.4% slip past $77,000 is the alert an exchange sends, and the move
         // channel is silent for it by design.
+        // Skip stablecoins from level notifications too
+        if (isStablecoin(a.symbol)) { sub.lastPrice[k] = q.price; changed = true; continue }
         const prevPrice = sub.lastPrice[k]
         const cross = prevPrice
           ? crossedLevel({ price: q.price, prev: prevPrice, lastLevel: sub.lastLevel[k] ?? null })
