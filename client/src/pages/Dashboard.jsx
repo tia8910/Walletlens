@@ -1849,6 +1849,14 @@ const StatCard = memo(function StatCard({ label, value, sub, color, tone, spark 
 // ── Portfolio Heatmap ─────────────────────────────────────────────────────
 const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, totalValue }) {
   const { t } = useLanguage()
+  const [tick, setTick] = useState(0)
+
+  // Re-render every 3s so pulse animations cycle
+  useEffect(() => {
+    const id = setInterval(() => setTick(n => n + 1), 3000)
+    return () => clearInterval(id)
+  }, [])
+
   const cells = enriched
     .filter(h => h.value > 0)
     .map(h => {
@@ -1860,7 +1868,8 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
         : chg < 0
           ? intensity < 0.35 ? `rgba(248,113,113,${0.28 + intensity * 0.4})` : intensity < 0.7 ? `rgba(239,68,68,${0.42 + intensity * 0.35})` : `rgba(220,38,38,${0.6 + intensity * 0.3})`
           : 'rgba(255,255,255,0.06)'
-      return { ...h, chg, sizePct, color }
+      const isMover = Math.abs(chg) >= 3
+      return { ...h, chg, sizePct, color, isMover }
     })
     .sort((a, b) => b.sizePct - a.sizePct)
 
@@ -1868,16 +1877,30 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
 
   return (
     <div className="glass-card heatmap-card">
-      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 700, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('dsPortfolioHeatmap')}</h3>
+      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 700, display:'inline-flex', alignItems:'center', gap:'0.4em' }}>
+        <Icon name="grid" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />
+        {t('dsPortfolioHeatmap')}
+        <span style={{ display:'inline-flex', alignItems:'center', gap:'0.3em', marginLeft:'0.5em', fontSize:'0.68rem', fontWeight:600, color:'var(--g)' }}>
+          <span className="hm-live-dot" /> Live
+        </span>
+      </h3>
       <div className="heatmap-grid">
-        {cells.map((c, i) => {
+        {cells.map((c) => {
           const minSize = 60
           const size = Math.max(minSize, Math.min(180, (c.sizePct / 100) * 800))
+          const pulseClass = c.isMover ? 'hm-pulse' : ''
           return (
             <div
               key={c.coin_id}
-              className="heatmap-cell"
-              style={{ background: c.color, width: size, height: size }}
+              className={`heatmap-cell ${pulseClass}`}
+              style={{
+                background: c.color,
+                width: size,
+                height: size,
+                animation: c.isMover
+                  ? `hmPulse ${1.5 + Math.abs(c.chg) * 0.08}s ease-in-out infinite`
+                  : undefined,
+              }}
               title={`${c.coin_symbol?.toUpperCase()} — ${c.sizePct.toFixed(1)}% · ${c.chg >= 0 ? '+' : ''}${c.chg.toFixed(2)}%`}
             >
               <CoinLogo image={c.coin_image} symbol={c.coin_symbol} coinId={c.coin_id} size={Math.min(28, Math.floor(size * 0.35))} className="heatmap-img" />
@@ -1888,14 +1911,19 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
               {size >= 90 && (
                 <div className="heatmap-pct" style={{ fontSize: '0.58rem', opacity: 0.7, marginTop: 2 }}>{t('dsPortfolioShare')(c.sizePct.toFixed(1))}</div>
               )}
+              {c.isMover && (
+                <div className="hm-mover-badge" style={{ position:'absolute', top:3, right:3, fontSize:'0.5rem', background:'rgba(0,0,0,0.55)', borderRadius:4, padding:'1px 4px', color:'#fff', fontWeight:700 }}>
+                  {Math.abs(c.chg) >= 8 ? '\u26a1' : '\u25b2'}
+                </div>
+              )}
             </div>
           )
         })}
       </div>
       <div className="heatmap-legend">
-        <span style={{ color:'rgba(248,113,113,0.9)' }}>■ {t('dsLosing')}</span>
+        <span style={{ color:'rgba(248,113,113,0.9)' }}>\u25a0 {t('dsLosing')}</span>
         <span style={{ color:'var(--text-sub)' }}>{t('dsDarkerBigger')}</span>
-        <span style={{ color:'rgba(var(--g-rgb),0.9)' }}>■ {t('dsGaining')}</span>
+        <span style={{ color:'rgba(var(--g-rgb),0.9)' }}>\u25a0 {t('dsGaining')}</span>
       </div>
     </div>
   )

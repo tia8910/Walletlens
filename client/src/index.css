@@ -16715,3 +16715,20 @@ input, select, textarea, .dvx-input {
     0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
   }
 }
+
+/* ═══ Dynamic Portfolio Heatmap (live pulse) ═══ */
+.hm-live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #22c55e; display: inline-block;
+  animation: hmBlink 1.2s ease-in-out infinite;
+}
+@keyframes hmBlink {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+  50% { opacity: 0.55; box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+}
+@keyframes hmPulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.04); filter: brightness(1.25); }
+}
+.heatmap-cell { position: relative; }
+.heatmap-cell.hm-pulse { will-change: transform; }
