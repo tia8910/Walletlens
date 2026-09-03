@@ -4286,6 +4286,19 @@ export default function Dashboard() {
     () => CATEGORY_ORDER.filter(cat => groupedHoldings[cat]?.length > 0),
     [groupedHoldings]
   )
+  // Duplicate-ticker detection per category — was previously recomputed by
+  // scanning every holding in the category on every Dashboard render (e.g.
+  // the price-ticker count-up firing each refresh), even though it only
+  // depends on groupedHoldings.
+  const dupSymbolsByCat = useMemo(() => {
+    const out = {}
+    Object.keys(groupedHoldings).forEach(cat => {
+      const symCount = {}
+      groupedHoldings[cat].forEach(h => { const s = (h.coin_symbol || '').toUpperCase(); symCount[s] = (symCount[s] || 0) + 1 })
+      out[cat] = new Set(Object.keys(symCount).filter(s => symCount[s] > 1))
+    })
+    return out
+  }, [groupedHoldings])
 
   // Stale manual price check — warn if any non-crypto asset price is >7 days old
   const staleAssets = useMemo(() => {
@@ -5193,9 +5206,7 @@ export default function Dashboard() {
                             )}
                             <ul className="dvx-holdings" style={{ margin:0 }}>
                               {(() => {
-                                const symCount = {}
-                                grouped[cat].forEach(h => { const s = (h.coin_symbol||'').toUpperCase(); symCount[s] = (symCount[s]||0) + 1 })
-                                const dupSymbols = new Set(Object.keys(symCount).filter(s => symCount[s] > 1))
+                                const dupSymbols = dupSymbolsByCat[cat] || new Set()
                                 return grouped[cat].map(h => {
                                 const isDupTicker = dupSymbols.has((h.coin_symbol||'').toUpperCase())
                                 const displayValue  = h.value > 0 ? h.value : h.total_invested

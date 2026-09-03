@@ -90,7 +90,7 @@ export async function onRequestGet(context) {
     await Promise.all(missing.map(async sym => {
       for (const host of ['query1', 'query2']) {
         try {
-          const res = await fetchWithTimeout(
+          const res = await fetch(
             `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`,
             { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WalletLens/1.0)' }, signal: AbortSignal.timeout(6000) }
           )
