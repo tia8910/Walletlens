@@ -50,17 +50,97 @@ export function parseCoinGecko(json, ids) {
   return out
 }
 
+/**
+ * CoinGecko ID -> Yahoo Finance symbol mapping.
+ *
+ * CoinGecko is unreliable from Cloudflare Workers (silent failures that
+ * leave every subscription without crypto price data), so Yahoo Finance
+ * is the primary source.  Yahoo uses TICKER-USD symbols for crypto,
+ * which is the same format it uses for stocks.
+ */
+const CG_TO_YAHOO = {
+  'bitcoin': 'BTC-USD', 'ethereum': 'ETH-USD', 'tether': 'USDT-USD',
+  'binancecoin': 'BNB-USD', 'solana': 'SOL-USD', 'ripple': 'XRP-USD',
+  'usd-coin': 'USDC-USD', 'dogecoin': 'DOGE-USD', 'cardano': 'ADA-USD',
+  'tron': 'TRX-USD', 'chainlink': 'LINK-USD', 'avalanche-2': 'AVAX-USD',
+  'stellar': 'XLM-USD', 'the-open-network': 'TON-USD',
+  'shiba-inu': 'SHIB-USD', 'hedera-hashgraph': 'HBAR-USD',
+  'polkadot': 'DOT-USD', 'bitcoin-cash': 'BCH-USD', 'uniswap': 'UNI-USD',
+  'litecoin': 'LTC-USD', 'matic-network': 'MATIC-USD', 'near': 'NEAR-USD',
+  'internet-computer': 'ICP-USD', 'arweave': 'AR-USD',
+  'sui': 'SUI-USD', 'aave': 'AAVE-USD', 'algorand': 'ALGO-USD',
+  'the-graph': 'GRT-USD', 'filecoin': 'FIL-USD', 'render-token': 'RENDER-USD',
+  'fantom': 'FTM-USD', 'cosmos': 'ATOM-USD', 'ethereum-classic': 'ETC-USD',
+  'immutable-x': 'IMX-USD', 'optimism': 'OP-USD', 'arbitrum': 'ARB-USD',
+  'sei-network': 'SEI-USD', 'injective-protocol': 'INJ-USD',
+  'celestia': 'TIA-USD', 'ondo-finance': 'ONDO-USD', 'pepe': 'PEPE-USD',
+  'bonk': 'BONK-USD', 'floki': 'FLOKI-USD', 'kaspa': 'KAS-USD',
+  'vechain': 'VET-USD', 'theta-token': 'THETA-USD',
+  'the-sandbox': 'SAND-USD', 'decentraland': 'MANA-USD', 'axie-infinity': 'AXS-USD',
+  'curve-dao-token': 'CRV-USD', 'gmx': 'GMX-USD', 'pendle': 'PENDLE-USD',
+  'jupiter': 'JUP-USD', 'jito-governance-token': 'JTO-USD',
+  'wormhole': 'W-USD', 'starknet': 'STRK-USD', 'zksync': 'ZK-USD',
+  'worldcoin-wld': 'WLD-USD', 'blur': 'BLUR-USD', 'dydx-chain': 'DYDX-USD',
+  'pyth-network': 'PYTH-USD', 'beam-2': 'BEAM-USD', 'mantle': 'MNT-USD',
+  'gate-token': 'GT-USD', 'crypto-com-chain': 'CRO-USD',
+  'eos': 'EOS-USD', 'maker': 'MKR-USD', 'fetch-ai': 'FET-USD',
+  'lido-dao': 'LDO-USD', 'rocket-pool': 'RPL-USD',
+  'pancakeswap-token': 'CAKE-USD', 'convex-finance': 'CVX-USD',
+  'yearn-finance': 'YFI-USD', 'enjincoin': 'ENJ-USD', 'chiliz': 'CHZ-USD',
+  'neo': 'NEO-USD', 'kucoin-token': 'KCS-USD', 'okb': 'OKB-USD',
+  'leo-token': 'LEO-USD', 'wrapped-bitcoin': 'WBTC-USD',
+  'staked-ether': 'STETH-USD', 'wrapped-steth': 'WSTETH-USD',
+  'trust-wallet-token': 'TWT-USD', 'flow': 'FLOW-USD',
+  'mina-protocol': 'MINA-USD', 'moonbeam': 'GLMR-USD',
+  'moonriver': 'MOVR-USD', 'celo': 'CELO-USD',
+  'cronos': 'CRO-USD', 'kava': 'KAVA-USD',
+  'ocean-protocol': 'OCEAN-USD', 'ankr': 'ANKR-USD',
+  'waves': 'WAVES-USD', 'loopring': 'LRC-USD',
+  'livepeer': 'LPT-USD', 'synthetix-network-token': 'SNX-USD',
+  'compound-governance-token': 'COMP-USD',
+  'raydium': 'RAY-USD', 'orca': 'ORCA-USD',
+  'helium': 'HNT-USD', 'oasis-network': 'ROSE-USD',
+  'qtum': 'QTUM-USD', 'nervos-network': 'CKB-USD',
+  'layerzero': 'ZRO-USD', 'eigenlayer': 'EIGEN-USD',
+  'ethena': 'ENA-USD', 'sei': 'SEI-USD',
+}
+
+/** Try Yahoo Finance first (works from CF Workers), fall back to CoinGecko. */
 export async function fetchCryptoQuotes(ids) {
+  const unique = [...new Set(ids)].filter(Boolean)
   const out = {}
-  for (const group of chunk([...new Set(ids)].filter(Boolean), CG_BATCH)) {
+
+  // Split into Yahoo-supported and unknown
+  const yahooIds = []
+  const cgOnly = []
+  for (const id of unique) {
+    if (CG_TO_YAHOO[id]) yahooIds.push(id)
+    else cgOnly.push(id)
+  }
+
+  // Yahoo Finance chart API — one request per symbol, parallelised.
+  await mapLimited(yahooIds, STOCK_CONCURRENCY, async (id) => {
+    const sym = CG_TO_YAHOO[id]
     try {
-      const url = 'https://api.coingecko.com/api/v3/simple/price'
-        + `?ids=${encodeURIComponent(group.join(','))}&vs_currencies=usd&include_24hr_change=true`
-      Object.assign(out, parseCoinGecko(await getJson(url), group))
-    } catch (e) {
-      console.error('coingecko fetch failed:', e instanceof Error ? e.message : e)
+      const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=2d`
+      const quote = parseYahooChart(await getJson(url, { 'User-Agent': 'Mozilla/5.0' }))
+      if (quote) out[id] = quote
+    } catch { /* symbol skipped this cycle */ }
+  })
+
+  // CoinGecko fallback for coins not in our Yahoo map
+  if (cgOnly.length) {
+    for (const group of chunk(cgOnly, CG_BATCH)) {
+      try {
+        const url = 'https://api.coingecko.com/api/v3/simple/price'
+          + `?ids=${encodeURIComponent(group.join(','))}&vs_currencies=usd&include_24hr_change=true`
+        Object.assign(out, parseCoinGecko(await getJson(url), group))
+      } catch (e) {
+        console.error('coingecko fetch failed:', e instanceof Error ? e.message : e)
+      }
     }
   }
+
   return out
 }
 

@@ -1176,12 +1176,24 @@ export async function pingSeen({ force = false } = {}) {
   } catch { /* fall through and ping */ }
 
   try {
-    const sub = await getSubscription()
-    if (!sub) return
+    // Inside the app's own WebView there is no Web Push subscription —
+    // getSubscription() returns null.  Send the FCM token instead so the
+    // server knows this device is alive and the win-back ladder stays accurate.
+    let address = {}
+    if (inAppShell()) {
+      const native = await import('./nativePush.js')
+      const token = native.nativePushToken()
+      if (!token) return
+      address = { fcmToken: token }
+    } else {
+      const sub = await getSubscription()
+      if (!sub) return
+      address = { endpoint: sub.endpoint }
+    }
     const res = await fetch(`${PUSH_API}/seen`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endpoint: sub.endpoint, lang: currentLang(), tz: currentTz() }),
+      body: JSON.stringify({ ...address, lang: currentLang(), tz: currentTz() }),
     }).catch(() => null)
     // Only record the ping if it landed; a failed one should be retried on the
     // next open rather than silently starting a six-hour blackout.
