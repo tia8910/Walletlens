@@ -1,8 +1,31 @@
 name: Deploy Web to Cloudflare Pages
 
-# Builds the React client and deploys the static site to Cloudflare Pages.
-# Reads the Pages project name from the CLOUDFLARE_PAGES_PROJECT secret
-# (defaults to "walletlens" if unset).
+# Builds the React client and uploads client/dist to Cloudflare Pages.
+#
+# THE PROJECT IS walletlenslive1, NOT walletlens.
+# There are two Pages projects on the account — walletlenslive and
+# walletlenslive1 — and only walletlenslive1 carries the walletlens.live
+# custom domain. A deploy to the wrong one SUCCEEDS and changes nothing a
+# visitor can see, which is the worst possible failure mode: green tick, stale
+# site. The default below is the live one; CLOUDFLARE_PAGES_PROJECT still
+# overrides it if the projects are ever renamed.
+#
+# THIS IS A DIRECT UPLOAD, AND THAT IS MUTUALLY EXCLUSIVE WITH GIT INTEGRATION.
+# Cloudflare Pages projects are either Git-connected (Cloudflare clones the
+# repo and builds it) or direct-upload (wrangler pushes a built directory).
+# walletlenslive1 was Git-connected and has been disconnected so this workflow
+# can drive it. Reconnecting Git in the Cloudflare dashboard would break this
+# workflow, so do one or the other — never both.
+#
+# THE API TOKEN NEEDS A SCOPE THE WORKERS DEPLOY DOES NOT.
+# deploy-workers.yml documents CLOUDFLARE_API_TOKEN as needing
+#   Account · Workers Scripts · Edit
+#   Account · D1 · Edit
+# `wrangler pages deploy` additionally needs
+#   Account · Cloudflare Pages · Edit
+# The same secret serves both workflows, so the token must carry all three.
+# Without the Pages scope this fails at the publish step with a 403 that names
+# authentication rather than the missing permission.
 
 on:
   push:
@@ -33,6 +56,25 @@ jobs:
           cache: npm
           cache-dependency-path: client/package-lock.json
 
+      - name: Check the Cloudflare secrets are present
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Checked before the build rather than after it: wrangler-action
+          # fails at the very last step, so a missing secret otherwise costs a
+          # full npm ci and vite build before saying so.
+          missing=0
+          if [ -z "$TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is not set. It needs Account · Cloudflare Pages · Edit on top of the Workers and D1 scopes deploy-workers.yml uses."
+            missing=1
+          fi
+          if [ -z "$ACCOUNT" ]; then
+            echo "::error::CLOUDFLARE_ACCOUNT_ID is not set."
+            missing=1
+          fi
+          exit $missing
+
       - name: Install deps
         working-directory: client
         run: npm ci
@@ -43,9 +85,33 @@ jobs:
           CI: false
         run: npm run build
 
+      - name: Check the build carries its routing files
+        working-directory: client
+        run: |
+          # _redirects holds the SPA fallback (/* /index.html 200); without it
+          # every deep link 404s and only the home page works. _headers holds
+          # the CSP and cache rules. Both are plain files that live or die with
+          # the build, and a deploy missing them looks fine on the home page
+          # and is broken everywhere else — so this is worth one grep.
+          fail=0
+          for f in index.html _redirects _headers; do
+            if [ ! -f "dist/$f" ]; then
+              echo "::error::dist/$f is missing; the build did not produce a deployable site."
+              fail=1
+            fi
+          done
+          grep -q '^/\* /index.html 200' dist/_redirects || {
+            echo "::error::dist/_redirects has no SPA fallback rule; deep links would 404."
+            fail=1
+          }
+          exit $fail
+
       - name: Publish to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy client/dist --project-name=${{ secrets.CLOUDFLARE_PAGES_PROJECT || 'walletlens' }} --branch=main
+          # --branch=main is what makes this a PRODUCTION deployment. Without
+          # it the upload lands as a preview on a random *.pages.dev hostname
+          # and the custom domain keeps serving the previous build.
+          command: pages deploy client/dist --project-name=${{ secrets.CLOUDFLARE_PAGES_PROJECT || 'walletlenslive1' }} --branch=main
