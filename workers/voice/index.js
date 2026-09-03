@@ -121,7 +121,7 @@ const PROXY_ALLOWLIST = new Set([
     "raw.githubusercontent.com",
     "lcw.nyc3.cdn.digitaloceanspaces.com",
 ]);
-async function handleProxy(target, headers) {
+async function handleProxy(target, headers, ctx) {
     if (!target) {
         return new Response(JSON.stringify({ error: "missing_url" }), { status: 400, headers });
     }
@@ -137,6 +137,25 @@ async function handleProxy(target, headers) {
     }
     if (parsed.protocol !== "https:" || !PROXY_ALLOWLIST.has(parsed.hostname)) {
         return new Response(JSON.stringify({ error: "host_not_allowed" }), { status: 403, headers });
+    }
+    // Edge cache keyed on the upstream URL alone (not on the per-request CORS
+    // headers, which vary by Origin) — shared across every visitor worldwide,
+    // so a price/logo fetched for one user is served to the next from cache
+    // instead of re-hitting the upstream, which rate-limits/IP-blocks us.
+    // Without this, the Cache-Control header below only helped repeat
+    // requests from the *same* browser.
+    const cache = caches.default;
+    const cacheKey = new Request(`https://proxy.cache/${encodeURIComponent(parsed.toString())}`, { method: "GET" });
+    const cached = await cache.match(cacheKey);
+    if (cached) {
+        return new Response(cached.body, {
+            status: cached.status,
+            headers: {
+                ...headers,
+                "Content-Type": cached.headers.get("Content-Type") || "application/json",
+                "Cache-Control": cached.headers.get("Cache-Control") || "public, max-age=30",
+            },
+        });
     }
     try {
         const upstream = await fetch(parsed.toString(), {
@@ -166,14 +185,23 @@ async function handleProxy(target, headers) {
         }
         const ct = upstream.headers.get("content-type") || "application/json";
         const isImage = ct.startsWith("image/");
+        // Logos are immutable — cache long; price data stays fresh
+        const cacheControl = isImage ? "public, max-age=86400" : "public, max-age=30";
+        if (upstream.status === 200) {
+            // Cache only body/content-type/status — deliberately not the
+            // per-Origin CORS headers, so the same cached entry can be served
+            // to every allowed origin.
+            const toCache = new Response(body, {
+                status: upstream.status,
+                headers: { "Content-Type": ct, "Cache-Control": cacheControl },
+            });
+            const put = cache.put(cacheKey, toCache);
+            if (ctx?.waitUntil) ctx.waitUntil(put);
+            else await put;
+        }
         return new Response(body, {
             status: upstream.status,
-            headers: {
-                ...headers,
-                "Content-Type": ct,
-                // Logos are immutable — cache long; price data stays fresh
-                "Cache-Control": isImage ? "public, max-age=86400" : "public, max-age=30",
-            },
+            headers: { ...headers, "Content-Type": ct, "Cache-Control": cacheControl },
         });
     }
     catch (e) {
@@ -1135,7 +1163,7 @@ function rateLimited(ip, bucket, max, windowMs = 60_000) {
 }
 const AI_MODES = new Set(["vision", "analyze", "assistant", "vision_advice", "recap", "target_analysis"]);
 const EMAIL_MODES = new Set(["email", "guardian_setup", "guardian_test", "backup_email", "weekly_subscribe"]);
-Deno.serve(async (req) => {
+Deno.serve(async (req, ctx) => {
     const origin = req.headers.get("Origin");
     const headers = corsHeaders(origin);
     if (req.method === "OPTIONS")
@@ -1148,7 +1176,7 @@ Deno.serve(async (req) => {
             if (rateLimited(ip, "proxy", 300)) {
                 return new Response(JSON.stringify({ error: "rate_limited" }), { status: 429, headers });
             }
-            return await handleProxy(reqUrl.searchParams.get("url"), headers);
+            return await handleProxy(reqUrl.searchParams.get("url"), headers, ctx);
         }
         // Owner "I'm still here" reset landing page (linked from the warning email).
         // This GET only RENDERS a confirmation page — it never mutates state, so email
@@ -2126,10 +2154,10 @@ function bind(env) {
 }
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     bind(env)
     if (!HANDLER) return new Response('handler not registered', { status: 500 })
-    return HANDLER(req)
+    return HANDLER(req, ctx)
   },
 
   async scheduled(event, env, ctx) {
