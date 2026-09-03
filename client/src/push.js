@@ -73,7 +73,7 @@ export const DEFAULT_PUSH_PREFS = {
   hacks: true,
   academy: true,
   portfolio: true,
-  movePct: 2,
+  movePct: 1,
 }
 
 export function isPushSupported() {
