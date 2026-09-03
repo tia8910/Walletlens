@@ -16716,19 +16716,79 @@ input, select, textarea, .dvx-input {
   }
 }
 
-/* ═══ Dynamic Portfolio Heatmap (live pulse) ═══ */
+/* ═══ Dynamic Portfolio Heatmap (treemap) ═══ */
 .hm-live-dot {
   width: 7px; height: 7px; border-radius: 50%;
   background: #22c55e; display: inline-block;
-  animation: hmBlink 1.2s ease-in-out infinite;
+  animation: hmBlink 1s ease-in-out infinite;
 }
 @keyframes hmBlink {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
-  50% { opacity: 0.55; box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.6); }
+  50% { opacity: 0.5; box-shadow: 0 0 0 5px rgba(34,197,94,0); }
 }
 @keyframes hmPulse {
-  0%, 100% { transform: scale(1); filter: brightness(1); }
-  50% { transform: scale(1.04); filter: brightness(1.25); }
+  0%   { transform: scale(1);    filter: brightness(1);   }
+  25%  { transform: scale(1.02); filter: brightness(1.2); }
+  50%  { transform: scale(1);    filter: brightness(1.05);}
+  75%  { transform: scale(1.015);filter: brightness(1.15);}
+  100% { transform: scale(1);    filter: brightness(1);   }
 }
-.heatmap-cell { position: relative; }
-.heatmap-cell.hm-pulse { will-change: transform; }
+@keyframes hmTickerUp {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
+@keyframes hmTickerDown {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(3px); }
+  100% { transform: translateY(0); }
+}
+.hm-ticker-up   { display:inline-block; animation: hmTickerUp   1.5s ease-in-out infinite; }
+.hm-ticker-down { display:inline-block; animation: hmTickerDown 1.5s ease-in-out infinite; }
+.heatmap-cell {
+  position: relative;
+  transition: filter 0.3s ease, transform 0.25s ease;
+}
+.heatmap-cell:hover { filter: brightness(1.3); z-index: 2; transform: scale(1.02); }
+.heatmap-cell.hm-pulse { will-change: transform, filter; }
+
+/* ═══ Dynamic Heatmap — enhanced live effects ═══ */
+.hm-glow {
+  border: 1px solid rgba(16,185,129,0.25);
+  box-shadow:
+    0 0 0 1px rgba(16,185,129,0.08),
+    0 0 22px rgba(16,185,129,0.18),
+    0 0 60px rgba(16,185,129,0.10),
+    inset 0 0 30px rgba(16,185,129,0.04);
+}
+@keyframes hmBreathe {
+  0%, 100% { transform: scale(1);      filter: brightness(1);    }
+  50%      { transform: scale(1.015);  filter: brightness(1.18); }
+}
+.heatmap-cell.hm-breathe { will-change: transform, filter; }
+@keyframes hmScan {
+  0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  35%  { opacity: 0.28; }
+  70%  { opacity: 0; }
+  100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+}
+.hm-scan {
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), rgba(80,220,200,0.18), transparent);
+  pointer-events: none;
+  z-index: 3;
+  animation: hmScan 5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hm-scan, .heatmap-cell.hm-breathe, .heatmap-cell.hm-pulse { animation: none !important; }
+}
+/* Light theme tune-ups so labels stay legible */
+[data-wl-light] .hm-glow {
+  border-color: rgba(16,185,129,0.4);
+  box-shadow: 0 0 22px rgba(16,185,129,0.22);
+}
+[data-wl-light] .heatmap-cell .heatmap-sym,
+[data-wl-light] .heatmap-cell .heatmap-chg,
+[data-wl-light] .heatmap-cell .heatmap-pct { color: rgba(255,255,255,0.97); text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
