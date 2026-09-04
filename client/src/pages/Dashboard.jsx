@@ -1851,9 +1851,10 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
   const { t } = useLanguage()
   const gridRef = useRef(null)
   const [dims, setDims] = useState({ w: 340, h: 300 })
-  const [tick, setTick] = useState(0)
 
-  // Re-measure on mount/resize + drive ambient animations continuously
+  // Re-measure on mount/resize. Ambient motion (breathing/pulse/scan-line) is
+  // driven entirely by CSS `infinite` keyframe animations — no JS re-render
+  // loop is needed to keep it "alive", so none runs here.
   useEffect(() => {
     if (!gridRef.current) return
     const el = gridRef.current
@@ -1865,12 +1866,6 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
     const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [])
-
-  // Continuous heartbeat — keeps the map "alive" even when prices are flat
-  useEffect(() => {
-    const id = setInterval(() => setTick(n => n + 1), 1600)
-    return () => clearInterval(id)
   }, [])
 
   const cells = useMemo(() => {
