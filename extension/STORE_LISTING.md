@@ -19,7 +19,7 @@ Your whole net worth in your toolbar: crypto, stocks, gold, property, cash. AI s
 
 Open your browser and know exactly what you are worth.
 
-WalletLens puts your entire net worth behind one click in your toolbar. Crypto, US stocks and ETFs, gold and silver, cash, bonds, your house, the watch in the drawer. Not only coins. Everything you own, live, in a single number.
+WalletLens puts your entire net worth behind one click in your toolbar. Bitcoin and 10,000 other coins, any US stock or ETF from Apple to Nvidia to the S&P 500, gold and silver, cash, bonds, your house, the watch in the drawer. Not only coins. Everything you own, live, in a single number.
 
 Free. No account. No sign-up. Your holdings never leave your browser.
 
@@ -36,6 +36,7 @@ IN THE TOOLBAR
 • Profit and loss per asset, with real coin and company logos
 • Top holdings at a glance, and the full list when you want it
 • Market data, the Fear and Greed index, and a clear read per crypto holding
+• Dividend yield and annual income on the stocks and ETFs that pay one
 • Market news without leaving the page
 • Syncs on its own, so it stays current even when the site is closed
 • Share your performance as a percentage. Your balance stays private.

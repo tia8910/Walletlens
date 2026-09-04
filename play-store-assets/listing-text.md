@@ -28,7 +28,7 @@ ADD YOUR PORTFOLIO IN UNDER A MINUTE
 EVERYTHING YOU OWN, NOT ONLY CRYPTO
 
 • Crypto: 10,000+ coins with live prices, profit and loss, and allocation
-• Stocks and ETFs: live quotes and performance
+• Stocks and ETFs: any US-listed ticker. Apple, Tesla, Nvidia, Microsoft, Amazon, Meta, Google, Palantir, Coinbase, plus index and dividend funds like SPY, QQQ, VOO, VTI, SCHD and JEPI
 • Precious metals: gold, silver, platinum
 • Cash and fiat: balances across currencies
 • Property: your home, a rental, land you are sitting on
@@ -45,6 +45,7 @@ SEE WHAT YOUR PORTFOLIO IS ACTUALLY DOING
 • Profit and loss per holding and for the portfolio as a whole
 • A health score covering diversification, risk and momentum
 • Market sentiment built from crypto, equities, volatility and macro, not coins alone
+• Dividend yield and annual income for every stock and ETF that pays one
 • Fear and Greed index, economic calendar and market news inside the app
 
 DECIDE INSTEAD OF GUESSING

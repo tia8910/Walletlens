@@ -167,3 +167,33 @@ bond portfolio tracker
 track physical gold and silver
 alternative assets tracker
 track art and collectibles value
+
+## Stock and ETF long-tail
+# Every ticker below resolves in the app on demand, so these are honest.
+# Company names carry far more volume than "stock portfolio tracker" alone,
+# and no portfolio tracker is bidding on the combinations.
+apple stock tracker
+tesla stock tracker
+nvidia stock tracker
+palantir stock tracker
+microstrategy bitcoin tracker
+coinbase stock tracker
+track tesla and bitcoin together
+track apple stock and crypto
+s&p 500 portfolio tracker
+sp500 tracker app
+nasdaq portfolio tracker
+qqq portfolio tracker
+voo vti portfolio tracker
+etf portfolio tracker
+index fund tracker app
+free stock portfolio tracker app
+
+## Dividend and income
+dividend tracker
+dividend portfolio tracker
+dividend income tracker
+dividend yield calculator
+schd jepi dividend tracker
+annual dividend income app
+passive income portfolio tracker
