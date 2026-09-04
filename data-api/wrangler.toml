@@ -1,0 +1,25 @@
+name = "walletlens-data"
+main = "worker.js"
+compatibility_date = "2026-09-04"
+
+# Replaces four GitHub Actions cron jobs — update-market, update-news,
+# update-economy-calendar and update-stock-prices — which fetched public feeds,
+# committed JSON into client/public/ and needed a site rebuild for the data to
+# reach anyone. Here a refresh is a KV write.
+
+# The cache. Create it once, then paste the printed id below:
+#   npx wrangler@4 kv namespace create DATA
+# Nothing here is secret: every byte is public market data served
+# unauthenticated, which is why this worker needs no secrets at all.
+[[kv_namespaces]]
+binding = "DATA"
+id = "PASTE_KV_NAMESPACE_ID_HERE"
+
+# OPTIONAL, AND IT MAY BE REFUSED. The Workers Free plan allows five cron
+# triggers per ACCOUNT, and walletlens-push already uses three. If this deploy
+# fails on the trigger limit, delete this block and deploy again — the service
+# still works, because serve() refreshes any dataset it finds past its maxAge
+# on the way to answering a request. The cron only moves that cost off the
+# first visitor after each interval.
+[triggers]
+crons = ["*/15 * * * *"]

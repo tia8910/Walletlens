@@ -17,41 +17,59 @@ stopped the moment Actions did. On 2026-09-02 that happened: the account was
 flagged, Actions was disabled, and all four froze with no error and no
 notification while the app served two-day-old prices.
 
-Here a refresh is a KV write. Nothing is built and nothing is committed.
+Here a refresh is a KV write.
 
-## Deploying
+## Layout
 
-**Deploy with the CLI, not from Git.** Deno Deploy's Git integration clones
-from GitHub, so while the account is flagged the dashboard's *Deploy Default
-Branch* answers `Failed to trigger build` — the same failure that broke
-Cloudflare Pages. `deployctl` uploads from the working directory and never
-touches GitHub.
+| File | What it is |
+| --- | --- |
+| `feeds.js` | Parsers. Take text, never URLs, so they are testable. |
+| `core.js` | The decisions: cadence, staleness, refresh, serve. Storage is a `{ read, write }` argument. |
+| `worker.js` | Cloudflare Workers binding — **the deployed one**. |
+| `main.ts` | Deno Deploy binding, kept as an alternative. |
+
+Splitting storage out of `core.js` is what lets the rules be unit-tested in
+Node against a plain object — see `client/src/dataService.test.js`, 53 tests —
+and it is why supporting a second runtime costs one small file rather than a
+fork.
+
+## Deploying (Cloudflare)
 
 ```bash
-deno install -gArf jsr:@deno/deployctl
-
 cd data-api
-deployctl deploy --project=walletlens-data --entrypoint=main.ts --prod
+
+# 1. Create the cache, once. Paste the printed id into wrangler.toml.
+npx wrangler@4 kv namespace create DATA
+
+# 2. Deploy.
+npx wrangler@4 deploy
+
+# 3. Check it can reach the upstreams and fill KV.
+curl https://walletlens-data.tarek-abdelhameed.workers.dev/__health
 ```
 
-The project name must match `DATA_HOST` in `client/src/apiHosts.js`
-(`walletlens-data.deno.dev`). `apiHosts.test.js` fails if they drift, along
-with the two CSPs and the service worker, which cannot import the constant.
+**There are no secrets to set.** Every byte is public market data served
+unauthenticated, which is the main reason this was worth splitting out from
+`workers/push`.
 
-There are **no secrets to set**. Every byte this stores and serves is public
-market data, which is the main reason it was worth splitting out from the push
-service.
+`name` in `wrangler.toml` must match `DATA_HOST` in `client/src/apiHosts.js`.
+`apiHosts.test.js` fails if they drift, and it checks the three places that
+cannot import the constant: both CSPs and `sw.js`.
 
-Then check it can reach the upstreams:
+### If the deploy is refused on the cron trigger
 
-```bash
-curl https://walletlens-data.deno.dev/__health
-curl https://walletlens-data.deno.dev/market.json | head -c 200
-```
+The Workers Free plan allows **five cron triggers per account**, and
+`walletlens-push` already uses three. If the deploy fails on that limit, delete
+the `[triggers]` block and deploy again.
+
+The service still works without it. `serve()` refreshes any dataset it finds
+past its `maxAge` on the way to answering a request, so the cron only moves
+that cost off the first visitor after each interval rather than being the only
+thing that can refresh anything.
 
 ## Checking on it
 
-`/__health` reports every dataset's `updated` stamp, row count and whether it
+`/__health` reports every dataset's `updated` stamp, row count, and whether it
 is past its `maxAge`:
 
 ```json
@@ -64,22 +82,15 @@ is past its `maxAge`:
 ```
 
 `"stale": true` on one row means its upstream is failing — the previous value
-is still served, which is deliberate. All rows stale means the cron is not
-running.
+is still served, which is deliberate.
 
 ## Design notes
-
-**`core.js` holds every decision; `main.ts` is Deno glue.** Storage is passed
-in as a `store` — `{ read, write }` — so the cadence table, the staleness rule
-and the failure branches are unit-tested in Node against a plain object. See
-`client/src/dataService.test.js`, 51 tests.
 
 **One cron, not six.** The originals carried six expressions between them.
 This sweeps every 15 minutes and asks each dataset whether it is past its own
 `maxAge`. Cadence becomes one number per dataset instead of a schedule spread
 across four files, and a refresh missed because an upstream was briefly down
-retries on the next tick — where the Actions version waited up to six hours
-for its slot.
+retries on the next tick — where the Actions version waited up to six hours.
 
 **A failed fetch never overwrites good data.** Fetchers return `null` rather
 than an empty envelope, and `refresh()` keeps the stored value. This is the
@@ -87,26 +98,25 @@ failure that reaches users: CoinGecko's free tier answers a rate-limited
 request with valid JSON and a truncated body, so "it parsed" is not "it is a
 market snapshot". `parseMarket` enforces a 50-coin floor for that reason.
 
-**Payloads are chunked.** Deno KV caps a value at 64 KiB and `market.json` is
-250 KB, so this is not an optimisation — the largest dataset cannot be stored
-whole. Chunks are written before the meta record that points at them, so a
-reader sees either the old version whole or the new one whole, never half of
-each.
+**Chunking is a Deno-only concern.** Deno KV caps a value at 64 KiB and
+`market.json` is 250 KB, so `main.ts` splits payloads across numbered keys.
+Workers KV allows 25 MB, so `worker.js` stores them whole and its store is two
+lines.
 
 **Parsers take text, not URLs.** The environment this was written in blocks
 CoinGecko, Stooq and every RSS host, so the fetching could not be exercised.
 Splitting the parsing out means the part where the bugs live is tested against
-captured payload shapes. That earned itself immediately: the first run caught
-that regex extraction does not entity-decode the way Python's ElementTree did,
+captured payload shapes. That earned itself on the first run: it caught that
+regex extraction does not entity-decode the way Python's ElementTree did,
 which had left HTML tags no stripper could see and thumbnails no scraper could
 find.
 
-**The client fetches cross-origin now.** These used to be static files on
-walletlens.live. `client/src/apiHosts.js` holds the host, `dataUrl()` builds
-the URLs, and both CSPs plus `sw.js` name it — all four pinned by
-`apiHosts.test.js`.
+**The client fetches cross-origin.** These used to be static files on
+walletlens.live. The CSP already admitted `*.workers.dev` for the voice and
+push services, so moving here needed no policy change — only `DATA_HOST`,
+`dataUrl()` and `sw.js`.
 
 ## Rolling back
 
-Point `DATA_HOST` back at the origin serving the files and redeploy the site.
+Point `DATA_HOST` back at an origin serving the files and redeploy the site.
 The Pages static copies take over again — stale, but present.

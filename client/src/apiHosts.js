@@ -21,9 +21,9 @@ export const PUSH_HOST = 'walletlens-push.tarek-abdelhameed.workers.dev'
 // calendar and stock prices. These used to be static files the Pages build
 // shipped, refreshed by four GitHub Actions cron jobs that committed JSON into
 // client/public/. That made a price refresh a deploy and stopped dead the day
-// Actions did, so they moved to a Deno Deploy service that fetches on its own
-// schedule. Must match the Deno Deploy project name.
-export const DATA_HOST = 'walletlens-data.deno.dev'
+// Actions did, so they moved to a worker that fetches on its own schedule.
+// Must match `name` in data-api/wrangler.toml.
+export const DATA_HOST = 'walletlens-data.tarek-abdelhameed.workers.dev'
 
 // The trailing slash on one and not the other is what the call sites already
 // expected; both shapes are preserved so this change stays a pure refactor.
