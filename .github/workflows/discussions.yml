@@ -1,14 +1,11 @@
 name: Scheduled Discussion Posts
 
+# Posts ONE discussion per day at 14:00 UTC (Sep 3-12 only).
+# workflow_dispatch removed — rapid-fire posting caused GitHub account flagging.
+
 on:
   schedule:
     - cron: '0 14 3-12 9 *'
-  workflow_dispatch:
-    inputs:
-      post_index:
-        description: 'Post index (0-9) or -1 for next in sequence'
-        required: false
-        default: '-1'
 
 permissions:
   contents: write
@@ -29,9 +26,7 @@ jobs:
         id: index
         run: |
           STATE_FILE="promo/discussion-state.json"
-          if [ "${{ github.event.inputs.post_index }}" != "" ] && [ "${{ github.event.inputs.post_index }}" != "-1" ]; then
-            IDX="${{ github.event.inputs.post_index }}"
-          elif [ -f "$STATE_FILE" ]; then
+          if [ -f "$STATE_FILE" ]; then
             IDX=$(jq -r '.next_index' "$STATE_FILE")
           else
             IDX="0"
