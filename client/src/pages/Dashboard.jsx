@@ -1895,8 +1895,6 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
     return arr
   }, [enriched, prices, totalValue])
 
-  if (!cells.length) return null
-
   // Squarified treemap layout (0..1 space)
   const layout = useMemo(() => {
     const total = cells.reduce((s, c) => s + c.sizePct, 0)
@@ -1946,6 +1944,12 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
     }
     return out
   }, [cells, dims])
+
+  // After every hook, never before one. This guard used to sit above the
+  // layout memo, so an empty portfolio ran six hooks and a filled one ran
+  // seven — React #310, "rendered more hooks than during the previous
+  // render", which took the whole dashboard down behind an error card.
+  if (!cells.length) return null
 
   const upCount   = cells.filter(c => c.chg > 0.5).length
   const downCount = cells.filter(c => c.chg < -0.5).length
