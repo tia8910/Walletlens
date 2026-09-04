@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useLanguage } from '../LanguageContext'
 import { useTheme } from '../ThemeContext'
 import Icon from './Icon'
+import { dataUrl } from '../apiHosts.js'
 
 // Weighted keyword lists for sentiment scoring
 const BULLISH = [
@@ -165,7 +166,7 @@ const RSS_FEEDS = [
 async function fetchHeadlines() {
   // 1. Try cached /news.json
   try {
-    const res = await fetch('/news.json?t=' + Math.floor(Date.now() / 3600000))
+    const res = await fetch(dataUrl('news.json') + '?t=' + Math.floor(Date.now() / 3600000))
     if (res.ok) {
       const d = await res.json()
       if (d.articles?.length) return d.articles

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { VOICE_HOST, PUSH_HOST, VOICE_API, PUSH_API, voiceProxy } from './apiHosts.js'
+import { VOICE_HOST, PUSH_HOST, DATA_HOST, VOICE_API, PUSH_API, DATA_API, voiceProxy, dataUrl } from './apiHosts.js'
 
 // The backend hosts were string literals in twenty-odd files. Moving off Deno
 // Deploy was therefore a search-and-replace, where missing one site fails at
@@ -58,6 +58,14 @@ describe('apiHosts', () => {
     expect(VOICE_API).toBe(`https://${VOICE_HOST}/`)
     expect(PUSH_API).toBe(`https://${PUSH_HOST}`)
     expect(PUSH_API.endsWith('/')).toBe(false)
+    expect(DATA_API).toBe(`https://${DATA_HOST}`)
+  })
+
+  it('builds a dataset URL under the filename it had as a static asset', () => {
+    // Call sites fetched '/market.json' when this was a file the build
+    // shipped. Only the origin moved, so a changed filename here would
+    // silently 404 against a service that still serves the old name.
+    expect(dataUrl('market.json')).toBe(`https://${DATA_HOST}/market.json`)
   })
 
   it('builds a proxy URL with the target encoded', () => {
@@ -73,7 +81,9 @@ describe('no call site hardcodes a backend host', () => {
       const rel = relative(CLIENT, file)
       if (rel.endsWith('src/apiHosts.js') || rel.endsWith('src/apiHosts.test.js')) continue
       const text = readFileSync(file, 'utf8')
-      if (text.includes(VOICE_HOST) || text.includes(PUSH_HOST)) offenders.push(rel)
+      if (text.includes(VOICE_HOST) || text.includes(PUSH_HOST) || text.includes(DATA_HOST)) {
+        offenders.push(rel)
+      }
     }
     // A failure here means a new call site hardcoded a host, and will keep
     // talking to the old service after the next move.
@@ -95,6 +105,7 @@ describe('the places that cannot import apiHosts.js', () => {
     const html = read('index.html')
     expect(cspAdmits(html, VOICE_HOST)).toBe(true)
     expect(cspAdmits(html, PUSH_HOST)).toBe(true)
+    expect(cspAdmits(html, DATA_HOST)).toBe(true)
   })
 
   it('admits both hosts in the _headers CSP that Pages actually serves', () => {
@@ -104,6 +115,7 @@ describe('the places that cannot import apiHosts.js', () => {
     const headers = read('public/_headers')
     expect(cspAdmits(headers, VOICE_HOST)).toBe(true)
     expect(cspAdmits(headers, PUSH_HOST)).toBe(true)
+    expect(cspAdmits(headers, DATA_HOST)).toBe(true)
   })
 
   it('caches the proxy in the service worker under the current host', () => {
@@ -113,8 +125,17 @@ describe('the places that cannot import apiHosts.js', () => {
     expect(read('public/sw.js')).toContain(VOICE_HOST)
   })
 
+  it('matches the data origin in the service worker', () => {
+    // The runtime cache for the scheduled datasets is gated on this origin.
+    // These used to be same-origin files, so a stale constant here does not
+    // error — it just stops matching, and every feed poll round-trips.
+    expect(read('public/sw.js')).toContain(`const DATA_ORIGIN = 'https://${DATA_HOST}'`)
+  })
+
   it('preconnects to the host the app actually calls', () => {
-    expect(read('index.html')).toContain(`<link rel="preconnect" href="https://${VOICE_HOST}"`)
+    const html = read('index.html')
+    expect(html).toContain(`<link rel="preconnect" href="https://${VOICE_HOST}"`)
+    expect(html).toContain(`<link rel="preconnect" href="https://${DATA_HOST}"`)
   })
 
   it('keeps the voice worker\'s own SELF_ORIGIN on the same host', () => {
@@ -132,7 +153,7 @@ describe('the places that cannot import apiHosts.js', () => {
     const html = read('index.html')
     const hinted = [...html.matchAll(/rel="(?:preconnect|dns-prefetch)" href="https:\/\/([^"]+)"/g)]
       .map((m) => m[1])
-      .filter((h) => h.endsWith('deno.net') || h.endsWith('workers.dev'))
-    for (const h of hinted) expect([VOICE_HOST, PUSH_HOST]).toContain(h)
+      .filter((h) => h.endsWith('deno.net') || h.endsWith('deno.dev') || h.endsWith('workers.dev'))
+    for (const h of hinted) expect([VOICE_HOST, PUSH_HOST, DATA_HOST]).toContain(h)
   })
 })

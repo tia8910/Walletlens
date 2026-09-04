@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useMemo } from 'react'
 import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
 import { translateBatch } from '../translateText'
+import { dataUrl } from '../apiHosts.js'
 
 function timeAgo(pubDate) {
   if (!pubDate) return ''
@@ -154,7 +155,7 @@ export default function NewsTicker() {
       // workflow (crypto → /news.json, stocks → /stocks.json, economy →
       // /economy.json). Loading that is instant and CORS-free; only if it's
       // missing/empty do we fall back to slow in-browser RSS proxying.
-      const CACHE_FILE = { crypto: '/news.json', stocks: '/stocks.json', economy: '/economy.json' }
+      const CACHE_FILE = { crypto: dataUrl('news.json'), stocks: dataUrl('stocks.json'), economy: dataUrl('economy.json') }
       const cacheUrl = CACHE_FILE[category]
       if (cacheUrl) {
         try {

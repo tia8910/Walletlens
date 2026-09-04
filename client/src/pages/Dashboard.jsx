@@ -1849,208 +1849,53 @@ const StatCard = memo(function StatCard({ label, value, sub, color, tone, spark 
 // ── Portfolio Heatmap (dynamic treemap, fills card) ─────────────────────
 const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, totalValue }) {
   const { t } = useLanguage()
-  const gridRef = useRef(null)
-  const [dims, setDims] = useState({ w: 340, h: 300 })
-  const [tick, setTick] = useState(0)
+  const cells = enriched
+    .filter(h => h.value > 0)
+    .map(h => {
+      const chg = prices[h.coin_id]?.usd_24h_change ?? 0
+      const sizePct = totalValue > 0 ? (h.value / totalValue) * 100 : 0
+      const intensity = Math.min(Math.abs(chg) / 15, 1)
+      const color = chg > 0
+        ? intensity < 0.35 ? `rgba(74,222,128,${0.28 + intensity * 0.4})` : intensity < 0.7 ? `rgba(34,197,94,${0.42 + intensity * 0.35})` : `rgba(22,163,74,${0.6 + intensity * 0.3})`
+        : chg < 0
+          ? intensity < 0.35 ? `rgba(248,113,113,${0.28 + intensity * 0.4})` : intensity < 0.7 ? `rgba(239,68,68,${0.42 + intensity * 0.35})` : `rgba(220,38,38,${0.6 + intensity * 0.3})`
+          : 'rgba(255,255,255,0.06)'
+      return { ...h, chg, sizePct, color }
+    })
+    .sort((a, b) => b.sizePct - a.sizePct)
 
-  // Re-measure on mount/resize + drive ambient animations continuously
-  useEffect(() => {
-    if (!gridRef.current) return
-    const el = gridRef.current
-    const measure = () => {
-      const w = el.clientWidth
-      if (w > 0) setDims({ w, h: Math.max(240, Math.min(Math.round(w * 0.82), 360)) })
-    }
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
-  // Continuous heartbeat — keeps the map "alive" even when prices are flat
-  useEffect(() => {
-    const id = setInterval(() => setTick(n => n + 1), 1600)
-    return () => clearInterval(id)
-  }, [])
-
-  const cells = useMemo(() => {
-    const arr = enriched
-      .filter(h => h.value > 0)
-      .map(h => {
-        const chg = prices[h.coin_id]?.usd_24h_change ?? 0
-        const sizePct = totalValue > 0 ? (h.value / totalValue) * 100 : 0
-        const intensity = Math.min(Math.abs(chg) / 12, 1)
-        let color
-        if (chg > 0)      color = intensity < 0.4 ? `rgba(45,212,191,${0.5 + intensity * 0.35})`
-                        : intensity < 0.75 ? `rgba(16,185,129,${0.7 + intensity * 0.2})`
-                        : 'rgba(5,150,105,0.98)'
-        else if (chg < 0) color = intensity < 0.4 ? `rgba(251,113,133,${0.5 + intensity * 0.35})`
-                        : intensity < 0.75 ? `rgba(244,63,94,${0.7 + intensity * 0.2})`
-                        : 'rgba(225,29,72,0.98)'
-        else color = 'rgba(100,116,139,0.4)'
-        const isMover = Math.abs(chg) >= 2
-        return { ...h, chg, sizePct, color, isMover, intensity }
-      })
-      .sort((a, b) => b.sizePct - a.sizePct)
-    return arr
-  }, [enriched, prices, totalValue])
-
-  // Squarified treemap layout (0..1 space)
-  const layout = useMemo(() => {
-    const total = cells.reduce((s, c) => s + c.sizePct, 0)
-    if (total <= 0) return cells.map(() => ({}))
-    const arr = cells.map((c, i) => ({ ...c, i, v: c.sizePct }))
-    const out = []
-    function worst(rows, area, remTot, side) {
-      let w = 0
-      const rowLen = area / side
-      rows.forEach(r => {
-        const frac = r.v / remTot
-        const len = (frac * total * dims.w * dims.h) / rowLen
-        const ratio = Math.max(rowLen / len, len / rowLen)
-        if (ratio > w) w = ratio
-      })
-      return w
-    }
-    let cx = 0, cy = 0, cw = 1, ch = 1
-    let rest = [...arr]
-    while (rest.length) {
-      const remTotal = rest.reduce((s, r) => s + r.v, 0)
-      const isWide = cw >= ch
-      const side = isWide ? ch : cw
-      let row = [rest[0]]
-      const rowArea = (rest[0].v / remTotal) * total
-      while (true) {
-        if (row.length === rest.length) break
-        const cand = [...row, rest[row.length]]
-        const candArea = rowArea + (rest[row.length].v / remTotal) * total
-        if (worst(cand, candArea, remTotal, side) <= worst(row, rowArea, remTotal, side)) {
-          row = cand
-        } else break
-      }
-      const rowFrac = row.reduce((s, r) => s + r.v, 0) / remTotal
-      const rowLen = (rowFrac * total) / side
-      let off = 0
-      for (const r of row) {
-        const frac = r.v / remTotal
-        const len = (frac * total) / rowLen
-        if (isWide) out.push({ i: r.i, x: cx, y: cy + off, w: rowLen, h: len })
-        else out.push({ i: r.i, x: cx + off, y: cy, w: len, h: rowLen })
-        off += len
-      }
-      if (isWide) { cx += rowLen; cw -= rowLen }
-      else { cy += rowLen; ch -= rowLen }
-      rest = rest.filter(r => !row.includes(r))
-    }
-    return out
-  }, [cells, dims])
-
-  // After every hook, never before one. This guard used to sit above the
-  // layout memo, so an empty portfolio ran six hooks and a filled one ran
-  // seven — React #310, "rendered more hooks than during the previous
-  // render", which took the whole dashboard down behind an error card.
   if (!cells.length) return null
 
-  const upCount   = cells.filter(c => c.chg > 0.5).length
-  const downCount = cells.filter(c => c.chg < -0.5).length
-  const topMover = [...cells].sort((a, b) => Math.abs(b.chg) - Math.abs(a.chg))[0]
-  // Overall portfolio "heat index" — weighted net momentum
-  const netMomentum = cells.reduce((s, c) => s + (c.chg * c.sizePct) / 100, 0)
-
   return (
-    <div className="glass-card heatmap-card hm-glow" style={{ padding: '1rem', position:'relative', overflow:'hidden' }}>
-      {/* Ambient scan-line shimmer that sweeps the whole map */}
-      <div className="hm-scan" aria-hidden="true" />
-
-      <h3 style={{ margin: '0 0 0.8rem', fontSize: '1rem', fontWeight: 800, display:'flex', alignItems:'center', gap:'0.5em' }}>
-        <Icon name="grid" size={18} style={{ color: 'var(--g-ink)' }} />
-        {t('dsPortfolioHeatmap')}
-        <span className="hm-live-chip" style={{ display:'inline-flex', alignItems:'center', gap:'0.35em', marginLeft:'auto', fontSize:'0.66rem', fontWeight:700, background: netMomentum >= 0 ? 'rgba(16,185,129,0.18)' : 'rgba(244,63,94,0.18)', color: netMomentum >= 0 ? '#10b981' : '#f43f5e', borderRadius:999, padding:'0.2rem 0.55rem' }}>
-          <span className="hm-live-dot" /> LIVE&nbsp;·&nbsp;{netMomentum >= 0 ? '+' : ''}{netMomentum.toFixed(1)}%
-        </span>
-      </h3>
-
-      {/* Top mover banner */}
-      {topMover && Math.abs(topMover.chg) >= 2 && (
-        <div className="hm-mover-banner" style={{
-          display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.7rem',
-          padding:'0.5rem 0.75rem', borderRadius:'0.6rem', fontSize:'0.75rem', fontWeight:600,
-          background: 'linear-gradient(90deg, rgba(16,185,129,0.14), rgba(16,185,129,0.02))',
-          color: topMover.chg > 0 ? '#34d399' : '#fb7185',
-          borderLeft: `3px solid ${topMover.chg > 0 ? '#10b981' : '#f43f5e'}`,
-        }}>
-          <span style={{ fontSize:'1rem' }}>{topMover.chg > 0 ? '▲' : '▼'}</span>
-          <span className={topMover.chg > 0 ? 'hm-ticker-up' : 'hm-ticker-down'} style={{ fontWeight:800 }}>
-            {topMover.coin_symbol?.toUpperCase()}
-          </span>
-          <span>#1 mover</span>
-          <span style={{ marginLeft:'auto', fontWeight:800 }}>
-            {topMover.chg >= 0 ? '+' : ''}{topMover.chg.toFixed(1)}%
-          </span>
-        </div>
-      )}
-
-      {/* Treemap container fills the card */}
-      <div ref={gridRef} className="hm-treemap" style={{ position:'relative', width:'100%', height: dims.h, borderRadius:'0.7rem', overflow:'hidden', background:'rgba(255,255,255,0.03)' }}>
-        {layout.map(({ i, x, y, w, h }) => {
-          const c = cells[i]
-          if (!c) return null
-          const W = w * dims.w, H = h * dims.h
-          const showSym = W > 34 && H > 26
-          const showChg = W > 52 && H > 40
-          const showShare = W > 72 && H > 56
-          // Alternate breathing phase per tile so the map "ripples" organically
-          const phase = (c.coin_id.length % 3) * 0.5
+    <div className="glass-card heatmap-card">
+      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 700, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('dsPortfolioHeatmap')}</h3>
+      <div className="heatmap-grid">
+        {cells.map((c, i) => {
+          const minSize = 60
+          const size = Math.max(minSize, Math.min(180, (c.sizePct / 100) * 800))
           return (
             <div
               key={c.coin_id}
-              className={`heatmap-cell${c.isMover ? ' hm-pulse' : ' hm-breathe'}`}
-              style={{
-                position:'absolute', left: x*dims.w, top: y*dims.h, width: W, height: H,
-                background: c.color,
-                animation: c.isMover
-                  ? `hmPulse ${0.9 + Math.abs(c.chg)*0.05}s ease-in-out ${phase}s infinite`
-                  : `hmBreathe 3.2s ease-in-out ${phase}s infinite`,
-                alignItems:'center', justifyContent:'center', display:'flex', flexDirection:'column',
-                boxShadow: c.isMover ? `inset 0 0 0 1px rgba(255,255,255,0.18), 0 0 ${8 + c.intensity*14}px rgba(80,220,200,0.35)` : 'inset 0 0 0 1px rgba(255,255,255,0.08)',
-              }}
+              className="heatmap-cell"
+              style={{ background: c.color, width: size, height: size }}
               title={`${c.coin_symbol?.toUpperCase()} — ${c.sizePct.toFixed(1)}% · ${c.chg >= 0 ? '+' : ''}${c.chg.toFixed(2)}%`}
             >
-              {c.isMover && <div className="hm-mover-badge" style={{ position:'absolute', top:3, right:3, fontSize:'0.55rem', background:'rgba(0,0,0,0.55)', borderRadius:5, padding:'1px 5px', color:'#fff', fontWeight:800 }}>{Math.abs(c.chg) >= 8 ? '⚡' : '▲'}</div>}
-              {showSym && (
-                <>
-                  <CoinLogo image={c.coin_image} symbol={c.coin_symbol} coinId={c.coin_id} size={Math.max(14, Math.min(30, Math.round(W * 0.28)))} className="heatmap-img" />
-                  <div className="heatmap-sym" style={{ fontSize: W < 70 ? '0.62rem' : '0.85rem', marginTop:'0.1rem' }}>{c.coin_symbol?.toUpperCase()}</div>
-                </>
-              )}
-              {showChg && (
-                <div className={`heatmap-chg ${c.chg >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: W < 70 ? '0.55rem' : '0.72rem', fontWeight:800, marginTop:'0.1rem' }}>
-                  {c.chg >= 0 ? '+' : ''}{c.chg.toFixed(1)}%
-                </div>
-              )}
-              {showShare && (
-                <div className="heatmap-pct" style={{ fontSize:'0.58rem', opacity:0.85, marginTop:2 }}>{c.sizePct.toFixed(1)}%</div>
+              <CoinLogo image={c.coin_image} symbol={c.coin_symbol} coinId={c.coin_id} size={Math.min(28, Math.floor(size * 0.35))} className="heatmap-img" />
+              <div className="heatmap-sym" style={{ fontSize: size < 80 ? '0.6rem' : '0.75rem' }}>{c.coin_symbol?.toUpperCase()}</div>
+              <div className={`heatmap-chg ${c.chg >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: size < 80 ? '0.55rem' : '0.7rem' }}>
+                {c.chg >= 0 ? '+' : ''}{c.chg.toFixed(1)}%
+              </div>
+              {size >= 90 && (
+                <div className="heatmap-pct" style={{ fontSize: '0.58rem', opacity: 0.7, marginTop: 2 }}>{t('dsPortfolioShare')(c.sizePct.toFixed(1))}</div>
               )}
             </div>
           )
         })}
       </div>
-
-      {/* Legend + heat bar */}
-      <div className="heatmap-legend" style={{ marginTop:'0.7rem', paddingTop:'0.5rem', borderTop:'1px solid rgba(255,255,255,0.08)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <span>
-          <span style={{ color:'rgba(16,185,129,0.95)', fontWeight:700 }}>{upCount} ▲</span>
-          <span style={{ margin:'0 0.5rem', color:'var(--text-sub)' }}>·</span>
-          <span style={{ color:'rgba(244,63,94,0.95)', fontWeight:700 }}>{downCount} ▼</span>
-        </span>
-        <span style={{ color:'var(--text-sub)', fontSize:'0.62rem' }}>{t('dsDarkerBigger')}</span>
-      </div>
-
-      {/* Momentum heat bar */}
-      <div style={{ marginTop:'0.55rem', height:'6px', borderRadius:'999px', overflow:'hidden', display:'flex', background:'rgba(15,23,42,0.6)' }}>
-        <div style={{ flex: `${Math.max(0, upCount)}`, background:'linear-gradient(90deg,#0d9488,#34d399)' }} />
-        {downCount > 0 && upCount > 0 && <div style={{ width:'2px', background:'rgba(255,255,255,0.35)' }} />}
-        <div style={{ flex: `${Math.max(0, downCount)}`, background:'linear-gradient(90deg,#fb7185,#e11d48)' }} />
+      <div className="heatmap-legend">
+        <span style={{ color:'rgba(248,113,113,0.9)' }}>■ {t('dsLosing')}</span>
+        <span style={{ color:'var(--text-sub)' }}>{t('dsDarkerBigger')}</span>
+        <span style={{ color:'rgba(var(--g-rgb),0.9)' }}>■ {t('dsGaining')}</span>
       </div>
     </div>
   )
@@ -5497,7 +5342,7 @@ export default function Dashboard() {
               </div>
 
               {/* Portfolio Heatmap */}
-              {cardVis.portfolio_heatmap && enriched.length >= 1 && !pricesFailed && (
+              {cardVis.portfolio_heatmap && !isDemo && enriched.length >= 2 && !pricesFailed && (
                 <PortfolioHeatmap enriched={enriched} prices={prices} totalValue={totalValue} />
               )}
 

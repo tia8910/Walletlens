@@ -17,7 +17,7 @@ async function fetchStaticStockPrices() {
   const now = Date.now()
   if (staticStockPrices && now - staticStockPricesTime < STATIC_PRICES_TTL) return staticStockPrices
   try {
-    const res = await fetchWithTimeout('/stock-prices.json', 5000)
+    const res = await fetchWithTimeout(dataUrl('stock-prices.json'), 5000)
     if (res.ok) {
       const data = await res.json()
       if (data?.prices && typeof data.prices === 'object') {
@@ -46,7 +46,7 @@ import {
 } from './data/storage';
 import { foldBalances as _foldBalancesPure, diffHoldings } from './data/portfolio';
 import { analyzeTechnicals } from './technicals';
-import { voiceProxy } from './apiHosts.js'
+import { dataUrl, voiceProxy } from './apiHosts.js'
 
 export {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
@@ -397,7 +397,7 @@ async function _loadStaticMarket() {
   const now = Date.now();
   if (_staticMarket && now - _staticMarketAt < 10 * 60_000) return _staticMarket;
   try {
-    const res = await fetchWithTimeout('/market.json?t=' + Math.floor(now / 1_800_000), 5000);
+    const res = await fetchWithTimeout(dataUrl('market.json') + '?t=' + Math.floor(now / 1_800_000), 5000);
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data?.coins) && data.coins.length > 0) {
@@ -2859,7 +2859,7 @@ export const api = {
   getEconomicCalendar: async () => {
     try {
       const res = await fetchWithTimeout(
-        '/economic-calendar.json?t=' + Math.floor(Date.now() / 1_800_000),
+        dataUrl('economic-calendar.json') + '?t=' + Math.floor(Date.now() / 1_800_000),
         5000
       )
       if (res.ok) {

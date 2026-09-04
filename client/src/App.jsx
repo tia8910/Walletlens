@@ -19,7 +19,6 @@ import Logo from './components/Logo'
 import Icon from './components/Icon'
 import BottomNav from './components/BottomNav'
 import PullToRefresh from './components/PullToRefresh'
-import GitHubStarButton from './components/GitHubStarButton'
 // Non-critical shell components — lazy-loaded after the app shell renders
 const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
 const AssistantChat = lazy(() => import('./components/AssistantChat'))
@@ -769,7 +768,6 @@ export default function App() {
       </PullToRefresh>
 
       <AppFooter />
-      <GitHubStarButton />
 
       {!isLanding && isStandalone && shellReady && <BottomNav />}
 

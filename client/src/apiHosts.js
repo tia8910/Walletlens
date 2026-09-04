@@ -17,10 +17,29 @@
 export const VOICE_HOST = 'walletlens-voice.tarek-abdelhameed.workers.dev'
 export const PUSH_HOST = 'walletlens-push.tarek-abdelhameed.workers.dev'
 
+// The scheduled datasets — market, news, stocks, economy, the economic
+// calendar and stock prices. These used to be static files the Pages build
+// shipped, refreshed by four GitHub Actions cron jobs that committed JSON into
+// client/public/. That made a price refresh a deploy and stopped dead the day
+// Actions did, so they moved to a Deno Deploy service that fetches on its own
+// schedule. Must match the Deno Deploy project name.
+export const DATA_HOST = 'walletlens-data.deno.dev'
+
 // The trailing slash on one and not the other is what the call sites already
 // expected; both shapes are preserved so this change stays a pure refactor.
 export const VOICE_API = `https://${VOICE_HOST}/`
 export const PUSH_API = `https://${PUSH_HOST}`
+
+export const DATA_API = `https://${DATA_HOST}`
+
+/**
+ * A scheduled dataset, by the filename it had when it was a static asset.
+ *
+ * Call sites used to fetch these same-origin ('/market.json'), so the names
+ * are unchanged and only the origin moved. Keeping the filenames means the
+ * service, the service worker and every call site still agree on one word.
+ */
+export const dataUrl = (name) => `${DATA_API}/${name}`
 
 /** The voice service's CORS proxy, used for prices, logos and RSS. */
 export const voiceProxy = (url) => `${VOICE_API}proxy?url=${encodeURIComponent(url)}`
