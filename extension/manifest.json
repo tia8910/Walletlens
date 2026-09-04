@@ -3,7 +3,7 @@
   "name": "WalletLens: Net Worth & Portfolio Tracker",
   "short_name": "WalletLens",
   "version": "1.5.1",
-  "description": "Your whole net worth in your toolbar: crypto, stocks, gold, cash. AI screenshot and voice import. Free, private, no account.",
+  "description": "Your whole net worth in your toolbar: crypto, stocks, gold, property, cash. AI screenshot and voice import. Free, no account.",
   "icons": {
     "16": "icons/icon-16.png",
     "48": "icons/icon-48.png",

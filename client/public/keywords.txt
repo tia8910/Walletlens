@@ -151,3 +151,19 @@ net worth tracker with gold and silver
 portfolio tracker with price alerts
 portfolio tracker with tax report
 zakat calculator portfolio
+
+## Whole-net-worth / non-crypto assets
+# The house is usually the biggest thing a person owns, and most trackers
+# cannot hold it. These are low-competition and high-intent.
+net worth tracker with real estate
+net worth tracker including property
+track property and crypto together
+portfolio tracker with real estate
+portfolio tracker for all assets
+track all my assets in one app
+total net worth calculator app
+track house stocks and crypto
+bond portfolio tracker
+track physical gold and silver
+alternative assets tracker
+track art and collectibles value

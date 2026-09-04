@@ -9,12 +9,12 @@
 WalletLens: Net Worth Tracker
 
 ## Short description (max 80)
-Net worth and portfolio tracker: crypto, stocks, gold, cash. No account needed.
+Net worth & portfolio tracker: crypto, stocks, gold, property, cash. No account.
 
 ## Full description (max 4000)
 One number for everything you own.
 
-WalletLens is a free net worth and portfolio tracker. It holds your crypto, stocks, ETFs, gold, silver and cash in one view, with live prices, real profit and loss, and allocation that updates as the market moves.
+WalletLens is a free net worth and portfolio tracker that takes anything you own. Crypto, stocks and ETFs, gold and silver, cash, bonds, your house, the watch in the drawer. It all sits in one view, with live prices, real profit and loss, and allocation that updates as the market moves.
 
 No account. No sign-up. No bank or exchange login. Your holdings stay on your device, not on our servers.
 
@@ -25,15 +25,19 @@ ADD YOUR PORTFOLIO IN UNDER A MINUTE
 • Spreadsheet import. Drop in an Excel or CSV export and map the columns once.
 • Manual entry, for when you just want to add one thing.
 
-EVERY ASSET CLASS, NOT ONLY CRYPTO
+EVERYTHING YOU OWN, NOT ONLY CRYPTO
 
 • Crypto: 10,000+ coins with live prices, profit and loss, and allocation
 • Stocks and ETFs: live quotes and performance
 • Precious metals: gold, silver, platinum
 • Cash and fiat: balances across currencies
-• Real estate, bonds, and anything else you hold
+• Property: your home, a rental, land you are sitting on
+• Bonds: treasuries, I-bonds, anything with a face value
+• Anything else: art, a watch collection, a stake in a private business
 
-Most trackers cover crypto or stocks. This covers your whole net worth.
+If it has a value, you can record it, and it counts toward your net worth.
+
+Most trackers stop at crypto or stocks. For most people the house is the largest thing they own, and leaving it out makes the number meaningless.
 
 SEE WHAT YOUR PORTFOLIO IS ACTUALLY DOING
 

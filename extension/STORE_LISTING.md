@@ -11,7 +11,7 @@ WalletLens: Net Worth & Portfolio Tracker
 
 ## Short description (max 132, pulled from manifest.json `description`)
 
-Your whole net worth in your toolbar: crypto, stocks, gold, cash. AI screenshot and voice import. Free, private, no account.
+Your whole net worth in your toolbar: crypto, stocks, gold, property, cash. AI screenshot and voice import. Free, no account.
 
 ---
 
@@ -19,7 +19,7 @@ Your whole net worth in your toolbar: crypto, stocks, gold, cash. AI screenshot 
 
 Open your browser and know exactly what you are worth.
 
-WalletLens puts your entire net worth behind one click in your toolbar: crypto, US stocks and ETFs, gold, silver, cash and fiat. Not only coins. Everything, live, in a single number.
+WalletLens puts your entire net worth behind one click in your toolbar. Crypto, US stocks and ETFs, gold and silver, cash, bonds, your house, the watch in the drawer. Not only coins. Everything you own, live, in a single number.
 
 Free. No account. No sign-up. Your holdings never leave your browser.
 
@@ -27,7 +27,7 @@ WHY PEOPLE SWITCH
 
 • Screenshot import. Photograph your holdings in any exchange, broker or wallet and AI reads them into your portfolio. It works with Binance, Coinbase, Kraken, Robinhood, MetaMask, a broker statement, even a handwritten list. No CSV wrangling, no API keys, nothing connected.
 • Voice import. Say "half a Bitcoin and twenty Apple shares" and it's added. English and Arabic.
-• One net worth, every asset class. Crypto, stocks, precious metals and cash in a single dashboard. Most trackers cover crypto or stocks. This covers the whole picture.
+• Anything you own, in one number. Crypto, stocks, metals, cash, bonds, property, and whatever else you hold. If it has a value, you can record it. Most trackers stop at crypto or stocks, which leaves out the house, and for most people that is the largest thing they own.
 • Nothing to link. No bank login, no exchange API, no wallet signature. Nothing can leak, because nothing is connected.
 
 IN THE TOOLBAR
