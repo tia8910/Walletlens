@@ -1,0 +1,43 @@
+name = "walletlens-data"
+main = "index.js"
+compatibility_date = "2026-06-21"
+
+# Replaces four GitHub Actions cron jobs — update-market, update-news,
+# update-economy-calendar and update-stock-prices — which fetched public feeds,
+# committed JSON into client/public/ and required a site rebuild for the data
+# to reach anyone. See index.js for why the schedule collapsed to one trigger.
+
+# The cache. Create it once before the first deploy:
+#   npx wrangler kv namespace create DATA
+# then paste the printed id below. Nothing here is secret: every byte in this
+# namespace is public market data the worker serves unauthenticated.
+[[kv_namespaces]]
+binding = "DATA"
+id = "PASTE_KV_NAMESPACE_ID_HERE"
+
+# Every fifteen minutes. This is a staleness sweep, not a fetch — each dataset
+# carries its own maxAge in index.js and most ticks do nothing but read KV, so
+# the frequency costs almost nothing and buys prompt retries when an upstream
+# feed is briefly down.
+[triggers]
+crons = ["*/15 * * * *"]
+
+# The paths the app already fetches. A Worker route wins over Cloudflare Pages
+# on a matching path, so these take over from the static files the Pages build
+# ships without any change to the client.
+#
+# LEFT COMMENTED OUT DELIBERATELY — uncomment as the LAST step of the first
+# deploy, after /__health confirms the worker can reach the upstreams.
+#
+# ORDER OF OPERATIONS MATTERS ON FIRST DEPLOY. The moment a route is live the
+# Pages copy of that path is unreachable, so the worker must be able to answer
+# immediately — it can, because serve() fetches inline on a cold KV. Deploy the
+# worker first, confirm /__health, then add the routes.
+# routes = [
+#   { pattern = "walletlens.live/market.json",            zone_name = "walletlens.live" },
+#   { pattern = "walletlens.live/news.json",              zone_name = "walletlens.live" },
+#   { pattern = "walletlens.live/stocks.json",            zone_name = "walletlens.live" },
+#   { pattern = "walletlens.live/economy.json",           zone_name = "walletlens.live" },
+#   { pattern = "walletlens.live/economic-calendar.json", zone_name = "walletlens.live" },
+#   { pattern = "walletlens.live/stock-prices.json",      zone_name = "walletlens.live" },
+# ]
