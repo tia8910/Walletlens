@@ -2,9 +2,9 @@ name: Deploy Web to Cloudflare Pages
 
 # Builds the React client and uploads client/dist to Cloudflare Pages.
 #
-# THE PROJECT IS walletlenslive1, NOT walletlens.
+# THE PROJECT IS 'walletlenslive1', NOT walletlens.
 # There are two Pages projects on the account — walletlenslive and
-# walletlenslive1 — and only walletlenslive1 carries the walletlens.live
+# 'walletlenslive1' — and only 'walletlenslive1' carries the walletlens.live
 # custom domain. A deploy to the wrong one SUCCEEDS and changes nothing a
 # visitor can see, which is the worst possible failure mode: green tick, stale
 # site. The default below is the live one; CLOUDFLARE_PAGES_PROJECT still
@@ -13,7 +13,7 @@ name: Deploy Web to Cloudflare Pages
 # THIS IS A DIRECT UPLOAD, AND THAT IS MUTUALLY EXCLUSIVE WITH GIT INTEGRATION.
 # Cloudflare Pages projects are either Git-connected (Cloudflare clones the
 # repo and builds it) or direct-upload (wrangler pushes a built directory).
-# walletlenslive1 was Git-connected and has been disconnected so this workflow
+# 'walletlenslive1' was Git-connected and has been disconnected so this workflow
 # can drive it. Reconnecting Git in the Cloudflare dashboard would break this
 # workflow, so do one or the other — never both.
 #
@@ -114,4 +114,4 @@ jobs:
           # --branch=main is what makes this a PRODUCTION deployment. Without
           # it the upload lands as a preview on a random *.pages.dev hostname
           # and the custom domain keeps serving the previous build.
-          command: pages deploy client/dist --project-name=${{ secrets.CLOUDFLARE_PAGES_PROJECT || 'walletlenslive1' }} --branch=main
+          command: pages deploy client/dist --project-name=walletlenslive1 --branch=main
