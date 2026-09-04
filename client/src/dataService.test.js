@@ -439,6 +439,40 @@ describe('serve', () => {
     }
   })
 
+  it('refreshes a stale copy on read, so cron is an optimisation not a requirement', async () => {
+    // Deno Deploy playgrounds, and plans without cron, would otherwise fill
+    // the store once and serve that snapshot forever — the exact failure this
+    // service exists to end.
+    const store = fakeStore({ 'market.json': agedBy(24 * 60 * 60 * 1000) })
+    const spec = DATASETS['market.json']
+    const original = spec.fetch
+    try {
+      spec.fetch = async (now) => ({ updated: isoStamp(now), count: 250, coins: [] })
+      const res = await serve(store, 'market.json', NOW)
+      expect(res.status).toBe(200)
+      expect((await res.json()).count).toBe(250)
+      expect(store.writes).toEqual(['market.json'])
+    } finally {
+      spec.fetch = original
+    }
+  })
+
+  it('serves the stale copy when the refresh it triggers fails', async () => {
+    // Degrading to old data beats degrading to a hole: the upstream being
+    // down must not turn a served page into an error.
+    const store = fakeStore({ 'market.json': agedBy(24 * 60 * 60 * 1000) })
+    const spec = DATASETS['market.json']
+    const original = spec.fetch
+    try {
+      spec.fetch = async () => null
+      const res = await serve(store, 'market.json', NOW)
+      expect(res.status).toBe(200)
+      expect(store.writes, 'a failed refresh must not overwrite').toEqual([])
+    } finally {
+      spec.fetch = original
+    }
+  })
+
   it('503s rather than inventing an empty envelope when it has nothing at all', async () => {
     // An authoritative-looking empty list is worse than an error: the client
     // has its own fallback path and can show the last data it holds.

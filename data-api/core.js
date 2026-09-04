@@ -99,17 +99,26 @@ function json(body, status, cache) {
 }
 
 /**
- * Serve one dataset.
+ * Serve one dataset, refreshing it inline if it is missing or stale.
  *
- * On a miss this fetches inline rather than erroring. The app asks for these
- * on first paint, so a cold store would otherwise show empty news and an
- * empty market page to whoever arrived first after a deploy — and the cost of
- * avoiding that is one slow request, once.
+ * On a miss this fetches rather than erroring. The app asks for these on
+ * first paint, so a cold store would otherwise show empty news and an empty
+ * market page to whoever arrived first after a deploy.
+ *
+ * A failed upstream still serves the previous value, because refresh() keeps
+ * it — so a stale read degrades to stale data, never to a hole.
  */
 export async function serve(store, name, now = Date.now()) {
+  const spec = DATASETS[name]
   let stored = await store.read(name)
 
-  if (!stored) {
+  // Refresh on read when the schedule has not. The cron sweep is the fast
+  // path, not the only one: a deploy without cron — a playground, or a plan
+  // that does not offer it — would otherwise fill the store once and serve
+  // that snapshot forever, which is the exact failure this service exists to
+  // end. Costs one slow request per maxAge window; the edge cache above
+  // absorbs the rest.
+  if (!stored || (spec && isStale(stored, spec.maxAge, now))) {
     await refresh(store, name, { now, force: true })
     stored = await store.read(name)
   }
