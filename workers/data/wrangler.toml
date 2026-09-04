@@ -33,11 +33,11 @@ crons = ["*/15 * * * *"]
 # Pages copy of that path is unreachable, so the worker must be able to answer
 # immediately — it can, because serve() fetches inline on a cold KV. Deploy the
 # worker first, confirm /__health, then add the routes.
-# routes = [
-#   { pattern = "walletlens.live/market.json",            zone_name = "walletlens.live" },
-#   { pattern = "walletlens.live/news.json",              zone_name = "walletlens.live" },
-#   { pattern = "walletlens.live/stocks.json",            zone_name = "walletlens.live" },
-#   { pattern = "walletlens.live/economy.json",           zone_name = "walletlens.live" },
-#   { pattern = "walletlens.live/economic-calendar.json", zone_name = "walletlens.live" },
-#   { pattern = "walletlens.live/stock-prices.json",      zone_name = "walletlens.live" },
-# ]
+routes = [
+  { pattern = "walletlens.live/market.json",            zone_name = "walletlens.live" },
+  { pattern = "walletlens.live/news.json",              zone_name = "walletlens.live" },
+  { pattern = "walletlens.live/stocks.json",            zone_name = "walletlens.live" },
+  { pattern = "walletlens.live/economy.json",           zone_name = "walletlens.live" },
+  { pattern = "walletlens.live/economic-calendar.json", zone_name = "walletlens.live" },
+  { pattern = "walletlens.live/stock-prices.json",      zone_name = "walletlens.live" },
+]
