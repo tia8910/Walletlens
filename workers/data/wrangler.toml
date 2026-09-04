@@ -13,7 +13,7 @@ compatibility_date = "2026-06-21"
 # namespace is public market data the worker serves unauthenticated.
 [[kv_namespaces]]
 binding = "DATA"
-id = "PASTE_KV_NAMESPACE_ID_HERE"
+id = "bf8d773c28a74505867eed6754940915"
 
 # Every fifteen minutes. This is a staleness sweep, not a fetch — each dataset
 # carries its own maxAge in index.js and most ticks do nothing but read KV, so

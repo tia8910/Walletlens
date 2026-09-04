@@ -457,6 +457,17 @@ export async function runSchedule(cron, jobs) {
     // Everything else — stocks cost one request per symbol — plus news.
     await run('moves', () => jobs.checkMoves())
     await run('news', () => jobs.checkNews())
+    // Trigger the data worker's public-market refresh (no own cron triggers).
+    await run('data-refresh', async () => {
+      const url = env.DATA_WORKER_URL
+      if (!url) return
+      const token = env.DATA_REFRESH_TOKEN || ''
+      await fetch(url + '/__refresh', {
+        method: 'POST',
+        headers: { 'x-refresh-token': token },
+        signal: AbortSignal.timeout(15_000),
+      })
+    })
     return
   }
   if (cron === '5 * * * *') {

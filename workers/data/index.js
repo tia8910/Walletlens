@@ -150,6 +150,20 @@ function json(body, status, cache) {
   })
 }
 
+
+/**
+ * Refresh all datasets that are stale. Called by the push worker on its
+ * the push worker's 5-minute schedule, so the data stays fresh without its own cron trgger.
+ */
+async function refreshAll(env, now) {
+  const results = await Promise.all(
+    Object.keys(DATASETS).map(name =>
+      refresh(env, name, { now }).catch(e => ({ name, error: String(e) }))),
+  )
+  const did = results.filter(r => r.updated)
+  if (did.length) console.log('refreshed:', did.map(r => `${r.name}(${r.count})`).join(' '))
+  return results
+}
 export default {
   /**
    * Refresh whatever is due. Every dataset is attempted on every tick; the
@@ -158,14 +172,7 @@ export default {
    */
   async scheduled(event, env, ctx) {
     const now = Date.now()
-    ctx.waitUntil((async () => {
-      const results = await Promise.all(
-        Object.keys(DATASETS).map(name =>
-          refresh(env, name, { now }).catch(e => ({ name, error: String(e) }))),
-      )
-      const did = results.filter(r => r.updated)
-      if (did.length) console.log('refreshed:', did.map(r => `${r.name}(${r.count})`).join(' '))
-    })())
+    ctx.waitUntil(refreshAll(env, now))
   },
 
   async fetch(request, env) {
@@ -173,6 +180,19 @@ export default {
     // Trailing path only, so the same worker answers on the custom domain and
     // on workers.dev without separate route handling.
     const name = url.pathname.replace(/^\//, '')
+
+    if (name === '__refresh' && request.method === 'POST') {
+      // Shared secret from the push worker, set as env DATA_REFRESH_TOKEN
+      const token = env.DATA_REFRESH_TOKEN
+      if (token) {
+        const supplied = request.headers.get('x-refresh-token')
+        if (supplied !== token) return new Response('unauthorized', { status: 401 })
+      }
+      const now = Date.now()
+      const results = await refreshAll(env, now)
+      const summary = results.map(r => `${r.name}:${r.updated ? 'ok' : r.skipped || 'err'}`)
+      return json({ ok: true, results: summary }, 200, 'no-store')
+    }
 
     if (name === '__health') {
       const now = Date.now()
