@@ -1,56 +1,81 @@
-# Chrome Web Store listing — WalletLens Portfolio
+# Chrome Web Store listing — WalletLens
 
-## Short description (132 char max — pulled from manifest.json `description`)
+> Exchange and wallet names below appear only as factual examples of what the
+> screenshot importer reads. No integration, partnership or endorsement is
+> implied or claimed. Descriptive use of a brand is permitted; implying a
+> relationship you do not have is what gets listings removed.
 
-Your whole net worth in your toolbar — crypto, stocks, gold & cash. AI screenshot + voice import. Free, private, no account.
+## Extension name (max 75 — pulled from manifest.json `name`)
+
+WalletLens — Net Worth & Portfolio Tracker
+
+## Short description (max 132 — pulled from manifest.json `description`)
+
+Your whole net worth in your toolbar — crypto, stocks, gold, cash. AI screenshot & voice import. Free, private, no account.
 
 ---
 
-## Detailed description (paste into the "Description" box in the dashboard)
+## Detailed description (paste into the Description box)
 
-See your entire net worth the moment you open your browser.
+Open a new tab and know exactly what you are worth.
 
-WalletLens tracks everything you own — crypto, US stocks & ETFs, gold, silver,
-cash and fiat — in ONE number, right from your toolbar. Not just coins. Your
-real net worth, live, one click away.
+WalletLens puts your entire net worth — crypto, US stocks and ETFs, gold, silver, cash and fiat — behind one click in your toolbar. Not just coins. Everything, live, in a single number.
 
-100% free. No account. No sign-up. Your data never leaves your device.
+Free. No account. No sign-up. Your holdings never leave your browser.
 
-★ WHAT MAKES WALLETLENS DIFFERENT ★
+★ WHY PEOPLE SWITCH TO WALLETLENS ★
 
-• IMPORT BY SCREENSHOT — Snap a photo of your holdings on ANY exchange, broker
-  or wallet (Binance, Coinbase, Robinhood, MetaMask, a broker statement, even a
-  handwritten list) and AI reads it into your portfolio. No CSV. No API keys.
-  No exchange connection. No mainstream tracker does this.
+• IMPORT BY SCREENSHOT — Photograph your holdings on any exchange, broker or wallet and AI reads them into your portfolio. Binance, Coinbase, Kraken, Robinhood, MetaMask, a broker statement, even a handwritten list. No CSV wrangling, no API keys, no account connection.
 
-• ADD HOLDINGS BY VOICE (English & Arabic) — Just say "I have half a Bitcoin
-  and twenty Apple shares" and AI logs it. Hands-free portfolio building.
+• ADD HOLDINGS BY VOICE — Say "half a Bitcoin and twenty Apple shares" and it is logged. English and Arabic.
 
-• ONE NET WORTH, EVERY ASSET — Crypto + stocks + precious metals + cash in a
-  single dashboard. Most trackers do crypto OR stocks. WalletLens does it all.
+• ONE NET WORTH, EVERY ASSET CLASS — Crypto plus stocks plus precious metals plus cash, in one dashboard. Most trackers do crypto OR stocks. This does the whole picture.
 
-★ IN THE EXTENSION ★
+• NOTHING TO CONNECT — No bank login, no exchange API, no wallet signature. Nothing to leak, because nothing is linked.
 
-• Total net worth & 24h change, live in your toolbar
-• Profit / loss per asset, with real coin & asset logos
-• Top holdings at a glance + full holdings list
-• Market data, Fear & Greed index, and per-coin Buy/Hold/Sell signals
-• Crypto news feed
-• Works even when the site isn't open — it syncs automatically
-• Share your performance (in % only — your balance stays private)
+★ IN THE TOOLBAR ★
 
-★ ON WALLETLENS.LIVE (free, no account) ★
+• Total net worth and 24h change, live
+• Profit and loss per asset, with real coin and company logos
+• Top holdings at a glance, plus the full list
+• Market data, Fear & Greed index, and a clear read per crypto holding
+• Market news without leaving the page
+• Syncs automatically — works even when the site is closed
+• Share performance as a percentage only; your balance stays private
 
-• AI Coach — risk analysis and a portfolio health score
-• Magic Indicator — one clear direction per crypto holding from 5 combined signals
-• Multi-target sell plans — "sell 25% at $80k, 50% at $100k", tracked for you,
-  generated from real technical analysis (RSI, MACD, support/resistance)
-• Multi-wallet tracking, price alerts, and an investing Academy
-• One-tap encrypted backup code to move your portfolio between devices
+★ INCLUDED FREE ON WALLETLENS.LIVE ★
+
+• Portfolio health score — diversification, risk and momentum, scored honestly
+• Magic Indicator — one clear direction per holding from five combined signals
+• Multi-target sell plans — "25% at $80k, 50% at $100k" — built from real technical analysis (RSI, MACD, support and resistance) and tracked for you
+• Rebalancing calculator that names the exact buy or sell, including rebalancing with new contributions to reduce tax
+• Cross-asset market sentiment — crypto, equities, volatility and macro, not just coins
+• Price alerts and drift alerts
+• Goals, targets, runway planning and a tax report export
+• Zakat calculator
+• Investing Academy
+• Multi-wallet tracking and on-chain whale activity
+• Encrypted backup code to move between devices, plus optional Google Drive backup
 
 ★ PRIVATE BY DESIGN ★
 
-No login. No account. No data ever leaves your device. Your holdings live only
-in your own browser — there is no server storing your financial life.
+No login. No account. No server holding your financial life. Your portfolio lives in your own browser and nowhere else.
 
-Free forever. Start tracking your net worth in seconds → walletlens.live
+Most free trackers are free because you are the product. WalletLens never sees your balances, so it has nothing to sell.
+
+★ WHO IT IS FOR ★
+
+Long-term investors who want one honest number. Crypto holders tired of tools that ignore their stocks. Anyone who wants a portfolio tracker without handing over a bank login, an exchange API key, or an email address.
+
+Free forever. Start in seconds → walletlens.live
+
+---
+
+## Category
+Productivity (secondary: Tools)
+
+## Keyword clusters this listing targets
+net worth tracker · portfolio tracker · crypto portfolio tracker · stock portfolio
+tracker · net worth calculator · investment tracker · asset allocation · rebalancing
+calculator · crypto and stocks in one app · portfolio tracker no account · private
+portfolio tracker · screenshot portfolio import · gold and silver tracker

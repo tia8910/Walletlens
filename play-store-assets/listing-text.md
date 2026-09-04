@@ -1,52 +1,86 @@
 # WalletLens — Google Play Store Listing
 
+> Every brand named below appears only as a factual example of what the
+> screenshot and CSV importers accept. No integration, partnership or
+> endorsement is implied, and none is claimed. That is the line between
+> descriptive use, which Play allows, and keyword stuffing, which it removes
+> apps for.
+
 ## App name (max 30)
-WalletLens — Net Worth Tracker
+WalletLens: Net Worth Tracker
 
 ## Short description (max 80)
-Track crypto, stocks, gold & cash net worth privately — no account, on your device.
+Net worth & portfolio tracker — crypto, stocks, gold, cash. No account needed.
 
 ## Full description (max 4000)
-WalletLens is a private, all-in-one net worth and portfolio tracker. See your crypto, stocks, precious metals and cash together in one clean dashboard — with live prices, profit/loss, and allocation updating in real time.
+One number for everything you own.
 
-No account. No sign-up. No bank login. Your data stays on your device.
+WalletLens is a free net worth and portfolio tracker that holds your crypto, stocks, ETFs, gold, silver and cash in a single view — with live prices, real profit and loss, and allocation that updates as the market moves.
 
-— TRACK EVERYTHING IN ONE PLACE —
-• Crypto: 10,000+ coins with real-time prices, P&L and allocation
-• Stocks & ETFs: live quotes and performance
-• Precious metals: gold, silver and more
-• Cash & fiat: balances across currencies
-• One unified net worth view across every asset
+No account. No sign-up. No bank or exchange login. Your holdings are stored on your device, not on our servers.
 
-— SEE YOUR REAL PICTURE —
-• Live allocation pie across crypto, stocks, metals and cash
-• Profit & loss per asset and for your whole portfolio
-• Net worth at a glance, updated with market prices
-• Drift alerts when an asset moves beyond your target
+▍ADD YOUR PORTFOLIO IN UNDER A MINUTE
 
-— REBALANCE WITH CONFIDENCE —
-• Built-in rebalancing calculator: see exactly what to buy or sell
-• Rebalance using new contributions to avoid selling and reduce taxes
-• Keep your risk aligned with your plan
+• SCREENSHOT IMPORT — Photograph your holdings on any exchange, broker or wallet app and AI reads them straight into your portfolio. Works with Binance, Coinbase, Kraken, Robinhood, MetaMask, a broker statement, even a handwritten list. No API keys, no account connection, nothing linked.
+• VOICE IMPORT — Say "half a Bitcoin and twenty Apple shares" and it is logged. English and Arabic.
+• SPREADSHEET IMPORT — Drop in an Excel or CSV export and map the columns once.
+• MANUAL ENTRY — A few taps when you just want to add one thing.
 
-— ADD HOLDINGS YOUR WAY —
-• Manual entry in seconds
-• Import from spreadsheets/Excel
-• Screenshot and voice import
-• Backup and restore your data
+▍EVERY ASSET CLASS, NOT JUST CRYPTO
 
-— PRIVATE BY DESIGN —
-• No account and no sign-up required
-• No bank or exchange login
-• Your portfolio data is stored on your device, not on our servers
-• Nothing about your holdings leaves your phone
+• Crypto — 10,000+ coins with live prices, P&L and allocation
+• Stocks & ETFs — real-time quotes and performance
+• Precious metals — gold, silver, platinum
+• Cash & fiat — balances across currencies
+• Real estate, bonds and anything else you hold
 
-— FREE —
-WalletLens is 100% free to use. Track your full net worth, monitor allocation, and rebalance — without a subscription.
+Most trackers do crypto OR stocks. This does your whole net worth.
 
-Whether you are a long-term investor, a crypto holder, or someone who just wants one honest number for their net worth, WalletLens gives you a clear, private view of your money.
+▍KNOW WHAT YOUR PORTFOLIO IS ACTUALLY DOING
 
-Start tracking your net worth in under a minute.
+• Live allocation across every asset class, with concentration warnings
+• Profit and loss per holding and for the whole portfolio
+• Portfolio health score — diversification, risk and momentum, scored honestly
+• Market sentiment across crypto, equities, volatility and macro — not just coins
+• Fear & Greed index, economic calendar and market news in the app
+
+▍DECIDE, DON'T GUESS
+
+• Magic Indicator — one clear read per holding from five combined signals
+• Technical analysis: RSI, MACD, support and resistance
+• Multi-target sell plans — "25% at $80k, 50% at $100k" — tracked for you
+• Rebalancing calculator that shows exactly what to buy or sell
+• Rebalance with new contributions instead of selling, to reduce tax
+• Price alerts and drift alerts that reach you even when the app is closed
+
+▍BUILT FOR REAL LIFE
+
+• Goals and targets with progress tracking
+• Runway and bucket planning for what your money is actually for
+• Zakat calculator
+• Tax report export
+• Investing Academy — learn as you go
+• Legacy planning, so someone you trust can reach your portfolio
+• Widget, biometric lock, offline access
+• English, Arabic, French and Spanish
+
+▍PRIVATE BY DESIGN — AND WE MEAN IT
+
+• No account, ever
+• No bank login, no exchange connection, no API keys
+• Your holdings never leave your device
+• Encrypted backup code moves your portfolio between devices without a server
+• Optional Google Drive backup that only you can read
+
+Most "free" trackers are free because you are the product. WalletLens never sees your balances, so it has nothing to sell.
+
+▍FREE
+
+All of it. No subscription, no premium tier, no paywalled feature.
+
+Whether you are a long-term investor, a crypto holder, or someone who just wants one honest number for their net worth — WalletLens gives you a clear, private picture of your money.
+
+Start tracking in under a minute.
 
 ---
 
