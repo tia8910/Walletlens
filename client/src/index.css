@@ -16703,6 +16703,59 @@ input, select, textarea, .dvx-input {
 }
 .fx-ath .fx-glow { animation: fx-soft 2.6s ease-out forwards; }
 
+/* ── Trend marker beside a holding ─────────────────────────────────────────
+   Direction is decided in assetTrend.js. Weight arrives as --wl-trend-weight,
+   set inline from the trend's strength, so two arrows of the same shape still
+   separate by conviction and the eye lands on what is actually moving.
+
+   Only strong arrows animate. Twenty holdings all breathing at once is a slot
+   machine, not a dashboard. */
+.wl-trend {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  line-height: 0;
+  vertical-align: -1px;
+}
+.wl-trend svg { overflow: visible; }
+
+/* A flat reading draws a dash, not nothing: an empty slot reads as missing
+   data, a dash reads as an answer. */
+.wl-trend--flat { color: var(--text-sub); opacity: 0.45; }
+.wl-trend--up   { color: var(--g-ink); opacity: var(--wl-trend-weight, 1); }
+.wl-trend--down { color: #f87171; opacity: var(--wl-trend-weight, 1); }
+.wl-trend--down svg { transform: rotate(180deg); }
+
+/* The glow is reserved for arrows that earned it, so it still means something
+   when it shows up. */
+.wl-trend--strong { filter: drop-shadow(0 0 3px currentColor); }
+.wl-trend--strong .wl-trend-chev--trail { opacity: 0.55; }
+
+/* A weekly direction the last day contradicts. The trailing chevron fades and
+   the glow goes, so a cooling rally does not look as certain as one still
+   running. */
+.wl-trend--diverging { filter: none; }
+.wl-trend--diverging .wl-trend-chev--trail { opacity: 0.25; }
+
+@keyframes wl-trend-drift {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1.2px); }
+}
+.wl-trend--strong .wl-trend-chev--lead {
+  animation: wl-trend-drift 2.6s ease-in-out infinite;
+}
+
+/* Deliberately placed BEFORE the fx block below, never after it:
+   screenEffectsPlacement asserts on the LAST reduced-motion block in this
+   file, and a new one at the end silently breaks that test. */
+@media (prefers-reduced-motion: reduce) {
+  .wl-trend--strong .wl-trend-chev--lead { animation: none; }
+}
+
+
 /* Reduced motion keeps the moment and drops the travel: the component renders
    no logo, rocket or debris at all, so only the badge and the glow remain and
    they simply fade. */

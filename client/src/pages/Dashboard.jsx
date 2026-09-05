@@ -44,6 +44,9 @@ import Tip from '../components/Tip'
 import { syncWidgets } from '../nativeWidgets'
 import { noteAppOpen, maybeAskForReview, noteMoment } from '../reviewPrompt'
 import { VOICE_API, voiceProxy } from '../apiHosts.js'
+import { dataUrl } from '../apiHosts.js'
+import { sevenDayMap, trendFor } from '../assetTrend'
+import TrendArrow from '../components/TrendArrow'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -3256,6 +3259,10 @@ export default function Dashboard() {
   const portfolioRef = useRef([])
   const loadAllRef = useRef(null)
   const [prices, setPrices]               = useState({})
+  // Weekly change per coin, used only to give the trend marker a window
+  // longer than a day. Absent until market.json loads, and absent for every
+  // coin outside its top 250, in which case trendFor falls back to 24h.
+  const [sevenDay, setSevenDay]           = useState({})
   const [coinImages, setCoinImages]       = useState({})
   const [transactions, setTransactions]   = useState([])
   const [wallets, setWallets]             = useState([])
@@ -3265,6 +3272,18 @@ export default function Dashboard() {
   const [coinTargets, setCoinTargets]     = useState({})
   const [loaded, setLoaded]               = useState(false)
   const [pricesLoading, setPricesLoading] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    // One request, no polling. A weekly number does not change fast enough to
+    // be worth refetching, and a failure here costs the arrows their longer
+    // window, not the dashboard.
+    fetch(dataUrl('market.json') + '?t=' + Math.floor(Date.now() / 3_600_000))
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (!cancelled && d?.coins) setSevenDay(sevenDayMap(d.coins)) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const [activeTab, setActiveTab]         = useState(() => {
     // If a QR deep-link import is waiting in sessionStorage, open the manage tab
     // so DataPanel mounts and its auto-import effect fires immediately.
@@ -5234,6 +5253,9 @@ export default function Dashboard() {
                                       <div className="dvx-holding-line1">
                                         <div className="dvx-holding-meta">
                                           <strong>{h.coin_symbol?.toUpperCase()}</strong>
+                                          {categorizeAsset(h) !== 'cash' && (
+                                            <TrendArrow trend={trendFor({ pct24h: h.pct24h, pct7d: sevenDay[h.coin_id] })} />
+                                          )}
                                           {isStable && <span className="dvx-stable-badge">{t('dsStable')}</span>}
                                           {!isStable && (() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
                                           {isDupTicker && <span className="dvx-cat-badge" style={{ background:'#f59e0b22', color:'#f59e0b', borderColor:'#f59e0b44', cursor:'help' }} title={`Two holdings share the ticker ${(h.coin_symbol||'').toUpperCase()} — one may have a wrong ID. Delete the one with no price and re-add it.`}><Icon name="warning" size={11} style={{ verticalAlign:'-1px', marginRight:'0.25em' }} />dup</span>}
