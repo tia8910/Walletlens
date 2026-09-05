@@ -60,6 +60,7 @@ jobs:
         env:
           TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC_KEY }}
         run: |
           # Checked before the build rather than after it: wrangler-action
           # fails at the very last step, so a missing secret otherwise costs a
@@ -73,6 +74,17 @@ jobs:
             echo "::error::CLOUDFLARE_ACCOUNT_ID is not set."
             missing=1
           fi
+          if [ -z "$VAPID_PUBLIC" ]; then
+            # Not secret — it is the public half and ships inside the JS bundle
+            # to every browser. It is checked here because it is BAKED IN AT
+            # BUILD TIME: client/src/push.js reads import.meta.env at build, so
+            # a build without it produces a site where enabling notifications
+            # fails with "Push isn't configured yet (missing key)" and no
+            # amount of fixing the push worker helps. That is exactly what
+            # shipped, because this workflow never passed the variable at all.
+            echo "::error::VAPID_PUBLIC_KEY is not set. Web push cannot work without it: the key is compiled into the bundle, so the site must be REBUILT after setting it. It must also be the same pair walletlens-push holds — a different key invalidates every existing browser subscription."
+            missing=1
+          fi
           exit $missing
 
       - name: Install deps
@@ -83,6 +95,11 @@ jobs:
         working-directory: client
         env:
           CI: false
+          # The one variable the bundle cannot get at runtime. Same secret the
+          # push worker is deployed with in deploy-workers.yml, so the key the
+          # browser subscribes with and the key the sender signs with cannot
+          # drift apart.
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
         run: npm run build
 
       - name: Check the build carries its routing files
