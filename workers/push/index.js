@@ -457,6 +457,14 @@ export async function runSchedule(cron, jobs) {
     // Everything else — stocks cost one request per symbol — plus news.
     await run('moves', () => jobs.checkMoves())
     await run('news', () => jobs.checkNews())
+    // main carried a 'data-refresh' step here that poked the data worker from
+    // this cron, because that worker had no triggers of its own. It is dropped
+    // rather than merged, for three separate reasons: `env` is not in scope in
+    // runSchedule (the reference threw on every pass and was swallowed by
+    // run()'s catch, so it had never once worked); the replacement data worker
+    // serves no /__refresh route, only /__health; and it does not need poking
+    // anyway, since it carries its own */15 cron AND serve() refreshes any
+    // dataset it finds past its maxAge while answering a request.
     return
   }
   if (cron === '5 * * * *') {
