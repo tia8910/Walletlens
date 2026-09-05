@@ -286,6 +286,19 @@ async function handle(req, env, store) {
       // already, and without it a server key that no longer matches the one
       // clients subscribed with is undetectable from either side.
       vapidKey: env.VAPID_PUBLIC_KEY || '',
+      // The channel roster of the RUNNING build, so deployment drift is
+      // visible instead of guessed at. "Why do I only get price alerts" has
+      // two possible answers -- the content channels have not fired yet
+      // today, or the deployed worker predates them -- and they need
+      // completely different responses. A short list here means the second.
+      channels: Object.keys(DEFAULT_PREFS).filter(k => typeof DEFAULT_PREFS[k] === 'boolean').sort(),
+      // What each cron is responsible for. A channel present above but absent
+      // here is defined and never scheduled, which is its own failure mode.
+      schedules: {
+        '* * * * *': ['targets', 'moves-crypto'],
+        '*/5 * * * *': ['moves', 'news'],
+        '5 * * * *': ['daily (digest, retention, zakat, portfolio, academy, hacks, features)', 'trend'],
+      },
     }, headers)
   }
 
