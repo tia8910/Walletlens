@@ -65,8 +65,7 @@ export { applySettings } from '../settingsUtils'
 export default function Settings() {
   const navigate = useNavigate()
   const [settings, setSettings] = useState(loadSettings)
-  const { theme: colorTheme, mode: colorMode, intensity: colorIntensity,
-          setTheme: setColorTheme, setMode: setColorMode, setIntensity: setColorIntensity } = useTheme()
+  const { theme: colorTheme, mode: colorMode, setTheme: setColorTheme, setMode: setColorMode } = useTheme()
   const { lang, setLang, t } = useLanguage()
   useEffect(() => { track('settings_view') }, [])
 
@@ -127,30 +126,6 @@ export default function Settings() {
                     : null}
                 </span>
                 {th.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="settings-divider"/>
-
-        {/* Colorful mode. Off is the default and leaves the app exactly as it
-            is; on, every surface is repainted from the theme chosen above, so
-            this row belongs directly under the theme it takes its colour from. */}
-        <div className="settings-row">
-          <div className="settings-label">
-            <span>{t('setColorful')}</span>
-            <span className="settings-hint">{t('setColorfulHint')}</span>
-          </div>
-          <div className="settings-chips">
-            {[{ id: 'refined', labelKey: 'colorfulOff', icon: 'circle' },
-              { id: 'colorful', labelKey: 'colorfulOn', icon: 'palette' }].map(x => (
-              <button key={x.id}
-                className={`settings-chip ${colorIntensity === x.id ? 'active' : ''}`}
-                onClick={() => { setColorIntensity(x.id); track('intensity_changed', { intensity: x.id, source: 'settings' }) }}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Icon name={x.icon} size={15} />
-                {t(x.labelKey)}
               </button>
             ))}
           </div>

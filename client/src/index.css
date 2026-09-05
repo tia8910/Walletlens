@@ -16790,36 +16790,42 @@ input, select, textarea, .dvx-input {
 }
 
 
-/* ── Colorful mode: the theme's coin mark behind the portfolio card ────────
-   ThemeContext writes --wl-motif and the two data attributes only while
-   Colorful is on, so this whole layer renders nothing for Refined users and
-   costs them no paint. The mark is a background layer under the figures in
-   z-order (the card's own content is not positioned, ::after is), and it never
-   takes a pointer event. It carries no animation, so it needs no
-   reduced-motion block — which is why it sits above the one below. */
-[data-wl-colorful] .dvx-hero::after {
+/* ── The selected theme's coin mark, behind the portfolio card ─────────────
+   ThemeContext writes --wl-motif from whichever theme is selected, so this
+   follows the picker with no component involvement. It is a background layer
+   under the figures in z-order (the card's own content is not positioned,
+   ::after is) and never takes a pointer event.
+
+   The opacity is deliberately low. This sits on the neutral graphite/white
+   card the app already has, where a mark heavy enough to "read" would compete
+   with the balance printed on top of it — the point is a watermark you notice
+   second, not a graphic you notice first.
+
+   No animation, so no reduced-motion block is needed, which is why it can sit
+   above the one below. */
+[data-wl-theme] .dvx-hero::after {
   content: '';
   position: absolute;
-  top: -10px;
-  inset-inline-end: -18px;
-  width: 132px;
-  height: 132px;
+  top: -12px;
+  inset-inline-end: -20px;
+  width: 136px;
+  height: 136px;
   background-image: var(--wl-motif);
   background-size: contain;
   background-repeat: no-repeat;
   filter: brightness(0) invert(1);
-  opacity: 0.15;
+  opacity: 0.055;
   pointer-events: none;
   z-index: 0;
 }
-/* Light Colorful keeps the near-white card, so the silhouette flips to dark. */
-[data-wl-light][data-wl-colorful] .dvx-hero::after {
+/* Light mode puts the card on white, so the silhouette flips to dark. */
+[data-wl-light][data-wl-theme] .dvx-hero::after {
   filter: brightness(0);
-  opacity: 0.13;
+  opacity: 0.05;
 }
 /* The card's children are static and would otherwise paint UNDER the
    positioned ::after. Lifting them keeps the balance on top of the mark. */
-[data-wl-colorful] .dvx-hero > * { position: relative; z-index: 1; }
+[data-wl-theme] .dvx-hero > * { position: relative; z-index: 1; }
 
 /* Deliberately placed BEFORE the fx block below, never after it:
    screenEffectsPlacement asserts on the LAST reduced-motion block in this

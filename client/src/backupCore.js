@@ -64,7 +64,6 @@ export const BACKUP_FIELDS = {
   cv: 'wl_card_vis',
   th: 'wl_theme',
   md: 'wl_mode',
-  ci: 'wl_intensity',
   lg: 'wl_lang',
   hv: 'crypto_tracker_hide_values',
   it: 'wl_interests',

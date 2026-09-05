@@ -121,7 +121,7 @@ export default function WelcomeModal() {
   const [animKey, setAnimKey] = useState(0)
   const [bioBusy, setBioBusy] = useState(false)
   const [bioError, setBioError] = useState('')
-  const { theme, mode, intensity, setTheme, setMode, setIntensity } = useTheme()
+  const { theme, mode, setTheme, setMode } = useTheme()
   const { lang, setLang, t } = useLanguage()
   const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
 
@@ -278,28 +278,6 @@ export default function WelcomeModal() {
                   >
                     <span style={{ fontSize: '1.35rem' }}>{m === 'dark' ? '🌙' : '☀️'}</span>
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, color: mode === m ? '#00e676' : 'rgba(255,255,255,0.7)', textTransform: 'capitalize' }}>{m}</span>
-                  </button>
-                ))}
-              </div>
-              {/* Colorful mode — under the theme cards, since it paints the app
-                  in whatever is chosen there. */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                {[{ id: 'refined', labelKey: 'colorfulOff' }, { id: 'colorful', labelKey: 'colorfulOn' }].map(x => (
-                  <button
-                    key={x.id}
-                    onClick={() => { sfx.startAmbient(); sfx.haptic(6); setIntensity(x.id) }}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem',
-                      padding: '0.7rem 0.5rem',
-                      background: intensity === x.id ? 'rgba(0,230,118,0.12)' : 'rgba(255,255,255,0.04)',
-                      border: `1.5px solid ${intensity === x.id ? 'rgba(0,230,118,0.55)' : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: '12px', cursor: 'pointer', transition: 'all 0.18s ease',
-                    }}
-                  >
-                    <span style={{ fontSize: '1.35rem' }}>{x.id === 'colorful' ? '🎨' : '⬤'}</span>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.2, textAlign: 'center', color: intensity === x.id ? '#00e676' : 'rgba(255,255,255,0.7)' }}>
-                      {t('setColorful')}: {t(x.labelKey)}
-                    </span>
                   </button>
                 ))}
               </div>
