@@ -85,3 +85,19 @@ export function sevenDayMap(marketCoins) {
   }
   return out
 }
+
+/**
+ * Build the 7-day price-series lookup the trend line draws from.
+ *
+ * Same shape and same caveat as sevenDayMap: a coin outside market.json's top
+ * 250 simply has no entry, and the row draws the label without a line rather
+ * than inventing one.
+ */
+export function sparkMap(marketCoins) {
+  const out = {}
+  if (!Array.isArray(marketCoins)) return out
+  for (const c of marketCoins) {
+    if (c?.id && Array.isArray(c.spark7d) && c.spark7d.length > 1) out[c.id] = c.spark7d
+  }
+  return out
+}

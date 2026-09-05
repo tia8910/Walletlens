@@ -1382,6 +1382,7 @@ export default {
     dsBreakEven: 'Gewinnschwelle',
     dsBreakEvenAt: 'Gewinnschwelle:',
     dsStable: 'STABIL',
+    trendChip: 'Trend',
     trendUp: 'Aufwärtstrend',
     trendDown: 'Abwärtstrend',
     trendFlat: 'Seitwärts',

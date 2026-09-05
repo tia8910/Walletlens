@@ -45,8 +45,8 @@ import { syncWidgets } from '../nativeWidgets'
 import { noteAppOpen, maybeAskForReview, noteMoment } from '../reviewPrompt'
 import { VOICE_API, voiceProxy } from '../apiHosts.js'
 import { dataUrl } from '../apiHosts.js'
-import { sevenDayMap, trendFor } from '../assetTrend'
-import TrendArrow from '../components/TrendArrow'
+import { sevenDayMap, sparkMap, trendFor } from '../assetTrend'
+import TrendArrow, { TrendBadge } from '../components/TrendArrow'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -3263,6 +3263,7 @@ export default function Dashboard() {
   // longer than a day. Absent until market.json loads, and absent for every
   // coin outside its top 250, in which case trendFor falls back to 24h.
   const [sevenDay, setSevenDay]           = useState({})
+  const [sparks, setSparks]               = useState({})
   const [coinImages, setCoinImages]       = useState({})
   const [transactions, setTransactions]   = useState([])
   const [wallets, setWallets]             = useState([])
@@ -3280,7 +3281,11 @@ export default function Dashboard() {
     // window, not the dashboard.
     fetch(dataUrl('market.json') + '?t=' + Math.floor(Date.now() / 3_600_000))
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (!cancelled && d?.coins) setSevenDay(sevenDayMap(d.coins)) })
+      .then(d => {
+        if (cancelled || !d?.coins) return
+        setSevenDay(sevenDayMap(d.coins))
+        setSparks(sparkMap(d.coins))
+      })
       .catch(() => {})
     return () => { cancelled = true }
   }, [])
@@ -5280,6 +5285,12 @@ export default function Dashboard() {
                                         </span>
                                       ) : (
                                         <div className="dvx-holding-stats">
+                                          {categorizeAsset(h) !== 'cash' && (
+                                            <TrendBadge
+                                              trend={trendFor({ pct24h: h.pct24h, pct7d: sevenDay[h.coin_id] })}
+                                              points={sparks[h.coin_id]}
+                                            />
+                                          )}
                                           {h.price > 0 ? (() => {
                                             const ch = Number(h.pct24h) || 0
                                             const priceColor = ch > 0 ? 'var(--g-ink)' : ch < 0 ? '#f87171' : undefined

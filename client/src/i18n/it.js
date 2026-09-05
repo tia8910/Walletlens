@@ -1382,6 +1382,7 @@ export default {
     dsBreakEven: 'Pareggio',
     dsBreakEvenAt: 'Pareggio:',
     dsStable: 'STABILE',
+    trendChip: 'Trend',
     trendUp: 'Trend rialzista',
     trendDown: 'Trend ribassista',
     trendFlat: 'Laterale',

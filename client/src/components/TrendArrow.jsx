@@ -72,4 +72,60 @@ const TrendArrow = memo(function TrendArrow({ trend, className = '' }) {
   )
 })
 
+/**
+ * The 7-day line, drawn from market.json's thinned series.
+ *
+ * Coloured by the trend's direction rather than by first-versus-last price,
+ * so the line, the arrow and the word all agree. A line that ended higher
+ * than it started but sat inside the flat band would otherwise be drawn green
+ * next to the word "Flat".
+ */
+function TrendSpark({ points, dir, width = 54, height = 16 }) {
+  if (!Array.isArray(points) || points.length < 2) return null
+  const min = Math.min(...points)
+  const max = Math.max(...points)
+  const span = max - min || 1
+  const stepX = width / (points.length - 1)
+  const d = points
+    .map((v, i) => `${i ? 'L' : 'M'}${(i * stepX).toFixed(1)} ${(height - ((v - min) / span) * height).toFixed(1)}`)
+    .join(' ')
+  return (
+    <svg className={`wl-trend-spark wl-trend-spark--${dir}`} viewBox={`0 0 ${width} ${height}`}
+      width={width} height={height} preserveAspectRatio="none" aria-hidden="true">
+      <path d={`${d} L${width} ${height} L0 ${height} Z`} className="wl-trend-spark-fill" />
+      <path d={d} className="wl-trend-spark-line" fill="none" strokeWidth="1.5"
+        strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/**
+ * Arrow, word and line together.
+ *
+ * The arrow alone tested badly: beside a red profit-and-loss pill measuring
+ * something else entirely, a bare green chevron reads as a contradiction
+ * rather than as a different fact. The word removes the ambiguity and the
+ * line shows the shape the word is describing.
+ */
+export const TrendBadge = memo(function TrendBadge({ trend, points }) {
+  const { t } = useLanguage()
+  if (!trend) return null
+  const { dir, basis, pct, diverging } = trend
+  const signed = `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`
+  const window = basis === '7d' ? t('trendBasis7d') : t('trendBasis24h')
+
+  return (
+    <span className={`wl-trend-badge wl-trend-badge--${dir}`}>
+      <em>{t('trendChip')}</em>
+      <b>
+        <TrendArrow trend={trend} />
+        {t(trendLabelKey(dir))}
+        <span className="wl-trend-window">{window} {signed}</span>
+      </b>
+      {dir !== 'flat' && <TrendSpark points={points} dir={dir} />}
+      {diverging && <span className="wl-trend-cooling" title={t('trendCooling')}>·</span>}
+    </span>
+  )
+})
+
 export default TrendArrow

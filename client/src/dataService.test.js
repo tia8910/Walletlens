@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   decodeEntities, stripTags, tagText, findImage, pubDateMs, parseFeed,
   parseCalendarRows, parseStooqCsv, parseMarket, stooqUrl, TICKERS, FEED_GROUPS,
-  isoStamp,
+  isoStamp, downsampleSpark, SPARK_POINTS,
 } from '../../data-api/feeds.js'
 import {
   CHUNK_BYTES, DATASETS, isStale, joinChunks, refresh, serve, splitChunks,
@@ -522,5 +522,83 @@ describe('splitChunks and joinChunks', () => {
     const body = 'ab'.repeat(CHUNK_BYTES)
     expect(joinChunks(splitChunks(body))).toBe(body)
     expect(splitChunks(body)).toHaveLength(2)
+  })
+})
+
+// ── Sparklines ──────────────────────────────────────────────────────────────
+//
+// CoinGecko returns about 168 hourly points per coin. Shipping all of them for
+// 250 coins would take market.json from 250 KB to near a megabyte, on a file
+// the dashboard fetches on load.
+
+describe('downsampleSpark', () => {
+  const hourly = (n, f = (i) => i) => Array.from({ length: n }, (_, i) => f(i))
+
+  it('thins a week of hourly points to the stored count', () => {
+    expect(downsampleSpark(hourly(168))).toHaveLength(SPARK_POINTS)
+  })
+
+  it('keeps both endpoints, so the line agrees with the percentage beside it', () => {
+    // Losing either end would let the drawn shape contradict the 7d number
+    // printed next to it, which is worse than drawing nothing.
+    const out = downsampleSpark(hourly(168, (i) => 100 + i))
+    expect(out[0]).toBe(100)
+    expect(out[out.length - 1]).toBe(267)
+  })
+
+  it('leaves a short series alone rather than padding it', () => {
+    expect(downsampleSpark([1, 2, 3])).toEqual([1, 2, 3])
+  })
+
+  it('holds precision across wildly different price scales', () => {
+    // The same code path carries bitcoin near 100000 and a memecoin near
+    // 0.00000002. Fixed decimals would flatten one of them to zero.
+    const big = downsampleSpark([104233.77, 104987.12])
+    expect(big[0]).toBeCloseTo(104234, 0)
+    const tiny = downsampleSpark([0.000000021234, 0.000000019876])
+    expect(tiny[0]).toBeGreaterThan(0)
+    expect(tiny[1]).toBeGreaterThan(0)
+  })
+
+  it('returns null rather than a stub when there is nothing to draw', () => {
+    expect(downsampleSpark(null)).toBe(null)
+    expect(downsampleSpark([])).toBe(null)
+    expect(downsampleSpark([5])).toBe(null)
+    expect(downsampleSpark([NaN, NaN])).toBe(null)
+  })
+
+  it('drops unusable points instead of drawing them as zero', () => {
+    const out = downsampleSpark([1, NaN, 3, null, 5])
+    expect(out).toEqual([1, 3, 5])
+  })
+})
+
+describe('parseMarket sparkline handling', () => {
+  const coins = (n) => Array.from({ length: n }, (_, i) => ({
+    id: `c${i}`,
+    current_price: 1,
+    sparkline_in_7d: { price: Array.from({ length: 168 }, (_, j) => 10 + j) },
+  }))
+
+  it('replaces the hourly series with the thinned one', () => {
+    const out = parseMarket(coins(50))
+    expect(out[0].spark7d).toHaveLength(SPARK_POINTS)
+  })
+
+  it('drops the original key, or the saving is spent twice', () => {
+    const out = parseMarket(coins(50))
+    expect(out[0].sparkline_in_7d).toBeUndefined()
+  })
+
+  it('keeps a coin that has no sparkline at all', () => {
+    const list = coins(50)
+    delete list[3].sparkline_in_7d
+    const out = parseMarket(list)
+    expect(out[3].id).toBe('c3')
+    expect(out[3].spark7d).toBeUndefined()
+  })
+
+  it('still rejects a short list as a rate-limit response', () => {
+    expect(parseMarket(coins(3))).toBe(null)
   })
 })

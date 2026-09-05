@@ -1419,6 +1419,7 @@ export default {
     dsBreakEven: 'Punto de equilibrio',
     dsBreakEvenAt: 'Punto de equilibrio:',
     dsStable: 'ESTABLE',
+    trendChip: 'Tendencia',
     trendUp: 'Tendencia alcista',
     trendDown: 'Tendencia bajista',
     trendFlat: 'Lateral',

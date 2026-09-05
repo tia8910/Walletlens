@@ -1445,6 +1445,7 @@ export default {
     dsBreakEven: 'نقطة التعادل',
     dsBreakEvenAt: 'نقطة التعادل:',
     dsStable: 'مستقرة',
+    trendChip: 'الاتجاه',
     trendUp: 'اتجاه صاعد',
     trendDown: 'اتجاه هابط',
     trendFlat: 'مستقر',

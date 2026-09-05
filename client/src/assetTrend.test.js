@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   FLAT_BAND_24H, FLAT_BAND_7D, sevenDayMap, trendFor, trendLabelKey,
+  sparkMap,
 } from './assetTrend.js'
 
 describe('trendFor', () => {
@@ -118,5 +119,21 @@ describe('sevenDayMap', () => {
   it('survives junk instead of an array', () => {
     expect(sevenDayMap(null)).toEqual({})
     expect(sevenDayMap({ coins: [] })).toEqual({})
+  })
+})
+
+describe('sparkMap', () => {
+  it('keys the 7-day series by coin id', () => {
+    expect(sparkMap([{ id: 'btc', spark7d: [1, 2, 3] }])).toEqual({ btc: [1, 2, 3] })
+  })
+
+  it('skips a series too short to draw', () => {
+    // One point is a dot, not a line. Better no line than a misleading one.
+    expect(sparkMap([{ id: 'a', spark7d: [1] }, { id: 'b', spark7d: [] }])).toEqual({})
+  })
+
+  it('survives junk', () => {
+    expect(sparkMap(null)).toEqual({})
+    expect(sparkMap([{ id: 'a' }, {}, null])).toEqual({})
   })
 })

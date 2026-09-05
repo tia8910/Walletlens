@@ -16703,6 +16703,47 @@ input, select, textarea, .dvx-input {
 }
 .fx-ath .fx-glow { animation: fx-soft 2.6s ease-out forwards; }
 
+/* The trend chip: arrow, word, window and line. Built on .dvx-hstat so it
+   sits in the same row as Price, Avg and Qty without a second visual language.
+   The arrow alone tested badly next to a profit-and-loss pill measuring
+   something else: a green chevron beside a red pill reads as a contradiction
+   rather than as a different fact. The word settles it. */
+.wl-trend-badge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.2rem 0.5rem; border-radius: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: 0.72rem; line-height: 1.1;
+}
+.wl-trend-badge em {
+  font-style: normal; font-weight: 800; font-size: 0.56rem;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-sub);
+}
+.wl-trend-badge b { display: inline-flex; align-items: center; gap: 0.28rem; font-weight: 700; }
+.wl-trend-badge--up b   { color: var(--g-ink); }
+.wl-trend-badge--down b { color: #f87171; }
+.wl-trend-badge--flat b { color: var(--text-sub); }
+
+/* The window is part of the claim, so it is shown rather than left to the
+   tooltip, but at lower weight: the word is the headline, not the number. */
+.wl-trend-window { font-weight: 600; opacity: 0.55; font-variant-numeric: tabular-nums; }
+
+/* Coloured by direction, never by first-versus-last price, so the line, the
+   arrow and the word cannot disagree. */
+.wl-trend-spark { display: block; flex-shrink: 0; overflow: visible; }
+.wl-trend-spark--up   .wl-trend-spark-line { stroke: var(--g-ink); }
+.wl-trend-spark--down .wl-trend-spark-line { stroke: #f87171; }
+.wl-trend-spark--up   .wl-trend-spark-fill { fill: var(--g-ink); fill-opacity: 0.12; }
+.wl-trend-spark--down .wl-trend-spark-fill { fill: #f87171; fill-opacity: 0.12; }
+.wl-trend-spark-line { stroke-opacity: 0.75; }
+
+.wl-trend-cooling { color: #f59e0b; font-weight: 900; cursor: help; }
+
+[data-wl-light] .wl-trend-badge {
+  background: rgba(16,24,40,0.05); border-color: rgba(16,24,40,0.09);
+}
+
+
 /* ── Trend marker beside a holding ─────────────────────────────────────────
    Direction is decided in assetTrend.js. Weight arrives as --wl-trend-weight,
    set inline from the trend's strength, so two arrows of the same shape still

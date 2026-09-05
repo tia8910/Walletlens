@@ -1419,6 +1419,7 @@ export default {
     dsBreakEven: 'Seuil de rentabilité',
     dsBreakEvenAt: 'Seuil de rentabilité :',
     dsStable: 'STABLE',
+    trendChip: 'Tendance',
     trendUp: 'Tendance haussière',
     trendDown: 'Tendance baissière',
     trendFlat: 'Stable',

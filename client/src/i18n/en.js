@@ -1440,6 +1440,7 @@ export default {
     dsBreakEven: 'Break-Even',
     dsBreakEvenAt: 'Break-even:',
     dsStable: 'STABLE',
+    trendChip: 'Trend',
     trendUp: 'Uptrend',
     trendDown: 'Downtrend',
     trendFlat: 'Flat',
