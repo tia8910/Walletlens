@@ -15693,20 +15693,45 @@ button.wl-topbar .wl-topbar-x, .wl-topbar button.wl-topbar-x { background: rgba(
 .dvx-holding-units { font-weight: 700; color: var(--text); }
 [data-wl-light] .dvx-holding-units { color: var(--text); }
 
-/* Price / Avg / Qty shown as small filled premium stat chips. */
-.dvx-holding-stats { display: flex; flex-wrap: wrap; gap: 0.3rem; width: 100%; margin-top: 0.15rem; }
+/* Price / Avg / Qty as stat chips, laid out on a GRID rather than a ragged
+   flex-wrap.
+   
+   Wrapping sized every chip to its own content, so each card packed itself
+   differently and nothing lined up from one holding to the next — a list of
+   cards instead of a table. Worse, a chip narrower than its text broke the
+   text: "TREND" rendered as "TREN / D" and "Uptrend" as "Uptre / nd" on a
+   phone, which is the screenshot that prompted this.
+   
+   Equal-width cells fix both. Labels and values land in the same place down
+   the whole list, and a cell that is too narrow now ellipsises its value
+   instead of breaking a word in half. */
+.dvx-holding-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.3rem;
+  width: 100%;
+  margin-top: 0.15rem;
+}
 .dvx-hstat {
-  display: inline-flex; align-items: baseline; gap: 0.3rem;
-  padding: 0.2rem 0.5rem; border-radius: 8px;
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  min-width: 0;
+  padding: 0.25rem 0.55rem; border-radius: 8px;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.08);
-  font-size: 0.72rem; line-height: 1.1;
+  font-size: 0.72rem; line-height: 1.25;
 }
 .dvx-hstat em {
+  flex: 0 0 auto; white-space: nowrap;
   font-style: normal; font-weight: 800; font-size: 0.56rem;
   text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-sub);
 }
-.dvx-hstat b { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+/* Right-aligned and tabular so the figures form a column the eye can run
+   down, and truncated rather than wrapped when a long quantity will not fit. */
+.dvx-hstat b {
+  min-width: 0; text-align: right;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums;
+}
 [data-wl-light] .dvx-hstat { background: rgba(16,24,40,0.05); border-color: rgba(16,24,40,0.09); }
 
 [data-wl-light] .dvx-holding {
@@ -16709,24 +16734,37 @@ input, select, textarea, .dvx-input {
    something else: a green chevron beside a red pill reads as a contradiction
    rather than as a different fact. The word settles it. */
 .wl-trend-badge {
-  display: inline-flex; align-items: center; gap: 0.35rem;
-  padding: 0.2rem 0.5rem; border-radius: 8px;
+  /* Full row inside .dvx-holding-stats. It carries an arrow, a label, a word,
+     a window and a sparkline — four times the content of a Price chip — so
+     squeezing it into an equal cell is what broke "TREND" across two lines.
+     Taking the row keeps every part on one line and leaves Price / Avg / Qty
+     to line up underneath it. */
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 0.4rem;
+  min-width: 0; white-space: nowrap;
+  padding: 0.25rem 0.55rem; border-radius: 8px;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.08);
-  font-size: 0.72rem; line-height: 1.1;
+  font-size: 0.72rem; line-height: 1.25;
 }
 .wl-trend-badge em {
+  flex: 0 0 auto; white-space: nowrap;
   font-style: normal; font-weight: 800; font-size: 0.56rem;
   text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-sub);
 }
-.wl-trend-badge b { display: inline-flex; align-items: center; gap: 0.28rem; font-weight: 700; }
+.wl-trend-badge b {
+  display: inline-flex; align-items: center; gap: 0.28rem;
+  flex: 0 0 auto; white-space: nowrap; font-weight: 700;
+}
+/* The sparkline is the one part that may give up room; the words may not. */
+.wl-trend-badge .wl-trend-spark { margin-inline-start: auto; }
 .wl-trend-badge--up b   { color: var(--g-ink); }
 .wl-trend-badge--down b { color: #f87171; }
 .wl-trend-badge--flat b { color: var(--text-sub); }
 
 /* The window is part of the claim, so it is shown rather than left to the
    tooltip, but at lower weight: the word is the headline, not the number. */
-.wl-trend-window { font-weight: 600; opacity: 0.55; font-variant-numeric: tabular-nums; }
+.wl-trend-window { flex: 0 0 auto; white-space: nowrap; font-weight: 600; opacity: 0.55; font-variant-numeric: tabular-nums; }
 
 /* Coloured by direction, never by first-versus-last price, so the line, the
    arrow and the word cannot disagree. */
