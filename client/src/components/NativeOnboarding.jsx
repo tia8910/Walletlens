@@ -98,7 +98,7 @@ export default function NativeOnboarding({ onDone }) {
   })
   const [bioBusy, setBioBusy] = useState(false)
   const [bioError, setBioError] = useState('')
-  const { theme, setTheme, mode, setMode } = useTheme()
+  const { theme, setTheme, mode, setMode, intensity, setIntensity } = useTheme()
   const { lang, setLang, t } = useLanguage()
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
@@ -283,6 +283,27 @@ export default function NativeOnboarding({ onDone }) {
               </button>
               )
             })}
+          </div>
+        )}
+
+        {/* Colorful mode. Placed after the theme grid on purpose: it paints the
+            app in whichever theme was just picked, so it only means anything
+            once there is a choice above it to take colour from. */}
+        {s.isTheme && (
+          <div className="no-mode-row">
+            {[
+              { id: 'refined',  labelKey: 'colorfulOff', icon: 'circle' },
+              { id: 'colorful', labelKey: 'colorfulOn',  icon: 'palette' },
+            ].map(x => (
+              <button
+                key={x.id}
+                className={`no-mode-btn${intensity === x.id ? ' active' : ''}`}
+                onClick={() => { try { setIntensity(x.id) } catch {}; try { track('intensity_changed', { intensity: x.id, source: 'onboarding' }) } catch {} }}
+              >
+                <Icon name={x.icon} size={16} />
+                <span>{t('setColorful')}: {t(x.labelKey)}</span>
+              </button>
+            ))}
           </div>
         )}
 
