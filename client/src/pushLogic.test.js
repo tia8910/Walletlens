@@ -273,9 +273,10 @@ describe('how promptly each channel runs', () => {
   })
 
   it('does not run the moves pass every minute', () => {
-    // fetchStockQuotes is one request PER SYMBOL, capped at 40. Per-minute
-    // would be up to forty Yahoo requests a minute and a rate-limit, which
-    // returns nothing at all — worse than a few minutes' latency.
+    // fetchStockQuotes now answers most symbols from the shared
+    // stock-prices.json in ONE request, but the tail it cannot cover is still
+    // one Yahoo request per symbol. Per-minute would rate-limit that tail, and
+    // a rate-limit returns nothing at all — worse than a few minutes' latency.
     const moves = cronFor('wl-check-moves')
     expect(moves).not.toBe('* * * * *')
     expect(moves).toMatch(/^\*\/([2-9]|1\d)/)
@@ -1567,10 +1568,10 @@ describe('notifications go out when the thing happens, not on a rota', () => {
   )
 
   it('checks crypto moves every minute and stocks every five', () => {
-    // The old pass ran everything at five because fetchStockQuotes costs one
-    // request PER SYMBOL. Crypto is one batched call however many coins are
-    // held, so letting the slowest ingredient set the pace delayed the
-    // notification people most expect to be immediate.
+    // The old pass ran everything at five because fetchStockQuotes cost one
+    // request per symbol for every symbol. Crypto is one batched call however
+    // many coins are held, so letting the slowest ingredient set the pace
+    // delayed the notification people most expect to be immediate.
     expect(server).toMatch(
       /Deno\.cron\("wl-moves-crypto", "\* \* \* \* \*", \(\) => checkMoves\(\{ kinds: \["crypto"\], refreshSeen: false \}\)\)/,
     )
