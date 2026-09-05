@@ -1867,10 +1867,17 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
     return () => ro.disconnect()
   }, [])
 
-  // Continuous heartbeat — keeps the map "alive" even when prices are flat
+  // Continuous heartbeat — keeps the map "alive" even when prices are flat.
+  // Paused while the tab is hidden so a backgrounded dashboard doesn't keep
+  // re-rendering the heatmap every 1.6s for no visible benefit.
   useEffect(() => {
-    const id = setInterval(() => setTick(n => n + 1), 1600)
-    return () => clearInterval(id)
+    let id = null
+    const start = () => { if (!id) id = setInterval(() => setTick(n => n + 1), 1600) }
+    const stop = () => { clearInterval(id); id = null }
+    const onVisibility = () => (document.hidden ? stop() : start())
+    if (!document.hidden) start()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => { stop(); document.removeEventListener('visibilitychange', onVisibility) }
   }, [])
 
   const cells = useMemo(() => {
@@ -2214,12 +2221,18 @@ const FeatureSlideshow = memo(function FeatureSlideshow() {
   const next = useCallback(() => goTo((idx + 1) % FEATURE_SLIDES.length,  1), [idx, goTo])
   const prev = useCallback(() => goTo((idx - 1 + FEATURE_SLIDES.length) % FEATURE_SLIDES.length, -1), [idx, goTo])
 
+  // Also pauses on a hidden tab so a backgrounded dashboard doesn't keep
+  // auto-advancing (and re-rendering) a slideshow no one is looking at.
   useEffect(() => {
     if (paused) return
-    const id = setInterval(() => {
-      setDir(1); setIdx(i => (i + 1) % FEATURE_SLIDES.length); setAnimKey(k => k + 1)
-    }, FS_SLIDE_MS)
-    return () => clearInterval(id)
+    let id = null
+    const advance = () => { setDir(1); setIdx(i => (i + 1) % FEATURE_SLIDES.length); setAnimKey(k => k + 1) }
+    const start = () => { if (!id) id = setInterval(advance, FS_SLIDE_MS) }
+    const stop = () => { clearInterval(id); id = null }
+    const onVisibility = () => (document.hidden ? stop() : start())
+    if (!document.hidden) start()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => { stop(); document.removeEventListener('visibilitychange', onVisibility) }
   }, [paused])
 
   const slide = FEATURE_SLIDES[idx]
