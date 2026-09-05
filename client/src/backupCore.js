@@ -64,6 +64,7 @@ export const BACKUP_FIELDS = {
   cv: 'wl_card_vis',
   th: 'wl_theme',
   md: 'wl_mode',
+  ci: 'wl_intensity',
   lg: 'wl_lang',
   hv: 'crypto_tracker_hide_values',
   it: 'wl_interests',
@@ -182,6 +183,9 @@ export const DEVICE_ONLY_KEYS = [
   // putting it in a backup would hand Drive access to anyone who ever sees
   // the code.
   'wl_drive_token',
+  // A refresh token, so the same reasoning as the bearer token above applies
+  // and applies for longer: it does not expire in an hour.
+  'wl_drive_refresh',
 ]
 
 // ── Compression helpers (WL3/WL2 format) ──────────────────────────────────
