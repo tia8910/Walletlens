@@ -48,7 +48,7 @@ const SHOW_TEST_SEND = false
  *
  * So the rows are behind a disclosure, closed by default. Shut, this screen is
  * exactly what it was: one switch, with every channel running on its default —
- * moves at 2%, round levels, news, market news, the morning brief, the daily
+ * moves at 1%, round levels, news, market news, the morning brief, the daily
  * portfolio read, the Academy challenge, investment hacks, win-back nudges,
  * feature tips and zakat reminders all ON. Open, every one of them is
  * switchable. The fiddling the flag was meant to prevent now costs one

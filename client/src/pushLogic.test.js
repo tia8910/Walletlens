@@ -157,9 +157,12 @@ describe('preferences', () => {
   })
 
   it('clamps the move threshold to a sane band', () => {
-    // 0% would fire on every tick for every asset the user holds.
-    expect(sanitizePrefs({ movePct: 0 }).movePct).toBe(1)
-    expect(sanitizePrefs({ movePct: -5 }).movePct).toBe(1)
+    // 0% would fire on every tick for every asset the user holds. The floor is
+    // 0.5 rather than 1 since 35960375: a 1% floor meant a large, slow-moving
+    // holding could drift all day without a word, and someone who deliberately
+    // sets the threshold low has asked for exactly that.
+    expect(sanitizePrefs({ movePct: 0 }).movePct).toBe(0.5)
+    expect(sanitizePrefs({ movePct: -5 }).movePct).toBe(0.5)
     expect(sanitizePrefs({ movePct: 900 }).movePct).toBe(50)
     expect(sanitizePrefs({ movePct: 'abc' }).movePct).toBe(DEFAULT_PREFS.movePct)
     expect(sanitizePrefs({ movePct: 8 }).movePct).toBe(8)
@@ -403,7 +406,10 @@ describe('nothing is withheld for being the seventh today', () => {
     // Removing the global cap is not "never suppress anything". These are
     // per-reason, so they cannot stack into a stream from one event — which is
     // exactly what a global cap could never distinguish.
-    expect(MOVE_COOLDOWN_MS).toBe(3 * 60 * 60 * 1000)
+    // One hour, not three, since 35960375. Three hours meant a holding that
+    // moved in the morning was silent through the afternoon it kept moving,
+    // which reads as the alerts being broken rather than as restraint.
+    expect(MOVE_COOLDOWN_MS).toBe(1 * 60 * 60 * 1000)
     expect(server).toMatch(/cooldownMs: MOVE_COOLDOWN_MS/)
     expect(server).toMatch(/now - sub\.lastNewsAt < NEWS_COOLDOWN_MS/)
     expect(FEATURE_TIP_GAP_MS).toBe(3 * 24 * 60 * 60 * 1000)
