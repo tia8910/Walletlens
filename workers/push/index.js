@@ -461,6 +461,10 @@ export async function runSchedule(cron, jobs) {
   }
   if (cron === '5 * * * *') {
     await run('daily', () => jobs.checkDaily())
+    // Hourly is the right cadence for a seven-day window, and it rides this
+    // schedule rather than adding a fourth: the account is at the Workers Free
+    // cron-trigger limit.
+    await run('trend', () => jobs.checkTrend())
     return
   }
   console.warn('unrecognised cron schedule:', cron)

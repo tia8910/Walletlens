@@ -358,3 +358,36 @@ export async function fetchNews() {
     return []
   }
 }
+
+// ── Seven-day trend ─────────────────────────────────────────────────────────
+
+/**
+ * The same weekly numbers the dashboard draws its trend from.
+ *
+ * Read from the data service's market.json rather than called fresh from
+ * CoinGecko, and that is the whole point: a notification saying an asset
+ * turned down while the screen it links to shows an uptrend is worse than no
+ * notification at all. One source, one answer.
+ *
+ * Also cheaper. That file is already built every few hours for the app, so
+ * this is one request against an edge cache instead of another rate-limited
+ * upstream call on an hourly cron.
+ */
+export async function fetchSevenDay() {
+  try {
+    const { dataUrl } = await import('../client/src/apiHosts.js')
+    const r = await fetch(dataUrl('market.json'), { signal: AbortSignal.timeout(TIMEOUT_MS) })
+    if (!r.ok) return {}
+    const d = await r.json()
+    const out = {}
+    for (const c of Array.isArray(d?.coins) ? d.coins : []) {
+      const v = c?.price_change_percentage_7d_in_currency
+      // A coin with no weekly number is absent, never zero: zero would claim
+      // it is flat, and a flat reading is a direction the switch logic acts on.
+      if (c?.id && Number.isFinite(v)) out[c.id] = v
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
