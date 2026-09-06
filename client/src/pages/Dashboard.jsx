@@ -5233,6 +5233,8 @@ export default function Dashboard() {
                                   ? Math.min(100, (h.price / breakEvenPrice) * 100) : 0
                                 const isSelected = selectedAssets.has(h.coin_id)
                                 const isDimmed   = selectedAssets.size > 0 && !isSelected
+                                const trendVal = Number(h.pct24h) || 0
+                                const trendStatus = trendVal > 0.5 ? 'up' : trendVal < -0.5 ? 'down' : 'flat'
                                 const holdingLpItems = isDemo ? [] : [
                                   { icon: '📊', label: 'Technical Analysis', onClick: () => navigate('/technicals') },
                                   { icon: '🎯', label: 'Set Sell Target', onClick: () => navigate('/dashboard', { state: { tab: 'targets' } }) },
@@ -5264,6 +5266,42 @@ export default function Dashboard() {
                                           {isStable && <span className="dvx-stable-badge">{t('dsStable')}</span>}
                                           {!isStable && (() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
                                           {isDupTicker && <span className="dvx-cat-badge" style={{ background:'#f59e0b22', color:'#f59e0b', borderColor:'#f59e0b44', cursor:'help' }} title={`Two holdings share the ticker ${(h.coin_symbol||'').toUpperCase()} — one may have a wrong ID. Delete the one with no price and re-add it.`}><Icon name="warning" size={11} style={{ verticalAlign:'-1px', marginRight:'0.25em' }} />dup</span>}
+                                          {!isStable && h.price > 0 && (
+                                            <span className="dvx-trend-badge" style={{
+                                              background: trendStatus === 'up' ? '#22c55e18' : trendStatus === 'down' ? '#ef444418' : '#64748b18',
+                                              color: trendStatus === 'up' ? '#22c55e' : trendStatus === 'down' ? '#ef4444' : '#64748b',
+                                              border: `1px solid ${trendStatus === 'up' ? '#22c55e33' : trendStatus === 'down' ? '#ef444433' : '#64748b33'}`,
+                                              padding: '1px 7px',
+                                              borderRadius: '9999px',
+                                              fontSize: '0.62rem',
+                                              fontWeight: 600,
+                                              letterSpacing: '0.04em',
+                                              lineHeight: '1.4',
+                                              whiteSpace: 'nowrap',
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: '0.25em',
+                                            }}>
+                                              {trendStatus === 'up' && (
+                                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, animation: 'trendArrowUp 1.8s ease-in-out infinite' }}>
+                                                  <path d="M6 2L10 7H2L6 2Z" fill="#22c55e"/>
+                                                  <line x1="6" y1="6" x2="6" y2="10" stroke="#22c55e" strokeWidth="1.8" strokeLinecap="round"/>
+                                                </svg>
+                                              )}
+                                              {trendStatus === 'down' && (
+                                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, animation: 'trendArrowDown 1.8s ease-in-out infinite' }}>
+                                                  <path d="M6 10L10 5H2L6 10Z" fill="#ef4444"/>
+                                                  <line x1="6" y1="2" x2="6" y2="6" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round"/>
+                                                </svg>
+                                              )}
+                                              {trendStatus === 'flat' && (
+                                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+                                                  <line x1="2" y1="6" x2="10" y2="6" stroke="#64748b" strokeWidth="1.8" strokeLinecap="round"/>
+                                                </svg>
+                                              )}
+                                              {trendStatus === 'up' ? t('dsUptrend') : trendStatus === 'down' ? t('dsDowntrend') : t('dsFlat')}
+                                            </span>
+                                          )}
                                         </div>
                                         <div className="dvx-holding-valblock">
                                           <div className="dvx-holding-val">{cv(displayValue)}</div>

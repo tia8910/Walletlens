@@ -334,6 +334,134 @@
     }
     </script>
 
+    <!-- Structured data — ChromeExtension for Chrome Web Store rich results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "WalletLens — Portfolio Tracker",
+      "url": "https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "ChromeOS, Windows, macOS, Linux",
+      "installUrl": "https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn",
+      "downloadUrl": "https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn",
+      "isAccessibleForFree": true,
+      "inLanguage": ["en", "ar"],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "featureList": [
+        "Track crypto, stocks, gold, silver, fiat — all from the browser toolbar",
+        "Live portfolio net worth and P&L",
+        "AI portfolio analysis and Magic Indicator",
+        "No account required — data stays in browser storage",
+        "Works offline as a Progressive Web App"
+      ],
+      "softwareVersion": "1.0",
+      "screenshot": "https://walletlens.live/og-image.png",
+      "publisher": {
+        "@type": "Organization",
+        "name": "WalletLens",
+        "url": "https://walletlens.live/"
+      }
+    }
+    </script>
+
+    <!-- Structured data — FAQPage for rich FAQ snippets in Search + AI Overviews -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is WalletLens really free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. WalletLens is 100% free with no premium tier, no paywall, and no hidden costs. It's open source under the MIT license."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does WalletLens require an account?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. WalletLens requires zero accounts, zero sign-up, and zero email. All data is stored locally in your browser's localStorage and never leaves your device."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What assets does WalletLens track?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "WalletLens tracks crypto (10,000+ coins via CoinGecko), US stocks and ETFs, gold, silver, platinum, copper, fiat currencies, and cash — all in one unified dashboard."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is WalletLens private and secure?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. WalletLens has no backend, no database, and no analytics. Your portfolio data stays in your browser's localStorage and is never sent to any server. Even the developer cannot see your data."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I use WalletLens on mobile?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. WalletLens works as a Progressive Web App (PWA) on any mobile browser and is also available as an Android app on Google Play."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does WalletLens have AI features?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. WalletLens includes AI voice import (say your holdings), AI screenshot import (screenshot exchange apps), AI Magic Indicator (5-signal analysis), AI Portfolio Guardian, and an AI Coach for personalized recommendations."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does the Magic Indicator work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The Magic Indicator fuses five independent signal types — technical analysis, on-chain data, volume analysis, whale activity, and fundamentals — into one direction per holding (Bullish, Bearish, or Neutral). Each signal votes independently and they're weighted by reliability."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I export my portfolio data?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. WalletLens supports export to Excel, CSV, JSON, and generates QR codes for easy sharing. All exports are local — nothing is uploaded to any server."
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- Structured data — SoftwareSourceCode for GitHub repository -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareSourceCode",
+      "name": "WalletLens",
+      "codeRepository": "https://github.com/tia8910/Walletlens",
+      "url": "https://github.com/tia8910/Walletlens",
+      "programmingLanguage": "JavaScript",
+      "license": "https://opensource.org/licenses/MIT",
+      "description": "Privacy-first net worth tracker — crypto, stocks, gold, fiat. No account, all data local, AI analysis. React + Vite + Cloudflare Pages.",
+      "isPartOf": {
+        "@type": "WebApplication",
+        "url": "https://walletlens.live/"
+      }
+    }
+    </script>
+
  </head>
   <body>
     <!-- Earliest-possible background: set before any CSS or JS runs so

@@ -1,0 +1,92 @@
+name: Backlink Posting Agent
+
+# Runs the multi-platform posting agent on a schedule.
+# Posts 1 item per platform per day to avoid spam flags.
+#
+# Required secrets:
+#   GH_TOKEN                  — GitHub PAT with public_repo scope
+#   DEVTO_API_KEY             — Dev.to API key (get from dev.to/settings/extensions)
+#   REDDIT_CLIENT_ID          — Reddit OAuth client ID (optional)
+#   REDDIT_CLIENT_SECRET      — Reddit OAuth client secret (optional)
+#   REDDIT_USERNAME           — Reddit username (optional)
+#   REDDIT_PASSWORD           — Reddit password (optional)
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to post to (blank = all)'
+        required: false
+        type: choice
+        options:
+          - ''
+          - github
+          - devto
+          - reddit
+          - directories
+      dry_run:
+        description: 'Dry run (no actual posts)'
+        required: false
+        type: boolean
+        default: true
+      schedule:
+        description: 'Schedule mode'
+        required: false
+        type: choice
+        options:
+          - daily
+          - once
+  schedule:
+    # Run daily at 10:00 UTC (offset posting across the day)
+    - cron: '0 10 * * *'
+
+concurrency:
+  group: backlink-agent
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run posting agent
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+          REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+          MEDIUM_TOKEN: ${{ secrets.MEDIUM_TOKEN }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.platform }}" != "" ]; then
+            ARGS="$ARGS --platform=${{ inputs.platform }}"
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ "${{ inputs.schedule }}" != "" ]; then
+            ARGS="$ARGS --schedule=${{ inputs.schedule }}"
+          else
+            ARGS="$ARGS --schedule=daily"
+          fi
+          node promo/agent-post-all.mjs $ARGS
+
+      - name: Upload state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-state
+          path: promo/agent-state.json
+          if-no-files-found: ignore
