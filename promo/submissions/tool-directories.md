@@ -109,3 +109,49 @@
 **Name**: WalletLens
 **Category**: Finance Software
 **Description**: Privacy-first net worth tracker. Free, open source, no account. Crypto, stocks, gold, fiat.
+
+---
+
+## 11. Chrome Web Store (Google)
+**URL**: https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn
+
+**Name**: WalletLens — Portfolio Tracker
+**Description**: Free, privacy-first portfolio tracker for crypto, stocks, gold, silver, and cash. No account required — all data stays in browser storage. AI-powered Magic Indicator, voice import, screenshot import. Open source.
+**Category**: Finance
+**Language**: English
+**Version**: 1.0
+
+---
+
+## 12. Chrome Extensions Store — Alternative Listings
+**Submit to these Chrome extension directories**:
+
+- **AlternativeTo Chrome Extensions**: https://alternativeto.net/software/chrome/
+- **ChromeStats**: https://chrome-stats.com/d/ajmjdeobjjmabgonhaeaaehoepfafhbn
+- **Extension.io**: https://extension.io/
+- **CRX4Chrome**: https://www.crx4chrome.com/
+- **Crx4Opera**: https://crx4opera.com/
+- **Web Store Stats**: https://webstorestats.com/
+
+---
+
+## 13. Edge Add-ons
+**URL**: https://microsoftedge.microsoft.com/addons
+**Submit WalletLens as an Edge extension** (Chrome extensions work in Edge)
+
+---
+
+## 14. Brave Web Store
+**Submit WalletLens to Brave Web Store** (Chrome extensions work in Brave)
+
+---
+
+## 15. Firefox Add-ons (AMO)
+**URL**: https://addons.mozilla.org/
+**Submit WalletLens** (may need minor port for Firefox)
+
+---
+
+## 16. Opera Add-ons
+**URL**: https://addons.opera.com/
+**Submit WalletLens** (Chrome extensions work in Opera)

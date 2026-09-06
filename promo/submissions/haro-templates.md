@@ -107,3 +107,10 @@ These are ready-to-send responses for common finance/privacy/tech journalist que
 - Tom's Guide (finance apps)
 - MakeUseOf (open source)
 - ZDNet (privacy)
+
+---
+
+## Template 6: Browser Extensions / Chrome Extensions
+**When journalist asks**: "best Chrome extensions for finance" or "privacy browser extensions"
+
+> WalletLens (https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn) is a free, open-source Chrome extension that tracks crypto, stocks, gold, and cash directly from the browser toolbar. No account required — all data stays in browser storage. It's a Progressive Web App that also works as a standalone extension. Source: https://github.com/tia8910/Walletlens

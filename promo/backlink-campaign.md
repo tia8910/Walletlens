@@ -91,3 +91,24 @@ These are the strongest backlinks. Each merged PR = permanent link from a DA 80-
 - Track all submissions in this file
 - Each submission should link to walletlens.live AND github.com/tia8910/Walletlens
 - Use consistent anchor text variety: "WalletLens", "walletlens.live", "free portfolio tracker", "net worth tracker"
+
+---
+
+## Priority 8 — Chrome Extension Backlinks
+
+| # | Platform | DA | URL | Status |
+|---|----------|-----|-----|--------|
+| 1 | Chrome Web Store listing | 95 | https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn | Live |
+| 2 | awesome-chrome-extensions | 85 | https://github.com/nicehash/awesome-chrome-extensions | Pending |
+| 3 | ChromeStats | 60 | https://chrome-stats.com/d/ajmjdeobjjmabgonhaeaaehoepfafhbn | Pending |
+| 4 | Extension.io | 55 | https://extension.io/ | Pending |
+| 5 | CRX4Chrome | 50 | https://www.crx4chrome.com/ | Pending |
+| 6 | Crx4Opera | 50 | https://crx4opera.com/ | Pending |
+| 7 | Web Store Stats | 55 | https://webstorestats.com/ | Pending |
+| 8 | Edge Add-ons | 90 | https://microsoftedge.microsoft.com/addons | Pending |
+| 9 | Brave Web Store | 85 | https://brave.com/extensions/ | Pending |
+| 10 | Firefox Add-ons | 90 | https://addons.mozilla.org/ | Pending |
+| 11 | Opera Add-ons | 80 | https://addons.opera.com/ | Pending |
+
+### SEO-Optimized Chrome Web Store Description
+> WalletLens is a free, open-source Chrome extension that tracks crypto, stocks, gold, silver, platinum, and cash directly from your browser toolbar. Zero accounts, zero tracking, zero cloud — all data stays in your browser. AI-powered analysis with voice/screenshot import. Install from walletlens.live or GitHub.

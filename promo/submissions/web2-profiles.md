@@ -208,3 +208,42 @@ These are high-authority profile pages that link to your site.
 **Name**: WalletLens
 **URL**: https://walletlens.live
 **Description**: AI portfolio tracker — voice import, screenshot import, Magic Indicator, Portfolio Guardian.
+
+---
+
+## 31. Chrome Web Store — SEO-Optimized Listing
+**URL**: https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn
+
+**Title**: WalletLens — Portfolio Tracker
+**Short description**: Free, privacy-first portfolio tracker for crypto, stocks, gold, and cash. No account, all data local.
+**Detailed description**:
+> WalletLens is a free, open-source Chrome extension that tracks crypto, stocks, gold, silver, platinum, and cash directly from your browser toolbar.
+>
+> **Why WalletLens?**
+> - Zero accounts — no sign-up, no email, no password
+> - Zero tracking — no analytics, no data collection
+> - Zero cloud — all data stays in your browser's storage
+> - Open source — verify every line on GitHub
+>
+> **Features:**
+> - Live portfolio net worth and P&L
+> - AI Magic Indicator — 5-signal composite analysis per holding
+> - Voice import — say your holdings, AI parses them
+> - Screenshot import — screenshot exchange apps, AI reads holdings
+> - Portfolio Guardian — anomaly and risk detection
+> - Technical analysis for all assets
+> - Export to Excel, CSV, JSON, QR code
+> - Works offline as a PWA
+>
+> **Tracks:** Crypto (10,000+ coins), US stocks, gold, silver, platinum, copper, fiat currencies, cash
+>
+> **Privacy:** Your portfolio data never leaves your browser. No server, no database, no tracking. The developer cannot see your data.
+>
+> **GitHub:** https://github.com/tia8910/Walletlens
+> **Website:** https://walletlens.live
+
+---
+
+## 32. Chrome Web Store — Alt Text for Extension Icon
+**Icon alt text**: WalletLens — Privacy-first portfolio tracker
+**Screenshot alt text**: WalletLens dashboard showing crypto, stocks, and gold portfolio with AI analysis

@@ -115,3 +115,21 @@
 ```diff
 + - [WalletLens](https://walletlens.live) - Privacy-first net worth tracker. React + Vite + Cloudflare Pages. PWA with offline support. ([Source](https://github.com/tia8910/Walletlens))
 ```
+
+---
+
+## 9. awesome-chrome-extensions (nicehash/awesome-chrome-extensions)
+
+**Branch**: `add-walletlens`
+**Title**: `Add WalletLens — privacy-first portfolio tracker extension`
+**Body**:
+> WalletLens is a free, open-source Chrome extension that tracks crypto, stocks, gold, and cash directly from the browser toolbar. No account required — all data stays in browser storage.
+>
+> - Chrome Web Store: https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn
+> - Website: https://walletlens.live
+> - GitHub: https://github.com/tia8910/Walletlens
+
+**Diff** (add in Finance section):
+```diff
++ - [WalletLens](https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn) - Privacy-first portfolio tracker. Crypto, stocks, gold, cash. No account, all data local. AI analysis included.
+```

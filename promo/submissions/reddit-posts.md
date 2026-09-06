@@ -203,3 +203,45 @@ Built [WalletLens](https://walletlens.live) — tracks crypto alongside stocks, 
 **Privacy:** Zero accounts, all data in localStorage, open source.
 
 https://walletlens.live
+
+---
+
+## Post 7: r/chrome_extensions (DA 70)
+
+**Title**: "WalletLens — free, privacy-first portfolio tracker Chrome extension"
+
+**Body**:
+Hey r/chrome_extensions,
+
+I built [WalletLens](https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn) — a free, open-source Chrome extension for tracking your portfolio.
+
+**What it does:**
+- Tracks crypto (10,000+ coins), US stocks, gold, silver, and cash
+- Live net worth and P&L from the browser toolbar
+- AI Magic Indicator — 5-signal composite analysis per holding
+- Voice import — say your holdings, AI parses them
+- Screenshot import — screenshot exchange apps, AI reads holdings
+- Portfolio Guardian — anomaly and risk detection
+- Export to Excel, CSV, JSON, QR code
+
+**Privacy:**
+- Zero accounts, zero tracking, zero cloud
+- All data stays in browser storage
+- Open source (MIT) — verify every line
+
+**Install**: https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn
+**GitHub**: https://github.com/tia8910/Walletlens
+**Website**: https://walletlens.live
+
+---
+
+## Post 8: r/chrome (DA 75)
+
+**Title**: "Free portfolio tracker extension — crypto, stocks, gold — no account needed"
+
+**Body**:
+Chrome extension for tracking your net worth across crypto, stocks, gold, and cash. No sign-up, no API keys, all data stays in your browser.
+
+Features: AI analysis, voice/screenshot import, portfolio guardian, export to Excel.
+
+https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn
