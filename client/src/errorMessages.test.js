@@ -62,6 +62,7 @@ const MARKETING_PENDING_I18N_ROUTING = [
   'pages/MarketIndex.jsx', 'pages/PricePage.jsx',
   'pages/TrackCoin.jsx', 'pages/Compare.jsx', 'pages/Learn.jsx',
   'pages/GrowNetWorth.jsx', 'pages/AdminMail.jsx',
+  'pages/EcosystemPage.jsx',
 ]
 
 // placeholder / title / aria-label have the same blind spot: rendered to the

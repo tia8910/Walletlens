@@ -46,7 +46,7 @@ const LANDING_PATH_SET = new Set([
   '/portfolio-tracker-no-account', '/import-portfolio-from-screenshot',
   '/add-holdings-by-voice', '/blog', '/about', '/market-index',
   '/fear-and-greed-index', '/rebalancing-calculator', '/faq', '/privacy',
-  '/zakat-calculator',
+  '/zakat-calculator', '/ecosystem',
 ])
 const LANDING_PREFIXES = [
   '/blog/', '/track/', '/calculator/', '/learn/', '/vs/', '/price/', '/ar/', '/admin/',
@@ -95,6 +95,7 @@ const MarketIndex      = lazy(() => import('./pages/MarketIndex'))
 const FearAndGreedIndex = lazy(() => import('./pages/FearAndGreedIndex'))
 const Rebalancing      = lazy(() => import('./pages/Rebalancing'))
 const ZakatLanding     = lazy(() => import('./pages/ZakatCalculatorPage'))
+const EcosystemLanding = lazy(() => import('./pages/EcosystemPage'))
 const FAQ              = lazy(() => import('./pages/FAQ'))
 const Privacy      = lazy(() => import('./pages/Privacy'))
 const Terms        = lazy(() => import('./pages/Terms'))
@@ -643,6 +644,7 @@ export default function App() {
           <Route path="/import-portfolio-from-screenshot" element={<Landing />} />
           <Route path="/add-holdings-by-voice" element={<Landing />} />
           <Route path="/zakat-calculator" element={<ZakatLanding />} />
+          <Route path="/ecosystem" element={<EcosystemLanding />} />
           <Route path="/ar/zakat-calculator" element={<ZakatLanding />} />
           <Route path="/ar/free-net-worth-tracker" element={<Landing />} />
           <Route path="/ar/import-portfolio-from-screenshot" element={<Landing />} />
@@ -759,6 +761,7 @@ export default function App() {
               <Route path="/fear-and-greed-index" element={<FearAndGreedIndex />} />
               <Route path="/rebalancing-calculator" element={<Rebalancing />} />
               <Route path="/zakat-calculator" element={<ZakatLanding />} />
+              <Route path="/ecosystem" element={<EcosystemLanding />} />
               <Route path="/ar/zakat-calculator" element={<ZakatLanding />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/privacy" element={<Privacy />} />
