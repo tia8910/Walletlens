@@ -1940,6 +1940,161 @@ ${fgFaq.html}
 }))
 console.log('Prerendered /fear-and-greed-index landing page.')
 
+
+// ── Zakat calculator (/zakat-calculator, /ar/zakat-calculator) ───────────────
+// The strongest keyword position this app has, and the only one where it holds
+// something competitors do not: a working zakat engine over a live portfolio.
+// "zakat calculator" and its crypto/gold/stock variants are dominated by thin
+// explainer pages and by calculators that ask for a cash figure and stop.
+// Demand also spikes hard and predictably every Ramadan.
+//
+// Two pages, one per language, each canonical to itself and cross-declared via
+// hreflang — the Arabic page is not a translation of an English landing page,
+// it is the page most of this audience will search in.
+const zkFaqEn = faqBlock([
+  {
+    q: 'Do I pay zakat on cryptocurrency?',
+    a: 'Most contemporary scholars treat crypto as a tradeable asset, zakatable at 2.5% of its market value on your due date, provided your total wealth is at or above nisab. A minority hold that it is not wealth at all. The WalletLens zakat calculator includes crypto and lets you exclude it if you follow that view.',
+  },
+  {
+    q: 'What is the nisab for zakat today?',
+    a: 'Nisab is the value of 85 grams of gold or 595 grams of silver, so it moves with the metal price rather than being a fixed dollar figure. The silver standard is lower, so more people reach it, and it is what most contemporary zakat bodies use for cash and mixed wealth. This calculator prices both live and shows the figure it used.',
+  },
+  {
+    q: 'How do I calculate zakat on shares and ETFs?',
+    a: 'Shares bought to trade are stock in trade and zakatable in full at market value. Shares held long term are zakatable on the company’s underlying zakatable assets rather than the whole share price; since no price feed can read a balance sheet, about 30% of market value is the commonly used approximation.',
+  },
+  {
+    q: 'Is zakat 2.5% or 2.577%?',
+    a: 'It is 2.5% over a lunar year of about 354 days. If you pay on a fixed solar date instead, the rate is scaled to 2.577% to cover the eleven extra days — otherwise a solar-year payer quietly underpays a little every year.',
+  },
+  {
+    q: 'Do I pay zakat on gold jewellery?',
+    a: 'Gold and silver held as wealth are zakatable in full by weight, whether bullion, coins or jewellery. Schools differ on jewellery in regular personal use; the majority position exempts it, while the Hanafi position does not.',
+  },
+  {
+    q: 'Is the zakat calculator free and private?',
+    a: 'Yes. It is free, needs no account, and computes entirely in your browser — nothing you type is sent anywhere. In the WalletLens app your holdings stay on your device, and the zakat reminder sends a date only, never an amount.',
+  },
+])
+
+const zkStepsEn = [
+  'Add up everything zakatable: cash, gold, silver, crypto, shares and money owed to you.',
+  'Subtract the debts that are due now, not the whole balance of a long-term loan.',
+  'Compare the total to nisab — the value of 595g of silver or 85g of gold.',
+  'If you are at or above nisab and have been for a full lunar year, pay 2.5% of the total.',
+]
+
+write('/zakat-calculator', buildPage({
+  path: '/zakat-calculator',
+  title: 'Zakat Calculator for Crypto, Gold & Stocks | WalletLens',
+  description: 'Free zakat calculator for a modern portfolio — crypto, gold, silver, shares and cash — against a live nisab. Gold or silver standard, lunar or solar year. Nothing you enter leaves your browser.',
+  alternates: [
+    { hreflang: 'en', path: '/zakat-calculator' },
+    { hreflang: 'ar', path: '/ar/zakat-calculator' },
+    { hreflang: 'x-default', path: '/zakat-calculator' },
+  ],
+  bodyHtml: `
+<h1>Zakat Calculator for Crypto, Gold &amp; Stocks</h1>
+<p>Work out what you owe on a modern portfolio — <strong>cash, gold, silver, crypto and shares</strong> — measured against a <strong>live nisab</strong> rather than a figure that went stale last Ramadan. Free, no account, and nothing you type is sent anywhere.</p>
+
+<h2>How zakat on a portfolio is calculated</h2>
+<ol>
+${zkStepsEn.map(x => `<li>${x}</li>`).join('\n')}
+</ol>
+
+<h2>What counts in a modern portfolio</h2>
+<ul>
+<li><strong>Cash, bank balances, savings</strong> — zakatable in full.</li>
+<li><strong>Gold and silver</strong> — zakatable in full by weight, whether bullion, coins or jewellery held as wealth.</li>
+<li><strong>Crypto</strong> — treated as a tradeable asset by most contemporary scholars, zakatable at market value on your due date.</li>
+<li><strong>Shares held to trade</strong> — stock in trade, zakatable in full.</li>
+<li><strong>Shares held long term</strong> — zakatable on the company&rsquo;s underlying zakatable assets; about 30% of market value is the common approximation.</li>
+<li><strong>Your home, car and tools of work</strong> — not zakatable. Personal use, not wealth held.</li>
+</ul>
+
+<h2>Gold nisab or silver nisab?</h2>
+<p>Both thresholds were set in metal, and the two metals have drifted far apart since. 595g of silver is worth far less than 85g of gold, so the <strong>silver standard</strong> puts more people above the threshold and moves more wealth to those entitled to it — which is why most contemporary zakat bodies use it for cash and mixed wealth. The gold standard is the lighter one on the payer and is also held. This calculator offers both.</p>
+
+<h2>Zakat on a live portfolio, not a snapshot</h2>
+<p>A calculator gives you one number on one day. Zakat needs a <strong>full year</strong> — the hawl — and the value that matters is the one on your due date. <a href="https://walletlens.live">WalletLens</a> values your holdings at live prices, tracks the hawl for you, and reminds you a month before, a week before, and on the day. The reminder carries a date only, never an amount.</p>
+<p><a href="/dashboard">Open the free portfolio tracker &rarr;</a> · <a href="/ar/zakat-calculator">&#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</a> · <a href="/rebalancing-calculator">Rebalancing calculator</a></p>
+
+<p><em>This is a calculation tool, not a fatwa. Rulings differ between schools and scholars, particularly on crypto and on shares.</em></p>
+
+${zkFaqEn.html}
+`,
+  jsonLd: [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: `${ORIGIN}/` },
+        { '@type': 'ListItem', position: 2, name: 'Zakat Calculator', item: `${ORIGIN}/zakat-calculator/` },
+      ],
+    },
+    howToJsonLd('How to calculate zakat on a portfolio', zkStepsEn),
+    zkFaqEn.jsonLd,
+  ],
+}))
+
+const zkFaqAr = faqBlock([
+  {
+    q: 'هل في العملات الرقمية زكاة؟',
+    a: 'يعدّها أكثر المعاصرين مالاً متقوّماً تجب فيه الزكاة بنسبة ٢٫٥٪ من قيمتها السوقية يوم الوجوب إذا بلغ مجموع مالك النصاب.',
+  },
+  {
+    q: 'كم النصاب اليوم؟',
+    a: 'النصاب قيمة ٨٥ جراماً من الذهب أو ٥٩٥ جراماً من الفضة، فهو يتغير بتغير سعر المعدن. وهذه الحاسبة تحسبه بالسعر الحالي.',
+  },
+  {
+    q: 'وكيف تُزكّى الأسهم؟',
+    a: 'أسهم المتاجرة تُزكّى بقيمتها السوقية كاملة، وأسهم الاستثمار الطويل تُزكّى على الموجودات الزكوية للشركة، والتقدير الشائع نحو ٣٠٪ من القيمة السوقية.',
+  },
+  {
+    q: 'أهي ٢٫٥٪ أم ٢٫٥٧٧٪؟',
+    a: '٢٫٥٪ على الحول القمري نحو ٣٥٤ يوماً، فإن أخرجت على تاريخ شمسي ثابت رُفعت النسبة إلى ٢٫٥٧٧٪ لتغطية الأيام الزائدة.',
+  },
+  {
+    q: 'هل تُرسل بياناتي؟',
+    a: 'لا. تُحسب الصفحة في متصفحك ولا تحفظ شيئاً، وفي التطبيق تبقى ممتلكاتك على جهازك.',
+  },
+])
+
+write('/ar/zakat-calculator', buildPage({
+  path: '/ar/zakat-calculator',
+  lang: 'ar',
+  dir: 'rtl',
+  title: 'حاسبة الزكاة للعملات الرقمية والذهب والأسهم | WalletLens',
+  description: 'حاسبة زكاة مجانية للمحفظة الحديثة — نقد وذهب وفضة وعملات رقمية وأسهم — مقابل نصاب محدّث بالسعر الحالي. لا يُرسل ما تكتبه إلى أي جهة.',
+  alternates: [
+    { hreflang: 'ar', path: '/ar/zakat-calculator' },
+    { hreflang: 'en', path: '/zakat-calculator' },
+    { hreflang: 'x-default', path: '/zakat-calculator' },
+  ],
+  bodyHtml: `
+<h1>&#1581;&#1575;&#1587;&#1576;&#1577; &#1575;&#1604;&#1586;&#1603;&#1575;&#1577; &#1604;&#1604;&#1593;&#1605;&#1604;&#1575;&#1578; &#1575;&#1604;&#1585;&#1602;&#1605;&#1610;&#1577; &#1608;&#1575;&#1604;&#1584;&#1607;&#1576; &#1608;&#1575;&#1604;&#1571;&#1587;&#1607;&#1605;</h1>
+<p>&#1575;&#1581;&#1587;&#1576; &#1586;&#1603;&#1575;&#1578;&#1603; &#1593;&#1604;&#1609; &#1605;&#1581;&#1601;&#1592;&#1577; &#1581;&#1583;&#1610;&#1579;&#1577; &#8212; <strong>&#1606;&#1602;&#1583; &#1608;&#1584;&#1607;&#1576; &#1608;&#1601;&#1590;&#1577; &#1608;&#1593;&#1605;&#1604;&#1575;&#1578; &#1585;&#1602;&#1605;&#1610;&#1577; &#1608;&#1571;&#1587;&#1607;&#1605;</strong> &#8212; &#1605;&#1602;&#1575;&#1576;&#1604; &#1606;&#1589;&#1575;&#1576; &#1605;&#1581;&#1583;&#1617;&#1579; &#1576;&#1575;&#1604;&#1587;&#1593;&#1585; &#1575;&#1604;&#1581;&#1575;&#1604;&#1610;. &#1605;&#1580;&#1575;&#1606;&#1610;&#1577; &#1576;&#1604;&#1575; &#1581;&#1587;&#1575;&#1576;&#1548; &#1608;&#1604;&#1575; &#1610;&#1615;&#1585;&#1587;&#1604; &#1605;&#1575; &#1578;&#1603;&#1578;&#1576;&#1607; &#1573;&#1604;&#1609; &#1571;&#1610; &#1580;&#1607;&#1577;.</p>
+
+<h2>&#1603;&#1610;&#1601; &#1578;&#1615;&#1581;&#1587;&#1576; &#1586;&#1603;&#1575;&#1577; &#1575;&#1604;&#1605;&#1581;&#1601;&#1592;&#1577;</h2>
+<ol>
+<li>&#1575;&#1580;&#1605;&#1593; &#1603;&#1604; &#1605;&#1575; &#1607;&#1608; &#1586;&#1603;&#1608;&#1610;: &#1575;&#1604;&#1606;&#1602;&#1583; &#1608;&#1575;&#1604;&#1584;&#1607;&#1576; &#1608;&#1575;&#1604;&#1601;&#1590;&#1577; &#1608;&#1575;&#1604;&#1593;&#1605;&#1604;&#1575;&#1578; &#1575;&#1604;&#1585;&#1602;&#1605;&#1610;&#1577; &#1608;&#1575;&#1604;&#1571;&#1587;&#1607;&#1605;.</li>
+<li>&#1575;&#1591;&#1585;&#1581; &#1575;&#1604;&#1583;&#1610;&#1608;&#1606; &#1575;&#1604;&#1581;&#1575;&#1604;&#1617;&#1577; &#1593;&#1604;&#1610;&#1603;.</li>
+<li>&#1602;&#1575;&#1585;&#1606; &#1575;&#1604;&#1605;&#1580;&#1605;&#1608;&#1593; &#1576;&#1575;&#1604;&#1606;&#1589;&#1575;&#1576;: &#1602;&#1610;&#1605;&#1577; &#1637;&#1641;&#1637; &#1580;&#1585;&#1575;&#1605;&#1611;&#1575; &#1605;&#1606; &#1575;&#1604;&#1601;&#1590;&#1577; &#1571;&#1608; &#1640;&#1637; &#1580;&#1585;&#1575;&#1605;&#1611;&#1575; &#1605;&#1606; &#1575;&#1604;&#1584;&#1607;&#1576;.</li>
+<li>&#1573;&#1606; &#1576;&#1604;&#1594;&#1578; &#1575;&#1604;&#1606;&#1589;&#1575;&#1576; &#1608;&#1605;&#1590;&#1609; &#1593;&#1604;&#1610;&#1607; &#1581;&#1608;&#1604; &#1603;&#1575;&#1605;&#1604;&#1548; &#1601;&#1571;&#1582;&#1585;&#1580; &#1634;&#1643;&#1637;&#1642;.</li>
+</ol>
+
+<h2>&#1586;&#1603;&#1575;&#1577; &#1605;&#1581;&#1601;&#1592;&#1577; &#1581;&#1610;&#1617;&#1577;&#1548; &#1604;&#1575; &#1604;&#1602;&#1591;&#1577; &#1608;&#1575;&#1581;&#1583;&#1577;</h2>
+<p>&#1575;&#1604;&#1581;&#1575;&#1587;&#1576;&#1577; &#1578;&#1593;&#1591;&#1610;&#1603; &#1585;&#1602;&#1605;&#1611;&#1575; &#1608;&#1575;&#1581;&#1583;&#1611;&#1575; &#1601;&#1610; &#1610;&#1608;&#1605; &#1608;&#1575;&#1581;&#1583;&#1548; &#1608;&#1575;&#1604;&#1586;&#1603;&#1575;&#1577; &#1578;&#1581;&#1578;&#1575;&#1580; &#1581;&#1608;&#1604;&#1575;&#1611; &#1603;&#1575;&#1605;&#1604;&#1575;&#1611;. <a href="https://walletlens.live">WalletLens</a> &#1610;&#1602;&#1608;&#1617;&#1605; &#1605;&#1605;&#1578;&#1604;&#1603;&#1575;&#1578;&#1603; &#1576;&#1575;&#1604;&#1571;&#1587;&#1593;&#1575;&#1585; &#1575;&#1604;&#1581;&#1610;&#1617;&#1577;&#1548; &#1608;&#1610;&#1578;&#1578;&#1576;&#1593; &#1575;&#1604;&#1581;&#1608;&#1604; &#1593;&#1606;&#1603;&#1548; &#1608;&#1610;&#1584;&#1603;&#1617;&#1585;&#1603; &#1602;&#1576;&#1604; &#1578;&#1605;&#1575;&#1605;&#1607; &#1576;&#1588;&#1607;&#1585; &#1608;&#1576;&#1571;&#1587;&#1576;&#1608;&#1593; &#1608;&#1601;&#1610; &#1610;&#1608;&#1605;&#1607;. &#1608;&#1575;&#1604;&#1578;&#1584;&#1603;&#1610;&#1585; &#1610;&#1581;&#1605;&#1604; &#1578;&#1575;&#1585;&#1610;&#1582;&#1611;&#1575; &#1601;&#1602;&#1591; &#1608;&#1604;&#1575; &#1610;&#1581;&#1605;&#1604; &#1605;&#1576;&#1604;&#1594;&#1611;&#1575; &#1571;&#1576;&#1583;&#1611;&#1575;.</p>
+<p><a href="/dashboard">&#1575;&#1601;&#1578;&#1581; &#1575;&#1604;&#1605;&#1578;&#1578;&#1576;&#1593; &#1575;&#1604;&#1605;&#1580;&#1575;&#1606;&#1610; &#8592;</a> · <a href="/zakat-calculator">English</a></p>
+
+<p><em>&#1607;&#1584;&#1607; &#1571;&#1583;&#1575;&#1577; &#1581;&#1587;&#1575;&#1576; &#1604;&#1575; &#1601;&#1578;&#1608;&#1609;. &#1578;&#1582;&#1578;&#1604;&#1601; &#1575;&#1604;&#1571;&#1602;&#1608;&#1575;&#1604; &#1576;&#1610;&#1606; &#1575;&#1604;&#1605;&#1584;&#1575;&#1607;&#1576; &#1608;&#1575;&#1604;&#1593;&#1604;&#1605;&#1575;&#1569;.</em></p>
+
+${zkFaqAr.html}
+`,
+  jsonLd: [zkFaqAr.jsonLd],
+}))
+
 // ── Portfolio rebalancing calculator (/rebalancing-calculator) ───────────────
 // Targets high-impression, zero-click rebalancing queries seen in Search
 // Console: "how to rebalance a crypto portfolio", "asset rebalancing",
@@ -2221,7 +2376,8 @@ const STATIC_ROUTES = [
   { path: '/market-index', changefreq: 'daily', priority: '0.9' },
   { path: '/fear-and-greed-index', changefreq: 'daily', priority: '0.9' },
   { path: '/rebalancing-calculator', changefreq: 'monthly', priority: '0.85' },
-  { path: '/about',   changefreq: 'monthly', priority: '0.7' },,,
+  { path: '/zakat-calculator', changefreq: 'weekly', priority: '0.9' },
+  { path: '/about',   changefreq: 'monthly', priority: '0.7' },
   { path: '/vision',  changefreq: 'monthly', priority: '0.8' },
   { path: '/faq',     changefreq: 'monthly', priority: '0.7' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.5' },
@@ -2235,6 +2391,7 @@ const AR_ROUTES = [
   '/ar/free-net-worth-tracker',
   '/ar/import-portfolio-from-screenshot',
   '/ar/add-holdings-by-voice',
+  '/ar/zakat-calculator',
   // /ar/vs/* excluded: they canonicalize to the English pages (see above).
   ...AR_POSTS.map(p => `/ar/blog/${p.slug}`),
 ]
