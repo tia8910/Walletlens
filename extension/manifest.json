@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "WalletLens: Net Worth & Portfolio Tracker",
   "short_name": "WalletLens",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "Your whole net worth in your toolbar: crypto, stocks, gold, property, cash. AI screenshot and voice import. Free, no account.",
   "icons": {
     "16": "icons/icon-16.png",
@@ -34,8 +34,7 @@
     }
   ],
   "permissions": [
-    "storage",
-    "alarms"
+    "storage"
   ],
   "host_permissions": [
     "https://walletlens.live/*",
@@ -44,7 +43,6 @@
     "https://walletlens-voice.tarek-abdelhameed.workers.dev/*",
     "https://stooq.com/*",
     "https://api.gold-api.com/*",
-    "https://open.er-api.com/*",
-    "https://cdn.jsdelivr.net/*"
+    "https://open.er-api.com/*"
   ]
 }
