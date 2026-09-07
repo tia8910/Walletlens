@@ -22,24 +22,43 @@ const CHUNK_ERR_PATTERNS = [
 const MAX_AUTO_RETRIES = 3
 const RETRY_KEY = 'wl_chunk_retry'
 function chunkReload() {
+  let attempt = 0
   try {
-    const n = parseInt(sessionStorage.getItem(RETRY_KEY) || '0', 10)
-    if (n >= MAX_AUTO_RETRIES) return
-    sessionStorage.setItem(RETRY_KEY, String(n + 1))
+    attempt = parseInt(sessionStorage.getItem(RETRY_KEY) || '0', 10)
+    if (attempt >= MAX_AUTO_RETRIES) return
+    sessionStorage.setItem(RETRY_KEY, String(attempt + 1))
   } catch {}
-  if ('caches' in window) {
-    // Only nuke API/versioned caches — preserve the static-asset cache (so the
-    // reload doesn't re-download every hashed JS/CSS chunk) AND the
-    // version-independent CDN cache (up to 500 coin icons that never change).
-    caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => !k.startsWith('walletlens-static-') && !k.startsWith('walletlens-cdn-'))
-          .map(k => caches.delete(k))
-      ))
-      .finally(() => window.location.reload())
-  } else {
+
+  if (!('caches' in window)) {
     window.location.reload()
+    return
   }
+
+  // The first attempts keep the static cache, so a reload does not re-download
+  // every hashed chunk for what is usually a one-off miss.
+  //
+  // The last one must not. A stale shell pointing at chunks the server has
+  // since deleted lives in exactly that cache, and preserving it means the
+  // routine meant to recover from a bad chunk can never actually escape one:
+  // it burns all three retries against the same broken copy and then gives up,
+  // leaving the boot splash on screen forever. On the final attempt take the
+  // cache and the worker with it and let the next load rebuild from network.
+  const lastTry = attempt >= MAX_AUTO_RETRIES - 1
+  const keep = k => !lastTry
+    ? (!k.startsWith('walletlens-static-') && !k.startsWith('walletlens-cdn-'))
+    : !k.startsWith('walletlens-cdn-')   // coin icons are content-addressed; they never go stale
+
+  const work = [
+    caches.keys().then(keys => Promise.all(keys.filter(keep).map(k => caches.delete(k)))),
+  ]
+  if (lastTry && 'serviceWorker' in navigator) {
+    work.push(
+      navigator.serviceWorker.getRegistrations()
+        .then(rs => Promise.all(rs.map(r => r.unregister())))
+        .catch(() => {})
+    )
+  }
+  Promise.all(work).catch(() => {}).finally(() => window.location.reload())
 }
 window.addEventListener('unhandledrejection', (e) => {
   const msg = e.reason?.message || ''

@@ -464,6 +464,75 @@
     </div>
     <script type="module" src="/src/main.jsx" fetchpriority="high"></script>
 
+    <!-- Boot watchdog.
+         If the module bundle 404s or throws, nothing in main.jsx ever runs:
+         no error handler, no retry, no message. The splash below just spins
+         forever, which is what a stale cache pointing at deleted chunks looks
+         like from the user's side. This is deliberately inline and dependency
+         free so it survives the bundle failing to load at all.
+
+         React replaces the whole of #root on mount, so the splash element
+         going away is the signal that boot succeeded. -->
+    <script>
+      (function () {
+        var BOOT_TIMEOUT = 12000
+        var firstError = ''
+        function note(msg) { if (!firstError && msg) firstError = String(msg).slice(0, 300) }
+        addEventListener('error', function (e) {
+          note(e.message || (e.target && e.target.src ? 'Failed to load ' + e.target.src : ''))
+        }, true)
+        addEventListener('unhandledrejection', function (e) { note(e.reason && (e.reason.message || e.reason)) })
+
+        // Wipe every trace of the last build: caches, workers and the retry
+        // counter that stops main.jsx retrying after three attempts.
+        function reset(btn) {
+          if (btn) { btn.disabled = true; btn.textContent = 'Resetting…' }
+          try { sessionStorage.removeItem('wl_chunk_retry') } catch (err) {}
+          var jobs = []
+          if (window.caches) jobs.push(caches.keys().then(function (k) {
+            return Promise.all(k.map(function (n) { return caches.delete(n) }))
+          }))
+          if (navigator.serviceWorker) jobs.push(
+            navigator.serviceWorker.getRegistrations().then(function (rs) {
+              return Promise.all(rs.map(function (r) { return r.unregister() }))
+            }))
+          Promise.all(jobs).catch(function () {}).then(function () {
+            location.replace(location.pathname + '?r=' + Date.now())
+          })
+        }
+
+        setTimeout(function () {
+          var boot = document.querySelector('.wlboot')
+          if (!boot) return                       // React mounted; nothing to do
+          var panel = document.createElement('div')
+          panel.setAttribute('style', 'position:fixed;inset:0;width:100vw;height:100vh;overflow:auto;z-index:2;display:flex;align-items:center;' +
+            'justify-content:center;padding:1.5rem;background:#081209;color:#eafff2;' +
+            "font-family:system-ui,-apple-system,sans-serif;text-align:center")
+          panel.innerHTML =
+            '<div style="max-width:26rem">' +
+            '<div style="font-size:1.25rem;font-weight:800;margin-bottom:.6rem">WalletLens could not finish loading</div>' +
+            '<p style="margin:0 0 1.2rem;line-height:1.55;color:#a7c9b5">This is almost always a copy of an older ' +
+            'version left in this browser. Resetting clears it and reloads. Your portfolio is not affected: it is ' +
+            'stored separately and is not touched by this.</p>' +
+            '<button id="wlReset" style="background:#00c853;color:#04240f;border:0;border-radius:12px;' +
+            'padding:.8rem 1.4rem;font-weight:800;font-size:.95rem;cursor:pointer">Reset and reload</button> ' +
+            '<button id="wlRetry" style="background:transparent;color:#eafff2;border:1px solid #2c4a38;' +
+            'border-radius:12px;padding:.8rem 1.4rem;font-weight:700;font-size:.95rem;cursor:pointer;' +
+            'margin-inline-start:.5rem">Try again</button>' +
+            (firstError ? '<pre style="margin:1.4rem 0 0;padding:.7rem;background:#04120a;border-radius:8px;' +
+              'color:#7fae94;font-size:.72rem;text-align:start;white-space:pre-wrap;word-break:break-word">' +
+              firstError.replace(/[<&]/g, function (c) { return c === '<' ? '&lt;' : '&amp;' }) + '</pre>' : '') +
+            '</div>'
+          // the prerendered SEO text sits behind #root; without this the
+          // page still scrolls past the panel to reach it
+          document.documentElement.style.overflow = 'hidden'
+          document.body.appendChild(panel)
+          panel.querySelector('#wlReset').onclick = function () { reset(this) }
+          panel.querySelector('#wlRetry').onclick = function () { location.reload() }
+        }, BOOT_TIMEOUT)
+      })()
+    </script>
+
     <!-- X conversion tracking event — deferred to window load so it never
          competes with the initial render or module evaluation. -->
     <script>
