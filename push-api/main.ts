@@ -99,7 +99,7 @@ interface WatchAsset { id: string; symbol: string; kind: "crypto" | "stock" | "m
 // crossing below without being declared here.
 interface Prefs {
   moves: boolean; levels: boolean; news: boolean; digest: boolean
-  retention: boolean; features: boolean; zakat: boolean
+  retention: boolean; features: boolean; zakat: boolean; trend: boolean
   // Scheduled content, rather than a reaction to a price.
   newsMarket: boolean; hacks: boolean; academy: boolean; portfolio: boolean
   movePct: number

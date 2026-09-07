@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { completeRedirectSignIn } from '../googleDrive'
+import { useLanguage } from '../LanguageContext'
 
 // Landing point for the Google OAuth redirect flow.
 //
@@ -16,6 +17,7 @@ import { completeRedirectSignIn } from '../googleDrive'
 export default function DriveCallback() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { t } = useLanguage()
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export default function DriveCallback() {
       const params = new URLSearchParams(search)
       const code = params.get('code')
       if (code) {
-        completeRedirectSignInWithCode(code, navigate, setError)
+        completeRedirectSignInWithCode(code, navigate, setError, t('dcFailed'))
         return
       }
     }
@@ -50,11 +52,11 @@ export default function DriveCallback() {
     if (hash && hash.includes('access_token=')) {
       completeRedirectSignIn(hash).then(({ returnTo }) => {
         navigate(returnTo || '/settings', { replace: true, state: { driveConnected: true } })
-      }).catch(e => setError(e.message || 'Sign-in failed'))
+      }).catch(() => setError(t('dcFailed')))
       return
     }
 
-    setError('No authorization received from Google')
+    setError(t('dcNoAuth'))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -65,7 +67,7 @@ export default function DriveCallback() {
           <h2 style={{ marginBottom: '0.75rem' }}>Google Drive</h2>
           <p style={{ opacity: 0.75, marginBottom: '1.5rem' }}>{error}</p>
           <button className="settings-chip" onClick={() => navigate('/settings', { replace: true })}>
-            Back to Settings
+            {t('dcBack')}
           </button>
         </>
       ) : (
@@ -75,11 +77,16 @@ export default function DriveCallback() {
   )
 }
 
-async function completeRedirectSignInWithCode(code, navigate, setError) {
+// The failure message is passed in already translated. It is not derived from
+// `e.message`: that string comes from Google or from a fetch failure, is always
+// English, and says things like "invalid_grant" that tell the person nothing
+// about what to do next. The error is still worth logging, just not showing.
+async function completeRedirectSignInWithCode(code, navigate, setError, failedMsg) {
   try {
     const { returnTo } = await completeRedirectSignIn(code)
     navigate(returnTo || '/settings', { replace: true, state: { driveConnected: true } })
   } catch (e) {
-    setError(e.message || 'Sign-in failed')
+    console.warn('drive sign-in failed:', String(e?.message || e).slice(0, 200))
+    setError(failedMsg)
   }
 }

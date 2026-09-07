@@ -11,7 +11,7 @@ I got tired of portfolio trackers that require accounts, store your data on thei
 - AI Magic Indicator — fuses technical, on-chain, volume, whale, and fundamental signals into one direction per holding
 - Voice import — say "I bought 0.5 BTC at 65K" and it parses multiple trades
 - Screenshot import — screenshot your Binance/Coinbase/MetaMask holdings and AI reads them
-- Portfolio Guardian — monitors for anomalies, concentration risk, and volatility spikes
+- Portfolio Guardian — a dead man's switch: stop opening the app and, after a two-week email warning, the people you nominated are sent a snapshot of what you hold
 - Price alerts — even when the app is closed
 - Export to tax-ready CSV for Koinly/CoinTracker
 

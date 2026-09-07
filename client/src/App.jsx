@@ -19,7 +19,6 @@ import Logo from './components/Logo'
 import Icon from './components/Icon'
 import BottomNav from './components/BottomNav'
 import PullToRefresh from './components/PullToRefresh'
-import GitHubStarButton from './components/GitHubStarButton'
 // Non-critical shell components — lazy-loaded after the app shell renders
 const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
 const AssistantChat = lazy(() => import('./components/AssistantChat'))
@@ -47,6 +46,7 @@ const LANDING_PATH_SET = new Set([
   '/portfolio-tracker-no-account', '/import-portfolio-from-screenshot',
   '/add-holdings-by-voice', '/blog', '/about', '/market-index',
   '/fear-and-greed-index', '/rebalancing-calculator', '/faq', '/privacy',
+  '/zakat-calculator', '/ecosystem',
 ])
 const LANDING_PREFIXES = [
   '/blog/', '/track/', '/calculator/', '/learn/', '/vs/', '/price/', '/ar/', '/admin/',
@@ -94,6 +94,8 @@ const About            = lazy(() => import('./pages/About'))
 const MarketIndex      = lazy(() => import('./pages/MarketIndex'))
 const FearAndGreedIndex = lazy(() => import('./pages/FearAndGreedIndex'))
 const Rebalancing      = lazy(() => import('./pages/Rebalancing'))
+const ZakatLanding     = lazy(() => import('./pages/ZakatCalculatorPage'))
+const EcosystemLanding = lazy(() => import('./pages/EcosystemPage'))
 const FAQ              = lazy(() => import('./pages/FAQ'))
 const Privacy      = lazy(() => import('./pages/Privacy'))
 const Terms        = lazy(() => import('./pages/Terms'))
@@ -635,12 +637,15 @@ export default function App() {
     return (
       <div className="wl-app wl-app-landing">
         <ErrorBoundary resetKey={location.pathname}><Suspense fallback={<PageFallback />}><Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<EcosystemLanding />} />
           <Route path="/free-net-worth-tracker" element={<Landing />} />
           <Route path="/crypto-and-stock-portfolio-tracker" element={<Landing />} />
           <Route path="/portfolio-tracker-no-account" element={<Landing />} />
           <Route path="/import-portfolio-from-screenshot" element={<Landing />} />
           <Route path="/add-holdings-by-voice" element={<Landing />} />
+          <Route path="/zakat-calculator" element={<ZakatLanding />} />
+          <Route path="/ecosystem" element={<EcosystemLanding />} />
+          <Route path="/ar/zakat-calculator" element={<ZakatLanding />} />
           <Route path="/ar/free-net-worth-tracker" element={<Landing />} />
           <Route path="/ar/import-portfolio-from-screenshot" element={<Landing />} />
           <Route path="/ar/add-holdings-by-voice" element={<Landing />} />
@@ -749,12 +754,18 @@ export default function App() {
               <Route path="/grow" element={<GrowNetWorth />} />
               <Route path="/technicals" element={<Technicals />} />
               <Route path="/asset/:coinId" element={<AssetDetail />} />
+              {/* /asset/?id=… is what notifications link to: it resolves to a
+                  real prerendered file, which /asset/:coinId never can. */}
+              <Route path="/asset" element={<AssetDetail />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<Blog />} />
               <Route path="/about" element={<About />} />
               <Route path="/market-index" element={<MarketIndex />} />
               <Route path="/fear-and-greed-index" element={<FearAndGreedIndex />} />
               <Route path="/rebalancing-calculator" element={<Rebalancing />} />
+              <Route path="/zakat-calculator" element={<ZakatLanding />} />
+              <Route path="/ecosystem" element={<EcosystemLanding />} />
+              <Route path="/ar/zakat-calculator" element={<ZakatLanding />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
@@ -769,7 +780,6 @@ export default function App() {
       </PullToRefresh>
 
       <AppFooter />
-      <GitHubStarButton />
 
       {!isLanding && isStandalone && shellReady && <BottomNav />}
 

@@ -80,7 +80,53 @@ function GeneratedIcon({ symbol, size, className, badgeStyle, fallbackChar }) {
 const STAGE_TIMEOUT_MS = 3000
 const FALLBACK_TIMEOUT_MS = 1200
 
-const CoinLogo = memo(function CoinLogo({
+/**
+ * Non-crypto assets — stocks, metals, fiat. Their icons come from a local
+ * table because no CDN carries them, so the fallback ladder in CryptoLogo
+ * would only burn requests on a stock ticker before giving up.
+ */
+function NonCryptoLogo({ coinId, symbol, size = 32, className = 'coin-logo', badgeStyle, fallbackChar }) {
+  const known = ASSET_ICONS[coinId]
+  if (known) {
+    const id = `gi-${coinId}`
+    return (
+      <svg width={size} height={size} viewBox="0 0 32 32" className={className} style={{ borderRadius:'50%', flexShrink:0, ...badgeStyle }}>
+        <defs>
+          <radialGradient id={id} cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stopColor={known.color1} />
+            <stop offset="100%" stopColor={known.color2} />
+          </radialGradient>
+        </defs>
+        <circle cx="16" cy="16" r="16" fill={`url(#${id})`} />
+        <text x="16" y="16" textAnchor="middle" dominantBaseline="central"
+          fontSize="11" fontWeight="800" fontFamily="Inter,system-ui,sans-serif" fill="rgba(255,255,255,0.95)">
+          {known.label}
+        </text>
+      </svg>
+    )
+  }
+  const label = fallbackChar || nonCryptoLabel(coinId, symbol)
+  const [c1, c2] = nonCryptoColor(coinId)
+  const id = `gi-nc-${coinId}`
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" className={className} style={{ borderRadius:'50%', flexShrink:0, ...badgeStyle }}>
+      <defs>
+        <radialGradient id={id} cx="35%" cy="35%" r="65%">
+          <stop offset="0%" stopColor={c1} />
+          <stop offset="100%" stopColor={c2} />
+        </radialGradient>
+      </defs>
+      <circle cx="16" cy="16" r="16" fill={`url(#${id})`} />
+      <text x="16" y="16" textAnchor="middle" dominantBaseline="central"
+        fontSize={label.length > 3 ? '8' : label.length > 2 ? '10' : '12'} fontWeight="800"
+        fontFamily="Inter,system-ui,sans-serif" fill="rgba(255,255,255,0.95)">
+        {label}
+      </text>
+    </svg>
+  )
+}
+
+const CryptoLogo = memo(function CryptoLogo({
   image,
   symbol,
   coinId,
@@ -90,48 +136,6 @@ const CoinLogo = memo(function CoinLogo({
   fallbackChar,
 }) {
   const sym = (symbol || '').toLowerCase()
-
-  // Short-circuit for non-crypto assets — no CDN has their icons
-  if (isNonCrypto(coinId)) {
-    const known = ASSET_ICONS[coinId]
-    if (known) {
-      const id = `gi-${coinId}`
-      return (
-        <svg width={size} height={size} viewBox="0 0 32 32" className={className} style={{ borderRadius:'50%', flexShrink:0, ...badgeStyle }}>
-          <defs>
-            <radialGradient id={id} cx="35%" cy="35%" r="65%">
-              <stop offset="0%" stopColor={known.color1} />
-              <stop offset="100%" stopColor={known.color2} />
-            </radialGradient>
-          </defs>
-          <circle cx="16" cy="16" r="16" fill={`url(#${id})`} />
-          <text x="16" y="16" textAnchor="middle" dominantBaseline="central"
-            fontSize="11" fontWeight="800" fontFamily="Inter,system-ui,sans-serif" fill="rgba(255,255,255,0.95)">
-            {known.label}
-          </text>
-        </svg>
-      )
-    }
-    const label = fallbackChar || nonCryptoLabel(coinId, symbol)
-    const [c1, c2] = nonCryptoColor(coinId)
-    const id = `gi-nc-${coinId}`
-    return (
-      <svg width={size} height={size} viewBox="0 0 32 32" className={className} style={{ borderRadius:'50%', flexShrink:0, ...badgeStyle }}>
-        <defs>
-          <radialGradient id={id} cx="35%" cy="35%" r="65%">
-            <stop offset="0%" stopColor={c1} />
-            <stop offset="100%" stopColor={c2} />
-          </radialGradient>
-        </defs>
-        <circle cx="16" cy="16" r="16" fill={`url(#${id})`} />
-        <text x="16" y="16" textAnchor="middle" dominantBaseline="central"
-          fontSize={label.length > 3 ? '8' : label.length > 2 ? '10' : '12'} fontWeight="800"
-          fontFamily="Inter,system-ui,sans-serif" fill="rgba(255,255,255,0.95)">
-          {label}
-        </text>
-      </svg>
-    )
-  }
 
   // Prefer the stored image and API cache (exact coinId match = correct icon).
   // Only fall back to symbol-based CDNs as last resort — they can return
@@ -203,6 +207,20 @@ const CoinLogo = memo(function CoinLogo({
       fallbackChar={fallbackChar}
     />
   )
+})
+
+/**
+ * Picks between the two. This wrapper calls no hooks, which is the point.
+ *
+ * The choice used to be an `if (isNonCrypto(coinId)) return …` sitting above
+ * six hooks in a single component, so a logo whose coinId moved between a
+ * stock and a coin at the same position rendered a different number of hooks
+ * than the render before it — React #310. A hookless component may return
+ * early; CryptoLogo always runs the same hooks in the same order.
+ */
+const CoinLogo = memo(function CoinLogo(props) {
+  if (isNonCrypto(props.coinId)) return <NonCryptoLogo {...props} />
+  return <CryptoLogo {...props} />
 })
 
 export default CoinLogo

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
+import { dataUrl } from '../apiHosts.js'
 
 const RSS_FEEDS = [
   { name: 'CoinTelegraph',    url: 'https://cointelegraph.com/rss',                   color: '#f7931a' },
@@ -185,7 +186,7 @@ export default function NewsFeed({ enriched = [] }) {
 
       // 1. Try GitHub Actions cached /news.json (fastest, no CORS)
       try {
-        const res = await fetchWithTimeout('/news.json?t=' + Math.floor(Date.now() / 3600000), 5000)
+        const res = await fetchWithTimeout(dataUrl('news.json') + '?t=' + Math.floor(Date.now() / 3600000), 5000)
         if (res.ok) {
           const data = await res.json()
           if (data.articles?.length) items = data.articles

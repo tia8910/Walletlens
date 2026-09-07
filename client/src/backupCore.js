@@ -182,6 +182,9 @@ export const DEVICE_ONLY_KEYS = [
   // putting it in a backup would hand Drive access to anyone who ever sees
   // the code.
   'wl_drive_token',
+  // A refresh token, so the same reasoning as the bearer token above applies
+  // and applies for longer: it does not expire in an hour.
+  'wl_drive_refresh',
 ]
 
 // ── Compression helpers (WL3/WL2 format) ──────────────────────────────────

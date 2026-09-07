@@ -5,7 +5,7 @@ Hey everyone! We just shipped **WalletLens v7** — the biggest update yet for t
 ## What's New
 
 ### 🛡️ Portfolio Guardian
-AI monitors your holdings for anomalies, concentration risk, and unusual volatility. Get alerts before problems escalate.
+A dead man's switch for your portfolio. Nominate who should reach your holdings; opening the app resets the countdown. Stop opening it and you are warned by email for two weeks, then they are sent a snapshot of what you hold — never a login, and never anything that can move funds.
 
 ### 🔔 Smart Push Notifications
 Price alerts for ANY asset (crypto, stocks, gold, silver), investment hacks, feature tips. Works even when the app is closed. No Firebase, no tracking.

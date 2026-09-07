@@ -7,6 +7,7 @@ import { TOKEN_UNLOCKS } from '../data/assets'
 import { useLanguage } from '../LanguageContext'
 import { renderMaybe } from '../data/walletEvalTips'
 import { showLocalNotification, requestNotifyPermission } from '../localNotify'
+import { dataUrl } from '../apiHosts.js'
 
 // ── Token Unlock Database is defined in data/assets.js ──────────────────────
 
@@ -342,7 +343,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
 
       let newsArticles = []
       try {
-        const r = await fetch(`/news.json?t=${Math.floor(Date.now() / 3_600_000)}`)
+        const r = await fetch(`${dataUrl('news.json')}?t=${Math.floor(Date.now() / 3_600_000)}`)
         if (r.ok) newsArticles = (await r.json()).articles || []
       } catch {}
 

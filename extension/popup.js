@@ -9,7 +9,11 @@ const SITE            = 'https://walletlens.live';
 const CG_PRICE_URL    = 'https://api.coingecko.com/api/v3/simple/price';
 const CG_MARKET_URL   = 'https://api.coingecko.com/api/v3/coins/markets';
 const FG_URL          = 'https://api.alternative.me/fng/?limit=1';
-const DENO_PROXY      = u => `https://walletlens-voice-parse.tia8910.deno.net/proxy?url=${encodeURIComponent(u)}`;
+// The voice worker's CORS proxy. This used to point at a Deno Deploy host on
+// an account that is no longer in use, so every fallback path through it was
+// reaching a service that does not answer, and the manifest was asking for a
+// host permission with nothing behind it.
+const PROXY           = u => `https://walletlens-voice.tarek-abdelhameed.workers.dev/proxy?url=${encodeURIComponent(u)}`;
 
 const MARKET_COINS = ['bitcoin','ethereum','binancecoin','solana','ripple','cardano'];
 const NEWS_URL     = 'https://walletlens.live/news.json';
@@ -112,7 +116,7 @@ function assetIcon(holding, cls) {
   }
   // Deno-proxied retries — official logo still loads on networks that block
   // the CDNs directly (proxy allowlists the logo hosts and passes bytes through)
-  for (const src of sources.slice()) sources.push(DENO_PROXY(src));
+  for (const src of sources.slice()) sources.push(PROXY(src));
   if (!sources.length) return letterBadge(holding, cls);
   const img = document.createElement('img');
   img.className = cls + ' ' + cls + '-img';
@@ -174,9 +178,9 @@ async function fetchPrices(coinIds) {
   const simpleUrl = `${CG_PRICE_URL}?ids=${encodeURIComponent(ids)}&vs_currencies=usd&include_24hr_change=true`;
   const attempts = [
     () => fetch(mktUrl, { signal: AbortSignal.timeout(8000) }),
-    () => fetch(DENO_PROXY(mktUrl), { signal: AbortSignal.timeout(10000) }),
+    () => fetch(PROXY(mktUrl), { signal: AbortSignal.timeout(10000) }),
     () => fetch(simpleUrl, { signal: AbortSignal.timeout(8000) }),
-    () => fetch(DENO_PROXY(simpleUrl), { signal: AbortSignal.timeout(10000) }),
+    () => fetch(PROXY(simpleUrl), { signal: AbortSignal.timeout(10000) }),
   ];
   for (const attempt of attempts) {
     try {
@@ -216,7 +220,7 @@ async function fetchStockPrices(stockIds) {
   // Stooq has no CORS headers — direct works on some networks, proxy elsewhere
   const attempts = [
     () => fetch(url, { signal: AbortSignal.timeout(7000) }),
-    () => fetch(DENO_PROXY(url), { signal: AbortSignal.timeout(9000) }),
+    () => fetch(PROXY(url), { signal: AbortSignal.timeout(9000) }),
   ];
   for (const attempt of attempts) {
     try {
@@ -251,7 +255,7 @@ async function fetchMetalPrices(metalIds) {
     const url = `https://api.gold-api.com/price/${code}`;
     const attempts = [
       () => fetch(url, { signal: AbortSignal.timeout(6000) }),
-      () => fetch(DENO_PROXY(url), { signal: AbortSignal.timeout(8000) }),
+      () => fetch(PROXY(url), { signal: AbortSignal.timeout(8000) }),
     ];
     for (const attempt of attempts) {
       try {
@@ -270,7 +274,7 @@ async function fetchFiatPrices(fiatIds) {
   const url = 'https://open.er-api.com/v6/latest/USD';
   const attempts = [
     () => fetch(url, { signal: AbortSignal.timeout(6000) }),
-    () => fetch(DENO_PROXY(url), { signal: AbortSignal.timeout(8000) }),
+    () => fetch(PROXY(url), { signal: AbortSignal.timeout(8000) }),
   ];
   for (const attempt of attempts) {
     try {
@@ -326,7 +330,7 @@ async function fetchMarketCoins() {
   const urlStr = url.toString();
   const attempts = [
     () => fetch(urlStr, { signal: AbortSignal.timeout(8000) }),
-    () => fetch(DENO_PROXY(urlStr), { signal: AbortSignal.timeout(10000) }),
+    () => fetch(PROXY(urlStr), { signal: AbortSignal.timeout(10000) }),
   ];
   for (const attempt of attempts) {
     try {
@@ -354,7 +358,7 @@ async function fetchOHLC(coinId) {
   const urlStr = CG_OHLC_URL.replace('{id}', coinId) + '?vs_currency=usd&days=14';
   const attempts = [
     () => fetch(urlStr, { signal: AbortSignal.timeout(8000) }),
-    () => fetch(DENO_PROXY(urlStr), { signal: AbortSignal.timeout(10000) }),
+    () => fetch(PROXY(urlStr), { signal: AbortSignal.timeout(10000) }),
   ];
   for (const attempt of attempts) {
     try {

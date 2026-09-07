@@ -73,10 +73,17 @@ Live P&L · Technical Analysis · Magic Indicator · AI Coach
 > Paste any ETH, BTC or Solana address — auto-fetches live balances. No API key.
 
 ### 🤖 AI Magic Indicator
-> One composite signal per holding merging **5 pillars**: technical, on-chain, volume, whale flow, and fundamentals. Shows: 🟢 Strong Buy → 🔴 Distribute.
+> One composite signal per holding, weighted from a pillar set chosen by asset type.
+> **Crypto, 8:** technical, momentum, whales, on-chain, volume, sentiment, cycle, correlation.
+> **Stocks, 7:** technical, momentum, volume, earnings, sector, dividend, market.
+> **Metals, 7:** technical, momentum, volume, DXY, inflation, safe haven, supply.
+> Shows: 🟢 Strong Buy → 🟡 Neutral → 🔴 Distribute.
 
 ### 🛡️ Portfolio Guardian
-> AI monitors your holdings for anomalies, concentration risk, and volatility spikes.
+> A dead man's switch for your portfolio. Nominate the people who should reach your holdings, and every time you open WalletLens the countdown resets. Stop opening it and you are warned by email for two weeks first; only then are your nominees sent a snapshot of what you hold — never a login, and never anything that can move funds.
+
+### 📉 Risk Scanner
+> Concentration, drawdown and exposure across everything you hold, on the same numbers the dashboard already shows.
 
 ### 💰 Zakat Calculator
 > Auto-calculate 2.5% Nisab with live gold/silver prices. Multi-currency support.

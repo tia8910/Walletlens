@@ -58,7 +58,7 @@ async function getJson(url, timeoutMs = 20000) {
 export const MARKET_URL =
   'https://api.coingecko.com/api/v3/coins/markets'
   + '?vs_currency=usd&order=market_cap_desc&per_page=250&page=1'
-  + '&sparkline=false&price_change_percentage=1h%2C24h%2C7d'
+  + '&sparkline=true&price_change_percentage=1h%2C24h%2C7d'
 
 /**
  * Accept a market payload, or reject it.
@@ -71,7 +71,52 @@ export const MARKET_URL =
  */
 export function parseMarket(data) {
   if (!Array.isArray(data) || data.length < 50) return null
-  return data
+  return data.map(withSpark)
+}
+
+/** How many points a stored 7-day sparkline keeps. */
+export const SPARK_POINTS = 28
+
+/**
+ * Thin a 7-day hourly series down to something worth shipping.
+ *
+ * CoinGecko returns about 168 hourly points per coin. Across 250 coins that
+ * is roughly 42,000 numbers, which would take market.json from 250 KB to near
+ * a megabyte, on a file the dashboard fetches on load. At the size these are
+ * actually drawn, a few hundred pixels wide, 28 points carries the same shape.
+ *
+ * Endpoints are always kept: the first and last prices are the ones a reader
+ * compares, and dropping either would let the line disagree with the 7-day
+ * percentage printed beside it.
+ */
+export function downsampleSpark(prices, points = SPARK_POINTS) {
+  if (!Array.isArray(prices)) return null
+  const clean = prices.filter((n) => Number.isFinite(n))
+  if (clean.length < 2) return null
+  if (clean.length <= points) return clean.map(round6)
+
+  const out = []
+  const step = (clean.length - 1) / (points - 1)
+  for (let i = 0; i < points; i++) out.push(round6(clean[Math.round(i * step)]))
+  return out
+}
+
+// Six significant digits, not fixed decimals: the same series has to hold
+// bitcoin near 100000 and a memecoin near 0.00000002 without flattening one
+// of them to zero.
+const round6 = (n) => Number(n.toPrecision(6))
+
+/**
+ * Swap the bulky hourly series for the thinned one the client draws.
+ *
+ * The original key is dropped rather than kept alongside, or the saving is
+ * spent twice over.
+ */
+function withSpark(coin) {
+  if (!coin || typeof coin !== 'object') return coin
+  const spark = downsampleSpark(coin.sparkline_in_7d?.price)
+  const { sparkline_in_7d: _drop, ...rest } = coin
+  return spark ? { ...rest, spark7d: spark } : rest
 }
 
 export async function fetchMarket(now = Date.now()) {

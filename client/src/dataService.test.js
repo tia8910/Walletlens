@@ -2,9 +2,11 @@ import { describe, it, expect } from 'vitest'
 import {
   decodeEntities, stripTags, tagText, findImage, pubDateMs, parseFeed,
   parseCalendarRows, parseStooqCsv, parseMarket, stooqUrl, TICKERS, FEED_GROUPS,
-  isoStamp,
-} from '../../workers/data/feeds.js'
-import { DATASETS, isStale, refresh, serve } from '../../workers/data/index.js'
+  isoStamp, downsampleSpark, SPARK_POINTS,
+} from '../../data-api/feeds.js'
+import {
+  CHUNK_BYTES, DATASETS, isStale, joinChunks, refresh, serve, splitChunks,
+} from '../../data-api/core.js'
 
 // The data worker replaces four GitHub Actions cron jobs that fetched public
 // feeds and committed JSON into client/public/. Those jobs were never tested —
@@ -309,21 +311,26 @@ describe('parseMarket', () => {
 
 // ── Staleness, refresh and serving ──────────────────────────────────────────
 
-/** A KV double that records puts, so "was the old value kept" is assertable. */
-function fakeKv(seed = {}) {
-  const store = new Map(Object.entries(seed).map(([k, v]) => [`data:${k}`, JSON.stringify(v)]))
+/**
+ * A store double that records writes, so "was the old value kept" is
+ * assertable. core.js takes the store as an argument for exactly this reason:
+ * the rules below are the ones that reach users, and none of them should need
+ * a Deno KV or a Cloudflare binding to exercise.
+ */
+function fakeStore(seed = {}) {
+  const data = new Map(Object.entries(seed).map(([k, v]) => [k, JSON.stringify(v)]))
   return {
-    puts: [],
-    async get(k, type) {
-      const raw = store.get(k)
-      if (raw == null) return null
-      return type === 'json' ? JSON.parse(raw) : raw
+    writes: [],
+    async read(name) {
+      const raw = data.get(name)
+      return raw == null ? null : JSON.parse(raw)
     },
-    async put(k, v) { this.puts.push(k); store.set(k, v) },
+    async write(name, payload) {
+      this.writes.push(name)
+      data.set(name, JSON.stringify(payload))
+    },
   }
 }
-
-const envWith = (kv) => ({ DATA: kv })
 const NOW = Date.UTC(2026, 8, 4, 12, 0, 0)
 const agedBy = (ms) => ({ updated: isoStamp(NOW - ms), count: 1, coins: [] })
 
@@ -346,69 +353,69 @@ describe('isStale', () => {
 
 describe('refresh', () => {
   it('does nothing while the stored copy is fresh', async () => {
-    const kv = fakeKv({ 'market.json': agedBy(60 * 1000) })
-    const r = await refresh(envWith(kv), 'market.json', { now: NOW })
+    const store = fakeStore({ 'market.json': agedBy(60 * 1000) })
+    const r = await refresh(store, 'market.json', { now: NOW })
     expect(r.skipped).toBe('fresh')
-    expect(kv.puts).toEqual([])
+    expect(store.writes).toEqual([])
   })
 
   it('KEEPS the previous value when the upstream gives nothing', async () => {
     // The failure that actually reaches users. The Python had this branch
     // ("keeping existing market.json") and it is the reason a rate-limited
     // CoinGecko never blanked the app's market page.
-    const kv = fakeKv({ 'market.json': agedBy(24 * 60 * 60 * 1000) })
+    const store = fakeStore({ 'market.json': agedBy(24 * 60 * 60 * 1000) })
     const spec = DATASETS['market.json']
     const original = spec.fetch
     try {
       spec.fetch = async () => null
-      const r = await refresh(envWith(kv), 'market.json', { now: NOW })
+      const r = await refresh(store, 'market.json', { now: NOW })
       expect(r.skipped).toBe('upstream')
       expect(r.kept).toBe(true)
-      expect(kv.puts, 'a failed fetch must never overwrite good data').toEqual([])
+      expect(store.writes, 'a failed fetch must never overwrite good data').toEqual([])
     } finally {
       spec.fetch = original
     }
   })
 
   it('keeps the previous value when the fetch throws, too', async () => {
-    const kv = fakeKv({ 'news.json': agedBy(24 * 60 * 60 * 1000) })
+    const store = fakeStore({ 'news.json': agedBy(24 * 60 * 60 * 1000) })
     const spec = DATASETS['news.json']
     const original = spec.fetch
     try {
       spec.fetch = async () => { throw new Error('network down') }
-      const r = await refresh(envWith(kv), 'news.json', { now: NOW })
+      const r = await refresh(store, 'news.json', { now: NOW })
       expect(r.skipped).toBe('upstream')
-      expect(kv.puts).toEqual([])
+      expect(store.writes).toEqual([])
     } finally {
       spec.fetch = original
     }
   })
 
   it('writes when stale and the upstream answers', async () => {
-    const kv = fakeKv({ 'market.json': agedBy(24 * 60 * 60 * 1000) })
+    const store = fakeStore({ 'market.json': agedBy(24 * 60 * 60 * 1000) })
     const spec = DATASETS['market.json']
     const original = spec.fetch
     try {
       spec.fetch = async (now) => ({ updated: isoStamp(now), count: 250, coins: [] })
-      const r = await refresh(envWith(kv), 'market.json', { now: NOW })
+      const r = await refresh(store, 'market.json', { now: NOW })
       expect(r.count).toBe(250)
-      expect(kv.puts).toEqual(['data:market.json'])
+      expect(store.writes).toEqual(['market.json'])
     } finally {
       spec.fetch = original
     }
   })
 
   it('ignores a dataset it does not own', async () => {
-    const kv = fakeKv()
-    expect((await refresh(envWith(kv), 'secrets.json', { now: NOW })).skipped).toBe('unknown')
-    expect(kv.puts).toEqual([])
+    const store = fakeStore()
+    expect((await refresh(store, 'secrets.json', { now: NOW })).skipped).toBe('unknown')
+    expect(store.writes).toEqual([])
   })
 })
 
 describe('serve', () => {
   it('returns the stored payload with a cacheable header', async () => {
-    const kv = fakeKv({ 'market.json': agedBy(60 * 1000) })
-    const res = await serve(envWith(kv), 'market.json', NOW)
+    const store = fakeStore({ 'market.json': agedBy(60 * 1000) })
+    const res = await serve(store, 'market.json', NOW)
     expect(res.status).toBe(200)
     expect(res.headers.get('Cache-Control')).toContain('stale-while-revalidate')
     expect((await res.json()).updated).toBeTruthy()
@@ -418,15 +425,49 @@ describe('serve', () => {
     // THE DEPLOY-ORDER TRAP. Once the route is live the Pages copy of this
     // path is unreachable, so an empty KV would serve nothing where a stale
     // file used to be. The first request has to heal it.
-    const kv = fakeKv()
+    const store = fakeStore()
     const spec = DATASETS['news.json']
     const original = spec.fetch
     try {
       spec.fetch = async (now) => ({ updated: isoStamp(now), count: 5, articles: [] })
-      const res = await serve(envWith(kv), 'news.json', NOW)
+      const res = await serve(store, 'news.json', NOW)
       expect(res.status).toBe(200)
       expect((await res.json()).count).toBe(5)
-      expect(kv.puts).toEqual(['data:news.json'])
+      expect(store.writes).toEqual(['news.json'])
+    } finally {
+      spec.fetch = original
+    }
+  })
+
+  it('refreshes a stale copy on read, so cron is an optimisation not a requirement', async () => {
+    // Deno Deploy playgrounds, and plans without cron, would otherwise fill
+    // the store once and serve that snapshot forever — the exact failure this
+    // service exists to end.
+    const store = fakeStore({ 'market.json': agedBy(24 * 60 * 60 * 1000) })
+    const spec = DATASETS['market.json']
+    const original = spec.fetch
+    try {
+      spec.fetch = async (now) => ({ updated: isoStamp(now), count: 250, coins: [] })
+      const res = await serve(store, 'market.json', NOW)
+      expect(res.status).toBe(200)
+      expect((await res.json()).count).toBe(250)
+      expect(store.writes).toEqual(['market.json'])
+    } finally {
+      spec.fetch = original
+    }
+  })
+
+  it('serves the stale copy when the refresh it triggers fails', async () => {
+    // Degrading to old data beats degrading to a hole: the upstream being
+    // down must not turn a served page into an error.
+    const store = fakeStore({ 'market.json': agedBy(24 * 60 * 60 * 1000) })
+    const spec = DATASETS['market.json']
+    const original = spec.fetch
+    try {
+      spec.fetch = async () => null
+      const res = await serve(store, 'market.json', NOW)
+      expect(res.status).toBe(200)
+      expect(store.writes, 'a failed refresh must not overwrite').toEqual([])
     } finally {
       spec.fetch = original
     }
@@ -435,16 +476,129 @@ describe('serve', () => {
   it('503s rather than inventing an empty envelope when it has nothing at all', async () => {
     // An authoritative-looking empty list is worse than an error: the client
     // has its own fallback path and can show the last data it holds.
-    const kv = fakeKv()
+    const store = fakeStore()
     const spec = DATASETS['news.json']
     const original = spec.fetch
     try {
       spec.fetch = async () => null
-      const res = await serve(envWith(kv), 'news.json', NOW)
+      const res = await serve(store, 'news.json', NOW)
       expect(res.status).toBe(503)
       expect(res.headers.get('Cache-Control')).toBe('no-store')
     } finally {
       spec.fetch = original
     }
+  })
+})
+
+// ── Chunking ────────────────────────────────────────────────────────────────
+//
+// Deno KV caps a value at 64 KiB. market.json is 250 KB, so this is not an
+// optimisation — the largest dataset cannot be stored whole, and a bug here
+// means a truncated body parsed as if it were a market snapshot.
+
+describe('splitChunks and joinChunks', () => {
+  it('round-trips a payload larger than the KV value limit', () => {
+    const body = JSON.stringify({ coins: Array.from({ length: 5000 }, (_, i) => ({ i, sym: `C${i}` })) })
+    expect(body.length).toBeGreaterThan(64 * 1024)
+    const parts = splitChunks(body)
+    expect(parts.length).toBeGreaterThan(1)
+    expect(joinChunks(parts)).toBe(body)
+  })
+
+  it('keeps every chunk under the 64 KiB Deno KV allows', () => {
+    expect(CHUNK_BYTES).toBeLessThan(64 * 1024)
+    const parts = splitChunks('x'.repeat(500_000))
+    for (const part of parts) expect(part.length).toBeLessThanOrEqual(CHUNK_BYTES)
+  })
+
+  it('emits one chunk for an empty body rather than none', () => {
+    // A zero count in the meta record cannot be told apart from "not stored",
+    // so the reader would refetch forever on a legitimately empty payload.
+    expect(splitChunks('')).toEqual([''])
+    expect(joinChunks(splitChunks(''))).toBe('')
+  })
+
+  it('splits on the boundary exactly, losing nothing', () => {
+    const body = 'ab'.repeat(CHUNK_BYTES)
+    expect(joinChunks(splitChunks(body))).toBe(body)
+    expect(splitChunks(body)).toHaveLength(2)
+  })
+})
+
+// ── Sparklines ──────────────────────────────────────────────────────────────
+//
+// CoinGecko returns about 168 hourly points per coin. Shipping all of them for
+// 250 coins would take market.json from 250 KB to near a megabyte, on a file
+// the dashboard fetches on load.
+
+describe('downsampleSpark', () => {
+  const hourly = (n, f = (i) => i) => Array.from({ length: n }, (_, i) => f(i))
+
+  it('thins a week of hourly points to the stored count', () => {
+    expect(downsampleSpark(hourly(168))).toHaveLength(SPARK_POINTS)
+  })
+
+  it('keeps both endpoints, so the line agrees with the percentage beside it', () => {
+    // Losing either end would let the drawn shape contradict the 7d number
+    // printed next to it, which is worse than drawing nothing.
+    const out = downsampleSpark(hourly(168, (i) => 100 + i))
+    expect(out[0]).toBe(100)
+    expect(out[out.length - 1]).toBe(267)
+  })
+
+  it('leaves a short series alone rather than padding it', () => {
+    expect(downsampleSpark([1, 2, 3])).toEqual([1, 2, 3])
+  })
+
+  it('holds precision across wildly different price scales', () => {
+    // The same code path carries bitcoin near 100000 and a memecoin near
+    // 0.00000002. Fixed decimals would flatten one of them to zero.
+    const big = downsampleSpark([104233.77, 104987.12])
+    expect(big[0]).toBeCloseTo(104234, 0)
+    const tiny = downsampleSpark([0.000000021234, 0.000000019876])
+    expect(tiny[0]).toBeGreaterThan(0)
+    expect(tiny[1]).toBeGreaterThan(0)
+  })
+
+  it('returns null rather than a stub when there is nothing to draw', () => {
+    expect(downsampleSpark(null)).toBe(null)
+    expect(downsampleSpark([])).toBe(null)
+    expect(downsampleSpark([5])).toBe(null)
+    expect(downsampleSpark([NaN, NaN])).toBe(null)
+  })
+
+  it('drops unusable points instead of drawing them as zero', () => {
+    const out = downsampleSpark([1, NaN, 3, null, 5])
+    expect(out).toEqual([1, 3, 5])
+  })
+})
+
+describe('parseMarket sparkline handling', () => {
+  const coins = (n) => Array.from({ length: n }, (_, i) => ({
+    id: `c${i}`,
+    current_price: 1,
+    sparkline_in_7d: { price: Array.from({ length: 168 }, (_, j) => 10 + j) },
+  }))
+
+  it('replaces the hourly series with the thinned one', () => {
+    const out = parseMarket(coins(50))
+    expect(out[0].spark7d).toHaveLength(SPARK_POINTS)
+  })
+
+  it('drops the original key, or the saving is spent twice', () => {
+    const out = parseMarket(coins(50))
+    expect(out[0].sparkline_in_7d).toBeUndefined()
+  })
+
+  it('keeps a coin that has no sparkline at all', () => {
+    const list = coins(50)
+    delete list[3].sparkline_in_7d
+    const out = parseMarket(list)
+    expect(out[3].id).toBe('c3')
+    expect(out[3].spark7d).toBeUndefined()
+  })
+
+  it('still rejects a short list as a rate-limit response', () => {
+    expect(parseMarket(coins(3))).toBe(null)
   })
 })

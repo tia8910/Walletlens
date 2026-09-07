@@ -17,7 +17,7 @@
 // and web-push → WebCrypto (webpush.js), which is the only genuinely new code.
 
 import {
-  asLang, bumpSent, copy, DEFAULT_PREFS, deliveryFor, localDayKey,
+  asLang, assetUrl, bumpSent, copy, DEFAULT_PREFS, deliveryFor, localDayKey,
   pushTopic, sanitizeAlerts, sanitizePrefs, sanitizeSetup, sanitizeTz,
   sanitizeWatch, sanitizeZakatDue, trimZakatSent,
   normalizeSub as normalize,
@@ -156,8 +156,49 @@ async function sendViaFcm(env, store, sub, payload, { now }) {
  * Firebase — which is exactly where the crons' blindness to the Android app
  * lived.
  */
-export function makeSender(env, store) {
+/**
+ * The subrequest budget for one Worker invocation.
+ *
+ * Cloudflare allows 50 outbound subrequests per invocation on the Free plan,
+ * and a cron pass spends them on everything: quote fetches, the news feed, the
+ * FCM OAuth token, and one per notification delivered. Exceeding it does not
+ * degrade — the next fetch throws "Too many subrequests by single Worker
+ * invocation", which surfaced to users as a refused delivery.
+ *
+ * So sends draw from a counted budget and stop when it runs out, instead of
+ * throwing. A subscriber who misses a pass is not skipped: nothing about their
+ * state is written unless the send succeeded, so the next tick — a minute away
+ * for targets and crypto, five for everything else — picks them up. Degrading
+ * beats failing, and deferring by a minute is invisible.
+ *
+ * The reserve exists because the budget is shared with the fetches that already
+ * happened before the first send, and those are not counted here. Leaving room
+ * is cheaper than counting every call site.
+ */
+export const SUBREQUEST_LIMIT = 50
+export const SUBREQUEST_RESERVE = 12
+
+export function makeBudget(limit = SUBREQUEST_LIMIT - SUBREQUEST_RESERVE) {
+  let left = limit
+  return {
+    get remaining() { return left },
+    /** True while there is room for one more outbound call. */
+    take() {
+      if (left <= 0) return false
+      left -= 1
+      return true
+    },
+  }
+}
+
+export function makeSender(env, store, budget = null) {
   return async function send(sub, payload, { now = Date.now() } = {}) {
+    // Out of budget: report not-sent rather than throwing. jobs.js already
+    // treats a falsy return as "did not deliver" and leaves the subscriber's
+    // channel state untouched, which is exactly the retry-next-tick behaviour
+    // this needs — no extra bookkeeping.
+    if (budget && !budget.take()) return false
+
     // One decision, two transports. Which one a device wants is a property of
     // the subscription, not of the notification — jobs.js has no idea either
     // exists and should not.
@@ -245,6 +286,25 @@ async function handle(req, env, store) {
       // already, and without it a server key that no longer matches the one
       // clients subscribed with is undetectable from either side.
       vapidKey: env.VAPID_PUBLIC_KEY || '',
+      // The channel roster of the RUNNING build, so deployment drift is
+      // visible instead of guessed at. "Why do I only get price alerts" has
+      // two possible answers -- the content channels have not fired yet
+      // today, or the deployed worker predates them -- and they need
+      // completely different responses. A short list here means the second.
+      channels: Object.keys(DEFAULT_PREFS).filter(k => typeof DEFAULT_PREFS[k] === 'boolean').sort(),
+      // The asset link shape this build produces. A price alert is only as
+      // good as the page it opens, and the difference between the two shapes
+      // is a working deep link and a 404 — but from outside there is no way
+      // to tell which one a running worker emits until a notification fires
+      // and somebody taps it. One request answers it instead.
+      assetUrlSample: assetUrl({ coin_id: 'bitcoin' }),
+      // What each cron is responsible for. A channel present above but absent
+      // here is defined and never scheduled, which is its own failure mode.
+      schedules: {
+        '* * * * *': ['targets', 'moves-crypto'],
+        '*/5 * * * *': ['moves', 'news'],
+        '5 * * * *': ['daily (digest, retention, zakat, portfolio, academy, hacks, features)', 'trend'],
+      },
     }, headers)
   }
 
@@ -457,21 +517,22 @@ export async function runSchedule(cron, jobs) {
     // Everything else — stocks cost one request per symbol — plus news.
     await run('moves', () => jobs.checkMoves())
     await run('news', () => jobs.checkNews())
-    // Trigger the data worker's public-market refresh (no own cron triggers).
-    await run('data-refresh', async () => {
-      const url = env.DATA_WORKER_URL
-      if (!url) return
-      const token = env.DATA_REFRESH_TOKEN || ''
-      await fetch(url + '/__refresh', {
-        method: 'POST',
-        headers: { 'x-refresh-token': token },
-        signal: AbortSignal.timeout(15_000),
-      })
-    })
+    // main carried a 'data-refresh' step here that poked the data worker from
+    // this cron, because that worker had no triggers of its own. It is dropped
+    // rather than merged, for three separate reasons: `env` is not in scope in
+    // runSchedule (the reference threw on every pass and was swallowed by
+    // run()'s catch, so it had never once worked); the replacement data worker
+    // serves no /__refresh route, only /__health; and it does not need poking
+    // anyway, since it carries its own */15 cron AND serve() refreshes any
+    // dataset it finds past its maxAge while answering a request.
     return
   }
   if (cron === '5 * * * *') {
     await run('daily', () => jobs.checkDaily())
+    // Hourly is the right cadence for a seven-day window, and it rides this
+    // schedule rather than adding a fourth: the account is at the Workers Free
+    // cron-trigger limit.
+    await run('trend', () => jobs.checkTrend())
     return
   }
   console.warn('unrecognised cron schedule:', cron)
@@ -490,7 +551,10 @@ export default {
 
   async scheduled(event, env, ctx) {
     const store = new SubStore(env.DB)
-    const jobs = createJobs({ store, send: makeSender(env, store) })
+    // One budget per invocation, so the crons that fan out the most (moves and
+    // news at */5, the daily channels at :05) cannot spend the platform's whole
+    // subrequest allowance before they start delivering.
+    const jobs = createJobs({ store, send: makeSender(env, store, makeBudget()) })
     ctx.waitUntil(runSchedule(event.cron, jobs))
   },
 }

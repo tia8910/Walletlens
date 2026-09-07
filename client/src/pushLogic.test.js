@@ -157,9 +157,12 @@ describe('preferences', () => {
   })
 
   it('clamps the move threshold to a sane band', () => {
-    // 0% would fire on every tick for every asset the user holds.
-    expect(sanitizePrefs({ movePct: 0 }).movePct).toBe(1)
-    expect(sanitizePrefs({ movePct: -5 }).movePct).toBe(1)
+    // 0% would fire on every tick for every asset the user holds. The floor is
+    // 0.5 rather than 1 since 35960375: a 1% floor meant a large, slow-moving
+    // holding could drift all day without a word, and someone who deliberately
+    // sets the threshold low has asked for exactly that.
+    expect(sanitizePrefs({ movePct: 0 }).movePct).toBe(0.5)
+    expect(sanitizePrefs({ movePct: -5 }).movePct).toBe(0.5)
     expect(sanitizePrefs({ movePct: 900 }).movePct).toBe(50)
     expect(sanitizePrefs({ movePct: 'abc' }).movePct).toBe(DEFAULT_PREFS.movePct)
     expect(sanitizePrefs({ movePct: 8 }).movePct).toBe(8)
@@ -270,9 +273,10 @@ describe('how promptly each channel runs', () => {
   })
 
   it('does not run the moves pass every minute', () => {
-    // fetchStockQuotes is one request PER SYMBOL, capped at 40. Per-minute
-    // would be up to forty Yahoo requests a minute and a rate-limit, which
-    // returns nothing at all — worse than a few minutes' latency.
+    // fetchStockQuotes now answers most symbols from the shared
+    // stock-prices.json in ONE request, but the tail it cannot cover is still
+    // one Yahoo request per symbol. Per-minute would rate-limit that tail, and
+    // a rate-limit returns nothing at all — worse than a few minutes' latency.
     const moves = cronFor('wl-check-moves')
     expect(moves).not.toBe('* * * * *')
     expect(moves).toMatch(/^\*\/([2-9]|1\d)/)
@@ -403,7 +407,10 @@ describe('nothing is withheld for being the seventh today', () => {
     // Removing the global cap is not "never suppress anything". These are
     // per-reason, so they cannot stack into a stream from one event — which is
     // exactly what a global cap could never distinguish.
-    expect(MOVE_COOLDOWN_MS).toBe(3 * 60 * 60 * 1000)
+    // One hour, not three, since 35960375. Three hours meant a holding that
+    // moved in the morning was silent through the afternoon it kept moving,
+    // which reads as the alerts being broken rather than as restraint.
+    expect(MOVE_COOLDOWN_MS).toBe(1 * 60 * 60 * 1000)
     expect(server).toMatch(/cooldownMs: MOVE_COOLDOWN_MS/)
     expect(server).toMatch(/now - sub\.lastNewsAt < NEWS_COOLDOWN_MS/)
     expect(FEATURE_TIP_GAP_MS).toBe(3 * 24 * 60 * 60 * 1000)
@@ -1561,10 +1568,10 @@ describe('notifications go out when the thing happens, not on a rota', () => {
   )
 
   it('checks crypto moves every minute and stocks every five', () => {
-    // The old pass ran everything at five because fetchStockQuotes costs one
-    // request PER SYMBOL. Crypto is one batched call however many coins are
-    // held, so letting the slowest ingredient set the pace delayed the
-    // notification people most expect to be immediate.
+    // The old pass ran everything at five because fetchStockQuotes cost one
+    // request per symbol for every symbol. Crypto is one batched call however
+    // many coins are held, so letting the slowest ingredient set the pace
+    // delayed the notification people most expect to be immediate.
     expect(server).toMatch(
       /Deno\.cron\("wl-moves-crypto", "\* \* \* \* \*", \(\) => checkMoves\(\{ kinds: \["crypto"\], refreshSeen: false \}\)\)/,
     )

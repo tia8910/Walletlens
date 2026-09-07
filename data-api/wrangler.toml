@@ -1,0 +1,43 @@
+name = "walletlens-data"
+main = "worker.js"
+compatibility_date = "2026-09-04"
+
+# Replaces four GitHub Actions cron jobs — update-market, update-news,
+# update-economy-calendar and update-stock-prices — which fetched public feeds,
+# committed JSON into client/public/ and needed a site rebuild for the data to
+# reach anyone. Here a refresh is a KV write.
+
+# The cache, already created and already holding the six datasets: this is the
+# same namespace the earlier workers/data revision of this worker was deployed
+# against, carried across so a deploy reuses the warm store instead of starting
+# from an empty one. A namespace id is not a credential — every byte in it is
+# public market data served unauthenticated, which is why this worker needs no
+# secrets at all.
+[[kv_namespaces]]
+binding = "DATA"
+id = "bf8d773c28a74505867eed6754940915"
+
+# OPTIONAL, AND IT MAY BE REFUSED. The Workers Free plan allows five cron
+# triggers per ACCOUNT, and walletlens-push already uses three. If this deploy
+# fails on the trigger limit, delete this block and deploy again — the service
+# still works, because serve() refreshes any dataset it finds past its maxAge
+# on the way to answering a request. The cron only moves that cost off the
+# first visitor after each interval.
+[triggers]
+crons = ["*/15 * * * *"]
+
+# Live since 8551b22f, and carried across with the namespace above. A Worker
+# route wins over Cloudflare Pages on a matching path, so these six take over
+# from the static files the Pages build still ships, with no change to the
+# client. They are already active, so this deploy inherits them rather than
+# introducing them — the order-of-operations warning that guarded the FIRST
+# deploy (never route a path the worker cannot yet answer) no longer applies,
+# because serve() answers a cold KV inline.
+routes = [
+  { pattern = "walletlens.live/market.json",            zone_name = "walletlens.live" },
+  { pattern = "walletlens.live/news.json",              zone_name = "walletlens.live" },
+  { pattern = "walletlens.live/stocks.json",            zone_name = "walletlens.live" },
+  { pattern = "walletlens.live/economy.json",           zone_name = "walletlens.live" },
+  { pattern = "walletlens.live/economic-calendar.json", zone_name = "walletlens.live" },
+  { pattern = "walletlens.live/stock-prices.json",      zone_name = "walletlens.live" },
+]

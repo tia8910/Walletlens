@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
 import { marketMood } from '../sentiment'
+import { dataUrl } from '../apiHosts.js'
 
 // Scoring and the market read live in ../sentiment, pure and tested. This file
 // only fetches and renders — the rule that decides what to call the market is
@@ -9,10 +10,10 @@ import { marketMood } from '../sentiment'
 async function fetchMood() {
   const bust = Math.floor(Date.now() / 3600000)
   const [articles, coins] = await Promise.all([
-    fetch(`/news.json?t=${bust}`).then(r => r.ok ? r.json() : null).then(j => j?.articles || []).catch(() => []),
+    fetch(`${dataUrl('news.json')}?t=${bust}`).then(r => r.ok ? r.json() : null).then(j => j?.articles || []).catch(() => []),
     // Prices decide the label, so this is the one that matters. Failing to
     // load it falls back to headlines rather than showing nothing.
-    fetch(`/market.json?t=${bust}`).then(r => r.ok ? r.json() : null).then(j => j?.coins || []).catch(() => []),
+    fetch(`${dataUrl('market.json')}?t=${bust}`).then(r => r.ok ? r.json() : null).then(j => j?.coins || []).catch(() => []),
   ])
   return marketMood({ articles, coins })
 }
