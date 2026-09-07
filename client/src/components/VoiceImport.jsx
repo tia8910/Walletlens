@@ -797,7 +797,7 @@ const HI_NUMBERS = {
   'hazaar':1000,'hajar':1000,'hazar':1000,
   'lakh':100000,'laakh':100000,
   'crore':10000000,'karod':10000000,
-  'arab':1000000000,'arab':1000000000,
+  'arab':1000000000,
   'pauna':0.75,'aadha':0.5,'aadh':0.5,'derh':1.5,'dedh':1.5,
   'sawa':1.25,'paune':0.75,'dhai':2.5,'saade':0.5,
   // Devanagari digits
@@ -817,7 +817,7 @@ const FR_NUMBERS = {
   'cent':100,'deux cents':200,'trois cents':300,
   'mille':1000,'million':1000000,'milliard':1000000000,
   'demi':0.5,'moitié':0.5,'quart':0.25,'tiers':0.333,
-  'demy':0.5,'demi':0.5,
+  'demy':0.5,
 }
 
 // ── Spanish word numbers ───────────────────────────────────────────────────
@@ -878,7 +878,7 @@ const JA_NUMBERS = {
 const KO_NUMBERS = {
   'hana':1,'dul':2,'set':3,'net':4,'daseot':5,
   'yeoseot':6,'ilgop':7,'yeodeol':8,'ahop':9,'yeol':10,
-  'hana':1,'do':2,'se':3,'ne':4,'daseot':5,
+  'do':2,'se':3,'ne':4,
   'il':1,'i':2,'sam':3,'sa':4,'o':5,' yuk':6,'chil':7,'pal':8,'gu':9,'sip':10,
   'baek':100,'cheon':1000,'man':10000,
 }

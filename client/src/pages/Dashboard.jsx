@@ -1719,7 +1719,7 @@ function DataPanel({ onRefresh, onImported, drive = false }) {
       {showQr && qrParts.length > 0 && (
         <div style={{ textAlign:'center', margin:'0.5rem 0' }}>
           {qrParts.length > 1 && (
-            <p style={{ fontSize:'0.78rem', color: 'var(--g-ink)', fontWeight: 700, margin:'0 0 0.5rem', fontWeight:700 }}>
+            <p style={{ fontSize:'0.78rem', color: 'var(--g-ink)', fontWeight: 700, margin:'0 0 0.5rem' }}>
               <Icon name="phone" size={13} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{qrParts.length}-part QR — scan each in order on the other device
             </p>
           )}
@@ -2393,7 +2393,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
         <div style={{ fontWeight:800, fontSize:'1.25rem', color:'var(--text)', marginBottom:'0.25rem' }}>
           {allDone ? "You're all set!" : 'Welcome to WalletLens'}
         </div>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', fontSize:'0.62rem', fontWeight:800, letterSpacing:'0.14em', color: 'var(--g-ink)', fontWeight: 700, marginBottom:'0.9rem' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', fontSize:'0.62rem', fontWeight:800, letterSpacing:'0.14em', color: 'var(--g-ink)', marginBottom:'0.9rem' }}>
           <span>TRACK</span><span style={{ opacity:0.4 }}>·</span><span>{t('dsAnalyze')}</span><span style={{ opacity:0.4 }}>·</span><span>GROW</span>
         </div>
         {/* Progress bar + counter */}
@@ -2453,7 +2453,7 @@ function OnboardingTutorial({ wallets, transactions, enriched, aiSeen, onCreateW
               }}>
                 <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
                   <span style={{ fontWeight:800, fontSize:'0.88rem', color:'var(--text)', textDecoration: s.done ? 'line-through' : 'none', textDecorationColor:'rgba(var(--g-rgb),0.5)' }}>{s.label}</span>
-                  {s.done && <span style={{ fontSize:'0.6rem', fontWeight:800, color: 'var(--g-ink)', fontWeight: 700, textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('rbDone')}</span>}
+                  {s.done && <span style={{ fontSize:'0.6rem', fontWeight:800, color: 'var(--g-ink)', textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('rbDone')}</span>}
                 </div>
                 <div style={{ fontSize:'0.74rem', color:'var(--text-muted)', marginTop:'0.15rem', lineHeight:1.45 }}>{s.desc}</div>
                 {isCurrent && s.cta && (
@@ -2827,7 +2827,7 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
                     fontSize:a.iconSize || '0.6rem', color:a.iconColor || 'white', fontWeight:800, flexShrink:0,
                   }}>{a.icon}</span>
               }
-              <span style={{ color: 'var(--g-ink)', fontWeight: 700, fontWeight:800, fontSize:'0.75rem', marginRight:1 }}>+</span>
+              <span style={{ color: 'var(--g-ink)', fontWeight:800, fontSize:'0.75rem', marginRight:1 }}>+</span>
               {a.label}
             </button>
           )
@@ -4572,7 +4572,7 @@ export default function Dashboard() {
               <button onClick={() => openSheet('buy', 'quick_strip')} style={{
                 flex: 1, padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
                 background: 'linear-gradient(135deg, rgba(var(--g-rgb),0.22), rgba(var(--g-rgb),0.10))',
-                color: 'var(--g-ink)', fontWeight: 700, fontWeight: 800, fontSize: '0.9rem',
+                color: 'var(--g-ink)', fontWeight: 800, fontSize: '0.9rem',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem',
                 boxShadow: '0 0 0 1px rgba(var(--g-rgb),0.3), 0 4px 16px rgba(var(--g-rgb),0.15)',
                 transition: 'box-shadow 0.15s',
@@ -5282,7 +5282,7 @@ export default function Dashboard() {
                     {selectedStats && (
                       <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', flexWrap:'wrap' }}>
                         <div style={{ fontSize:'0.71rem', display:'flex', gap:'0.5rem', flexWrap:'wrap', alignItems:'center', background:'rgba(0,255,170,0.08)', border:'1px solid rgba(0,255,170,0.25)', borderRadius:'8px', padding:'0.25rem 0.6rem' }}>
-                          <span style={{ color: 'var(--g-ink)', fontWeight: 700, fontWeight:700 }}>✓ {selectedAssets.size} selected</span>
+                          <span style={{ color: 'var(--g-ink)', fontWeight:700 }}>✓ {selectedAssets.size} selected</span>
                           <span style={{ opacity:0.4 }}>·</span>
                           <span style={{ fontWeight:600, color:'var(--text)' }}>{hidden ? '••••' : cv(selectedStats.value)}</span>
                           {selectedStats.pnl !== 0 && !pricesFailed && (
@@ -5748,7 +5748,7 @@ export default function Dashboard() {
             {t('dsImportSeconds')}
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.55rem', marginBottom:'0.75rem' }}>
-            <button onClick={() => openSheet('buy', 'tools_empty')} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color: 'var(--g-ink)', fontWeight: 700, fontWeight:700, fontSize:'0.82rem' }}>
+            <button onClick={() => openSheet('buy', 'tools_empty')} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color: 'var(--g-ink)', fontWeight:700, fontSize:'0.82rem' }}>
               <span style={{ fontSize:'1rem', fontWeight:700 }}>+</span> {t('startAddingAssets')}
             </button>
             <button onClick={() => { setShowBackupCode(v => !v); setShowExcelImport(false); setShowVoiceImport(false) }} style={{ display:'flex', alignItems:'center', gap:'0.45rem', padding:'0.7rem 0.75rem', borderRadius:'12px', cursor:'pointer', background:'rgba(var(--g-rgb),0.1)', border:'1.5px solid rgba(var(--g-rgb),0.3)', color:'var(--g-ink)', fontWeight:700, fontSize:'0.82rem' }}>
