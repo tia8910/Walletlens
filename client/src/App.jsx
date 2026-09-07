@@ -754,6 +754,9 @@ export default function App() {
               <Route path="/grow" element={<GrowNetWorth />} />
               <Route path="/technicals" element={<Technicals />} />
               <Route path="/asset/:coinId" element={<AssetDetail />} />
+              {/* /asset/?id=… is what notifications link to: it resolves to a
+                  real prerendered file, which /asset/:coinId never can. */}
+              <Route path="/asset" element={<AssetDetail />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<Blog />} />
               <Route path="/about" element={<About />} />

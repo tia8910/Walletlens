@@ -2383,6 +2383,10 @@ const APP_ROUTES = [
   // grow-net-worth tip links to /grow.
   { path: '/calendar',     title: 'Economic Calendar — WalletLens', description: 'Rate decisions, CPI prints and earnings that move what you hold.' },
   { path: '/grow',         title: 'Grow Your Net Worth — WalletLens', description: 'Where the gaps are in what you hold, and what to do about them.' },
+  // Price alerts land here. /asset/:coinId cannot be prerendered — the id is
+  // a holding — so assetUrl() links to /asset/?id=… and this shell is the
+  // file that makes the cold navigation resolve.
+  { path: '/asset',        title: 'Asset — WalletLens', description: 'Price, holdings and history for one asset.' },
 ]
 for (const r of APP_ROUTES) {
   write(r.path, buildPage({

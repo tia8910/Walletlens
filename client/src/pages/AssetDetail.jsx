@@ -35,7 +35,13 @@ function fmt(n) {
 
 export default function AssetDetail() {
   const { t } = useLanguage()
-  const { coinId } = useParams()
+  const { coinId: paramCoinId } = useParams()
+  // Notifications arrive as /asset/?id=… because that path resolves to a file
+  // on a cold navigation; in-app links still use /asset/:coinId.
+  const coinId = paramCoinId
+    || (typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('id') || undefined
+      : undefined)
   const navigate = useNavigate()
   const [chartData, setChartData] = useState([])
   const [chartDays, setChartDays] = useState(7)

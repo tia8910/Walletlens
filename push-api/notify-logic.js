@@ -2030,7 +2030,17 @@ export const CHANNEL_URL = {
  */
 export function assetUrl(asset) {
   const id = appAssetId(asset)
-  return id ? `/asset/${encodeURIComponent(id)}` : null
+  // Query param, not a path segment. Tapping a notification is a cold
+  // navigation to the host: the URL has to resolve to a real file before React
+  // Router ever runs. /asset/:coinId can never be a file — the id is a holding,
+  // not a route — so Pages found nothing and served 404.html. /asset/ is a
+  // prerendered shell that exists, and the id rides in the query where the host
+  // does not have to route on it.
+  //
+  // It also sidesteps the encoded separators in ids we really carry: 'metal:xau'
+  // and 'brk/b' become %3A and %2F in a path, and hosts disagree about whether
+  // %2F is a slash. In a query string neither is special.
+  return id ? `/asset/?id=${encodeURIComponent(id)}` : null
 }
 
 /**
