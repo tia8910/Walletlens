@@ -143,7 +143,7 @@ export default function EcosystemPage() {
       <line x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wlNavLens)" strokeWidth="5.5" strokeLinecap="round" />
     </svg> WalletLens</a>
           <nav className="nav-links" aria-label="Sections">
-            <a href="#wl-eco-ecosystem">Ecosystem</a><a href="#wl-eco-privacy">Privacy</a>
+            <a href="#wl-eco-shots">The app</a><a href="#wl-eco-ecosystem">Ecosystem</a><a href="#wl-eco-privacy">Privacy</a>
             <a href="#wl-eco-why">Features</a><a href="#wl-eco-faq">FAQ</a>
           </nav>
           <div className="nav-cta">
@@ -178,6 +178,37 @@ export default function EcosystemPage() {
           <div className="chip"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect x='3' y='15' width='34' height='13' rx='2' fill='%23808898'/%3E%3Crect x='3' y='15' width='34' height='7' rx='2' fill='%23e8ecf4'/%3E%3C/svg%3E" alt="" /><small>SILVER</small></div>
           <div className="chip"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect x='3' y='11' width='34' height='18' rx='3' fill='%230f7a38'/%3E%3Crect x='6' y='14' width='28' height='12' rx='2' fill='none' stroke='%234ade80' stroke-width='1.4'/%3E%3Ccircle cx='20' cy='20' r='4.2' fill='%234ade80'/%3E%3C/svg%3E" alt="" /><small>CASH</small></div>
           <div className="chip"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23f7931a'/%3E%3Cpath fill='%23ffffff' d='M28.2 18c.3-2.3-1.4-3.5-3.8-4.3l.8-3.1-1.9-.5-.8 3c-.5-.1-1-.2-1.5-.4l.8-3-1.9-.5-.8 3.1c-.4-.1-.8-.2-1.2-.3l-2.6-.7-.5 2.1s1.4.3 1.4.4c.8.2.9.7.9 1.1l-1 3.9c.1 0 .1 0 .2.1h-.2l-1.3 5.4c-.1.3-.4.6-.9.5 0 0-1.4-.4-1.4-.4l-1 2.3 2.5.6c.5.1.9.2 1.3.4l-.8 3.2 1.9.5.8-3.1c.5.1 1 .3 1.5.4l-.8 3.1 1.9.5.8-3.2c3.3.6 5.7.4 6.8-2.6.9-2.4 0-3.8-1.7-4.7 1.2-.3 2.2-1.1 2.5-2.8zm-4.4 6.2c-.6 2.4-4.7 1.1-6 .8l1-4.1c1.3.3 5.6 1 5 3.3zm.6-6.2c-.6 2.2-4 1.1-5.1.8l.9-3.7c1.1.3 4.9.8 4.2 2.9z'/%3E%3C/svg%3E" alt="" /><small>CRYPTO</small></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="stage shots" id="wl-eco-shots">
+          <div className="sweep" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div>
+          <div className="wrap shots-in">
+            <div className="shots-copy">
+              <p className="kicker"><span>The app itself</span></p>
+              <h2>Not a drawing<br />of an app</h2>
+              <ul className="screen-keys">
+                <li><span className="n">01</span><div><b>Analysis</b>
+                  <p>Allocation by asset class, and a wallet evaluation that names the gaps
+                    rather than scoring you and leaving it there.</p></div></li>
+                <li><span className="n">02</span><div><b>Dashboard</b>
+                  <p>Net worth in any currency, over any window, with the asset classes
+                    broken out beneath it.</p></div></li>
+                <li><span className="n">03</span><div><b>Goals</b>
+                  <p>Every dollar assigned to a purpose, with a target, a deadline and the
+                    runway left on each.</p></div></li>
+              </ul>
+              <p className="shot-note">Real screens, example portfolio</p>
+            </div>
+            <div className="shot-stage">
+              <picture>
+                <source media="(min-width: 720px)" srcSet="/screens/app-three-screens.webp" />
+                <img className="shot" src="/screens/app-dashboard.webp" width="1031" height="877"
+                  alt="WalletLens on Android: a portfolio analysis screen with allocation by asset class,
+                    the dashboard showing total portfolio value and a candlestick chart, and a goals screen
+                    splitting net worth into funded buckets." />
+              </picture>
             </div>
           </div>
         </div>

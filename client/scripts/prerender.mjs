@@ -2404,6 +2404,10 @@ write('/ecosystem', buildPage({
 <p>Property, stocks, gold, cash, crypto and anything else you value, in <strong>one figure</strong>, on every screen you use. Your holdings are written to your own device, and nothing is uploaded unless you switch on a feature that needs it. Free, no paid tier, no account, works offline.</p>
 <p><a href="/dashboard">Open the WalletLens web app &rarr;</a></p>
 
+<h2>The app itself</h2>
+<p><img src="/screens/app-three-screens.webp" width="1031" height="877" alt="WalletLens on Android: a portfolio analysis screen with allocation by asset class, the dashboard showing total portfolio value and a candlestick chart, and a goals screen splitting net worth into funded buckets." /></p>
+<p><strong>Analysis</strong> — allocation by asset class, and a wallet evaluation that names the gaps rather than scoring you and leaving it there. <strong>Dashboard</strong> — net worth in any currency, over any window, with the asset classes broken out beneath it. <strong>Goals</strong> — every dollar assigned to a purpose, with a target, a deadline and the runway left on each. Real screens, example portfolio.</p>
+
 <h2>One store, three ways in</h2>
 <p>Your holdings are written once, to your own device. The <strong>web app</strong> is where you build the portfolio. The <strong>Android app</strong> watches while you are not looking and sends alerts with the app closed. The <strong>Chrome extension</strong> keeps a mirrored copy so it can show your net worth from any tab without loading a page. Nothing is reconciled through an account and nothing sits in the middle.</p>
 

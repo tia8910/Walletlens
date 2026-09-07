@@ -293,3 +293,43 @@
 .wl-eco .feat-link:focus-visible{outline:2px solid currentColor;outline-offset:3px;border-radius:5px}
 .wl-eco .dek-tail{margin-top:34px}
 .wl-eco .inline-link{text-decoration:underline;text-underline-offset:4px}
+
+/* ══ product shot ═════════════════════════════════════════════════════════
+   The real app, not a drawing of it. Two crops rather than one: the trio
+   shows breadth, but at phone width three devices shrink to unreadable, so
+   the single dashboard takes over below 720px. */
+.wl-eco .shots{--ring:rgba(12,58,32,.10);padding:clamp(58px,8vw,104px) 0}
+.wl-eco .shots-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);
+  gap:clamp(26px,5vw,64px);align-items:center}
+.wl-eco .shots-copy h2{margin-bottom:0}
+.wl-eco .shot-stage{position:relative;display:flex;justify-content:center}
+.wl-eco .shot-stage picture{display:block;width:100%}
+.wl-eco .shot{display:block;width:100%;height:auto;
+  filter:drop-shadow(0 34px 60px rgba(10,30,20,.26));
+  animation:shotFloat 9s ease-in-out infinite}
+@keyframes shotFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+
+/* Naming the three screens is the point of the animation: the highlight
+   walks them in the order the images sit, so the label and the device agree. */
+.wl-eco .screen-keys{list-style:none;margin:clamp(22px,3vw,32px) 0 0;padding:0;
+  display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--hair)}
+.wl-eco .screen-keys li{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:baseline;
+  padding:14px 0;border-bottom:1px solid var(--hair)}
+.wl-eco .screen-keys .n{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-3);transition:color .5s}
+.wl-eco .screen-keys b{font-size:16px;font-weight:700}
+.wl-eco .screen-keys p{color:var(--ink-2);font-size:14.5px;margin-top:3px}
+.wl-eco .screen-keys li::before{content:"";position:absolute}
+.wl-eco .screen-keys li{position:relative}
+.wl-eco .screen-keys li::after{content:"";position:absolute;left:0;bottom:-1px;height:1px;width:0;
+  background:var(--em-txt);animation:keyWalk 12s linear infinite}
+.wl-eco .screen-keys li:nth-child(2)::after{animation-delay:-8s}
+.wl-eco .screen-keys li:nth-child(3)::after{animation-delay:-4s}
+@keyframes keyWalk{0%{width:0}4%{width:100%}29%{width:100%}33%,100%{width:0}}
+.wl-eco .shot-note{margin-top:16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3)}
+
+@media (max-width:860px){
+  .wl-eco .shots-in{grid-template-columns:1fr}
+  .wl-eco .shot-stage{order:-1}
+}
