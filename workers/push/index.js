@@ -17,7 +17,7 @@
 // and web-push → WebCrypto (webpush.js), which is the only genuinely new code.
 
 import {
-  asLang, bumpSent, copy, DEFAULT_PREFS, deliveryFor, localDayKey,
+  asLang, assetUrl, bumpSent, copy, DEFAULT_PREFS, deliveryFor, localDayKey,
   pushTopic, sanitizeAlerts, sanitizePrefs, sanitizeSetup, sanitizeTz,
   sanitizeWatch, sanitizeZakatDue, trimZakatSent,
   normalizeSub as normalize,
@@ -292,6 +292,12 @@ async function handle(req, env, store) {
       // today, or the deployed worker predates them -- and they need
       // completely different responses. A short list here means the second.
       channels: Object.keys(DEFAULT_PREFS).filter(k => typeof DEFAULT_PREFS[k] === 'boolean').sort(),
+      // The asset link shape this build produces. A price alert is only as
+      // good as the page it opens, and the difference between the two shapes
+      // is a working deep link and a 404 — but from outside there is no way
+      // to tell which one a running worker emits until a notification fires
+      // and somebody taps it. One request answers it instead.
+      assetUrlSample: assetUrl({ coin_id: 'bitcoin' }),
       // What each cron is responsible for. A channel present above but absent
       // here is defined and never scheduled, which is its own failure mode.
       schedules: {

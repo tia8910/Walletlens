@@ -18,6 +18,30 @@
     </style>
   </head>
   <body>
+    <script>
+      // Cloudflare serves this file for any path with no file behind it, which
+      // makes it the last place a deep link can still be rescued.
+      //
+      // /asset/<id> is the one that matters. Every price alert used to point
+      // there, and a notification already sitting in someone's tray cannot be
+      // rewritten — the URL was baked in when it was sent. Those taps land
+      // here, so here is where they get turned into /asset/?id=<id>, which is
+      // a real file and does resolve.
+      //
+      // No loop risk: /asset/ (the shell itself) has nothing after the slash
+      // and does not match.
+      (function () {
+        try {
+          var m = location.pathname.match(/^\/asset\/([^/][^?#]*?)\/?$/)
+          if (!m) return
+          var id = m[1]
+          try { id = decodeURIComponent(id) } catch (e) {}
+          // Keep whatever the notification appended (utm_source=push and friends).
+          var extra = location.search ? '&' + location.search.slice(1) : ''
+          location.replace('/asset/?id=' + encodeURIComponent(id) + extra + location.hash)
+        } catch (e) {}
+      })()
+    </script>
     <!-- Visible only without JS — with JS the script above routes into the app -->
     <div class="wrap">
       <h1>404</h1>
