@@ -2378,6 +2378,11 @@ const APP_ROUTES = [
   // navigation straight to the host, so without a shell it 404s and the token
   // never reaches the app — the same way /guardian broke for notifications.
   { path: '/drive-callback', title: 'Connecting Google Drive — WalletLens', description: 'Completing your Google Drive connection.' },
+  // Both are notification targets with no shell, so both 404'd on a cold tap
+  // exactly as /guardian did: the calendar channel links to /calendar, and the
+  // grow-net-worth tip links to /grow.
+  { path: '/calendar',     title: 'Economic Calendar — WalletLens', description: 'Rate decisions, CPI prints and earnings that move what you hold.' },
+  { path: '/grow',         title: 'Grow Your Net Worth — WalletLens', description: 'Where the gaps are in what you hold, and what to do about them.' },
 ]
 for (const r of APP_ROUTES) {
   write(r.path, buildPage({
