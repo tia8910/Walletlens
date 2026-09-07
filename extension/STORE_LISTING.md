@@ -44,7 +44,7 @@ IN THE TOOLBAR
 INCLUDED FREE ON WALLETLENS.LIVE
 
 • A health score covering diversification, risk and momentum
-• Magic Indicator: one clear direction per holding, from five signals combined
+• Magic Indicator: one clear direction per holding, from eight weighted signals
 • Multi-target sell plans, such as "25% at $80k, 50% at $100k", built from RSI, MACD, support and resistance, then tracked for you
 • A rebalancing calculator that names the exact buy or sell, including rebalancing with new contributions to reduce tax
 • Market sentiment built from crypto, equities, volatility and macro, not coins alone

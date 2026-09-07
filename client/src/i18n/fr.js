@@ -941,7 +941,7 @@ export default {
     plDxy: 'DXY',
     // ── Magic Indicator panel ───────────────────────────────────
     miTitle: 'Indicateur magique',
-    miSubtitle: 'analyse technique, momentum, volume et fondamentaux en un seul signal.',
+    miSubtitle: 'analyse technique, momentum, baleines, flux on-chain et plus, en un seul signal.',
     miBuy: 'Acheter',
     miSell: 'Vendre',
     miNeutral: 'Neutre',

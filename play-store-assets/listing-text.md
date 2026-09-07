@@ -50,7 +50,7 @@ SEE WHAT YOUR PORTFOLIO IS ACTUALLY DOING
 
 DECIDE INSTEAD OF GUESSING
 
-• Magic Indicator: one clear read per holding, from five signals combined
+• Magic Indicator: one clear read per holding, from eight weighted signals
 • Technical analysis using RSI, MACD, support and resistance
 • Multi-target sell plans, such as "25% at $80k, 50% at $100k", tracked for you
 • A rebalancing calculator that names the exact buy or sell
