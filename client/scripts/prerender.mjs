@@ -281,7 +281,7 @@ function write(routePath, html) {
 
 // ── Homepage ─────────────────────────────────────────────────────────────────
 const homeBody = `
-<h1>WalletLens — Private Net Worth Tracker &amp; Investment Management Tool</h1>
+<h2>WalletLens: a private net worth tracker and investment manager</h2>
 <p>WalletLens is a <strong>privacy-first net worth tracker</strong> and <strong>investment management tool</strong> for <strong>crypto, US stocks, gold, silver, bonds, cash and FX</strong> — all in one private dashboard. Track <em>and manage</em> all your investments in one place with no account, no subscription, and your data kept on your device. A free, private alternative to Kubera, CoinStats, and Personal Capital.</p>
 <h2>Why WalletLens is the best free portfolio tracker</h2>
 <ul>
@@ -349,40 +349,95 @@ ${POSTS.map(p => `<li><a href="/blog/${p.slug}">${esc(p.title)}</a> — ${esc(p.
 </ul>
 <p><a href="/dashboard">Open the WalletLens dashboard</a> · <a href="/free-net-worth-tracker">Free net worth tracker comparison</a> · <a href="/blog">Read the blog</a> · <a href="/about">About</a></p>
 `
+// ── Ecosystem (/ecosystem) ───────────────────────────────────────────────────
+// The one page that argues the whole product: three surfaces, one local store,
+// and a named list of exactly which traffic leaves the device. The React route
+// is client/src/pages/EcosystemPage.jsx — the copy below has to stay in step
+// with it, because the FAQPage JSON-LD must match what a visitor can read.
+const ecoFaq = faqBlock([
+  { q: "Is WalletLens really free?",
+    a: "Yes. No paid tier, no subscription, no holding limit and no feature behind a paywall. The expensive part of a tracker is the server that stores your portfolio, and WalletLens does not have one." },
+  { q: "Is this only for crypto?",
+    a: "No. WalletLens is a net worth tracker and crypto is one line in it. Property, any US stock or ETF, gold, silver and platinum by weight, cash in any currency, bonds, and anything you value yourself all sit in the same figure." },
+  { q: "Does WalletLens connect to my bank or brokerage?",
+    a: "No. There is no Plaid-style connection, no credentials are asked for and nothing is linked. You enter holdings yourself, or photograph a screen, or speak them, or paste a public wallet address." },
+  { q: "Can I track things with no market price, like a house?",
+    a: "Yes. Enter your own valuation for property, a car, a business stake, art or watches, and update it whenever you like. It counts towards your net worth and towards zakat alongside everything priced live." },
+  { q: "Do I have to create an account?",
+    a: "No. There is nothing to sign up for and no password to lose. Open it and start entering holdings, which are written to your own device." },
+  { q: "Where is my portfolio actually stored?",
+    a: "In your browser or phone storage. No server holds a copy by default, which is why there is nothing to breach, nothing to sell and nothing to hand over. Features you switch on yourself can send specific data, and each one is named on this page." },
+  { q: "What happens to my portfolio if I die?",
+    a: "Portfolio Guardian is a dead man’s switch. You nominate the people who should reach your holdings, and every time you open WalletLens the countdown resets. If it ever runs out, you are warned by email for two weeks first, and only then are they sent a snapshot of what you hold. They receive a picture of the portfolio, never a login and never anything that can move funds." },
+  { q: "How do I leave my crypto and investments to my family?",
+    a: "Without handing anyone a seed phrase or an exchange password. Portfolio Guardian sends your nominated people a readable snapshot of everything you hold across every asset class, so they know what exists and where to look. Custody stays exactly where it already is." },
+  { q: "Does WalletLens calculate zakat?",
+    a: "Yes, on your live portfolio, against a nisab priced from current gold and silver. Gold or silver standard, lunar or solar year, long-term shares counted at the usual portion, and property and cash included. It tracks the hawl and reminds you before it completes." },
+  { q: "How does screenshot import work?",
+    a: "It reads the holdings off a picture of any broker, exchange or wallet screen. Because it reads a picture rather than connecting to an API, it works with institutions that have no integration at all, and it never needs a login of yours. The image you choose is sent for reading and is not kept." },
+  { q: "Do the three apps share one portfolio?",
+    a: "The web app and the Android app read the same store on the device. The Chrome extension keeps a mirrored copy so it can show your total without loading a page, refreshed whenever you open walletlens.live. Moving between devices goes through the encrypted Google Drive backup, which WalletLens keeps current for you." },
+  { q: "Do I have to remember to back up?",
+    a: "No. Connect Google Drive once and WalletLens keeps the backup current by itself, shortly after you make a change and again when you open the app after time away. It skips the upload when nothing has changed, and it renews its own access in the background so it never quietly stops. The file is encrypted on your device before it is uploaded, into a folder you own, and you hold the passphrase." },
+  { q: "Will it tell me when something moves?",
+    a: "The Android app sends price moves, round-number levels, your own targets, seven-day trend switches on your crypto, news naming what you hold, a daily digest and zakat reminders. Notifications arrive with the app closed, and each opens straight to that asset." },
+  { q: "Is there an iPhone app?",
+    a: "Not in the App Store yet. Open walletlens.live in Safari and add it to your home screen: it installs and runs like an app, offline included, and it is the same portfolio the other surfaces read." },
+  { q: "Does it work offline?",
+    a: "Net worth, allocation, profit and loss and history all render from data already on the device. Only fresh prices need a network connection." },
+])
+const ecoBody = `
+<h1>The net worth tracker that never asks who you are</h1>
+<p>Property, stocks, gold, cash, crypto and anything else you value, in <strong>one figure</strong>, on every screen you use. Your holdings are written to your own device, and nothing is uploaded unless you switch on a feature that needs it. Free, no paid tier, no account, works offline.</p>
+<p><a href="/dashboard">Open the WalletLens web app &rarr;</a></p>
+
+<h2>The app itself</h2>
+<p><img src="/screens/app-three-screens.webp" width="1031" height="877" alt="WalletLens on Android: a portfolio analysis screen with allocation by asset class, the dashboard showing total portfolio value and a candlestick chart, and a goals screen splitting net worth into funded buckets." /></p>
+<p><strong>Analysis</strong> — allocation by asset class, and a wallet evaluation that names the gaps rather than scoring you and leaving it there. <strong>Dashboard</strong> — net worth in any currency, over any window, with the asset classes broken out beneath it. <strong>Goals</strong> — every dollar assigned to a purpose, with a target, a deadline and the runway left on each. Real screens, example portfolio.</p>
+
+<h2>One store, three ways in</h2>
+<p>Your holdings are written once, to your own device. The <strong>web app</strong> is where you build the portfolio. The <strong>Android app</strong> watches while you are not looking and sends alerts with the app closed. The <strong>Chrome extension</strong> keeps a mirrored copy so it can show your net worth from any tab without loading a page. Nothing is reconciled through an account and nothing sits in the middle.</p>
+
+<h2>Exactly what leaves your device</h2>
+<p><strong>Sent by default:</strong> a ticker symbol, so a public price feed can quote it. BTC, ETH, AAPL, XAU, and nothing beside it.</p>
+<p><strong>Sent only if you switch it on:</strong> price alerts send the tickers you hold so they can be watched for you; screenshot import sends the picture you chose; Portfolio Guardian sends your heirs&rsquo; email addresses and a snapshot for them; the weekly email sends your address and your total. Each is off until you turn it on, each can be turned back off, and none is needed to use WalletLens as a tracker.</p>
+<p><strong>Never sent, whatever you switch on:</strong> your transaction history, your notes, a password, a bank or brokerage connection, or an account, because there isn&rsquo;t one. A backup goes to your own Google Drive, encrypted on the device before it leaves, and you hold the passphrase. Every feature above that sends anything is named, and each one can be turned back off.</p>
+
+<h2>What most trackers leave out</h2>
+<p>Your net worth is a house, a pension, some shares, a little gold and whatever crypto you hold, and it only means anything once it sits in one figure. Trackers like Kubera and Empower charge a subscription for that all-asset view; CoinStats and Delta cover crypto and stop there.</p>
+<ul>
+<li><strong>Every asset in one number.</strong> Property and land, any US stock or ETF, gold and silver by the gram, cash in any currency, bonds, crypto, and anything you value yourself: art, watches, a car, a stake in a business. Most trackers make you pick a category. This one is the whole balance sheet.</li>
+<li><strong>Portfolio Guardian.</strong> Name the people who should reach your portfolio if something happens to you. Opening the app resets the countdown, and WalletLens warns you by email for two weeks before it ever contacts anyone, so it only fires when you have genuinely stopped. What they receive is a snapshot of what you hold, never access to an account and never anything that can move funds. It is a rare thing in a portfolio tracker, and it works here because there is no account for anyone to inherit.</li>
+<li><strong>Photograph your holdings in.</strong> Point your camera at any broker, exchange or wallet screen, or even a handwritten list, and WalletLens reads the rows off the picture. It works with institutions that have no API at all, and it never needs a login of yours.</li>
+<li><strong>Or just say it out loud.</strong> “I bought half a Bitcoin at 65K and twenty Apple shares.” One sentence, several trades, parsed in English or Arabic. Typing rows on a phone is where most portfolios go stale.</li>
+<li><strong>Paste a wallet address.</strong> An ETH, BTC or Solana address is enough. Balances arrive on their own, with no API key to generate, no exchange login and no read-only permission to hand over.</li>
+<li><strong>One signal per holding.</strong> The Magic Indicator weighs eight pillars for a coin and seven for a share into one reading, from strong buy through to distribute: technical and momentum always, then whale flow, on-chain activity, sentiment and cycle for crypto, or earnings, sector, dividend and market for equities. Comparable signals usually sit behind a paid tier.</li>
+<li><strong>Alerts that name what you hold.</strong> Price moves, round-number levels, your own targets, seven-day trend switches on your crypto, news that names something you own, a daily digest and a reminder when zakat falls due. Each one opens straight to the holding it is about.</li>
+<li><strong>Zakat, calculated on the real thing.</strong> Your live net worth against a nisab priced from current gold and silver. Gold or silver standard, lunar or solar year, long-term shares handled properly. It tracks the hawl and reminds you before it completes.</li>
+<li><strong>Tax-ready without the upgrade.</strong> A full transaction CSV your accountant can work from, or that you map into Koinly, CoinTracker or TurboTax in a couple of clicks, plus an Excel export of your holdings whenever you want your own numbers out. Tax export is a paid feature in most trackers.</li>
+<li><strong>A Drive backup that keeps itself current.</strong> Connect Google Drive once and WalletLens backs itself up from then on: shortly after you add a trade, on a slow sweep for edits nothing announced, and again when you open the app after a while away. It uploads only when something actually changed, it renews its own access quietly so it never stops working or asks you to sign in again, and every backup is encrypted on your device before it leaves. Open WalletLens on a new phone and the portfolio restores itself.</li>
+<li><strong>Free with nothing held back.</strong> No paid tier, no holding limit, no paywalled chart, no trial that ends. The parts that usually cost money are the parts that need a server holding your portfolio, and there is not one.</li>
+<li><strong>Reads fine on a plane.</strong> Net worth, allocation, profit and loss and history all render from data already on the device. Only fresh prices need a network connection.</li>
+</ul>
+<p>WalletLens reports what you hold and what public markets say it is worth. Nothing here is financial advice.</p>
+
+${ecoFaq.html}
+
+<p><a href="/dashboard">Open the free net worth tracker &rarr;</a> &middot; <a href="/zakat-calculator">Zakat calculator</a> &middot; <a href="/rebalancing-calculator">Rebalancing calculator</a> &middot; <a href="/privacy">Privacy</a></p>
+`
+
 write('/', buildPage({
   path: '/',
-  title: 'WalletLens — Private Net Worth & Investment Manager',
-  description: 'A privacy-first net worth tracker & investment management tool. Track and manage crypto, stocks, gold & cash in one place — AI analysis, no account, 100% free. Your data stays on your device.',
-  bodyHtml: homeBody,
+  title: 'Free Net Worth Tracker, No Account, No Server | WalletLens',
+  description: 'Track property, stocks, gold, cash and crypto in one net worth figure. Free, no account, no subscription, and your holdings stay on your device. Web, Android, Chrome.',
+  bodyHtml: ecoBody + homeBody,
   jsonLd: [
     // WebApplication + Organization are emitted once site-wide from the global
     // JSON-LD in index.html (single canonical instance, one aggregateRating).
-    // The homepage only adds its page-specific FAQPage to avoid duplicate /
-    // conflicting entities that Google flags as low-quality structured data.
-    {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: [
-        { '@type': 'Question', name: 'Is WalletLens free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens is 100% free with no paid tier, no premium paywall, and no subscription. You can track unlimited assets, use all AI features, and export backups without ever paying.' } },
-        { '@type': 'Question', name: 'Do I need an account to use WalletLens?', acceptedAnswer: { '@type': 'Answer', text: 'No. WalletLens requires no sign-up, no email, and no password. Open the app and start tracking immediately. There is no account to hack, leak, or lock you out.' } },
-        { '@type': 'Question', name: 'Where is my portfolio data stored?', acceptedAnswer: { '@type': 'Answer', text: "Entirely in your browser's localStorage on your device. WalletLens has no account system and no database of user portfolios. Your holdings are never stored on a server; optional AI features process a transient snapshot and retain nothing." } },
-        { '@type': 'Question', name: 'What assets can I track with WalletLens?', acceptedAnswer: { '@type': 'Answer', text: 'Crypto (10,000+ coins including Bitcoin, Ethereum, Solana), US stocks and ETFs (Apple, Tesla, Nvidia, etc.), gold, silver, platinum, fiat currencies, cash, bonds, and custom assets — all in one live dashboard.' } },
-        { '@type': 'Question', name: 'What is the best free net worth tracker?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a top choice for a free net worth tracker: it covers every asset class (crypto, stocks, gold, cash), needs no account, keeps data private on your device, and includes AI analysis — all at no cost.' } },
-        { '@type': 'Question', name: 'Where can I see all my investments in one place?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens combines crypto, US stocks and ETFs, gold and silver, cash, bonds and FX into a single live dashboard with one net-worth total, an allocation breakdown and profit/loss — without linking a bank account and without any subscription.' } },
-        { '@type': 'Question', name: 'How can I check if my portfolio is too risky or not diversified?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens runs an on-device AI analysis that gives your portfolio a health score, a diversification grade, a concentration/risk scan and a correlation matrix, so you can see where you are over-exposed — all computed locally, with no account.' } },
-        { '@type': 'Question', name: 'What is a good free alternative to CoinStats, Kubera, or Empower?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a free, no-account alternative that tracks every asset class (not just crypto), keeps your data on your device, and includes AI analysis — with no paid tier, no bank login, and no exchange API connection required.' } },
-        { '@type': 'Question', name: 'Can I import my portfolio from a screenshot?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens can read a screenshot of any exchange, broker, or wallet app and automatically extract each asset, amount and price into your portfolio — no manual typing, no CSV, no account required.' } },
-        { '@type': 'Question', name: 'Does WalletLens support voice import?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Say your holdings naturally ("I have half a Bitcoin and 20 Apple shares") and WalletLens AI parses your speech into structured holdings. Voice import works in both English and Arabic.' } },
-        { '@type': 'Question', name: 'Can I track crypto and stocks in the same portfolio?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens tracks Bitcoin, Ethereum, Solana, and 10,000+ crypto coins alongside US stocks (Apple, Tesla, Nvidia), ETFs, gold, silver, bonds, cash and FX — all in one free dashboard with a single net-worth total.' } },
-        { '@type': 'Question', name: 'Is there a free portfolio tracker with no sign up?', acceptedAnswer: { '@type': 'Answer', text: 'Yes — WalletLens is a free portfolio tracker that requires no sign-up, no email, and no account. Open it and start tracking immediately. All your data stays in your browser.' } },
-        { '@type': 'Question', name: 'What is the best free alternative to Kubera?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is the best free alternative to Kubera. It tracks the same asset classes (crypto, stocks, gold, fiat), keeps data on your device, requires no account, and is completely free — versus Kubera at $199–$249/year.' } },
-        { '@type': 'Question', name: 'What is the best free alternative to CoinStats?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a free, no-account alternative to CoinStats. It covers crypto, stocks, gold and FX, stores data locally, and has AI analysis — all without a subscription or sign-up.' } },
-        { '@type': 'Question', name: 'How do I track my investment ROI for free?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is a free investment ROI tracker: enter your purchase price and quantity for any asset (crypto, stock, gold, etc.) and it shows your profit/loss in dollars and percentage, with AI insights — no account needed.' } },
-        { '@type': 'Question', name: 'Is there a portfolio tracker that does not link to my bank account?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens is a private portfolio tracker that never links to a bank account, exchange API, or wallet. You enter holdings manually (or via screenshot/voice import) and all data stays on your device.' } },
-        { '@type': 'Question', name: 'What is the best free portfolio tracker in 2026?', acceptedAnswer: { '@type': 'Answer', text: 'WalletLens is one of the best free portfolio trackers in 2026: it covers every major asset class, requires no account, provides AI analysis, and is 100% free with no paid tier — comparing favorably to Kubera, CoinStats, Delta, and Empower.' } },
-        { '@type': 'Question', name: 'Can I analyze portfolio risk for free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens includes a free AI portfolio risk analyzer that scans every holding for concentration risk, volatility grade and health score. It also shows a correlation matrix and diversification grade — all on your device, no account required.' } },
-      ],
-    },
+    // The homepage adds only its FAQPage. These are the fifteen the visitor can
+    // actually open on the page; the previous eighteen were schema-only and
+    // matched nothing rendered, which is the mismatch Google penalises.
+    ecoFaq.jsonLd,
   ],
   heroImage: true,
 }))
@@ -1777,9 +1832,9 @@ const faqPageSections = [
     { q: 'I cleared my browser and lost my portfolio. Can you restore it?',
       a: 'Only if you saved a WLZ backup code — paste it in Settings → Backup to restore everything instantly. There is no server-side copy, which is the price of true privacy, so export a backup regularly.' },
     { q: 'Is WalletLens open source?',
-      a: 'Yes. You can inspect the code, report issues, or contribute on GitHub at github.com/tia8910/walletlens.' },
+      a: 'Yes. The source is public under the MIT licence.' },
     { q: 'How do I report a bug or request a feature?',
-      a: 'Email contact@walletlens.live or open an issue on GitHub — we read everything.' },
+      a: 'Email contact@walletlens.live — we read everything.' },
   ]},
 ]
 const allFaqPageQs = faqPageSections.flatMap(s => s.faqs)
@@ -2358,87 +2413,12 @@ console.log('Prerendered /market redirect stub → /dashboard.')
 writeRedirect('/ar', '/ar/free-net-worth-tracker', 'WalletLens — متتبّع الثروة')
 console.log('Prerendered /ar redirect stub → /ar/free-net-worth-tracker.')
 
-// ── Ecosystem (/ecosystem) ───────────────────────────────────────────────────
-// The one page that argues the whole product: three surfaces, one local store,
-// and a named list of exactly which traffic leaves the device. The React route
-// is client/src/pages/EcosystemPage.jsx — the copy below has to stay in step
-// with it, because the FAQPage JSON-LD must match what a visitor can read.
-const ecoFaq = faqBlock([
-  { q: "Is WalletLens really free?",
-    a: "Yes. No paid tier, no subscription, no holding limit and no feature behind a paywall. The expensive part of a tracker is the server that stores your portfolio, and WalletLens does not have one." },
-  { q: "Is this only for crypto?",
-    a: "No. WalletLens is a net worth tracker and crypto is one line in it. Property, any US stock or ETF, gold, silver and platinum by weight, cash in any currency, bonds, and anything you value yourself all sit in the same figure." },
-  { q: "Does WalletLens connect to my bank or brokerage?",
-    a: "No. There is no Plaid-style connection, no credentials are asked for and nothing is linked. You enter holdings yourself, or photograph a screen, or speak them, or paste a public wallet address." },
-  { q: "Can I track things with no market price, like a house?",
-    a: "Yes. Enter your own valuation for property, a car, a business stake, art or watches, and update it whenever you like. It counts towards your net worth and towards zakat alongside everything priced live." },
-  { q: "Do I have to create an account?",
-    a: "No. There is nothing to sign up for and no password to lose. Open it and start entering holdings, which are written to your own device." },
-  { q: "Where is my portfolio actually stored?",
-    a: "In your browser or phone storage. No server holds a copy by default, which is why there is nothing to breach, nothing to sell and nothing to hand over. Features you switch on yourself can send specific data, and each one is named on this page." },
-  { q: "What happens to my portfolio if I die?",
-    a: "Portfolio Guardian is a dead man’s switch. You nominate the people who should reach your holdings, and every time you open WalletLens the countdown resets. If it ever runs out, you are warned by email for two weeks first, and only then are they sent a snapshot of what you hold. They receive a picture of the portfolio, never a login and never anything that can move funds." },
-  { q: "How do I leave my crypto and investments to my family?",
-    a: "Without handing anyone a seed phrase or an exchange password. Portfolio Guardian sends your nominated people a readable snapshot of everything you hold across every asset class, so they know what exists and where to look. Custody stays exactly where it already is." },
-  { q: "Does WalletLens calculate zakat?",
-    a: "Yes, on your live portfolio, against a nisab priced from current gold and silver. Gold or silver standard, lunar or solar year, long-term shares counted at the usual portion, and property and cash included. It tracks the hawl and reminds you before it completes." },
-  { q: "How does screenshot import work?",
-    a: "It reads the holdings off a picture of any broker, exchange or wallet screen. Because it reads a picture rather than connecting to an API, it works with institutions that have no integration at all, and it never needs a login of yours. The image you choose is sent for reading and is not kept." },
-  { q: "Do the three apps share one portfolio?",
-    a: "The web app and the Android app read the same store on the device. The Chrome extension keeps a mirrored copy so it can show your total without loading a page, refreshed whenever you open walletlens.live. Moving between devices goes through the encrypted Google Drive backup, which WalletLens keeps current for you." },
-  { q: "Do I have to remember to back up?",
-    a: "No. Connect Google Drive once and WalletLens keeps the backup current by itself, shortly after you make a change and again when you open the app after time away. It skips the upload when nothing has changed, and it renews its own access in the background so it never quietly stops. The file is encrypted on your device before it is uploaded, into a folder you own, and you hold the passphrase." },
-  { q: "Will it tell me when something moves?",
-    a: "The Android app sends price moves, round-number levels, your own targets, seven-day trend switches on your crypto, news naming what you hold, a daily digest and zakat reminders. Notifications arrive with the app closed, and each opens straight to that asset." },
-  { q: "Is there an iPhone app?",
-    a: "Not in the App Store yet. Open walletlens.live in Safari and add it to your home screen: it installs and runs like an app, offline included, and it is the same portfolio the other surfaces read." },
-  { q: "Does it work offline?",
-    a: "Net worth, allocation, profit and loss and history all render from data already on the device. Only fresh prices need a network connection." },
-])
 write('/ecosystem', buildPage({
   path: '/ecosystem',
+  canonicalOverride: '/',
   title: 'Free Net Worth Tracker, No Account, No Server | WalletLens',
   description: 'Track property, stocks, gold, cash and crypto in one net worth figure. Free, no account, no subscription, and your holdings stay on your device. Web, Android, Chrome.',
-  bodyHtml: `
-<h1>The net worth tracker that never asks who you are</h1>
-<p>Property, stocks, gold, cash, crypto and anything else you value, in <strong>one figure</strong>, on every screen you use. Your holdings are written to your own device, and nothing is uploaded unless you switch on a feature that needs it. Free, no paid tier, no account, works offline.</p>
-<p><a href="/dashboard">Open the WalletLens web app &rarr;</a></p>
-
-<h2>The app itself</h2>
-<p><img src="/screens/app-three-screens.webp" width="1031" height="877" alt="WalletLens on Android: a portfolio analysis screen with allocation by asset class, the dashboard showing total portfolio value and a candlestick chart, and a goals screen splitting net worth into funded buckets." /></p>
-<p><strong>Analysis</strong> — allocation by asset class, and a wallet evaluation that names the gaps rather than scoring you and leaving it there. <strong>Dashboard</strong> — net worth in any currency, over any window, with the asset classes broken out beneath it. <strong>Goals</strong> — every dollar assigned to a purpose, with a target, a deadline and the runway left on each. Real screens, example portfolio.</p>
-
-<h2>One store, three ways in</h2>
-<p>Your holdings are written once, to your own device. The <strong>web app</strong> is where you build the portfolio. The <strong>Android app</strong> watches while you are not looking and sends alerts with the app closed. The <strong>Chrome extension</strong> keeps a mirrored copy so it can show your net worth from any tab without loading a page. Nothing is reconciled through an account and nothing sits in the middle.</p>
-
-<h2>Exactly what leaves your device</h2>
-<p><strong>Sent by default:</strong> a ticker symbol, so a public price feed can quote it. BTC, ETH, AAPL, XAU, and nothing beside it.</p>
-<p><strong>Sent only if you switch it on:</strong> price alerts send the tickers you hold so they can be watched for you; screenshot import sends the picture you chose; Portfolio Guardian sends your heirs&rsquo; email addresses and a snapshot for them; the weekly email sends your address and your total. Each is off until you turn it on, each can be turned back off, and none is needed to use WalletLens as a tracker.</p>
-<p><strong>Never sent, whatever you switch on:</strong> your transaction history, your notes, a password, a bank or brokerage connection, or an account, because there isn&rsquo;t one. A backup goes to your own Google Drive, encrypted on the device before it leaves, and you hold the passphrase. WalletLens is <a href="https://github.com/tia8910/Walletlens">open source</a>, so you can check rather than take our word for it.</p>
-
-<h2>What most trackers leave out</h2>
-<p>Your net worth is a house, a pension, some shares, a little gold and whatever crypto you hold, and it only means anything once it sits in one figure. Trackers like Kubera and Empower charge a subscription for that all-asset view; CoinStats and Delta cover crypto and stop there.</p>
-<ul>
-<li><strong>Every asset in one number.</strong> Property and land, any US stock or ETF, gold and silver by the gram, cash in any currency, bonds, crypto, and anything you value yourself: art, watches, a car, a stake in a business. Most trackers make you pick a category. This one is the whole balance sheet.</li>
-<li><strong>Portfolio Guardian.</strong> Name the people who should reach your portfolio if something happens to you. Opening the app resets the countdown, and WalletLens warns you by email for two weeks before it ever contacts anyone, so it only fires when you have genuinely stopped. What they receive is a snapshot of what you hold, never access to an account and never anything that can move funds. It is a rare thing in a portfolio tracker, and it works here because there is no account for anyone to inherit.</li>
-<li><strong>Photograph your holdings in.</strong> Point your camera at any broker, exchange or wallet screen, or even a handwritten list, and WalletLens reads the rows off the picture. It works with institutions that have no API at all, and it never needs a login of yours.</li>
-<li><strong>Or just say it out loud.</strong> “I bought half a Bitcoin at 65K and twenty Apple shares.” One sentence, several trades, parsed in English or Arabic. Typing rows on a phone is where most portfolios go stale.</li>
-<li><strong>Paste a wallet address.</strong> An ETH, BTC or Solana address is enough. Balances arrive on their own, with no API key to generate, no exchange login and no read-only permission to hand over.</li>
-<li><strong>One signal per holding.</strong> The Magic Indicator weighs eight pillars for a coin and seven for a share into one reading, from strong buy through to distribute: technical and momentum always, then whale flow, on-chain activity, sentiment and cycle for crypto, or earnings, sector, dividend and market for equities. Comparable signals usually sit behind a paid tier.</li>
-<li><strong>Alerts that name what you hold.</strong> Price moves, round-number levels, your own targets, seven-day trend switches on your crypto, news that names something you own, a daily digest and a reminder when zakat falls due. Each one opens straight to the holding it is about.</li>
-<li><strong>Zakat, calculated on the real thing.</strong> Your live net worth against a nisab priced from current gold and silver. Gold or silver standard, lunar or solar year, long-term shares handled properly. It tracks the hawl and reminds you before it completes.</li>
-<li><strong>Tax-ready without the upgrade.</strong> A full transaction CSV your accountant can work from, or that you map into Koinly, CoinTracker or TurboTax in a couple of clicks, plus an Excel export of your holdings whenever you want your own numbers out. Tax export is a paid feature in most trackers.</li>
-<li><strong>A Drive backup that keeps itself current.</strong> Connect Google Drive once and WalletLens backs itself up from then on: shortly after you add a trade, on a slow sweep for edits nothing announced, and again when you open the app after a while away. It uploads only when something actually changed, it renews its own access quietly so it never stops working or asks you to sign in again, and every backup is encrypted on your device before it leaves. Open WalletLens on a new phone and the portfolio restores itself.</li>
-<li><strong>The code is public.</strong> Claims about where your data goes are the sort you should be able to check rather than take on trust. WalletLens is open source under the MIT licence, so read the code that sends the requests. Read the source on GitHub.</li>
-<li><strong>Free with nothing held back.</strong> No paid tier, no holding limit, no paywalled chart, no trial that ends. The parts that usually cost money are the parts that need a server holding your portfolio, and there is not one.</li>
-<li><strong>Reads fine on a plane.</strong> Net worth, allocation, profit and loss and history all render from data already on the device. Only fresh prices need a network connection.</li>
-</ul>
-<p>WalletLens reports what you hold and what public markets say it is worth. Nothing here is financial advice.</p>
-
-${ecoFaq.html}
-
-<p><a href="/dashboard">Open the free net worth tracker &rarr;</a> &middot; <a href="/zakat-calculator">Zakat calculator</a> &middot; <a href="/rebalancing-calculator">Rebalancing calculator</a> &middot; <a href="/privacy">Privacy</a></p>
-`,
+  bodyHtml: ecoBody,
   jsonLd: [
     ecoFaq.jsonLd,
     {
@@ -2466,7 +2446,6 @@ const STATIC_ROUTES = [
   { path: '/add-holdings-by-voice', changefreq: 'monthly', priority: '0.9' },
   { path: '/export-portfolio-to-excel', changefreq: 'monthly', priority: '0.9' },
   { path: '/crypto-portfolio-tax-report', changefreq: 'monthly', priority: '0.9' },
-  { path: '/ecosystem', changefreq: 'monthly', priority: '0.9' },
   { path: '/blog',    changefreq: 'weekly',  priority: '0.9' },
   { path: '/market-index', changefreq: 'daily', priority: '0.9' },
   { path: '/fear-and-greed-index', changefreq: 'daily', priority: '0.9' },

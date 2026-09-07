@@ -16,7 +16,6 @@ import './EcosystemPage.css'
 const WEB = 'https://walletlens.live'
 const PLAY = 'https://play.google.com/store/apps/details?id=live.walletlens.twa'
 const CWS = 'https://chromewebstore.google.com/detail/ajmjdeobjjmabgonhaeaaehoepfafhbn'
-const GH = 'https://github.com/tia8910/Walletlens'
 
 const TITLE = 'Free Net Worth Tracker, No Account, No Server | WalletLens'
 const DESC = 'Track property, stocks, gold, cash and crypto in one net worth figure. ' +
@@ -125,7 +124,9 @@ export default function EcosystemPage() {
   <symbol id="i-doc" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="M13.6 2.8H6.9a2 2 0 0 0-2 2v14.4a2 2 0 0 0 2 2h10.2a2 2 0 0 0 2-2V8.2z" />
     <path d="M13.4 2.8v5.4h5.5" /><path d="M8.6 13.4h6.8M8.6 17h4.6" /></g></symbol>
-  <symbol id="i-code" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+  {/* i-code is parked with the open-source card: both come back when the
+      GitHub account flag is lifted. */}
+  <symbol data-parked="true" id="i-code" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="m8.4 8.2-4.6 3.9 4.6 3.9" /><path d="m15.6 8.2 4.6 3.9-4.6 3.9" /><path d="m13.4 4.6-2.8 15" /></g></symbol>
 </defs></svg>
 
@@ -315,8 +316,8 @@ export default function EcosystemPage() {
             </div>
             <p className="dek dek-tail">There is no account to create, so there is no account to leak. A backup
               goes to your own Google Drive, encrypted on the device before it leaves, and you hold the
-              passphrase. If you would rather check than take our word for it,{' '}
-              <a className="inline-link" href={GH}>the source is public</a>.</p>
+              passphrase. Every feature above that sends
+              anything is named, and each one can be turned back off.</p>
           </div>
         </div>
 
@@ -368,11 +369,6 @@ export default function EcosystemPage() {
               <h3>A Drive backup that keeps itself current</h3>
               <p>Connect Google Drive once and WalletLens backs itself up from then on: shortly after you add a trade, on a slow sweep for edits nothing announced, and again when you open the app after a while away. It uploads only when something actually changed, it renews its own access quietly so it never stops working or asks you to sign in again, and every backup is encrypted on your device before it leaves. Open WalletLens on a new phone and the portfolio restores itself.</p>
               <span className="tag">Automatic, encrypted, your own folder</span></div></div>
-            <div className="feat"><svg className="ic" aria-hidden="true"><use href="#i-code" /></svg><div>
-              <h3>The code is public</h3>
-              <p>Claims about where your data goes are the sort you should be able to check rather than take on trust. WalletLens is open source under the MIT licence, so read the code that sends the requests.</p>
-              <a className="feat-link" href="https://github.com/tia8910/Walletlens">Read the source on GitHub</a>
-              <span className="tag">Open source, MIT licence</span></div></div>
             <div className="feat"><svg className="ic" aria-hidden="true"><use href="#i-tag" /></svg><div>
               <h3>Free with nothing held back</h3>
               <p>No paid tier, no holding limit, no paywalled chart, no trial that ends. The parts that usually cost money are the parts that need a server holding your portfolio, and there is not one.</p>
@@ -468,7 +464,7 @@ export default function EcosystemPage() {
                 <a className="go" href={CWS}><svg className="ic" aria-hidden="true"><use href="#i-chrome" /></svg>Add to Chrome</a></div>
             </div>
             <p className="close-note"><span>Free, no paid tier</span><span>No account</span>
-              <span>No card</span><span>Open source</span></p>
+              <span>No card</span><span>Works offline</span></p>
           </div>
         </div>
 
@@ -480,7 +476,6 @@ export default function EcosystemPage() {
         <a href="/terms">Terms</a>
         <a href="/zakat-calculator">Zakat calculator</a>
         <a href="/blog">Blog</a>
-        <a href={GH}>Source on GitHub</a>
       </div></div></footer>
     </div>
   )

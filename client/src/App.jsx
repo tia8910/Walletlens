@@ -637,7 +637,7 @@ export default function App() {
     return (
       <div className="wl-app wl-app-landing">
         <ErrorBoundary resetKey={location.pathname}><Suspense fallback={<PageFallback />}><Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<EcosystemLanding />} />
           <Route path="/free-net-worth-tracker" element={<Landing />} />
           <Route path="/crypto-and-stock-portfolio-tracker" element={<Landing />} />
           <Route path="/portfolio-tracker-no-account" element={<Landing />} />
