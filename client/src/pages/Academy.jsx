@@ -5,7 +5,6 @@ import { Link } from 'react-router-dom'
 import { track } from '../analytics'
 import Icon from '../components/Icon'
 import { useTheme } from '../ThemeContext'
-import { POSTS } from '../data/blogPosts'
 import { useLanguage } from '../LanguageContext'
 import { shareFile, shareText } from '../fileOut'
 import {
@@ -708,6 +707,19 @@ export default function Academy() {
     } catch { return -1 }
   })
   const [articleFilter, setArticleFilter] = useState('All')
+  // blogPosts.js is ~136 KB of inline article content, and the tab count
+  // label (below) needs it regardless of which tab is open. A top-level
+  // `import` made it a hard dependency of this whole page's chunk, so it
+  // was fetched+parsed on every /academy visit even for the 5 tabs that
+  // never render an article. Loading it after mount instead means the
+  // page itself paints first and this chunk comes in afterward, off the
+  // critical path — same eventual count, cheaper first render.
+  const [posts, setPosts] = useState(null)
+  useEffect(() => {
+    let cancelled = false
+    import('../data/blogPosts').then(m => { if (!cancelled) setPosts(m.POSTS) })
+    return () => { cancelled = true }
+  }, [])
   const timerRef = useRef(null)
   const startTime = useRef(null)
 
@@ -897,7 +909,7 @@ export default function Academy() {
           { id: 'wheel',     label: '🎡 ' + t('ayTabWheel') },
           { id: 'game',      label: '🕵️ ' + t('ayTabGame') },
           { id: 'hacks',     label: '💡 ' + t('ayTabHacks') },
-          { id: 'articles',  label: '📚 ' + t('ayArticlesTab')(POSTS.length) },
+          { id: 'articles',  label: '📚 ' + t('ayArticlesTab')((posts || []).length) },
         ].map(tab => (
           <button key={tab.id} className={`acad-tab ${activeTab === tab.id ? 'acad-tab-active' : ''}`}
             onClick={() => { setActiveTab(tab.id); track('academy_tab_switch', { tab: tab.id }) }}>
@@ -1066,7 +1078,7 @@ export default function Academy() {
             ))}
           </div>
           <div className="acad-articles-list">
-            {POSTS
+            {(posts || [])
               .filter(p => articleFilter === 'All' || getArticleCat(p.slug) === articleFilter)
               .map(post => {
                 const cat = getArticleCat(post.slug)
