@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import db from '../database.js';
-import { createHmac } from 'crypto';
+import { createHmac, createHash } from 'crypto';
 import fetch from 'node-fetch';
 
 const router = Router();
@@ -11,7 +11,10 @@ const UPSTREAM_TIMEOUT_MS = 10_000;
 
 router.get('/', (req, res) => {
   const exchanges = db.prepare('SELECT id, name, is_connected, created_at FROM exchanges ORDER BY created_at DESC').all();
+  const etag = `"${createHash('md5').update(JSON.stringify(exchanges)).digest('hex').slice(0, 12)}"`;
+  res.set('ETag', etag);
   res.set('Cache-Control', 'private, no-cache');
+  if (req.headers['if-none-match'] === etag) return res.status(304).end();
   res.json(exchanges);
 });
 
