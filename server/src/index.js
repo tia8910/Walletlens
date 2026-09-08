@@ -10,7 +10,15 @@ import aiRouter from './routes/ai.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(compression());
+// Skip compression on SSE (text/event-stream) responses — gzip buffers
+// output until its internal flush threshold, which defeats streaming and
+// delays every token in the AI chat UI until a chunk of them has piled up.
+app.use(compression({
+  filter: (req, res) => {
+    if (String(res.getHeader('Content-Type') || '').includes('text/event-stream')) return false;
+    return compression.filter(req, res);
+  },
+}));
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'http://localhost:5173';
 app.use(cors({ origin: ALLOWED_ORIGIN, credentials: false }));
 app.use(express.json({ limit: '100kb' }));

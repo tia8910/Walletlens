@@ -3,10 +3,13 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const router = Router();
 
+// Built once at module load and reused — constructing a fresh client (and
+// its underlying HTTP agent) on every request added avoidable setup cost to
+// the hottest, most latency-sensitive endpoints in the app.
+const client = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
+
 function getClient() {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
-  return new Anthropic({ apiKey });
+  return client;
 }
 
 // Build compact portfolio context string shared by both endpoints

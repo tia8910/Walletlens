@@ -21,7 +21,12 @@ const CACHE_DURATION = 60_000; // 1 minute
 
 // In-flight deduplication: if a CoinGecko fetch is already running, attach
 // to that promise instead of firing a second identical upstream request.
+// Only safe to reuse when the in-flight fetch actually covers every id the
+// new caller needs — otherwise a concurrent request for a different coin
+// set would silently get back whichever coins the first request happened
+// to ask for, dropping the rest from `result` with no error.
 let pendingFetch = null;
+let pendingFetchIds = new Set();
 
 function priceCacheGet(id) {
   const entry = priceCache.get(id);
@@ -78,9 +83,18 @@ function searchCacheSet(key, value) {
 }
 
 async function refreshPrices(ids) {
-  if (pendingFetch) return pendingFetch;
+  const requestedIds = new Set(ids.split(','));
+  if (pendingFetch) {
+    let covered = true;
+    for (const id of requestedIds) {
+      if (!pendingFetchIds.has(id)) { covered = false; break; }
+    }
+    if (covered) return pendingFetch;
+  }
+
+  pendingFetchIds = requestedIds;
   pendingFetch = fetch(
-    `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`,
+    `https://api.coingecko.com/api/v3/simple/price?ids=${[...requestedIds].join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`,
     { signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }
   )
     .then(async (response) => {
@@ -95,7 +109,7 @@ async function refreshPrices(ids) {
       console.error('Price fetch error:', err.message);
       return null;
     })
-    .finally(() => { pendingFetch = null; });
+    .finally(() => { pendingFetch = null; pendingFetchIds = new Set(); });
   return pendingFetch;
 }
 
