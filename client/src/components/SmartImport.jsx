@@ -141,7 +141,7 @@ function ThumbStrip({ previews }) {
     <div className="si-thumb-strip">
       {previews.map((p, i) => (
         <div key={i} className={`si-thumb si-thumb-${p.status}`}>
-          <img src={p.src} alt={`screenshot ${i + 1}`} />
+          <img src={p.src} alt={`screenshot ${i + 1}`} loading="lazy" decoding="async" />
           <span className="si-thumb-badge">
             {p.status === 'reading'  && <span className="si-thumb-spin" />}
             {p.status === 'queued'   && <Icon name="hourglass" size={13} />}
