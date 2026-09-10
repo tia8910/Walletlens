@@ -575,12 +575,15 @@ async function checkScamAddress(input) {
 
   // EVM contract check via GoPlus
   if (isEthAddr) {
-    // Try major chains
+    // Try major chains in parallel — avoids up to 7 sequential round trips
     const chains = [1, 56, 137, 43114, 42161, 10, 8453]
+    const results = await Promise.allSettled(
+      chains.map(chainId => fetchJSON(`${GOPLUS_BASE}/token_security/${chainId}?contract_addresses=${input}`))
+    )
     let info = null
-    for (const chainId of chains) {
-      const gp = await fetchJSON(`${GOPLUS_BASE}/token_security/${chainId}?contract_addresses=${input}`)
-      const res = gp?.result?.[input.toLowerCase()]
+    for (const settled of results) {
+      if (settled.status !== 'fulfilled') continue
+      const res = settled.value?.result?.[input.toLowerCase()]
       if (res && (res.is_honeypot !== undefined || res.token_name)) { info = res; break }
     }
 
