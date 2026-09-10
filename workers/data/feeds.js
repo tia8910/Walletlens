@@ -239,15 +239,19 @@ export function parseFeed(xml, feed, seen = new Set(), limit = 30) {
 export async function fetchFeedGroup(feeds, now = Date.now()) {
   const articles = []
   const seen = new Set()
-  for (const feed of feeds) {
-    try {
-      articles.push(...parseFeed(await getText(feed.url, 15000), feed, seen))
-    } catch (e) {
+  // Fetch every feed in parallel — sequential awaits here can chain into a
+  // multi-x-15s stall since a cache-miss request blocks on this same call.
+  const fetched = await Promise.allSettled(feeds.map(feed => getText(feed.url, 15000)))
+  fetched.forEach((result, i) => {
+    const feed = feeds[i]
+    if (result.status !== 'fulfilled') {
       // One dead feed must not empty the group. Three of four still makes a
       // usable news page; failing the whole job makes an empty one.
-      console.warn(`${feed.name} failed: ${e}`)
+      console.warn(`${feed.name} failed: ${result.reason}`)
+      return
     }
-  }
+    articles.push(...parseFeed(result.value, feed, seen))
+  })
   articles.sort((a, b) => pubDateMs(b.pubDate) - pubDateMs(a.pubDate))
   return { updated: isoStamp(now), count: articles.length, articles: articles.slice(0, 120) }
 }
@@ -314,13 +318,15 @@ export function parseCalendarRows(rows, seen = new Set()) {
 export async function fetchCalendar(now = Date.now()) {
   const events = []
   const seen = new Set()
-  for (const url of CALENDAR_FEEDS) {
-    try {
-      events.push(...parseCalendarRows(await getJson(url, 30000), seen))
-    } catch (e) {
-      console.warn(`calendar feed failed ${url}: ${e}`)
+  // Fetch both weeks in parallel instead of chaining two 30s-timeout requests.
+  const fetched = await Promise.allSettled(CALENDAR_FEEDS.map(url => getJson(url, 30000)))
+  fetched.forEach((result, i) => {
+    if (result.status !== 'fulfilled') {
+      console.warn(`calendar feed failed ${CALENDAR_FEEDS[i]}: ${result.reason}`)
+      return
     }
-  }
+    events.push(...parseCalendarRows(result.value, seen))
+  })
   if (!events.length) return null
   // Undated items sink to the end rather than sorting as epoch zero.
   events.sort((a, b) => (a.ts == null) - (b.ts == null) || (a.ts || 0) - (b.ts || 0))

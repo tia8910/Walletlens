@@ -1176,11 +1176,11 @@ async function fetchYahooOHLCV(ticker, days = 180) {
 // wallets (no wallet_id on holdings), which previously collapsed multi-wallet
 // portfolios into the first wallet on restore.
 async function holdingsPerWallet(wallets) {
+  const perWallet = await Promise.all(wallets.map(w => api.getPortfolio(w.id)))
   const out = []
-  for (const w of wallets) {
-    const hs = await api.getPortfolio(w.id)
-    for (const h of hs) out.push({ ...h, wallet_id: w.id })
-  }
+  perWallet.forEach((hs, i) => {
+    for (const h of hs) out.push({ ...h, wallet_id: wallets[i].id })
+  })
   return out
 }
 
