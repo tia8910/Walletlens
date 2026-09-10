@@ -127,6 +127,33 @@
   font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--mint-ink-2)}
 .wl-eco .facts span{padding:0 clamp(12px,2vw,20px);border-left:1px solid rgba(12,58,32,.2)}
 .wl-eco .facts span:first-child{border-left:0}
+/* ── Trustpilot ──────────────────────────────────────────────────────────────
+   Two layers of the same five glyphs, the filled one clipped to score/5. A
+   half star has to be a clip rather than a "½" character: at 3.7 the fill is
+   74%, and no glyph set draws that. The layers must carry identical
+   letter-spacing or the fill drifts out of register with the track. */
+.wl-eco .tp{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+  gap:10px 14px;margin-top:22px}
+.wl-eco .tp-card{display:inline-flex;align-items:center;gap:10px;padding:9px 15px 9px 13px;
+  border-radius:999px;background:#fff;border:1px solid rgba(12,58,32,.13);
+  color:var(--mint-ink);text-decoration:none;
+  box-shadow:0 6px 16px -13px rgba(12,58,32,.75);transition:border-color .18s,transform .18s}
+.wl-eco .tp-card:hover{border-color:rgba(12,58,32,.3);transform:translateY(-1px)}
+.wl-eco .tp-stars{display:block;flex:none}
+.wl-eco .tp-off{fill:rgba(12,58,32,.2)}
+.wl-eco .tp-on{fill:#00B67A}
+.wl-eco .tp-score{font-family:var(--disp);font-weight:800;font-size:16px;
+  letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.wl-eco .tp-meta{display:flex;flex-direction:column;font-family:var(--mono);font-size:10px;
+  font-weight:500;letter-spacing:.11em;text-transform:uppercase;color:var(--mint-ink-2);line-height:1.35}
+.wl-eco .tp-meta small{font-size:9.5px;color:var(--mint-ink-2);opacity:.72}
+.wl-eco .tp-write{font-family:var(--mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--mint-ink-2);text-decoration:none;border-bottom:1px solid rgba(12,58,32,.25);
+  padding-bottom:2px}
+.wl-eco .tp-write:hover{color:var(--mint-ink);border-bottom-color:currentColor}
+@media (prefers-reduced-motion:reduce){.wl-eco .tp-card{transition:none}
+  .wl-eco .tp-card:hover{transform:none}}
+
 .wl-eco .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:38px}
 .wl-eco .chip{width:70px;height:70px;border-radius:19px;display:grid;place-items:center;align-content:center;
   background:#fff;border:1px solid rgba(12,58,32,.1);color:var(--mint-ink-2);
