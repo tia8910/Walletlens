@@ -5,6 +5,7 @@ import sfx from '../sfx'
 import { ASSET_CATEGORIES } from '../data/assets'
 import { THEMES } from '../ThemeContext'
 import { useLanguage } from '../LanguageContext'
+import { INTERESTS_EVENT } from '../data/interestsEvent'
 
 // Metal bar logos ("Au" / "Ag") so gold & silver match the trade category.
 const GOLD_LOGO = THEMES.find(t => t.id === 'gold')?.logo || ''
@@ -70,6 +71,19 @@ export default function InterestPicker({ onDone, onClose, editMode = false }) {
       localStorage.setItem(INTERESTS_KEY, JSON.stringify(list))
       localStorage.setItem(DONE_KEY, '1')
     } catch {}
+    // Announce the change. The price strip lives in the header, which never
+    // unmounts and is not re-rendered by anything that happens in here, so a
+    // localStorage write is invisible to it: someone who picked stocks went on
+    // watching the crypto strip until its next 60-second poll came round. That
+    // is the first minute of the app, immediately after the only question it
+    // asked. The same applies to re-opening this from Settings.
+    //
+    // An event rather than shared state because the two components have no
+    // common owner short of App, and a context for one string that changes
+    // twice in a lifetime is the more expensive answer.
+    try {
+      window.dispatchEvent(new CustomEvent(INTERESTS_EVENT, { detail: list }))
+    } catch { /* very old WebView with no CustomEvent constructor */ }
     onDone?.(list)
   }
 

@@ -611,19 +611,37 @@ export async function enablePush() {
     })
   }
 
-  const res = await fetch(`${PUSH_API}/subscribe`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    // Reads from the transactions store, not from whatever page happened to
-    // call this: turning push on from Settings must arm the movement and news
-    // channels immediately, not at the next dashboard visit. Every field but
-    // the subscription is best-effort — see registrationPayload.
-    body: JSON.stringify(registrationPayload(sub)),
-  })
+  // Roll back so isPushEnabled() doesn't report a half-registered state.
+  const rollback = async () => { try { await sub.unsubscribe() } catch {} }
+
+  let res
+  try {
+    res = await fetch(`${PUSH_API}/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // Reads from the transactions store, not from whatever page happened to
+      // call this: turning push on from Settings must arm the movement and news
+      // channels immediately, not at the next dashboard visit. Every field but
+      // the subscription is best-effort — see registrationPayload.
+      body: JSON.stringify(registrationPayload(sub)),
+    })
+  } catch (e) {
+    await rollback()
+    throw new Error(`Couldn’t reach the notification server. ${detailOf(e)}`)
+  }
   if (!res.ok) {
-    // Roll back so isPushEnabled() doesn't report a half-registered state.
-    try { await sub.unsubscribe() } catch {}
-    throw new Error('Couldn’t reach the notification server. Please try again.')
+    // A refusal, not an unreachable host. This branch used to print "couldn't
+    // reach the notification server" and throw the status away, so a server
+    // that answered 400 invalid_endpoint and a server that answered 503
+    // store_unavailable produced the same sentence — and that sentence named
+    // the network, which was the one thing working. The status and the
+    // server's own error code are the whole diagnosis; they go on the screen.
+    let body = {}
+    try { body = await res.json() } catch { /* not JSON */ }
+    await rollback()
+    throw new Error(
+      `The notification server refused this device (${res.status}${body?.error ? ` ${body.error}` : ''}).`
+    )
   }
   try { localStorage.removeItem(OPTOUT_KEY) } catch {}
   sendWelcomePush()
@@ -762,7 +780,18 @@ async function enablePushInShell() {
     if (res.reason?.startsWith('http-')) {
       throw new Error(`The notification server refused this device (${res.reason.slice(5)}). It may be running an older version — try again shortly.`)
     }
-    throw new Error('Couldn’t reach the notification server. Please try again.')
+    // registerNativePush reports exactly one reason for a request that never
+    // completed, and every other reason is something local. Collapsing them
+    // into one sentence about the network is what kept this on the screen
+    // while /health answered db: true, vapid: true from outside — both true,
+    // about different things.
+    if (res.reason === 'unreachable') {
+      throw new Error('Couldn’t reach the notification server — the request never completed. Check the connection and try again.')
+    }
+    if (res.reason === 'not-in-shell') {
+      throw new Error('The app’s notification bridge isn’t available. Close WalletLens fully and reopen it.')
+    }
+    throw new Error(`Registering this device failed (${res.reason || 'unknown'}).`)
   }
 
   try { localStorage.removeItem(OPTOUT_KEY) } catch { /* private mode */ }

@@ -4,6 +4,7 @@ import { useLanguage } from '../LanguageContext'
 import {
   tickerIdsFor, tickerLabel, tickerPlaceholders, MAX_TICKER_IDS, MAX_LIVE_CRYPTO,
 } from '../data/tickerPicks'
+import { INTERESTS_EVENT } from '../data/interestsEvent'
 
 const TICKER_REFRESH_MS = 60_000
 const CAL_REFRESH_MS = 30 * 60_000
@@ -209,17 +210,35 @@ function PriceTicker() {
       }
     }
 
+    // Onboarding ends, and the strip is already mounted.
+    //
+    // This header outlives every page: the picker writes the new classes to
+    // localStorage and nothing here is re-rendered by it, so the strip went on
+    // showing the old ones until the next 60-second poll. For a new user that
+    // poll is the whole first minute of the app, spent looking at the asset
+    // class they did not pick, right after being asked which one they track.
+    //
+    // Placeholders first so their own names are on screen in the same frame
+    // the picker closes; the quotes follow a moment later.
+    function onInterestsChanged() {
+      if (cancelled) return
+      setItems(tickerPlaceholders(chosenInterests()))
+      load()
+    }
+
     load()
     loadEvents()
     const calId = setInterval(loadEvents, CAL_REFRESH_MS)
     if (!document.hidden) startPolling()
     document.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener(INTERESTS_EVENT, onInterestsChanged)
 
     return () => {
       cancelled = true
       stopPolling()
       clearInterval(calId)
       document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener(INTERESTS_EVENT, onInterestsChanged)
     }
   }, [])
 

@@ -77,3 +77,60 @@ describe('the sentence each fault produces', () => {
     expect(toggle).toMatch(/startsWith\('http_'\)/)
   })
 })
+
+describe('turning push on says why it failed', () => {
+  // The toggle's error line had the same disease as the status line: one
+  // sentence about the network for every failure, including the ones where the
+  // server answered. "Couldn't reach the notification server" was on screen
+  // while /health returned db: true, vapid: true from outside.
+  function enablePushBody() {
+    const start = push.indexOf('export async function enablePush()')
+    expect(start).toBeGreaterThan(-1)
+    const next = push.indexOf('\n/**', start)
+    return push.slice(start, next)
+  }
+
+  it('reports a refusal with the status the server returned', () => {
+    const body = enablePushBody()
+    expect(body).toMatch(/refused this device \(\$\{res\.status\}/)
+    // The server's own error code too — invalid_endpoint and store_unavailable
+    // need completely different responses from the reader.
+    expect(body).toMatch(/body\?\.error/)
+  })
+
+  it('does not call a refusal an unreachable server', () => {
+    const body = enablePushBody()
+    // Code only — the comment above the branch quotes the old sentence to say
+    // why it is gone, and that is the point of the comment.
+    const refusal = body.slice(body.indexOf('if (!res.ok)'))
+      .split('\n').filter(l => !l.trim().startsWith('//')).join('\n')
+    expect(refusal).not.toMatch(/reach the notification server/)
+  })
+
+  it('still rolls the subscription back on both failures', () => {
+    // A half-registered device reports itself enabled and never receives
+    // anything, which is worse than a visible error.
+    const body = enablePushBody()
+    expect(body.match(/await rollback\(\)/g)?.length).toBe(2)
+  })
+
+  it('separates a request that never completed from every local fault', () => {
+    const shell = push.slice(push.indexOf('async function enablePushInShell'))
+    expect(shell).toMatch(/res\.reason === 'unreachable'/)
+    expect(shell).toMatch(/res\.reason === 'not-in-shell'/)
+    // And the catch-all names the reason rather than guessing at a cause.
+    expect(shell).toMatch(/Registering this device failed \(\$\{res\.reason/)
+  })
+
+  it('covers every reason registerNativePush can return', () => {
+    const native = readFileSync(join(here, 'nativePush.js'), 'utf8')
+    const reg = native.slice(native.indexOf('export async function registerNativePush'))
+    const body = reg.slice(0, reg.indexOf('\n}'))
+    const reasons = [...body.matchAll(/reason: '([a-z-]+)'/g)].map(m => m[1])
+      .filter(r => r !== 'already')
+    const shell = push.slice(push.indexOf('async function enablePushInShell'))
+    for (const r of reasons) {
+      expect(shell).toContain(`'${r}'`)
+    }
+  })
+})

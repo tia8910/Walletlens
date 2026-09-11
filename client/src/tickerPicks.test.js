@@ -143,3 +143,39 @@ describe('the strip never substitutes one asset class for another', () => {
     expect(src).not.toMatch(/name: 'DOGE', price: null/)
   })
 })
+
+describe('the strip hears about a choice while it is on screen', () => {
+  const dir = dirname(fileURLToPath(import.meta.url))
+  const picker = readFileSync(join(dir, 'components/InterestPicker.jsx'), 'utf8')
+  const ticker = readFileSync(join(dir, 'components/PriceTicker.jsx'), 'utf8')
+  const shared = readFileSync(join(dir, 'data/interestsEvent.js'), 'utf8')
+
+  it('announces the save, because the header never unmounts', () => {
+    // The picker writes localStorage and closes. Nothing re-renders the header,
+    // so without this the strip kept the old classes until its next 60-second
+    // poll — the first minute of the app, right after the only question it
+    // asked.
+    const finish = picker.slice(picker.indexOf('function finish('))
+    expect(finish.slice(0, finish.indexOf('\n  }'))).toMatch(/dispatchEvent\(new CustomEvent\(INTERESTS_EVENT/)
+  })
+
+  it('listens for it, and removes the listener', () => {
+    expect(ticker).toMatch(/addEventListener\(INTERESTS_EVENT, onInterestsChanged\)/)
+    expect(ticker).toMatch(/removeEventListener\(INTERESTS_EVENT, onInterestsChanged\)/)
+  })
+
+  it('repaints the placeholders before refetching', () => {
+    // Their own names in the frame the picker closes; quotes a moment later.
+    const handler = ticker.slice(ticker.indexOf('function onInterestsChanged()'))
+    const body = handler.slice(0, handler.indexOf('\n    }'))
+    expect(body.indexOf('setItems(tickerPlaceholders')).toBeLessThan(body.indexOf('load()'))
+  })
+
+  it('shares one event name instead of two string literals', () => {
+    expect(shared).toMatch(/export const INTERESTS_EVENT = 'wl:interests'/)
+    for (const src of [picker, ticker]) {
+      expect(src).toMatch(/import \{ INTERESTS_EVENT \} from '\.\.\/data\/interestsEvent'/)
+      expect(src).not.toMatch(/'wl:interests'/)
+    }
+  })
+})
