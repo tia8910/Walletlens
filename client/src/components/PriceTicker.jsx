@@ -1,7 +1,9 @@
 import { useEffect, useState, useMemo, memo } from 'react'
 import { api } from '../api'
 import { useLanguage } from '../LanguageContext'
-import { tickerIdsFor, tickerLabel, MAX_TICKER_IDS, MAX_LIVE_CRYPTO } from '../data/tickerPicks'
+import {
+  tickerIdsFor, tickerLabel, tickerPlaceholders, MAX_TICKER_IDS, MAX_LIVE_CRYPTO,
+} from '../data/tickerPicks'
 
 const TICKER_REFRESH_MS = 60_000
 const CAL_REFRESH_MS = 30 * 60_000
@@ -26,24 +28,30 @@ function eventDayLabel(dateStr) {
   return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })
 }
 
+// What was chosen at onboarding. Read on every load rather than once: the
+// picker can be reopened from Settings, and a strip that keeps showing the old
+// classes until a reload reads as broken.
+function chosenInterests() {
+  try {
+    const v = JSON.parse(localStorage.getItem('wl_interests') || 'null')
+    return Array.isArray(v) ? v : []
+  } catch { return [] }
+}
+
 function PriceTicker() {
   const { t } = useLanguage()
-  const [items, setItems] = useState([])
+  // Seeded, not empty. The names someone picked are known offline and cost
+  // nothing to draw, so the strip opens on their own assets in the first frame
+  // and the quotes fill in underneath. It used to mount empty and fall back to
+  // a hardcoded row of six coins, which is what a stocks user saw first.
+  const [items, setItems] = useState(() => tickerPlaceholders(chosenInterests()))
   const [events, setEvents] = useState([])
 
   useEffect(() => {
     let cancelled = false
     let intervalId = null
 
-    // Read on every load rather than once: the picker can be reopened from
-    // Settings, and a strip that keeps showing the old classes until a reload
-    // reads as broken.
-    function chosenIds() {
-      try {
-        const v = JSON.parse(localStorage.getItem('wl_interests') || 'null')
-        return tickerIdsFor(Array.isArray(v) ? v : [])
-      } catch { return [] }
-    }
+    const chosenIds = () => tickerIdsFor(chosenInterests())
 
     // Crypto follows the market instead of a list. getMarketData is the
     // top-of-market ranking the dashboard already loads, so this costs nothing
@@ -99,14 +107,12 @@ function PriceTicker() {
       // hostage to the slowest quote, and the header sat empty for seconds.
       let live = []
       let others = []
-      let painted = false
       const paint = () => {
         const picks = compose(live, others)
         // A feed being down should not blank the strip — keep whatever is
-        // already on screen and try again on the next tick.
+        // already on screen, placeholders included, and try again next tick.
         if (cancelled || !picks.length) return
         setItems(picks)
-        painted = true
       }
 
       const cryptoTask = wantsCrypto
@@ -131,7 +137,6 @@ function PriceTicker() {
         : Promise.resolve()
 
       await Promise.all([cryptoTask, othersTask])
-      return painted
     }
 
     // Top crypto by market cap. Still the default, because it is what someone
@@ -153,17 +158,16 @@ function PriceTicker() {
       setItems(picks)
     }
 
-    function chosenInterests() {
-      try {
-        const v = JSON.parse(localStorage.getItem('wl_interests') || 'null')
-        return Array.isArray(v) ? v : []
-      } catch { return [] }
-    }
-
     async function load() {
       const interests = chosenInterests()
       const ids = chosenIds()
-      if (ids.length && await loadChosen(interests, ids)) return
+      // Their choices, or nothing. This used to fall through to loadDefault()
+      // whenever loadChosen painted nothing — a slow or rate-limited stock
+      // feed, a closed market — and loadDefault is the top crypto ranking. So
+      // the one case where a stocks user most needed to see stocks was the
+      // case that replaced them with coins. A strip of their own names with no
+      // prices yet is honest; a strip of somebody else's asset class is not.
+      if (ids.length) { await loadChosen(interests, ids); return }
       await loadDefault()
     }
 
@@ -221,21 +225,16 @@ function PriceTicker() {
 
   // NOTE: must run before any early return — hooks cannot be called
   // conditionally (React: "Rendered more hooks than during the previous render").
-  // Fallback: always show the strip even if the API hasn't loaded yet.
-  // change: null, not 0. Zero read as "not negative", so every placeholder
-  // rendered a green up-arrow and the strip claimed six coins were up before a
-  // single price had loaded.
-  const priceItems = items.length > 0 ? items : [
-    { type: 'price', name: 'BTC', price: null, change: null },
-    { type: 'price', name: 'ETH', price: null, change: null },
-    { type: 'price', name: 'SOL', price: null, change: null },
-    { type: 'price', name: 'XRP', price: null, change: null },
-    { type: 'price', name: 'ADA', price: null, change: null },
-    { type: 'price', name: 'DOGE', price: null, change: null },
-  ]
+  //
+  // No fallback list here any more. `items` is seeded from the chosen classes
+  // at mount, so it is never empty and the six hardcoded coins that used to
+  // stand in for everyone are gone. Placeholder rows carry change: null, not 0
+  // — zero read as "not negative", so every one of them drew a green up-arrow
+  // and the strip claimed six coins were up before a single price had loaded.
+  //
   // Macro events ride behind the prices. They are the browse half of the strip
   // and the prices are the check half, so the prices come first.
-  const displayItems = useMemo(() => [...priceItems, ...events], [priceItems, events])
+  const displayItems = useMemo(() => [...items, ...events], [items, events])
 
   // A row, not a marquee.
   //

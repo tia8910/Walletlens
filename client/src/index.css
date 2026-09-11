@@ -5941,14 +5941,20 @@ tr:last-child td { border-bottom: none; }
 }
 
 
-/* TWA app mode: no topbar, so reduce top padding */
-.wl-content.twa-mode {
-  padding-top: 0.5rem !important;
-}
+/* The app shell renders the SAME header the web does, so it needs the same
+   clearance. Two rules here used to force padding-top to 0.5rem and then to 0,
+   both !important, on the strength of "TWA app mode: no topbar" and "hide web
+   topbar in native mobile app". Neither is true any more: the Trusted Web
+   Activity was replaced by a WebView shell that loads walletlens.live and
+   draws .wl-topbar itself — nothing hides it — so the overrides beat every
+   calc(var(--wl-topbar-h)) rule, including the media-query ones, and tucked
+   the top of the first card under the fixed bar on every Android screen. The
+   import card lost its heading and its Excel row that way.
+
+   There is nothing app-specific left to say about this padding, so the app
+   inherits .wl-content's measured clearance and the rules are gone. */
 
 .twa-mode .news-ticker { margin-top: 0.75rem; }
-/* Hide web topbar in native mobile app */
-.twa-mode .wl-content { padding-top: 0 !important; }
 
 .twa-mode .dvx > .news-ticker:first-child { margin-top: 1rem; }
 

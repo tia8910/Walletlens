@@ -95,9 +95,41 @@ const METAL_LABELS = {
   [GOLD_ID]: 'GOLD', [SILVER_ID]: 'SILVER',
   [COPPER_ID]: 'COPPER', [PLATINUM_ID]: 'PLATINUM',
 }
+
+// Symbols for the crypto ids above, for the one case where there is no quote
+// to read one from: the placeholder row drawn before any price has arrived.
+// Without this a cold strip says BITCOIN and ETHEREUM in full, which is not a
+// ticker.
+const CRYPTO_SYMBOLS = {
+  bitcoin: 'BTC', ethereum: 'ETH', solana: 'SOL', ripple: 'XRP',
+  binancecoin: 'BNB', cardano: 'ADA', dogecoin: 'DOGE', 'avalanche-2': 'AVAX',
+  chainlink: 'LINK', polkadot: 'DOT', tether: 'USDT',
+}
+
 export function tickerLabel(id, quote) {
   if (METAL_LABELS[id]) return METAL_LABELS[id]
   if (id.startsWith(STOCK_PREFIX)) return id.slice(STOCK_PREFIX.length).toUpperCase()
   if (id.startsWith(FIAT_PREFIX)) return id.slice(FIAT_PREFIX.length).toUpperCase()
-  return (quote?.symbol || id).toUpperCase()
+  return (quote?.symbol || CRYPTO_SYMBOLS[id] || id).toUpperCase()
+}
+
+// How many names the cold strip shows before any price has arrived. Enough to
+// fill the row on a phone; the rest arrive with the quotes.
+export const MAX_PLACEHOLDERS = 8
+
+// The strip someone sees in the first frame, from their own choices.
+//
+// It used to be a hardcoded BTC/ETH/SOL/XRP/ADA/DOGE row for everybody, which
+// meant a person who picked stocks at onboarding opened the app to six coins
+// and watched them be replaced by AAPL and MSFT a second or two later. Their
+// answer to the only question we asked them was on screen last.
+//
+// Names only — every price is null, which the strip renders as a dash and a
+// neutral dot rather than a number or a direction it does not know.
+export function tickerPlaceholders(interests) {
+  const ids = tickerIdsFor(interests)
+  const from = ids.length ? ids : INTEREST_TICKER_IDS.crypto
+  return from.slice(0, MAX_PLACEHOLDERS).map(id => ({
+    type: 'price', name: tickerLabel(id, null), price: null, change: null,
+  }))
 }

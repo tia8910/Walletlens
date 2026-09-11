@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { tickerIdsFor, tickerLabel, INTEREST_TICKER_IDS, MAX_TICKER_IDS, MAX_LIVE_CRYPTO } from './data/tickerPicks'
+import { readFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import {
+  tickerIdsFor, tickerLabel, tickerPlaceholders, INTEREST_TICKER_IDS,
+  MAX_TICKER_IDS, MAX_LIVE_CRYPTO, MAX_PLACEHOLDERS,
+} from './data/tickerPicks'
 import { GOLD_ID, SILVER_ID, STOCK_PREFIX, FIAT_PREFIX } from './data/assets'
 
 describe('ticker picks from onboarding interests', () => {
@@ -76,5 +82,64 @@ describe('request cost per tick', () => {
     for (const id of [...INTEREST_TICKER_IDS.stocks, ...INTEREST_TICKER_IDS.etfs]) {
       expect(id.slice('stock:'.length), `${id} is a plain symbol`).not.toMatch(/-/)
     }
+  })
+})
+
+describe('what the strip shows before any price arrives', () => {
+  it('shows the classes that were chosen, not crypto', () => {
+    // The whole point of asking at onboarding. A stocks user opening the app
+    // to BTC/ETH/SOL and watching them be swapped for AAPL a second later saw
+    // their own answer arrive last.
+    const names = tickerPlaceholders(['stocks']).map(p => p.name)
+    expect(names).toContain('AAPL')
+    expect(names).not.toContain('BTC')
+  })
+
+  it('falls back to crypto only when nothing was chosen', () => {
+    expect(tickerPlaceholders([]).map(p => p.name)).toContain('BTC')
+    expect(tickerPlaceholders(null).map(p => p.name)).toContain('BTC')
+  })
+
+  it('carries no price and no direction', () => {
+    // change: 0 renders a green up-arrow, which is a claim about a price that
+    // has not loaded.
+    for (const p of tickerPlaceholders(['crypto', 'gold'])) {
+      expect(p.price).toBeNull()
+      expect(p.change).toBeNull()
+      expect(p.type).toBe('price')
+    }
+  })
+
+  it('uses symbols, not coin ids', () => {
+    const names = tickerPlaceholders(['crypto']).map(p => p.name)
+    expect(names).toContain('BTC')
+    expect(names).not.toContain('BITCOIN')
+  })
+
+  it('fills a phone row without running long', () => {
+    expect(tickerPlaceholders(['crypto', 'stocks', 'etfs', 'gold']).length)
+      .toBeLessThanOrEqual(MAX_PLACEHOLDERS)
+  })
+
+  it('labels a metal and a currency the same way a quote would', () => {
+    expect(tickerPlaceholders(['gold']).map(p => p.name)).toEqual(['GOLD'])
+    expect(tickerPlaceholders(['cash']).map(p => p.name)).toContain('EUR')
+  })
+})
+
+describe('the strip never substitutes one asset class for another', () => {
+  const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'components/PriceTicker.jsx'), 'utf8')
+
+  it('does not fall back to the crypto ranking when a choice was made', () => {
+    const load = src.slice(src.indexOf('async function load()'))
+    const body = load.slice(0, load.indexOf('\n    }') + 6)
+    // loadDefault() is the top-of-market crypto list. It may only run when
+    // there are no chosen ids at all.
+    expect(body).toMatch(/if \(ids\.length\) \{ await loadChosen\([^)]*\); return \}/)
+  })
+
+  it('seeds state from the chosen classes instead of a hardcoded row', () => {
+    expect(src).toMatch(/useState\(\(\) => tickerPlaceholders\(chosenInterests\(\)\)\)/)
+    expect(src).not.toMatch(/name: 'DOGE', price: null/)
   })
 })
