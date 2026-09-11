@@ -236,15 +236,41 @@ async function handle(req, env, store) {
   const vapidReady = !!(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY)
 
   if (path === '/' || path === '/health') {
+    let db = false
+    let dbError = ''
+    try {
+      const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM subs').first()
+      db = row != null
+      if (!db) dbError = 'no row returned'
+    } catch (e) {
+      dbError = String(e?.message || e)
+    }
+    let assetUrlSample = null
+    try {
+      const base = String(env.SITE_ORIGIN || env.DATA_WORKER_URL || '').trim()
+        .replace(/^DATA_WORKER_URL=/i, '')
+        .replace(/\/__refresh$/, '')
+        .replace(/\/+$/, '')
+      if (!base) throw new Error('DATA_WORKER_URL not set')
+      const url = base + '/market.json'
+      const r = await fetch(url, { signal: AbortSignal.timeout(8_000) })
+      const text = await r.text()
+      assetUrlSample = { url, ok: r.ok, status: r.status, bytes: text.length }
+    } catch (e) {
+      assetUrlSample = { error: String(e?.message || e) }
+    }
     return json({
       ok: true,
       service: 'walletlens-push',
       runtime: 'cloudflare-workers',
+      db,
+      dbError,
       vapid: vapidReady,
       // The public half, deliberately: it ships in every client bundle
       // already, and without it a server key that no longer matches the one
       // clients subscribed with is undetectable from either side.
       vapidKey: env.VAPID_PUBLIC_KEY || '',
+      assetUrlSample,
     }, headers)
   }
 

@@ -32,3 +32,4 @@ crons = [
 # hand.
 [vars]
 VAPID_SUBJECT = "mailto:contact@walletlens.live"
+SITE_ORIGIN = "https://walletlens.live"
