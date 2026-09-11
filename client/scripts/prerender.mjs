@@ -390,7 +390,6 @@ const ecoBody = `
 <h1>The net worth tracker that never asks who you are</h1>
 <p>Property, stocks, gold, cash, crypto and anything else you value, in <strong>one figure</strong>, on every screen you use. Your holdings are written to your own device, and nothing is uploaded unless you switch on a feature that needs it. Free, no paid tier, no account, works offline.</p>
 <p><a href="/dashboard">Open the WalletLens web app &rarr;</a></p>
-<p>Rated <strong>3.7 out of 5</strong> from 1 review on <a href="https://www.trustpilot.com/review/walletlens.live" rel="noopener">Trustpilot</a>. Used WalletLens? <a href="https://www.trustpilot.com/evaluate/walletlens.live" rel="noopener">Write a review</a>.</p>
 
 <h2>The app itself</h2>
 <p><img src="/screens/app-three-screens.webp" width="1031" height="877" alt="WalletLens on Android: a portfolio analysis screen with allocation by asset class, the dashboard showing total portfolio value and a candlestick chart, and a goals screen splitting net worth into funded buckets." /></p>

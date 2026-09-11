@@ -17,26 +17,6 @@ const WEB = 'https://walletlens.live'
 const PLAY = 'https://play.google.com/store/apps/details?id=live.walletlens.twa'
 const CWS = 'https://chromewebstore.google.com/detail/ajmjdeobjjmabgonhaeaaehoepfafhbn'
 
-// Trustpilot. Every number the card shows is read from here, so keeping it
-// current is one edit.
-//
-// Deliberately NOT the official TrustBox widget. That would be a third-party
-// script on the one page whose argument is that nothing leaves your device,
-// and it would need widget.trustpilot.com added to the CSP in index.html. This
-// renders from local markup and makes no request until someone clicks through.
-// The consequence is that the score here is a snapshot, not a live read: it is
-// wrong the moment a review lands, so update it when you check the profile.
-//
-// No AggregateRating JSON-LD either. Google does not allow a site to mark up
-// reviews about itself, and a rich-result penalty costs more than a star
-// rating in a snippet is worth.
-const TRUSTPILOT = {
-  url: 'https://www.trustpilot.com/review/walletlens.live',
-  writeUrl: 'https://www.trustpilot.com/evaluate/walletlens.live',
-  score: 3.7,
-  count: 1,
-}
-
 const TITLE = 'Free Net Worth Tracker, No Account, No Server | WalletLens'
 const DESC = 'Track property, stocks, gold, cash and crypto in one net worth figure. ' +
   'Free, no account, no subscription, and your holdings stay on your device. Web, Android, Chrome.'
@@ -192,36 +172,6 @@ export default function EcosystemPage() {
             </div>
             <p className="facts"><span>Free, no paid tier</span><span>No account</span>
               <span>No bank linking</span><span>Works offline</span></p>
-            <div className="tp">
-              <a className="tp-card" href={TRUSTPILOT.url} target="_blank" rel="noopener noreferrer">
-                <svg className="tp-stars" viewBox="0 0 132 24" width="83" height="15"
-                  role="img" aria-label={`Rated ${TRUSTPILOT.score} out of 5 on Trustpilot`}>
-                  <defs>
-                    <g id="wlTpRow">
-                      {[0, 27, 54, 81, 108].map(x => (
-                        <path key={x} transform={`translate(${x} 0)`}
-                          d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.5l7.1-.6z" />
-                      ))}
-                    </g>
-                    <clipPath id="wlTpFill">
-                      {/* Whole stars carry the 3px gap with them; the partial one
-                          is a fraction of the star alone, never of the gap. */}
-                      <rect x="0" y="0" height="24"
-                        width={Math.floor(TRUSTPILOT.score) * 27 + (TRUSTPILOT.score % 1) * 24} />
-                    </clipPath>
-                  </defs>
-                  <use href="#wlTpRow" className="tp-off" />
-                  <use href="#wlTpRow" className="tp-on" clipPath="url(#wlTpFill)" />
-                </svg>
-                <b className="tp-score">{TRUSTPILOT.score.toFixed(1)}</b>
-                <span className="tp-meta">on Trustpilot
-                  <small>{TRUSTPILOT.count === 1 ? '1 review' : `${TRUSTPILOT.count} reviews`}</small>
-                </span>
-              </a>
-              <a className="tp-write" href={TRUSTPILOT.writeUrl} target="_blank" rel="noopener noreferrer">
-                Write a review
-              </a>
-            </div>
             <div className="chips">
           <div className="chip"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%230A140F'/%3E%3Crect x='9' y='22' width='4.5' height='9' rx='1.2' fill='%234ade80'/%3E%3Crect x='17.7' y='16' width='4.5' height='15' rx='1.2' fill='%2316a34a'/%3E%3Crect x='26.4' y='9' width='4.5' height='22' rx='1.2' fill='%234ade80'/%3E%3C/svg%3E" alt="" /><small>STOCKS</small></div>
           <div className="chip"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%2314532d'/%3E%3Cpath d='M20 9L31 19h-3v11h-6v-7h-4v7h-6V19H9Z' fill='%234ade80'/%3E%3C/svg%3E" alt="" /><small>PROPERTY</small></div>
