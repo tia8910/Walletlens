@@ -54,7 +54,7 @@ export default {
     })())
   },
 
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const name = new URL(request.url).pathname.replace(/^\//, '')
 
     // The app is on walletlens.live and this is on workers.dev, so every one
@@ -77,6 +77,8 @@ export default {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response('Method not allowed', { status: 405 })
     }
-    return serve(storeFor(env), name)
+    // ctx.waitUntil lets a stale dataset be answered now and refreshed after
+    // the response is sent, instead of the reader waiting for eight RSS feeds.
+    return serve(storeFor(env), name, Date.now(), { waitUntil: (p) => ctx.waitUntil(p) })
   },
 }

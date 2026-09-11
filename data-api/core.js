@@ -108,17 +108,28 @@ function json(body, status, cache) {
  * A failed upstream still serves the previous value, because refresh() keeps
  * it — so a stale read degrades to stale data, never to a hole.
  */
-export async function serve(store, name, now = Date.now()) {
+export async function serve(store, name, now = Date.now(), { waitUntil } = {}) {
   const spec = DATASETS[name]
   let stored = await store.read(name)
+  const stale = spec && stored && isStale(stored, spec.maxAge, now)
 
   // Refresh on read when the schedule has not. The cron sweep is the fast
-  // path, not the only one: a deploy without cron — a playground, or a plan
-  // that does not offer it — would otherwise fill the store once and serve
-  // that snapshot forever, which is the exact failure this service exists to
-  // end. Costs one slow request per maxAge window; the edge cache above
-  // absorbs the rest.
-  if (!stored || (spec && isStale(stored, spec.maxAge, now))) {
+  // path, not the only one: a deploy without cron — a playground, a plan that
+  // does not offer it, or an account already at its trigger limit — would
+  // otherwise fill the store once and serve that snapshot forever, which is
+  // the exact failure this service exists to end.
+  //
+  // STALE IS SERVED IMMEDIATELY AND REFRESHED BEHIND THE RESPONSE. Awaiting
+  // the refresh made the reader pay for it, and for news that is eight RSS
+  // feeds at up to 15s each behind a 2-minute maxAge: every visitor more than
+  // two minutes after the last one waited seconds for a strip that renders
+  // nothing until it has data. Two-minute-old headlines now arrive at once and
+  // the next reader gets fresh ones.
+  //
+  // Only a cold store still blocks, because there is nothing else to send.
+  if (stale && waitUntil) {
+    waitUntil(refresh(store, name, { now, force: true }).catch(() => {}))
+  } else if (!stored || stale) {
     await refresh(store, name, { now, force: true })
     stored = await store.read(name)
   }

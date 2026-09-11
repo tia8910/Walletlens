@@ -204,7 +204,26 @@ export default function NewsTicker() {
   // Keep the component mounted while the modal is open even if the current
   // category is still loading / returned nothing, so switching categories
   // doesn't tear the modal down.
-  if (!items.length && !modalOpen) return null
+  // While the first load is in flight, hold the row rather than rendering
+  // nothing. Returning null meant the strip was absent for the whole round
+  // trip and then appeared, shoving everything below it down the page — the
+  // component looked slow because it had no way to say "coming", and the
+  // layout jumped when it arrived. Once loading finishes with nothing to show,
+  // null is still right: an empty bar for a feed that has no articles is
+  // furniture.
+  if (!items.length && !modalOpen) {
+    if (!loading) return null
+    return (
+      <div className="news-ticker-wrap" aria-busy="true">
+        <span className="news-ticker-label">
+          <span className="news-ticker-dot">●</span> {catLabel}
+        </span>
+        <div className="news-ticker-mask">
+          <div className="news-ticker-skeleton" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>

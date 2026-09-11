@@ -1142,7 +1142,25 @@ input, select, textarea {
 [data-wl-light] .ticker-sep { color: var(--text-sub); }
 
 /* ── News ticker (new component) ── */
-[data-wl-light] .news-ticker-wrap { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
+[data-wl-light] /* Placeholder while the first news load is in flight. Same height as a real
+   row, so the strip does not change size when the headlines arrive. */
+.news-ticker-skeleton {
+  height: 1.1em;
+  border-radius: 4px;
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 100%);
+  background-size: 200% 100%;
+  animation: news-sk 1.4s ease-in-out infinite;
+}
+@keyframes news-sk { from { background-position: 200% 0 } to { background-position: -200% 0 } }
+@media (prefers-reduced-motion: reduce) { .news-ticker-skeleton { animation: none } }
+[data-wl-light] .news-ticker-skeleton {
+  background: linear-gradient(90deg,
+    rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.09) 50%, rgba(0,0,0,0.04) 100%);
+  background-size: 200% 100%;
+}
+
+.news-ticker-wrap { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
 [data-wl-light] .news-ticker-label { border-right-color: rgba(0,0,0,0.7); }
 [data-wl-light] .news-ticker-mask::before { background: linear-gradient(to right, var(--bg), transparent); }
 [data-wl-light] .news-ticker-mask::after  { background: linear-gradient(to left,  var(--bg), transparent); }
