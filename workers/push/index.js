@@ -440,7 +440,7 @@ async function handle(req, env, store) {
 // Each job is isolated: one throwing must not cancel the others, because they
 // serve different channels and a news outage is not a reason to stop price
 // alerts.
-export async function runSchedule(cron, jobs) {
+export async function runSchedule(cron, jobs, env) {
   const run = async (name, fn) => {
     try { await fn() } catch (e) {
       console.error(`cron ${name} failed:`, String(e?.message || e).slice(0, 300))
@@ -459,10 +459,12 @@ export async function runSchedule(cron, jobs) {
     await run('news', () => jobs.checkNews())
     // Trigger the data worker's public-market refresh (no own cron triggers).
     await run('data-refresh', async () => {
-      const url = env.DATA_WORKER_URL
-      if (!url) return
+      const raw = String(env.DATA_WORKER_URL || '').trim()
+        .replace(/^DATA_WORKER_URL=/i, '')
+      if (!raw) return
       const token = env.DATA_REFRESH_TOKEN || ''
-      await fetch(url + '/__refresh', {
+      const url = raw.endsWith('/__refresh') ? raw : raw.replace(/\/+$/, '') + '/__refresh'
+      await fetch(url, {
         method: 'POST',
         headers: { 'x-refresh-token': token },
         signal: AbortSignal.timeout(15_000),
@@ -491,6 +493,6 @@ export default {
   async scheduled(event, env, ctx) {
     const store = new SubStore(env.DB)
     const jobs = createJobs({ store, send: makeSender(env, store) })
-    ctx.waitUntil(runSchedule(event.cron, jobs))
+    ctx.waitUntil(runSchedule(event.cron, jobs, env))
   },
 }
