@@ -25,6 +25,7 @@ import {
 import { accessToken, buildMessage, isDeadToken, FCM_ENDPOINT } from './fcm.js'
 import { SubStore, endpointKey, tokenKey } from './store.js'
 import { createJobs } from './jobs.js'
+import { SITE_ORIGIN } from './site.js'
 import { encryptPayload, vapidHeader } from './webpush.js'
 
 // ── CORS ────────────────────────────────────────────────────────────────────
@@ -262,6 +263,45 @@ async function readJson(req) {
 }
 
 // ── HTTP ────────────────────────────────────────────────────────────────────
+/**
+ * Fetch the page a price alert opens, and report what came back.
+ *
+ * Never throws and never fails /health: a health check that goes red because
+ * something it depends on is slow is reporting the wrong service. A timeout, a
+ * DNS failure and a 500 all come back as fields.
+ *
+ * redirect: 'manual' on purpose. A 301 onto the 404 shell still answers 200
+ * once the redirect is followed, which is the failure this is meant to catch,
+ * so the status is worth more than the destination.
+ *
+ * `?probe=0` skips it, for an uptime pinger that wants this endpoint to cost
+ * nothing outbound.
+ */
+export async function probeAssetPage(probeParam) {
+  const path = assetUrl({ coin_id: 'bitcoin' })
+  if (!path) return { skipped: 'no_sample' }
+  const target = SITE_ORIGIN + path
+  if (probeParam === '0') return { url: target, skipped: 'probe=0' }
+
+  const started = Date.now()
+  try {
+    const res = await fetch(target, {
+      method: 'GET',
+      redirect: 'manual',
+      headers: { 'User-Agent': 'walletlens-push/health' },
+      signal: AbortSignal.timeout(4000),
+    })
+    return { url: target, status: res.status, ok: res.ok, ms: Date.now() - started }
+  } catch (e) {
+    // The runtime's own words. "The operation was aborted" is a timeout and a
+    // DNS failure is not; they need different responses.
+    return {
+      url: target, ok: false, ms: Date.now() - started,
+      error: String(e?.message || e).slice(0, 120),
+    }
+  }
+}
+
 async function handle(req, env, store) {
   const origin = req.headers.get('origin')
   const headers = corsHeaders(origin)
@@ -300,12 +340,29 @@ async function handle(req, env, store) {
       // today, or the deployed worker predates them -- and they need
       // completely different responses. A short list here means the second.
       channels: Object.keys(DEFAULT_PREFS).filter(k => typeof DEFAULT_PREFS[k] === 'boolean').sort(),
-      // The asset link shape this build produces. A price alert is only as
-      // good as the page it opens, and the difference between the two shapes
-      // is a working deep link and a 404 — but from outside there is no way
-      // to tell which one a running worker emits until a notification fires
-      // and somebody taps it. One request answers it instead.
+      // The asset link SHAPE this build produces — a reported string, not a
+      // request. A price alert is only as good as the page it opens, and the
+      // difference between '/asset/?id=bitcoin' and '/asset/bitcoin' is a
+      // working deep link and a 404; from outside there is no way to tell
+      // which one a running worker emits until a notification fires and
+      // somebody taps it. This answers that without tapping anything.
+      //
+      // It is relative on purpose, because that is exactly what the payload
+      // carries: Web Push resolves it against the page, and fcm.js prefixes
+      // SITE_ORIGIN for the native app. Fetching this against the worker's own
+      // subdomain would 404 correctly — the push worker has no /asset/ route
+      // and should not — and pointing the field at a URL that answers instead
+      // loses the shape signal it exists for. The live fetch is its own field.
       assetUrlSample: assetUrl({ coin_id: 'bitcoin' }),
+      // Whether that shape actually resolves on the site notifications send
+      // people to. The shape can be right and the page still missing: a Pages
+      // deploy that drops the prerendered /asset/ shell breaks every price
+      // alert while this worker stays perfectly healthy, and nothing here
+      // could see it.
+      //
+      // SITE_ORIGIN, not a host of its own, so the probe cannot drift onto a
+      // different origin than fcm.js writes into the payload.
+      assetPage: await probeAssetPage(url.searchParams.get('probe')),
       // What each cron is responsible for. A channel present above but absent
       // here is defined and never scheduled, which is its own failure mode.
       schedules: {
