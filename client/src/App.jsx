@@ -1,4 +1,4 @@
-import { lazy, Suspense, memo, useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { lazy, Suspense, memo, useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 const Landing       = lazy(() => import('./pages/Landing'))
 const TrackCoin     = lazy(() => import('./pages/TrackCoin'))
@@ -406,6 +406,7 @@ export default function App() {
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
   const [isStandalone, setIsStandalone] = useState(false)
 
+  const topbarRef = useRef(null)
   const _guardianChecked = useRef(false)
   const _backupChecked = useRef(false)
 
@@ -631,6 +632,26 @@ export default function App() {
     })
   }, [location.pathname, location.search])
 
+  // Publish the fixed header's real height so content can clear it.
+  //
+  // .wl-topbar is position:fixed, so it contributes no layout height and
+  // .wl-content has to reserve the gap itself. A constant would be wrong twice
+  // over: the price strip inside the header can be turned off in settings, and
+  // it wraps at narrow widths, so the header is between one and two rows tall
+  // depending on both. ResizeObserver reports every one of those transitions,
+  // including the one on first paint when the lazy ticker chunk arrives.
+  useLayoutEffect(() => {
+    const el = topbarRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const publish = () => {
+      document.documentElement.style.setProperty('--wl-topbar-h', `${Math.round(el.offsetHeight)}px`)
+    }
+    publish()
+    const ro = new ResizeObserver(publish)
+    ro.observe(el)
+    return () => ro.disconnect()
+  })
+
   if (locked && !isLanding) return <BiometricLockScreen onUnlock={unlock} />
 
   if (isLanding) {
@@ -676,7 +697,7 @@ export default function App() {
       <DynamicBackground />
       <div className="wl-mood-aura" aria-hidden="true" />
 
-      <header className="wl-topbar">
+      <header className="wl-topbar" ref={topbarRef}>
         <div className="wl-topbar-inner">
           <button className="wl-hamburger" onClick={() => setDrawerOpen(true)} aria-label={t('menu')}>
             <IconMenu />
