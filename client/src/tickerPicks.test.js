@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { tickerIdsFor, tickerLabel, INTEREST_TICKER_IDS, MAX_TICKER_IDS } from './data/tickerPicks'
+import { tickerIdsFor, tickerLabel, INTEREST_TICKER_IDS, MAX_TICKER_IDS, MAX_LIVE_CRYPTO } from './data/tickerPicks'
 import { GOLD_ID, SILVER_ID, STOCK_PREFIX, FIAT_PREFIX } from './data/assets'
 
 describe('ticker picks from onboarding interests', () => {
@@ -31,6 +31,13 @@ describe('ticker picks from onboarding interests', () => {
     // Valued by hand in this app, so there is no quote to scroll.
     expect(INTEREST_TICKER_IDS.realestate).toBeUndefined()
     expect(INTEREST_TICKER_IDS.bonds).toBeUndefined()
+  })
+
+  it('reserves room for the other classes beside crypto', () => {
+    // Crypto is filled from the live top-of-market ranking, so without a cap
+    // of its own it would take the whole budget and someone who picked crypto
+    // and gold would swipe past twenty coins to reach the gold.
+    expect(MAX_LIVE_CRYPTO).toBeLessThan(MAX_TICKER_IDS)
   })
 
   it('caps the strip however many classes are chosen', () => {

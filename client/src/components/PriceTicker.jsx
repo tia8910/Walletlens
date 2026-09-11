@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, memo } from 'react'
 import { api } from '../api'
 import { useLanguage } from '../LanguageContext'
-import { tickerIdsFor, tickerLabel } from '../data/tickerPicks'
+import { tickerIdsFor, tickerLabel, MAX_TICKER_IDS, MAX_LIVE_CRYPTO } from '../data/tickerPicks'
 
 const TICKER_REFRESH_MS = 60_000
 const CAL_REFRESH_MS = 30 * 60_000
@@ -45,14 +45,45 @@ function PriceTicker() {
       } catch { return [] }
     }
 
+    // Crypto follows the market instead of a list. getMarketData is the
+    // top-of-market ranking the dashboard already loads, so this costs nothing
+    // extra and the strip reorders itself as the ranking does — which a
+    // hardcoded five cannot, and goes quietly wrong the week it changes.
+    // Stables are dropped: a row of dollars pegged to a dollar is not a price.
+    async function liveCrypto() {
+      const data = await api.getMarketData()
+      if (!Array.isArray(data)) return []
+      const skip = new Set(['tether', 'usd-coin', 'dai', 'first-digital-usd',
+                            'true-usd', 'binance-usd'])
+      return data
+        .filter(c => !skip.has(c.id) && c.current_price != null)
+        .slice(0, MAX_LIVE_CRYPTO)
+        .map(c => ({
+          type: 'price',
+          name: (c.symbol || c.id || '').toUpperCase(),
+          price: c.current_price,
+          change: c.price_change_percentage_24h,
+        }))
+    }
+
     // What someone said they track, when they said anything. getPrices batches
     // per asset class and dedupes in-flight identical fan-outs, so the whole
     // strip is a handful of requests however many symbols are on it.
-    async function loadChosen(ids) {
-      const quotes = await api.getPrices(ids.join(','))
-      if (cancelled || !quotes) return false
-      const picks = ids
-        .map(id => [id, quotes[id]])
+    async function loadChosen(interests, ids) {
+      const wantsCrypto = interests.includes('crypto')
+      // Everything except crypto, which has its own live source above.
+      const fixed = wantsCrypto
+        ? ids.filter(id => !tickerIdsFor(['crypto']).includes(id))
+        : ids
+
+      const [live, quotes] = await Promise.all([
+        wantsCrypto ? liveCrypto().catch(() => []) : [],
+        fixed.length ? api.getPrices(fixed.join(',')).catch(() => null) : {},
+      ])
+      if (cancelled) return false
+
+      const others = fixed
+        .map(id => [id, quotes?.[id]])
         .filter(([, q]) => q && q.usd != null)
         .map(([id, q]) => ({
           type: 'price',
@@ -60,8 +91,21 @@ function PriceTicker() {
           price: q.usd,
           change: q.usd_24h_change,
         }))
-      // A class whose feed is down should not blank the strip — keep whatever
-      // is already on screen and try again on the next tick.
+
+      // Interleaved head, then the rest of the coins. Someone who picked
+      // crypto and gold sees gold in the first handful rather than after
+      // twenty coins, and still gets the twenty coins.
+      const head = []
+      for (let i = 0; head.length < others.length * 2 && i < 40; i++) {
+        if (live[i]) head.push(live[i])
+        if (others[i]) head.push(others[i])
+      }
+      const seen = new Set(head.map(x => x.name))
+      const tail = [...live, ...others].filter(x => !seen.has(x.name))
+      const picks = [...head, ...tail].slice(0, MAX_TICKER_IDS)
+
+      // A feed being down should not blank the strip — keep whatever is
+      // already on screen and try again on the next tick.
       if (!picks.length) return false
       setItems(picks)
       return true
@@ -86,9 +130,17 @@ function PriceTicker() {
       setItems(picks)
     }
 
+    function chosenInterests() {
+      try {
+        const v = JSON.parse(localStorage.getItem('wl_interests') || 'null')
+        return Array.isArray(v) ? v : []
+      } catch { return [] }
+    }
+
     async function load() {
+      const interests = chosenInterests()
       const ids = chosenIds()
-      if (ids.length && await loadChosen(ids)) return
+      if (ids.length && await loadChosen(interests, ids)) return
       await loadDefault()
     }
 
@@ -147,13 +199,16 @@ function PriceTicker() {
   // NOTE: must run before any early return — hooks cannot be called
   // conditionally (React: "Rendered more hooks than during the previous render").
   // Fallback: always show the strip even if the API hasn't loaded yet.
+  // change: null, not 0. Zero read as "not negative", so every placeholder
+  // rendered a green up-arrow and the strip claimed six coins were up before a
+  // single price had loaded.
   const priceItems = items.length > 0 ? items : [
-    { type: 'price', name: 'BTC', price: 0, change: 0 },
-    { type: 'price', name: 'ETH', price: 0, change: 0 },
-    { type: 'price', name: 'SOL', price: 0, change: 0 },
-    { type: 'price', name: 'XRP', price: 0, change: 0 },
-    { type: 'price', name: 'ADA', price: 0, change: 0 },
-    { type: 'price', name: 'DOGE', price: 0, change: 0 },
+    { type: 'price', name: 'BTC', price: null, change: null },
+    { type: 'price', name: 'ETH', price: null, change: null },
+    { type: 'price', name: 'SOL', price: null, change: null },
+    { type: 'price', name: 'XRP', price: null, change: null },
+    { type: 'price', name: 'ADA', price: null, change: null },
+    { type: 'price', name: 'DOGE', price: null, change: null },
   ]
   // Macro events ride behind the prices. They are the browse half of the strip
   // and the prices are the check half, so the prices come first.
@@ -185,13 +240,15 @@ function PriceTicker() {
             </div>
           )
         }
-        const up = (t.change ?? 0) >= 0
+        // Three states: up, down, and not knowing yet.
+        const pending = t.change == null
+        const up = !pending && t.change >= 0
         return (
           <div key={`${t.name}-${i}`} className="tick" role="listitem">
             <span className="tick-name">{t.name}</span>
-            <span className="tick-val">${fmtPrice(t.price)}</span>
-            <span className={up ? 'tick-up' : 'tick-dn'}>
-              {up ? '▲' : '▼'} {Math.abs(t.change ?? 0).toFixed(2)}%
+            <span className="tick-val">{t.price == null ? '–' : `$${fmtPrice(t.price)}`}</span>
+            <span className={pending ? 'tick-val' : up ? 'tick-up' : 'tick-dn'}>
+              {pending ? '·' : `${up ? '▲' : '▼'} ${Math.abs(t.change).toFixed(2)}%`}
             </span>
           </div>
         )

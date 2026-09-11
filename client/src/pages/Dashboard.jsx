@@ -4455,6 +4455,17 @@ export default function Dashboard() {
       </div>
       ) : (activeTab === 'overview' && enriched.length > 0 && importOptions)}
 
+      {/* Live news ticker, demoted but not buried.
+          It was the second thing on the page, under the price strip, so a
+          dashboard opened with two marquees running before any figure of the
+          user's own. Moving it to the end of .dvx overcorrected: on a
+          populated dashboard that is thousands of pixels down, past every tab
+          block, which is not lower but gone. Here it sits under the tab grid
+          and above the tab content, so the numbers still come first and the
+          headlines are still on screen. Outside the tab blocks, as before, so
+          it stays reachable from every tab. */}
+      <NewsTicker />
+
       {/* Tab content — opacity fades slightly during lazy-load transitions */}
       <div style={isTabPending ? { opacity: 0.7, transition: 'opacity 0.15s' } : undefined}>
 
@@ -5967,14 +5978,6 @@ export default function Dashboard() {
       {loaded && !isDemo && transactions.length === 0 && obStep === 'balances' && (
         <WelcomeStart onDone={() => { setObStep('done'); loadAll() }} />
       )}
-
-      {/* Live news ticker, below the numbers rather than above them.
-          It used to be the second thing on the page, under the price strip, so
-          a dashboard opened it with two marquees running before any figure of
-          the user's own. Opening a net worth tracker is a check, and headlines
-          are a browse; the check goes first. Still outside the tab blocks, so
-          it stays reachable from every tab as it always was. */}
-      <NewsTicker />
 
       {lpMenu && <LongPressMenu items={lpMenu.items} pos={{ x: lpMenu.x, y: lpMenu.y }} onClose={closeLpMenu} />}
     </div>

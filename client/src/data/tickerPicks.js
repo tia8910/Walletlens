@@ -16,23 +16,41 @@ import { GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID, STOCK_PREFIX, FIAT_PREFIX }
 // no quote in this app — every holding is valued manually — so there is
 // nothing to scroll, and inventing a proxy index would be showing someone a
 // number that is not theirs.
+const S = t => `${STOCK_PREFIX}${t}`
+
 export const INTEREST_TICKER_IDS = {
-  crypto:      ['bitcoin', 'ethereum', 'solana', 'ripple', 'binancecoin'],
+  // Crypto is a placeholder here, not the list that ships. When crypto is
+  // among the interests the strip is filled from the live top-of-market
+  // ranking instead, so it follows the market rather than a list that goes
+  // stale the moment the top ten reshuffles. These are the fallback for a
+  // cold market feed, which is the only time a fixed list is the right answer.
+  crypto:      ['bitcoin', 'ethereum', 'solana', 'ripple', 'binancecoin',
+                'cardano', 'dogecoin', 'avalanche-2', 'chainlink', 'polkadot'],
   stablecoins: ['tether'],
-  stocks:      [`${STOCK_PREFIX}aapl`, `${STOCK_PREFIX}msft`, `${STOCK_PREFIX}nvda`, `${STOCK_PREFIX}tsla`],
-  etfs:        [`${STOCK_PREFIX}spy`, `${STOCK_PREFIX}qqq`, `${STOCK_PREFIX}voo`],
+  // The large caps people recognise without looking them up. Not an index:
+  // a ticker is read at a glance, and a symbol nobody knows is furniture.
+  stocks:      [S('aapl'), S('msft'), S('nvda'), S('tsla'), S('amzn'), S('googl'),
+                S('meta'), S('brk-b'), S('jpm'), S('v'), S('wmt'), S('xom')],
+  etfs:        [S('spy'), S('qqq'), S('voo'), S('vti'), S('iwm'), S('dia')],
   gold:        [GOLD_ID],
   silver:      [SILVER_ID],
   commodities: [COPPER_ID, PLATINUM_ID],
-  cash:        [`${FIAT_PREFIX}eur`, `${FIAT_PREFIX}gbp`],
+  cash:        [`${FIAT_PREFIX}eur`, `${FIAT_PREFIX}gbp`, `${FIAT_PREFIX}jpy`],
   // realestate and bonds: priced by hand in this app, so no feed to show.
 }
 
-// A ceiling on the strip, because interests are multi-select and someone who
-// taps everything would otherwise fan out a request per class on a 60s loop.
-// getPrices batches per class, so the cost is roughly one request per class
-// present, not per symbol.
-export const MAX_TICKER_IDS = 14
+// A ceiling on the strip. Interests are multi-select, and getPrices batches
+// per class, so the cost is roughly one request per class present rather than
+// per symbol: the limit is about how long a row stays worth swiping, not about
+// bandwidth. Forty is roughly a minute of scrolling and well past where anyone
+// keeps looking.
+export const MAX_TICKER_IDS = 40
+
+// How many live top-of-market coins the crypto class contributes before the
+// other chosen classes get their turn. Without a cap of its own, crypto would
+// take the whole budget and someone who picked crypto and gold would have to
+// swipe past every coin to reach the gold.
+export const MAX_LIVE_CRYPTO = 20
 
 // Interleave rather than concatenate. Picking crypto and gold and getting five
 // coins before the gold is a strip most people never scroll far enough to see
