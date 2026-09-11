@@ -133,8 +133,17 @@ function repairMessage(repair) {
  */
 function PushStatusLine({ status, repair }) {
   if (status.reachable === false) {
+    // Two different faults wore the same sentence. A server that answers to
+    // say its own store is unavailable is not a server you cannot reach, and
+    // telling someone to check their connection sends them after the wrong
+    // thing entirely.
+    const text = status.serverFault === 'store_unavailable'
+      ? 'The notification server is up but its subscription store is unavailable. This is a fault on our side, not on your device.'
+      : status.serverFault === 'server_error'
+      ? 'The notification server returned an error. This is a fault on our side, not on your device.'
+      : 'Can’t reach the notification server right now.'
     return <div className="settings-hint" style={{ marginTop: '0.5rem', color: WARN }}>
-      Can’t reach the notification server right now.
+      {text}
     </div>
   }
   if (status.found === false) {

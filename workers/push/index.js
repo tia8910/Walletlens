@@ -277,8 +277,16 @@ async function handle(req, env, store) {
   const vapidReady = !!(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY)
 
   if (path === '/' || path === '/health') {
+    // Query the store, do not just claim to be up. Until this was here /health
+    // returned ok:true with the D1 binding missing, because nothing on this
+    // route touched the database — so the one failure most likely to follow a
+    // redeploy was the one the health check could not see, and Settings said
+    // "can't reach the notification server" about a server that was answering.
+    const db = await store.probe()
     return json({
-      ok: true,
+      ok: db.ok,
+      db: db.ok,
+      ...(db.ok ? {} : { dbError: db.error }),
       service: 'walletlens-push',
       runtime: 'cloudflare-workers',
       vapid: vapidReady,
@@ -544,8 +552,20 @@ export default {
     try {
       return await handle(req, env, store)
     } catch (e) {
-      console.error('request failed:', String(e?.message || e).slice(0, 300))
-      return json({ error: 'internal' }, corsHeaders(req.headers.get('origin')), 500)
+      const msg = String(e?.message || e)
+      console.error('request failed:', msg.slice(0, 300))
+      // A missing D1 binding surfaces here as a TypeError on `undefined`,
+      // because SubStore accepts undefined at construction and only throws
+      // when a route reaches the database. Reported as its own status and
+      // reason rather than a blanket 500: the app can then say the server's
+      // store is unavailable instead of claiming it cannot be reached, which
+      // sent everyone looking at their own connection.
+      const noStore = !env.DB || /prepare|of undefined|no such table/i.test(msg)
+      return json(
+        noStore ? { error: 'store_unavailable' } : { error: 'internal' },
+        corsHeaders(req.headers.get('origin')),
+        noStore ? 503 : 500,
+      )
     }
   },
 

@@ -1044,6 +1044,21 @@ export async function ensureRegistered() {
  *
  * @returns {Promise<object|null>} the server's view, or null if unreachable
  */
+// Which failure was it?
+//
+// "reachable: false" used to cover two unrelated things: the server being
+// unreachable, and the server answering perfectly to say its own store is
+// broken. Those need different responses from the reader — one is their
+// network, the other is ours — and telling someone to check their connection
+// when the fault is a missing database binding costs them an evening.
+async function faultOf(res) {
+  try {
+    const body = await res.json()
+    if (body?.error) return body.error
+  } catch { /* not JSON, fall through to the status code */ }
+  return res.status >= 500 ? 'server_error' : 'http_' + res.status
+}
+
 export async function pushStatus() {
   try {
     if (!isPushSupported()) return { supported: false }
@@ -1056,14 +1071,20 @@ export async function pushStatus() {
       const token = native.nativePushToken()
       if (!token) return { supported: true, subscribed: false, permission }
       const res = await fetch(`${PUSH_API}/status?fcmToken=${encodeURIComponent(token)}`)
-      if (!res.ok) return { supported: true, subscribed: true, permission, reachable: false }
+      if (!res.ok) {
+        return { supported: true, subscribed: true, permission, reachable: false,
+                 serverFault: await faultOf(res) }
+      }
       return { supported: true, subscribed: true, permission, reachable: true, ...(await res.json()) }
     }
 
     const sub = await getSubscription()
     if (!sub) return { supported: true, subscribed: false, permission: Notification.permission }
     const res = await fetch(`${PUSH_API}/status?endpoint=${encodeURIComponent(sub.endpoint)}`)
-    if (!res.ok) return { supported: true, subscribed: true, permission: Notification.permission, reachable: false }
+    if (!res.ok) {
+      return { supported: true, subscribed: true, permission: Notification.permission,
+               reachable: false, serverFault: await faultOf(res) }
+    }
     const server = await res.json()
     return {
       supported: true,
