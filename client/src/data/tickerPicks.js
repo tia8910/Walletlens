@@ -30,7 +30,7 @@ export const INTEREST_TICKER_IDS = {
   // The large caps people recognise without looking them up. Not an index:
   // a ticker is read at a glance, and a symbol nobody knows is furniture.
   stocks:      [S('aapl'), S('msft'), S('nvda'), S('tsla'), S('amzn'), S('googl'),
-                S('meta'), S('brk-b'), S('jpm'), S('v'), S('wmt'), S('xom')],
+                S('meta'), S('jpm'), S('v'), S('wmt'), S('xom'), S('cost')],
   etfs:        [S('spy'), S('qqq'), S('voo'), S('vti'), S('iwm'), S('dia')],
   gold:        [GOLD_ID],
   silver:      [SILVER_ID],
@@ -52,12 +52,27 @@ export const MAX_TICKER_IDS = 40
 // swipe past every coin to reach the gold.
 export const MAX_LIVE_CRYPTO = 20
 
+// Per-class ceilings for the classes that cost real requests.
+//
+// The classes are not equally priced. Crypto is one getMarketData call however
+// many coins come back. Stocks go out as a batch and then one request per
+// ticker the batch missed, against a feed that rate-limits — so twelve stocks
+// and six ETFs is up to eighteen round trips on a 60s loop, which is what made
+// the strip take seconds to fill. The full lists stay as the pool so the
+// choice of names survives; only the number fetched per tick is cut.
+export const MAX_PER_CLASS = { stocks: 4, etfs: 3 }
+
 // Interleave rather than concatenate. Picking crypto and gold and getting five
 // coins before the gold is a strip most people never scroll far enough to see
 // the gold in. Round-robin puts one of each class up front.
 export function tickerIdsFor(interests) {
   const lists = (Array.isArray(interests) ? interests : [])
-    .map(i => INTEREST_TICKER_IDS[i])
+    .map(i => {
+      const list = INTEREST_TICKER_IDS[i]
+      if (!list) return null
+      const cap = MAX_PER_CLASS[i]
+      return cap ? list.slice(0, cap) : list
+    })
     .filter(Boolean)
   if (!lists.length) return []
 

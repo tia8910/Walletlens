@@ -57,3 +57,24 @@ describe('ticker picks from onboarding interests', () => {
     expect(tickerLabel(`${FIAT_PREFIX}eur`, undefined)).toBe('EUR')
   })
 })
+
+describe('request cost per tick', () => {
+  it('caps the classes that cost one request per symbol', async () => {
+    const { tickerIdsFor, MAX_PER_CLASS } = await import('./data/tickerPicks')
+    const ids = tickerIdsFor(['crypto', 'stocks', 'etfs', 'gold'])
+    const stooq = ids.filter(i => i.startsWith('stock:')).length
+    // Crypto is one getMarketData call however many coins return. Stocks are a
+    // batch plus one request per ticker the batch missed, against a feed that
+    // rate-limits, so this number is what decides whether the strip fills in
+    // under a second or takes several.
+    expect(stooq).toBeLessThanOrEqual(MAX_PER_CLASS.stocks + MAX_PER_CLASS.etfs)
+    expect(stooq).toBeLessThanOrEqual(7)
+  })
+
+  it('keeps no hyphenated tickers, which miss the batch', async () => {
+    const { INTEREST_TICKER_IDS } = await import('./data/tickerPicks')
+    for (const id of [...INTEREST_TICKER_IDS.stocks, ...INTEREST_TICKER_IDS.etfs]) {
+      expect(id.slice('stock:'.length), `${id} is a plain symbol`).not.toMatch(/-/)
+    }
+  })
+})

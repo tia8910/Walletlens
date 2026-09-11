@@ -76,39 +76,62 @@ function PriceTicker() {
         ? ids.filter(id => !tickerIdsFor(['crypto']).includes(id))
         : ids
 
-      const [live, quotes] = await Promise.all([
-        wantsCrypto ? liveCrypto().catch(() => []) : [],
-        fixed.length ? api.getPrices(fixed.join(',')).catch(() => null) : {},
-      ])
-      if (cancelled) return false
-
-      const others = fixed
-        .map(id => [id, quotes?.[id]])
-        .filter(([, q]) => q && q.usd != null)
-        .map(([id, q]) => ({
-          type: 'price',
-          name: tickerLabel(id, q),
-          price: q.usd,
-          change: q.usd_24h_change,
-        }))
-
-      // Interleaved head, then the rest of the coins. Someone who picked
-      // crypto and gold sees gold in the first handful rather than after
-      // twenty coins, and still gets the twenty coins.
-      const head = []
-      for (let i = 0; head.length < others.length * 2 && i < 40; i++) {
-        if (live[i]) head.push(live[i])
-        if (others[i]) head.push(others[i])
+      // Interleaved head, then whatever is left. Someone who picked crypto and
+      // gold sees gold in the first handful rather than after twenty coins,
+      // and still gets the twenty coins.
+      const compose = (live, others) => {
+        const head = []
+        for (let i = 0; head.length < others.length * 2 && i < 40; i++) {
+          if (live[i]) head.push(live[i])
+          if (others[i]) head.push(others[i])
+        }
+        const seen = new Set(head.map(x => x.name))
+        const tail = [...live, ...others].filter(x => !seen.has(x.name))
+        return [...head, ...tail].slice(0, MAX_TICKER_IDS)
       }
-      const seen = new Set(head.map(x => x.name))
-      const tail = [...live, ...others].filter(x => !seen.has(x.name))
-      const picks = [...head, ...tail].slice(0, MAX_TICKER_IDS)
 
-      // A feed being down should not blank the strip — keep whatever is
-      // already on screen and try again on the next tick.
-      if (!picks.length) return false
-      setItems(picks)
-      return true
+      // Paint each source as it lands rather than waiting for both.
+      //
+      // These two have wildly different costs. Crypto is one getMarketData
+      // call. Stocks go out as a batch and then one request per ticker the
+      // batch missed, against a feed that rate-limits and closes at the
+      // weekend — so a Promise.all held the whole strip, crypto included,
+      // hostage to the slowest quote, and the header sat empty for seconds.
+      let live = []
+      let others = []
+      let painted = false
+      const paint = () => {
+        const picks = compose(live, others)
+        // A feed being down should not blank the strip — keep whatever is
+        // already on screen and try again on the next tick.
+        if (cancelled || !picks.length) return
+        setItems(picks)
+        painted = true
+      }
+
+      const cryptoTask = wantsCrypto
+        ? liveCrypto().then(r => { live = r; paint() }).catch(() => {})
+        : Promise.resolve()
+
+      const othersTask = fixed.length
+        ? api.getPrices(fixed.join(','))
+            .then(quotes => {
+              others = fixed
+                .map(id => [id, quotes?.[id]])
+                .filter(([, q]) => q && q.usd != null)
+                .map(([id, q]) => ({
+                  type: 'price',
+                  name: tickerLabel(id, q),
+                  price: q.usd,
+                  change: q.usd_24h_change,
+                }))
+              paint()
+            })
+            .catch(() => {})
+        : Promise.resolve()
+
+      await Promise.all([cryptoTask, othersTask])
+      return painted
     }
 
     // Top crypto by market cap. Still the default, because it is what someone
