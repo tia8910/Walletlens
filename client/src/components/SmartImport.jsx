@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { noteMoment, noteFriction } from '../reviewPrompt'
 import { api } from '../api'
 import { parseScreenshotWithClaude } from '../visionAi'
-import { track, trackImport, trackProfileCreated } from '../analytics'
+import { track, trackImport, importCompleted, trackProfileCreated } from '../analytics'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
 
@@ -394,7 +394,9 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       })
       // profile_created fires only on a user's FIRST portfolio; this fires on
       // every import, which is what makes the funnel add up.
-      trackImport({ method: mode === 'screenshot' ? 'screenshot' : 'spreadsheet', step: 'saved' })
+      const doneMethod = mode === 'screenshot' ? 'screenshot' : 'spreadsheet'
+      trackImport({ method: doneMethod, step: 'saved' })
+      importCompleted({ method: doneMethod })
       showMsg(`Imported ${valid.length} transaction(s) successfully!`, 'ok')
       setRows([])
       setPreviews([])

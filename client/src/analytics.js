@@ -246,13 +246,47 @@ export function trackProfileCreated({ method, source } = {}) {
 //   step:   'opened' | 'started' | 'parsed' | 'saved' | 'failed'
 //   reason: a fixed code, never a message or user text — exception strings
 //           routinely carry filenames and cell contents.
+//
+// The dashboard's import tiles are keyed for the UI, where the spreadsheet one
+// is called 'excel' because that is what people call it. The funnel is keyed
+// for the data, where it is 'spreadsheet' because the same path takes .csv.
+// One map, so a rename on either side cannot silently split one method into
+// two rows in GA.
+const IMPORT_METHODS = {
+  excel: 'spreadsheet',
+  spreadsheet: 'spreadsheet',
+  screenshot: 'screenshot',
+  voice: 'voice',
+  backup: 'backup',
+}
+export function importMethod(key) {
+  return IMPORT_METHODS[key] || 'other'
+}
+
 export function trackImport({ method, step, reason, format } = {}) {
   track('import_step', {
-    import_method: method,
+    import_method: importMethod(method),
     import_step: step,
     ...(reason ? { failure_reason: reason } : {}),
     ...(format ? { file_format: format } : {}),
   })
+}
+
+// A successful import, as its own event name rather than only a step.
+//
+// import_step is the right shape for a funnel and the wrong shape for the
+// question actually being asked most of the time, which is "did anyone manage
+// to import today". Answering that from import_step means registering
+// import_step as a custom dimension first, because GA4 shows event names in
+// Realtime and reports but hides parameters until they are declared, and the
+// declaration is not retroactive. So a success is also emitted under a name of
+// its own: it is visible with no configuration, and it can be marked as a Key
+// Event, which import_step cannot be without also counting every failure.
+//
+// Fired ALONGSIDE trackImport({ step: 'saved' }) rather than replacing it, so
+// the funnel still adds up.
+export function importCompleted({ method } = {}) {
+  track('import_completed', { import_method: importMethod(method) })
 }
 
 // Track referral link clicks

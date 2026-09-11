@@ -24,7 +24,7 @@ import { LongPressMenu, bindLongPress, consumeLongPress } from '../components/Lo
 import { useLanguage } from '../LanguageContext'
 import { CLASS_LABEL_KEYS, renderTip, renderMaybe } from '../data/walletEvalTips'
 import { useTheme, THEMES } from '../ThemeContext'
-import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
+import { track, trackPortfolioLoaded, trackProfileCreated, trackImport, importCompleted, importMethod } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData, getGenesisTs } from '../snapshots'
 // Subscribing lives in Settings. The dashboard only keeps the stored snapshot
 // fresh for people who already subscribed, so the weekly email carries current
@@ -1672,6 +1672,11 @@ function DataPanel({ onRefresh, onImported, drive = false }) {
     setBusy(false)
     if (result?.success === false) { setMsg(t('errImportFailedPrefix') + (result.error || 'unknown error')); return }
     setMsg('Imported! Redirecting…'); setCode(''); setPreview(null)
+    // Backup restore is one of the four import tiles and was the only one
+    // sending nothing, so a funnel on import_step under-counted by its whole
+    // share and read as "nobody restores a backup".
+    trackImport({ method: 'backup', step: 'saved' })
+    importCompleted({ method: 'backup' })
     onRefresh()
     // Jump to the portfolio overview so the user sees their restored holdings.
     if (onImported) setTimeout(() => onImported(), 300)
@@ -4373,7 +4378,13 @@ export default function Dashboard() {
             <div className={`wl-import-branch${open ? ' open' : ''}`} key={m.key}>
               <button className="wl-import-node" style={{ '--c':`rgb(${m.color})`, '--cbg':`rgba(${m.color},0.12)` }}
                 aria-expanded={open}
-                onClick={() => { const next = open ? null : m.key; setOpenImport(next); if (next) track('quick_import_open', { method: m.key }) }}>
+                onClick={() => { const next = open ? null : m.key; setOpenImport(next)
+                  // 'opened' is where the user starts. 'started' does not fire
+                  // until a file comes back from the picker, so without this the
+                  // funnel cannot see anyone who opened an importer and never
+                  // chose a file, which is where they are being lost.
+                  if (next) { track('quick_import_open', { import_method: importMethod(m.key) })
+                    trackImport({ method: m.key, step: 'opened' }) } }}>
                 <span className="wl-import-node-icon"><Icon name={m.icon} size={18} /></span>
                 <span className="wl-import-node-text">
                   <span className="wl-import-node-label">{m.label}</span>
@@ -5723,7 +5734,13 @@ export default function Dashboard() {
                   <div className={`wl-import-branch${open ? ' open' : ''}`} key={m.key}>
                     <button className="wl-import-node" style={{ '--c': `rgb(${m.color})`, '--cbg': `rgba(${m.color},0.12)` }}
                       aria-expanded={open}
-                      onClick={() => { const next = open ? null : m.key; setOpenImport(next); if (next) track('smart_import_open', { method: m.key }) }}>
+                      onClick={() => { const next = open ? null : m.key; setOpenImport(next)
+                  // 'opened' is where the user starts. 'started' does not fire
+                  // until a file comes back from the picker, so without this the
+                  // funnel cannot see anyone who opened an importer and never
+                  // chose a file, which is where they are being lost.
+                  if (next) { track('smart_import_open', { import_method: importMethod(m.key) })
+                    trackImport({ method: m.key, step: 'opened' }) } }}>
                       <span className="wl-import-node-icon"><Icon name={m.icon} size={18} /></span>
                       <span className="wl-import-node-text">
                         <span className="wl-import-node-label">{m.label}</span>
