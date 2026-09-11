@@ -123,6 +123,33 @@ function repairMessage(repair) {
   }
 }
 
+// Why the server's view could not be read. Mirrors repairMessage: a code, a
+// sentence, and a colour that says whose problem it is.
+function faultMessage(fault) {
+  switch (fault) {
+    case 'store_unavailable':
+      return { text: 'The notification server is up but its subscription store is unavailable. This is a fault on our side, not on your device.', tone: BAD }
+    case 'server_error':
+      return { text: 'The notification server returned an error. This is a fault on our side, not on your device.', tone: BAD }
+    case 'client_error':
+      // Nothing was sent. Saying "can't reach the server" here is simply false,
+      // and it is the sentence that sent a whole diagnosis to the wrong side.
+      return { text: 'This app could not work out which device to ask about, so the server was never called. This is a fault on our side.', tone: BAD }
+    case 'bad_body':
+      return { text: 'Something answered for the notification server but not with its data — usually a captive portal or a proxy on this network.', tone: WARN }
+    case 'network':
+      return { text: 'Can’t reach the notification server right now — the request never completed.', tone: WARN }
+    default:
+      if (typeof fault === 'string' && fault.startsWith('http_')) {
+        return { text: `The notification server answered ${fault.slice(5)} instead of this device's status.`, tone: BAD }
+      }
+      if (fault) {
+        return { text: `The notification server refused the request (${fault}).`, tone: BAD }
+      }
+      return { text: 'Can’t reach the notification server right now.', tone: WARN }
+  }
+}
+
 /**
  * One line saying whether this device is actually wired up, and what would
  * stop a notification arriving right now.
@@ -133,17 +160,21 @@ function repairMessage(repair) {
  */
 function PushStatusLine({ status, repair }) {
   if (status.reachable === false) {
-    // Two different faults wore the same sentence. A server that answers to
-    // say its own store is unavailable is not a server you cannot reach, and
-    // telling someone to check their connection sends them after the wrong
-    // thing entirely.
-    const text = status.serverFault === 'store_unavailable'
-      ? 'The notification server is up but its subscription store is unavailable. This is a fault on our side, not on your device.'
-      : status.serverFault === 'server_error'
-      ? 'The notification server returned an error. This is a fault on our side, not on your device.'
-      : 'Can’t reach the notification server right now.'
-    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: WARN }}>
-      {text}
+    // Every fault here used to wear one sentence, and that sentence named the
+    // network. A server answering to say its own store is broken, a request
+    // that never left the tab, and a phone with no signal need three different
+    // responses from the reader -- and only one of them is "check your
+    // connection". Diagnosing a silent install against a worker that reported
+    // itself healthy from the outside is what this is for: the fault code and
+    // the browser's own words are on the screen, so the next report names it.
+    const { text, tone } = faultMessage(status.serverFault)
+    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: tone }}>
+      <div>{text}</div>
+      {status.detail && (
+        <div style={{ opacity: 0.75, fontSize: '0.85em', marginTop: '0.15rem', wordBreak: 'break-word' }}>
+          {status.detail}
+        </div>
+      )}
     </div>
   }
   if (status.found === false) {

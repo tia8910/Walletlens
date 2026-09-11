@@ -1059,42 +1059,72 @@ async function faultOf(res) {
   return res.status >= 500 ? 'server_error' : 'http_' + res.status
 }
 
-export async function pushStatus() {
+/**
+ * Ask the server about one address, and say what went wrong if it would not say.
+ *
+ * Split out so the fetch is the ONLY thing whose failure can be called a
+ * network fault. Everything else pushStatus does -- reading a permission,
+ * importing the native bridge, asking the service worker for a subscription --
+ * used to sit inside the same try/catch, so a local exception in any of them
+ * was reported as "can't reach the notification server" about a server that
+ * had not been contacted at all. That sent the reader after their connection
+ * while the fault was in their own tab, and it cost a round of diagnosis with
+ * the worker verified healthy from the outside.
+ */
+async function askServer(query) {
+  let res
   try {
-    if (!isPushSupported()) return { supported: false }
+    res = await fetch(`${PUSH_API}/status?${query}`)
+  } catch (e) {
+    // The request itself did not complete: no signal, DNS, CORS, a blocked
+    // connect-src. The detail is the browser's own words and is the only thing
+    // that distinguishes them from each other.
+    return { reachable: false, serverFault: 'network', detail: detailOf(e) }
+  }
+  if (!res.ok) return { reachable: false, serverFault: await faultOf(res) }
+  try {
+    return { reachable: true, ...(await res.json()) }
+  } catch (e) {
+    // 200 with a body that is not JSON is a proxy or an error page, not the
+    // push worker answering.
+    return { reachable: false, serverFault: 'bad_body', detail: detailOf(e) }
+  }
+}
 
-    // Notification.permission does not exist in the app's WebView, and reading
-    // it is what would throw before any of the rest of this ran.
-    if (inAppShell()) {
-      const permission = shellNotificationsAllowed() ? 'granted' : 'default'
+export async function pushStatus() {
+  if (!isPushSupported()) return { supported: false }
+
+  // Notification.permission does not exist in the app's WebView, and reading
+  // it is what would throw before any of the rest of this ran.
+  if (inAppShell()) {
+    let permission = 'default'
+    let token = ''
+    try {
+      permission = shellNotificationsAllowed() ? 'granted' : 'default'
       const native = await import('./nativePush.js')
-      const token = native.nativePushToken()
-      if (!token) return { supported: true, subscribed: false, permission }
-      const res = await fetch(`${PUSH_API}/status?fcmToken=${encodeURIComponent(token)}`)
-      if (!res.ok) {
-        return { supported: true, subscribed: true, permission, reachable: false,
-                 serverFault: await faultOf(res) }
-      }
-      return { supported: true, subscribed: true, permission, reachable: true, ...(await res.json()) }
+      token = native.nativePushToken()
+    } catch (e) {
+      return { supported: true, reachable: false, serverFault: 'client_error', detail: detailOf(e) }
     }
-
-    const sub = await getSubscription()
-    if (!sub) return { supported: true, subscribed: false, permission: Notification.permission }
-    const res = await fetch(`${PUSH_API}/status?endpoint=${encodeURIComponent(sub.endpoint)}`)
-    if (!res.ok) {
-      return { supported: true, subscribed: true, permission: Notification.permission,
-               reachable: false, serverFault: await faultOf(res) }
-    }
-    const server = await res.json()
+    if (!token) return { supported: true, subscribed: false, permission }
     return {
-      supported: true,
-      subscribed: true,
-      permission: Notification.permission,
-      reachable: true,
-      ...server,
+      supported: true, subscribed: true, permission,
+      ...(await askServer(`fcmToken=${encodeURIComponent(token)}`)),
     }
-  } catch {
-    return { supported: true, reachable: false }
+  }
+
+  let sub
+  let permission
+  try {
+    permission = Notification.permission
+    sub = await getSubscription()
+  } catch (e) {
+    return { supported: true, reachable: false, serverFault: 'client_error', detail: detailOf(e) }
+  }
+  if (!sub) return { supported: true, subscribed: false, permission }
+  return {
+    supported: true, subscribed: true, permission,
+    ...(await askServer(`endpoint=${encodeURIComponent(sub.endpoint)}`)),
   }
 }
 
