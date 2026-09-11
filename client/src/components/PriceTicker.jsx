@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, memo } from 'react'
 import { api } from '../api'
+import { tickerIdsFor, tickerLabel } from '../data/tickerPicks'
 
 const TICKER_REFRESH_MS = 60_000
 const CAL_REFRESH_MS = 30 * 60_000
@@ -32,7 +33,41 @@ function PriceTicker() {
     let cancelled = false
     let intervalId = null
 
-    async function load() {
+    // Read on every load rather than once: the picker can be reopened from
+    // Settings, and a strip that keeps showing the old classes until a reload
+    // reads as broken.
+    function chosenIds() {
+      try {
+        const v = JSON.parse(localStorage.getItem('wl_interests') || 'null')
+        return tickerIdsFor(Array.isArray(v) ? v : [])
+      } catch { return [] }
+    }
+
+    // What someone said they track, when they said anything. getPrices batches
+    // per asset class and dedupes in-flight identical fan-outs, so the whole
+    // strip is a handful of requests however many symbols are on it.
+    async function loadChosen(ids) {
+      const quotes = await api.getPrices(ids.join(','))
+      if (cancelled || !quotes) return false
+      const picks = ids
+        .map(id => [id, quotes[id]])
+        .filter(([, q]) => q && q.usd != null)
+        .map(([id, q]) => ({
+          type: 'price',
+          name: tickerLabel(id, q),
+          price: q.usd,
+          change: q.usd_24h_change,
+        }))
+      // A class whose feed is down should not blank the strip — keep whatever
+      // is already on screen and try again on the next tick.
+      if (!picks.length) return false
+      setItems(picks)
+      return true
+    }
+
+    // Top crypto by market cap. Still the default, because it is what someone
+    // who skipped the picker gets, and skipping is allowed.
+    async function loadDefault() {
       const data = await api.getMarketData()
       if (cancelled || !Array.isArray(data) || data.length === 0) return
       // Pick top 12 by market cap, skip obvious stables for visual variety
@@ -47,6 +82,12 @@ function PriceTicker() {
           change: c.price_change_percentage_24h,
         }))
       setItems(picks)
+    }
+
+    async function load() {
+      const ids = chosenIds()
+      if (ids.length && await loadChosen(ids)) return
+      await loadDefault()
     }
 
     async function loadEvents() {
