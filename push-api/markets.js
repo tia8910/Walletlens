@@ -397,10 +397,16 @@ export function quoteFor(quotes, asset) {
 }
 
 // ── News ────────────────────────────────────────────────────────────────────
-// The site already publishes a merged, de-duplicated RSS digest for the app's
-// own news feed; re-using it means the cron adds no new upstream dependency
-// and always matches what the user sees in-app.
-const NEWS_URL = 'https://walletlens.live/news.json'
+// The same merged, de-duplicated RSS digest the app's own news feed reads, so
+// the cron adds no upstream dependency and a notification always matches what
+// the user sees in-app.
+//
+// It comes from the data worker now, not from walletlens.live. That digest
+// used to be a static file a GitHub Action committed into client/public/ every
+// two hours; when Actions was disabled the file froze, and because it ships
+// inside the Pages build it kept being served, nine days stale and looking
+// perfectly healthy. The client and the other two datasets here moved to the
+// worker in ea04a05c; this one line was left behind pointing at the corpse.
 const MAX_ARTICLES = 120
 
 export function parseNews(json) {
@@ -421,7 +427,8 @@ export function parseNews(json) {
 
 export async function fetchNews() {
   try {
-    return parseNews(await getJson(NEWS_URL))
+    const { dataUrl } = await import('../client/src/apiHosts.js')
+    return parseNews(await getJson(dataUrl('news.json')))
   } catch (e) {
     console.error('news fetch failed:', e instanceof Error ? e.message : e)
     return []
