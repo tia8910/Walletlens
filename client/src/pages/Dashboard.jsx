@@ -3226,12 +3226,27 @@ const PortfolioBrief = memo(function PortfolioBrief({ enriched, totalValue, tota
       parts.push(t('dsSummaryTrails')(worstSym, worstChg.toFixed(1)))
     }
 
-    return parts.join('. ') + '.'
+    // Returned split rather than joined. The opening clause is the one that
+    // carries the verdict, and it is the only part that should take the
+    // status colour: a whole paragraph in red is harder to read than a grey
+    // one and says nothing the first six words did not.
+    return { head: parts[0] + '.', rest: parts.slice(1).join('. ') + (parts.length > 1 ? '.' : '') }
     // `t` is a dependency: without it the sentence would keep the language it
     // was first built in until the numbers happened to change.
   }, [enriched, totalValue, totalPnLPct, t])
 
   if (!statement) return null
+
+  // Three states, not two. `>= 0` called a portfolio that has not moved a
+  // winner, so a flat day was reported in green with an up arrow. Anything
+  // inside a tenth of a percent is neither, and says so in neutral.
+  const tone = totalPnLPct > 0.05 ? 'up' : totalPnLPct < -0.05 ? 'down' : 'flat'
+  const TONES = {
+    up:   { accent: 'var(--g)', tint: 'rgba(var(--g-rgb),0.07)', edge: 'rgba(var(--g-rgb),0.22)' },
+    down: { accent: '#f87171',  tint: 'rgba(248,113,113,0.08)',  edge: 'rgba(248,113,113,0.22)' },
+    flat: { accent: 'var(--text2)', tint: 'rgba(255,255,255,0.03)', edge: 'var(--border)' },
+  }
+  const c = TONES[tone]
 
   return (
     <div style={{
@@ -3241,10 +3256,12 @@ const PortfolioBrief = memo(function PortfolioBrief({ enriched, totalValue, tota
       color: 'var(--text2)',
       lineHeight: 1.5,
       borderRadius: '12px',
-      background: 'rgba(255,255,255,0.03)',
-      borderLeft: '3px solid ' + (totalPnLPct >= 0 ? 'var(--g)' : '#f87171'),
+      background: c.tint,
+      border: '1px solid ' + c.edge,
+      borderLeft: '3px solid ' + c.accent,
     }}>
-      {statement}
+      <b style={{ color: c.accent, fontWeight: 600 }}>{statement.head}</b>
+      {statement.rest ? ' ' + statement.rest : ''}
     </div>
   )
 })
@@ -4420,10 +4437,6 @@ export default function Dashboard() {
           tap, and never see the animation — it was unreachable from five of
           the six tabs. */}
       <ScreenEffect effect={effect?.effect} payload={effect?.payload} onDone={() => setEffect(null)} />
-
-      {/* Live news ticker — above the tab navigation so it's always visible */}
-      <NewsTicker />
-
 
       {/* Tab nav — labeled tile grid on the web. Inside the native app the tile
           grid is redundant with the native bottom nav, so we replace it with the
@@ -5954,6 +5967,14 @@ export default function Dashboard() {
       {loaded && !isDemo && transactions.length === 0 && obStep === 'balances' && (
         <WelcomeStart onDone={() => { setObStep('done'); loadAll() }} />
       )}
+
+      {/* Live news ticker, below the numbers rather than above them.
+          It used to be the second thing on the page, under the price strip, so
+          a dashboard opened it with two marquees running before any figure of
+          the user's own. Opening a net worth tracker is a check, and headlines
+          are a browse; the check goes first. Still outside the tab blocks, so
+          it stays reachable from every tab as it always was. */}
+      <NewsTicker />
 
       {lpMenu && <LongPressMenu items={lpMenu.items} pos={{ x: lpMenu.x, y: lpMenu.y }} onClose={closeLpMenu} />}
     </div>

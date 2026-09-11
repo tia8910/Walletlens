@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, memo } from 'react'
 import { api } from '../api'
+import { useLanguage } from '../LanguageContext'
 import { tickerIdsFor, tickerLabel } from '../data/tickerPicks'
 
 const TICKER_REFRESH_MS = 60_000
@@ -26,6 +27,7 @@ function eventDayLabel(dateStr) {
 }
 
 function PriceTicker() {
+  const { t } = useLanguage()
   const [items, setItems] = useState([])
   const [events, setEvents] = useState([])
 
@@ -142,10 +144,9 @@ function PriceTicker() {
     }
   }, [])
 
-  // Duplicate the list so the marquee loops seamlessly.
   // NOTE: must run before any early return — hooks cannot be called
   // conditionally (React: "Rendered more hooks than during the previous render").
-    // Fallback: always show the ticker even if the API hasn't loaded yet
+  // Fallback: always show the strip even if the API hasn't loaded yet.
   const priceItems = items.length > 0 ? items : [
     { type: 'price', name: 'BTC', price: 0, change: 0 },
     { type: 'price', name: 'ETH', price: 0, change: 0 },
@@ -154,36 +155,47 @@ function PriceTicker() {
     { type: 'price', name: 'ADA', price: 0, change: 0 },
     { type: 'price', name: 'DOGE', price: 0, change: 0 },
   ]
-  // Interleave macro events into the price stream so the calendar rides the
-  // same marquee as the markets ticker.
-  const displayItems = useMemo(() => [...events, ...priceItems], [events, priceItems])
-  const doubled = useMemo(() => [...displayItems, ...displayItems], [displayItems])
+  // Macro events ride behind the prices. They are the browse half of the strip
+  // and the prices are the check half, so the prices come first.
+  const displayItems = useMemo(() => [...priceItems, ...events], [priceItems, events])
 
+  // A row, not a marquee.
+  //
+  // Once the strip shows what someone chose at onboarding, a 26-second scroll
+  // cycle is the wrong shape: a person who picked gold wants gold, not gold in
+  // fifteen seconds. Everything is present at once and the row scrolls
+  // sideways under a finger.
+  //
+  // It also fixes an accessibility bug the marquee had. Under
+  // prefers-reduced-motion the animation was paused, which left those users
+  // looking at the first two items frozen, with no way to reach the rest.
+  //
+  // No longer aria-hidden for the same reason: the content is now static and
+  // readable, so hiding it from a screen reader would be hiding real data
+  // rather than sparing someone an animation.
   return (
-    <div className="ticker-strip" aria-hidden="true">
-      <div className="ticker-inner">
-        {doubled.map((t, i) => {
-          if (t.type === 'event') {
-            return (
-              <div key={`ev-${t.title}-${i}`} className="tick tick-cal">
-                <span className="tick-cal-dot" style={{ background: IMPACT_COLOR[t.impact] || '#eab308' }} />
-                <span className="tick-name">{t.title}</span>
-                <span className="tick-cal-day">{t.day}</span>
-              </div>
-            )
-          }
-          const up = (t.change ?? 0) >= 0
+    <div className="ticker-strip" role="list" aria-label={t('tickerPrices')}>
+      {displayItems.map((t, i) => {
+        if (t.type === 'event') {
           return (
-            <div key={`${t.name}-${i}`} className="tick">
-              <span className="tick-name">{t.name}</span>
-              <span className="tick-val">${fmtPrice(t.price)}</span>
-              <span className={up ? 'tick-up' : 'tick-dn'}>
-                {up ? '▲' : '▼'} {Math.abs(t.change ?? 0).toFixed(2)}%
-              </span>
+            <div key={`ev-${t.title}-${i}`} className="tick tick-cal" role="listitem">
+              <span className="tick-cal-dot" style={{ background: IMPACT_COLOR[t.impact] || '#eab308' }} />
+              <span className="tick-name">{t.title}</span>
+              <span className="tick-cal-day">{t.day}</span>
             </div>
           )
-        })}
-      </div>
+        }
+        const up = (t.change ?? 0) >= 0
+        return (
+          <div key={`${t.name}-${i}`} className="tick" role="listitem">
+            <span className="tick-name">{t.name}</span>
+            <span className="tick-val">${fmtPrice(t.price)}</span>
+            <span className={up ? 'tick-up' : 'tick-dn'}>
+              {up ? '▲' : '▼'} {Math.abs(t.change ?? 0).toFixed(2)}%
+            </span>
+          </div>
+        )
+      })}
     </div>
   )
 }

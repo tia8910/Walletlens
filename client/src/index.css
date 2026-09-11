@@ -1814,45 +1814,32 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
 }
 
 /* ── Live price ticker ── */
+/* A row of chips that scrolls under a finger, not a marquee.
+   It lives inside .wl-topbar now, so it inherits the header's stickiness and
+   there is no second sticky element for the header to paint over. */
 .ticker-strip {
+  display: flex; gap: 7px;
+  padding: 7px 10px 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
   background: var(--ink);
-  padding: 9px 0;
-  overflow: hidden;
-  border-radius: 12px;
-  margin-bottom: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  position: relative;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  /* The scrollbar is 8px of permanent furniture on a 38px strip, and the row
+     already reads as scrollable from the clipped chip at its edge. */
+  scrollbar-width: none;
 }
-.ticker-strip::before,
-.ticker-strip::after {
-  content: ''; position: absolute; top: 0; bottom: 0; width: 32px;
-  z-index: 2; pointer-events: none;
-}
-.ticker-strip::before {
-  left: 0;
-  background: linear-gradient(90deg, var(--ink), transparent);
-}
-.ticker-strip::after {
-  right: 0;
-  background: linear-gradient(-90deg, var(--ink), transparent);
-}
-.ticker-inner {
-  display: flex; gap: 28px;
-  animation: tk-scroll 30s linear infinite;
-  white-space: nowrap;
-  width: max-content;
-  will-change: transform;
-}
-@keyframes tk-scroll {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ticker-inner { animation-play-state: paused; }
-}
+.ticker-strip::-webkit-scrollbar { display: none; }
 .tick {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 0.72rem; font-family: var(--mono);
+  flex: none;
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 0.7rem; font-family: var(--mono);
+  white-space: nowrap;
 }
 .tick-name { color: #fff; font-weight: 500; }
 .tick-val  { color: rgba(255,255,255,0.8); }

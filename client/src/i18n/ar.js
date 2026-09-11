@@ -81,6 +81,7 @@ export default {
     home: 'الرئيسية',
     trades: 'الصفقات',
     market: 'السوق',
+    tickerPrices: 'أسعار السوق',
     whales: 'الحيتان',
     dashboard: 'لوحة التحكم',
     transactions: 'المعاملات',

@@ -86,6 +86,7 @@ export default {
     home: 'Inicio',
     trades: 'Operaciones',
     market: 'Mercado',
+    tickerPrices: 'Precios de mercado',
     whales: 'Ballenas',
     dashboard: 'Panel',
     transactions: 'Transacciones',

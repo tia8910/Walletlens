@@ -730,11 +730,16 @@ export default function App() {
             </button>
           </div>
         </div>
+        {/* Inside the header, not after it.
+            As a sibling the strip lost a stacking race it could not win: the
+            topbar is sticky with z-index 80 on narrow screens and the strip had
+            no z-index at all, so the moment anyone scrolled the header painted
+            straight over it and the first price was permanently unreadable.
+            One sticky element has no race to lose. */}
+        <Suspense fallback={<div className="ticker-strip" style={{ minHeight: '38px' }} aria-hidden="true" />}>
+          <PriceTicker />
+        </Suspense>
       </header>
-
-      <Suspense fallback={<div className="ticker-strip" style={{ minHeight: '34px' }} aria-hidden="true" />}>
-        <PriceTicker />
-      </Suspense>
 
       {drawerMounted && <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}
         onHelp={() => { setHelpOpen(true); track('help_guide_open', { source: 'drawer' }) }} />}

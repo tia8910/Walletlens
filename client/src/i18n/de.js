@@ -81,6 +81,7 @@ export default {
     home: 'Start',
     trades: 'Trades',
     market: 'Markt',
+    tickerPrices: 'Marktpreise',
     whales: 'Wale',
     dashboard: 'Dashboard',
     transactions: 'Transaktionen',
