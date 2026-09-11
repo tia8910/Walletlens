@@ -17,6 +17,19 @@ compatibility_date = "2026-09-04"
 binding = "DATA"
 id = "bf8d773c28a74505867eed6754940915"
 
+# REQUIRED, and its absence is what took the datasets off the air.
+#
+# wrangler disables the *.workers.dev subdomain on any deploy that declares
+# `routes` unless workers_dev is set true here. The routes below kept
+# walletlens.live/news.json answering, so from the outside the service looked
+# healthy — while walletlens-data.tarek-abdelhameed.workers.dev/news.json, the
+# URL every client actually fetches through dataUrl(), stopped resolving. The
+# app then fell through to in-browser RSS, that failed too, and NewsTicker
+# renders nothing on an empty list, so the strip simply vanished with no error
+# anywhere. Both hostnames have to work: the browser uses workers.dev through
+# dataUrl, and workers/push reaches it the same way, worker to worker.
+workers_dev = true
+
 # OPTIONAL, AND IT MAY BE REFUSED. The Workers Free plan allows five cron
 # triggers per ACCOUNT, and walletlens-push already uses three. If this deploy
 # fails on the trigger limit, delete this block and deploy again — the service
