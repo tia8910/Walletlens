@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import worker from '../scripts/pages-worker-entry.js'
-import { PUSH_HOST, SITE_ORIGIN } from './apiHosts.js'
+import { PUSH_HOST, DATA_HOST, SITE_ORIGIN } from './apiHosts.js'
 
 // A zip deploy carries static assets and nothing else, so functions/ is absent
 // from it entirely — which is what /api/push/subscribe answering 405 meant:
@@ -70,15 +70,67 @@ describe('the bundled Pages worker', () => {
 })
 
 describe('what the build emits', () => {
-  it('bundles the worker and narrows it to /api/*', () => {
+  it('bundles the worker and narrows it to what it actually handles', () => {
     expect(config).toMatch(/entryPoints: \[resolve\(__dirname, 'scripts\/pages-worker-entry\.js'\)\]/)
-    expect(config).toMatch(/include: \['\/api\/\*'\]/)
+    expect(config).toMatch(/'\/api\/\*',/)
+    expect(config).toMatch(/'\/news\.json'/)
   })
 
-  it('produces both files, with the push host inside', () => {
+  it('produces both files, with both worker hosts inside', () => {
     const dist = join(here, '../dist')
     if (!existsSync(join(dist, '_worker.js'))) return   // no build in this run
-    expect(readFileSync(join(dist, '_worker.js'), 'utf8')).toContain(PUSH_HOST)
-    expect(JSON.parse(readFileSync(join(dist, '_routes.json'), 'utf8')).include).toEqual(['/api/*'])
+    const bundle = readFileSync(join(dist, '_worker.js'), 'utf8')
+    expect(bundle).toContain(PUSH_HOST)
+    expect(bundle).toContain(DATA_HOST)
+    expect(JSON.parse(readFileSync(join(dist, '_routes.json'), 'utf8')).include).toContain('/api/*')
+  })
+})
+
+describe('the scheduled datasets', () => {
+  it('are answered from the data worker, not the file the build ships', async () => {
+    // dataUrl() asks walletlens.live for these now, and the build still puts a
+    // real file at each path. Pages served that file, and it has been frozen
+    // since the workflow that refreshed it was disabled, so the news modal
+    // filled with articles nine days old.
+    let seen
+    vi.stubGlobal('fetch', async (u) => { seen = u; return new Response('{"articles":[]}', { status: 200 }) })
+    const res = await call('/news.json')
+    expect(seen).toBe(`https://${DATA_HOST}/news.json`)
+    expect(res.status).toBe(200)
+    expect(assets.fetch, 'must not serve the shipped copy while the worker answers').not.toHaveBeenCalled()
+  })
+
+  it('covers every dataset the client asks for', async () => {
+    for (const f of ['market.json', 'stocks.json', 'economy.json', 'economic-calendar.json', 'stock-prices.json']) {
+      let seen
+      vi.stubGlobal('fetch', async (u) => { seen = u; return new Response('{}', { status: 200 }) })
+      await call(`/${f}`)
+      expect(seen, `${f} routed`).toBe(`https://${DATA_HOST}/${f}`)
+    }
+  })
+
+  it('falls back to the shipped copy when the worker cannot answer', async () => {
+    // Stale beats empty: news has no other source in the app, and its own
+    // timestamps say how old it is.
+    vi.stubGlobal('fetch', async () => { throw new Error('offline') })
+    await call('/news.json')
+    expect(assets.fetch).toHaveBeenCalledOnce()
+  })
+
+  it('falls back on a bad status too, not only on a throw', async () => {
+    vi.stubGlobal('fetch', async () => new Response('nope', { status: 502 }))
+    await call('/news.json')
+    expect(assets.fetch).toHaveBeenCalledOnce()
+  })
+
+  it('does not let the edge hold a dataset past its own refresh window', async () => {
+    vi.stubGlobal('fetch', async () => new Response('{}', { status: 200 }))
+    const res = await call('/news.json')
+    expect(res.headers.get('cache-control')).toBe('public, max-age=300')
+  })
+
+  it('is listed in _routes.json, or Pages would never invoke the worker', () => {
+    const include = JSON.parse(readFileSync(join(here, '../dist/_routes.json'), 'utf8')).include
+    for (const f of ['/news.json', '/market.json', '/stock-prices.json']) expect(include).toContain(f)
   })
 })

@@ -108,7 +108,18 @@ function pagesWorkerPlugin() {
       })
       writeFileSync(
         resolve(__dirname, 'dist/_routes.json'),
-        JSON.stringify({ version: 1, include: ['/api/*'], exclude: [] }, null, 2) + '\n',
+        JSON.stringify({
+          version: 1,
+          // The dataset paths are here because the build still ships a static
+          // file at each of them, and Pages would serve that frozen copy
+          // rather than the live worker.
+          include: [
+            '/api/*',
+            '/news.json', '/market.json', '/stocks.json',
+            '/economy.json', '/economic-calendar.json', '/stock-prices.json',
+          ],
+          exclude: [],
+        }, null, 2) + '\n',
       )
     },
   }
