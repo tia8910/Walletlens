@@ -106,6 +106,7 @@ const Guardian     = lazy(() => import('./pages/Guardian'))
 const DriveCallback = lazy(() => import('./pages/DriveCallback'))
 const AdminMail    = lazy(() => import('./pages/AdminMail'))
 const Vision       = lazy(() => import('./pages/Vision'))
+const Diagnostics  = lazy(() => import('./pages/Diagnostics'))
 const GrowNetWorth = lazy(() => import('./pages/GrowNetWorth'))
 
 function PageFallback() {
@@ -799,6 +800,9 @@ export default function App() {
               <Route path="/guardian" element={<Guardian />} />
               <Route path="/drive-callback" element={<DriveCallback />} />
               <Route path="/vision" element={<Vision />} />
+              {/* Not linked, not in the sitemap: a URL to type when something
+                  is wrong. Every backend hop, answered in one pass. */}
+              <Route path="/diag" element={<Diagnostics />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>
