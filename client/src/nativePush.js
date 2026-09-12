@@ -21,6 +21,13 @@ const bridge = () => {
   } catch { return null }
 }
 
+// The runtime's own description of a failure, trimmed to something a settings
+// line can carry. "Failed to fetch", "Load failed" and a CSP refusal are three
+// different problems wearing one sentence without it.
+function detailOf(e) {
+  return String(e?.message || e || '').trim().slice(0, 120)
+}
+
 /** Whether this device registers over FCM rather than Web Push. */
 export function usesNativePush() {
   return bridge() !== null
@@ -70,23 +77,50 @@ export async function registerNativePush(opts = {}) {
     catch { /* treat an unreadable flag as "not synced" and re-register */ }
   }
 
+  // Serialised BEFORE the request, and deliberately outside the try below.
+  //
+  // It used to be built inline in the fetch call, inside that try — so a
+  // throw from JSON.stringify (a circular value, a BigInt, a getter that
+  // raises) came back as `unreachable`, and the screen told the user to check
+  // their connection about a request that was never attempted. This is the
+  // same trap registrationFields() was written to escape on the web path.
+  //
+  // `alerts` and `zakatDue` are sent because the server reads both and the
+  // callers have always passed them: without alerts a price target is stored
+  // on the device and never armed on the server, and without zakatDue the
+  // reminder has no date to count down to. They were being dropped here, one
+  // layer below the function whose whole comment says they must not be.
+  let body
+  try {
+    body = JSON.stringify({
+      transport: 'fcm',
+      fcmToken: token,
+      alerts: opts.alerts,
+      watch: opts.watch,
+      setup: opts.setup,
+      prefs: opts.prefs ?? getPushPrefs(),
+      // An explicit null is meaningful here — the year lapsed, or zakat was
+      // paid — and the server honours it, so it is not filtered out.
+      zakatDue: opts.zakatDue,
+      lang: opts.lang,
+      tz: opts.tz,
+    })
+  } catch (e) {
+    return { ok: false, reason: 'payload', detail: detailOf(e) }
+  }
+
   try {
     const res = await fetch(`${PUSH_API}/subscribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        transport: 'fcm',
-        fcmToken: token,
-        watch: opts.watch,
-        setup: opts.setup,
-        prefs: opts.prefs ?? getPushPrefs(),
-        lang: opts.lang,
-        tz: opts.tz,
-      }),
+      body,
     })
     if (!res.ok) return { ok: false, reason: `http-${res.status}` }
-  } catch {
-    return { ok: false, reason: 'unreachable' }
+  } catch (e) {
+    // Keep the runtime's own words. An empty catch here is what left the one
+    // failure still on screen — "the request never completed" is true and
+    // says nothing about WHY, and the why is in this exception.
+    return { ok: false, reason: 'unreachable', detail: detailOf(e) }
   }
 
   // Marked only after the server accepted it. Marking on the attempt would

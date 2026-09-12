@@ -786,7 +786,18 @@ async function enablePushInShell() {
     // while /health answered db: true, vapid: true from outside — both true,
     // about different things.
     if (res.reason === 'unreachable') {
-      throw new Error('Couldn’t reach the notification server — the request never completed. Check the connection and try again.')
+      // With the detail, because "the request never completed" is true of a
+      // phone with no signal, a blocked connect-src and a failed CORS
+      // preflight alike, and those are three different fixes. The runtime's
+      // own words are the only thing that separates them from out here.
+      throw new Error(
+        `Couldn’t reach the notification server — the request never completed.${res.detail ? ` (${res.detail})` : ''}`
+      )
+    }
+    if (res.reason === 'payload') {
+      // Nothing was sent. This used to be indistinguishable from the line
+      // above, because the body was built inside the same try as the fetch.
+      throw new Error(`This device’s registration could not be prepared${res.detail ? ` (${res.detail})` : ''}. This is a fault on our side.`)
     }
     if (res.reason === 'not-in-shell') {
       throw new Error('The app’s notification bridge isn’t available. Close WalletLens fully and reopen it.')

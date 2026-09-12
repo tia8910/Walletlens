@@ -98,13 +98,70 @@ describe('registering over FCM', () => {
     expect(b.markPushTokenSynced).toHaveBeenCalled()
   })
 
-  it('survives the server being unreachable', async () => {
+  it('survives the server being unreachable, and keeps what it said', async () => {
     const b = bridgeWith()
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline') }))
     const { registerNativePush } = await load()
 
-    expect(await registerNativePush()).toEqual({ ok: false, reason: 'unreachable' })
+    // The detail is the whole diagnosis. "The request never completed" is
+    // equally true of a phone with no signal, a blocked connect-src and a
+    // failed CORS preflight, and those are three different fixes — an empty
+    // catch here is what left that one sentence on the screen with nothing
+    // behind it.
+    expect(await registerNativePush()).toEqual({
+      ok: false, reason: 'unreachable', detail: 'offline',
+    })
     expect(b.markPushTokenSynced).not.toHaveBeenCalled()
+  })
+
+  it('does not call a body it could not build an unreachable server', async () => {
+    // JSON.stringify used to run inside the same try as the fetch, so a
+    // circular value came back as 'unreachable' and sent the user to check a
+    // connection that was never used.
+    bridgeWith()
+    const circular = {}
+    circular.self = circular
+    const { registerNativePush } = await load()
+
+    const res = await registerNativePush({ force: true, watch: circular })
+    expect(res.reason).toBe('payload')
+    expect(res.detail).toBeTruthy()
+    expect(fetch, 'nothing was sent').not.toHaveBeenCalled()
+  })
+
+  it('sends the fields the server reads, not a subset of them', async () => {
+    // alerts and zakatDue were dropped here, one layer below the function
+    // whose comment says they must not be: without alerts a price target is
+    // stored on the device and never armed on the server, and without
+    // zakatDue the reminder has no date to count down to.
+    bridgeWith()
+    const { registerNativePush } = await load()
+    await registerNativePush({
+      force: true,
+      alerts: [{ coin_id: 'bitcoin', targetPrice: 1 }],
+      watch: [{ id: 'bitcoin' }],
+      setup: { zakat: true },
+      prefs: { moves: true },
+      zakatDue: '2026-03-01',
+      lang: 'ar',
+      tz: 120,
+    })
+    expect(calls[0].body).toMatchObject({
+      transport: 'fcm',
+      alerts: [{ coin_id: 'bitcoin', targetPrice: 1 }],
+      zakatDue: '2026-03-01',
+      lang: 'ar',
+      tz: 120,
+    })
+  })
+
+  it('sends an explicit null zakat date, which means something', async () => {
+    // The year lapsed, or zakat was paid. The server honours null and falls
+    // through on undefined, so the two must not be conflated.
+    bridgeWith()
+    const { registerNativePush } = await load()
+    await registerNativePush({ force: true, zakatDue: null })
+    expect(calls[0].body.zakatDue).toBeNull()
   })
 
   it('asks the native side to fetch a token when it has none', async () => {

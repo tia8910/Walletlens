@@ -122,6 +122,13 @@ describe('turning push on says why it failed', () => {
     expect(shell).toMatch(/Registering this device failed \(\$\{res\.reason/)
   })
 
+  it('shows the runtime\u2019s own words for a request that never left', () => {
+    // Two failures wear "nothing was sent": the fetch threw, and the body
+    // could not be serialised. Neither is diagnosable without the detail.
+    const shell = push.slice(push.indexOf('async function enablePushInShell'))
+    expect(shell).toMatch(/res\.detail \? ` \(\$\{res\.detail\}\)`/)
+  })
+
   it('covers every reason registerNativePush can return', () => {
     const native = readFileSync(join(here, 'nativePush.js'), 'utf8')
     const reg = native.slice(native.indexOf('export async function registerNativePush'))
