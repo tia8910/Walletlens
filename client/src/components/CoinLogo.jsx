@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, memo } from 'react'
 import { getCachedCoinImage } from '../api'
 // Shared with the landing page's asset-class cards so both render the same
 // metal badges. See client/src/data/assetIcons.js.
-import { ASSET_ICONS } from '../data/assetIcons'
+import { ASSET_ICONS, AssetIconBadge } from '../data/assetIcons'
 import { voiceProxy } from '../apiHosts.js'
 function isNonCrypto(coinId) {
   if (!coinId) return false
@@ -189,25 +189,17 @@ const MAX_RETRIES = 2
  * would only burn requests on a stock ticker before giving up.
  */
 function NonCryptoLogo({ coinId, symbol, size = 32, className = 'coin-logo', badgeStyle, fallbackChar }) {
-  const known = ASSET_ICONS[coinId]
-  if (known) {
-    const id = `gi-${coinId}`
-    return (
-      <svg width={size} height={size} viewBox="0 0 32 32" className={className} style={{ borderRadius:'50%', flexShrink:0, ...badgeStyle }}>
-        <defs>
-          <radialGradient id={id} cx="35%" cy="35%" r="65%">
-            <stop offset="0%" stopColor={known.color1} />
-            <stop offset="100%" stopColor={known.color2} />
-          </radialGradient>
-        </defs>
-        <circle cx="16" cy="16" r="16" fill={`url(#${id})`} />
-        <text x="16" y="16" textAnchor="middle" dominantBaseline="central"
-          fontSize="11" fontWeight="800" fontFamily="Inter,system-ui,sans-serif" fill="rgba(255,255,255,0.95)">
-          {known.label}
-        </text>
-      </svg>
-    )
+  // The shared badge, not a second copy of it.
+  //
+  // This drew its own gradient disc with the metal's ISO code, while
+  // assetIcons.jsx exported a badge for exactly these ids and the trade sheet
+  // drew an ingot — three marks for one asset, and the dashboard got the least
+  // recognisable. AssetIconBadge is now the only one, and it carries the same
+  // ingot Buy and Sell show.
+  if (ASSET_ICONS[coinId]) {
+    return <AssetIconBadge coinId={coinId} size={size} className={className} style={badgeStyle} />
   }
+
   const label = fallbackChar || nonCryptoLabel(coinId, symbol)
   const [c1, c2] = nonCryptoColor(coinId)
   const id = `gi-nc-${coinId}`
