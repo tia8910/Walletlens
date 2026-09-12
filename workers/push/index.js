@@ -37,15 +37,28 @@ const ALLOWED_ORIGINS = new Set([
 ])
 const PAGES_PREVIEW = /^https:\/\/([a-z0-9-]+\.)?walletlenslive1?\.pages\.dev$/
 
-function corsHeaders(origin) {
+function corsHeaders(origin, requestedHeaders) {
   const allow = origin && (ALLOWED_ORIGINS.has(origin) || PAGES_PREVIEW.test(origin))
     ? origin
     : 'https://walletlens.live'
   return {
     'Access-Control-Allow-Origin': allow,
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': '*',
-    'Vary': 'Origin',
+    // Echo what was asked for, and name Content-Type outright rather than
+    // relying on the wildcard.
+    //
+    // '*' here is only understood by Chromium 77 and later. Every GET this
+    // service answers is a simple request and never preflights, so the
+    // wildcard was never exercised by them — but /subscribe is a POST with a
+    // JSON content type, which always preflights. On an older Android System
+    // WebView that '*' is not a match for 'content-type', the preflight fails,
+    // and the POST surfaces in the page as a bare "Failed to fetch" with no
+    // console entry the user can see. Echoing the request is what the spec
+    // recommends and works on every version.
+    'Access-Control-Allow-Headers': requestedHeaders || 'Content-Type',
+    // A preflight per registration attempt is a round trip nobody needs.
+    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin, Access-Control-Request-Headers',
     'Content-Type': 'application/json',
   }
 }
@@ -304,7 +317,7 @@ export async function probeAssetPage(probeParam) {
 
 async function handle(req, env, store) {
   const origin = req.headers.get('origin')
-  const headers = corsHeaders(origin)
+  const headers = corsHeaders(origin, req.headers.get('access-control-request-headers'))
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers })
 
   // Anything that is not a read may write a subscription, so the cached scan

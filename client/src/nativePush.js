@@ -64,6 +64,21 @@ export function nativePushToken() {
  * @param {{force?: boolean, watch?: Array, setup?: object, lang?: string, tz?: number}} opts
  * @returns {Promise<{ok: boolean, reason?: string}>}
  */
+/**
+ * Can this device reach the push service at all?
+ *
+ * Deliberately the plainest request that exists: GET, no custom headers, no
+ * body. That makes it a CORS "simple request", which is never preflighted — so
+ * it isolates reachability from whether a preflight would have been allowed.
+ * Only called after a failure, never on the happy path.
+ */
+async function canReachServer() {
+  try {
+    const res = await fetch(`${PUSH_API}/health`, { method: 'GET' })
+    return res.ok
+  } catch { return false }
+}
+
 export async function registerNativePush(opts = {}) {
   const b = bridge()
   if (!b) return { ok: false, reason: 'not-in-shell' }
@@ -117,10 +132,19 @@ export async function registerNativePush(opts = {}) {
     })
     if (!res.ok) return { ok: false, reason: `http-${res.status}` }
   } catch (e) {
-    // Keep the runtime's own words. An empty catch here is what left the one
-    // failure still on screen — "the request never completed" is true and
-    // says nothing about WHY, and the why is in this exception.
-    return { ok: false, reason: 'unreachable', detail: detailOf(e) }
+    // Keep the runtime's own words, and then answer the question they do not.
+    //
+    // "Failed to fetch" is one string for two unrelated faults: the device
+    // cannot reach the host at all, or it reached it and the browser refused
+    // the request before sending it — a failed CORS preflight, a connect-src
+    // the page's own policy blocks. They have nothing in common and neither is
+    // visible from inside a WebView, where there is no console to open.
+    //
+    // So ask a question that cannot preflight. A GET with no custom headers is
+    // a simple request; if it comes back while the POST did not, the network
+    // is fine and the POST was stopped on its way out. That is a fault on our
+    // side, and the user should not be told to check their connection.
+    return { ok: false, reason: 'unreachable', detail: detailOf(e), reachedServer: await canReachServer() }
   }
 
   // Marked only after the server accepted it. Marking on the attempt would

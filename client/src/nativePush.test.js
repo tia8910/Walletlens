@@ -109,9 +109,51 @@ describe('registering over FCM', () => {
     // catch here is what left that one sentence on the screen with nothing
     // behind it.
     expect(await registerNativePush()).toEqual({
-      ok: false, reason: 'unreachable', detail: 'offline',
+      ok: false, reason: 'unreachable', detail: 'offline', reachedServer: false,
     })
     expect(b.markPushTokenSynced).not.toHaveBeenCalled()
+  })
+
+  it('separates a blocked request from an unreachable host', async () => {
+    // "Failed to fetch" is one string for two unrelated faults. A GET with no
+    // custom headers cannot preflight, so if it answers while the POST did
+    // not, the network is fine and the POST was stopped on its way out — ours
+    // to fix, and not something the user can do anything about.
+    bridgeWith()
+    vi.stubGlobal('fetch', vi.fn(async (url, init) => {
+      if ((init?.method ?? 'GET') === 'GET') return { ok: true, status: 200 }
+      throw new Error('Failed to fetch')
+    }))
+    const { registerNativePush } = await load()
+
+    expect(await registerNativePush({ force: true })).toMatchObject({
+      reason: 'unreachable', reachedServer: true,
+    })
+  })
+
+  it('asks with the plainest request there is', async () => {
+    // A custom header or a body would make the probe preflight too, and it
+    // would then fail for the same reason the POST did and prove nothing.
+    const seen = []
+    bridgeWith()
+    vi.stubGlobal('fetch', vi.fn(async (url, init) => {
+      seen.push({ url, init })
+      if ((init?.method ?? 'GET') === 'GET') return { ok: true, status: 200 }
+      throw new Error('Failed to fetch')
+    }))
+    const { registerNativePush } = await load()
+    await registerNativePush({ force: true })
+
+    const probe = seen.find(c => (c.init?.method ?? 'GET') === 'GET')
+    expect(probe.init.headers).toBeUndefined()
+    expect(probe.init.body).toBeUndefined()
+  })
+
+  it('does not probe when the request succeeded', async () => {
+    bridgeWith()
+    const { registerNativePush } = await load()
+    await registerNativePush({ force: true })
+    expect(calls).toHaveLength(1)
   })
 
   it('does not call a body it could not build an unreachable server', async () => {

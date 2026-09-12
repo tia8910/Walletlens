@@ -93,3 +93,33 @@ describe('one origin, not two', () => {
     expect(java).toContain(`"${SITE_ORIGIN}/"`)
   })
 })
+
+describe('the preflight the app actually makes', () => {
+  const cors = index.slice(index.indexOf('function corsHeaders('), index.indexOf('const json ='))
+
+  it('does not rely on the header wildcard', () => {
+    // '*' in Access-Control-Allow-Headers is only understood by Chromium 77+.
+    // Every GET here is a simple request and never preflights, so the wildcard
+    // was never exercised — but /subscribe is a POST with a JSON content type,
+    // which always does. On an older Android System WebView the preflight then
+    // fails and the POST surfaces in the page as a bare "Failed to fetch".
+    expect(cors).not.toMatch(/'Access-Control-Allow-Headers': '\*'/)
+    expect(cors).toMatch(/requestedHeaders \|\| 'Content-Type'/)
+  })
+
+  it('echoes what the preflight asked for, and varies on it', () => {
+    expect(index).toMatch(/corsHeaders\(origin, req\.headers\.get\('access-control-request-headers'\)\)/)
+    expect(cors).toMatch(/'Vary': 'Origin, Access-Control-Request-Headers'/)
+  })
+
+  it('allows the methods the routes answer', () => {
+    // A method missing here fails the preflight for that route only, which is
+    // the hardest version of this bug to spot.
+    const methods = cors.match(/'Access-Control-Allow-Methods': '([^']+)'/)[1]
+    for (const m of ['GET', 'POST', 'DELETE', 'OPTIONS']) expect(methods).toContain(m)
+  })
+
+  it('caches the preflight so registering is one round trip', () => {
+    expect(cors).toMatch(/'Access-Control-Max-Age'/)
+  })
+})

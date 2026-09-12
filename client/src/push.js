@@ -786,10 +786,16 @@ async function enablePushInShell() {
     // while /health answered db: true, vapid: true from outside — both true,
     // about different things.
     if (res.reason === 'unreachable') {
-      // With the detail, because "the request never completed" is true of a
-      // phone with no signal, a blocked connect-src and a failed CORS
-      // preflight alike, and those are three different fixes. The runtime's
-      // own words are the only thing that separates them from out here.
+      // Two faults, one exception text. registerNativePush follows a failure
+      // with a plain GET that cannot preflight: if that answered, the device
+      // reaches the server perfectly well and the registration was refused on
+      // its way out of the browser — a CORS preflight or a connect-src — which
+      // is ours to fix and has nothing to do with their connection.
+      if (res.reachedServer) {
+        throw new Error(
+          `The notification server is reachable, but this device’s registration was blocked before it could be sent${res.detail ? ` (${res.detail})` : ''}. This is a fault on our side, not on your connection.`
+        )
+      }
       throw new Error(
         `Couldn’t reach the notification server — the request never completed.${res.detail ? ` (${res.detail})` : ''}`
       )
