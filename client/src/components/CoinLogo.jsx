@@ -112,6 +112,10 @@ function rememberResolved(key, src) {
 
 const STAGE_TIMEOUT_MS = 3000
 const FALLBACK_TIMEOUT_MS = 1200
+// How many times a row may rebuild an exhausted ladder on returning to the
+// foreground. Bounded, so an asset with genuinely no logo anywhere does not
+// re-walk six CDNs every time the app is opened.
+const MAX_RETRIES = 2
 
 /**
  * Non-crypto assets — stocks, metals, fiat. Their icons come from a local
@@ -218,11 +222,44 @@ const CryptoLogo = memo(function CryptoLogo({
     if (stageIdx >= STAGES.length) return
     loadedRef.current = false
     const timeout = stageIdx <= 1 ? STAGE_TIMEOUT_MS : FALLBACK_TIMEOUT_MS
-    const t = setTimeout(() => {
-      if (stageIdxRef.current === stageIdx && !loadedRef.current) setStageIdx(s => s + 1)
-    }, timeout)
-    return () => clearTimeout(t)
-  }, [stageIdx])
+    let t = null
+
+    // Never run the clock while the tab is hidden.
+    //
+    // A hidden document has its timers throttled and its image loads deferred
+    // or dropped, so the timer would advance past a stage the browser never
+    // gave a chance to load — and it advances again, and again, until the
+    // ladder is exhausted and the generated letter badge is all that is left.
+    // That is the whole bug: a logo that was fine before the app went into the
+    // background is initials when it comes back, and only reappears if the row
+    // is remounted, which is what opening an asset and returning does.
+    const arm = () => {
+      clearTimeout(t)
+      if (document.hidden) return
+      t = setTimeout(() => {
+        if (stageIdxRef.current === stageIdx && !loadedRef.current) setStageIdx(s => s + 1)
+      }, timeout)
+    }
+    arm()
+    const onVisible = () => { if (!document.hidden) arm() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => { clearTimeout(t); document.removeEventListener('visibilitychange', onVisible) }
+  }, [stageIdx, STAGES.length])
+
+  // One more try when the app returns, for a ladder that ran out while it was
+  // away. Without this the row keeps its badge until something remounts it.
+  const retriesRef = useRef(0)
+  useEffect(() => {
+    if (stageIdx < STAGES.length) return
+    const onVisible = () => {
+      if (document.hidden || retriesRef.current >= MAX_RETRIES) return
+      retriesRef.current += 1
+      loadedRef.current = false
+      setStageIdx(0)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [stageIdx, STAGES.length])
 
   const onLoad = (e) => {
     loadedRef.current = true
@@ -230,7 +267,7 @@ const CryptoLogo = memo(function CryptoLogo({
     rememberResolved(logoKey, el?.currentSrc || el?.src || '')
   }
   const advance  = () => setStageIdx(s => s + 1)
-  const common   = { alt: symbol ? `${String(symbol).toUpperCase()} logo` : 'asset logo', width: size, height: size, className, referrerPolicy: 'no-referrer', loading: 'lazy', decoding: 'async', onLoad }
+  const common   = { alt: symbol ? `${String(symbol).toUpperCase()} logo` : 'asset logo', width: size, height: size, className, referrerPolicy: 'no-referrer', decoding: 'async', onLoad }
 
   const currentStage = STAGES[stageIdx]
   if (!currentStage) {

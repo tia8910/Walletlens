@@ -72,3 +72,37 @@ describe('the image map is folded, not replaced', () => {
     }
   })
 })
+
+describe('the ladder does not advance past a load that never started', () => {
+  it('does not lazy-load a 36px icon', () => {
+    // Below the fold a lazy image does not begin fetching until it is scrolled
+    // to, while the advance timer starts at mount. The timer wins, every
+    // stage is skipped in turn, and the row ends on the letter badge — which
+    // is why the logo only came back after opening an asset and returning,
+    // the one thing that remounts the row while it is in view.
+    expect(logo).not.toMatch(/loading: 'lazy'/)
+  })
+
+  it('stops the clock while the app is in the background', () => {
+    // A hidden document throttles timers and defers image loads, so the timer
+    // would advance past stages the browser never attempted.
+    const eff = logo.slice(logo.indexOf('const arm = () => {'))
+    expect(eff.slice(0, eff.indexOf('\n    }'))).toMatch(/if \(document\.hidden\) return/)
+  })
+
+  it('re-arms the clock when the app comes back', () => {
+    expect(logo).toMatch(/const onVisible = \(\) => \{ if \(!document\.hidden\) arm\(\) \}/)
+  })
+
+  it('rebuilds an exhausted ladder on return, instead of waiting for a remount', () => {
+    const eff = logo.slice(logo.indexOf('const retriesRef = useRef(0)'))
+    const body = eff.slice(0, eff.indexOf('}, [stageIdx, STAGES.length])'))
+    expect(body).toMatch(/if \(stageIdx < STAGES\.length\) return/)
+    expect(body).toMatch(/setStageIdx\(0\)/)
+  })
+
+  it('bounds that retry, so a logo-less asset does not re-walk six CDNs forever', () => {
+    expect(logo).toMatch(/const MAX_RETRIES = 2/)
+    expect(logo).toMatch(/retriesRef\.current >= MAX_RETRIES/)
+  })
+})
