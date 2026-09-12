@@ -129,8 +129,12 @@ function isLikelyMobile() {
 // refresh_token to obtain a fresh access_token.  The token is returned
 // directly to this page; the worker sees nothing else.
 
+// Why the last silentRefresh() returned false: 'network' or 'rejected'.
+let lastRefreshFailure = null
+
 async function silentRefresh() {
   if (!refreshToken) return false
+  lastRefreshFailure = null
   // Dedup: if two callers hit this at the same time, only one network round
   // trip happens.
   if (refreshing) return refreshing
@@ -144,13 +148,20 @@ async function silentRefresh() {
       const data = await res.json()
       if (!res.ok || !data.access_token) {
         // Refresh token revoked or expired — user must re-sign-in.
+        lastRefreshFailure = 'rejected'
         forgetTokens()
         return false
       }
       rememberToken(data.access_token, data.expires_in)
       return true
     } catch {
-      // Network error — try again next time, don't nuke the token.
+      // The request never completed. Not the same thing as a refusal, and the
+      // difference decides what happens next: a rejected refresh token means
+      // sign in again, an unreachable one means try again in a minute. Sending
+      // someone through a full OAuth redirect on a network that just failed
+      // ends on "Sign-in did not complete" and costs them the refresh token
+      // they still had.
+      lastRefreshFailure = 'network'
       return false
     } finally {
       refreshing = null
@@ -220,11 +231,11 @@ export async function completeRedirectSignInWithCode(code) {
   } catch { /* private mode */ }
 
   const redirectUri = window.location.origin + REDIRECT_PATH
-  const res = await fetch(`${AUTH_WORKER}/exchange`, {
+  const res = await netFetch(`${AUTH_WORKER}/exchange`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ code, redirectUri }),
-  })
+  }, NET_AUTH)
   const data = await res.json()
   if (!res.ok) throw new Error(data.error_description || data.error || 'Token exchange failed')
 
@@ -306,6 +317,9 @@ export async function getAccessToken({ interactive = true } = {}) {
   if (refreshToken) {
     const ok = await silentRefresh()
     if (ok) return accessToken
+    // The refresh never reached Google. A redirect sign-in would not reach it
+    // either, and it would clear a refresh token that is probably still good.
+    if (lastRefreshFailure === 'network') throw new Error(NET_AUTH)
   }
 
   if (!isDriveConfigured()) throw new Error('Google Drive is not configured')
@@ -331,6 +345,29 @@ export function isSignedIn() {
 /** Thrown when Drive work needs a sign-in that only a user gesture may start. */
 export const NEEDS_SIGNIN = 'NEEDS_SIGNIN'
 
+/**
+ * Thrown when a request never completed — DNS, the radio, a filtering
+ * resolver, an offline device.
+ *
+ * fetch() rejects with TypeError("Failed to fetch"), and that string was going
+ * straight to the screen: it names no service, no step and no remedy, and it
+ * is the browser's wording rather than the app's. The suffix says which hop
+ * failed, because "Drive is unreachable" and "the token service is
+ * unreachable" are different problems with different fixes.
+ */
+export const NET_ERROR = 'NET_ERROR'
+export const NET_DRIVE = 'NET_ERROR:drive'
+export const NET_AUTH = 'NET_ERROR:auth'
+
+/** fetch(), with a rejection that says which hop failed instead of TypeError. */
+async function netFetch(url, init, hop) {
+  try {
+    return await fetch(url, init)
+  } catch {
+    throw new Error(hop)
+  }
+}
+
 async function driveFetch(url, init = {}) {
   // If the token is expired but we have a refresh token, try refresh first.
   // This is the code path that previously returned null and broke auto-backup.
@@ -338,23 +375,24 @@ async function driveFetch(url, init = {}) {
   if (!token && refreshToken) {
     const ok = await silentRefresh()
     if (ok) token = storedAccessToken()
+    else if (lastRefreshFailure === 'network') throw new Error(NET_AUTH)
   }
   if (!token) throw new Error(NEEDS_SIGNIN)
 
-  const res = await fetch(url, {
+  const res = await netFetch(url, {
     ...init,
     headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` },
-  })
+  }, NET_DRIVE)
   if (res.status === 401) {
     // Rejected by Drive — try one refresh, then give up.
     if (refreshToken) {
       const ok = await silentRefresh()
       if (ok) {
         token = storedAccessToken()
-        const retry = await fetch(url, {
+        const retry = await netFetch(url, {
           ...init,
           headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` },
-        })
+        }, NET_DRIVE)
         if (retry.ok) return retry
       }
     }
