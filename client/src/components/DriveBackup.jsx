@@ -103,11 +103,18 @@ export default function DriveBackup({ embedded = false }) {
     // Two hops, two problems. Drive unreachable is usually the connection;
     // the token service unreachable has been a blocked hostname, and saying
     // which one failed is the difference between a report and a guess.
-    if (m === NET_DRIVE || /Failed to fetch|NetworkError|Load failed/i.test(m)) {
+    if (m === NET_DRIVE) {
       return 'Could not reach Google Drive. Your data is safe on this device — check your connection and try again.'
     }
     if (m === NET_AUTH) {
       return 'Could not reach the Google sign-in service. Your data is safe on this device — try again in a moment.'
+    }
+    // A raw TypeError from somewhere that is not tagged. Every fetch in the
+    // Drive path is, so this should be unreachable — and it must not name a
+    // hop it cannot know, or the message becomes a false lead in exactly the
+    // situation where the message is the only evidence there is.
+    if (/Failed to fetch|NetworkError|Load failed/i.test(m)) {
+      return 'The request did not complete. Your data is safe on this device — check your connection and try again.'
     }
     // A Drive error carries a status and Google's own English. Worth logging,
     // not worth showing.
