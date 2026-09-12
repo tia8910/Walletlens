@@ -162,10 +162,39 @@ if ('serviceWorker' in navigator && basename === '/') {
   // never loop.
   const hadController = !!navigator.serviceWorker.controller
   let refreshing = false
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!hadController || refreshing) return
+  let pendingReload = false
+
+  function reloadForUpdate() {
+    if (refreshing) return
     refreshing = true
     window.location.reload()
+  }
+
+  // Reload onto the new build while nobody is watching.
+  //
+  // This used to reload the moment a new worker took control. Combined with
+  // the reg.update() below — which runs every time the app becomes visible —
+  // that meant the reload landed almost exactly when someone reopened the app:
+  // the dashboard blanked and rebuilt itself on every reopen following a
+  // deploy. It reads as the holdings disappearing, and during a day of
+  // frequent deploys it happens on essentially every return.
+  //
+  // So a reload that arrives while the app is on screen is deferred to the
+  // next time the app leaves it. The user goes away, the page reloads unseen,
+  // and they come back to the new build already drawn.
+  //
+  // Deferring is safe because the stale bundle only matters if it asks for a
+  // chunk this deployment no longer has, and chunkReload() at the top of this
+  // file already catches that import failure and reloads — at the one moment
+  // where a reload is the honest thing to do.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || refreshing) return
+    if (document.visibilityState === 'hidden') reloadForUpdate()
+    else pendingReload = true
+  })
+
+  document.addEventListener('visibilitychange', () => {
+    if (pendingReload && document.visibilityState === 'hidden') reloadForUpdate()
   })
 
   // Auto-apply a ready update — no banner. If a new worker is waiting (the SW
