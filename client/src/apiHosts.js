@@ -25,6 +25,10 @@ export const PUSH_HOST = 'walletlens-push.tarek-abdelhameed.workers.dev'
 // Must match `name` in data-api/wrangler.toml.
 export const DATA_HOST = 'walletlens-data.tarek-abdelhameed.workers.dev'
 
+// Holds the Google OAuth client_secret and exchanges an authorization code for
+// tokens. The browser never talks to it directly — see DRIVE_API below.
+export const DRIVE_AUTH_HOST = 'walletlens-drive-auth.tarek-abdelhameed.workers.dev'
+
 // The app's own origin, and the one the browser is told to talk to.
 //
 // Every client request used to go to a *.workers.dev hostname. A connection
@@ -63,6 +67,11 @@ export const PUSH_API = `${SITE_ORIGIN}/api/push`
 // inside the push Worker, where a relative URL has no origin to resolve
 // against and fetch throws.
 export const DATA_API = SITE_ORIGIN
+
+// Routed through the site for the same reason as the rest: an OAuth code
+// posted to workers.dev from a filtered device never arrives, and the only
+// thing the user sees is "Sign-in did not complete".
+export const DRIVE_API = `${SITE_ORIGIN}/api/drive`
 
 // The content type every write to our own services sends.
 //

@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import worker from '../scripts/pages-worker-entry.js'
-import { PUSH_HOST, DATA_HOST, SITE_ORIGIN } from './apiHosts.js'
+import { PUSH_HOST, DATA_HOST, DRIVE_AUTH_HOST, SITE_ORIGIN } from './apiHosts.js'
 
 // A zip deploy carries static assets and nothing else, so functions/ is absent
 // from it entirely — which is what /api/push/subscribe answering 405 meant:
@@ -36,6 +36,17 @@ describe('the bundled Pages worker', () => {
     vi.stubGlobal('fetch', async (u) => { seen = u; return new Response('{}') })
     await call('/api/push/status?endpoint=abc')
     expect(seen).toBe(`https://${PUSH_HOST}/status?endpoint=abc`)
+  })
+
+  it('routes /api/drive/* to the drive-auth proxy', async () => {
+    // The OAuth code exchange. Without this branch the path is a static asset,
+    // a POST to it answers 405, and the sign-in screen reads "Sign-in did not
+    // complete" with nothing to say why.
+    let seen
+    vi.stubGlobal('fetch', async (u) => { seen = u; return new Response('{}', { status: 200 }) })
+    await call('/api/drive/exchange', { method: 'POST', body: '{"code":"4/abc"}' })
+    expect(seen).toBe(`https://${DRIVE_AUTH_HOST}/exchange`)
+    expect(assets.fetch, 'never fell through to the asset server').not.toHaveBeenCalled()
   })
 
   it('hands every other path to the asset server', async () => {
@@ -82,6 +93,7 @@ describe('what the build emits', () => {
     const bundle = readFileSync(join(dist, '_worker.js'), 'utf8')
     expect(bundle).toContain(PUSH_HOST)
     expect(bundle).toContain(DATA_HOST)
+    expect(bundle).toContain(DRIVE_AUTH_HOST)
     expect(JSON.parse(readFileSync(join(dist, '_routes.json'), 'utf8')).include).toContain('/api/*')
   })
 })

@@ -26,6 +26,7 @@ import * as translate from '../../functions/api/translate.js'
 import * as stocks from '../../functions/api/stocks.js'
 import * as icon from '../../functions/api/icon.js'
 import * as push from '../../functions/api/push/[[path]].js'
+import * as drive from '../../functions/api/drive/[[path]].js'
 import { DATA_HOST } from '../src/apiHosts.js'
 
 // The scheduled datasets, by the filename they had when the build shipped
@@ -92,13 +93,20 @@ function pushParams(pathname) {
   return { path: rest ? rest.split('/') : [] }
 }
 
+/** Same, for /api/drive/<exchange|refresh>. */
+function driveParams(pathname) {
+  const rest = pathname.replace(/^\/api\/drive\/?/, '')
+  return { path: rest ? rest.split('/') : [] }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url)
     if (DATASETS.has(url.pathname)) return serveDataset(url, request, env)
 
     const isPush = url.pathname === '/api/push' || url.pathname.startsWith('/api/push/')
-    const mod = EXACT[url.pathname] || (isPush ? push : null)
+    const isDrive = url.pathname === '/api/drive' || url.pathname.startsWith('/api/drive/')
+    const mod = EXACT[url.pathname] || (isPush ? push : isDrive ? drive : null)
 
     // Not an API path. Hand it back to the asset server, which applies
     // _headers and _redirects — so this stays correct even if _routes.json is
@@ -116,7 +124,9 @@ export default {
     return handler({
       request,
       env,
-      params: isPush ? pushParams(url.pathname) : {},
+      params: isPush ? pushParams(url.pathname)
+        : isDrive ? driveParams(url.pathname)
+        : {},
       waitUntil: (p) => ctx.waitUntil(p),
       // A function that calls next() wants the static asset behind it.
       next: () => env.ASSETS.fetch(request),

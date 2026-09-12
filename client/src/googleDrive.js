@@ -29,6 +29,8 @@
 // The refresh_token never leaves the device except to this one endpoint.
 // Nothing is stored server-side.
 
+import { DRIVE_API } from './apiHosts'
+
 const CLIENT_ID = import.meta.env?.VITE_GOOGLE_CLIENT_ID
   || '630094688874-rilioqqic8004hk57skqi6oi2bs0g078.apps.googleusercontent.com'
 
@@ -37,9 +39,13 @@ const FILE_NAME = 'walletlens-backup.wl3'
 const API = 'https://www.googleapis.com/drive/v3/files'
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files'
 
-// The worker that holds GOOGLE_CLIENT_SECRET and does the token dance.
-const AUTH_WORKER = import.meta.env?.VITE_DRIVE_AUTH_URL
-  || 'https://walletlens-drive-auth.tarek-abdelhameed.workers.dev'
+// Where the token dance happens. The worker that holds GOOGLE_CLIENT_SECRET
+// still does the work, but the browser posts to the site instead of to the
+// worker's own hostname: workers.dev is filtered by some ISPs and resolvers,
+// and a sign-in that cannot reach it fails with nothing to show the person but
+// "Sign-in did not complete". /api/drive/* forwards to the worker from
+// Cloudflare's edge, which always resolves it.
+const AUTH_WORKER = import.meta.env?.VITE_DRIVE_AUTH_URL || DRIVE_API
 
 /** Feature switch: without a client ID the whole thing stays invisible. */
 export function isDriveConfigured() {

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { VOICE_HOST, PUSH_HOST, DATA_HOST, SITE_ORIGIN, VOICE_API, PUSH_API, DATA_API, voiceProxy, dataUrl } from './apiHosts.js'
+import { VOICE_HOST, PUSH_HOST, DATA_HOST, DRIVE_AUTH_HOST, SITE_ORIGIN, VOICE_API, PUSH_API, DATA_API, DRIVE_API, voiceProxy, dataUrl } from './apiHosts.js'
 
 // The backend hosts were string literals in twenty-odd files. Moving off Deno
 // Deploy was therefore a search-and-replace, where missing one site fails at
@@ -64,6 +64,10 @@ describe('apiHosts', () => {
     expect(PUSH_API).toBe(`${SITE_ORIGIN}/api/push`)
     expect(PUSH_API.endsWith('/')).toBe(false)
     expect(DATA_API).toBe(SITE_ORIGIN)
+    // And the Drive token exchange, for the same reason: a sign-in that cannot
+    // reach workers.dev fails with nothing to show but "Sign-in did not
+    // complete".
+    expect(DRIVE_API).toBe(`${SITE_ORIGIN}/api/drive`)
   })
 
   it('builds a dataset URL under the filename it had as a static asset', () => {
@@ -86,7 +90,8 @@ describe('no call site hardcodes a backend host', () => {
       const rel = relative(CLIENT, file)
       if (rel.endsWith('src/apiHosts.js') || rel.endsWith('src/apiHosts.test.js')) continue
       const text = readFileSync(file, 'utf8')
-      if (text.includes(VOICE_HOST) || text.includes(PUSH_HOST) || text.includes(DATA_HOST)) {
+      if (text.includes(VOICE_HOST) || text.includes(PUSH_HOST)
+        || text.includes(DATA_HOST) || text.includes(DRIVE_AUTH_HOST)) {
         offenders.push(rel)
       }
     }
