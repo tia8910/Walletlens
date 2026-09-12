@@ -5373,8 +5373,27 @@ export default function Dashboard() {
                                   ? Math.min(100, (h.price / breakEvenPrice) * 100) : 0
                                 const isSelected = selectedAssets.has(h.coin_id)
                                 const isDimmed   = selectedAssets.size > 0 && !isSelected
-                                const trendVal = Number(h.pct24h) || 0
-                                const trendStatus = trendVal > 0.5 ? 'up' : trendVal < -0.5 ? 'down' : 'flat'
+                                // One reading, shown three ways.
+                                //
+                                // The pill computed its own direction from
+                                // pct24h with a ±0.5% band, while the chevron
+                                // beside it and the TREND row below it both
+                                // come from trendFor(), which prefers the
+                                // 7-day window and uses a ±2% band. Two
+                                // windows and two thresholds wearing the same
+                                // word: WLD read "Uptrend 7-day +3.0%" next to
+                                // a red DOWNTREND pill, and APT a green
+                                // UPTREND pill next to "Flat". Both were true
+                                // about different periods, which is not
+                                // something a reader can be expected to work
+                                // out from a row of badges.
+                                //
+                                // Where the two windows genuinely disagree the
+                                // row already says so, with the cooling dot
+                                // TrendArrow draws from trendFor's `diverging`
+                                // flag. That is the one place it belongs.
+                                const holdingTrend = trendFor({ pct24h: h.pct24h, pct7d: sevenDay[h.coin_id] })
+                                const trendStatus = holdingTrend.dir
                                 const holdingLpItems = isDemo ? [] : [
                                   { icon: '📊', label: 'Technical Analysis', onClick: () => navigate('/technicals') },
                                   { icon: '🎯', label: 'Set Sell Target', onClick: () => navigate('/dashboard', { state: { tab: 'targets' } }) },
@@ -5401,7 +5420,7 @@ export default function Dashboard() {
                                         <div className="dvx-holding-meta">
                                           <strong>{h.coin_symbol?.toUpperCase()}</strong>
                                           {categorizeAsset(h) !== 'cash' && (
-                                            <TrendArrow trend={trendFor({ pct24h: h.pct24h, pct7d: sevenDay[h.coin_id] })} />
+                                            <TrendArrow trend={holdingTrend} />
                                           )}
                                           {isStable && <span className="dvx-stable-badge">{t('dsStable')}</span>}
                                           {!isStable && (() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
@@ -5465,7 +5484,7 @@ export default function Dashboard() {
                                         <div className="dvx-holding-stats">
                                           {categorizeAsset(h) !== 'cash' && (
                                             <TrendBadge
-                                              trend={trendFor({ pct24h: h.pct24h, pct7d: sevenDay[h.coin_id] })}
+                                              trend={holdingTrend}
                                               points={sparks[h.coin_id]}
                                             />
                                           )}
