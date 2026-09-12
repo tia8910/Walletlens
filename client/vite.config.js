@@ -74,10 +74,51 @@ const BUILD_ID = (() => {
   }
 })()
 
+
+// Bundle the Pages functions into dist/_worker.js, so a zip deploy carries them.
+//
+// Cloudflare compiles functions/ only when the deploy runs through
+// `wrangler pages deploy` from the project root. A direct upload of the built
+// directory carries static assets and nothing else — every function is simply
+// absent from that deployment, which is what /api/push/subscribe answering 405
+// meant: no handler for the path, so Pages served it as a static asset and a
+// static asset refuses a POST.
+//
+// _worker.js is the one server-side mechanism a direct upload does honour.
+// _routes.json narrows it to /api/*, so everything else is served by the normal
+// asset pipeline and _headers and _redirects keep applying — the CSP and the
+// SPA fallback included.
+function pagesWorkerPlugin() {
+  return {
+    name: 'pages-worker-bundle',
+    apply: 'build',
+    async closeBundle() {
+      const { build } = await import('esbuild')
+      const outfile = resolve(__dirname, 'dist/_worker.js')
+      await build({
+        entryPoints: [resolve(__dirname, 'scripts/pages-worker-entry.js')],
+        outfile,
+        bundle: true,
+        format: 'esm',
+        platform: 'neutral',
+        target: 'es2022',
+        mainFields: ['module', 'main'],
+        conditions: ['worker', 'browser'],
+        legalComments: 'none',
+      })
+      writeFileSync(
+        resolve(__dirname, 'dist/_routes.json'),
+        JSON.stringify({ version: 1, include: ['/api/*'], exclude: [] }, null, 2) + '\n',
+      )
+    },
+  }
+}
+
 export default defineConfig({
   plugins: [
     react(),
     swVersionPlugin(),
+    pagesWorkerPlugin(),
     asyncCssPlugin(),
     // Bundle visualizer: run `ANALYZE=true npm run build` to generate dist/stats.html
     process.env.ANALYZE && visualizer({
