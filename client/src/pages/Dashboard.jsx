@@ -3296,6 +3296,36 @@ export default function Dashboard() {
   const [loaded, setLoaded]               = useState(false)
   const [pricesLoading, setPricesLoading] = useState(false)
 
+  /**
+   * Fold new quotes into the ones already held. Never replace, never clear.
+   *
+   * api.getPrices fans out per asset class, each with its own timeout and its
+   * own upstream: crypto in one batch, stocks in a batch plus a request per
+   * ticker the batch missed, metals, fiat. A tick where any one of those is
+   * slow or rate-limited resolves with a SUBSET, and assigning that subset
+   * dropped every id missing from it.
+   *
+   * What that looked like on screen: the holding valued at 0, and because each
+   * category is sorted by value, it fell to the bottom of its list and read as
+   * having vanished — then came back on the next tick that happened to include
+   * it. Merging means a price, once known, stays until a better one arrives.
+   */
+  const mergePrices = useCallback((next) => {
+    if (!next) return
+    const keys = Object.keys(next)
+    if (!keys.length) return
+    setPrices(prev => {
+      // Same object identity when nothing actually moved, so the memo below
+      // does not recompute and the rows do not re-render on a no-op refresh.
+      let changed = false
+      for (const k of keys) {
+        const a = prev[k], b = next[k]
+        if (!a || a.usd !== b.usd || a.usd_24h_change !== b.usd_24h_change) { changed = true; break }
+      }
+      return changed ? { ...prev, ...next } : prev
+    })
+  }, [])
+
   useEffect(() => {
     let cancelled = false
     // One request, no polling. A weekly number does not change fast enough to
@@ -3646,8 +3676,12 @@ export default function Dashboard() {
       // nisab even when the user does not hold metals as portfolio assets.
       const metalIds = [GOLD_ID, SILVER_ID].filter(id => !p.some(h => h.coin_id === id))
       const allIds = metalIds.length ? ids + ',' + metalIds.join(',') : ids
+      // The cache first, synchronously. getCachedPrices holds the last quote
+      // for every id already seen, so rows open with a real value instead of
+      // zero while the network call is still out.
+      mergePrices(api.getCachedPrices(allIds))
       try {
-        setPrices(await api.getPrices(allIds) || {})
+        mergePrices(await api.getPrices(allIds))
       } catch {}
       setPricesLoading(false)
 
@@ -3683,8 +3717,9 @@ export default function Dashboard() {
     const allIds = extra.length ? ids + ',' + extra.join(',') : ids
     setPricesLoading(true)
     try {
-      const px = await api.getPrices(allIds)
-      if (px && Object.keys(px).length) setPrices(px)
+      // Merged, not assigned. The old guard only caught a wholly empty
+      // response; a partial one still dropped every id it did not carry.
+      mergePrices(await api.getPrices(allIds))
     } catch {}
     setPricesLoading(false)
   }
@@ -4219,7 +4254,13 @@ export default function Dashboard() {
       const invested = investeds[cat] || 0
       const pnl = pnls[cat] || 0
       const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0
-      const assets = (assetsByCat[cat] || []).sort((a, b) => b.value - a.value)
+      // Copied before sorting, and tie-broken by symbol. sort() mutates, so
+      // this was reordering the memoised array in place on every render; and
+      // two holdings of equal value could swap places between renders for no
+      // reason the reader could see.
+      const assets = (assetsByCat[cat] || []).slice().sort((a, b) =>
+        (b.value - a.value) ||
+        String(a.coin_symbol || a.coin_id || '').localeCompare(String(b.coin_symbol || b.coin_id || '')))
       return {
         cat, label: t(CATEGORY_LABELS[cat]),
         value: totals[cat],
