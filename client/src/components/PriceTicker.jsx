@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, memo } from 'react'
+import { useEffect, useState, useMemo, useRef, memo } from 'react'
 import { api } from '../api'
 import { useLanguage } from '../LanguageContext'
 import {
@@ -255,6 +255,35 @@ function PriceTicker() {
   // and the prices are the check half, so the prices come first.
   const displayItems = useMemo(() => [...items, ...events], [items, events])
 
+  // Which chips have just moved, and which way.
+  //
+  // A ticker's whole job is to say that something is happening. The strip
+  // repainted the same numbers every minute with nothing to mark the moment a
+  // price actually changed, so a live feed and a frozen one looked identical.
+  // The flash is on the CHANGE, not on the direction the day is going: a coin
+  // that is down but ticking up flashes green for that tick, which is what a
+  // trading screen does and what makes the row feel alive.
+  const [flashes, setFlashes] = useState({})
+  const lastPrices = useRef({})
+  const flashTimer = useRef(null)
+
+  useEffect(() => {
+    const next = {}
+    for (const it of items) {
+      if (it.price == null) continue
+      const was = lastPrices.current[it.name]
+      if (was != null && was !== it.price) next[it.name] = it.price > was ? 'up' : 'down'
+      lastPrices.current[it.name] = it.price
+    }
+    if (!Object.keys(next).length) return
+    setFlashes(next)
+    // Long enough to notice, short enough to be gone before the next poll.
+    clearTimeout(flashTimer.current)
+    flashTimer.current = setTimeout(() => setFlashes({}), 1100)
+  }, [items])
+
+  useEffect(() => () => clearTimeout(flashTimer.current), [])
+
   // A row, not a marquee.
   //
   // Once the strip shows what someone chose at onboarding, a 26-second scroll
@@ -284,8 +313,18 @@ function PriceTicker() {
         // Three states: up, down, and not knowing yet.
         const pending = t.change == null
         const up = !pending && t.change >= 0
+        // Direction colours the chip; magnitude sets how strongly. A 12% move
+        // and a 0.1% move were the same shade of nothing before.
+        const dir = pending ? 'flat' : up ? 'up' : 'down'
+        const mag = pending ? 0 : Math.abs(t.change)
+        const tier = mag >= 5 ? 'strong' : mag >= 1 ? 'mid' : 'soft'
+        const flash = flashes[t.name]
         return (
-          <div key={`${t.name}-${i}`} className="tick" role="listitem">
+          <div
+            key={`${t.name}-${i}`}
+            className={`tick tick--${dir} tick--${tier}${flash ? ` tick--flash-${flash}` : ''}`}
+            role="listitem"
+          >
             <span className="tick-name">{t.name}</span>
             <span className="tick-val">{t.price == null ? '–' : `$${fmtPrice(t.price)}`}</span>
             <span className={pending ? 'tick-val' : up ? 'tick-up' : 'tick-dn'}>

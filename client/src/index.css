@@ -1859,6 +1859,73 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
   font-size: 0.7rem; font-family: var(--mono);
   white-space: nowrap;
 }
+/* ── Direction, magnitude, and the moment a price moves ────────────────────
+   The strip was a row of identical neutral chips: the only thing that said
+   anything was the percentage at the end, and a 12% move looked exactly like
+   a 0.1% one. Three things carry it now.
+
+   1. Direction tints the whole chip and lights an inset bar down its leading
+      edge, so the row reads green/red at a glance without being read.
+   2. Magnitude sets the strength of that tint, so size is visible before the
+      number is.
+   3. A change flashes. A ticker's job is to say something is happening, and
+      repainting the same numbers every minute said nothing — a live feed and
+      a frozen one looked the same. The flash is on the CHANGE rather than the
+      day's direction: a coin that is down but ticking up flashes green for
+      that tick, which is what a trading screen does. */
+.tick { transition: background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease; }
+
+.tick--up {
+  border-color: rgba(16, 185, 129, 0.30);
+  box-shadow: inset 2px 0 0 rgba(16, 185, 129, 0.85);
+}
+.tick--down {
+  border-color: rgba(244, 63, 94, 0.30);
+  box-shadow: inset 2px 0 0 rgba(244, 63, 94, 0.85);
+}
+.tick--up.tick--soft   { background: rgba(16, 185, 129, 0.07); }
+.tick--up.tick--mid    { background: rgba(16, 185, 129, 0.13); }
+.tick--up.tick--strong { background: rgba(16, 185, 129, 0.20); border-color: rgba(16, 185, 129, 0.45); }
+.tick--down.tick--soft   { background: rgba(244, 63, 94, 0.07); }
+.tick--down.tick--mid    { background: rgba(244, 63, 94, 0.13); }
+.tick--down.tick--strong { background: rgba(244, 63, 94, 0.22); border-color: rgba(244, 63, 94, 0.45); }
+
+/* Not yet priced: no colour, no claim. */
+.tick--flat { background: rgba(255, 255, 255, 0.05); }
+
+@keyframes tickFlashUp {
+  0%   { background-color: rgba(16, 185, 129, 0.42); box-shadow: inset 2px 0 0 rgba(16,185,129,1), 0 0 12px rgba(16,185,129,0.35); }
+  100% { background-color: inherit; }
+}
+@keyframes tickFlashDown {
+  0%   { background-color: rgba(244, 63, 94, 0.42); box-shadow: inset 2px 0 0 rgba(244,63,94,1), 0 0 12px rgba(244,63,94,0.35); }
+  100% { background-color: inherit; }
+}
+.tick--flash-up   { animation: tickFlashUp 1s ease-out; }
+.tick--flash-down { animation: tickFlashDown 1s ease-out; }
+
+/* The number itself leads the flash by a beat. */
+.tick--flash-up .tick-val,
+.tick--flash-down .tick-val { color: #fff; transition: color 700ms ease; }
+
+[data-wl-light] .tick--up.tick--soft   { background: rgba(16, 185, 129, 0.10); }
+[data-wl-light] .tick--up.tick--mid    { background: rgba(16, 185, 129, 0.16); }
+[data-wl-light] .tick--up.tick--strong { background: rgba(16, 185, 129, 0.24); }
+[data-wl-light] .tick--down.tick--soft   { background: rgba(244, 63, 94, 0.10); }
+[data-wl-light] .tick--down.tick--mid    { background: rgba(244, 63, 94, 0.16); }
+[data-wl-light] .tick--down.tick--strong { background: rgba(244, 63, 94, 0.24); }
+[data-wl-light] .tick--flat { background: var(--surface-1); }
+[data-wl-light] .tick--flash-up .tick-val,
+[data-wl-light] .tick--flash-down .tick-val { color: var(--text); }
+
+/* The colour is the information; the movement is decoration. Keep the first,
+   drop the second. */
+@media (prefers-reduced-motion: reduce) {
+  .tick { transition: none; }
+  .tick--flash-up, .tick--flash-down { animation: none; }
+  .tick--flash-up .tick-val, .tick--flash-down .tick-val { transition: none; }
+}
+
 .tick-name { color: #fff; font-weight: 500; }
 .tick-val  { color: rgba(255,255,255,0.8); }
 .tick-up   { color: var(--g-ink); font-weight: 700; }
