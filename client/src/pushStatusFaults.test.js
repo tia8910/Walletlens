@@ -180,3 +180,43 @@ describe('writes to the push service do not need permission first', () => {
     expect(worker).not.toMatch(/req\.headers\.get\(['"]content-type/i)
   })
 })
+
+describe('the connection check', () => {
+  const toggleSrc = readFileSync(join(here, 'components/PushToggle.jsx'), 'utf8')
+  const worker = readFileSync(join(here, '../../workers/push/index.js'), 'utf8')
+
+  it('probes a control host that is known to work', () => {
+    // The price strip already reads from the data worker, and that worker
+    // answers Allow-Origin: *. It passing proves *.workers.dev resolves and is
+    // reachable from this device; it failing moves the problem off push
+    // entirely.
+    expect(toggleSrc).toMatch(/probe\('data worker \(control\)', `\$\{DATA_API\}/)
+  })
+
+  it('probes the push worker with both a read and a write', () => {
+    // The read is a CORS simple request and the write is the real path. One
+    // passing and the other not is the distinction "Failed to fetch" erases.
+    expect(toggleSrc).toMatch(/probe\('push worker GET', `\$\{PUSH_API\}\/health`\)/)
+    expect(toggleSrc).toMatch(/probe\('push worker POST', `\$\{PUSH_API\}\/subscribe`/)
+  })
+
+  it('registers nothing — the write probe is deliberately rejected', () => {
+    // An empty body is refused with 400 missing_subscription BEFORE the
+    // handler touches the store, and a 400 is a response: it proves the write
+    // path completes end to end without creating a subscription.
+    const post = toggleSrc.slice(toggleSrc.indexOf("'push worker POST'"))
+    expect(post.slice(0, post.indexOf('))'))).toMatch(/body: '\{\}'/)
+
+    const route = worker.slice(worker.indexOf("path === '/subscribe'"))
+    const beforeStore = route.slice(0, route.indexOf('await store.get('))
+    expect(beforeStore).toMatch(/missing_subscription.*400|error: 'missing_subscription' \}, headers, 400/s)
+  })
+
+  it('reports the exception when a probe throws, not just that it did', () => {
+    expect(toggleSrc).toMatch(/error: String\(e\?\.message \|\| e\)/)
+  })
+
+  it('only appears once something has gone wrong', () => {
+    expect(toggleSrc).toMatch(/\{\(error \|\| status\?\.reachable === false \|\| \(enabled && status\?\.found === false\)\) && <ConnectionCheck \/>\}/)
+  })
+})

@@ -6,6 +6,7 @@ import {
 } from '../push'
 import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
+import { PUSH_API, DATA_API, SIMPLE_JSON } from '../apiHosts.js'
 
 // Settings → Notifications. The master switch plus one row per channel, since
 // "notifications" is not one thing: someone who wants to know their holding
@@ -283,6 +284,86 @@ function timeAgo(at) {
   const hrs = Math.round(mins / 60)
   if (hrs < 24) return `${hrs}h ago`
   return `${Math.round(hrs / 24)}d ago`
+}
+
+/**
+ * Three requests that between them say where a registration is being stopped.
+ *
+ * Remote-diagnosing this from a phone has cost a whole evening of one-line
+ * reports, because every failure the app could show collapsed into "Failed to
+ * fetch" — a TypeError that covers an unreachable host, a rejected CORS
+ * response and a blocked policy identically, from a WebView with no console to
+ * open. Guessing between them from the outside does not converge. Measuring
+ * does.
+ *
+ * The three are chosen so that the pattern of results names the fault:
+ *
+ *   1. GET the data worker. The CONTROL. It answers
+ *      Access-Control-Allow-Origin: * and is the host the price strip already
+ *      uses, so it passing proves *.workers.dev resolves and is reachable from
+ *      this device, and it failing proves the problem is nothing to do with
+ *      push at all.
+ *   2. GET the push worker's /health. A CORS simple request: no preflight, but
+ *      the response must still carry an Allow-Origin this page matches or the
+ *      browser rejects it and fetch throws. So 1 passing and 2 failing is a
+ *      CORS answer from the push worker, not a network fault — the two the
+ *      error text cannot tell apart.
+ *   3. POST an empty body to /subscribe. Expected to come back 400
+ *      missing_subscription, which is the POINT: a 400 is a response, and a
+ *      response proves the write path completes end to end. It registers
+ *      nothing — the worker returns before it touches the store.
+ */
+function ConnectionCheck() {
+  const [rows, setRows] = useState(null)
+  const [running, setRunning] = useState(false)
+
+  async function probe(label, url, init) {
+    const started = Date.now()
+    try {
+      const res = await fetch(url, init)
+      return { label, ok: true, status: res.status, ms: Date.now() - started }
+    } catch (e) {
+      return { label, ok: false, error: String(e?.message || e).slice(0, 90), ms: Date.now() - started }
+    }
+  }
+
+  async function run() {
+    setRunning(true)
+    setRows(null)
+    const out = []
+    out.push(await probe('data worker (control)', `${DATA_API}/market.json`))
+    out.push(await probe('push worker GET', `${PUSH_API}/health`))
+    out.push(await probe('push worker POST', `${PUSH_API}/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': SIMPLE_JSON },
+      body: '{}',
+    }))
+    setRows(out)
+    setRunning(false)
+    track('push_connection_check', {
+      control: out[0].ok ? out[0].status : 'throw',
+      get: out[1].ok ? out[1].status : 'throw',
+      post: out[2].ok ? out[2].status : 'throw',
+    })
+  }
+
+  return (
+    <div style={{ marginTop: '0.6rem' }}>
+      <button className="settings-chip" onClick={run} disabled={running}>
+        {running ? 'Checking…' : 'Run a connection check'}
+      </button>
+      {rows && (
+        <div className="settings-hint" style={{ marginTop: '0.4rem', fontFamily: 'ui-monospace, monospace', fontSize: '0.78em' }}>
+          {rows.map(r => (
+            <div key={r.label} style={{ color: r.ok ? undefined : BAD, wordBreak: 'break-word' }}>
+              {r.label}: {r.ok ? `${r.status} in ${r.ms}ms` : `threw — ${r.error}`}
+            </div>
+          ))}
+          <div style={{ opacity: 0.6, marginTop: '0.25rem' }}>build {BUILD}</div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 /**
@@ -578,6 +659,9 @@ export default function PushToggle() {
       */}
       {enabled && status && <PushStatusLine status={status} repair={repair} />}
       {SHOW_TEST_SEND && status?.found && <TestSend />}
+      {/* Shown only once something has gone wrong, so it is where it is needed
+          and nowhere else. */}
+      {(error || status?.reachable === false || (enabled && status?.found === false)) && <ConnectionCheck />}
 
       {enabled && <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>}
 
