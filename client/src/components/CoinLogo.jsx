@@ -187,6 +187,16 @@ const CryptoLogo = memo(function CryptoLogo({
     resolved ? `img:${resolved}` : null,
     image    && image !== resolved ? `img:${image}` : null,
     cachedImg && cachedImg !== image && cachedImg !== resolved ? `img:${cachedImg}` : null,
+    // Our own origin, ahead of every third-party host.
+    //
+    // A screen recording showed every holding rendering as the generated
+    // letter badge: the CDNs below, and the proxy at the bottom, are all
+    // somewhere this device cannot reach — the same filtering that made every
+    // workers.dev request fail. walletlens.live it does reach, so /api/icon
+    // does the last hop from the edge. It is also one request instead of a
+    // walk through six, and it is edge-cached for everyone.
+    sym      ? `origin:${sym}` : null,
+    image    ? `originurl:${image}` : null,
     sym      ? `jsdelivr:${sym}` : null,
     sym      ? `coincap:${sym}` : null,
     sym      ? `lcw:${sym}` : null,
@@ -275,6 +285,12 @@ const CryptoLogo = memo(function CryptoLogo({
   } else if (currentStage.startsWith('img:')) {
     const src = currentStage.slice(4)
     return <img {...common} src={src} onError={advance} />
+  } else if (currentStage.startsWith('origin:')) {
+    return <img {...common} src={`/api/icon?sym=${encodeURIComponent(sym)}`} onError={advance} />
+  } else if (currentStage.startsWith('originurl:')) {
+    // The URL the API gave us, fetched through our origin. On a filtered
+    // network coin-images.coingecko.com is no more reachable than the rest.
+    return <img {...common} src={`/api/icon?url=${encodeURIComponent(currentStage.slice(10))}`} onError={advance} />
   } else if (currentStage.startsWith('jsdelivr:')) {
     return <img {...common} src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`} onError={advance} />
   } else if (currentStage.startsWith('coincap:')) {

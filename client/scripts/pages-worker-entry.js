@@ -24,6 +24,7 @@ import * as analyze from '../../functions/api/analyze.js'
 import * as voiceParse from '../../functions/api/voice-parse.js'
 import * as translate from '../../functions/api/translate.js'
 import * as stocks from '../../functions/api/stocks.js'
+import * as icon from '../../functions/api/icon.js'
 import * as push from '../../functions/api/push/[[path]].js'
 import { DATA_HOST } from '../src/apiHosts.js'
 
@@ -72,6 +73,7 @@ const EXACT = {
   '/api/voice-parse': voiceParse,
   '/api/translate': translate,
   '/api/stocks': stocks,
+  '/api/icon': icon,
 }
 
 /**
