@@ -2,6 +2,31 @@ name = "walletlens-push"
 main = "index.js"
 compatibility_date = "2026-06-21"
 
+# The route the app actually uses.
+#
+# Every client request used to go to the workers.dev subdomain below. A
+# connection check run from the app showed it — and the data worker used as a
+# control — failing with "Failed to fetch" on a device that loaded the site
+# perfectly, which is what a DNS or ISP blocklist looks like from inside a
+# browser. workers.dev is abused for phishing often enough to be on plenty of
+# them. Nothing in the app's code could fix that.
+#
+# walletlens.live is a host the device plainly reaches, and a Worker route wins
+# over Pages on a matching path — the same arrangement data-api has used for
+# its six datasets since 8551b22f. The prefix is stripped in index.js, so both
+# front doors reach identical handlers. Same origin as the page, so CORS, the
+# preflight and the origin allowlist all stop being able to break this.
+routes = [
+  { pattern = "walletlens.live/api/push/*", zone_name = "walletlens.live" },
+]
+
+# REQUIRED alongside `routes`: wrangler disables the workers.dev subdomain on
+# any deploy that declares routes unless this is set. That is exactly how the
+# data worker went dark once already. The subdomain is what deploys and health
+# checks use, and it is the fallback if a route is ever misconfigured.
+workers_dev = true
+
+
 # Replaces the Deno Deploy service of the same name, which was suspended when
 # the org exhausted its KV Reads allowance. See README.md for why the storage
 # moved to D1 and what that changes.

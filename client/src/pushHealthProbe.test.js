@@ -123,3 +123,35 @@ describe('the preflight the app actually makes', () => {
     expect(cors).toMatch(/'Access-Control-Max-Age'/)
   })
 })
+
+describe('the front door the app uses', () => {
+  const wrangler = readFileSync(join(here, '../../workers/push/wrangler.toml'), 'utf8')
+
+  it('is routed on the zone the device can actually reach', () => {
+    expect(wrangler).toMatch(/pattern = "walletlens\.live\/api\/push\/\*"/)
+  })
+
+  it('keeps the workers.dev subdomain alive alongside it', () => {
+    // wrangler disables it on any deploy that declares routes unless this is
+    // set — which is exactly how the data worker went dark once already. It is
+    // what deploys and health checks use.
+    expect(wrangler).toMatch(/^workers_dev = true$/m)
+  })
+
+  it('strips the route prefix so both doors reach the same handlers', () => {
+    expect(index).toMatch(/url\.pathname\.replace\(\/\^\\\/api\\\/push\(\?=\\\/\|\$\)\/, ''\) \|\| '\/'/)
+  })
+
+  it('routes every path the same either way', () => {
+    // The regex, exercised rather than eyeballed.
+    const strip = (p) => p.replace(/^\/api\/push(?=\/|$)/, '') || '/'
+    expect(strip('/api/push/subscribe')).toBe('/subscribe')
+    expect(strip('/api/push/status')).toBe('/status')
+    expect(strip('/api/push')).toBe('/')
+    expect(strip('/api/push/')).toBe('/')
+    expect(strip('/subscribe')).toBe('/subscribe')
+    expect(strip('/health')).toBe('/health')
+    // And does not eat a path that merely starts with the same letters.
+    expect(strip('/api/pushed')).toBe('/api/pushed')
+  })
+})

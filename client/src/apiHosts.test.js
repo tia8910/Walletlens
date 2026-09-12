@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { VOICE_HOST, PUSH_HOST, DATA_HOST, VOICE_API, PUSH_API, DATA_API, voiceProxy, dataUrl } from './apiHosts.js'
+import { VOICE_HOST, PUSH_HOST, DATA_HOST, SITE_ORIGIN, VOICE_API, PUSH_API, DATA_API, voiceProxy, dataUrl } from './apiHosts.js'
 
 // The backend hosts were string literals in twenty-odd files. Moving off Deno
 // Deploy was therefore a search-and-replace, where missing one site fails at
@@ -56,16 +56,21 @@ describe('apiHosts', () => {
     // inherited from the call sites, and normalising it here would silently
     // change the URLs every one of them builds.
     expect(VOICE_API).toBe(`https://${VOICE_HOST}/`)
-    expect(PUSH_API).toBe(`https://${PUSH_HOST}`)
+    // Both now go through the app's own origin rather than workers.dev: a
+    // connection check from the app showed every workers.dev host throwing
+    // "Failed to fetch" on a device that loaded the site fine, which is what a
+    // DNS or ISP blocklist looks like from a browser. Worker routes on the
+    // zone carry these the rest of the way.
+    expect(PUSH_API).toBe(`${SITE_ORIGIN}/api/push`)
     expect(PUSH_API.endsWith('/')).toBe(false)
-    expect(DATA_API).toBe(`https://${DATA_HOST}`)
+    expect(DATA_API).toBe(SITE_ORIGIN)
   })
 
   it('builds a dataset URL under the filename it had as a static asset', () => {
     // Call sites fetched '/market.json' when this was a file the build
     // shipped. Only the origin moved, so a changed filename here would
     // silently 404 against a service that still serves the old name.
-    expect(dataUrl('market.json')).toBe(`https://${DATA_HOST}/market.json`)
+    expect(dataUrl('market.json')).toBe(`${SITE_ORIGIN}/market.json`)
   })
 
   it('builds a proxy URL with the target encoded', () => {
@@ -129,7 +134,7 @@ describe('the places that cannot import apiHosts.js', () => {
     // The runtime cache for the scheduled datasets is gated on this origin.
     // These used to be same-origin files, so a stale constant here does not
     // error — it just stops matching, and every feed poll round-trips.
-    expect(read('public/sw.js')).toContain(`const DATA_ORIGIN = 'https://${DATA_HOST}'`)
+    expect(read('public/sw.js')).toContain(`const DATA_ORIGIN = '${SITE_ORIGIN}'`)
   })
 
   it('preconnects to the host the app actually calls', () => {

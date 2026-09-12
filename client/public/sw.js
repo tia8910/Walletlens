@@ -24,7 +24,7 @@ const CDN_CACHE = 'walletlens-cdn-v1'
 // Icons are cached so the PWA home-screen experience works offline immediately.
 // Mirrors DATA_HOST in src/apiHosts.js. sw.js is not in the module graph, so
 // it cannot import the constant; apiHosts.test.js fails when the two drift.
-const DATA_ORIGIN = 'https://walletlens-data.tarek-abdelhameed.workers.dev'
+const DATA_ORIGIN = 'https://walletlens.live'
 
 const PRECACHE_URLS = [
   '/',

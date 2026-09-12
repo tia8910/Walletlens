@@ -25,12 +25,44 @@ export const PUSH_HOST = 'walletlens-push.tarek-abdelhameed.workers.dev'
 // Must match `name` in data-api/wrangler.toml.
 export const DATA_HOST = 'walletlens-data.tarek-abdelhameed.workers.dev'
 
+// The app's own origin, and the one the browser is told to talk to.
+//
+// Every client request used to go to a *.workers.dev hostname. A connection
+// check run from the app showed all three of them — push, and the data worker
+// used as a CONTROL — failing with "Failed to fetch" on a device where the
+// site itself loaded fine and the price strip was full. The strip was no
+// evidence: fetchStaticStockPrices and _loadStaticMarket both swallow their
+// error and return null, and the callers fall through to CoinGecko and Yahoo
+// directly, so the datasets had been failing silently for as long as this and
+// only news — which has no fallback — ever showed it.
+//
+// workers.dev is heavily abused for phishing and sits on a good number of DNS
+// and ISP blocklists. A machine that deploys the worker resolves it; a phone
+// on a filtered resolver does not, and the failure is indistinguishable from
+// every other cause of a TypeError. Nothing in the app can fix that, and no
+// amount of CORS work was ever going to.
+//
+// So the browser talks to walletlens.live, which it plainly reaches, and
+// Worker routes on the zone carry the request the rest of the way. It also
+// makes every one of these same-origin: no CORS, no preflight, no allowlist.
+export const SITE_ORIGIN = 'https://walletlens.live'
+
 // The trailing slash on one and not the other is what the call sites already
 // expected; both shapes are preserved so this change stays a pure refactor.
 export const VOICE_API = `https://${VOICE_HOST}/`
-export const PUSH_API = `https://${PUSH_HOST}`
 
-export const DATA_API = `https://${DATA_HOST}`
+// Routed by workers/push/wrangler.toml. The prefix is stripped worker-side, so
+// /api/push/subscribe reaches the same handler as /subscribe does on the
+// workers.dev subdomain, which stays live for deploys and health checks.
+export const PUSH_API = `${SITE_ORIGIN}/api/push`
+
+// The six dataset routes on this zone have been live since 8551b22f — see
+// data-api/wrangler.toml. dataUrl() simply never used them.
+//
+// Absolute, not a relative path: push-api/markets.js calls dataUrl() from
+// inside the push Worker, where a relative URL has no origin to resolve
+// against and fetch throws.
+export const DATA_API = SITE_ORIGIN
 
 // The content type every write to our own services sends.
 //

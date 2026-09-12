@@ -326,7 +326,12 @@ async function handle(req, env, store) {
   if (req.method !== 'GET') store.invalidate()
 
   const url = new URL(req.url)
-  const path = url.pathname
+  // Two front doors, one set of handlers. The app reaches this through the
+  // route walletlens.live/api/push/* — same origin as the page, so no CORS and
+  // nothing for a DNS blocklist to catch — while the workers.dev subdomain
+  // stays live for deploys and health checks. Strip the route prefix so every
+  // handler below sees the same path either way.
+  const path = url.pathname.replace(/^\/api\/push(?=\/|$)/, '') || '/'
   const vapidReady = !!(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY)
 
   if (path === '/' || path === '/health') {
