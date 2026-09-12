@@ -2359,6 +2359,12 @@ ${vFaq.html}
 }
 
 const APP_ROUTES = [
+  // /diag is typed by hand when something is wrong, which makes it a cold
+  // navigation by definition — the one kind of arrival that needs a shell.
+  // Shipping it without one reproduced the bug it exists to diagnose.
+  { path: '/diag',         title: 'Diagnostics — WalletLens',    description: 'Connection diagnostics for this device.' },
+  // Not user-facing, and it 404'd on a cold navigation exactly like the rest.
+  { path: '/admin/mail',   title: 'Mail — WalletLens',           description: 'Internal mail tools.' },
   { path: '/dashboard',    title: 'Dashboard — WalletLens',      description: 'Your private portfolio dashboard. Data stays on your device.' },
   { path: '/transactions', title: 'Trades — WalletLens',         description: 'Your transaction history. Data stays on your device.' },
   { path: '/whales',       title: 'Whale Tracker — WalletLens',  description: 'Real-time large Bitcoin transactions and volume anomalies.' },
