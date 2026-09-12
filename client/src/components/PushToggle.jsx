@@ -196,29 +196,17 @@ function PushStatusLine({ status, repair }) {
           Open the Dashboard once to sync your holdings.
         </div>
       )}
-      {status.lastError && (
-        // The other half of "0 sent today": a zero reads the same whether
-        // nothing was due or every attempt was refused. The refusal code
-        // itself is logged, not printed, because it names a cause the reader
-        // has no way to act on.
-        <div style={{ color: BAD }}>
-          The last alert could not be delivered
-          {Number.isFinite(status.lastError.at) && <> {timeAgo(status.lastError.at)}</>}.
-        </div>
-      )}
+      {/* A refused delivery is not shown.
+          It read as "notifications are broken" to someone who had eleven
+          arrive the same day: lastError is cleared by the next SUCCESSFUL
+          send, so a quiet afternoon leaves the last failure on screen long
+          after it stopped meaning anything. The server still records it, and
+          /status still returns it in full for anyone diagnosing a device. It
+          is simply not a sentence a user can act on. */}
     </div>
   )
 }
 
-/** Rough, and deliberately so: the age of a failure matters, the minute does not. */
-function timeAgo(at) {
-  const mins = Math.max(0, Math.round((Date.now() - at) / 60000))
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins} min ago`
-  const hrs = Math.round(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.round(hrs / 24)}d ago`
-}
 
 /**
  * Send one notification to this device, now.

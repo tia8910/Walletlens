@@ -105,3 +105,54 @@ describe('the settings copy carries no notes to the developer', () => {
     }
   })
 })
+
+describe('a refused delivery is not put in front of the user', () => {
+  it('does not render lastError on the card', () => {
+    // It read as "notifications are broken" to someone who had eleven arrive
+    // the same day: the field is cleared by the next SUCCESSFUL send, so a
+    // quiet afternoon leaves the last failure on screen long after it stopped
+    // meaning anything.
+    expect(toggle).not.toMatch(/\{status\.lastError\.code\}/)
+    expect(toggle).not.toMatch(/could not be delivered/)
+    expect(toggle).not.toMatch(/function timeAgo/)
+  })
+
+  it('still records it on the server, for anyone diagnosing a device', () => {
+    const worker = readFileSync(join(here, '../../workers/push/index.js'), 'utf8')
+    expect(worker).toMatch(/lastError: sub\.lastError/)
+    expect(worker).toMatch(/function noteError\(sub, code, now\)/)
+  })
+})
+
+describe('nothing is withheld for being the nth notification', () => {
+  const logic = readFileSync(join(here, '../../push-api/notify-logic.js'), 'utf8')
+
+  it('counts sends without capping them', () => {
+    const fn = logic.slice(logic.indexOf('export function bumpSent'))
+    const body = fn.slice(0, fn.indexOf('\n}'))
+    // A counter, not a budget: no comparison against a ceiling anywhere in it.
+    expect(body).toMatch(/return \{ day, n: \(sent\.n \|\| 0\) \+ 1 \}/)
+    expect(body).not.toMatch(/>=|<=|MAX|LIMIT|CAP/)
+  })
+
+  it('has no daily ceiling left to trip over', () => {
+    expect(logic).not.toMatch(/MAX_PER_DAY|DAILY_CAP|MAX_DAILY/)
+  })
+
+  it('keeps the per-reason cooldowns, which are what hold the volume', () => {
+    // These cannot stack into a stream from one event, and unlike a global cap
+    // they can only ever delay the reason that just fired, never a different
+    // one.
+    for (const gate of ['MOVE_COOLDOWN_MS', 'NEWS_COOLDOWN_MS', 'FEATURE_TIP_GAP_MS']) {
+      expect(logic, gate).toContain(gate)
+    }
+  })
+
+  it('treats an exhausted per-run budget as retry, not as drop', () => {
+    const worker = readFileSync(join(here, '../../workers/push/index.js'), 'utf8')
+    // The only remaining limit is Cloudflare's subrequest ceiling for one cron
+    // invocation. Hitting it must leave the channel state untouched so the
+    // next tick sends it, rather than counting as delivered.
+    expect(worker).toMatch(/if \(budget && !budget\.take\(\)\) return false/)
+  })
+})
