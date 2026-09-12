@@ -32,6 +32,27 @@ export const PUSH_API = `https://${PUSH_HOST}`
 
 export const DATA_API = `https://${DATA_HOST}`
 
+// The content type every write to our own services sends.
+//
+// Not a lie about the body — it is JSON, and the workers parse it with
+// req.json(), which reads the body text and does not consult this header.
+// It is what stops the request needing PERMISSION to be sent.
+//
+// A cross-origin POST is only exempt from a CORS preflight when its content
+// type is one of three safelisted values, and 'application/json' is not among
+// them. So every write preflighted: an OPTIONS that has to be answered
+// correctly, be allowed by the page's connect-src, and be understood by the
+// browser, before the real request is even attempted. Every GET this app makes
+// is already a simple request, which is why reads worked from inside the
+// Android WebView while registering a device failed with a bare "Failed to
+// fetch" — the POST was refused on its way out and there is no console in a
+// WebView to see why.
+//
+// 'text/plain' is safelisted, so the preflight disappears and with it every
+// way a preflight can go wrong.
+export const SIMPLE_JSON = 'text/plain;charset=UTF-8'
+
+
 /**
  * A scheduled dataset, by the filename it had when it was a static asset.
  *

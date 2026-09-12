@@ -11,7 +11,7 @@
 // token. Every browser, desktop and iOS home-screen install still goes through
 // push.js, untouched.
 
-import { PUSH_API } from './apiHosts.js'
+import { PUSH_API, SIMPLE_JSON } from './apiHosts.js'
 import { getPushPrefs } from './push'
 
 const bridge = () => {
@@ -127,7 +127,7 @@ export async function registerNativePush(opts = {}) {
   try {
     const res = await fetch(`${PUSH_API}/subscribe`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': SIMPLE_JSON },
       body,
     })
     if (!res.ok) return { ok: false, reason: `http-${res.status}` }

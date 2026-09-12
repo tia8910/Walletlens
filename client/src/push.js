@@ -19,7 +19,7 @@ import { LANGUAGE_CODES } from './i18n'
 import { loadDueDate as loadZakatDue } from './zakat'
 import { usedFeature } from './featureUse'
 import { isAndroidTWA, fireNativeIntent } from './nativeBridge'
-import { PUSH_API } from './apiHosts.js'
+import { PUSH_API, SIMPLE_JSON } from './apiHosts.js'
 
 
 // The server builds the notification text, so it has to be told which language
@@ -618,7 +618,7 @@ export async function enablePush() {
   try {
     res = await fetch(`${PUSH_API}/subscribe`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': SIMPLE_JSON },
       // Reads from the transactions store, not from whatever page happened to
       // call this: turning push on from Settings must arm the movement and news
       // channels immediately, not at the next dashboard visit. Every field but
@@ -969,7 +969,7 @@ export async function disablePush() {
     if (sub) {
       await fetch(`${PUSH_API}/unsubscribe`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': SIMPLE_JSON },
         body: JSON.stringify({ endpoint: sub.endpoint }),
       }).catch(() => {})
       await sub.unsubscribe()
@@ -1049,7 +1049,7 @@ export async function ensureRegistered() {
     try {
       post = await fetch(`${PUSH_API}/subscribe`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': SIMPLE_JSON },
         body: JSON.stringify(registrationPayload(sub)),
       })
     } catch (e) {
@@ -1200,7 +1200,7 @@ export async function syncAlerts() {
     if (!sub) return
     await fetch(`${PUSH_API}/alerts`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': SIMPLE_JSON },
       body: JSON.stringify({ endpoint: sub.endpoint, alerts: readAlerts(), lang: currentLang() }),
     }).catch(() => {})
   } catch { /* best-effort */ }
@@ -1244,7 +1244,7 @@ export async function syncWatch(holdings) {
     if (!sub) return
     await fetch(`${PUSH_API}/watch`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': SIMPLE_JSON },
       body: JSON.stringify({
         endpoint: sub.endpoint,
         watch,
@@ -1290,7 +1290,7 @@ export async function pingSeen({ force = false } = {}) {
     }
     const res = await fetch(`${PUSH_API}/seen`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': SIMPLE_JSON },
       body: JSON.stringify({ ...address, lang: currentLang(), tz: currentTz() }),
     }).catch(() => null)
     // Only record the ping if it landed; a failed one should be retried on the
@@ -1337,7 +1337,7 @@ export async function sendTestPush() {
   try {
     res = await fetch(`${PUSH_API}/test`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': SIMPLE_JSON },
       body: JSON.stringify({ ...address, lang: currentLang() }),
     })
   } catch (e) {

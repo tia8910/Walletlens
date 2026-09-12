@@ -141,3 +141,42 @@ describe('turning push on says why it failed', () => {
     }
   })
 })
+
+describe('writes to the push service do not need permission first', () => {
+  const native = readFileSync(join(here, 'nativePush.js'), 'utf8')
+  const hosts = readFileSync(join(here, 'apiHosts.js'), 'utf8')
+
+  it('sends a content type that is CORS-safelisted', () => {
+    // 'application/json' is not one of the three safelisted values, so every
+    // write preflighted — an OPTIONS that had to be answered correctly, be
+    // allowed by connect-src, and be understood by the browser, before the
+    // real request was attempted. Reads never preflight, which is why they
+    // worked from the Android WebView while registering a device did not.
+    expect(hosts).toMatch(/export const SIMPLE_JSON = 'text\/plain;charset=UTF-8'/)
+  })
+
+  it('leaves no write still asking for a preflight', () => {
+    for (const src of [push, native]) {
+      expect(src).not.toMatch(/'Content-Type': 'application\/json'/)
+    }
+    expect(push).toMatch(/'Content-Type': SIMPLE_JSON/)
+    expect(native).toMatch(/'Content-Type': SIMPLE_JSON/)
+  })
+
+  it('sends no other header, which would preflight just as surely', () => {
+    // One safelisted content type and nothing else is what makes a request
+    // simple. Any added header here puts the OPTIONS back.
+    for (const m of push.matchAll(/fetch\(`\$\{PUSH_API\}[^`]*`,\s*\{[^}]*headers:\s*\{([^}]*)\}/g)) {
+      expect(m[1].trim().replace(/,$/, '')).toBe("'Content-Type': SIMPLE_JSON")
+    }
+  })
+
+  it('is still read as JSON by the worker, which ignores the header', () => {
+    const worker = readFileSync(join(here, '../../workers/push/index.js'), 'utf8')
+    expect(worker).toMatch(/async function readJson\(req\) \{\s*try \{ return await req\.json\(\)/)
+    // And nothing READS the request's content type, which would now see
+    // text/plain. (corsHeaders names Content-Type on the way out; that is the
+    // response's own type and is unrelated.)
+    expect(worker).not.toMatch(/req\.headers\.get\(['"]content-type/i)
+  })
+})
