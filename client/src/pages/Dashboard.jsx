@@ -4348,13 +4348,45 @@ export default function Dashboard() {
     return { value, invested, pnl, pnlPct, count: sel.size || selectedAssets.size }
   }, [filteredHoldings, selectedAssets])
 
+  // How many holdings the collapsed list shows before "show all".
+  //
+  // Six was low enough that most portfolios had something just outside it, and
+  // the list is sorted by value — so a holding sitting near the boundary
+  // crossed it whenever a quote moved, and appeared and disappeared on the
+  // 60-second refresh. When it was the only asset in its category, the whole
+  // category heading went with it. Twelve covers a normal portfolio outright,
+  // and the window below keeps the larger ones steady.
+  const PREVIEW_ROWS = 12
+
+  // The ids the preview is showing, pinned against price movement.
+  //
+  // Membership is chosen when the SET of holdings changes, or the sort or the
+  // filter does — not when a value does. Prices then reorder rows within the
+  // window without ever swapping one out for another, which is the difference
+  // between a list that updates and a list that flickers.
+  const previewRef = useRef({ key: '', ids: [] })
+
   // Memoized because .slice() returns a fresh array identity on every render
   // even when filteredHoldings has not changed — which silently defeated the
   // groupedHoldings memo below, whose only dependency this is.
-  const displayHoldings = useMemo(
-    () => (showAllHoldings || isHoldingsFiltered) ? filteredHoldings : filteredHoldings.slice(0, 6),
-    [filteredHoldings, showAllHoldings, isHoldingsFiltered]
-  )
+  const displayHoldings = useMemo(() => {
+    if (showAllHoldings || isHoldingsFiltered) return filteredHoldings
+    if (filteredHoldings.length <= PREVIEW_ROWS) return filteredHoldings
+
+    // `priced` is part of the key on purpose: the first pass runs before any
+    // quote has arrived, when every value is 0 and the order is arbitrary.
+    // Pinning that would freeze the wrong twelve. The key changes once prices
+    // land, the window is chosen again from real values, and it settles there.
+    const priced = filteredHoldings.some(h => h.value > 0)
+    const key = `${filteredHoldings.map(h => h.coin_id).sort().join('|')}#${holdingsSort}#${holdingsSortDir}#${priced}`
+    if (previewRef.current.key !== key) {
+      previewRef.current = { key, ids: filteredHoldings.slice(0, PREVIEW_ROWS).map(h => h.coin_id) }
+    }
+    const keep = new Set(previewRef.current.ids)
+    const pinned = filteredHoldings.filter(h => keep.has(h.coin_id))
+    // Never render an empty list because the pin went stale.
+    return pinned.length ? pinned : filteredHoldings.slice(0, PREVIEW_ROWS)
+  }, [filteredHoldings, showAllHoldings, isHoldingsFiltered, holdingsSort, holdingsSortDir])
 
   // Holdings grouped by category for the holdings list — memoized so this
   // grouping pass doesn't re-run on every render (e.g. the ticker count-up

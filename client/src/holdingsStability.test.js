@@ -59,3 +59,42 @@ describe('the order a holding sits in', () => {
     expect(sort.slice(0, 320)).toMatch(/localeCompare/)
   })
 })
+
+describe('the collapsed holdings list', () => {
+  const win = dash.slice(dash.indexOf('const PREVIEW_ROWS'), dash.indexOf('// Holdings grouped by category'))
+
+  it('shows a normal portfolio outright, with no window at all', () => {
+    // Six was low enough that most portfolios had something just outside it,
+    // and the list is sorted by value: a holding near the boundary crossed it
+    // whenever a quote moved, so it appeared and disappeared on the refresh.
+    expect(win).toMatch(/const PREVIEW_ROWS = 12/)
+    expect(win).toMatch(/if \(filteredHoldings\.length <= PREVIEW_ROWS\) return filteredHoldings/)
+  })
+
+  it('pins which holdings the window shows, so a price cannot swap one out', () => {
+    expect(win).toMatch(/previewRef\.current = \{ key, ids:/)
+    expect(win).toMatch(/filteredHoldings\.filter\(h => keep\.has\(h\.coin_id\)\)/)
+  })
+
+  it('keys the pin on the set of holdings, the sort and the filter, never on a value', () => {
+    const key = win.slice(win.indexOf('const key ='), win.indexOf('\n    if (previewRef'))
+    expect(key).toMatch(/map\(h => h\.coin_id\)\.sort\(\)/)
+    expect(key).toMatch(/holdingsSort/)
+    expect(key).not.toMatch(/h\.value(?!\s*>\s*0)/)
+  })
+
+  it('re-chooses the window once prices land, rather than freezing an unpriced order', () => {
+    // The first pass runs before any quote arrives, when every value is 0 and
+    // the order is arbitrary. Pinning that would freeze the wrong twelve.
+    expect(win).toMatch(/const priced = filteredHoldings\.some\(h => h\.value > 0\)/)
+    expect(win).toMatch(/#\$\{priced\}/)
+  })
+
+  it('never renders an empty list because the pin went stale', () => {
+    expect(win).toMatch(/pinned\.length \? pinned : filteredHoldings\.slice\(0, PREVIEW_ROWS\)/)
+  })
+
+  it('still lets the user open the whole list', () => {
+    expect(win).toMatch(/if \(showAllHoldings \|\| isHoldingsFiltered\) return filteredHoldings/)
+  })
+})
