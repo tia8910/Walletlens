@@ -6,7 +6,6 @@ import {
 } from '../push'
 import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
-import { PUSH_API, DATA_API, SIMPLE_JSON } from '../apiHosts.js'
 
 // Settings → Notifications. The master switch plus one row per channel, since
 // "notifications" is not one thing: someone who wants to know their holding
@@ -70,89 +69,58 @@ function Row({ label, hint, on, onToggle }) {
   )
 }
 
-// Stamped in by vite.config.js at build time. The fallback keeps a test or a
-// bundle without the define from throwing on an undefined global.
-const BUILD = typeof __WL_BUILD__ === 'string' ? __WL_BUILD__ : 'unknown'
-
 const BAD = '#f87171'
 const WARN = '#f59e0b'
 
-// What to say when the device is not registered. `repair` is the outcome of
+// What to say when this device is not set up yet. `repair` is the outcome of
 // ensureRegistered(): null while it is still running, otherwise its result.
 //
-// These used to share one line reading "reconnecting…", which was correct for
-// about a second and a lie after that — a repair that had already been refused
-// looked exactly like one still in flight, so the honest answer ("this cannot
-// succeed, here is why") was never reachable from the screen.
+// Every reason resolves to one of three things a reader can actually do: wait,
+// flip the switch, or change a browser permission. The distinctions below that
+// are real, and they are logged, but they are not choices anyone is being
+// asked to make, so the screen does not put them there.
+const RECONNECT = 'This device needs to reconnect. Turn the switch off, then on again.'
+const OFFLINE = 'Notifications are offline right now. WalletLens will try again shortly.'
+
 function repairMessage(repair) {
-  if (!repair) return { text: 'Not registered on the server yet — reconnecting…', tone: WARN }
+  if (!repair) return { text: 'Finishing setup.', tone: WARN }
   switch (repair.reason) {
     case 'opted-out':
-      return { text: 'Notifications are switched off for this device. Turn the switch above off and on again.', tone: BAD }
+      return { text: 'Notifications are switched off for this device. Turn the switch on to restore them.', tone: BAD }
     case 'not-granted':
-      return { text: 'Your browser has not allowed notifications for WalletLens. Allow them in site settings, then reopen this screen.', tone: BAD }
-    case 'no-subscription':
-      return { text: 'This device has no push subscription. Turn the switch above off and on again.', tone: BAD }
-    case 'key-rotated':
-      return { text: 'This device’s notification key is out of date. Turn the switch above off and on again to renew it.', tone: BAD }
+      return { text: 'Allow notifications for WalletLens in your browser settings, then reopen this screen.', tone: BAD }
     case 'no-key':
-      return { text: 'Push is not configured in this build. It will work after the next update.', tone: BAD }
+      return { text: 'Notifications will be available after the next update.', tone: BAD }
     case 'status-unreachable':
-      return { text: 'Could not reach the notification server. It will try again next time you open this screen.', tone: WARN }
     case 'status-http':
-      return { text: `The notification server answered ${repair.httpStatus} when asked about this device. It will try again next time you open this screen.`, tone: WARN }
     case 'subscribe-unreachable':
-      // The read worked and the write did not, which is the shape of a server
-      // error rather than a phone with no signal — worth saying differently.
-      return { text: 'The notification server could be read but not written to. This is a fault on our side, not on your phone.', tone: BAD }
-    case 'error':
-      return { text: 'Registering this device failed unexpectedly.', tone: BAD }
+      return { text: OFFLINE, tone: WARN }
     case 'endpoint-rejected':
-      return {
-        text: `The server does not accept push from ${repair.host || 'this browser'}. Open WalletLens in Chrome and turn notifications on there.`,
-        tone: BAD,
-      }
+      return { text: 'This browser cannot receive notifications. Open WalletLens in Chrome to switch them on.', tone: BAD }
     case 'rejected':
       if (repair.code === 'invalid_endpoint') {
-        return {
-          text: `The server does not accept push from ${repair.host || 'this browser'}. Open WalletLens in Chrome and turn notifications on there.`,
-          tone: BAD,
-        }
+        return { text: 'This browser cannot receive notifications. Open WalletLens in Chrome to switch them on.', tone: BAD }
       }
-      return {
-        text: `The server refused to register this device${repair.httpStatus ? ` (${repair.httpStatus}${repair.code ? ` ${repair.code}` : ''})` : ''}. Turn the switch above off and on again.`,
-        tone: BAD,
-      }
+      return { text: RECONNECT, tone: BAD }
+    case 'no-subscription':
+    case 'key-rotated':
+    case 'error':
+      return { text: RECONNECT, tone: BAD }
     default:
-      return { text: 'Not registered on the server yet — retrying.', tone: WARN }
+      return { text: 'Finishing setup.', tone: WARN }
   }
 }
 
-// Why the server's view could not be read. Mirrors repairMessage: a code, a
-// sentence, and a colour that says whose problem it is.
+// Why this device's status could not be read. Two answers: something on our
+// side, or a connection that is not there yet. A status code tells a reader
+// nothing they can use, so it stays out of the copy and in the logs.
+const SERVER_FAULTS = new Set(['store_unavailable', 'server_error', 'client_error'])
+
 function faultMessage(fault) {
-  switch (fault) {
-    case 'store_unavailable':
-      return { text: 'The notification server is up but its subscription store is unavailable. This is a fault on our side, not on your device.', tone: BAD }
-    case 'server_error':
-      return { text: 'The notification server returned an error. This is a fault on our side, not on your device.', tone: BAD }
-    case 'client_error':
-      // Nothing was sent. Saying "can't reach the server" here is simply false,
-      // and it is the sentence that sent a whole diagnosis to the wrong side.
-      return { text: 'This app could not work out which device to ask about, so the server was never called. This is a fault on our side.', tone: BAD }
-    case 'bad_body':
-      return { text: 'Something answered for the notification server but not with its data — usually a captive portal or a proxy on this network.', tone: WARN }
-    case 'network':
-      return { text: 'Can’t reach the notification server right now — the request never completed.', tone: WARN }
-    default:
-      if (typeof fault === 'string' && fault.startsWith('http_')) {
-        return { text: `The notification server answered ${fault.slice(5)} instead of this device's status.`, tone: BAD }
-      }
-      if (fault) {
-        return { text: `The notification server refused the request (${fault}).`, tone: BAD }
-      }
-      return { text: 'Can’t reach the notification server right now.', tone: WARN }
+  if (SERVER_FAULTS.has(fault)) {
+    return { text: 'Notifications are temporarily unavailable. Nothing to fix on your side.', tone: BAD }
   }
+  return { text: OFFLINE, tone: WARN }
 }
 
 /**
@@ -165,35 +133,12 @@ function faultMessage(fault) {
  */
 function PushStatusLine({ status, repair }) {
   if (status.reachable === false) {
-    // Every fault here used to wear one sentence, and that sentence named the
-    // network. A server answering to say its own store is broken, a request
-    // that never left the tab, and a phone with no signal need three different
-    // responses from the reader -- and only one of them is "check your
-    // connection". Diagnosing a silent install against a worker that reported
-    // itself healthy from the outside is what this is for: the fault code and
-    // the browser's own words are on the screen, so the next report names it.
     const { text, tone } = faultMessage(status.serverFault)
-    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: tone }}>
-      <div>{text}</div>
-      {status.detail && (
-        <div style={{ opacity: 0.75, fontSize: '0.85em', marginTop: '0.15rem', wordBreak: 'break-word' }}>
-          {status.detail}
-        </div>
-      )}
-    </div>
+    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: tone }}>{text}</div>
   }
   if (status.found === false) {
     const { text, tone } = repairMessage(repair)
-    return (
-      <div className="settings-hint" style={{ marginTop: '0.5rem', color: tone }}>
-        <div>{text}</div>
-        {repair?.detail && (
-          <div style={{ opacity: 0.75, fontSize: '0.85em', marginTop: '0.15rem', wordBreak: 'break-word' }}>
-            {repair.detail}
-          </div>
-        )}
-      </div>
-    )
+    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: tone }}>{text}</div>
   }
   if (status.subscribed === false) {
     // The switch reads On and there is no address to send to. In the app that
@@ -203,8 +148,8 @@ function PushStatusLine({ status, repair }) {
     // the most misleading state the card has, shown as a blank.
     return (
       <div className="settings-hint" style={{ marginTop: '0.5rem', color: BAD }}>
-        This device isn’t registered for notifications yet, so nothing can be
-        sent to it. Turn the switch off and on again to register it.
+        This device is not set up for notifications yet. Turn the switch off,
+        then on again to finish.
       </div>
     )
   }
@@ -239,37 +184,26 @@ function PushStatusLine({ status, repair }) {
       </div>
       {status.vapid === false && (
         <div style={{ color: BAD }}>
-          The notification server has no signing key, so nothing can be delivered
-          to any device. This is a server configuration problem, not a fault on
-          your phone.
+          Notifications are temporarily unavailable. Nothing to fix on your side.
         </div>
       )}
       {keyOk === false && (
-        <div style={{ color: BAD }}>
-          This device subscribed with a different signing key than the server
-          uses, so every notification is rejected on arrival. Turn the switch
-          above off and on again to re-subscribe with the current key.
-        </div>
+        <div style={{ color: BAD }}>{RECONNECT}</div>
       )}
       {noWatch && (
         <div style={{ color: BAD }}>
-          No assets are being watched, so move and news alerts can’t fire.
+          No assets are being watched yet, so price and news alerts stay quiet.
           Open the Dashboard once to sync your holdings.
         </div>
       )}
       {status.lastError && (
-        // The other half of "0 sent today". A zero reads the same whether
-        // nothing was due or every attempt was refused, and those two want
-        // opposite fixes — so the refusal is shown verbatim rather than
-        // summarised. It is cleared by the next successful send, which means
-        // an error still on screen is one that has not been recovered from.
+        // The other half of "0 sent today": a zero reads the same whether
+        // nothing was due or every attempt was refused. The refusal code
+        // itself is logged, not printed, because it names a cause the reader
+        // has no way to act on.
         <div style={{ color: BAD }}>
-          The last delivery to this device was refused
-          {Number.isFinite(status.lastError.at) && <> {timeAgo(status.lastError.at)}</>}:
-          <div style={{ opacity: 0.8, fontFamily: 'monospace', fontSize: '0.85em',
-                        marginTop: '0.15rem', wordBreak: 'break-word' }}>
-            {status.lastError.code}
-          </div>
+          The last alert could not be delivered
+          {Number.isFinite(status.lastError.at) && <> {timeAgo(status.lastError.at)}</>}.
         </div>
       )}
     </div>
@@ -284,86 +218,6 @@ function timeAgo(at) {
   const hrs = Math.round(mins / 60)
   if (hrs < 24) return `${hrs}h ago`
   return `${Math.round(hrs / 24)}d ago`
-}
-
-/**
- * Three requests that between them say where a registration is being stopped.
- *
- * Remote-diagnosing this from a phone has cost a whole evening of one-line
- * reports, because every failure the app could show collapsed into "Failed to
- * fetch" — a TypeError that covers an unreachable host, a rejected CORS
- * response and a blocked policy identically, from a WebView with no console to
- * open. Guessing between them from the outside does not converge. Measuring
- * does.
- *
- * The three are chosen so that the pattern of results names the fault:
- *
- *   1. GET the data worker. The CONTROL. It answers
- *      Access-Control-Allow-Origin: * and is the host the price strip already
- *      uses, so it passing proves *.workers.dev resolves and is reachable from
- *      this device, and it failing proves the problem is nothing to do with
- *      push at all.
- *   2. GET the push worker's /health. A CORS simple request: no preflight, but
- *      the response must still carry an Allow-Origin this page matches or the
- *      browser rejects it and fetch throws. So 1 passing and 2 failing is a
- *      CORS answer from the push worker, not a network fault — the two the
- *      error text cannot tell apart.
- *   3. POST an empty body to /subscribe. Expected to come back 400
- *      missing_subscription, which is the POINT: a 400 is a response, and a
- *      response proves the write path completes end to end. It registers
- *      nothing — the worker returns before it touches the store.
- */
-function ConnectionCheck() {
-  const [rows, setRows] = useState(null)
-  const [running, setRunning] = useState(false)
-
-  async function probe(label, url, init) {
-    const started = Date.now()
-    try {
-      const res = await fetch(url, init)
-      return { label, ok: true, status: res.status, ms: Date.now() - started }
-    } catch (e) {
-      return { label, ok: false, error: String(e?.message || e).slice(0, 90), ms: Date.now() - started }
-    }
-  }
-
-  async function run() {
-    setRunning(true)
-    setRows(null)
-    const out = []
-    out.push(await probe('data worker (control)', `${DATA_API}/market.json`))
-    out.push(await probe('push worker GET', `${PUSH_API}/health`))
-    out.push(await probe('push worker POST', `${PUSH_API}/subscribe`, {
-      method: 'POST',
-      headers: { 'Content-Type': SIMPLE_JSON },
-      body: '{}',
-    }))
-    setRows(out)
-    setRunning(false)
-    track('push_connection_check', {
-      control: out[0].ok ? out[0].status : 'throw',
-      get: out[1].ok ? out[1].status : 'throw',
-      post: out[2].ok ? out[2].status : 'throw',
-    })
-  }
-
-  return (
-    <div style={{ marginTop: '0.6rem' }}>
-      <button className="settings-chip" onClick={run} disabled={running}>
-        {running ? 'Checking…' : 'Run a connection check'}
-      </button>
-      {rows && (
-        <div className="settings-hint" style={{ marginTop: '0.4rem', fontFamily: 'ui-monospace, monospace', fontSize: '0.78em' }}>
-          {rows.map(r => (
-            <div key={r.label} style={{ color: r.ok ? undefined : BAD, wordBreak: 'break-word' }}>
-              {r.label}: {r.ok ? `${r.status} in ${r.ms}ms` : `threw — ${r.error}`}
-            </div>
-          ))}
-          <div style={{ opacity: 0.6, marginTop: '0.25rem' }}>build {BUILD}</div>
-        </div>
-      )}
-    </div>
-  )
 }
 
 /**
@@ -659,30 +513,10 @@ export default function PushToggle() {
       */}
       {enabled && status && <PushStatusLine status={status} repair={repair} />}
       {SHOW_TEST_SEND && status?.found && <TestSend />}
-      {/* Shown only once something has gone wrong, so it is where it is needed
-          and nowhere else. */}
-      {(error || status?.reachable === false || (enabled && status?.found === false)) && <ConnectionCheck />}
 
       {enabled && <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>}
 
-      {error && (
-        <div className="settings-hint" style={{ color: BAD, marginTop: '0.4rem' }}>
-          <div>{error}</div>
-          {/*
-            Which build is saying this.
-
-            Three rounds of diagnosis went on not knowing whether the site on
-            the phone contained the fix being discussed — the worker reports
-            its version on /health, the site reported nothing, and "still the
-            same error" meant either "the fix does not work" or "the fix is not
-            deployed", which need opposite responses. It costs one dim line and
-            only appears when something has already gone wrong.
-          */}
-          <div style={{ opacity: 0.6, fontSize: '0.8em', marginTop: '0.2rem' }}>
-            build {BUILD}
-          </div>
-        </div>
-      )}
+      {error && <div className="settings-hint" style={{ color: BAD, marginTop: '0.4rem' }}>{error}</div>}
     </div>
   )
 }

@@ -1330,8 +1330,11 @@ describe('the status line renders as text, not escapes', () => {
     ]) {
       expect(body).toContain(`case '${reason}'`)
     }
-    // Only the in-flight state may say "reconnecting".
-    expect(body.split('reconnecting').length - 1).toBe(1)
+    // The in-flight sentence is now "Finishing setup." and only the two states
+    // that genuinely do not know yet may use it: before the repair returns,
+    // and for a reason with no specific advice.
+    expect(body).not.toMatch(/reconnecting/i)
+    expect(body.split("'Finishing setup.'").length - 1).toBe(2)
   })
 
   it('only repaints as healthy when the repair actually worked', () => {

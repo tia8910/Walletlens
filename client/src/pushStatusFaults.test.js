@@ -52,171 +52,56 @@ describe('pushStatus fault attribution', () => {
   })
 })
 
-describe('the sentence each fault produces', () => {
-  it('has a distinct message for every fault pushStatus can emit', () => {
-    const emitted = [...push.matchAll(/serverFault: '([a-z_]+)'/g)].map(m => m[1])
-    expect(emitted.length).toBeGreaterThan(0)
-    for (const fault of emitted) {
-      expect(toggle).toContain(`case '${fault}':`)
+describe('the settings copy carries no notes to the developer', () => {
+  // The diagnostics that found tonight's fault did their job and are gone from
+  // the screen. Every distinction they drew still exists in the code and in
+  // what gets logged; none of it is put in front of a reader, because none of
+  // it names something a reader can do.
+  const surfaces = { 'PushToggle.jsx': toggle, 'push.js': push }
+
+  it('prints no build identifier', () => {
+    expect(toggle).not.toMatch(/__WL_BUILD__|build \{/)
+  })
+
+  it('prints no raw exception text', () => {
+    expect(toggle).not.toMatch(/\{(status|repair)\.detail\}/)
+    for (const [name, src] of Object.entries(surfaces)) {
+      expect(src, `${name} still interpolates detailOf`).not.toMatch(/new Error\([^)]*detailOf\(/)
     }
   })
 
-  it('still names the two server-side faults /health can report', () => {
-    for (const fault of ['store_unavailable', 'server_error']) {
-      expect(toggle).toContain(`case '${fault}':`)
-    }
+  it('prints no status code, reason code or fault code', () => {
+    expect(toggle).not.toMatch(/repair\.httpStatus|lastError\.code|fault\.slice/)
+    expect(push).not.toMatch(/new Error\(`[^`]*\$\{res\.(status|reason)/)
   })
 
-  it('shows the browser’s own words when it has them', () => {
-    // The detail is the whole point: "Failed to fetch" and a CSP refusal are
-    // the same status object without it.
-    expect(toggle).toMatch(/status\.detail/)
+  it('has no diagnostic instrument left on the page', () => {
+    expect(toggle).not.toMatch(/ConnectionCheck|Run a connection check/)
   })
 
-  it('renders an HTTP status the server actually returned', () => {
-    expect(toggle).toMatch(/startsWith\('http_'\)/)
-  })
-})
-
-describe('turning push on says why it failed', () => {
-  // The toggle's error line had the same disease as the status line: one
-  // sentence about the network for every failure, including the ones where the
-  // server answered. "Couldn't reach the notification server" was on screen
-  // while /health returned db: true, vapid: true from outside.
-  function enablePushBody() {
-    const start = push.indexOf('export async function enablePush()')
-    expect(start).toBeGreaterThan(-1)
-    const next = push.indexOf('\n/**', start)
-    return push.slice(start, next)
-  }
-
-  it('reports a refusal with the status the server returned', () => {
-    const body = enablePushBody()
-    expect(body).toMatch(/refused this device \(\$\{res\.status\}/)
-    // The server's own error code too — invalid_endpoint and store_unavailable
-    // need completely different responses from the reader.
-    expect(body).toMatch(/body\?\.error/)
+  it('says one thing for a fault on our side and one for a missing connection', () => {
+    expect(toggle).toMatch(/const SERVER_FAULTS = new Set\(/)
+    expect(toggle).toMatch(/Nothing to fix on your side/)
+    expect(toggle).toMatch(/Notifications are offline right now/)
   })
 
-  it('does not call a refusal an unreachable server', () => {
-    const body = enablePushBody()
-    // Code only — the comment above the branch quotes the old sentence to say
-    // why it is gone, and that is the point of the comment.
-    const refusal = body.slice(body.indexOf('if (!res.ok)'))
-      .split('\n').filter(l => !l.trim().startsWith('//')).join('\n')
-    expect(refusal).not.toMatch(/reach the notification server/)
-  })
-
-  it('still rolls the subscription back on both failures', () => {
-    // A half-registered device reports itself enabled and never receives
-    // anything, which is worse than a visible error.
-    const body = enablePushBody()
-    expect(body.match(/await rollback\(\)/g)?.length).toBe(2)
-  })
-
-  it('separates a request that never completed from every local fault', () => {
+  it('still distinguishes every reason in code, even though the copy does not', () => {
+    // The branches are what make the logs worth reading. Collapsing the
+    // SENTENCES must not collapse the logic behind them.
     const shell = push.slice(push.indexOf('async function enablePushInShell'))
-    expect(shell).toMatch(/res\.reason === 'unreachable'/)
-    expect(shell).toMatch(/res\.reason === 'not-in-shell'/)
-    // And the catch-all names the reason rather than guessing at a cause.
-    expect(shell).toMatch(/Registering this device failed \(\$\{res\.reason/)
-  })
-
-  it('shows the runtime\u2019s own words for a request that never left', () => {
-    // Two failures wear "nothing was sent": the fetch threw, and the body
-    // could not be serialised. Neither is diagnosable without the detail.
-    const shell = push.slice(push.indexOf('async function enablePushInShell'))
-    expect(shell).toMatch(/res\.detail \? ` \(\$\{res\.detail\}\)`/)
-  })
-
-  it('covers every reason registerNativePush can return', () => {
-    const native = readFileSync(join(here, 'nativePush.js'), 'utf8')
-    const reg = native.slice(native.indexOf('export async function registerNativePush'))
-    const body = reg.slice(0, reg.indexOf('\n}'))
-    const reasons = [...body.matchAll(/reason: '([a-z-]+)'/g)].map(m => m[1])
-      .filter(r => r !== 'already')
-    const shell = push.slice(push.indexOf('async function enablePushInShell'))
-    for (const r of reasons) {
-      expect(shell).toContain(`'${r}'`)
+    for (const reason of ['no-token', 'not-in-shell', 'unreachable', 'payload', 'http-']) {
+      expect(shell, `${reason} branch`).toContain(`'${reason}'`)
     }
-  })
-})
-
-describe('writes to the push service do not need permission first', () => {
-  const native = readFileSync(join(here, 'nativePush.js'), 'utf8')
-  const hosts = readFileSync(join(here, 'apiHosts.js'), 'utf8')
-
-  it('sends a content type that is CORS-safelisted', () => {
-    // 'application/json' is not one of the three safelisted values, so every
-    // write preflighted — an OPTIONS that had to be answered correctly, be
-    // allowed by connect-src, and be understood by the browser, before the
-    // real request was attempted. Reads never preflight, which is why they
-    // worked from the Android WebView while registering a device did not.
-    expect(hosts).toMatch(/export const SIMPLE_JSON = 'text\/plain;charset=UTF-8'/)
+    expect(shell).toMatch(/res\.reachedServer/)
   })
 
-  it('leaves no write still asking for a preflight', () => {
-    for (const src of [push, native]) {
-      expect(src).not.toMatch(/'Content-Type': 'application\/json'/)
+  it('uses no dash as punctuation in anything the reader sees', () => {
+    for (const [name, src] of Object.entries(surfaces)) {
+      const code = src
+        .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')   // JSX comments
+        .replace(/\/\*[\s\S]*?\*\//g, '')         // block comments
+        .split('\n').filter(l => !l.trim().startsWith('//')).join('\n')
+      expect(code, `${name} has an em dash in visible copy`).not.toMatch(/\u2014/)
     }
-    expect(push).toMatch(/'Content-Type': SIMPLE_JSON/)
-    expect(native).toMatch(/'Content-Type': SIMPLE_JSON/)
-  })
-
-  it('sends no other header, which would preflight just as surely', () => {
-    // One safelisted content type and nothing else is what makes a request
-    // simple. Any added header here puts the OPTIONS back.
-    for (const m of push.matchAll(/fetch\(`\$\{PUSH_API\}[^`]*`,\s*\{[^}]*headers:\s*\{([^}]*)\}/g)) {
-      expect(m[1].trim().replace(/,$/, '')).toBe("'Content-Type': SIMPLE_JSON")
-    }
-  })
-
-  it('is still read as JSON by the worker, which ignores the header', () => {
-    const worker = readFileSync(join(here, '../../workers/push/index.js'), 'utf8')
-    expect(worker).toMatch(/async function readJson\(req\) \{\s*try \{ return await req\.json\(\)/)
-    // And nothing READS the request's content type, which would now see
-    // text/plain. (corsHeaders names Content-Type on the way out; that is the
-    // response's own type and is unrelated.)
-    expect(worker).not.toMatch(/req\.headers\.get\(['"]content-type/i)
-  })
-})
-
-describe('the connection check', () => {
-  const toggleSrc = readFileSync(join(here, 'components/PushToggle.jsx'), 'utf8')
-  const worker = readFileSync(join(here, '../../workers/push/index.js'), 'utf8')
-
-  it('probes a control host that is known to work', () => {
-    // The price strip already reads from the data worker, and that worker
-    // answers Allow-Origin: *. It passing proves *.workers.dev resolves and is
-    // reachable from this device; it failing moves the problem off push
-    // entirely.
-    expect(toggleSrc).toMatch(/probe\('data worker \(control\)', `\$\{DATA_API\}/)
-  })
-
-  it('probes the push worker with both a read and a write', () => {
-    // The read is a CORS simple request and the write is the real path. One
-    // passing and the other not is the distinction "Failed to fetch" erases.
-    expect(toggleSrc).toMatch(/probe\('push worker GET', `\$\{PUSH_API\}\/health`\)/)
-    expect(toggleSrc).toMatch(/probe\('push worker POST', `\$\{PUSH_API\}\/subscribe`/)
-  })
-
-  it('registers nothing — the write probe is deliberately rejected', () => {
-    // An empty body is refused with 400 missing_subscription BEFORE the
-    // handler touches the store, and a 400 is a response: it proves the write
-    // path completes end to end without creating a subscription.
-    const post = toggleSrc.slice(toggleSrc.indexOf("'push worker POST'"))
-    expect(post.slice(0, post.indexOf('))'))).toMatch(/body: '\{\}'/)
-
-    const route = worker.slice(worker.indexOf("path === '/subscribe'"))
-    const beforeStore = route.slice(0, route.indexOf('await store.get('))
-    expect(beforeStore).toMatch(/missing_subscription.*400|error: 'missing_subscription' \}, headers, 400/s)
-  })
-
-  it('reports the exception when a probe throws, not just that it did', () => {
-    expect(toggleSrc).toMatch(/error: String\(e\?\.message \|\| e\)/)
-  })
-
-  it('only appears once something has gone wrong', () => {
-    expect(toggleSrc).toMatch(/\{\(error \|\| status\?\.reachable === false \|\| \(enabled && status\?\.found === false\)\) && <ConnectionCheck \/>\}/)
   })
 })

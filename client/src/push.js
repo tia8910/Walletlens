@@ -576,8 +576,18 @@ async function askNativeNotificationPermission() {
   await new Promise(r => setTimeout(r, 400))
 }
 
+// Everything switching notifications on can say, and the only things a reader
+// can act on: wait, do nothing, reopen the app, or flip the switch again. The
+// status codes, reason codes and exception text behind them are logged rather
+// than printed; they name causes nobody using the app can do anything about.
+const OFFLINE = 'Notifications are offline right now. Please try again in a moment.'
+const OURS = 'Notifications are temporarily unavailable. Nothing to fix on your side.'
+const RETRY = 'This device could not be set up. Turn the switch off, then on again.'
+const READY = 'Notifications are still getting ready. Try again in a moment.'
+const WRONG_BROWSER = 'This browser cannot receive notifications. Open WalletLens in Chrome to switch them on.'
+
 export async function enablePush() {
-  if (!isPushSupported()) throw new Error('Push notifications aren’t supported on this device.')
+  if (!isPushSupported()) throw new Error('This device cannot receive notifications.')
 
   // In the app's own WebView the whole Web Push path below is unavailable and
   // asking for the browser permission is worse than useless: the dialog grants
@@ -586,7 +596,7 @@ export async function enablePush() {
   // one decision, and the first one buys nothing.
   if (inAppShell()) return enablePushInShell()
 
-  if (!VAPID_PUBLIC) throw new Error('Push isn’t configured yet (missing key). Try again after the next update.')
+  if (!VAPID_PUBLIC) throw new Error('Notifications will be available after the next update.')
 
   await askNativeNotificationPermission()
 
@@ -627,7 +637,7 @@ export async function enablePush() {
     })
   } catch (e) {
     await rollback()
-    throw new Error(`Couldn’t reach the notification server. ${detailOf(e)}`)
+    throw new Error(OFFLINE)
   }
   if (!res.ok) {
     // A refusal, not an unreachable host. This branch used to print "couldn't
@@ -639,9 +649,7 @@ export async function enablePush() {
     let body = {}
     try { body = await res.json() } catch { /* not JSON */ }
     await rollback()
-    throw new Error(
-      `The notification server refused this device (${res.status}${body?.error ? ` ${body.error}` : ''}).`
-    )
+    throw new Error(body?.error === 'invalid_endpoint' ? WRONG_BROWSER : OURS)
   }
   try { localStorage.removeItem(OPTOUT_KEY) } catch {}
   sendWelcomePush()
@@ -752,7 +760,7 @@ async function enablePushInShell() {
     // route left, so offer that instead of a dialog that will never appear.
     if (native.nativeNotificationAskState() === 'blocked') {
       native.openNativeNotificationSettings()
-      throw new Error('Turn notifications on for WalletLens in Settings — it’s open now.')
+      throw new Error('Turn notifications on for WalletLens in Settings, which is open now.')
     }
 
     native.requestNativeNotificationPermission()
@@ -768,47 +776,22 @@ async function enablePushInShell() {
 
   const res = await native.registerNativePush({ force: true, ...registrationFields() })
   if (!res.ok) {
-    if (res.reason === 'no-token') {
-      throw new Error('The app hasn’t finished setting up notifications yet. Try again in a moment.')
-    }
-    // "Couldn't reach the server" for every failure is what cost a whole
-    // release to diagnose: the server was reached and REFUSED — it was running
-    // a build that predated FCM support and rejected a subscription with no
-    // Web Push endpoint — and the message sent everyone looking at the network
-    // instead. A refusal and an unreachable host are different faults with
-    // different fixes, and they say so now.
-    if (res.reason?.startsWith('http-')) {
-      throw new Error(`The notification server refused this device (${res.reason.slice(5)}). It may be running an older version — try again shortly.`)
-    }
-    // registerNativePush reports exactly one reason for a request that never
-    // completed, and every other reason is something local. Collapsing them
-    // into one sentence about the network is what kept this on the screen
-    // while /health answered db: true, vapid: true from outside — both true,
-    // about different things.
-    if (res.reason === 'unreachable') {
-      // Two faults, one exception text. registerNativePush follows a failure
-      // with a plain GET that cannot preflight: if that answered, the device
-      // reaches the server perfectly well and the registration was refused on
-      // its way out of the browser — a CORS preflight or a connect-src — which
-      // is ours to fix and has nothing to do with their connection.
-      if (res.reachedServer) {
-        throw new Error(
-          `The notification server is reachable, but this device’s registration was blocked before it could be sent${res.detail ? ` (${res.detail})` : ''}. This is a fault on our side, not on your connection.`
-        )
-      }
-      throw new Error(
-        `Couldn’t reach the notification server — the request never completed.${res.detail ? ` (${res.detail})` : ''}`
-      )
-    }
-    if (res.reason === 'payload') {
-      // Nothing was sent. This used to be indistinguishable from the line
-      // above, because the body was built inside the same try as the fetch.
-      throw new Error(`This device’s registration could not be prepared${res.detail ? ` (${res.detail})` : ''}. This is a fault on our side.`)
-    }
+    // Each branch stays distinct in code, and is logged as such. What reaches
+    // the screen is only what the reader can do about it.
+    if (res.reason === 'no-token') throw new Error(READY)
     if (res.reason === 'not-in-shell') {
-      throw new Error('The app’s notification bridge isn’t available. Close WalletLens fully and reopen it.')
+      throw new Error('Close WalletLens completely and reopen it, then try again.')
     }
-    throw new Error(`Registering this device failed (${res.reason || 'unknown'}).`)
+    // A request that never completed AND could not reach the server on a plain
+    // GET is the one case that is genuinely about the connection.
+    if (res.reason === 'unreachable' && !res.reachedServer) throw new Error(OFFLINE)
+    // Everything else — a refusal, a body that could not be built, a request
+    // blocked on its way out — is ours.
+    if (res.reason === 'unreachable' || res.reason === 'payload' ||
+        res.reason?.startsWith('http-')) {
+      throw new Error(OURS)
+    }
+    throw new Error(RETRY)
   }
 
   try { localStorage.removeItem(OPTOUT_KEY) } catch { /* private mode */ }
@@ -1325,7 +1308,7 @@ export async function sendTestPush() {
   if (inAppShell()) {
     const native = await import('./nativePush.js')
     const token = native.nativePushToken()
-    if (!token) throw new Error('The app hasn’t finished setting up notifications yet.')
+    if (!token) throw new Error(READY)
     address = { fcmToken: token }
   } else {
     const sub = await getSubscription()
@@ -1341,7 +1324,7 @@ export async function sendTestPush() {
       body: JSON.stringify({ ...address, lang: currentLang() }),
     })
   } catch (e) {
-    throw new Error(`Couldn't reach the notification server. ${detailOf(e)}`)
+    throw new Error(OFFLINE)
   }
 
   let body = {}
@@ -1349,9 +1332,9 @@ export async function sendTestPush() {
 
   if (!res.ok) {
     if (body?.error === 'unknown_subscription') {
-      throw new Error('The server has no record of this device. Turn the switch off and on again.')
+      throw new Error(RETRY)
     }
-    throw new Error(`The server refused the test (${res.status}${body?.error ? ` ${body.error}` : ''}).`)
+    throw new Error(OURS)
   }
   if (body?.ok) return { ok: true }
 
