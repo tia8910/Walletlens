@@ -5,7 +5,7 @@ import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line,
   PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
 } from 'recharts'
-import { api } from '../api'
+import { api, getCachedCoinImage } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
 import { observe, primeEffectAudio } from '../screenEffectsRuntime'
@@ -3310,6 +3310,30 @@ export default function Dashboard() {
    * having vanished — then came back on the next tick that happened to include
    * it. Merging means a price, once known, stays until a better one arrives.
    */
+  /**
+   * Logos, folded in the same way as quotes, and for the same reason.
+   *
+   * This assigned getCoinImages' result straight over the map. That call
+   * reaches CoinGecko and a proxy, so a slow or blocked one resolves with a
+   * subset — and every asset missing from it lost its image URL. CoinLogo
+   * then restarted its fallback ladder without its best stage, walked a set
+   * of CDNs, and settled on the generated letter badge, where it stayed for
+   * the session. A logo that has been on screen is never taken away now.
+   */
+  const mergeCoinImages = useCallback((next) => {
+    if (!next) return
+    const keys = Object.keys(next).filter(k => next[k])
+    if (!keys.length) return
+    setCoinImages(prev => {
+      let changed = false
+      for (const k of keys) if (prev[k] !== next[k]) { changed = true; break }
+      if (!changed) return prev
+      const merged = { ...prev }
+      for (const k of keys) merged[k] = next[k]
+      return merged
+    })
+  }, [])
+
   const mergePrices = useCallback((next) => {
     if (!next) return
     const keys = Object.keys(next)
@@ -3694,7 +3718,15 @@ export default function Dashboard() {
       // overlay falls back to the symbol on a disc, and rows to a letter
       // badge. Trading a correct number arriving sooner for a picture arriving
       // later is the right way round.
-      api.getCoinImages(ids).then(imgs => setCoinImages(imgs || {})).catch(() => {})
+      // The persisted cache first, synchronously, so rows open with their real
+      // logos rather than initials that are then replaced.
+      const cachedLogos = {}
+      for (const id of ids.split(',')) {
+        const url = getCachedCoinImage(id)
+        if (url) cachedLogos[id] = url
+      }
+      mergeCoinImages(cachedLogos)
+      api.getCoinImages(ids).then(mergeCoinImages).catch(() => {})
     }
     setLoaded(true)
   }

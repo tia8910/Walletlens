@@ -77,6 +77,39 @@ function GeneratedIcon({ symbol, size, className, badgeStyle, fallbackChar }) {
 // blocked/slow CDN can't stall the whole chain for many seconds per icon.
 //
 // Order: provided URL → jsDelivr SVG → CoinGecko assets → CoinCap → cryptoicons → generated gradient
+// The URL that actually rendered, per asset, kept across sessions.
+//
+// A logo that has been on screen must never turn back into initials. Two
+// things were making it do exactly that:
+//
+//   • The Dashboard replaced its whole coinImages map with each refresh's
+//     result, so a partial response left `image` undefined for the assets it
+//     did not carry.
+//   • The effect below restarted the fallback ladder whenever `image`
+//     changed — including from a URL to undefined. The ladder then re-ran
+//     without its best stage, walked a set of CDNs this device may not be
+//     able to reach, and settled on the generated letter badge. Once there it
+//     stayed for the session, which is why a logo appeared at startup and
+//     then went.
+//
+// Recording the winner and putting it first means the ladder starts from
+// something already proven to load, on this device, on this network — and it
+// survives a restart, so logos are there in the first frame.
+const RESOLVED_KEY = 'wl_logo_resolved'
+let RESOLVED = {}
+try { RESOLVED = JSON.parse(localStorage.getItem(RESOLVED_KEY) || '{}') || {} } catch { RESOLVED = {} }
+
+let saveTimer = null
+function rememberResolved(key, src) {
+  if (!key || !src || RESOLVED[key] === src) return
+  RESOLVED[key] = src
+  // Debounced: a dashboard paints a dozen of these at once.
+  clearTimeout(saveTimer)
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(RESOLVED_KEY, JSON.stringify(RESOLVED)) } catch { /* full or private */ }
+  }, 500)
+}
+
 const STAGE_TIMEOUT_MS = 3000
 const FALLBACK_TIMEOUT_MS = 1200
 
@@ -141,9 +174,15 @@ const CryptoLogo = memo(function CryptoLogo({
   // Only fall back to symbol-based CDNs as last resort — they can return
   // wrong icons when the same symbol exists for multiple coins (WLD, NS, FET…).
   const cachedImg = coinId ? getCachedCoinImage(coinId) : null
+  const logoKey = coinId || (sym ? `sym:${sym}` : '')
+  const resolved = logoKey ? RESOLVED[logoKey] : null
   const STAGES = useMemo(() => [
-    image    ? `img:${image}` : null,
-    cachedImg && cachedImg !== image ? `img:${cachedImg}` : null,
+    // What loaded last time, first. Everything below it is a guess by
+    // comparison, and several of the guesses are hosts a given device or
+    // network may block outright.
+    resolved ? `img:${resolved}` : null,
+    image    && image !== resolved ? `img:${image}` : null,
+    cachedImg && cachedImg !== image && cachedImg !== resolved ? `img:${cachedImg}` : null,
     sym      ? `jsdelivr:${sym}` : null,
     sym      ? `coincap:${sym}` : null,
     sym      ? `lcw:${sym}` : null,
@@ -154,14 +193,23 @@ const CryptoLogo = memo(function CryptoLogo({
     // permissive CORS, so logos still load when direct requests are blocked.
     sym      ? `dproxy:https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg` : null,
     sym      ? `dproxy:https://assets.coincap.io/assets/icons/${sym}@2x.png` : null,
-  ].filter(Boolean), [image, cachedImg, sym])
+  ].filter(Boolean), [image, cachedImg, sym, resolved])
 
   const [stageIdx, setStageIdx] = useState(0)
   const stageIdxRef = useRef(stageIdx)
   const loadedRef   = useRef(false)
   stageIdxRef.current = stageIdx
 
+  // Restart the ladder for a DIFFERENT asset, or for a new image URL. Not
+  // because the URL went away: a refresh that returns a partial map does
+  // exactly that, and restarting there is what replaced a loaded logo with
+  // initials.
+  const assetRef = useRef(`${coinId}|${sym}`)
   useEffect(() => {
+    const id = `${coinId}|${sym}`
+    const changedAsset = assetRef.current !== id
+    assetRef.current = id
+    if (!changedAsset && !image) return
     loadedRef.current = false
     setStageIdx(0)
   }, [image, sym, coinId])
@@ -176,7 +224,11 @@ const CryptoLogo = memo(function CryptoLogo({
     return () => clearTimeout(t)
   }, [stageIdx])
 
-  const onLoad   = () => { loadedRef.current = true }
+  const onLoad = (e) => {
+    loadedRef.current = true
+    const el = e?.currentTarget
+    rememberResolved(logoKey, el?.currentSrc || el?.src || '')
+  }
   const advance  = () => setStageIdx(s => s + 1)
   const common   = { alt: symbol ? `${String(symbol).toUpperCase()} logo` : 'asset logo', width: size, height: size, className, referrerPolicy: 'no-referrer', loading: 'lazy', decoding: 'async', onLoad }
 
