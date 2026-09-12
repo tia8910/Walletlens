@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { execSync } from 'child_process'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -54,6 +55,25 @@ function asyncCssPlugin() {
   }
 }
 
+// Which build is this?
+//
+// Three rounds of diagnosis were spent not knowing whether the site running on
+// a phone included the fix being discussed. The worker reports its own version
+// on /health; the site could not, so "still the same error" was ambiguous
+// between "the fix does not work" and "the fix is not there yet" — and those
+// need opposite responses.
+//
+// The commit, or the build time if this is not a git checkout (a zip, a
+// tarball). Read once at config time, never at runtime.
+const BUILD_ID = (() => {
+  try {
+    return execSync('git rev-parse --short HEAD', { cwd: __dirname, stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString().trim()
+  } catch {
+    return `t${Math.floor(Date.now() / 1000).toString(36)}`
+  }
+})()
+
 export default defineConfig({
   plugins: [
     react(),
@@ -68,6 +88,10 @@ export default defineConfig({
       template: 'treemap',
     }),
   ].filter(Boolean),
+  define: {
+    // Stamped in, not read from an env file, so it cannot be stale or absent.
+    __WL_BUILD__: JSON.stringify(BUILD_ID),
+  },
   // Absolute base — the app is served from the domain root. Relative './'
   // breaks asset URLs on hard-loads of nested routes (e.g. /blog/<slug>) and
   // on the prerendered content pages.

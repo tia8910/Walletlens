@@ -69,6 +69,10 @@ function Row({ label, hint, on, onToggle }) {
   )
 }
 
+// Stamped in by vite.config.js at build time. The fallback keeps a test or a
+// bundle without the define from throwing on an undefined global.
+const BUILD = typeof __WL_BUILD__ === 'string' ? __WL_BUILD__ : 'unknown'
+
 const BAD = '#f87171'
 const WARN = '#f59e0b'
 
@@ -577,7 +581,24 @@ export default function PushToggle() {
 
       {enabled && <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>}
 
-      {error && <div className="settings-hint" style={{ color: BAD, marginTop: '0.4rem' }}>{error}</div>}
+      {error && (
+        <div className="settings-hint" style={{ color: BAD, marginTop: '0.4rem' }}>
+          <div>{error}</div>
+          {/*
+            Which build is saying this.
+
+            Three rounds of diagnosis went on not knowing whether the site on
+            the phone contained the fix being discussed — the worker reports
+            its version on /health, the site reported nothing, and "still the
+            same error" meant either "the fix does not work" or "the fix is not
+            deployed", which need opposite responses. It costs one dim line and
+            only appears when something has already gone wrong.
+          */}
+          <div style={{ opacity: 0.6, fontSize: '0.8em', marginTop: '0.2rem' }}>
+            build {BUILD}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
