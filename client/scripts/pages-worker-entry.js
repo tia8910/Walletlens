@@ -27,6 +27,7 @@ import * as stocks from '../../functions/api/stocks.js'
 import * as icon from '../../functions/api/icon.js'
 import * as push from '../../functions/api/push/[[path]].js'
 import * as drive from '../../functions/api/drive/[[path]].js'
+import * as gdrive from '../../functions/api/gdrive/[[path]].js'
 import { DATA_HOST } from '../src/apiHosts.js'
 
 // The scheduled datasets, by the filename they had when the build shipped
@@ -99,6 +100,12 @@ function driveParams(pathname) {
   return { path: rest ? rest.split('/') : [] }
 }
 
+/** Same again, for the Drive API relay. */
+function gdriveParams(pathname) {
+  const rest = pathname.replace(/^\/api\/gdrive\/?/, '')
+  return { path: rest ? rest.split('/') : [] }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url)
@@ -106,7 +113,8 @@ export default {
 
     const isPush = url.pathname === '/api/push' || url.pathname.startsWith('/api/push/')
     const isDrive = url.pathname === '/api/drive' || url.pathname.startsWith('/api/drive/')
-    const mod = EXACT[url.pathname] || (isPush ? push : isDrive ? drive : null)
+    const isGDrive = url.pathname === '/api/gdrive' || url.pathname.startsWith('/api/gdrive/')
+    const mod = EXACT[url.pathname] || (isPush ? push : isDrive ? drive : isGDrive ? gdrive : null)
 
     // Not an API path. Hand it back to the asset server, which applies
     // _headers and _redirects — so this stays correct even if _routes.json is
@@ -126,6 +134,7 @@ export default {
       env,
       params: isPush ? pushParams(url.pathname)
         : isDrive ? driveParams(url.pathname)
+        : isGDrive ? gdriveParams(url.pathname)
         : {},
       waitUntil: (p) => ctx.waitUntil(p),
       // A function that calls next() wants the static asset behind it.

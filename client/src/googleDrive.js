@@ -29,7 +29,7 @@
 // The refresh_token never leaves the device except to this one endpoint.
 // Nothing is stored server-side.
 
-import { DRIVE_API } from './apiHosts'
+import { DRIVE_API, GDRIVE_API } from './apiHosts'
 
 const CLIENT_ID = import.meta.env?.VITE_GOOGLE_CLIENT_ID
   || '630094688874-rilioqqic8004hk57skqi6oi2bs0g078.apps.googleusercontent.com'
@@ -399,6 +399,52 @@ async function netFetch(url, init, hop) {
   }
 }
 
+// Whether the direct route to Google is known to fail on this device.
+//
+// /diag on the reporting device showed every cross-origin request failing in
+// 3-5ms while same-origin answered in ~430ms: nothing reaches DNS in 4ms, so
+// those requests never left the phone. Once that is established there is no
+// point paying the failure on every call for the rest of the session, and no
+// point remembering it forever either — it is a property of the network, and
+// networks change.
+const RELAY_KEY = 'wl_drive_relay_until'
+const RELAY_FOR_MS = 12 * 60 * 60 * 1000
+
+function relaying() {
+  try { return Number(localStorage.getItem(RELAY_KEY) || 0) > Date.now() } catch { return false }
+}
+function useRelay(on) {
+  try {
+    if (on) localStorage.setItem(RELAY_KEY, String(Date.now() + RELAY_FOR_MS))
+    else localStorage.removeItem(RELAY_KEY)
+  } catch { /* private mode */ }
+}
+
+/** The same Drive URL, pointed at the site instead of at Google. */
+function viaRelay(url) {
+  return url.replace(/^https:\/\/www\.googleapis\.com\//, `${GDRIVE_API}/`)
+}
+
+/**
+ * A Drive request, direct if the device can manage it and relayed if not.
+ *
+ * Direct is always tried first on a device that has not already failed, so a
+ * working network keeps the access token off every server but Google's.
+ */
+async function driveRequest(url, init) {
+  if (!relaying()) {
+    try {
+      const res = await fetch(url, init)
+      return res
+    } catch { /* fall through — the device could not make the call itself */ }
+  }
+  const res = await netFetch(viaRelay(url), init, NET_DRIVE)
+  // Only now, once the relay has actually answered: a failure on both paths
+  // is a network problem, not proof that the direct route is the broken one.
+  useRelay(true)
+  return res
+}
+
 async function driveFetch(url, init = {}) {
   // If the token is expired but we have a refresh token, try refresh first.
   // This is the code path that previously returned null and broke auto-backup.
@@ -410,20 +456,20 @@ async function driveFetch(url, init = {}) {
   }
   if (!token) throw new Error(NEEDS_SIGNIN)
 
-  const res = await netFetch(url, {
+  const res = await driveRequest(url, {
     ...init,
     headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` },
-  }, NET_DRIVE)
+  })
   if (res.status === 401) {
     // Rejected by Drive — try one refresh, then give up.
     if (refreshToken) {
       const ok = await silentRefresh()
       if (ok) {
         token = storedAccessToken()
-        const retry = await netFetch(url, {
+        const retry = await driveRequest(url, {
           ...init,
           headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` },
-        }, NET_DRIVE)
+        })
         if (retry.ok) return retry
       }
     }

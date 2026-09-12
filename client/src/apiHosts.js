@@ -73,6 +73,11 @@ export const DATA_API = SITE_ORIGIN
 // thing the user sees is "Sign-in did not complete".
 export const DRIVE_API = `${SITE_ORIGIN}/api/drive`
 
+// Google Drive's own API, through the site. A fallback, not the path:
+// googleDrive.js calls www.googleapis.com directly and only comes here when
+// that fails, which on a healthy network is never.
+export const GDRIVE_API = `${SITE_ORIGIN}/api/gdrive`
+
 // The content type every write to our own services sends.
 //
 // Not a lie about the body — it is JSON, and the workers parse it with

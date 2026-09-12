@@ -185,6 +185,11 @@ export const DEVICE_ONLY_KEYS = [
   // A refresh token, so the same reasoning as the bearer token above applies
   // and applies for longer: it does not expire in an hour.
   'wl_drive_refresh',
+  // Whether this device had to relay Drive calls through the site because it
+  // could not reach googleapis.com itself. A fact about one network, and
+  // restoring it onto a phone with a working connection would route that
+  // phone's Drive traffic through a hop it does not need.
+  'wl_drive_relay_until',
 ]
 
 // ── Compression helpers (WL3/WL2 format) ──────────────────────────────────
