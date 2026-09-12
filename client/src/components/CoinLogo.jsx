@@ -110,6 +110,72 @@ function rememberResolved(key, src) {
   }, 500)
 }
 
+// Whether an icon's ink is dark, so it can be given something to sit on.
+//
+// Several official marks are near-black on a transparent ground — Arweave is
+// the one that prompted this — and on a dark theme they render as a faint
+// smudge or nothing at all. A white disc behind them is what every exchange
+// does, and it costs nothing for the rest: an icon that already fills its own
+// circle covers the disc completely, so this is a no-op for them.
+//
+// Measured from the pixels rather than kept as a list of coin ids, because a
+// list is wrong the moment a project restyles its logo. Sixteen by sixteen is
+// plenty to average an ink colour, and the verdict is cached per URL so it is
+// paid once per icon, ever.
+const DARK_KEY = 'wl_logo_dark'
+let DARKNESS = {}
+try { DARKNESS = JSON.parse(localStorage.getItem(DARK_KEY) || '{}') || {} } catch { DARKNESS = {} }
+
+let darkSaveTimer = null
+function rememberDarkness(src, isDark) {
+  if (!src || DARKNESS[src] === isDark) return
+  DARKNESS[src] = isDark
+  clearTimeout(darkSaveTimer)
+  darkSaveTimer = setTimeout(() => {
+    try { localStorage.setItem(DARK_KEY, JSON.stringify(DARKNESS)) } catch { /* full or private */ }
+  }, 500)
+}
+
+// Below this, on a 0-1 scale, the mark needs a plate. Arweave's black sits
+// near 0.05; Tether's green near 0.55; Aptos is dark but opaque, so it gets a
+// disc it then completely hides.
+const DARK_INK = 0.42
+
+/**
+ * Average the luminance of everything that is actually drawn.
+ *
+ * Returns null when it cannot tell — a tainted canvas, a browser without one,
+ * an image with no pixels yet — and the caller then leaves the icon alone.
+ * Guessing "dark" on no evidence would put a white disc behind every logo.
+ */
+function measureInk(img) {
+  try {
+    if (!img?.naturalWidth) return null
+    const c = document.createElement('canvas')
+    c.width = 16; c.height = 16
+    const ctx = c.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return null
+    ctx.drawImage(img, 0, 0, 16, 16)
+    const { data } = ctx.getImageData(0, 0, 16, 16)
+
+    let sum = 0
+    let seen = 0
+    for (let i = 0; i < data.length; i += 4) {
+      const a = data[i + 3]
+      if (a < 32) continue      // transparent ground is not ink
+      // Rec. 709 luma, which tracks perceived brightness rather than raw mean.
+      sum += (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) / 255
+      seen++
+    }
+    if (!seen) return null
+    return sum / seen
+  } catch {
+    // Cross-origin pixels the canvas will not hand back. Every icon now comes
+    // through /api/icon, which is same-origin, so this is the rare path.
+    return null
+  }
+}
+
 const STAGE_TIMEOUT_MS = 3000
 const FALLBACK_TIMEOUT_MS = 1200
 // How many times a row may rebuild an exhausted ladder on returning to the
@@ -271,37 +337,55 @@ const CryptoLogo = memo(function CryptoLogo({
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [stageIdx, STAGES.length])
 
+  const [needsPlate, setNeedsPlate] = useState(false)
+
   const onLoad = (e) => {
     loadedRef.current = true
     const el = e?.currentTarget
-    rememberResolved(logoKey, el?.currentSrc || el?.src || '')
+    const src = el?.currentSrc || el?.src || ''
+    rememberResolved(logoKey, src)
+
+    const known = DARKNESS[src]
+    if (typeof known === 'boolean') { setNeedsPlate(known); return }
+    const ink = measureInk(el)
+    if (ink === null) return          // could not tell; leave the icon alone
+    const dark = ink < DARK_INK
+    rememberDarkness(src, dark)
+    setNeedsPlate(dark)
   }
   const advance  = () => setStageIdx(s => s + 1)
   const common   = { alt: symbol ? `${String(symbol).toUpperCase()} logo` : 'asset logo', width: size, height: size, className, referrerPolicy: 'no-referrer', decoding: 'async', onLoad }
 
+  // The plate on the first frame for an icon already judged, so a known-dark
+  // mark never flashes unreadable before its own onLoad runs.
   const currentStage = STAGES[stageIdx]
+  const stageSrc = currentStage?.startsWith('img:') ? currentStage.slice(4) : null
+  const plate = needsPlate || DARKNESS[stageSrc] === true
+  const withPlate = plate
+    ? { ...common, style: { ...(common.style || {}), background: '#fff' } }
+    : common
   if (!currentStage) {
     // exhausted all stages
   } else if (currentStage.startsWith('img:')) {
     const src = currentStage.slice(4)
-    return <img {...common} src={src} onError={advance} />
+    return <img {...withPlate} src={src} onError={advance} />
   } else if (currentStage.startsWith('origin:')) {
-    return <img {...common} src={`/api/icon?sym=${encodeURIComponent(sym)}`} onError={advance} />
+    return <img {...withPlate} src={`/api/icon?sym=${encodeURIComponent(sym)}`} onError={advance} />
   } else if (currentStage.startsWith('originurl:')) {
     // The URL the API gave us, fetched through our origin. On a filtered
     // network coin-images.coingecko.com is no more reachable than the rest.
-    return <img {...common} src={`/api/icon?url=${encodeURIComponent(currentStage.slice(10))}`} onError={advance} />
+    return <img {...withPlate} src={`/api/icon?url=${encodeURIComponent(currentStage.slice(10))}`} onError={advance} />
   } else if (currentStage.startsWith('jsdelivr:')) {
-    return <img {...common} src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`} onError={advance} />
+    return <img {...withPlate} src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`} onError={advance} />
   } else if (currentStage.startsWith('coincap:')) {
-    return <img {...common} src={`https://assets.coincap.io/assets/icons/${sym}@2x.png`} onError={advance} />
+    return <img {...withPlate} src={`https://assets.coincap.io/assets/icons/${sym}@2x.png`} onError={advance} />
   } else if (currentStage.startsWith('lcw:')) {
-    return <img {...common} src={`https://lcw.nyc3.cdn.digitaloceanspaces.com/production/currencies/64/${sym}.webp`} onError={advance} />
+    return <img {...withPlate} src={`https://lcw.nyc3.cdn.digitaloceanspaces.com/production/currencies/64/${sym}.webp`} onError={advance} />
   } else if (currentStage.startsWith('cryptoicons:')) {
-    return <img {...common} src={`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym}.png`} onError={advance} />
+    return <img {...withPlate} src={`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym}.png`} onError={advance} />
   } else if (currentStage.startsWith('dproxy:')) {
     const target = currentStage.slice(7)
-    return <img {...common} src={voiceProxy(target)} onError={advance} />
+    return <img {...withPlate} src={voiceProxy(target)} onError={advance} />
   }
   return (
     <GeneratedIcon
