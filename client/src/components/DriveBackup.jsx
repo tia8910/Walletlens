@@ -9,7 +9,7 @@ import {
   disconnectDrive, autoBackupEnabled, forgetAutoBackup,
   latestBackupAt, knownBackup, hasLocalPortfolio,
 } from '../driveSync'
-import { NEEDS_SIGNIN, NET_DRIVE, NET_AUTH } from '../googleDrive'
+import { NEEDS_SIGNIN, NET_DRIVE, NET_DRIVE_REFUSED, NET_AUTH } from '../googleDrive'
 
 // Google Drive backup panel.
 //
@@ -105,6 +105,11 @@ export default function DriveBackup({ embedded = false }) {
     // which one failed is the difference between a report and a guess.
     if (m === NET_DRIVE) {
       return 'Could not reach Google Drive. Your data is safe on this device — check your connection and try again.'
+    }
+    // Reachable, and refused. Not the person's connection, so do not send them
+    // off to check it — say whose fault it is and stop there.
+    if (m === NET_DRIVE_REFUSED) {
+      return 'Google Drive answered but would not accept the request. Your data is safe on this device — this is a fault on our side, not your connection.'
     }
     if (m === NET_AUTH) {
       return 'Could not reach the Google sign-in service. Your data is safe on this device — try again in a moment.'

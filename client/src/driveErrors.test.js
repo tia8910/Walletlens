@@ -86,6 +86,64 @@ describe('a request that never completed', () => {
   })
 })
 
+describe('telling "never arrived" from "arrived and was refused"', () => {
+  // fetch() rejects identically for both, and they are opposite problems: one
+  // is the network or a filtering resolver, the other is ours to fix in the
+  // request. Only the device that fails can see which — so it checks, with a
+  // no-cors probe that resolves if anything answered at all.
+  it('calls it refused when the host answers the probe', async () => {
+    withToken()
+    const { findBackup, NET_DRIVE_REFUSED } = await import('./googleDrive')
+    vi.stubGlobal('fetch', async (_u, init) => {
+      if (init?.mode === 'no-cors') return new Response(null, { status: 0 })
+      throw new TypeError('Failed to fetch')
+    })
+    await expect(findBackup()).rejects.toThrow(NET_DRIVE_REFUSED)
+  })
+
+  it('calls it unreachable when the probe fails too', async () => {
+    withToken()
+    const { findBackup, NET_DRIVE } = await import('./googleDrive')
+    vi.stubGlobal('fetch', async () => { throw new TypeError('Failed to fetch') })
+    await expect(findBackup()).rejects.toThrow(NET_DRIVE)
+  })
+
+  it('probes without CORS, so the probe cannot fail the way the request did', async () => {
+    withToken()
+    const { findBackup } = await import('./googleDrive')
+    let probe
+    vi.stubGlobal('fetch', async (u, init) => {
+      if (init?.mode === 'no-cors') { probe = { u, init }; return new Response(null, { status: 0 }) }
+      throw new TypeError('Failed to fetch')
+    })
+    await findBackup().catch(() => {})
+    expect(probe.u).toContain('https://www.googleapis.com/drive/v3/files')
+    expect(probe.init.mode).toBe('no-cors')
+    // An opaque response is the whole signal; reading it would throw.
+    expect(probe.init.cache).toBe('no-store')
+  })
+
+  it('does not hang the error on a probe that never answers', async () => {
+    withToken()
+    const { findBackup } = await import('./googleDrive')
+    vi.stubGlobal('fetch', async (_u, init) => {
+      if (init?.mode === 'no-cors') { expect(init.signal).toBeDefined(); return new Response(null) }
+      throw new TypeError('Failed to fetch')
+    })
+    await findBackup().catch(() => {})
+  })
+
+  it('does not probe for the token service, which is a different host', async () => {
+    withRefresh()
+    const { getAccessToken, NET_AUTH } = await import('./googleDrive')
+    const modes = []
+    vi.stubGlobal('fetch', async (_u, init) => { modes.push(init?.mode); throw new TypeError('Failed to fetch') })
+    await getAccessToken({ interactive: false }).catch(() => {})
+    await expect(getAccessToken({ interactive: true })).rejects.toThrow(NET_AUTH)
+    expect(modes.includes('no-cors'), 'probed the wrong host').toBe(false)
+  })
+})
+
 describe('a refresh Google actually refused', () => {
   it('still clears the token and asks for a new sign-in', async () => {
     // The other half of the distinction. A revoked grant must NOT be treated
@@ -116,5 +174,16 @@ describe('the backup card', () => {
 
   it('catches the raw string even if one reaches it from somewhere else', () => {
     expect(panel).toMatch(/Failed to fetch\|NetworkError\|Load failed/)
+  })
+
+  it('does not tell someone to check a connection that is demonstrably fine', () => {
+    // The refused case reaches Google. Sending them to check the network is
+    // both wrong and the kind of advice that makes an app feel broken.
+    // The branch, not the import line that also names the constant.
+    const at = panel.indexOf('if (m === NET_DRIVE_REFUSED)')
+    expect(at, 'the refused branch is gone').toBeGreaterThan(-1)
+    const sentence = panel.slice(at, panel.indexOf('\n    }', at))
+    expect(sentence).not.toMatch(/check your connection/)
+    expect(sentence).toMatch(/fault on our side/)
   })
 })

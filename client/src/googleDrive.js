@@ -359,12 +359,43 @@ export const NET_ERROR = 'NET_ERROR'
 export const NET_DRIVE = 'NET_ERROR:drive'
 export const NET_AUTH = 'NET_ERROR:auth'
 
+/**
+ * Drive answered, but would not accept the app's request.
+ *
+ * fetch() rejects identically whether the request never arrived or arrived and
+ * was refused by CORS, and those are opposite problems: one is the network or
+ * a filtering resolver, the other is ours to fix in the request. Only the
+ * device that fails can tell them apart, so it does it itself.
+ */
+export const NET_DRIVE_REFUSED = 'NET_ERROR:drive-refused'
+
+/**
+ * Which of the two just happened.
+ *
+ * no-cors makes this a pure reachability test: the browser sends the request
+ * and hands back an opaque response without applying CORS at all, so it
+ * resolves if anything answered and rejects only if nothing did. The response
+ * is deliberately unread — its opacity is the entire signal.
+ */
+async function classifyDriveFailure() {
+  try {
+    await fetch(`${API}?pageSize=1`, {
+      mode: 'no-cors',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5000),
+    })
+    return NET_DRIVE_REFUSED
+  } catch {
+    return NET_DRIVE
+  }
+}
+
 /** fetch(), with a rejection that says which hop failed instead of TypeError. */
 async function netFetch(url, init, hop) {
   try {
     return await fetch(url, init)
   } catch {
-    throw new Error(hop)
+    throw new Error(hop === NET_DRIVE ? await classifyDriveFailure() : hop)
   }
 }
 
