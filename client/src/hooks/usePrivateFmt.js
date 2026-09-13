@@ -1,10 +1,23 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const HIDE_KEY = 'crypto_tracker_hide_values'
+// The one place the app records this. Settings writes it and Dashboard reads
+// it; this hook used to read a key of its own, 'crypto_tracker_hide_values',
+// which nothing has ever written — so any page wired up to it would have read
+// false forever while the eye on the Dashboard said otherwise. Nothing imported
+// it yet, which is the only reason that never shipped as a bug.
+const SETTINGS_KEY = 'wl_settings'
 const MASK = '••••'
 
 function readHide() {
-  try { return localStorage.getItem(HIDE_KEY) === '1' } catch { return false }
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}').hideValues === true }
+  catch { return false }
+}
+
+function writeHide(next) {
+  try {
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...s, hideValues: next }))
+  } catch { /* private mode */ }
 }
 
 // Subscribe to "hideValues" changes across the app via a custom storage
@@ -13,7 +26,7 @@ function readHide() {
 const listeners = new Set()
 function emit() { for (const fn of listeners) fn() }
 if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => { if (e.key === HIDE_KEY) emit() })
+  window.addEventListener('storage', (e) => { if (e.key === SETTINGS_KEY) emit() })
 }
 
 export default function usePrivateFmt() {
@@ -27,7 +40,7 @@ export default function usePrivateFmt() {
 
   const toggle = useCallback(() => {
     const next = !readHide()
-    try { localStorage.setItem(HIDE_KEY, next ? '1' : '0') } catch {}
+    writeHide(next)
     setHide(next)
     emit()
   }, [])

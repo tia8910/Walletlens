@@ -2732,6 +2732,10 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
 }
 
 // ── Targets Tab ──────────────────────────────────────────────────────────
+// One mask for every hidden figure on this page, so a masked chip and a masked
+// holding look like the same thing rather than two different bugs.
+const VALUE_MASK = '••••'
+
 function fmtQty(n) {
   if (!n && n !== 0) return '0'
   return n.toFixed(4).replace(/\.?0+$/, '') || '0'
@@ -3612,7 +3616,19 @@ export default function Dashboard() {
   }, [displayCurrency, fxRates, btcUsd, prices])
 
   // Full-precision money string in the active currency (e.g. "E£ 410,233.50").
-  const cv = useCallback((usd) => {
+  // ── Hiding values ──────────────────────────────────────────────────────────
+  //
+  // Hiding values has to hide the values. The total was masked while the
+  // category chips directly beneath it still read $13.4k · $7.1k · $6.3k, and
+  // every holding still showed its own value, cost basis and quantity — so the
+  // one figure that was covered could be reconstructed by adding up the ones
+  // that were not.
+  //
+  // The mask therefore lives inside the formatters rather than at each call
+  // site. Every amount this page prints goes through cv or cvN, so a figure
+  // added later is hidden by default instead of by somebody remembering to
+  // hide it. That is the property the first version lacked.
+  const cvPub = useCallback((usd) => {
     const n = Number(usd) || 0
     if (!curConv.rate) return `$${fmt(Math.abs(n))}`
     const v = n * curConv.rate
@@ -3621,8 +3637,10 @@ export default function Dashboard() {
     return `${curConv.sym}${sp}${fmt(Math.abs(v))}`
   }, [curConv])
 
-  // Compact variant for chart axes (e.g. "E£12k", "₿0.45").
-  const cvN = useCallback((usd) => {
+  const cv = useCallback((usd) => (hidden ? VALUE_MASK : cvPub(usd)), [hidden, cvPub])
+
+  // Compact variant for chart axes and the category chips (e.g. "E£12k").
+  const cvNPub = useCallback((usd) => {
     const n = Number(usd) || 0
     const rate = curConv.rate || 1
     const v = n * rate
@@ -3632,6 +3650,8 @@ export default function Dashboard() {
     const s = abs >= 1000 ? `${(abs / 1000).toFixed(1)}k` : `${abs.toFixed(0)}`
     return `${v < 0 ? '-' : ''}${curConv.sym}${sp}${s}`
   }, [curConv])
+
+  const cvN = useCallback((usd) => (hidden ? VALUE_MASK : cvNPub(usd)), [hidden, cvNPub])
 
   function saveCurrency(code) {
     setDisplayCurrency(code)
@@ -5466,7 +5486,7 @@ export default function Dashboard() {
                                           <div className="dvx-holding-val">{cv(displayValue)}</div>
                                           {!showBreakEven && hasPnl && (
                                             <span className={`dvx-holding-pnl-pill ${h.pnl >= 0 ? 'pos' : 'neg'}`}>
-                                              {h.pnl >= 0 ? '▲' : '▼'} {cv(h.pnl)} ({pct(h.pnlPct)})
+                                              {hidden ? VALUE_MASK : `${h.pnl >= 0 ? '▲' : '▼'} ${cv(h.pnl)} (${pct(h.pnlPct)})`}
                                             </span>
                                           )}
                                         </div>
@@ -5491,12 +5511,12 @@ export default function Dashboard() {
                                           {h.price > 0 ? (() => {
                                             const ch = Number(h.pct24h) || 0
                                             const priceColor = ch > 0 ? 'var(--g-ink)' : ch < 0 ? '#f87171' : undefined
-                                            return <span className="dvx-hstat"><em>{t('wtPrice')}</em><b style={{ color: priceColor }}>{cv(h.price)}</b></span>
+                                            return <span className="dvx-hstat"><em>{t('wtPrice')}</em><b style={{ color: priceColor }}>{cvPub(h.price)}</b></span>
                                           })() : <span className="dvx-hstat"><em>{t('invested')}</em><b>{cv(h.total_invested)}</b></span>}
                                           {breakEvenPrice > 0 && categorizeAsset(h) !== 'cash' && (
                                             <span className="dvx-hstat"><em>Avg</em><b>{cv(breakEvenPrice)}</b></span>
                                           )}
-                                          <span className="dvx-hstat dvx-hstat-qty"><em>Qty</em><b>{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {Number(h.amount) === 1 ? 'unit' : 'units'}</b></span>
+                                          <span className="dvx-hstat dvx-hstat-qty"><em>Qty</em><b>{hidden ? VALUE_MASK : `${Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} ${Number(h.amount) === 1 ? 'unit' : 'units'}`}</b></span>
                                         </div>
                                       )}
                                       {showBreakEven && h.price > 0 && breakEvenPrice > 0 && (
