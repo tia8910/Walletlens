@@ -9,7 +9,7 @@
 // because Deno KV caps a value at 64 KiB and market.json is 250 KB.
 
 import {
-  FEED_GROUPS, fetchCalendar, fetchFeedGroup, fetchMarket, fetchStockPrices,
+  FEED_GROUPS, fetchCalendar, fetchCoins, fetchFeedGroup, fetchMarket, fetchStockPrices,
 } from './feeds.js'
 
 const MIN = 60 * 1000
@@ -25,6 +25,10 @@ const MIN = 60 * 1000
  */
 export const DATASETS = {
   'market.json':            { maxAge: 6 * 60 * MIN, fetch: fetchMarket },
+  // Four CoinGecko pages rather than one, so it refreshes far less often than
+  // the prices do. Ranks move slowly; the list is for finding a coin, and the
+  // price beside it is refreshed from market.json and the live feeds anyway.
+  'coins.json':             { maxAge: 12 * 60 * MIN, fetch: fetchCoins },
   'news.json':              { maxAge: 2 * 60 * MIN, fetch: (n) => fetchFeedGroup(FEED_GROUPS.news, n) },
   'stocks.json':            { maxAge: 2 * 60 * MIN, fetch: (n) => fetchFeedGroup(FEED_GROUPS.stocks, n) },
   'economy.json':           { maxAge: 2 * 60 * MIN, fetch: (n) => fetchFeedGroup(FEED_GROUPS.economy, n) },

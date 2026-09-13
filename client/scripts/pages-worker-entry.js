@@ -46,6 +46,7 @@ const DATA_ORIGIN = `https://${DATA_HOST}`
 const DATASETS = new Set([
   '/news.json', '/market.json', '/stocks.json',
   '/economy.json', '/economic-calendar.json', '/stock-prices.json',
+  '/coins.json',
 ])
 
 async function serveDataset(url, request, env) {

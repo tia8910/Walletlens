@@ -410,6 +410,72 @@ async function _loadStaticMarket() {
   return null;
 }
 
+// ── Coin catalogue (top 1000, same-origin) ──────────────────────────────────
+//
+// market.json is the dashboard's load-time fetch and stays at 250 coins with
+// sparklines. coins.json is the browsable catalogue: four times the coins in
+// less space, because it drops everything a list does not draw.
+//
+// It is fetched lazily — nothing asks for it until someone opens the coin list
+// or types in the picker — and cached for a day, because market-cap ranks do
+// not move on the timescale that prices do.
+const COIN_CATALOGUE_KEY = 'crypto_tracker_coin_catalogue_v1';
+const CATALOGUE_TTL = 24 * 60 * 60 * 1000;
+let _cataloguePromise = null;
+
+async function _loadCoinCatalogue() {
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(COIN_CATALOGUE_KEY) || 'null'); } catch {}
+  if (cached?.v?.length && Date.now() - cached.t < CATALOGUE_TTL) return cached.v;
+  if (_cataloguePromise) return _cataloguePromise;
+
+  _cataloguePromise = (async () => {
+    try {
+      const res = await fetchWithTimeout(dataUrl('coins.json'), 8000);
+      const data = res?.ok ? await res.json() : null;
+      const coins = Array.isArray(data?.coins) ? data.coins : null;
+      if (coins?.length) {
+        _saveCache(COIN_CATALOGUE_KEY, { t: Date.now(), v: coins });
+        return coins;
+      }
+    } catch { /* fall through */ }
+    // Stale beats empty: a day-old rank list still finds the coin.
+    return cached?.v || [];
+  })().finally(() => { _cataloguePromise = null; });
+  return _cataloguePromise;
+}
+
+/**
+ * Search the local catalogue the way a person expects a ticker box to behave:
+ * an exact symbol first, then symbols that start with what was typed, then
+ * names. Within each tier, higher market cap wins — typing "eth" should offer
+ * Ethereum before a rank-800 token whose name happens to contain it.
+ */
+export function rankCatalogueMatches(coins, query) {
+  const q = String(query || '').trim().toLowerCase();
+  if (!q) return [];
+  const tier = (c) => {
+    const sym = (c.symbol || '').toLowerCase();
+    const name = (c.name || '').toLowerCase();
+    if (sym === q) return 0;
+    if (sym.startsWith(q)) return 1;
+    if (name === q) return 2;
+    if (name.startsWith(q)) return 3;
+    if (name.includes(q) || sym.includes(q)) return 4;
+    return 99;
+  };
+  return coins
+    .map((c) => ({ c, t: tier(c) }))
+    .filter((x) => x.t < 99)
+    .sort((a, b) => a.t - b.t || (a.c.rank ?? 1e9) - (b.c.rank ?? 1e9))
+    .slice(0, 20)
+    .map(({ c }) => ({ id: c.id, symbol: c.symbol, name: c.name, thumb: c.image, large: c.image }));
+}
+
+async function searchCatalogue(query) {
+  return rankCatalogueMatches(await _loadCoinCatalogue(), query);
+}
+
 // ── Resilient market-snapshot loader (used by getMarketData and Whales) ──
 // Returns CoinGecko /coins/markets-shaped rows. Tries localStorage cache
 // first (returns instantly), then CoinGecko, then CoinCap as a fallback.
@@ -1813,10 +1879,18 @@ export const api = {
     };
   })(),
 
+  getCoinCatalogue: () => _loadCoinCatalogue(),
+
   searchCoins: async (query) => {
     if (!query) return [];
     const data = await fetchJSONFast(`${COINGECKO_BASE}/search?query=${encodeURIComponent(query)}`);
-    if (!data) return [];
+    // CoinGecko unreachable, or throttled into an empty answer. Searching the
+    // local catalogue is the difference between finding a coin and the picker
+    // looking broken — and on a device that cannot reach any third-party host,
+    // this is the only path that ever returns anything.
+    if (!data || !Array.isArray(data.coins) || !data.coins.length) {
+      return searchCatalogue(query);
+    }
     const results = (data.coins || []).slice(0, 20).map(c => ({
       id: c.id,
       symbol: c.symbol,

@@ -119,6 +119,77 @@ function withSpark(coin) {
   return spark ? { ...rest, spark7d: spark } : rest
 }
 
+// ── Coin catalogue: the top 1000 by market cap ──────────────────────────────
+//
+// market.json is the dashboard's load-time fetch, so it stays at 250 coins
+// with sparklines. This is the browsable catalogue, fetched only when someone
+// opens the coin list or searches, and it carries four times as many coins in
+// less space by dropping everything the list does not draw: no sparkline, no
+// 1h/7d series, no fully-diluted valuation.
+//
+// It is also the offline and filtered-network answer to search. api.searchCoins
+// queries CoinGecko directly, which returns nothing at all on a device that
+// cannot reach api.coingecko.com — and the app is full of devices like that.
+// Same-origin, this file works wherever the site itself loads.
+
+/** CoinGecko caps per_page at 250 on the free tier, so 1000 is four pages. */
+export const COIN_PAGES = 4
+export const coinsUrl = (page) =>
+  'https://api.coingecko.com/api/v3/coins/markets'
+  + `?vs_currency=usd&order=market_cap_desc&per_page=250&page=${page}`
+  + '&sparkline=false&price_change_percentage=24h'
+
+/** Only the fields a searchable list actually renders. */
+export function slimCoin(c) {
+  return {
+    id: c.id,
+    symbol: (c.symbol || '').toLowerCase(),
+    name: c.name,
+    image: c.image || null,
+    price: Number.isFinite(c.current_price) ? Number(c.current_price.toPrecision(6)) : null,
+    rank: c.market_cap_rank ?? null,
+    cap: Number.isFinite(c.market_cap) ? Math.round(c.market_cap) : null,
+    d24: Number.isFinite(c.price_change_percentage_24h)
+      ? Number(c.price_change_percentage_24h.toFixed(2)) : null,
+  }
+}
+
+export function parseCoinPage(data) {
+  // The same rate-limit trap parseMarket guards: CoinGecko answers a throttled
+  // request with a short valid JSON body rather than an error status, so a
+  // page that parses is not necessarily a page of coins. A full page is 250;
+  // the last one can legitimately be short, so accept anything substantial.
+  if (!Array.isArray(data) || data.length < 50) return null
+  return data.map(slimCoin)
+}
+
+export async function fetchCoins(now = Date.now()) {
+  const coins = []
+  const seen = new Set()
+  for (let page = 1; page <= COIN_PAGES; page++) {
+    let rows = null
+    for (let i = 0; i < 2 && !rows; i++) {
+      try {
+        rows = parseCoinPage(await getJson(coinsUrl(page), 30000))
+      } catch (e) {
+        console.warn(`coins page ${page} attempt ${i + 1} failed: ${e}`)
+      }
+    }
+    // A page that will not come is not a reason to throw away the ones that
+    // did. 750 coins is a worse catalogue than 1000 and a far better one than
+    // none, and the next run starts over from page 1 anyway.
+    if (!rows) break
+    for (const c of rows) {
+      if (!c.id || seen.has(c.id)) continue   // pages can overlap as caps move
+      seen.add(c.id)
+      coins.push(c)
+    }
+    if (rows.length < 250) break              // that was the last page
+  }
+  if (coins.length < 50) return null
+  return { updated: isoStamp(now), count: coins.length, coins }
+}
+
 export async function fetchMarket(now = Date.now()) {
   let coins = null
   // Three attempts, as the Python did. The retries are worth keeping: the

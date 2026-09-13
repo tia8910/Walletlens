@@ -34,6 +34,11 @@ describe('the output envelope matches what the deployed client reads', () => {
     // A dataset missing here is a path the Pages build still owns and that
     // silently keeps serving whatever the last deploy baked in.
     expect(Object.keys(DATASETS).sort()).toEqual([
+      // coins.json is the browsable top 1000. It is separate from market.json
+      // on purpose: market.json is the dashboard's load-time fetch and carries
+      // sparklines, so putting 1000 coins in it would quadruple the bytes every
+      // visitor pays on arrival to serve a list most of them never open.
+      'coins.json',
       'economic-calendar.json', 'economy.json', 'market.json',
       'news.json', 'stock-prices.json', 'stocks.json',
     ])
