@@ -485,16 +485,29 @@ export async function runSchedule(cron, jobs, env) {
     await run('news', () => jobs.checkNews())
     // Trigger the data worker's public-market refresh (no own cron triggers).
     await run('data-refresh', async () => {
-      const raw = String(env.DATA_WORKER_URL || '').trim()
-        .replace(/^DATA_WORKER_URL=/i, '')
-      if (!raw) return
       const token = env.DATA_REFRESH_TOKEN || ''
-      const url = raw.endsWith('/__refresh') ? raw : raw.replace(/\/+$/, '') + '/__refresh'
-      await fetch(url, {
+      const headers = { 'x-refresh-token': token }
+      const opts = {
         method: 'POST',
-        headers: { 'x-refresh-token': token },
+        headers,
         signal: AbortSignal.timeout(15_000),
-      })
+      }
+      let res
+      let url = ''
+      if (env.DATA) {
+        // Service binding: no hostname routing, no 1042.
+        url = 'service:walletlens-data/__refresh'
+        res = await env.DATA.fetch('http://data/__refresh', opts)
+      } else {
+        const raw = String(env.DATA_WORKER_URL || '').trim()
+          .replace(/^DATA_WORKER_URL=/i, '')
+        if (!raw) return
+        url = raw.endsWith('/__refresh') ? raw : raw.replace(/\/+$/, '') + '/__refresh'
+        res = await fetch(url, opts)
+      }
+      if (!res.ok) {
+        console.error('data-refresh rejected:', res.status, (await res.text()).slice(0, 120), 'target:', url)
+      }
     })
     return
   }

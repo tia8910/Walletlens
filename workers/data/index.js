@@ -161,7 +161,16 @@ async function refreshAll(env, now) {
       refresh(env, name, { now }).catch(e => ({ name, error: String(e) }))),
   )
   const did = results.filter(r => r.updated)
-  if (did.length) console.log('refreshed:', did.map(r => `${r.name}(${r.count})`).join(' '))
+  const failed = results.filter(r => r.skipped === 'upstream' || r.skipped === 'unknown' || r.error)
+  if (did.length || failed.length) {
+    console.log('refresh sweep:', JSON.stringify(results.map(r => ({
+      name: r.name,
+      updated: r.updated ?? null,
+      skipped: r.skipped ?? null,
+      count: r.count ?? null,
+      error: r.error ?? null,
+    }))))
+  }
   return results
 }
 export default {
