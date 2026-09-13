@@ -51,6 +51,7 @@ describe('the diagnostics page', () => {
 
   it('checks the site routes, Google, and every worker host', () => {
     for (const name of ['drive route', 'push route', 'news dataset',
+      'stock snapshot', 'stocks live',
       'drive host reachable', 'drive CORS', 'drive token',
       'workers.dev direct', 'voice worker', 'data worker', 'service worker']) {
       expect(page, `${name} missing`).toContain(`'${name}'`)

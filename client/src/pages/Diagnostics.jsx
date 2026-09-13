@@ -99,6 +99,12 @@ const CHECKS = [
   ['news dataset', json(`${SITE_ORIGIN}/news.json`, (r, b) => r.ok && b.trim().startsWith('{'))],
   // count is the diagnostic: the picker showing a dash on 128 of 130 rows was
   // a sparse snapshot, and nothing on screen said so.
+  // The live fallback, for the few tickers the snapshot cannot carry. It was
+  // never checked here, so "prices not loading" could not be pinned to the
+  // file or to the function without guessing.
+  ['stocks live', json(`${SITE_ORIGIN}/api/stocks?symbols=AAPL`, (r, b) => {
+    try { return r.ok && typeof JSON.parse(b)?.AAPL?.price === 'number' } catch { return false }
+  })],
   ['stock snapshot', json(`${SITE_ORIGIN}/stock-prices.json`, (r, b) => {
     try { return r.ok && Object.keys(JSON.parse(b).prices || {}).length > 100 } catch { return false }
   })],

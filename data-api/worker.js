@@ -55,7 +55,8 @@ export default {
   },
 
   async fetch(request, env, ctx) {
-    const name = new URL(request.url).pathname.replace(/^\//, '')
+    const url = new URL(request.url)
+    const name = url.pathname.replace(/^\//, '')
 
     // The app is on walletlens.live and this is on workers.dev, so every one
     // of these is cross-origin. GETs of a public JSON file are CORS-simple, so
@@ -79,6 +80,14 @@ export default {
     }
     // ctx.waitUntil lets a stale dataset be answered now and refreshed after
     // the response is sent, instead of the reader waiting for eight RSS feeds.
-    return serve(storeFor(env), name, Date.now(), { waitUntil: (p) => ctx.waitUntil(p) })
+    // ?force=1 rebuilds now instead of waiting out maxAge, which is what makes
+    // a fix to how a dataset is built take effect on deploy rather than hours
+    // later. core.js holds it to FORCE_MIN_AGE so it cannot be used to hammer
+    // the upstreams.
+    const force = url.searchParams.get('force') === '1'
+    return serve(storeFor(env), name, Date.now(), {
+      waitUntil: (p) => ctx.waitUntil(p),
+      force,
+    })
   },
 }

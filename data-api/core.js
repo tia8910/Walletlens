@@ -103,6 +103,19 @@ function json(body, status, cache) {
 }
 
 /**
+ * How old a payload must be before ?force=1 will rebuild it.
+ *
+ * Deploying a fix to how a dataset is BUILT does nothing until the stored copy
+ * ages out on its own — stock-prices.json has a four-hour maxAge, so a fix for
+ * a snapshot that was missing 123 of 125 tickers would have kept serving the
+ * broken file for four hours after it shipped.
+ *
+ * The floor is what keeps this from being an open invitation to hammer Stooq
+ * and Yahoo: force ignores maxAge, it does not ignore this.
+ */
+export const FORCE_MIN_AGE = 10 * MIN
+
+/**
  * Serve one dataset, refreshing it inline if it is missing or stale.
  *
  * On a miss this fetches rather than erroring. The app asks for these on
@@ -112,10 +125,11 @@ function json(body, status, cache) {
  * A failed upstream still serves the previous value, because refresh() keeps
  * it — so a stale read degrades to stale data, never to a hole.
  */
-export async function serve(store, name, now = Date.now(), { waitUntil } = {}) {
+export async function serve(store, name, now = Date.now(), { waitUntil, force = false } = {}) {
   const spec = DATASETS[name]
   let stored = await store.read(name)
-  const stale = spec && stored && isStale(stored, spec.maxAge, now)
+  const aged = !stored || isStale(stored, FORCE_MIN_AGE, now)
+  const stale = spec && stored && (isStale(stored, spec.maxAge, now) || (force && aged))
 
   // Refresh on read when the schedule has not. The cron sweep is the fast
   // path, not the only one: a deploy without cron — a playground, a plan that

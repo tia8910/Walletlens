@@ -5,7 +5,7 @@ import {
   isoStamp, downsampleSpark, SPARK_POINTS,
 } from '../../data-api/feeds.js'
 import {
-  CHUNK_BYTES, DATASETS, isStale, joinChunks, refresh, serve, splitChunks,
+  CHUNK_BYTES, DATASETS, FORCE_MIN_AGE, isStale, joinChunks, refresh, serve, splitChunks,
 } from '../../data-api/core.js'
 
 // The data worker replaces four GitHub Actions cron jobs that fetched public
@@ -605,5 +605,67 @@ describe('parseMarket sparkline handling', () => {
 
   it('still rejects a short list as a rate-limit response', () => {
     expect(parseMarket(coins(3))).toBe(null)
+  })
+})
+
+// ── Forcing a rebuild ───────────────────────────────────────────────────────
+//
+// Deploying a fix to how a dataset is BUILT does nothing until the stored copy
+// ages out on its own. stock-prices.json has a four-hour maxAge, so the fix for
+// a snapshot missing 123 of its 125 tickers would have kept serving the broken
+// file for four hours after it shipped.
+
+describe('?force=1', () => {
+  const storeWith = (updated) => {
+    const data = { 'stock-prices.json': { updated, count: 2, prices: { 'stock:aapl': { usd: 1 } } } }
+    return {
+      read: async (n) => data[n],
+      write: async (n, v) => { data[n] = v },
+      _data: data,
+    }
+  }
+  const iso = (ms) => new Date(ms).toISOString().replace(/\.\d+Z$/, 'Z')
+
+  it('rebuilds a payload that is fresh by maxAge but old enough to force', async () => {
+    const now = Date.UTC(2026, 8, 13, 12, 0, 0)
+    // 30 minutes old: nowhere near the 4-hour maxAge, well past FORCE_MIN_AGE.
+    const store = storeWith(iso(now - 30 * 60_000))
+    let refreshed = false
+    await serve(store, 'stock-prices.json', now, {
+      force: true,
+      waitUntil: (p) => { refreshed = true; return p.catch(() => {}) },
+    })
+    expect(refreshed, 'force did not trigger a rebuild').toBe(true)
+  })
+
+  it('refuses to rebuild something rebuilt moments ago', async () => {
+    // Otherwise the query parameter is an invitation to hammer Stooq and Yahoo.
+    const now = Date.UTC(2026, 8, 13, 12, 0, 0)
+    const store = storeWith(iso(now - 60_000))
+    let refreshed = false
+    await serve(store, 'stock-prices.json', now, {
+      force: true,
+      waitUntil: () => { refreshed = true },
+    })
+    expect(refreshed, 'force ignored its own floor').toBe(false)
+  })
+
+  it('changes nothing without it', async () => {
+    const now = Date.UTC(2026, 8, 13, 12, 0, 0)
+    const store = storeWith(iso(now - 30 * 60_000))
+    let refreshed = false
+    await serve(store, 'stock-prices.json', now, { waitUntil: () => { refreshed = true } })
+    expect(refreshed).toBe(false)
+  })
+
+  it('keeps serving the stored copy while it rebuilds', async () => {
+    // A forced rebuild must not make the caller wait for Stooq.
+    const now = Date.UTC(2026, 8, 13, 12, 0, 0)
+    const store = storeWith(iso(now - 30 * 60_000))
+    const res = await serve(store, 'stock-prices.json', now, {
+      force: true, waitUntil: (p) => p.catch(() => {}),
+    })
+    expect(res.status).toBe(200)
+    expect((await res.json()).count).toBe(2)
   })
 })
