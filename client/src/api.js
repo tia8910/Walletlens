@@ -953,11 +953,61 @@ function parseStooqBatchCsv(text) {
   return out;
 }
 
+/**
+ * Batch stock prices, the way crypto prices already work.
+ *
+ * Crypto does no live upstream work per request: a cron writes market.json,
+ * every client reads that one file from its own origin, and nothing fans out
+ * to a third party while somebody is waiting. Stocks did the opposite — the
+ * Buy Asset picker asked /api/stocks for all 130 popular tickers, and that
+ * function then queried Stooq and Yahoo live, per request, per visitor.
+ *
+ * It could not work. 130 symbols across two Yahoo hosts is up to 260
+ * subrequests against Cloudflare's limit of 50 per invocation, and the
+ * function's own timeouts summed past the caller's budget, so the picker
+ * showed a dash on every row while the price field sat on FETCHING.
+ *
+ * stock-prices.json already existed and already covered 125 of those 130
+ * tickers — it is why the dashboard ticker kept working while this did not.
+ * The five it misses are bStock entries, which Stooq cannot price anyway.
+ *
+ * So the file comes first here, exactly as market.json does for crypto, and
+ * the edge function is asked only about whatever is genuinely missing. On the
+ * common path that is nothing, and no third-party request happens at all.
+ */
 async function fetchTwelveDataBatch(tickers) {
+  const out = {};
+  const staticPrices = await fetchStaticStockPrices();
+  if (staticPrices) {
+    for (const t of tickers) {
+      const p = staticPrices[`${STOCK_PREFIX}${String(t).toLowerCase()}`];
+      if (p && p.usd > 0) {
+        out[String(t).toUpperCase()] = {
+          usd: p.usd,
+          usd_24h_change: p.usd_24h_change || 0,
+          name: '',
+          source: 'snapshot',
+        };
+      }
+    }
+  }
+
+  const remaining = tickers.filter(t => !out[String(t).toUpperCase()]);
+  if (remaining.length === 0) return out;
+
+  const live = await _fetchStocksRemote(remaining);
+  return live ? { ...out, ...live } : out;
+}
+
+/** The live paths, for the few tickers the snapshot does not carry. */
+async function _fetchStocksRemote(tickers) {
   // ── 0. Same-origin /api/stocks Pages Function — runs server-side, no CORS ──
   try {
+    // Headroom over the function's own 4.5s budget. At 6s this raced the
+    // edge and lost: the response was discarded and every fallback below is
+    // a third-party host, which on a filtered device reaches nothing at all.
     const url = `/api/stocks?symbols=${encodeURIComponent(tickers.join(','))}`;
-    const res = await fetchWithTimeout(url, 6000);
+    const res = await fetchWithTimeout(url, 9000);
     if (res.ok) {
       const data = await res.json();
       if (data && typeof data === 'object' && !data.error) {
