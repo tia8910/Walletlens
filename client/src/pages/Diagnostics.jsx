@@ -97,6 +97,11 @@ const CHECKS = [
   ['drive route', json(`${DRIVE_API}/__diag`, (r, b) => r.status === 404 && b.includes('not_found'))],
   ['push route', json(`${PUSH_API}/health`, (r) => r.status < 500)],
   ['news dataset', json(`${SITE_ORIGIN}/news.json`, (r, b) => r.ok && b.trim().startsWith('{'))],
+  // count is the diagnostic: the picker showing a dash on 128 of 130 rows was
+  // a sparse snapshot, and nothing on screen said so.
+  ['stock snapshot', json(`${SITE_ORIGIN}/stock-prices.json`, (r, b) => {
+    try { return r.ok && Object.keys(JSON.parse(b).prices || {}).length > 100 } catch { return false }
+  })],
 
   // Google, the two ways that fail identically through fetch() alone.
   ['drive host reachable', reachable('https://www.googleapis.com/drive/v3/files?pageSize=1')],

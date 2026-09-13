@@ -508,13 +508,78 @@ export function parseStooqCsv(text) {
 
 const round4 = (n) => Math.round(n * 1e4) / 1e4
 
+/** Stooq answers a long symbol list with partial data, so ask in batches. */
+export const STOOQ_CHUNK = 20
+
+/** Symbols Stooq did not price, asked of Yahoo one at a time. Bounded. */
+export const YAHOO_FALLBACK_MAX = 25
+
+export function chunk(arr, size) {
+  const out = []
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+  return out
+}
+
+/**
+ * The stock snapshot every client reads.
+ *
+ * This asked Stooq for all 125 tickers in a single CSV request and kept
+ * whatever came back. Stooq does not answer a list that long in full: most
+ * symbols returned N/D, parseStooqCsv put them in `missing`, and `missing` was
+ * dropped on the floor. The published file therefore carried a handful of
+ * prices — in the Buy Asset picker, AAPL and MSFT had a price and the other
+ * 128 rows showed a dash, while the client went looking for them live one
+ * screen at a time.
+ *
+ * So: ask in batches Stooq will actually answer, then ask Yahoo about what is
+ * still missing. Both are bounded, because this runs in a Worker and the free
+ * plan allows 50 subrequests per invocation — 7 batches plus at most 25
+ * single-symbol lookups stays well inside it. That is the same ceiling that
+ * truncated push sends and broke /api/stocks.
+ */
 export async function fetchStockPrices(now = Date.now()) {
-  let prices = {}
-  try {
-    const { prices: p } = parseStooqCsv(await getText(stooqUrl(TICKERS), 30000))
-    prices = p
-  } catch (e) {
-    console.warn(`stooq batch failed: ${e}`)
+  const prices = {}
+  const unpriced = []
+
+  for (const group of chunk(TICKERS, STOOQ_CHUNK)) {
+    try {
+      const { prices: p, missing } = parseStooqCsv(await getText(stooqUrl(group), 20000))
+      Object.assign(prices, p)
+      unpriced.push(...missing)
+    } catch (e) {
+      // One bad batch is 20 symbols, not the whole file.
+      console.warn(`stooq batch [${group[0]}…] failed: ${e}`)
+      unpriced.push(...group)
+    }
   }
-  return { updated: isoStamp(now), count: Object.keys(prices).length, prices }
+
+  // Stooq does not carry every US listing, and answers a closed market for
+  // some with N/D. Yahoo fills those rather than leaving a dash in the picker.
+  for (const sym of unpriced.slice(0, YAHOO_FALLBACK_MAX)) {
+    const key = `stock:${sym.toLowerCase()}`
+    if (prices[key]) continue
+    try {
+      const data = await getJson(
+        `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`,
+        8000,
+      )
+      const meta = data?.chart?.result?.[0]?.meta
+      if (meta && Number.isFinite(meta.regularMarketPrice) && meta.regularMarketPrice > 0) {
+        prices[key] = {
+          usd: round4(meta.regularMarketPrice),
+          usd_24h_change: round4(meta.regularMarketChangePercent || 0),
+        }
+      }
+    } catch { /* the dash for this one symbol is the cost */ }
+  }
+
+  // `missing` is reported rather than discarded: a count that drops tells the
+  // next person the upstreams changed, instead of the picker doing it.
+  const missing = unpriced.filter((sym) => !prices[`stock:${sym.toLowerCase()}`])
+  return {
+    updated: isoStamp(now),
+    count: Object.keys(prices).length,
+    missing: missing.length,
+    prices,
+  }
 }

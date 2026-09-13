@@ -79,6 +79,42 @@ describe('the batch path reads the file first', () => {
   })
 })
 
+describe('building the snapshot', () => {
+  it('asks Stooq in batches it will actually answer', () => {
+    // One request for all 125 symbols came back mostly N/D, which is how the
+    // published file ended up with a handful of prices in it.
+    expect(feeds).toMatch(/export const STOOQ_CHUNK = 20/)
+    expect(feeds).toMatch(/for \(const group of chunk\(TICKERS, STOOQ_CHUNK\)\)/)
+  })
+
+  it('does not discard the symbols Stooq could not price', () => {
+    // parseStooqCsv has always returned `missing`. fetchStockPrices threw it
+    // away, so a dash in the picker was the only place it ever surfaced.
+    expect(feeds).toMatch(/unpriced\.push\(\.\.\.missing\)/)
+    expect(feeds).toMatch(/query1\.finance\.yahoo\.com/)
+  })
+
+  it('loses one batch, not the file, when a request fails', () => {
+    expect(feeds).toMatch(/unpriced\.push\(\.\.\.group\)/)
+  })
+
+  it('stays under the 50-subrequest ceiling', async () => {
+    const m = await import('../../data-api/feeds.js')
+    const worst = m.chunk(m.TICKERS, m.STOOQ_CHUNK).length + m.YAHOO_FALLBACK_MAX
+    expect(worst, `worst case ${worst} subrequests`).toBeLessThan(50)
+  })
+
+  it('reports how many are still missing, so a drop is visible', () => {
+    expect(feeds).toMatch(/missing: missing\.length/)
+  })
+
+  it('chunks evenly, remainder included', async () => {
+    const { chunk } = await import('../../data-api/feeds.js')
+    expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]])
+    expect(chunk([], 3)).toEqual([])
+  })
+})
+
 describe('the live path stays inside both ceilings', () => {
   it('caps Yahoo so one invocation cannot breach the subrequest limit', () => {
     expect(fn).toMatch(/const YAHOO_MAX = 12/)
