@@ -1692,6 +1692,7 @@ export default {
     errNoValidRows: 'No valid rows found. Check your column headers.',
     errNoRowsToImport: 'No valid rows to import (need symbol + amount > 0).',
     errNoHoldingsDetected: 'No holdings detected in any screenshot. Try clearer, tighter shots of the holdings list.',
+    errImportUnreachable: 'Could not reach the import service. Nothing is wrong with your screenshot — check your connection and try again.',
     errParsePrefix: 'Parse error: ',
     errImportPrefix: 'Import error: ',
     errImportFailedPrefix: 'Import failed: ',

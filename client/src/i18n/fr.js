@@ -1671,6 +1671,7 @@ export default {
     errNoValidRows: 'Aucune ligne valide trouvée. Vérifiez vos en-têtes de colonnes.',
     errNoRowsToImport: 'Aucune ligne valide à importer (symbole + quantité > 0 requis).',
     errNoHoldingsDetected: 'Aucune position détectée sur les captures. Essayez des captures plus nettes et plus serrées de la liste des positions.',
+    errImportUnreachable: "Impossible de joindre le service d'import. Votre capture n'est pas en cause : vérifiez votre connexion et réessayez.",
     errParsePrefix: 'Erreur d\'analyse : ',
     errImportPrefix: 'Erreur d\'import : ',
     errImportFailedPrefix: 'Échec de l\'import : ',

@@ -28,6 +28,7 @@ import * as icon from '../../functions/api/icon.js'
 import * as push from '../../functions/api/push/[[path]].js'
 import * as drive from '../../functions/api/drive/[[path]].js'
 import * as gdrive from '../../functions/api/gdrive/[[path]].js'
+import * as voice from '../../functions/api/voice/[[path]].js'
 import { DATA_HOST } from '../src/apiHosts.js'
 
 // The scheduled datasets, by the filename they had when the build shipped
@@ -107,6 +108,12 @@ function gdriveParams(pathname) {
   return { path: rest ? rest.split('/') : [] }
 }
 
+/** And for the voice worker, whose root path is a route in its own right. */
+function voiceParams(pathname) {
+  const rest = pathname.replace(/^\/api\/voice\/?/, '')
+  return { path: rest ? rest.split('/') : [] }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url)
@@ -115,7 +122,9 @@ export default {
     const isPush = url.pathname === '/api/push' || url.pathname.startsWith('/api/push/')
     const isDrive = url.pathname === '/api/drive' || url.pathname.startsWith('/api/drive/')
     const isGDrive = url.pathname === '/api/gdrive' || url.pathname.startsWith('/api/gdrive/')
-    const mod = EXACT[url.pathname] || (isPush ? push : isDrive ? drive : isGDrive ? gdrive : null)
+    const isVoice = url.pathname === '/api/voice' || url.pathname.startsWith('/api/voice/')
+    const mod = EXACT[url.pathname]
+      || (isPush ? push : isDrive ? drive : isGDrive ? gdrive : isVoice ? voice : null)
 
     // Not an API path. Hand it back to the asset server, which applies
     // _headers and _redirects — so this stays correct even if _routes.json is
@@ -136,6 +145,7 @@ export default {
       params: isPush ? pushParams(url.pathname)
         : isDrive ? driveParams(url.pathname)
         : isGDrive ? gdriveParams(url.pathname)
+        : isVoice ? voiceParams(url.pathname)
         : {},
       waitUntil: (p) => ctx.waitUntil(p),
       // A function that calls next() wants the static asset behind it.

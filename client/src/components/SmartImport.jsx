@@ -193,6 +193,19 @@ function ReviewTable({ rows, onChange, onRemove }) {
   )
 }
 
+/**
+ * Whether this failure means the image could not be READ, or could not be SENT.
+ *
+ * visionAi throws a written sentence when no endpoint answered, and a bare
+ * TypeError when the request itself never completed. Either way nothing about
+ * the screenshot is at fault, and telling someone to take a clearer photo is
+ * the worst possible response.
+ */
+function isUnreachable(e) {
+  const m = String(e?.message || e || '')
+  return /Failed to fetch|NetworkError|Load failed|AI endpoint|unavailable/i.test(m)
+}
+
 export default function SmartImport({ wallets, onImported, defaultMode = 'excel' }) {
   const { t } = useLanguage()
   const [rows, setRows]         = useState([])
@@ -235,6 +248,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
 
     let totalAdded = 0
     let errors = 0
+    let unreachable = false
 
     for (let i = 0; i < files.length; i++) {
       const thumbIdx = startIdx + i
@@ -272,11 +286,15 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
         // the contract. The step is the signal; the size of their portfolio is
         // not ours to send.
         trackImport({ method: 'screenshot', step: 'parsed' })
-      } catch {
+      } catch (e) {
         setPreviews(prev => prev.map((p, idx) => idx === thumbIdx ? { ...p, status: 'error' } : p))
         // Counted per screenshot, because a user can succeed on three and fail
         // on one and the old events could not tell that from a clean run.
         trackImport({ method: 'screenshot', step: 'failed', reason: 'read_error' })
+        // "No holdings detected — try clearer shots" was shown for this too,
+        // which is advice to re-photograph an exchange for a request that was
+        // never sent. A failure to reach the reader is not a failure to read.
+        unreachable = unreachable || isUnreachable(e)
         errors++
       }
     }
@@ -287,6 +305,9 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       showMsg(`Detected ${totalAdded} holding(s) from ${files.length} screenshot${files.length > 1 ? 's' : ''} — review and edit below.`, 'ok')
     } else if (totalAdded > 0) {
       showMsg(`Detected ${totalAdded} holding(s) — ${errors} screenshot${errors > 1 ? 's' : ''} could not be read. Review and edit below.`, 'ok')
+    } else if (unreachable) {
+      trackImport({ method: 'screenshot', step: 'failed', reason: 'unreachable' })
+      showMsg(t('errImportUnreachable'))
     } else {
       trackImport({ method: 'screenshot', step: 'failed', reason: 'nothing_detected' })
       showMsg(t('errNoHoldingsDetected'))

@@ -1697,6 +1697,7 @@ export default {
     errNoValidRows: 'لم يُعثر على صفوف صالحة. تحقّق من عناوين الأعمدة.',
     errNoRowsToImport: 'لا توجد صفوف صالحة للاستيراد (يلزم رمز وكمية أكبر من صفر).',
     errNoHoldingsDetected: 'لم تُرصد أي أصول في أي لقطة. جرّب لقطات أوضح وأقرب لقائمة الأصول.',
+    errImportUnreachable: 'تعذّر الوصول إلى خدمة الاستيراد. لا مشكلة في لقطتك — تحقّق من اتصالك وحاول مرة أخرى.',
     errParsePrefix: 'خطأ في التحليل: ',
     errImportPrefix: 'خطأ في الاستيراد: ',
     errImportFailedPrefix: 'فشل الاستيراد: ',

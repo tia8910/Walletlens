@@ -1671,6 +1671,7 @@ export default {
     errNoValidRows: 'No se han encontrado filas válidas. Revisa los encabezados de columna.',
     errNoRowsToImport: 'No hay filas válidas para importar (se necesita símbolo y cantidad > 0).',
     errNoHoldingsDetected: 'No se han detectado posiciones en ninguna captura. Prueba con capturas más nítidas y ajustadas de la lista de posiciones.',
+    errImportUnreachable: 'No se ha podido contactar con el servicio de importación. Tu captura está bien: comprueba la conexión e inténtalo de nuevo.',
     errParsePrefix: 'Error de análisis: ',
     errImportPrefix: 'Error de importación: ',
     errImportFailedPrefix: 'Error al importar: ',

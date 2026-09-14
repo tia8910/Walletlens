@@ -1631,6 +1631,7 @@ export default {
     errNoValidRows: 'Nessuna riga valida trovata. Controlla le intestazioni delle colonne.',
     errNoRowsToImport: 'Nessuna riga valida da importare (servono simbolo e quantità maggiore di 0).',
     errNoHoldingsDetected: 'Nessuna posizione rilevata negli screenshot. Prova con immagini più nitide e ravvicinate dell’elenco delle posizioni.',
+    errImportUnreachable: "Impossibile raggiungere il servizio di importazione. Lo screenshot non c'entra: controlla la connessione e riprova.",
     errParsePrefix: 'Errore di lettura: ',
     errImportPrefix: 'Errore di importazione: ',
     errImportFailedPrefix: 'Importazione non riuscita: ',

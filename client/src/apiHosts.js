@@ -53,7 +53,11 @@ export const SITE_ORIGIN = 'https://walletlens.live'
 
 // The trailing slash on one and not the other is what the call sites already
 // expected; both shapes are preserved so this change stays a pure refactor.
-export const VOICE_API = `https://${VOICE_HOST}/`
+// Through the site, for the same reason as everything else here: screenshot
+// import, RSS import and two coin-logo fallbacks all post to this worker, and
+// on a device that cannot resolve workers.dev none of them ever left the page.
+// The trailing slash is load-bearing — voiceProxy() appends 'proxy?url='.
+export const VOICE_API = `${SITE_ORIGIN}/api/voice/`
 
 // Routed by workers/push/wrangler.toml. The prefix is stripped worker-side, so
 // /api/push/subscribe reaches the same handler as /subscribe does on the

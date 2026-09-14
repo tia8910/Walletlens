@@ -1631,6 +1631,7 @@ export default {
     errNoValidRows: 'Keine gültigen Zeilen gefunden. Prüfen Sie Ihre Spaltenüberschriften.',
     errNoRowsToImport: 'Keine gültigen Zeilen zum Importieren (benötigt Symbol und Menge größer als 0).',
     errNoHoldingsDetected: 'In keinem Screenshot wurden Bestände erkannt. Versuchen Sie schärfere, enger zugeschnittene Aufnahmen der Bestandsliste.',
+    errImportUnreachable: 'Der Import-Dienst war nicht erreichbar. Ihr Screenshot ist in Ordnung — prüfen Sie die Verbindung und versuchen Sie es erneut.',
     errParsePrefix: 'Auswertungsfehler: ',
     errImportPrefix: 'Importfehler: ',
     errImportFailedPrefix: 'Import fehlgeschlagen: ',

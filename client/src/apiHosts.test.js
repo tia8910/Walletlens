@@ -54,8 +54,15 @@ describe('apiHosts', () => {
   it('builds the two endpoint shapes the call sites expected', () => {
     // One has a trailing slash and the other does not. That asymmetry is
     // inherited from the call sites, and normalising it here would silently
-    // change the URLs every one of them builds.
-    expect(VOICE_API).toBe(`https://${VOICE_HOST}/`)
+    // change the URLs every one of them builds — voiceProxy() appends
+    // 'proxy?url=' straight onto VOICE_API.
+    //
+    // The voice worker moved behind the site for the same reason as the rest:
+    // screenshot import posted the image to workers.dev, the request never
+    // left the device, and the app answered "No holdings detected in any
+    // screenshot. Try clearer, tighter shots."
+    expect(VOICE_API).toBe(`${SITE_ORIGIN}/api/voice/`)
+    expect(VOICE_API.endsWith('/')).toBe(true)
     // Both now go through the app's own origin rather than workers.dev: a
     // connection check from the app showed every workers.dev host throwing
     // "Failed to fetch" on a device that loaded the site fine, which is what a
@@ -79,7 +86,7 @@ describe('apiHosts', () => {
 
   it('builds a proxy URL with the target encoded', () => {
     expect(voiceProxy('https://x.com/a?b=1&c=2'))
-      .toBe(`https://${VOICE_HOST}/proxy?url=https%3A%2F%2Fx.com%2Fa%3Fb%3D1%26c%3D2`)
+      .toBe(`${SITE_ORIGIN}/api/voice/proxy?url=https%3A%2F%2Fx.com%2Fa%3Fb%3D1%26c%3D2`)
   })
 })
 
