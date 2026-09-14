@@ -1253,15 +1253,23 @@ function buildPerfSeries(base, tf = '30D', transactions = [], useSnapshots = tru
       // Synthetic backfill parameters for the pre-snapshot gap.
       const startRatio = { '4H': 0.97, '1D': 0.94, '7D': 0.88, '30D': 0.8, '90D': 0.72, '1Y': 0.62, 'ALL': 0.55 }[tf] || 0.8
       const seed = Math.round(b) % 997
+      // targetTs only increases as i increases, so the surrounding pts0 pair
+      // can be found by advancing one shared pointer instead of rescanning
+      // pts0 from the start for every point — O(pts + pts0.length) instead of
+      // O(pts * pts0.length). For the 'ALL' timeframe that was up to ~2,160
+      // snapshots x 144 points, recomputed on every price poll. Mirrors the
+      // transaction-replay branch below (validTxs/ptr), which already used
+      // this pattern.
+      let segIdx = 0
       return Array.from({ length: pts }, (_, i) => {
         const t = i / (pts - 1)
         const targetTs = startTime + t * (now - startTime)
         if (targetTs >= firstTs) {
           // Real data: interpolate between the two surrounding snapshots.
-          let lo = pts0[0], hi = pts0[pts0.length - 1]
-          for (let j = 0; j < pts0.length - 1; j++) {
-            if (pts0[j].ts <= targetTs && pts0[j + 1].ts >= targetTs) { lo = pts0[j]; hi = pts0[j + 1]; break }
-          }
+          while (segIdx < pts0.length - 2 && pts0[segIdx + 1].ts < targetTs) segIdx++
+          const found = pts0[segIdx + 1].ts >= targetTs
+          const lo = found ? pts0[segIdx] : pts0[0]
+          const hi = found ? pts0[segIdx + 1] : pts0[pts0.length - 1]
           const segT = hi.ts === lo.ts ? 1 : (targetTs - lo.ts) / (hi.ts - lo.ts)
           return { i, ts: targetTs, v: Math.max(lo.v + (hi.v - lo.v) * segT, 0) }
         }

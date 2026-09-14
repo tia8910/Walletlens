@@ -77,9 +77,18 @@ const STATIC_CDN_PATTERNS = [
 ]
 
 const API_TTL_MS = 5 * 60 * 1000      // 5 minutes (price APIs)
-const NEWS_TTL_MS = 10 * 60 * 1000    // 10 min (news.json RSS feed)
-const STOCK_TTL_MS = 25 * 60 * 1000   // 25 min (stock-prices.json — matches GH Actions interval)
-const MARKET_TTL_MS = 25 * 60 * 1000  // 25 min (market.json — same GH Actions cron)
+// These three TTLs previously targeted the six-hourly GitHub Actions jobs
+// that used to write these files. That was replaced by workers/data/index.js,
+// which now refreshes each dataset on its own DATASETS[...].maxAge cadence
+// (news.json: 2h, stock-prices.json: 4h, market.json: 6h) — but these TTLs
+// were left at their old, much shorter values. The mismatch meant every open
+// tab kicked off a background revalidate() fetch on a schedule 9-14x tighter
+// than the data could possibly have changed: pure wasted network/battery with
+// zero freshness benefit. Matched to DATASETS' maxAge so the two cannot drift
+// apart silently again.
+const NEWS_TTL_MS = 2 * 60 * 60 * 1000    // 2h  (news.json — matches workers/data DATASETS maxAge)
+const STOCK_TTL_MS = 4 * 60 * 60 * 1000   // 4h  (stock-prices.json — matches workers/data DATASETS maxAge)
+const MARKET_TTL_MS = 6 * 60 * 60 * 1000  // 6h  (market.json — matches workers/data DATASETS maxAge)
 
 // Set gives O(1) exact-hostname lookup; only fall through to subdomain scan
 // when no direct hit — avoids O(n) .some() on every intercepted request.
