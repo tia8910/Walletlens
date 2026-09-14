@@ -575,6 +575,15 @@ export default function App() {
   // likely navigation is instant. On the landing page we pre-warm all core app
   // pages; from within the app we prefetch the most common next destinations.
   useEffect(() => {
+    // Speculative prefetching only pays off when bandwidth is free to spend.
+    // A visitor with Data Saver on, or on 2G/slow-2G, is exactly the user for
+    // whom silently downloading five extra JS chunks in the background is
+    // costliest — it competes with the price-data fetches they're actually
+    // waiting on and can burn real money on a metered plan. Skip the whole
+    // scheme for them; normal lazy-loading on actual navigation still works.
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection
+    if (conn && (conn.saveData || conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g')) return
+
     const schedule = requestIdleCallback
       ? (fn, opts) => requestIdleCallback(fn, opts)
       : (fn, opts) => setTimeout(fn, opts?.timeout ?? 2000)
