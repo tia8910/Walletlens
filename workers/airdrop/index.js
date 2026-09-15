@@ -186,8 +186,19 @@ Deno.serve(async (req) => {
 
 // -- Worker entry point ------------------------------------------------------
 
+// /stats (see the ported handler above) scans every "reg" row in D1 on every
+// call, with no cache — unlike every other repeated-scan endpoint this app
+// has (push's SubStore.all(), the data worker's KV-cached feeds). It's the
+// number a public counter on the airdrop page polls, so as registrations
+// grow this is a full-table read on every page view. Edge-caching the
+// response for a short window, purely in this Workers entry point, keeps the
+// ported handler above byte-for-byte identical to airdrop-api/main.ts (which
+// has no edge cache to reach for) while turning N page views into one D1
+// scan per cache window.
+const STATS_CACHE_SECONDS = 30
+
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     ENV = env
     KV = new KvOnD1(env.DB)
     RPC = env.SUI_RPC ?? "https://fullnode.mainnet.sui.io:443"
@@ -196,7 +207,24 @@ export default {
     IP_SALT = env.IP_SALT ?? "lenz-salt"
     ALLOWED_ORIGIN = env.ALLOWED_ORIGIN ?? "*"
     if (!HANDLER) return new Response('handler not registered', { status: 500 })
-    return HANDLER(req)
+
+    const url = new URL(req.url)
+    const cacheableStats = req.method === "GET" && url.pathname === "/stats"
+    const cache = caches.default
+    if (cacheableStats) {
+      const cached = await cache.match(req)
+      if (cached) return cached
+    }
+
+    const res = await HANDLER(req)
+
+    if (cacheableStats && res.status === 200) {
+      const toCache = new Response(res.body, res)
+      toCache.headers.set("Cache-Control", `public, max-age=${STATS_CACHE_SECONDS}`)
+      ctx.waitUntil(cache.put(req, toCache.clone()))
+      return toCache
+    }
+    return res
   },
 }
 

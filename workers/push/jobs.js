@@ -40,6 +40,31 @@ import { hacks, questions } from '../../client/src/data/academyContent.js'
 const DIGEST_HOUR = 9
 const ZAKAT_HOUR = 11
 
+// Each subscriber costs one send() (a delivery round trip through whichever
+// adapter the caller wired up) and, when their record changed, a store.save()
+// (a D1 read-then-update) — two round trips that used to run one subscriber
+// at a time. None of the four jobs share mutable state across subscribers:
+// each only reads the quotes/assets maps fetched once before the loop, so
+// nothing about who gets notified depends on processing order. Fanning them
+// out is safe; fanning ALL of them out at once on a tick with thousands of
+// rows would not be, since a Worker has a fixed budget of simultaneous
+// subrequests — so this caps how many subscribers are in flight at a time
+// rather than dropping the loop entirely.
+const SUBSCRIBER_CONCURRENCY = 15
+
+/**
+ * Run `fn` over `items`, at most `limit` in flight at once, in the order
+ * items complete rather than the order they were given — a slow send() for
+ * one subscriber no longer holds up every subscriber behind them.
+ */
+async function forEachSubscriber(items, fn) {
+  const it = items[Symbol.iterator]()
+  const lanes = Array.from({ length: Math.min(SUBSCRIBER_CONCURRENCY, items.length) }, async () => {
+    for (let next = it.next(); !next.done; next = it.next()) await fn(next.value)
+  })
+  await Promise.all(lanes)
+}
+
 /**
  * Bind the jobs to a storage adapter and a sender.
  *
@@ -58,7 +83,7 @@ export function createJobs({ store, send }) {
     const quotes = await fetchCryptoQuotes([...ids])
     if (!Object.keys(quotes).length) return
 
-    for (const { key, sub } of subs) {
+    await forEachSubscriber(subs, async ({ key, sub }) => {
       let changed = false
       for (const a of sub.alerts) {
         const p = quotes[a.coin_id]?.price
@@ -87,7 +112,7 @@ export function createJobs({ store, send }) {
         }
       }
       if (changed) await store.save(key, sub)
-    }
+    })
   }
 
   async function checkMoves({ kinds = null, refreshSeen = true } = {}) {
@@ -112,7 +137,7 @@ export function createJobs({ store, send }) {
 
     const now = Date.now()
 
-    for (const { key, sub } of watching) {
+    await forEachSubscriber(watching, async ({ key, sub }) => {
       let changed = false
 
       // Refresh the "last visit" price snapshot when the user has been back
@@ -217,7 +242,7 @@ export function createJobs({ store, send }) {
       for (const k of Object.keys(sub.lastLevel)) if (!live.has(k)) { delete sub.lastLevel[k]; changed = true }
 
       if (changed) await store.save(key, sub)
-    }
+    })
   }
 
   async function checkNews() {
@@ -231,10 +256,10 @@ export function createJobs({ store, send }) {
     const articles = (await fetchNews()).filter(a => isBreaking(a, now))
     if (!articles.length) return
 
-    for (const { key, sub } of subs) {
+    await forEachSubscriber(subs, async ({ key, sub }) => {
       // One story per window: a busy news day should not become a news feed on
       // the lock screen.
-      if (now - sub.lastNewsAt < NEWS_COOLDOWN_MS) continue
+      if (now - sub.lastNewsAt < NEWS_COOLDOWN_MS) return
       const pruned = pruneSent(sub.newsSent, now, 48 * 60 * 60 * 1000)
       let changed = Object.keys(pruned).length !== Object.keys(sub.newsSent).length
       sub.newsSent = pruned
@@ -280,7 +305,7 @@ export function createJobs({ store, send }) {
       }
 
       if (changed) await store.save(key, sub)
-    }
+    })
   }
 
   async function checkDaily() {
@@ -322,7 +347,7 @@ export function createJobs({ store, send }) {
     for (const { sub } of due) for (const a of sub.watch) assets.set(`${a.kind}:${a.id}:${a.symbol}`, a)
     const quotes = assets.size ? await fetchQuotes([...assets.values()]) : {}
 
-    for (const { key, sub } of due) {
+    await forEachSubscriber(due, async ({ key, sub }) => {
       const hour = localHour(now, sub.tz)
       let changed = false
 
@@ -405,7 +430,7 @@ export function createJobs({ store, send }) {
             }),
             RETENTION_MIN_PCT,
           )
-          if (!mover) { if (changed) await store.save(key, sub); continue }
+          if (!mover) { if (changed) await store.save(key, sub); return }
 
           const body = copy("retentionMoverBody", sub.lang)(
             mover.symbol, fmtPct(mover.pct), mover.pct > 0,
@@ -552,7 +577,7 @@ export function createJobs({ store, send }) {
       }
 
       if (changed) await store.save(key, sub)
-    }
+    })
   }
   return { checkTargets, checkMoves, checkNews, checkDaily }
 }

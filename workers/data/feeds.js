@@ -239,14 +239,23 @@ export function parseFeed(xml, feed, seen = new Set(), limit = 30) {
 export async function fetchFeedGroup(feeds, now = Date.now()) {
   const articles = []
   const seen = new Set()
-  for (const feed of feeds) {
+  // Fetched concurrently — these are independent HTTP round trips to
+  // unrelated hosts, and awaiting them one at a time made a slow feed's own
+  // 15s timeout delay every feed queued behind it. Parsed back in the
+  // original feeds order (not arrival order), so which mirror of a
+  // syndicated story wins the `seen` dedup is unchanged.
+  const fetched = await Promise.all(feeds.map(async feed => {
     try {
-      articles.push(...parseFeed(await getText(feed.url, 15000), feed, seen))
+      return { feed, text: await getText(feed.url, 15000) }
     } catch (e) {
       // One dead feed must not empty the group. Three of four still makes a
       // usable news page; failing the whole job makes an empty one.
       console.warn(`${feed.name} failed: ${e}`)
+      return null
     }
+  }))
+  for (const result of fetched) {
+    if (result) articles.push(...parseFeed(result.text, result.feed, seen))
   }
   articles.sort((a, b) => pubDateMs(b.pubDate) - pubDateMs(a.pubDate))
   return { updated: isoStamp(now), count: articles.length, articles: articles.slice(0, 120) }
@@ -314,12 +323,20 @@ export function parseCalendarRows(rows, seen = new Set()) {
 export async function fetchCalendar(now = Date.now()) {
   const events = []
   const seen = new Set()
-  for (const url of CALENDAR_FEEDS) {
+  // Concurrent for the same reason as fetchFeedGroup above: two independent
+  // requests (this week, next week) that gain nothing from being serialized,
+  // parsed back in feed order so the this-week/next-week overlap still
+  // dedups the same way.
+  const fetched = await Promise.all(CALENDAR_FEEDS.map(async url => {
     try {
-      events.push(...parseCalendarRows(await getJson(url, 30000), seen))
+      return await getJson(url, 30000)
     } catch (e) {
       console.warn(`calendar feed failed ${url}: ${e}`)
+      return null
     }
+  }))
+  for (const rows of fetched) {
+    if (rows) events.push(...parseCalendarRows(rows, seen))
   }
   if (!events.length) return null
   // Undated items sink to the end rather than sorting as epoch zero.
