@@ -51,6 +51,7 @@ const DATASETS = new Set([
 ])
 
 async function serveDataset(url, request, env) {
+  let upstream = null
   try {
     const res = await fetch(`${DATA_ORIGIN}${url.pathname}${url.search}`, {
       headers: { Accept: 'application/json' },
@@ -67,8 +68,37 @@ async function serveDataset(url, request, env) {
         },
       })
     }
-  } catch { /* fall through to the shipped copy */ }
-  return env.ASSETS.fetch(request)
+    upstream = res.status
+
+    // THE UPSTREAM'S OWN EXPLANATION IS THE DIAGNOSIS, SO DO NOT DISCARD IT.
+    //
+    // serve() answers a cold store with 503 {"error":"no data yet"}. That was
+    // being thrown away for the shipped copy below, which for a dataset that
+    // ships no copy means the site's HTML 404 — so "the worker has not been
+    // deployed" and "the worker is deployed and the upstream fetch failed"
+    // arrived identically, as a page of HTML. Four diagnostic reports in a row
+    // could not tell them apart.
+    const type = res.headers.get('content-type') || ''
+    if (type.includes('json')) {
+      return new Response(res.body, {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      })
+    }
+  } catch { /* unreachable — the shipped copy is the right answer */ }
+
+  // Stale beats empty: news has no other source in the app, and the build
+  // still ships a copy of the older datasets.
+  const shipped = await env.ASSETS.fetch(request)
+  if (shipped.ok) return shipped
+
+  // No copy shipped and the upstream would not serve it. Say which, rather
+  // than handing back a page of HTML that says neither.
+  return new Response(JSON.stringify({
+    error: 'dataset_unavailable',
+    name: url.pathname.replace(/^\//, ''),
+    upstream,
+  }), { status: 502, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })
 }
 
 // Exact paths, mirroring the filenames Pages would route from.

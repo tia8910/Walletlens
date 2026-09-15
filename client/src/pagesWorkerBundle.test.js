@@ -135,6 +135,41 @@ describe('the scheduled datasets', () => {
     expect(assets.fetch).toHaveBeenCalledOnce()
   })
 
+  it('passes the upstream explanation through instead of burying it', async () => {
+    // serve() answers a cold store with 503 {"error":"no data yet"}. Replacing
+    // that with the site's HTML 404 made "never deployed" and "deployed but
+    // the upstream failed" arrive identically, and four diagnostic reports in
+    // a row could not tell them apart.
+    vi.stubGlobal('fetch', async () => new Response('{"error":"no data yet"}', {
+      status: 503, headers: { 'Content-Type': 'application/json' },
+    }))
+    const res = await call('/smartmoney.json')
+    expect(res.status).toBe(503)
+    expect((await res.json()).error).toBe('no data yet')
+    expect(assets.fetch, 'buried a JSON explanation under the asset server').not.toHaveBeenCalled()
+  })
+
+  it('names the dataset and the upstream status when nothing ships a copy', async () => {
+    // coins.json and smartmoney.json have no static fallback, so the asset
+    // server can only ever answer with a page of HTML that explains nothing.
+    assets.fetch.mockResolvedValueOnce(new Response('<!DOCTYPE html>', { status: 404 }))
+    vi.stubGlobal('fetch', async () => new Response('Not found', { status: 404 }))
+    const res = await call('/smartmoney.json')
+    expect(res.status).toBe(502)
+    const body = await res.json()
+    expect(body.error).toBe('dataset_unavailable')
+    expect(body.name).toBe('smartmoney.json')
+    expect(body.upstream).toBe(404)
+  })
+
+  it('still prefers a shipped copy when one exists', async () => {
+    // Stale beats empty for the datasets the build does ship.
+    vi.stubGlobal('fetch', async () => new Response('Not found', { status: 404 }))
+    const res = await call('/news.json')
+    expect(assets.fetch).toHaveBeenCalledOnce()
+    expect(res.status).toBe(200)
+  })
+
   it('does not let the edge hold a dataset past its own refresh window', async () => {
     vi.stubGlobal('fetch', async () => new Response('{}', { status: 200 }))
     const res = await call('/news.json')
