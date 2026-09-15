@@ -18,22 +18,27 @@ const REFRESH_MS = 15 * 60_000
 const MAX_ROWS = 12
 
 /**
- * Whether this person asked to see crypto at all.
+ * Whether crypto is among the asset classes this person sees.
  *
  * Smart money flow is a crypto-only signal — there is no on-chain wallet
- * labelling for a gold bar or a share of Apple. Someone who picked stocks and
- * metals should not be given a strip of token tickers they did not ask for,
- * and should not pay for the request either, so the fetch below is skipped
- * entirely rather than fetched and hidden.
+ * labelling for a gold bar or a share of Apple — so someone who picked stocks
+ * and metals should not be handed a strip of token tickers, and should not pay
+ * for the request either. The fetch is skipped rather than hidden.
  *
- * Not chosen yet counts as no. A brand-new arrival gets this the moment they
- * pick crypto, which is better than showing it to someone who never will.
+ * AN EMPTY LIST MEANS YES, and getting that wrong is what hid this strip on a
+ * screen that was showing crypto prices at the time. tickerPlaceholders() ends
+ * `ids.length ? ids : INTEREST_TICKER_IDS.crypto`: anyone who has not picked —
+ * skipped onboarding, cleared storage, arrived today — gets the crypto price
+ * ticker by default. Requiring an explicit choice here made this strip
+ * stricter than the strip directly above it, so the two disagreed about the
+ * same person. Hide it only when someone has chosen, and chosen without crypto.
  */
 function hasCrypto() {
   try {
     const v = JSON.parse(localStorage.getItem('wl_interests') || 'null')
-    return Array.isArray(v) && v.includes('crypto')
-  } catch { return false }
+    if (!Array.isArray(v) || v.length === 0) return true
+    return v.includes('crypto')
+  } catch { return true }
 }
 
 /** $12.4M, $840K, $1.2B — a ticker has no room for grouped digits. */

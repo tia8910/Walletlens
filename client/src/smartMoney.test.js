@@ -86,10 +86,23 @@ describe('who sees it', () => {
     expect(ticker).toMatch(/localStorage\.getItem\('wl_interests'\)/)
   })
 
-  it('treats "not chosen yet" as no', () => {
-    // Array.isArray(null) is false, so an unset or unreadable value hides it.
-    expect(ticker).toMatch(/Array\.isArray\(v\) && v\.includes\('crypto'\)/)
-    expect(ticker).toMatch(/catch \{ return false \}/)
+  it('treats an unset list as yes, matching the strip above it', () => {
+    // tickerPlaceholders() ends `ids.length ? ids : INTEREST_TICKER_IDS.crypto`,
+    // so anyone who never picked sees the crypto PRICE ticker. Requiring an
+    // explicit choice here made this strip stricter than that one, and hid it
+    // on a screen that was showing BTC and ETH at the time.
+    expect(ticker).toMatch(/if \(!Array\.isArray\(v\) \|\| v\.length === 0\) return true/)
+    expect(ticker).toMatch(/catch \{ return true \}/)
+  })
+
+  it('hides it only for someone who chose, and chose without crypto', () => {
+    expect(ticker).toMatch(/return v\.includes\('crypto'\)/)
+  })
+
+  it('agrees with the price ticker about the default', () => {
+    // If that fallback is ever removed, this gate has to change with it.
+    const picks = readFileSync(join(here, 'data/tickerPicks.js'), 'utf8')
+    expect(picks).toMatch(/ids\.length \? ids : INTEREST_TICKER_IDS\.crypto/)
   })
 
   it('skips the request entirely rather than fetching and hiding', () => {
