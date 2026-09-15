@@ -14,6 +14,24 @@ const here = dirname(fileURLToPath(import.meta.url))
 const page = readFileSync(join(here, 'pages/Diagnostics.jsx'), 'utf8')
 const app = readFileSync(join(here, 'App.jsx'), 'utf8')
 
+describe('reporting a failure', () => {
+  it('parses the body before it looks at the status', () => {
+    // The dataset answers 502 and 503 with a JSON body saying why. Returning
+    // early on !res.ok discarded exactly that and printed "not published" —
+    // the one thing every possible failure has in common. Three separate
+    // diagnostics in this file have now been undone at the last step by
+    // throwing away the payload that explained them.
+    const at = page.indexOf("['smart money'")
+    const block = page.slice(at, page.indexOf('}],', at))
+    expect(block.indexOf('JSON.parse(body)')).toBeLessThan(block.indexOf('if (!res.ok)'))
+  })
+
+  it('names the data worker status when the dataset is not deployed', () => {
+    expect(page).toMatch(/dataset_unavailable/)
+    expect(page).toMatch(/not deployed · data worker said/)
+  })
+})
+
 describe('the diagnostics page', () => {
   it('is routed, lazily, at a path nothing links to', () => {
     expect(app).toContain('<Route path="/diag" element={<Diagnostics />} />')

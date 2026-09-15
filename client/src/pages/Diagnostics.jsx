@@ -111,9 +111,19 @@ const CHECKS = [
       cache: 'no-store', signal: AbortSignal.timeout(8000),
     })
     const body = await res.text()
-    if (!res.ok) return { state: 'fail', detail: `${res.status} · not published` }
-    let d
-    try { d = JSON.parse(body) } catch { return { state: 'fail', detail: 'not json' } }
+    // Parse FIRST, whatever the status. The dataset now answers 502 and 503
+    // with a JSON body that says why — that body is the entire point of this
+    // check, and returning early on !res.ok discarded it and printed "not
+    // published", which is the one thing every failure has in common.
+    let d = null
+    try { d = JSON.parse(body) } catch { /* not json — reported below */ }
+    if (d?.error === 'dataset_unavailable') {
+      return { state: 'fail', detail: `not deployed · data worker said ${d.upstream ?? 'nothing'}` }
+    }
+    if (!res.ok) {
+      return { state: 'fail', detail: `${res.status} · ${d?.error || body.slice(0, 40).replace(/\s+/g, ' ')}` }
+    }
+    if (!d) return { state: 'fail', detail: 'not json' }
     if ((d.flows || []).length) return { state: 'ok', detail: `${d.flows.length} flows · ${d.shape || ''}` }
     const g = d.diagnostic || {}
     return {
