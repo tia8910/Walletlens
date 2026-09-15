@@ -1,0 +1,9 @@
+name = "walletlens-nansen"
+main = "index.js"
+compatibility_date = "2026-06-21"
+
+# Stateless proxy — no storage, no cron. The Nansen API key must be set once:
+#   npx wrangler secret put NANSEN_API_KEY
+# The base URL is a var because it is not secret.
+[vars]
+NANSEN_BASE = "https://api.nansen.ai"

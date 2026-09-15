@@ -16,11 +16,13 @@
 
 export const VOICE_HOST = 'walletlens-voice.tarek-abdelhameed.workers.dev'
 export const PUSH_HOST = 'walletlens-push.tarek-abdelhameed.workers.dev'
+export const NANSEN_HOST = 'walletlens-nansen.tarek-abdelhameed.workers.dev'
 
 // The trailing slash on one and not the other is what the call sites already
 // expected; both shapes are preserved so this change stays a pure refactor.
 export const VOICE_API = `https://${VOICE_HOST}/`
 export const PUSH_API = `https://${PUSH_HOST}`
+export const NANSEN_API = `https://${NANSEN_HOST}`
 
 /** The voice service's CORS proxy, used for prices, logos and RSS. */
 export const voiceProxy = (url) => `${VOICE_API}proxy?url=${encodeURIComponent(url)}`

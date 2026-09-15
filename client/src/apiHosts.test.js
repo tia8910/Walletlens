@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { VOICE_HOST, PUSH_HOST, VOICE_API, PUSH_API, voiceProxy } from './apiHosts.js'
+import { VOICE_HOST, PUSH_HOST, NANSEN_HOST, VOICE_API, PUSH_API, NANSEN_API, voiceProxy } from './apiHosts.js'
 
 // The backend hosts were string literals in twenty-odd files. Moving off Deno
 // Deploy was therefore a search-and-replace, where missing one site fails at
@@ -58,6 +58,8 @@ describe('apiHosts', () => {
     expect(VOICE_API).toBe(`https://${VOICE_HOST}/`)
     expect(PUSH_API).toBe(`https://${PUSH_HOST}`)
     expect(PUSH_API.endsWith('/')).toBe(false)
+    expect(NANSEN_API).toBe(`https://${NANSEN_HOST}`)
+    expect(NANSEN_API.endsWith('/')).toBe(false)
   })
 
   it('builds a proxy URL with the target encoded', () => {
@@ -95,6 +97,7 @@ describe('the places that cannot import apiHosts.js', () => {
     const html = read('index.html')
     expect(cspAdmits(html, VOICE_HOST)).toBe(true)
     expect(cspAdmits(html, PUSH_HOST)).toBe(true)
+    expect(cspAdmits(html, NANSEN_HOST)).toBe(true)
   })
 
   it('admits both hosts in the _headers CSP that Pages actually serves', () => {
@@ -104,6 +107,7 @@ describe('the places that cannot import apiHosts.js', () => {
     const headers = read('public/_headers')
     expect(cspAdmits(headers, VOICE_HOST)).toBe(true)
     expect(cspAdmits(headers, PUSH_HOST)).toBe(true)
+    expect(cspAdmits(headers, NANSEN_HOST)).toBe(true)
   })
 
   it('caches the proxy in the service worker under the current host', () => {
