@@ -50,10 +50,28 @@ describe('reading whatever Nansen sends', () => {
     expect(feeds).toMatch(/unparsed,/)
   })
 
-  it('keeps the last good payload when nothing parses', () => {
-    // refresh() keeps the previous value on null, so returning null here is
-    // what stops a reshaped upstream from blanking the strip.
-    expect(feeds).toMatch(/if \(!flows\.length\) \{[\s\S]*?return null/)
+  it('publishes why it failed instead of failing silently', () => {
+    // A dataset that fails silently is indistinguishable from one that was
+    // never deployed, and that ambiguity cost several rounds of "still no
+    // ticker". The envelope now carries the upstream's own field names —
+    // schema, not data — which is exactly what fixes the mapping.
+    expect(feeds).toMatch(/sampleKeys: rows\.length \? Object\.keys\(rows\[0\]\)/)
+    expect(feeds).toMatch(/diagnostic: \{/)
+  })
+
+  it('tries both request shapes rather than betting on one guess', () => {
+    // Nansen's shape could not be verified from the build sandbox, so the
+    // feature is not staked on a single spelling.
+    expect(feeds).toMatch(/'GET \?symbols'/)
+    expect(feeds).toMatch(/'POST body'/)
+    expect(feeds).toMatch(/if \(r\.length\) \{ rows = r; how = a\.how; break \}/)
+  })
+
+  it('publishes no values, only key names', () => {
+    // Field names are schema. Publishing a row of live market data into a
+    // public file to debug a parser would be a different mistake.
+    const block = feeds.slice(feeds.indexOf('diagnostic: {'), feeds.indexOf('diagnostic: {') + 400)
+    expect(block).not.toMatch(/Object\.values|rows\[0\]\[/)
   })
 
   it('leads with the biggest conviction, because a ticker has few slots', () => {

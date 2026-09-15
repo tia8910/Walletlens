@@ -189,18 +189,45 @@ export function rowsOf(data) {
 }
 
 export async function fetchSmartMoney(now = Date.now()) {
-  let data
-  try {
-    data = await getJson(
-      `${NANSEN_PROXY}/api/v1/token-screener?symbols=${SMART_MONEY_TOKENS.join(',')}`,
-      20000,
-    )
-  } catch (e) {
-    console.warn(`nansen token-screener failed: ${e}`)
-    return null
+  // Nansen's request shape could not be verified from here — the sandbox's
+  // egress proxy blocks api.nansen.ai and the key is deliberately not
+  // available — so rather than bet the feature on one guess, both plausible
+  // shapes are tried. Most of Nansen's screeners take a POST with a filter
+  // body; some take query parameters. Whichever answers with rows wins.
+  const attempts = [
+    { how: 'GET ?symbols',
+      url: `${NANSEN_PROXY}/api/v1/token-screener?symbols=${SMART_MONEY_TOKENS.join(',')}`,
+      init: { headers: { Accept: 'application/json' } } },
+    { how: 'POST body',
+      url: `${NANSEN_PROXY}/api/v1/token-screener`,
+      init: {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ symbols: SMART_MONEY_TOKENS, limit: SMART_MONEY_TOKENS.length }),
+      } },
+    { how: 'GET bare',
+      url: `${NANSEN_PROXY}/api/v1/token-screener`,
+      init: { headers: { Accept: 'application/json' } } },
+  ]
+
+  let rows = []
+  let how = null
+  const tried = []
+  for (const a of attempts) {
+    try {
+      const res = await fetch(a.url, { ...a.init, signal: AbortSignal.timeout(15000) })
+      const text = await res.text()
+      if (!res.ok) { tried.push(`${a.how}:${res.status}`); continue }
+      let data
+      try { data = JSON.parse(text) } catch { tried.push(`${a.how}:not-json`); continue }
+      const r = rowsOf(data)
+      if (r.length) { rows = r; how = a.how; break }
+      tried.push(`${a.how}:0-rows`)
+    } catch (e) {
+      tried.push(`${a.how}:threw`)
+    }
   }
 
-  const rows = rowsOf(data)
   const flows = []
   let unparsed = 0
   for (const row of rows) {
@@ -208,17 +235,32 @@ export async function fetchSmartMoney(now = Date.now()) {
     if (f) flows.push(f)
     else unparsed++
   }
+
+  // NOTHING PARSED — PUBLISH WHY, NOT NOTHING.
+  //
+  // A dataset that fails silently is indistinguishable from one that was
+  // never deployed, and that ambiguity has cost several rounds of "still no
+  // ticker" with no way to tell which. So the envelope carries the field
+  // names of the first row it could not read. Those are schema, not data —
+  // no values, no key, nothing private — and they are exactly what is needed
+  // to correct the mapping without anyone having to paste a response.
   if (!flows.length) {
-    // Publishing an empty ticker would look like "smart money did nothing"
-    // rather than "the upstream changed shape". Keep the previous payload.
-    console.warn(`nansen returned ${rows.length} rows, none parseable`)
-    return null
+    return {
+      updated: isoStamp(now),
+      count: 0,
+      flows: [],
+      diagnostic: {
+        shape: how,
+        tried,
+        rows: rows.length,
+        unparsed,
+        sampleKeys: rows.length ? Object.keys(rows[0]).slice(0, 40) : [],
+      },
+    }
   }
 
-  // Biggest conviction first — a ticker has limited slots and the extremes are
-  // what anyone actually reads.
   flows.sort((a, b) => Math.abs(b.netflow) - Math.abs(a.netflow))
-  return { updated: isoStamp(now), count: flows.length, unparsed, flows }
+  return { updated: isoStamp(now), count: flows.length, unparsed, shape: how, flows }
 }
 
 // ── Coin catalogue: the top 1000 by market cap ──────────────────────────────

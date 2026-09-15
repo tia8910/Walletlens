@@ -102,11 +102,25 @@ const CHECKS = [
   // The live fallback, for the few tickers the snapshot cannot carry. It was
   // never checked here, so "prices not loading" could not be pinned to the
   // file or to the function without guessing.
-  // unparsed climbing means Nansen changed field names — the failure that
-  // left the stock snapshot sparse for months with nothing reporting it.
-  ['smart money', json(`${SITE_ORIGIN}/smartmoney.json`, (r, b) => {
-    try { const d = JSON.parse(b); return r.ok && (d.flows || []).length > 0 } catch { return false }
-  })],
+  // Reports the upstream's own field names when nothing parsed. Those are
+  // schema, not data, and they are what fixes the mapping — a check that only
+  // said "fail" cost several rounds of "still no ticker" with no way to tell
+  // an undeployed dataset from a mis-read one.
+  ['smart money', async () => {
+    const res = await fetch(`${SITE_ORIGIN}/smartmoney.json`, {
+      cache: 'no-store', signal: AbortSignal.timeout(8000),
+    })
+    const body = await res.text()
+    if (!res.ok) return { state: 'fail', detail: `${res.status} · not published` }
+    let d
+    try { d = JSON.parse(body) } catch { return { state: 'fail', detail: 'not json' } }
+    if ((d.flows || []).length) return { state: 'ok', detail: `${d.flows.length} flows · ${d.shape || ''}` }
+    const g = d.diagnostic || {}
+    return {
+      state: 'fail',
+      detail: `rows ${g.rows ?? 0} · tried ${(g.tried || []).join(' ') || '—'} · keys ${(g.sampleKeys || []).join(',') || '—'}`,
+    }
+  }],
   ['stocks live', json(`${SITE_ORIGIN}/api/stocks?symbols=AAPL`, (r, b) => {
     try { return r.ok && typeof JSON.parse(b)?.AAPL?.price === 'number' } catch { return false }
   })],
