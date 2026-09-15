@@ -76,6 +76,36 @@ describe('what it costs', () => {
   })
 })
 
+describe('who sees it', () => {
+  it('is gated on the crypto interest', () => {
+    // Smart money flow is a crypto-only signal: there is no on-chain wallet
+    // labelling for a gold bar or a share of Apple. Someone who picked stocks
+    // and metals should not get a strip of token tickers.
+    expect(ticker).toMatch(/function hasCrypto\(\)/)
+    expect(ticker).toMatch(/v\.includes\('crypto'\)/)
+    expect(ticker).toMatch(/localStorage\.getItem\('wl_interests'\)/)
+  })
+
+  it('treats "not chosen yet" as no', () => {
+    // Array.isArray(null) is false, so an unset or unreadable value hides it.
+    expect(ticker).toMatch(/Array\.isArray\(v\) && v\.includes\('crypto'\)/)
+    expect(ticker).toMatch(/catch \{ return false \}/)
+  })
+
+  it('skips the request entirely rather than fetching and hiding', () => {
+    // A stocks-only user should not pay for a file they will never see.
+    expect(ticker).toMatch(/if \(!show\) \{ setFlows\(\[\]\); return \}/)
+  })
+
+  it('appears the moment the picker is saved, without a reload', () => {
+    // The picker reopens from Settings, and a strip that waits for a reload
+    // reads as broken — the same reason PriceTicker listens for this.
+    expect(ticker).toMatch(/INTERESTS_EVENT/)
+    expect(ticker).toMatch(/window\.addEventListener\(INTERESTS_EVENT, sync\)/)
+    expect(ticker).toMatch(/\}, \[show\]\)/)
+  })
+})
+
 describe('the strip itself', () => {
   it('abbreviates, because a ticker has no room for grouped digits', () => {
     expect(fmtFlow(12_400_000)).toBe('$12.4M')
@@ -86,8 +116,8 @@ describe('the strip itself', () => {
 
   it('renders nothing at all when there is nothing to say', () => {
     // An empty bar costs a row of a phone screen and says the feature is
-    // broken. This also covers the upstream changing shape.
-    expect(ticker).toMatch(/if \(!flows\.length\) return null/)
+    // broken. This covers both a non-crypto user and a reshaped upstream.
+    expect(ticker).toMatch(/if \(!show \|\| !flows\.length\) return null/)
   })
 
   it('sizes the chip by magnitude, not just direction', () => {

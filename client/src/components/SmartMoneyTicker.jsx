@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { dataUrl } from '../apiHosts'
 import { useLanguage } from '../LanguageContext'
+import { INTERESTS_EVENT } from '../data/interestsEvent'
 
 // Smart money flow, as a strip.
 //
@@ -16,6 +17,25 @@ import { useLanguage } from '../LanguageContext'
 const REFRESH_MS = 15 * 60_000
 const MAX_ROWS = 12
 
+/**
+ * Whether this person asked to see crypto at all.
+ *
+ * Smart money flow is a crypto-only signal — there is no on-chain wallet
+ * labelling for a gold bar or a share of Apple. Someone who picked stocks and
+ * metals should not be given a strip of token tickers they did not ask for,
+ * and should not pay for the request either, so the fetch below is skipped
+ * entirely rather than fetched and hidden.
+ *
+ * Not chosen yet counts as no. A brand-new arrival gets this the moment they
+ * pick crypto, which is better than showing it to someone who never will.
+ */
+function hasCrypto() {
+  try {
+    const v = JSON.parse(localStorage.getItem('wl_interests') || 'null')
+    return Array.isArray(v) && v.includes('crypto')
+  } catch { return false }
+}
+
 /** $12.4M, $840K, $1.2B — a ticker has no room for grouped digits. */
 export function fmtFlow(n) {
   const a = Math.abs(n)
@@ -28,8 +48,22 @@ export function fmtFlow(n) {
 export default function SmartMoneyTicker() {
   const { t } = useLanguage()
   const [flows, setFlows] = useState([])
+  const [show, setShow] = useState(hasCrypto)
+
+  // The picker can be reopened from Settings, and a strip that only appears
+  // after a reload reads as broken — the same reason PriceTicker listens.
+  useEffect(() => {
+    const sync = () => setShow(hasCrypto())
+    window.addEventListener(INTERESTS_EVENT, sync)
+    window.addEventListener('storage', sync)
+    return () => {
+      window.removeEventListener(INTERESTS_EVENT, sync)
+      window.removeEventListener('storage', sync)
+    }
+  }, [])
 
   useEffect(() => {
+    if (!show) { setFlows([]); return }
     let alive = true
     const load = async () => {
       try {
@@ -42,14 +76,22 @@ export default function SmartMoneyTicker() {
     load()
     const id = setInterval(load, REFRESH_MS)
     return () => { alive = false; clearInterval(id) }
-  }, [])
+  }, [show])
 
   // Nothing to say is better than an empty bar taking up a row of a phone
-  // screen. This also covers the upstream changing shape.
-  if (!flows.length) return null
+  // screen. This covers both "not a crypto user" and the upstream changing
+  // shape.
+  if (!show || !flows.length) return null
 
   return (
     <div className="ticker-strip" role="list" aria-label={t('tickerSmartMoney')}>
+      {/* Self-identifying, because without it this reads as a second price
+          strip that disagrees with the first: the same token can be down on
+          the day and accumulated by smart money, so ETH shows red above and
+          green here. The label is what makes that a fact rather than a bug.
+          No pulsing dot — the news strip earns one by being live, this is
+          an hourly snapshot and should not claim otherwise. */}
+      <span className="news-ticker-label">{t('tickerSmartMoney')}</span>
       {flows.map((f) => {
         const inflow = f.netflow >= 0
         const mag = Math.abs(f.netflow)
