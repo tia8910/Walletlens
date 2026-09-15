@@ -201,17 +201,36 @@ export function rowsOf(data) {
  * rather than one more round of guessing.
  */
 export const SMART_MONEY_PATHS = [
+  // A CONTROL FIRST. The proxy's own /health answers without touching Nansen,
+  // so a 200 here and 404 everywhere else proves the worker is reachable and
+  // routing, and that the failure is purely which path is being asked for.
+  'health',
+
+  // The allowlist was described as: smart-money, profiler, tgm,
+  // token-screener, search, agent, hyperliquid, perp, prediction-market.
+  // Those read like path SEGMENTS, and the one endpoint quoted with a slash
+  // was `tgm/indicators` — so the likeliest shapes are a tgm or smart-money
+  // prefix, with the flat spelling kept because it is what was described.
   'api/v1/tgm/token-screener',
   'api/v1/smart-money/token-screener',
   'api/v1/token-screener',
-  'api/v1/smart-money/netflow',
   'api/v1/tgm/indicators',
+  'api/v1/smart-money/netflow',
+  'api/v1/smart-money/flows',
+  'api/v1/smart-money/holdings',
+  'api/v1/smart-money/dex-trades',
+  'api/v1/tgm/flows',
+  'api/v1/tgm/flow-intelligence',
 ]
+
+/** Short enough that a dozen of them still fit on a phone screen. */
+const shortPath = (p) => p.replace('api/v1/', '')
 
 export async function fetchSmartMoney(now = Date.now()) {
   let rows = []
   let hit = null
   const tried = []
+  let notFound = 0
 
   for (const path of SMART_MONEY_PATHS) {
     for (const method of ['GET', 'POST']) {
@@ -228,16 +247,23 @@ export async function fetchSmartMoney(now = Date.now()) {
       try {
         const res = await fetch(url, { ...init, signal: AbortSignal.timeout(12000) })
         const text = await res.text()
-        if (!res.ok) { tried.push(`${path} ${method}:${res.status}`); continue }
+        // 404 is the expected answer for a wrong path and there will be many,
+        // so they are counted rather than listed. Anything else is a finding.
+        if (res.status === 404) { notFound++; continue }
+        if (!res.ok) { tried.push(`${shortPath(path)} ${method}:${res.status}`); continue }
         let data
-        try { data = JSON.parse(text) } catch { tried.push(`${path} ${method}:not-json`); continue }
+        try {
+          data = JSON.parse(text)
+        } catch {
+          tried.push(`${shortPath(path)} ${method}:200-not-json`)
+          continue
+        }
         const r = rowsOf(data)
         if (r.length) { rows = r; hit = `${path} ${method}`; break }
-        // 200 with no rows is still a live endpoint — worth reporting the
-        // top-level keys, because the rows may be nested somewhere rowsOf
-        // does not look.
-        tried.push(`${path} ${method}:200-but-[${Object.keys(data || {}).slice(0, 6).join(',')}]`)
-      } catch { tried.push(`${path} ${method}:threw`) }
+        // A live endpoint that answered. Its top-level keys say where the rows
+        // are, if they are nested somewhere rowsOf does not look.
+        tried.push(`${shortPath(path)} ${method}:200[${Object.keys(data || {}).slice(0, 6).join(',')}]`)
+      } catch { tried.push(`${shortPath(path)} ${method}:threw`) }
     }
     if (hit) break
   }
@@ -260,7 +286,9 @@ export async function fetchSmartMoney(now = Date.now()) {
       flows: [],
       diagnostic: {
         hit,
+        // Everything that was NOT a plain 404, plus how many were.
         tried,
+        notFound,
         rows: rows.length,
         unparsed,
         sampleKeys: rows.length ? Object.keys(rows[0]).slice(0, 40) : [],

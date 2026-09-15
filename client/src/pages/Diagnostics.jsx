@@ -128,7 +128,12 @@ const CHECKS = [
     const g = d.diagnostic || {}
     return {
       state: 'fail',
-      detail: `rows ${g.rows ?? 0} · tried ${(g.tried || []).join(' ') || '—'} · keys ${(g.sampleKeys || []).join(',') || '—'}`,
+      detail: [
+        `rows ${g.rows ?? 0}`,
+        g.notFound ? `${g.notFound} paths 404` : null,
+        (g.tried || []).length ? (g.tried || []).join(' ') : null,
+        (g.sampleKeys || []).length ? `keys ${g.sampleKeys.join(',')}` : null,
+      ].filter(Boolean).join(' · '),
     }
   }],
   ['stocks live', json(`${SITE_ORIGIN}/api/stocks?symbols=AAPL`, (r, b) => {

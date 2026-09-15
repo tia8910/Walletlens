@@ -74,14 +74,26 @@ describe('reading whatever Nansen sends', () => {
     expect(feeds).toMatch(/CONTROL/)
   })
 
-  it('reports the status of every attempt, not just the last', () => {
-    expect(feeds).toMatch(/tried\.push\(`\$\{path\} \$\{method\}:\$\{res\.status\}`\)/)
+  it('counts the 404s and lists everything else', () => {
+    // Most candidate paths will 404 and listing them all would push the
+    // findings off a phone screen. A path that answers anything else is the
+    // finding.
+    expect(feeds).toMatch(/if \(res\.status === 404\) \{ notFound\+\+; continue \}/)
+    expect(feeds).toMatch(/notFound,/)
+  })
+
+  it('probes the proxy health first, as a control', async () => {
+    // /health answers without touching Nansen, so 200 there and 404 elsewhere
+    // proves the worker is reachable and routing, and that the only thing
+    // wrong is which path is being asked for.
+    const m = await import('../../data-api/feeds.js')
+    expect(m.SMART_MONEY_PATHS[0]).toBe('health')
   })
 
   it('reports the top-level keys when an endpoint answers with no rows', () => {
     // A 200 with nothing rowsOf recognises means the rows are nested somewhere
     // it does not look, and the key names say where.
-    expect(feeds).toMatch(/200-but-\[/)
+    expect(feeds).toMatch(/200\[\$\{Object\.keys/)
   })
 
   it('publishes no values, only key names', () => {
