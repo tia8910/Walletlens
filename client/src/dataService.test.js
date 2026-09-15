@@ -40,7 +40,7 @@ describe('the output envelope matches what the deployed client reads', () => {
       // visitor pays on arrival to serve a list most of them never open.
       'coins.json',
       'economic-calendar.json', 'economy.json', 'market.json',
-      'news.json', 'stock-prices.json', 'stocks.json',
+      'news.json', 'smartmoney.json', 'stock-prices.json', 'stocks.json',
     ])
   })
 })

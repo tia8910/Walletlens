@@ -87,6 +87,7 @@ export default {
     trades: 'Transactions',
     market: 'Marché',
     tickerPrices: 'Cours du marché',
+    tickerSmartMoney: 'Flux du smart money',
     whales: 'Baleines',
     dashboard: 'Tableau de bord',
     transactions: 'Transactions',

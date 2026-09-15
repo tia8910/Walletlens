@@ -13,6 +13,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 // the landing page and every SEO content page (blog, about, FAQ, ...) load
 // price/technicals code they never use.
 const PriceTicker = lazy(() => import('./components/PriceTicker'))
+const SmartMoneyTicker = lazy(() => import('./components/SmartMoneyTicker'))
 import ErrorBoundary from './components/ErrorBoundary'
 import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
@@ -760,6 +761,9 @@ export default function App() {
             One sticky element has no race to lose. */}
         <Suspense fallback={<div className="ticker-strip" style={{ minHeight: '38px' }} aria-hidden="true" />}>
           <PriceTicker />
+          {/* Renders nothing until the cron has published flows, so a
+              missing or reshaped upstream costs a row of screen, not an error. */}
+          <SmartMoneyTicker />
         </Suspense>
       </header>
 

@@ -9,7 +9,8 @@
 // because Deno KV caps a value at 64 KiB and market.json is 250 KB.
 
 import {
-  FEED_GROUPS, fetchCalendar, fetchCoins, fetchFeedGroup, fetchMarket, fetchStockPrices,
+  FEED_GROUPS, fetchCalendar, fetchCoins, fetchFeedGroup, fetchMarket,
+  fetchSmartMoney, fetchStockPrices,
 } from './feeds.js'
 
 const MIN = 60 * 1000
@@ -34,6 +35,9 @@ export const DATASETS = {
   'economy.json':           { maxAge: 2 * 60 * MIN, fetch: (n) => fetchFeedGroup(FEED_GROUPS.economy, n) },
   'economic-calendar.json': { maxAge: 60 * MIN,     fetch: fetchCalendar },
   'stock-prices.json':      { maxAge: 4 * 60 * MIN, fetch: fetchStockPrices },
+  // Nansen bills by credit, so the cadence is the cost control: one paid pull
+  // per hour serves every visitor, rather than one per page load.
+  'smartmoney.json':        { maxAge: 60 * MIN,     fetch: fetchSmartMoney },
 }
 
 /**

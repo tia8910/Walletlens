@@ -117,7 +117,7 @@ function pagesWorkerPlugin() {
             '/api/*',
             '/news.json', '/market.json', '/stocks.json',
             '/economy.json', '/economic-calendar.json', '/stock-prices.json',
-            '/coins.json',
+            '/coins.json', '/smartmoney.json',
           ],
           exclude: [],
         }, null, 2) + '\n',

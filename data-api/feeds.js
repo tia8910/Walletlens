@@ -119,6 +119,108 @@ function withSpark(coin) {
   return spark ? { ...rest, spark7d: spark } : rest
 }
 
+// ── Smart money (Nansen) ────────────────────────────────────────────────────
+//
+// Nansen bills by credit, and a ticker renders on every page load for every
+// visitor. A browser-initiated call would therefore make the bill scale with
+// traffic, which is the wrong shape for a free app: one good day on Hacker
+// News and the quota is gone. So the cron pays once per interval and every
+// client reads the result, the same way market.json works.
+//
+// The key lives in the nansen worker as NANSEN_API_KEY and is never sent from
+// here — this is a server-to-server call to a proxy that adds it.
+const NANSEN_PROXY = 'https://walletlens-nansen.tarek-abdelhameed.workers.dev'
+
+/** Tokens worth a ticker slot. Wide enough to be interesting, small enough to be cheap. */
+export const SMART_MONEY_TOKENS = [
+  'ETH', 'SOL', 'BTC', 'LINK', 'UNI', 'AAVE', 'ARB', 'OP',
+  'PEPE', 'WIF', 'ENA', 'ONDO', 'TIA', 'SUI', 'APT', 'SEI',
+]
+
+/**
+ * Pull one number out of a row, whatever the upstream decided to call it.
+ *
+ * Nansen's field names differ between endpoints and have changed across API
+ * versions, and this cannot be verified from the build sandbox — the egress
+ * proxy blocks api.nansen.ai and the key is deliberately not available here.
+ * So the shape is read defensively rather than pinned to one spelling, and
+ * anything unreadable is counted in `unparsed` instead of being dropped
+ * silently. A count that climbs says the upstream changed; the old stock
+ * snapshot went sparse for months precisely because nothing reported that.
+ */
+export function pick(row, names) {
+  for (const n of names) {
+    const v = row?.[n]
+    if (typeof v === 'number' && Number.isFinite(v)) return v
+    if (typeof v === 'string' && v.trim() && Number.isFinite(Number(v))) return Number(v)
+  }
+  return null
+}
+
+export function normalizeFlow(row) {
+  const symbol = String(
+    row?.symbol || row?.token_symbol || row?.tokenSymbol || row?.ticker || '',
+  ).toUpperCase().trim()
+  if (!symbol) return null
+
+  // Netflow is the signal: positive means smart money accumulated over the
+  // window, negative means it distributed. Price and volume are already in the
+  // app from other sources, so they are not duplicated here.
+  const netflow = pick(row, [
+    'netflow_usd', 'netflowUsd', 'net_flow_usd', 'netflow', 'smart_money_netflow',
+    'volume_netflow_usd', 'netFlow',
+  ])
+  if (netflow === null) return null
+
+  return {
+    symbol,
+    netflow: Math.round(netflow),
+    volume: pick(row, ['volume_usd', 'volumeUsd', 'volume']) ?? null,
+  }
+}
+
+/** Rows come back under a different key depending on the endpoint. */
+export function rowsOf(data) {
+  if (Array.isArray(data)) return data
+  for (const k of ['data', 'result', 'results', 'rows', 'tokens']) {
+    if (Array.isArray(data?.[k])) return data[k]
+  }
+  return []
+}
+
+export async function fetchSmartMoney(now = Date.now()) {
+  let data
+  try {
+    data = await getJson(
+      `${NANSEN_PROXY}/api/v1/token-screener?symbols=${SMART_MONEY_TOKENS.join(',')}`,
+      20000,
+    )
+  } catch (e) {
+    console.warn(`nansen token-screener failed: ${e}`)
+    return null
+  }
+
+  const rows = rowsOf(data)
+  const flows = []
+  let unparsed = 0
+  for (const row of rows) {
+    const f = normalizeFlow(row)
+    if (f) flows.push(f)
+    else unparsed++
+  }
+  if (!flows.length) {
+    // Publishing an empty ticker would look like "smart money did nothing"
+    // rather than "the upstream changed shape". Keep the previous payload.
+    console.warn(`nansen returned ${rows.length} rows, none parseable`)
+    return null
+  }
+
+  // Biggest conviction first — a ticker has limited slots and the extremes are
+  // what anyone actually reads.
+  flows.sort((a, b) => Math.abs(b.netflow) - Math.abs(a.netflow))
+  return { updated: isoStamp(now), count: flows.length, unparsed, flows }
+}
+
 // ── Coin catalogue: the top 1000 by market cap ──────────────────────────────
 //
 // market.json is the dashboard's load-time fetch, so it stays at 250 coins

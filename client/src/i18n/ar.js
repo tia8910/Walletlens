@@ -82,6 +82,7 @@ export default {
     trades: 'الصفقات',
     market: 'السوق',
     tickerPrices: 'أسعار السوق',
+    tickerSmartMoney: 'تدفّق الأموال الذكية',
     whales: 'الحيتان',
     dashboard: 'لوحة التحكم',
     transactions: 'المعاملات',
