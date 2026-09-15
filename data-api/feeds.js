@@ -188,44 +188,58 @@ export function rowsOf(data) {
   return []
 }
 
-export async function fetchSmartMoney(now = Date.now()) {
-  // Nansen's request shape could not be verified from here — the sandbox's
-  // egress proxy blocks api.nansen.ai and the key is deliberately not
-  // available — so rather than bet the feature on one guess, both plausible
-  // shapes are tried. Most of Nansen's screeners take a POST with a filter
-  // body; some take query parameters. Whichever answers with rows wins.
-  const attempts = [
-    { how: 'GET ?symbols',
-      url: `${NANSEN_PROXY}/api/v1/token-screener?symbols=${SMART_MONEY_TOKENS.join(',')}`,
-      init: { headers: { Accept: 'application/json' } } },
-    { how: 'POST body',
-      url: `${NANSEN_PROXY}/api/v1/token-screener`,
-      init: {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ symbols: SMART_MONEY_TOKENS, limit: SMART_MONEY_TOKENS.length }),
-      } },
-    { how: 'GET bare',
-      url: `${NANSEN_PROXY}/api/v1/token-screener`,
-      init: { headers: { Accept: 'application/json' } } },
-  ]
+/**
+ * Candidate paths, most likely first.
+ *
+ * All three shapes of `api/v1/token-screener` came back 404, and the proxy
+ * answers a DISALLOWED endpoint with 403 — so 404 is not the allowlist
+ * refusing, it is the path not existing. `tgm/indicators` is in the list as a
+ * CONTROL: it is verified working, so if it answers while the others 404 the
+ * convention is prefixed paths and the right one is among them.
+ *
+ * Every attempt's status is published, so one look says which path is real
+ * rather than one more round of guessing.
+ */
+export const SMART_MONEY_PATHS = [
+  'api/v1/tgm/token-screener',
+  'api/v1/smart-money/token-screener',
+  'api/v1/token-screener',
+  'api/v1/smart-money/netflow',
+  'api/v1/tgm/indicators',
+]
 
+export async function fetchSmartMoney(now = Date.now()) {
   let rows = []
-  let how = null
+  let hit = null
   const tried = []
-  for (const a of attempts) {
-    try {
-      const res = await fetch(a.url, { ...a.init, signal: AbortSignal.timeout(15000) })
-      const text = await res.text()
-      if (!res.ok) { tried.push(`${a.how}:${res.status}`); continue }
-      let data
-      try { data = JSON.parse(text) } catch { tried.push(`${a.how}:not-json`); continue }
-      const r = rowsOf(data)
-      if (r.length) { rows = r; how = a.how; break }
-      tried.push(`${a.how}:0-rows`)
-    } catch (e) {
-      tried.push(`${a.how}:threw`)
+
+  for (const path of SMART_MONEY_PATHS) {
+    for (const method of ['GET', 'POST']) {
+      const init = method === 'GET'
+        ? { headers: { Accept: 'application/json' } }
+        : {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ symbols: SMART_MONEY_TOKENS, limit: SMART_MONEY_TOKENS.length }),
+          }
+      const url = method === 'GET'
+        ? `${NANSEN_PROXY}/${path}?symbols=${SMART_MONEY_TOKENS.join(',')}`
+        : `${NANSEN_PROXY}/${path}`
+      try {
+        const res = await fetch(url, { ...init, signal: AbortSignal.timeout(12000) })
+        const text = await res.text()
+        if (!res.ok) { tried.push(`${path} ${method}:${res.status}`); continue }
+        let data
+        try { data = JSON.parse(text) } catch { tried.push(`${path} ${method}:not-json`); continue }
+        const r = rowsOf(data)
+        if (r.length) { rows = r; hit = `${path} ${method}`; break }
+        // 200 with no rows is still a live endpoint — worth reporting the
+        // top-level keys, because the rows may be nested somewhere rowsOf
+        // does not look.
+        tried.push(`${path} ${method}:200-but-[${Object.keys(data || {}).slice(0, 6).join(',')}]`)
+      } catch { tried.push(`${path} ${method}:threw`) }
     }
+    if (hit) break
   }
 
   const flows = []
@@ -236,21 +250,16 @@ export async function fetchSmartMoney(now = Date.now()) {
     else unparsed++
   }
 
-  // NOTHING PARSED — PUBLISH WHY, NOT NOTHING.
-  //
-  // A dataset that fails silently is indistinguishable from one that was
-  // never deployed, and that ambiguity has cost several rounds of "still no
-  // ticker" with no way to tell which. So the envelope carries the field
-  // names of the first row it could not read. Those are schema, not data —
-  // no values, no key, nothing private — and they are exactly what is needed
-  // to correct the mapping without anyone having to paste a response.
+  // Nothing usable — publish why, not nothing. A dataset that fails silently
+  // is indistinguishable from one that was never deployed, and that ambiguity
+  // cost several rounds before this envelope existed.
   if (!flows.length) {
     return {
       updated: isoStamp(now),
       count: 0,
       flows: [],
       diagnostic: {
-        shape: how,
+        hit,
         tried,
         rows: rows.length,
         unparsed,
@@ -260,7 +269,7 @@ export async function fetchSmartMoney(now = Date.now()) {
   }
 
   flows.sort((a, b) => Math.abs(b.netflow) - Math.abs(a.netflow))
-  return { updated: isoStamp(now), count: flows.length, unparsed, shape: how, flows }
+  return { updated: isoStamp(now), count: flows.length, unparsed, hit, flows }
 }
 
 // ── Coin catalogue: the top 1000 by market cap ──────────────────────────────

@@ -59,12 +59,29 @@ describe('reading whatever Nansen sends', () => {
     expect(feeds).toMatch(/diagnostic: \{/)
   })
 
-  it('tries both request shapes rather than betting on one guess', () => {
-    // Nansen's shape could not be verified from the build sandbox, so the
-    // feature is not staked on a single spelling.
-    expect(feeds).toMatch(/'GET \?symbols'/)
-    expect(feeds).toMatch(/'POST body'/)
-    expect(feeds).toMatch(/if \(r\.length\) \{ rows = r; how = a\.how; break \}/)
+  it('probes candidate paths rather than betting on one spelling', async () => {
+    // All three shapes of a flat api/v1/token-screener returned 404, and the
+    // proxy answers a DISALLOWED endpoint with 403 — so 404 meant the path
+    // does not exist, not that it was refused.
+    const m = await import('../../data-api/feeds.js')
+    expect(m.SMART_MONEY_PATHS.length).toBeGreaterThan(2)
+    expect(m.SMART_MONEY_PATHS).toContain('api/v1/tgm/indicators')
+  })
+
+  it('keeps a verified endpoint in the list as a control', () => {
+    // tgm/indicators is known to work. If it answers while the rest 404, the
+    // convention is prefixed paths and the right one is among them.
+    expect(feeds).toMatch(/CONTROL/)
+  })
+
+  it('reports the status of every attempt, not just the last', () => {
+    expect(feeds).toMatch(/tried\.push\(`\$\{path\} \$\{method\}:\$\{res\.status\}`\)/)
+  })
+
+  it('reports the top-level keys when an endpoint answers with no rows', () => {
+    // A 200 with nothing rowsOf recognises means the rows are nested somewhere
+    // it does not look, and the key names say where.
+    expect(feeds).toMatch(/200-but-\[/)
   })
 
   it('publishes no values, only key names', () => {
