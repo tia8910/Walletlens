@@ -12607,7 +12607,6 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
   .wl-coffee-x { transition: none; }
   .wl-coffee-x:hover { transform: none; }
 }
-}
 
 /* ── Assistant history panel & buttons ── */
 .wlc-history-btn, .wlc-new-chat-btn { background: none; border: none; color: var(--text-muted, rgba(255,255,255,0.5)); cursor: pointer; padding: 0.25rem; border-radius: 8px; display: flex; transition: color 0.15s, background 0.15s; }
