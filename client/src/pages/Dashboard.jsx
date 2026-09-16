@@ -771,6 +771,18 @@ const DEMO = {
 }
 
 const fmt   = n => { const v = Number(n); return isFinite(v) ? v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00' }
+
+// Two decimals is right for an amount and wrong for a sub-dollar price: a
+// token at $0.0087 and one at $0.0149 both rendered as $0.01, and anything
+// under half a cent as $0.00, which reads as worthless rather than small.
+// Significant digits let the precision follow the magnitude without padding a
+// $75,964 bitcoin with zeroes.
+const fmtPx = n => {
+  const v = Number(n)
+  if (!isFinite(v) || v === 0) return fmt(v)
+  if (Math.abs(v) >= 1) return fmt(v)
+  return v.toLocaleString(undefined, { maximumSignificantDigits: 6 })
+}
 const fmtN  = n => { const v = Number(n); if (!isFinite(v)) return '$0'; const s = Math.abs(v) >= 1000 ? `$${(Math.abs(v)/1000).toFixed(1)}k` : `$${Math.abs(v).toFixed(0)}`; return v < 0 ? `-${s}` : s }
 const fmtAmt = n => { const v = parseFloat(n); if (!isFinite(v)) return '0'; if (v >= 100) return v.toLocaleString(undefined, { maximumFractionDigits: 2 }); if (v >= 1) return v.toLocaleString(undefined, { maximumFractionDigits: 4 }); return v.toLocaleString(undefined, { maximumSignificantDigits: 4 }) }
 const pct   = n => { const v = Number(n); if (!isFinite(v)) return '0.00%'; return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` }
@@ -3630,11 +3642,11 @@ export default function Dashboard() {
   // hide it. That is the property the first version lacked.
   const cvPub = useCallback((usd) => {
     const n = Number(usd) || 0
-    if (!curConv.rate) return `$${fmt(Math.abs(n))}`
+    if (!curConv.rate) return `$${fmtPx(Math.abs(n))}`
     const v = n * curConv.rate
     if (curConv.btc) return `₿ ${Math.abs(v) < 1 ? Math.abs(v).toFixed(6) : Math.abs(v).toFixed(4)}`
     const sp = curConv.sym.length > 1 ? ' ' : ''
-    return `${curConv.sym}${sp}${fmt(Math.abs(v))}`
+    return `${curConv.sym}${sp}${fmtPx(Math.abs(v))}`
   }, [curConv])
 
   const cv = useCallback((usd) => (hidden ? VALUE_MASK : cvPub(usd)), [hidden, cvPub])

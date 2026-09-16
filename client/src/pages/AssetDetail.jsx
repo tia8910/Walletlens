@@ -29,8 +29,29 @@ function categoryFor(id) {
   return assetClass(id)
 }
 
+// Dollar AMOUNTS — a holding's value, a P&L, proceeds. Two decimals is what
+// money looks like and more would be noise.
 function fmt(n) {
   return (n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+// Per-unit PRICES, which are a different problem below a dollar.
+//
+// Two decimals threw the number away: STONKBROKER rendered as $0.01, and so
+// would a token at $0.0051 and one at $0.0149 — three different assets, one
+// displayed price. Anything under half a cent rendered as $0.00, which reads
+// as worthless rather than small.
+//
+// Significant digits rather than decimal places, so the precision follows the
+// magnitude: $0.0087 keeps its digits and $0.00000234 keeps its own, without
+// padding a $75,964 bitcoin with zeroes. Same rule PricePage already uses.
+function fmtPrice(n) {
+  const v = Number(n)
+  if (!isFinite(v) || v === 0) return '0.00'
+  if (Math.abs(v) >= 1) {
+    return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  }
+  return v.toLocaleString(undefined, { maximumSignificantDigits: 6 })
 }
 
 export default function AssetDetail() {
@@ -258,7 +279,7 @@ export default function AssetDetail() {
           </div>
         </div>
         <div className="detail-hero-right">
-          <div className="detail-price-big">${fmt(price)}</div>
+          <div className="detail-price-big">${fmtPrice(price)}</div>
           <span className={`detail-change ${(coin?.change24 || 0) >= 0 ? 'positive' : 'negative'}`}>
             {(coin?.change24 || 0) >= 0 ? '▲' : '▼'} {Math.abs(coin?.change24 || 0).toFixed(2)}%
           </span>
@@ -290,7 +311,7 @@ export default function AssetDetail() {
                 itemStyle={{ color: 'var(--text)', fontWeight: 700 }}
                 labelStyle={{ color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.15rem' }}
                 cursor={{ stroke: 'var(--text-sub)', strokeWidth: 1, strokeDasharray: '4 3', opacity: 0.45 }}
-                formatter={(val) => ['$' + fmt(val), 'Price']}
+                formatter={(val) => ['$' + fmtPrice(val), 'Price']}
                 labelFormatter={(_, payload) => payload?.[0]?.payload?.time || ''}
               />
               <Area type="monotone" dataKey="price" stroke={chartColor} fill="url(#cGrad)" strokeWidth={2.5} dot={false} />
@@ -303,11 +324,11 @@ export default function AssetDetail() {
 
       {/* Market stats */}
       <div className="detail-stats-grid">
-        {coin?.high24 != null && <div className="dstat"><span className="dstat-label">{t('ad24hHigh')}</span><span>${fmt(coin.high24)}</span></div>}
-        {coin?.low24 != null && <div className="dstat"><span className="dstat-label">{t('ad24hLow')}</span><span>${fmt(coin.low24)}</span></div>}
+        {coin?.high24 != null && <div className="dstat"><span className="dstat-label">{t('ad24hHigh')}</span><span>${fmtPrice(coin.high24)}</span></div>}
+        {coin?.low24 != null && <div className="dstat"><span className="dstat-label">{t('ad24hLow')}</span><span>${fmtPrice(coin.low24)}</span></div>}
         {coin?.change7d != null && <div className="dstat"><span className="dstat-label">{t('ad7dChange')}</span><span className={coin.change7d >= 0 ? 'positive' : 'negative'}>{coin.change7d >= 0 ? '+' : ''}{coin.change7d.toFixed(2)}%</span></div>}
         {coin?.change30d != null && <div className="dstat"><span className="dstat-label">{t('ad30dChange')}</span><span className={coin.change30d >= 0 ? 'positive' : 'negative'}>{coin.change30d >= 0 ? '+' : ''}{coin.change30d.toFixed(2)}%</span></div>}
-        {coin?.ath != null && <div className="dstat"><span className="dstat-label">{t('adAllTimeHigh')}</span><span>${fmt(coin.ath)}</span></div>}
+        {coin?.ath != null && <div className="dstat"><span className="dstat-label">{t('adAllTimeHigh')}</span><span>${fmtPrice(coin.ath)}</span></div>}
         {coin?.marketCap != null && <div className="dstat"><span className="dstat-label">{t('adMarketCap')}</span><span>${(coin.marketCap / 1e9).toFixed(2)}B</span></div>}
         {coin?.volume != null && <div className="dstat"><span className="dstat-label">{t('ad24hVolume')}</span><span>${(coin.volume / 1e9).toFixed(2)}B</span></div>}
       </div>
@@ -327,7 +348,7 @@ export default function AssetDetail() {
             </div>
             <div className="dh-item">
               <span className="dh-label">{t('adAvgBuyPrice')}</span>
-              <span className="dh-value">${fmt(avgBuy)}</span>
+              <span className="dh-value">${fmtPrice(avgBuy)}</span>
             </div>
             <div className="dh-item">
               <span className="dh-label">{t('adProfitLoss')}</span>
@@ -430,7 +451,7 @@ export default function AssetDetail() {
                   <div className="sp-row-top">
                     <div className="sp-price">
                       <span className="sp-label">{t('adSellAt')}</span>
-                      <span className="sp-val">${fmt(tg.price)}</span>
+                      <span className="sp-val">${fmtPrice(tg.price)}</span>
                     </div>
                     <div className="sp-qty">
                       <span className="sp-label">{t('adQuantity')}</span>
