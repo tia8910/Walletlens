@@ -23,6 +23,7 @@ import PullToRefresh from './components/PullToRefresh'
 // Non-critical shell components — lazy-loaded after the app shell renders
 const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
 const AssistantChat = lazy(() => import('./components/AssistantChat'))
+const CoffeeButton = lazy(() => import('./components/CoffeeButton'))
 const NotificationPrimer = lazy(() => import('./components/NotificationPrimer'))
 const WelcomeModal = lazy(() => import('./components/WelcomeModal'))
 const NativeOnboarding = lazy(() => import('./components/NativeOnboarding'))
@@ -820,6 +821,7 @@ export default function App() {
       {shellReady && isStandalone && !onboardDone && <Suspense fallback={null}><NativeOnboarding onDone={() => setOnboardDone(true)} /></Suspense>}
       {shellReady && !isStandalone && <Suspense fallback={null}><WelcomeModal /></Suspense>}
       {shellReady && <Suspense fallback={null}><AssistantChat /></Suspense>}
+      {shellReady && <Suspense fallback={null}><CoffeeButton /></Suspense>}
 
       {/* Asks permission to notify, in the app's own words, before the browser
           dialog is ever raised. Gated on onboarding being finished so it never

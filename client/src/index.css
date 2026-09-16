@@ -12565,6 +12565,40 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 [data-wl-light] .wlc-suggestion { color: #1e293b; }
 [data-wl-light] .wlc-input { background: rgba(0,0,0,0.03); color: #1e293b; border-color: rgba(0,0,0,0.12); }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   SUPPORT LAUNCHER (buy me a coffee) — draggable, independent of the chat
+   ═══════════════════════════════════════════════════════════════════════ */
+.wlbmc-fab {
+  position: fixed;
+  /* The opposite corner from the assistant launcher, on purpose. These two
+     are unrelated controls and neither should be able to cover the other, or
+     the panel the assistant opens. Drag moves this one anywhere. */
+  bottom: 1.25rem; left: 1.25rem;
+  z-index: 899;
+  width: 46px; height: 46px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none; /* pointer-drag on touch without scrolling the page */
+  -webkit-tap-highlight-color: transparent;
+  color: #1f1400;
+  background: linear-gradient(135deg, #ffdd00, #ffc700);
+  box-shadow: 0 6px 18px rgba(255,199,0,0.42), 0 0 0 1px rgba(255,255,255,0.35) inset;
+  transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s, opacity 0.18s;
+}
+.wlbmc-fab:hover { transform: translateY(-2px) scale(1.06); box-shadow: 0 10px 26px rgba(255,199,0,0.58); }
+.wlbmc-fab:active { transform: scale(0.94); }
+.wlbmc-fab:focus-visible { outline: 3px solid #ffdd00; outline-offset: 3px; }
+.wlbmc-fab-dragging { cursor: grabbing; transition: none; transform: scale(1.08); box-shadow: 0 14px 32px rgba(255,199,0,0.62); will-change: transform; }
+
+/* Mirrored in RTL, where the assistant launcher moves to the left. */
+[dir="rtl"] .wlbmc-fab { left: auto; right: 1.25rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wlbmc-fab { transition: none; }
+  .wlbmc-fab:hover { transform: none; }
+}
+
 /* ── Assistant history panel & buttons ── */
 .wlc-history-btn, .wlc-new-chat-btn { background: none; border: none; color: var(--text-muted, rgba(255,255,255,0.5)); cursor: pointer; padding: 0.25rem; border-radius: 8px; display: flex; transition: color 0.15s, background 0.15s; }
 .wlc-history-btn:hover, .wlc-new-chat-btn:hover { color: var(--g); background: rgba(var(--g-rgb,16,185,129),0.1); }

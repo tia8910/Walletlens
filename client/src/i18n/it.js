@@ -1693,6 +1693,7 @@ export default {
     atUnlockFingerprint: 'Sblocca con l’impronta',
     atUseMarketPrice: 'Usa il prezzo di mercato attuale',
     atAssistant: 'Assistente WalletLens',
+    coffeeSupport: 'Sostieni WalletLens — offrimi un caffè',
     atHome: 'Home di WalletLens',
     atTagline: 'Slogan di WalletLens',
     // ── Attributes: input placeholders ──────────────────────────
