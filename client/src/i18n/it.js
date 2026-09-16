@@ -1694,6 +1694,7 @@ export default {
     atUseMarketPrice: 'Usa il prezzo di mercato attuale',
     atAssistant: 'Assistente WalletLens',
     coffeeSupport: 'Sostieni WalletLens — offrimi un caffè',
+    coffeeHide: 'Nascondi il pulsante di sostegno',
     atHome: 'Home di WalletLens',
     atTagline: 'Slogan di WalletLens',
     // ── Attributes: input placeholders ──────────────────────────

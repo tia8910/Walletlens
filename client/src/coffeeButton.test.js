@@ -3,13 +3,12 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// The support launcher is its own control, not part of the assistant.
+// The support button lives in the header, beside the settings gear, and can be
+// closed for good.
 //
-// The first cut stacked it above the chat launcher and had AssistantChat set
-// an attribute on <html> so the coffee button could hide itself while the
-// panel was open. That is two components knowing about each other for a
-// cosmetic reason, and it put an ask on top of the one button people came to
-// press. Separate corner, no coupling — and these tests keep it that way.
+// It was a floating draggable circle first. That put an ask on top of the
+// screen people came to use, and it had no way to say no. Both are fixed by
+// where it now sits and by the dismiss.
 
 const here = dirname(fileURLToPath(import.meta.url))
 const src = readFileSync(join(here, 'components/CoffeeButton.jsx'), 'utf8')
@@ -17,31 +16,58 @@ const chat = readFileSync(join(here, 'components/AssistantChat.jsx'), 'utf8')
 const css = readFileSync(join(here, 'index.css'), 'utf8')
 const app = readFileSync(join(here, 'App.jsx'), 'utf8')
 
-describe('it is independent of the assistant', () => {
-  it('does not reach into the chat component', () => {
-    expect(src).not.toMatch(/wlc-/)
-    expect(src).not.toMatch(/AssistantChat/)
+describe('where it sits', () => {
+  it('is rendered in the header, next to the settings gear', () => {
+    expect(app).toMatch(/<CoffeeButton \/>\s*\n\s*<button\s*\n\s*className="wl-topbar-x wl-topbar-gear"/)
   })
 
-  it('leaves the chat component with nothing to say about it', () => {
+  it('is imported directly, not lazily', () => {
+    // A lazy chunk would pop into the header a beat after everything else.
+    expect(app).toContain("import CoffeeButton from './components/CoffeeButton'")
+    expect(app).not.toMatch(/lazy\(\(\) => import\('\.\/components\/CoffeeButton'\)\)/)
+  })
+
+  it('no longer floats over the app', () => {
+    expect(css).not.toContain('wlbmc-fab')
+    expect(src).not.toMatch(/position: fixed|pointerdown|onPointerDown/i)
+  })
+
+  it('borrows the header button size rather than inventing one', () => {
+    expect(src).toContain('className="wl-topbar-x wl-coffee-btn"')
+    expect(css).toMatch(/\.wl-topbar-x \{[\s\S]*?width: 34px; height: 34px;/)
+  })
+
+  it('stays clear of the assistant, which is a separate control', () => {
+    expect(src).not.toMatch(/wlc-|AssistantChat/)
     expect(chat).not.toMatch(/wlbmc|coffee|Coffee/)
   })
+})
 
-  it('starts in the opposite corner, so neither can cover the other', () => {
-    const block = css.slice(css.indexOf('.wlbmc-fab {'))
-    expect(block).toMatch(/bottom: 1\.25rem; left: 1\.25rem;/)
-    // The assistant launcher is bottom-right.
-    expect(css).toMatch(/\.wlc-fab \{[\s\S]*?bottom: 1\.25rem; right: 1\.25rem;/)
+describe('closing it', () => {
+  it('has a dismiss that is its own button, not the link', () => {
+    // A close that shares a hit area with a payment link is a trap.
+    expect(src).toMatch(/<button\s+type="button"\s+className="wl-coffee-x"/)
+    expect(src).toContain('onClick={dismiss}')
   })
 
-  it('mirrors in RTL, where the assistant moves to the left', () => {
-    expect(css).toMatch(/\[dir="rtl"\] \.wlbmc-fab \{ left: auto; right: 1\.25rem; \}/)
-    expect(css).toMatch(/\[dir="rtl"\] \.wlc-fab \{ right: auto; left: 1\.25rem; \}/)
+  it('stays closed on the next visit', () => {
+    expect(src).toContain("const HIDE_KEY = 'wl_coffee_hidden'")
+    expect(src).toContain("localStorage.setItem(HIDE_KEY, '1')")
+    expect(src).toContain('if (hidden) return null')
   })
 
-  it('is mounted alongside the assistant, not inside it', () => {
-    expect(app).toContain("const CoffeeButton = lazy(() => import('./components/CoffeeButton'))")
-    expect(app).toContain('<CoffeeButton />')
+  it('shows the button when storage cannot be read', () => {
+    // Failing the other way hides it from every strict browser.
+    expect(src).toMatch(/catch \{ return false \}/)
+  })
+
+  it('gives the dismiss a touch target bigger than the dot', () => {
+    // 16px of visible circle; a missed tap would open the payment page.
+    expect(css).toMatch(/\.wl-coffee-x::after \{[\s\S]*?top: -8px; right: -8px; bottom: -8px; left: -8px;/)
+  })
+
+  it('labels the dismiss for screen readers', () => {
+    expect(src).toContain("aria-label={t('coffeeHide')}")
   })
 })
 
@@ -51,59 +77,16 @@ describe('what it links to', () => {
   })
 
   it('opens out of the app safely', () => {
-    // target=_blank without noopener hands the opened page a window.opener
-    // reference back into the app.
     expect(src).toContain('target="_blank"')
     expect(src).toContain('rel="noopener noreferrer"')
   })
 
   it('is a link, so keyboard and open-in-new-tab both work', () => {
-    // A <button> with an onClick would take all of that away for no gain.
     expect(src).toMatch(/<a\s/)
     expect(src).not.toMatch(/window\.open\(/)
   })
-})
 
-describe('dragging', () => {
-  it('remembers where it was dropped', () => {
-    expect(src).toContain("const POS_KEY = 'wl_coffee_fab_pos'")
-    expect(src).toContain('localStorage.setItem(POS_KEY, JSON.stringify(p))')
-    // Its own key: moving one launcher must not move the other.
-    expect(src).not.toContain('wl_assistant_fab_pos')
-  })
-
-  it('does not navigate when the pointer actually moved', () => {
-    // click fires after pointerup, so a drag that ends over the button would
-    // otherwise leave the app for buymeacoffee.com.
-    expect(src).toMatch(/if \(drag\.current\.moved\) \{ e\.preventDefault\(\)/)
-  })
-
-  it('needs a real drag before it moves at all', () => {
-    // Without a threshold, the jitter in a tap on a touchscreen reads as a
-    // drag and the tap stops opening the link.
-    expect(src).toContain('const DRAG_THRESHOLD = 6')
-  })
-
-  it('stays on screen', () => {
-    expect(src).toMatch(/function clampPos/)
-    // A remembered position is viewport pixels: a rotation can put it outside.
-    expect(src).toContain("window.addEventListener('orientationchange', onResize)")
-  })
-
-  it('can be dragged on touch without scrolling the page', () => {
-    const block = css.slice(css.indexOf('.wlbmc-fab {'))
-    expect(block.slice(0, 700)).toContain('touch-action: none')
-  })
-
-  it('leaves the context menu alone', () => {
-    // Swallowing a right-click would take away "open link in new tab".
-    expect(src).toContain('if (e.button !== 0) return')
-  })
-})
-
-describe('the label', () => {
-  it('comes from the dictionary, not a hardcoded string', () => {
+  it('takes its label from the dictionary', () => {
     expect(src).toContain("t('coffeeSupport')")
-    expect(src).toContain('aria-label={label}')
   })
 })
