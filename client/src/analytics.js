@@ -4,6 +4,14 @@
 // asset counts, no asset-class mix, no profit/loss signals, no user-typed
 // text. Events describe WHICH features are used — never WHAT the user owns.
 // If you add an event, keep every param free of portfolio-derived data.
+//
+// WHAT A TRADE MAY REPORT: its direction and its asset CATEGORY (crypto,
+// stocks, gold…), plus which screen it came from. Not the symbol, not the
+// amount, not the dollar value or a tier of it, not the price, not what it was
+// paid for with, not how much of a position was exited, and not the realized
+// profit or loss. All fourteen of those were being sent on every trade from
+// three different screens until they were removed; the guard could not see the
+// calls because both events are named by a ternary rather than a literal.
 
 // KNOWN GAP, recorded rather than quietly left: `page` below is the raw path,
 // and this app has routes that name an asset — /asset/bitcoin, /track/solana.

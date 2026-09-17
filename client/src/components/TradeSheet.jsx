@@ -518,56 +518,29 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       // Force dashboard to refresh holdings immediately
       window.dispatchEvent(new Event('wl:portfolio-updated'))
 
-      // Detailed GA4 transaction events
-      const valueUsd = Math.round(amt * ppu)
-      const valueTier = valueUsd >= 10000 ? '10k+' : valueUsd >= 1000 ? '1k-10k' : valueUsd >= 100 ? '100-1k' : '<100'
       const assetCat = asset.category || category || 'crypto'
 
-      // Sell-only metrics: how much of the position was exited and the realized
-      // P&L, so GA can answer "are people taking profit or cutting losses?" and
-      // "do they trim or fully exit?". Buys don't have a prior position, so these
-      // are computed only for sells (left undefined for buys → omitted by GA4).
-      let pctOfPosition, positionPctTier, fullExit, realizedPnlPct, pnlOutcome
-      if (!isBuy && holdingForCoin && Number(holdingForCoin.amount) > 0) {
-        const heldBefore = Number(holdingForCoin.amount)
-        pctOfPosition = Math.round(Math.min(100, (amt / heldBefore) * 100))
-        fullExit = amt >= heldBefore - 1e-9 ? 'yes' : 'no'
-        positionPctTier = pctOfPosition >= 100 ? '100' : pctOfPosition >= 50 ? '50-99' : pctOfPosition >= 25 ? '25-49' : '<25'
-        const invested = Number(holdingForCoin.total_invested)
-        if (isFinite(invested) && invested > 0) {
-          const avgCost = invested / heldBefore
-          if (avgCost > 0) {
-            realizedPnlPct = Math.round(((ppu - avgCost) / avgCost) * 100)
-            pnlOutcome = realizedPnlPct > 1 ? 'profit' : realizedPnlPct < -1 ? 'loss' : 'flat'
-          }
-        }
-      }
-
-      // Fire specific buy/sell event for GA4 funnels
+      // WHICH CATEGORY WAS TRADED, AND NOTHING ELSE.
+      //
+      // This call used to carry asset_symbol, asset_name, value_usd,
+      // value_tier, amount, price_usd, wallet_id, paid_with, received_as,
+      // pct_of_position, position_pct_tier, full_exit, realized_pnl_pct and
+      // pnl_outcome — the ticker, the dollar size and the profit or loss of
+      // every trade, to Google Analytics, from an app whose pitch is that
+      // none of that leaves the device. The contract at the top of
+      // analytics.js forbids every one of them by name.
+      //
+      // The comment below this used to say the leak was removed. It had been,
+      // from trade_submitted only, while this event kept sending all of it.
+      // analyticsPrivacy.test.js could not see either call because its scanner
+      // required a quoted event name and both are named by a ternary.
       track(type === 'buy' ? 'buy_transaction' : 'sell_transaction', {
-        asset_symbol:    asset.symbol?.toUpperCase(),
-        asset_name:      asset.name,
-        asset_category:  assetCat,
-        value_usd:       valueUsd,
-        value_tier:      valueTier,
-        amount:          parseFloat(amt.toFixed(6)),
-        price_usd:       Math.round(ppu),
-        wallet_id:       wid,
-        paid_with:       isBuy ? (buyWith === 'NONE' ? 'none' : buyWith) : undefined,
-        received_as:     !isBuy ? (sellFor === 'REMOVE' ? 'removed' : sellFor) : undefined,
-        pct_of_position: pctOfPosition,
-        position_pct_tier: positionPctTier,
-        full_exit:       fullExit,
-        realized_pnl_pct: realizedPnlPct,
-        pnl_outcome:     pnlOutcome,
+        asset_category: assetCat,
+        source: 'trade_sheet',
       })
 
-      // Also keep the combined event for backwards compat
-      // asset_symbol and trade_value_usd removed: the ticker and dollar size of
-      // every trade, which is the most sensitive thing this app holds. The
-      // third of three call sites that were sending it — Transactions and the
-      // dashboard's manage tab had the same pair.
-      track('trade_submitted', { trade_type: type, asset_category: assetCat })
+      // Kept for backwards compatibility with the existing GA reports.
+      track('trade_submitted', { trade_type: type, asset_category: assetCat, source: 'trade_sheet' })
 
       // First manual trade = the user started their profile this way.
       if (isFirstHolding) {

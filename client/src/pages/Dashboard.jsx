@@ -1426,19 +1426,13 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
         amount: amt, price_per_unit: ppu,
         date, category: 'crypto',
       })
-      const valueUsd = Math.round(amt * ppu)
+      // Which category was traded, and nothing else; see TradeSheet.jsx.
+      // Which category was traded, and nothing else; see TradeSheet.jsx.
       track(type === 'buy' ? 'buy_transaction' : 'sell_transaction', {
-        asset_symbol:   symbol.toUpperCase(),
-        asset_name:     coin,
         asset_category: 'crypto',
-        value_usd:      valueUsd,
-        value_tier:     valueUsd >= 10000 ? '10k+' : valueUsd >= 1000 ? '1k-10k' : valueUsd >= 100 ? '100-1k' : '<100',
-        amount:         parseFloat(amt.toFixed(6)),
-        price_usd:      Math.round(ppu),
-        source:         'manage_tab',
+        source: 'manage_tab',
       })
-      // Same leak as the transactions page: ticker and USD value per trade.
-      track('trade_submitted', { trade_type: type, source: 'manage_tab' })
+      track('trade_submitted', { trade_type: type, asset_category: 'crypto', source: 'manage_tab' })
       if (isFirstHolding) trackProfileCreated({ method: 'manual_trade', source: 'manage_tab' })
       setMsg(t('errTradeAdded')); setCoin(''); setSymbol(''); setAmount(''); setPrice('')
       onRefresh(); setTimeout(() => setMsg(''), 2500)
