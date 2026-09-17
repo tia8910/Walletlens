@@ -1754,7 +1754,6 @@ export default {
     atUnlockFingerprint: 'Unlock with fingerprint',
     atUseMarketPrice: 'Use current market price',
     atAssistant: 'WalletLens assistant',
-    coffeeSupport: 'Support WalletLens — buy me a coffee',
     atHome: 'WalletLens home',
     atTagline: 'WalletLens tagline',
     // ── Attributes: input placeholders ──────────────────────────

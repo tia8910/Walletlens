@@ -29,7 +29,6 @@ const NativeOnboarding = lazy(() => import('./components/NativeOnboarding'))
 const HelpGuide = lazy(() => import('./components/HelpGuide'))
 const AddAssetTour = lazy(() => import('./components/AddAssetTour'))
 import { useLanguage } from './LanguageContext'
-import CoffeeButton from './components/CoffeeButton'
 import { useTheme, THEMES } from './ThemeContext'
 import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
@@ -730,7 +729,6 @@ export default function App() {
             </div>
           </div>
           <div className="wl-topbar-right">
-            <CoffeeButton />
             <button
               className="wl-topbar-x wl-topbar-gear"
               onClick={() => { navigate('/settings'); track('settings_open', { source: 'topbar' }) }}
