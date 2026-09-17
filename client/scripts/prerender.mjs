@@ -281,14 +281,14 @@ function write(routePath, html) {
 
 // ── Homepage ─────────────────────────────────────────────────────────────────
 const homeBody = `
-<h2>WalletLens: a private net worth tracker and investment manager</h2>
-<p>WalletLens is a <strong>privacy-first net worth tracker</strong> and <strong>investment management tool</strong> for <strong>crypto, US stocks, gold, silver, bonds, cash and FX</strong> — all in one private dashboard. Track <em>and manage</em> all your investments in one place with no account, no subscription, and your data kept on your device. A free, private alternative to Kubera, CoinStats, and Personal Capital.</p>
-<h2>Why WalletLens is the best free portfolio tracker</h2>
+<h2>WalletLens: the complete management tool for crypto and digital assets</h2>
+<p>WalletLens is a <strong>complete management tool for crypto and digital assets</strong>, covering <strong>crypto, US stocks, gold, silver, bonds, cash and FX</strong> in one dashboard. Add holdings by <em>voice</em> or straight from a <em>screenshot</em>, track <em>and manage</em> everything in one place, and get AI analysis, risk scanning and price alerts on top. Free, with no account and no subscription. A free alternative to Kubera, CoinStats, and Personal Capital.</p>
+<h2>Why WalletLens is the best management tool for crypto and digital assets</h2>
 <ul>
 <li><strong>No account required</strong> — open the app and start tracking instantly. No sign-up, no email, no password.</li>
 <li><strong>Track crypto and stocks together</strong> — Bitcoin, Ethereum, and 10,000+ coins alongside Apple, Tesla, Nvidia, ETFs, gold, silver, and cash in one net-worth total.</li>
 <li><strong>100% free</strong> — no paid tier, no premium paywall, no subscription. Every feature is free forever.</li>
-<li><strong>Private portfolio tracker</strong> — data stays in your browser's localStorage and is never stored on any server.</li>
+<li><strong>Smart money flow</strong> — see which tokens large wallets are moving in and out of, live in the header.</li>
 <li><strong>AI portfolio analysis</strong> — portfolio health score A–F, diversification grade, risk scanner, stress test, and rebalance planner — all on your device.</li>
 <li><strong>Import from screenshot</strong> — <a href="/import-portfolio-from-screenshot">photograph any exchange, broker or wallet screen</a>; AI reads it into your portfolio.</li>
 <li><strong>Voice import (English &amp; Arabic)</strong> — <a href="/add-holdings-by-voice">speak your trades hands-free</a>, AI logs them instantly.</li>
