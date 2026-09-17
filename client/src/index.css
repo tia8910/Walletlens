@@ -11630,7 +11630,7 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 @keyframes wm-body-in   { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes wm-icon-pop  { 0% { transform: scale(0.4); opacity: 0; } 70% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
 @keyframes wm-pill-in   { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes wm-scan-line { 0% { top: 0; opacity: 0; } 6% { opacity: 1; } 94% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+@keyframes wm-scan-line { 0% { transform: translateY(0); opacity: 0; } 6% { opacity: 1; } 94% { opacity: 1; } 100% { transform: translateY(100%); opacity: 0; } }
 @keyframes wm-logo-pulse { 0%,100% { filter: drop-shadow(0 0 8px rgba(0,200,83,0.6)); } 50% { filter: drop-shadow(0 0 18px rgba(0,200,83,0.9)); } }
 
 .wm-overlay {
@@ -11673,12 +11673,23 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
   filter: blur(70px); opacity: 0.55; pointer-events: none;
 }
 
+/* Sweeping scan-line effect. The visible line is a ::before positioned at the
+   top of this full-height, inset:0 box; the box itself animates via
+   `transform: translateY()` (a compositor-only property) instead of `top`, so
+   the sweep never touches layout and doesn't get flagged as a CLS-counting
+   layout shift the way animating `top` on an absolutely-positioned element
+   does. The box's own height matches .wm-header (its offset parent), so a
+   100% translateY (relative to its own border box, per the transform percent
+   spec) covers exactly the same distance the old `top: 0 -> 100%` did. */
 .wm-scanline {
-  position: absolute; left: 0; right: 0; height: 2px; z-index: 3;
-  background: linear-gradient(90deg, transparent 0%, rgba(0,200,83,0) 15%, rgba(0,200,83,0.7) 50%, rgba(0,200,83,0) 85%, transparent 100%);
-  box-shadow: 0 0 14px 4px rgba(0,200,83,0.22);
+  position: absolute; inset: 0; z-index: 3;
   animation: wm-scan-line 3.5s ease-in-out infinite 1s;
   pointer-events: none;
+}
+.wm-scanline::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent 0%, rgba(0,200,83,0) 15%, rgba(0,200,83,0.7) 50%, rgba(0,200,83,0) 85%, transparent 100%);
+  box-shadow: 0 0 14px 4px rgba(0,200,83,0.22);
 }
 
 .wm-grid {
