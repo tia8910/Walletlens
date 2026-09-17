@@ -42,18 +42,22 @@ describe('the widget is on the page', () => {
   })
 
   it('keeps the message and placement it was configured with', () => {
-    expect(html).toContain('data-message="Loved walletlens.live? Built solo and kept free. A coffee helps keep it going."')
+    // Kept byte for byte as Buy Me a Coffee generated it, trailing space and
+    // all, so a diff against their snippet is empty.
+    expect(html).toContain('data-message="Loved walletlens.live? Built solo and kept free. A coffee helps keep it going. "')
+    expect(html).toContain('data-y_margin="18"')
     expect(html).toContain('data-position="Right"')
     expect(html).toContain('data-color="#40DCA5"')
   })
 
-  it('sits clear of everything else in that corner', () => {
-    // The snippet ships with y_margin 18. The bottom nav is fixed at bottom:0
-    // and ~85px tall, and it renders only in the installed app — so at 18 the
-    // widget was invisible in the app and overlapped the assistant launcher on
-    // the website. Anything under ~100 puts it back behind one of them.
-    const y = Number(html.match(/data-y_margin="(\d+)"/)[1])
-    expect(y).toBeGreaterThanOrEqual(100)
+  it('/diag can tell why it is missing', () => {
+    // Three causes look identical on screen: not deployed, refused by the CSP,
+    // or drawn behind the bottom nav. Guessing between them cost several
+    // rounds, so the page reports which one it is.
+    const diag = readFileSync(join(here, 'pages/Diagnostics.jsx'), 'utf8')
+    expect(diag).toContain("'support widget'")
+    expect(diag).toContain('script[data-name="BMC-Widget"]')
+    expect(diag).toContain('old build deployed')
   })
 })
 

@@ -92,6 +92,38 @@ async function swState() {
 }
 
 const CHECKS = [
+  // "Still no widget" has three completely different causes that look
+  // identical on screen: the build is not deployed, the script is deployed but
+  // the CSP refused it, or it ran and is sitting behind something. This
+  // separates them in one line, without a console or a cable.
+  ['support widget', async () => {
+    const tag = document.querySelector('script[data-name="BMC-Widget"]')
+    if (!tag) {
+      // The tag lives in index.html, so its absence means the HTML being
+      // served is older than the build that added it. Nothing else can cause
+      // this.
+      return { state: 'fail', detail: 'script tag not in the page — old build deployed' }
+    }
+    // The widget injects its own launcher into <body>. Present means the
+    // script was fetched, allowed by the CSP and executed.
+    const shown = document.querySelector('#bmc-wbtn, [id^="bmc-w"], iframe[src*="buymeacoffee"]')
+    if (shown) {
+      const r = shown.getBoundingClientRect()
+      const onScreen = r.width > 0 && r.bottom > 0 && r.top < window.innerHeight
+      return onScreen
+        ? { state: 'ok', detail: `rendered ${Math.round(r.width)}x${Math.round(r.height)} at bottom ${Math.round(window.innerHeight - r.bottom)}px` }
+        : { state: 'fail', detail: 'ran, but drawn off-screen or behind something' }
+    }
+    // Tag present, nothing injected: either the CSP refused the script or the
+    // host could not be reached. A no-cors probe tells those apart — it
+    // resolves opaquely if anything answered and rejects if nothing did.
+    try {
+      await fetch('https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js', { mode: 'no-cors', cache: 'no-store', signal: AbortSignal.timeout(6000) })
+      return { state: 'fail', detail: 'script tag present, host reachable, widget never appeared' }
+    } catch {
+      return { state: 'fail', detail: 'cdnjs.buymeacoffee.com unreachable or blocked by CSP' }
+    }
+  }],
   // The site's own functions. A 405 or an HTML body here means the zip
   // deployed without _worker.js and every /api path is a static asset.
   ['drive route', json(`${DRIVE_API}/__diag`, (r, b) => r.status === 404 && b.includes('not_found'))],

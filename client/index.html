@@ -546,13 +546,14 @@
          so both have to agree or the widget is refused with no visible
          error at all.
 
-         y_margin IS 120, NOT THE 18 THE SNIPPET SHIPS WITH.
-         Two fixed things already occupy that corner. .wl-bottom-nav is
-         position:fixed at bottom:0 and roughly 85px tall once the safe-area
-         inset is added, and it only renders in the installed app — so at 18px
-         the widget was completely hidden behind it there while being visible
-         on the website. The assistant launcher sits at 20px and is 56px tall,
-         so it owns everything up to ~76px. 120 clears both. -->
-    <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="Walletlens" data-description="Support me on Buy me a coffee!" data-message="Loved walletlens.live? Built solo and kept free. A coffee helps keep it going." data-color="#40DCA5" data-position="Right" data-x_margin="18" data-y_margin="120"></script>
+         KEPT EXACTLY AS BUY ME A COFFEE GENERATED IT, y_margin AND ALL.
+         Worth knowing what 18px means here: .wl-bottom-nav is fixed at
+         bottom:0 and about 85px tall with the safe-area inset, and it renders
+         only in the installed app, so at 18 the widget is behind it there. The
+         assistant launcher owns up to ~76px on the website. Raising y_margin
+         to ~120 clears both, whenever that is wanted. /diag reports whether
+         the script is on the page and whether it ran, so "not visible" and
+         "not loaded" can be told apart without guessing. -->
+    <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="Walletlens" data-description="Support me on Buy me a coffee!" data-message="Loved walletlens.live? Built solo and kept free. A coffee helps keep it going. " data-color="#40DCA5" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
   </body>
 </html>
