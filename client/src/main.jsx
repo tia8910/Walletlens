@@ -5,7 +5,8 @@ import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
 import { LanguageProvider } from './LanguageContext'
 import { ThemeProvider } from './ThemeContext'
-import { initAutoTrack, initErrorTracking, initHumanSignal } from './analytics'
+import { initAutoTrack, initErrorTracking, initHumanSignal, setInterestSegments } from './analytics'
+import { INTERESTS_EVENT } from './data/interestsEvent'
 import './index.css'
 
 // Auto-reload on stale chunk error (unhandled promise rejection path).
@@ -99,6 +100,12 @@ initAutoTrack()
 initErrorTracking()
 // Flag sessions that actually interacted, so crawler traffic can be segmented out.
 initHumanSignal()
+// Label this browser by the asset classes it asked for, so every later event
+// can be read per segment. Set on every start, not only when the picker is
+// answered: doing it only on answer labels the moment somebody chose and
+// leaves every returning user — which is most of them — unsegmented.
+setInterestSegments()
+window.addEventListener(INTERESTS_EVENT, (e) => setInterestSegments(e.detail))
 // Report Core Web Vitals (LCP, INP, CLS, FCP, TTFB) to GA4.
 //
 // Imported dynamically and started after first paint. A static import put the

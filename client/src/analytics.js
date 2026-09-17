@@ -20,6 +20,63 @@ export function track(eventName, params = {}) {
   })
 }
 
+/**
+ * GA4 user properties — the segment every later event is read against.
+ *
+ * WHY THIS IS NOT THE SAME AS SENDING THE PORTFOLIO
+ *
+ * The contract above forbids "asset-class mix", and it means what the user
+ * OWNS: the mix of a real portfolio, which is a financial fact about them.
+ * What this sends is what they TOLD US THEY CARE ABOUT — the asset classes
+ * ticked in the interest picker, which already ride out in the
+ * interests_selected event and which steer what the app shows. Someone can
+ * tick crypto and hold nothing; someone can hold gold and never tick it.
+ * Declared interest is a preference, a holding is a balance, and only the
+ * second one is what the contract was written to keep on the device.
+ *
+ * Grouped into three coarse buckets rather than the ten raw ids. That is what
+ * the question "how many of my users are crypto people" actually needs, it
+ * keeps each value inside GA4's 36-character limit without truncation, and it
+ * is a smaller claim about any individual than a ten-way fingerprint would be.
+ */
+const SEGMENTS = {
+  seg_crypto: ['crypto', 'stablecoins'],
+  seg_stocks: ['stocks', 'etfs'],
+  seg_metals: ['gold', 'silver'],
+  seg_other: ['cash', 'realestate', 'bonds', 'commodities'],
+}
+
+/** The declared interests, or null when the picker has not been answered. */
+export function readInterests() {
+  try {
+    const v = JSON.parse(localStorage.getItem('wl_interests') || 'null')
+    return Array.isArray(v) ? v : null
+  } catch { return null }
+}
+
+/**
+ * Label this browser by the asset classes it asked for. Safe to call on every
+ * start and again whenever the choice changes — GA4 keeps the latest value and
+ * stamps it on subsequent events, which is the whole point: an event-only
+ * version labels the moment somebody picked and leaves every returning user
+ * unsegmented.
+ */
+export function setInterestSegments(list = readInterests()) {
+  if (typeof window.gtag !== 'function') return
+  const picked = Array.isArray(list) ? list : []
+  const props = { interest_count: String(picked.length) }
+  for (const [prop, ids] of Object.entries(SEGMENTS)) {
+    props[prop] = ids.some(id => picked.includes(id)) ? 'yes' : 'no'
+  }
+  // "unset" is a real answer and a different one from "picked nothing": the
+  // picker can be skipped, and a skipped picker means the app fell back to its
+  // defaults rather than the user choosing them.
+  props.interest_state = list == null ? 'unset' : (picked.length ? 'picked' : 'none')
+  gtag('set', 'user_properties', props)
+}
+
+export { SEGMENTS }
+
 // Redact digits from any captured on-screen text so amounts/prices that
 // happen to sit inside a clicked element can never reach analytics.
 function redactNumbers(s) {
