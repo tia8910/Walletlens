@@ -203,7 +203,15 @@ export default function NewsTicker() {
   // Keep the component mounted while the modal is open even if the current
   // category is still loading / returned nothing, so switching categories
   // doesn't tear the modal down.
-  if (!items.length && !modalOpen) return null
+  if (!items.length && !modalOpen) {
+    // While the feed is still loading, hold the ticker bar's own height so it
+    // doesn't pop in and push everything below it down once items arrive —
+    // that pop-in was the single largest layout-shift contributor measured
+    // on Dashboard (news loads async, right below the fold-critical content).
+    // Once loading gives up with nothing to show, collapse for real.
+    if (!loading) return null
+    return <div className="news-ticker-wrap" aria-hidden="true" />
+  }
 
   return (
     <>
