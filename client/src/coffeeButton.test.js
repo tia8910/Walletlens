@@ -101,6 +101,23 @@ describe('what it does', () => {
     expect(css).not.toContain('.wl-coffee-x')
   })
 
+  it('reports the click to GA under its own event name', () => {
+    // initAutoTrack() already fires a generic click for every <a>, so without
+    // this the support click is one row among every other link on the page,
+    // identified by a class name. A named event is what a conversion can be
+    // built on.
+    expect(src).toContain("track('coffee_support_click', { source: 'topbar' })")
+    expect(src).toContain("import { track } from '../analytics'")
+  })
+
+  it('sends nothing about the portfolio with it', () => {
+    // The contract at the top of analytics.js. `source` is a placement, which
+    // is the only thing this event has any business knowing.
+    const params = src.match(/track\('coffee_support_click', (\{[^}]*\})\)/)
+    expect(params).not.toBeNull()
+    expect(params[1]).toBe("{ source: 'topbar' }")
+  })
+
   it('takes its label from the dictionary', () => {
     expect(src).toContain("t('coffeeSupport')")
     expect(src).toContain('aria-label={t(')
