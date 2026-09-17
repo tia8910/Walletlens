@@ -3,18 +3,47 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// The support button lives in the header, beside the settings gear, and can be
-// closed for good.
+// The support button: a filled amber disc in the header, beside the settings
+// gear, linking to the project's Buy Me a Coffee page.
 //
-// It was a floating draggable circle first. That put an ask on top of the
-// screen people came to use, and it had no way to say no. Both are fixed by
-// where it now sits and by the dismiss.
+// It has been through two shapes that were wrong. A floating draggable circle
+// put an ask on top of the screen people came to use. Flattening it to a line
+// icon for the header fixed that and broke something else: it then looked like
+// one more piece of navigation. The disc is what marks it as the one control
+// in that row that asks for something rather than doing something, so these
+// tests pin the fill, not just the position.
 
 const here = dirname(fileURLToPath(import.meta.url))
 const src = readFileSync(join(here, 'components/CoffeeButton.jsx'), 'utf8')
 const chat = readFileSync(join(here, 'components/AssistantChat.jsx'), 'utf8')
 const css = readFileSync(join(here, 'index.css'), 'utf8')
 const app = readFileSync(join(here, 'App.jsx'), 'utf8')
+
+const block = css.slice(css.indexOf('.wl-coffee-btn {'), css.indexOf('.wl-coffee-btn:active'))
+
+describe('how it looks', () => {
+  it('keeps the filled amber disc', () => {
+    expect(block).toContain('background: linear-gradient(135deg, #ffdd00, #ffc700)')
+    expect(block).toContain('border-radius: 50%')
+    expect(block).toContain('color: #1f1400')
+  })
+
+  it('does not borrow the transparent header-icon style', () => {
+    // .wl-topbar-x is the line-icon treatment the gear and stats use. Wearing
+    // it made this read as navigation.
+    expect(src).not.toMatch(/className="[^"]*wl-topbar-x/)
+  })
+
+  it('matches the size of the controls beside it', () => {
+    expect(block).toContain('width: 34px; height: 34px')
+    expect(css).toMatch(/\.wl-topbar-x \{[\s\S]*?width: 34px; height: 34px;/)
+  })
+
+  it('keeps the same cup drawing it has always had', () => {
+    expect(src).toContain('M4 10h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5v-5Z')
+    expect(src).toContain('M17 11h1.5a2.5 2.5 0 0 1 0 5H17')
+  })
+})
 
 describe('where it sits', () => {
   it('is rendered in the header, next to the settings gear', () => {
@@ -29,12 +58,7 @@ describe('where it sits', () => {
 
   it('no longer floats over the app', () => {
     expect(css).not.toContain('wlbmc-fab')
-    expect(src).not.toMatch(/position: fixed|pointerdown|onPointerDown/i)
-  })
-
-  it('borrows the header button size rather than inventing one', () => {
-    expect(src).toContain('className="wl-topbar-x wl-coffee-btn"')
-    expect(css).toMatch(/\.wl-topbar-x \{[\s\S]*?width: 34px; height: 34px;/)
+    expect(src).not.toMatch(/position: fixed|onPointerDown/i)
   })
 
   it('stays clear of the assistant, which is a separate control', () => {
@@ -43,35 +67,7 @@ describe('where it sits', () => {
   })
 })
 
-describe('closing it', () => {
-  it('has a dismiss that is its own button, not the link', () => {
-    // A close that shares a hit area with a payment link is a trap.
-    expect(src).toMatch(/<button\s+type="button"\s+className="wl-coffee-x"/)
-    expect(src).toContain('onClick={dismiss}')
-  })
-
-  it('stays closed on the next visit', () => {
-    expect(src).toContain("const HIDE_KEY = 'wl_coffee_hidden'")
-    expect(src).toContain("localStorage.setItem(HIDE_KEY, '1')")
-    expect(src).toContain('if (hidden) return null')
-  })
-
-  it('shows the button when storage cannot be read', () => {
-    // Failing the other way hides it from every strict browser.
-    expect(src).toMatch(/catch \{ return false \}/)
-  })
-
-  it('gives the dismiss a touch target bigger than the dot', () => {
-    // 16px of visible circle; a missed tap would open the payment page.
-    expect(css).toMatch(/\.wl-coffee-x::after \{[\s\S]*?top: -8px; right: -8px; bottom: -8px; left: -8px;/)
-  })
-
-  it('labels the dismiss for screen readers', () => {
-    expect(src).toContain("aria-label={t('coffeeHide')}")
-  })
-})
-
-describe('what it links to', () => {
+describe('what it does', () => {
   it('points at the project page', () => {
     expect(src).toContain("const SUPPORT_URL = 'https://buymeacoffee.com/Walletlens'")
   })
@@ -86,7 +82,13 @@ describe('what it links to', () => {
     expect(src).not.toMatch(/window\.open\(/)
   })
 
+  it('does nothing but link — no dismiss, no stored state', () => {
+    expect(src).not.toMatch(/localStorage|useState|wl-coffee-x/)
+    expect(css).not.toContain('.wl-coffee-x')
+  })
+
   it('takes its label from the dictionary', () => {
     expect(src).toContain("t('coffeeSupport')")
+    expect(src).toContain('aria-label={t(')
   })
 })

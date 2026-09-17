@@ -12569,43 +12569,26 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
    SUPPORT BUTTON (buy me a coffee) — header, beside the settings gear
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* The dismiss sits on the corner of the button, so the pair is positioned as
-   one unit and takes exactly the width of a normal header button. */
-.wl-coffee { position: relative; display: inline-flex; flex-shrink: 0; }
-
-/* Inherits .wl-topbar-x for size and shape; only the colour is its own, which
-   is what separates an ask from the navigation around it. */
-.wl-coffee-btn { color: #ffd54a; }
-.wl-coffee-btn:hover { color: #1f1400; background: linear-gradient(135deg, #ffdd00, #ffc700); }
-
-.wl-coffee-x {
-  position: absolute; top: -3px; right: -3px;
+/* The filled disc is the point. Everything else in .wl-topbar-right is a
+   transparent line icon, so the one control that asks for something rather
+   than doing something is the one that is filled. Same 34px box as
+   .wl-topbar-x, so it sits on the same baseline. */
+.wl-coffee-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 16px; height: 16px; padding: 0;
-  border: none; border-radius: 50%;
-  background: rgba(15,23,42,0.92);
-  color: rgba(255,255,255,0.75);
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, transform 0.15s;
+  width: 34px; height: 34px; border-radius: 50%;
+  flex-shrink: 0; text-decoration: none;
+  color: #1f1400;
+  background: linear-gradient(135deg, #ffdd00, #ffc700);
+  box-shadow: 0 2px 10px rgba(255,199,0,0.38), 0 0 0 1px rgba(255,255,255,0.35) inset;
+  transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s;
 }
-.wl-coffee-x:hover { background: #ef4444; color: #fff; transform: scale(1.12); }
-.wl-coffee-x:focus-visible { outline: 2px solid #ffdd00; outline-offset: 1px; }
-
-/* The visible dot is 16px; the touch target is not. Without this the dismiss
-   is a coin-flip on a phone, and a missed tap opens the payment page instead
-   — the one outcome a close button must never produce. */
-.wl-coffee-x::after {
-  content: ''; position: absolute; top: -8px; right: -8px; bottom: -8px; left: -8px;
-}
-
-[dir="rtl"] .wl-coffee-x { right: auto; left: -3px; }
-
-[data-wl-light] .wl-coffee-btn { color: #b45309; }
-[data-wl-light] .wl-coffee-x { background: rgba(30,41,59,0.9); }
+.wl-coffee-btn:hover { transform: translateY(-1px) scale(1.06); box-shadow: 0 5px 16px rgba(255,199,0,0.55); }
+.wl-coffee-btn:active { transform: scale(0.94); }
+.wl-coffee-btn:focus-visible { outline: 2px solid #ffdd00; outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-coffee-x { transition: none; }
-  .wl-coffee-x:hover { transform: none; }
+  .wl-coffee-btn { transition: none; }
+  .wl-coffee-btn:hover { transform: none; }
 }
 
 /* ── Assistant history panel & buttons ── */
