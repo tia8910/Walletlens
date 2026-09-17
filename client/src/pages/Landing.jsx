@@ -207,7 +207,7 @@ export default function Landing() {
 
           <p className="lp-hero-sub">{t('heroSub')}</p>
 
-          <p className="lp-privacy-caption">Crypto, stocks, metals and cash in one place.</p>
+          <p className="lp-privacy-caption">Say a trade, photograph a balance, paste a wallet address. It lands.</p>
 
           <div className="lp-cta-row">
             <button className="lp-cta-primary" onMouseEnter={prefetchDashboard} onClick={() => { track('landing_cta_net_worth'); navigate('/dashboard') }}>
@@ -228,13 +228,13 @@ export default function Landing() {
             <div className="lp-store-note">Free on every platform · no account, no signup</div>
           </div>
 
-          {/* Feature-led, not privacy-led: these are the three things nothing
-              else in the category does, which is what a first-time visitor is
-              actually deciding on. */}
+          {/* The three things nothing else in the comparison table can tick.
+              AI analysis was here and came out: everyone claims it now, so it
+              tells a first-time visitor nothing about us. */}
           <div className="lp-trust-strip">
-            <span className="lp-trust-pill">🎙️ Import by voice</span>
-            <span className="lp-trust-pill">📸 Import from a screenshot</span>
-            <span className="lp-trust-pill">🤖 Built-in AI analysis</span>
+            <span className="lp-trust-pill">🎙️ Speak your trades</span>
+            <span className="lp-trust-pill">📸 Photograph your balances</span>
+            <span className="lp-trust-pill">🕊️ Outlives you</span>
           </div>
 
           <div className="lp-badges">
@@ -449,6 +449,26 @@ export default function Landing() {
             icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>}
             title="🎙️ Voice Trade Import"
             desc="Just say it — “I bought 0.5 BTC at 60K” or “I added 20 Apple shares and 10g of gold” — and WalletLens logs the trade. Handles multiple trades in one sentence, gram→oz for gold, and lets you review every field before saving."
+          />
+          <FeatureCard delay={0} accent="167,139,250"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>}
+            title="🕊️ Portfolio Guardian"
+            desc="Crypto's hardest problem isn't volatility. It's that holdings die with the holder, and nobody else knows what existed. Pick an interval and your people. Opening the app resets the clock. Miss it and they receive your message and a scannable snapshot of what you held. Your keys never travel. Only the record that any of it was ever there."
+          />
+          <FeatureCard delay={80} accent="52,211,153"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>}
+            title="⚡ Live, Not Last Refresh"
+            desc="Most trackers show you a number from whenever you last opened them. Every holding, every category total and your whole net worth reprice themselves while the tab sits open, with a ticker running across the header so the market reaches you before you go looking for it."
+          />
+          <FeatureCard delay={160} accent="244,114,182"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>}
+            title="📸 No API Key? Take a Photo"
+            desc="Exchanges guard their API keys and half of them never give you one. So point your camera at the balances screen instead. The AI reads the rows out of the image, symbol, amount and cost, and hands them to you to check before anything is saved. Works the same on a broker statement or a wallet app."
+          />
+          <FeatureCard delay={0} accent="96,165,250"
+            icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>}
+            title="🐋 Watch Where The Size Goes"
+            desc="A live strip of what the largest wallets are actually buying and dumping, in dollars, updated through the day. No newsletter, no call, no opinion. Just the direction real money moved while you were asleep."
           />
         </div>
       </section>
