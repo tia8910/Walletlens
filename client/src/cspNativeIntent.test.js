@@ -53,18 +53,21 @@ describe('CSP admits the native intent bridge', () => {
     })
   }
 
-  it('still confines frames to that and the Google sign-in origin', () => {
+  it('still confines frames to a short, named list', () => {
     // The point of the directive is that a frame cannot be pointed anywhere.
     // Widening it to '*' or dropping it would also make the test above pass.
     //
-    // buymeacoffee was in here briefly for the support widget and is out
-    // again: the widget's payment form was refused as a frame anyway, and the
-    // header button that replaced it is a link, which frame-src does not
-    // govern. Nothing needs the extra origins now, so they are gone rather
-    // than left lying in the policy.
+    // www.buymeacoffee.com is here for the support panel, which embeds the
+    // vendor's widget page. Exhaustive rather than a "contains" check, so the
+    // next origin admitted is a decision somebody makes rather than a side
+    // effect — this list has already been widened and narrowed once.
     for (const [file] of POLICIES) {
       const sources = frameSources(read(file))
-      expect(sources).toEqual(['https://accounts.google.com', 'intent:'])
+      expect(sources).toEqual([
+        'https://accounts.google.com',
+        'intent:',
+        'https://www.buymeacoffee.com',
+      ])
     }
   })
 

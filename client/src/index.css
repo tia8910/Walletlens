@@ -12605,6 +12605,71 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
   .wl-coffee-btn:hover { transform: none; }
 }
 
+/* The support panel. Sits over the app rather than sending people away; the
+   fallback below replaces the frame when the policy refuses it. */
+.wl-coffee-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.82); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  animation: wl-coffee-fade 0.18s ease;
+}
+@keyframes wl-coffee-fade { from { opacity: 0 } to { opacity: 1 } }
+
+.wl-coffee-panel {
+  display: flex; flex-direction: column;
+  width: min(420px, 100%); height: min(620px, 88vh);
+  background: #0e1a14;
+  border: 1px solid rgba(255,221,0,0.28);
+  border-radius: 1.1rem;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+}
+.wl-coffee-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.75rem; padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.wl-coffee-title { font-size: 0.85rem; font-weight: 700; color: #ffd54a; }
+.wl-coffee-close {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; min-height: 30px; padding: 0;
+  border: none; border-radius: 50%;
+  background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.75);
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.wl-coffee-close:hover { background: rgba(255,255,255,0.14); color: #fff; }
+
+.wl-coffee-frame { flex: 1; width: 100%; border: none; background: #fff; }
+/* Something to look at while the frame is still blank, so the panel never
+   reads as broken during a slow load. */
+.wl-coffee-loading {
+  height: 3px; width: 100%;
+  background: linear-gradient(90deg, transparent, #ffdd00, transparent);
+  background-size: 40% 100%; background-repeat: no-repeat;
+  animation: wl-coffee-scan 1.1s linear infinite;
+}
+@keyframes wl-coffee-scan { from { background-position: -40% 0 } to { background-position: 140% 0 } }
+
+.wl-coffee-fallback {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1rem;
+  padding: 1.5rem; text-align: center;
+}
+.wl-coffee-fallback p { color: rgba(255,255,255,0.72); font-size: 0.88rem; line-height: 1.5; margin: 0; }
+.wl-coffee-go {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.7rem 1.2rem; border-radius: 999px;
+  background: linear-gradient(135deg, #ffdd00, #ffc700);
+  color: #1f1400; font-weight: 700; font-size: 0.88rem; text-decoration: none;
+}
+.wl-coffee-go:hover { filter: brightness(1.05); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-coffee-overlay { animation: none; }
+  .wl-coffee-loading { animation: none; }
+}
+
 /* ── Assistant history panel & buttons ── */
 .wlc-history-btn, .wlc-new-chat-btn { background: none; border: none; color: var(--text-muted, rgba(255,255,255,0.5)); cursor: pointer; padding: 0.25rem; border-radius: 8px; display: flex; transition: color 0.15s, background 0.15s; }
 .wlc-history-btn:hover, .wlc-new-chat-btn:hover { color: var(--g); background: rgba(var(--g-rgb,16,185,129),0.1); }

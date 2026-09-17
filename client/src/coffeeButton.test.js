@@ -81,26 +81,6 @@ describe('where it sits', () => {
   })
 })
 
-describe('why it is a link and not the vendor widget', () => {
-  it('leaves no trace of the Buy Me a Coffee widget script', () => {
-    // The widget's payment form loads in an iframe, and that iframe came back
-    // net::ERR_BLOCKED_BY_CSP on the target device even with both buymeacoffee
-    // origins in frame-src. A link is a top-level navigation, which frame-src
-    // does not govern at all, so this whole class of failure is gone rather
-    // than worked around.
-    const html = readFileSync(join(here, '../index.html'), 'utf8')
-    expect(html).not.toContain('BMC-Widget')
-    expect(html).not.toContain('buymeacoffee')
-  })
-
-  it('does not leave the widget relay or its CSP entries behind', () => {
-    // /api/bmc existed only to feed that script past a filtering resolver.
-    const entry = readFileSync(join(here, '../scripts/pages-worker-entry.js'), 'utf8')
-    expect(entry).not.toContain('bmc')
-    expect(readFileSync(join(here, '../public/_headers'), 'utf8')).not.toContain('buymeacoffee')
-  })
-})
-
 describe('what it does', () => {
   it('points at the project page', () => {
     expect(src).toContain("const SUPPORT_URL = 'https://buymeacoffee.com/Walletlens'")
@@ -111,13 +91,56 @@ describe('what it does', () => {
     expect(src).toContain('rel="noopener noreferrer"')
   })
 
-  it('is a link, so keyboard and open-in-new-tab both work', () => {
-    expect(src).toMatch(/<a\s/)
+  it('opens the support page in a panel, not by leaving the app', () => {
+    expect(src).toContain("const EMBED_URL = 'https://www.buymeacoffee.com/widget/page/Walletlens'")
+    expect(src).toContain('className="wl-coffee-frame"')
     expect(src).not.toMatch(/window\.open\(/)
   })
 
-  it('does nothing but link — no dismiss, no stored state', () => {
-    expect(src).not.toMatch(/localStorage|useState|wl-coffee-x/)
+  it('both policies admit the frame, or the panel is blank in production only', () => {
+    for (const f of ['../index.html', '../public/_headers']) {
+      expect(readFileSync(join(here, f), 'utf8')).toContain('https://www.buymeacoffee.com')
+    }
+  })
+
+  it('checks the host before putting a frame on screen', () => {
+    // Measured: a frame that cannot load renders the browser's own error page
+    // inside itself and FIRES load, which cancelled a five second timeout and
+    // left the fallback unreachable. onError does not fire either. So the
+    // frame is only rendered once a probe says the host answered.
+    expect(src).toContain("await fetch(EMBED_URL, { mode: 'no-cors'")
+    expect(src).toContain('{reachable && (')
+    expect(src).toContain('{blocked || reachable === false ? (')
+  })
+
+  it('the probe is a fetch, so connect-src has to admit the host', () => {
+    for (const f of ['../index.html', '../public/_headers']) {
+      const p = readFileSync(join(here, f), 'utf8')
+      const connect = p.match(/connect-src([^;]*)/)[1]
+      expect(connect).toContain('https://www.buymeacoffee.com')
+    }
+  })
+
+  it('has somewhere to go when the embed cannot be shown', () => {
+    // The vendor widget's form came back net::ERR_BLOCKED_BY_CSP and showed a
+    // white sheet with an Android error page in it. A plain link is a
+    // top-level navigation and frame-src does not govern those.
+    expect(src).toContain("document.addEventListener('securitypolicyviolation'")
+    expect(src).toContain("href={SUPPORT_URL}")
+  })
+
+  it('closes on Back rather than exiting the app', () => {
+    // Without the pushed entry, Back in the Android shell navigates the
+    // WebView away instead of closing the panel.
+    expect(src).toContain("window.history.pushState({ wlCoffee: true }, '')")
+    expect(src).toContain("e.key === 'Escape'")
+  })
+
+  it('has no hide-forever dismiss and stores nothing', () => {
+    // The panel needs useState; what is gone is the close-for-good that wrote
+    // wl_coffee_hidden and could not be undone.
+    expect(src).not.toMatch(/localStorage/)
+    expect(src).not.toMatch(/wl-coffee-x/)
     expect(css).not.toContain('.wl-coffee-x')
   })
 
