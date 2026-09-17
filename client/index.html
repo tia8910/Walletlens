@@ -546,7 +546,17 @@
          so both have to agree or the widget is refused with no visible
          error at all.
 
-         KEPT EXACTLY AS BUY ME A COFFEE GENERATED IT, y_margin AND ALL.
+         THE src IS /api/bmc, NOT cdnjs.buymeacoffee.com. EVERYTHING ELSE IS
+         THE SNIPPET AS GENERATED.
+         /diag on the live site reported cdnjs.buymeacoffee.com failing in 14ms
+         while every walletlens.live check took 507ms. Fourteen milliseconds
+         contains no DNS lookup and no TLS handshake: the request is refused
+         before it leaves the machine, by a filtering resolver — the same one
+         functions/api/icon.js was written for, and the reason a second device
+         on the same network behaves identically. Both CSPs name the host
+         explicitly, so it is not a policy refusal.
+         functions/api/bmc.js fetches the same file from Cloudflare's edge and
+         serves it from this origin, which the device does reach.
          Worth knowing what 18px means here: .wl-bottom-nav is fixed at
          bottom:0 and about 85px tall with the safe-area inset, and it renders
          only in the installed app, so at 18 the widget is behind it there. The
@@ -554,6 +564,6 @@
          to ~120 clears both, whenever that is wanted. /diag reports whether
          the script is on the page and whether it ran, so "not visible" and
          "not loaded" can be told apart without guessing. -->
-    <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="Walletlens" data-description="Support me on Buy me a coffee!" data-message="Loved walletlens.live? Built solo and kept free. A coffee helps keep it going. " data-color="#40DCA5" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
+    <script data-name="BMC-Widget" data-cfasync="false" src="/api/bmc" data-id="Walletlens" data-description="Support me on Buy me a coffee!" data-message="Loved walletlens.live? Built solo and kept free. A coffee helps keep it going. " data-color="#40DCA5" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
   </body>
 </html>

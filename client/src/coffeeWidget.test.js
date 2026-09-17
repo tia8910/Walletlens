@@ -31,9 +31,28 @@ const metaCsp = html.match(/http-equiv="Content-Security-Policy" content="([\s\S
 const headerCsp = headers.match(/Content-Security-Policy:\s*([^\n]*)/)[1]
 
 describe('the widget is on the page', () => {
-  it('loads the script Buy Me a Coffee gave us', () => {
-    expect(html).toContain('src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"')
+  it('loads the script from this origin, not the blocked CDN', () => {
+    // cdnjs.buymeacoffee.com fails in 14ms on the target network — refused
+    // before it leaves the machine, by the filtering resolver that
+    // functions/api/icon.js documents. Same relay, same reason.
+    expect(html).toContain('src="/api/bmc"')
+    expect(html).not.toContain('src="https://cdnjs.buymeacoffee.com')
     expect(html).toContain('data-name="BMC-Widget"')
+  })
+
+  it('the relay is wired into the worker bundle', () => {
+    // functions/ is not compiled by a direct upload; only _worker.js is. A
+    // function that is not in this map does not exist in production.
+    const entry = readFileSync(join(here, '../scripts/pages-worker-entry.js'), 'utf8')
+    expect(entry).toContain("'/api/bmc': bmc")
+    expect(entry).toContain("import * as bmc from '../../functions/api/bmc.js'")
+  })
+
+  it('the relay is not an open proxy', () => {
+    const fn = readFileSync(join(here, '../../functions/api/bmc.js'), 'utf8')
+    expect(fn).toContain("const UPSTREAM = 'https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js'")
+    // No caller-supplied target anywhere in it.
+    expect(fn).not.toMatch(/searchParams\.get|params\./)
   })
 
   it('points at the right account', () => {
@@ -58,6 +77,10 @@ describe('the widget is on the page', () => {
     expect(diag).toContain("'support widget'")
     expect(diag).toContain('script[data-name="BMC-Widget"]')
     expect(diag).toContain('old build deployed')
+    // It reports what the relay actually said instead of guessing between
+    // "unreachable" and "blocked by CSP", which cost two rounds.
+    expect(diag).toContain('/api/bmc')
+    expect(diag).toContain('relay served')
   })
 })
 

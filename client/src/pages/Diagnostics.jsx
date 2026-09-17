@@ -114,14 +114,24 @@ const CHECKS = [
         ? { state: 'ok', detail: `rendered ${Math.round(r.width)}x${Math.round(r.height)} at bottom ${Math.round(window.innerHeight - r.bottom)}px` }
         : { state: 'fail', detail: 'ran, but drawn off-screen or behind something' }
     }
-    // Tag present, nothing injected: either the CSP refused the script or the
-    // host could not be reached. A no-cors probe tells those apart — it
-    // resolves opaquely if anything answered and rejects if nothing did.
+    // Tag present, nothing injected. The script now comes from /api/bmc, so
+    // ask the relay directly and report what it actually returned — the
+    // previous version guessed between "unreachable" and "blocked by CSP" and
+    // could not tell them apart, which cost two rounds.
     try {
-      await fetch('https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js', { mode: 'no-cors', cache: 'no-store', signal: AbortSignal.timeout(6000) })
-      return { state: 'fail', detail: 'script tag present, host reachable, widget never appeared' }
-    } catch {
-      return { state: 'fail', detail: 'cdnjs.buymeacoffee.com unreachable or blocked by CSP' }
+      const r = await fetch(`${SITE_ORIGIN}/api/bmc`, { cache: 'no-store', signal: AbortSignal.timeout(8000) })
+      const body = await r.text()
+      if (!r.ok) {
+        // 502 means the edge could not reach buymeacoffee either, which is a
+        // different problem from the device not reaching it.
+        return { state: 'fail', detail: `relay ${r.status} · ${body.slice(0, 60).replace(/\s+/g, ' ')}` }
+      }
+      if (body.length < 500) {
+        return { state: 'fail', detail: `relay returned ${body.length} bytes — not the widget` }
+      }
+      return { state: 'fail', detail: `relay served ${Math.round(body.length / 1024)}KB but the widget did not draw` }
+    } catch (e) {
+      return { state: 'fail', detail: `relay unreachable · ${String(e?.message || e).slice(0, 50)}` }
     }
   }],
   // The site's own functions. A 405 or an HTML body here means the zip

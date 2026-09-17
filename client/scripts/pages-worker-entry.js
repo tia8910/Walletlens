@@ -25,6 +25,7 @@ import * as voiceParse from '../../functions/api/voice-parse.js'
 import * as translate from '../../functions/api/translate.js'
 import * as stocks from '../../functions/api/stocks.js'
 import * as icon from '../../functions/api/icon.js'
+import * as bmc from '../../functions/api/bmc.js'
 import * as push from '../../functions/api/push/[[path]].js'
 import * as drive from '../../functions/api/drive/[[path]].js'
 import * as gdrive from '../../functions/api/gdrive/[[path]].js'
@@ -108,6 +109,7 @@ const EXACT = {
   '/api/translate': translate,
   '/api/stocks': stocks,
   '/api/icon': icon,
+  '/api/bmc': bmc,
 }
 
 /**
