@@ -91,74 +91,34 @@ describe('what it does', () => {
     expect(src).toContain('rel="noopener noreferrer"')
   })
 
-  it('opens the support page in a panel, not by leaving the app', () => {
-    expect(src).toContain("const EMBED_URL = 'https://www.buymeacoffee.com/widget/page/Walletlens'")
-    expect(src).toContain('className="wl-coffee-frame"')
+  it('is a link, so keyboard and open-in-new-tab both work', () => {
+    expect(src).toMatch(/<a\s/)
     expect(src).not.toMatch(/window\.open\(/)
   })
 
-  it('both policies admit the frame, or the panel is blank in production only', () => {
+  it('never embeds the support page', () => {
+    // Two attempts at that: the vendor widget's form and then our own panel.
+    // Both came back net::ERR_BLOCKED_BY_CSP. A link is a top-level
+    // navigation and frame-src does not govern those.
+    expect(src).not.toMatch(/iframe/)
     for (const f of ['../index.html', '../public/_headers']) {
-      expect(readFileSync(join(here, f), 'utf8')).toContain('https://www.buymeacoffee.com')
+      expect(readFileSync(join(here, f), 'utf8')).not.toContain('buymeacoffee')
     }
   })
 
-  it('checks the host before putting a frame on screen', () => {
-    // Measured: a frame that cannot load renders the browser's own error page
-    // inside itself and FIRES load, which cancelled a five second timeout and
-    // left the fallback unreachable. onError does not fire either. So the
-    // frame is only rendered once a probe says the host answered.
-    expect(src).toContain("await fetch(EMBED_URL, { mode: 'no-cors'")
-    expect(src).toContain('{reachable && (')
-    expect(src).toContain('{blocked || reachable === false ? (')
+  it('pins padding so the cup cannot be squashed again', () => {
+    // As a <button> it inherited a global 8.8px 17.6px padding; with
+    // border-box on a 36px square that left a 0.8px content box and the icon
+    // rendered at 0.8x0.8 — a blank yellow disc. Measured in a browser.
+    expect(block).toContain('padding: 0')
   })
 
-  it('the probe is a fetch, so connect-src has to admit the host', () => {
-    for (const f of ['../index.html', '../public/_headers']) {
-      const p = readFileSync(join(here, f), 'utf8')
-      const connect = p.match(/connect-src([^;]*)/)[1]
-      expect(connect).toContain('https://www.buymeacoffee.com')
-    }
-  })
-
-  it('has somewhere to go when the embed cannot be shown', () => {
-    // The vendor widget's form came back net::ERR_BLOCKED_BY_CSP and showed a
-    // white sheet with an Android error page in it. A plain link is a
-    // top-level navigation and frame-src does not govern those.
-    expect(src).toContain("document.addEventListener('securitypolicyviolation'")
-    expect(src).toContain("href={SUPPORT_URL}")
-  })
-
-  it('closes on Back rather than exiting the app', () => {
-    // Without the pushed entry, Back in the Android shell navigates the
-    // WebView away instead of closing the panel.
-    expect(src).toContain("window.history.pushState({ wlCoffee: true }, '')")
-    expect(src).toContain("e.key === 'Escape'")
-  })
-
-  it('has no hide-forever dismiss and stores nothing', () => {
-    // The panel needs useState; what is gone is the close-for-good that wrote
-    // wl_coffee_hidden and could not be undone.
-    expect(src).not.toMatch(/localStorage/)
-    expect(src).not.toMatch(/wl-coffee-x/)
-    expect(css).not.toContain('.wl-coffee-x')
-  })
-
-  it('reports the click to GA under its own event name', () => {
-    // initAutoTrack() already fires a generic click for every <a>, so without
-    // this the support click is one row among every other link on the page,
-    // identified by a class name. A named event is what a conversion can be
-    // built on.
-    expect(src).toContain("track('coffee_support_click', { source: 'topbar' })")
-    expect(src).toContain("import { track } from '../analytics'")
-  })
-
-  it('sends nothing about the portfolio with it', () => {
-    // The contract at the top of analytics.js. `source` is a placement, which
-    // is the only thing this event has any business knowing.
-    const params = src.match(/track\('coffee_support_click', (\{[^}]*\})\)/)
-    expect(params).not.toBeNull()
-    expect(params[1]).toBe("{ source: 'topbar' }")
+  it('animates the steam and nothing else', () => {
+    // A drifting cup reads as a glitch. Only the two wisps carry the class.
+    expect(src).toContain('className="wl-coffee-steam"')
+    expect(src).toContain('wl-coffee-steam wl-coffee-steam-b')
+    expect(css).toContain('@keyframes wl-coffee-rise')
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.wl-coffee-steam \{ animation: none;/)
   })
 
   it('takes its label from the dictionary', () => {

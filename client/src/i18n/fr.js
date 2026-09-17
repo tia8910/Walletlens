@@ -1734,8 +1734,6 @@ export default {
     atUseMarketPrice: 'Utiliser le prix du marché actuel',
     atAssistant: 'Assistant WalletLens',
     coffeeSupport: 'Soutenir WalletLens — offrez-moi un café',
-    coffeeOpenOutside: 'La page de soutien ne peut pas s’ouvrir dans l’app ici. Ouvrez-la dans votre navigateur.',
-    coffeeContinue: 'Ouvrir Buy Me a Coffee',
     atHome: 'Accueil WalletLens',
     atTagline: 'Slogan WalletLens',
     // ── Attributes: input placeholders ──────────────────────────
