@@ -97,7 +97,7 @@ export default {
     brandTag: 'VEDI IL TUO PATRIMONIO CON CHIAREZZA',
     heroH1a: 'Meriti di sapere',
     heroH1b: 'esattamente a che punto sei.',
-    heroSub: 'La maggior parte degli investitori naviga a vista — stima i propri guadagni, non vede arrivare i rug pull e tiene posizioni in perdita senza un piano. WalletLens ti dà la chiarezza, la protezione e l’intelligenza per riprendere il controllo. Gratis. Privato. Senza account.',
+    heroSub: 'Il kit completo per gestire cripto e asset digitali. Aggiungi posizioni con la voce o da uno screenshot, tieni cripto, azioni, metalli e contanti in un unico portafoglio, con analisi AI, scansione dei rischi e avvisi di prezzo. Gratis, senza account.',
     ctaLaunch: 'Risveglia il mio patrimonio — gratis',
     ctaMarket: 'Esplora il mercato',
     badge1: '🔒 100% privato',

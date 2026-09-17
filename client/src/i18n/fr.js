@@ -100,7 +100,7 @@ export default {
     brandTag: 'VOYEZ VOTRE PATRIMOINE CLAIREMENT',
     heroH1a: 'Vous méritez de savoir',
     heroH1b: 'exactement où vous en êtes.',
-    heroSub: 'La plupart des investisseurs avancent à l\'aveugle : ils devinent leurs gains, passent à côté des arnaques, gardent des positions perdantes sans plan. WalletLens vous donne la clarté, la protection et l\'intelligence nécessaires pour reprendre le contrôle. Gratuit. Privé. Sans compte.',
+    heroSub: 'La boîte à outils complète pour gérer crypto et actifs numériques. Ajoutez vos positions à la voix ou depuis une capture d\'écran, réunissez crypto, actions, métaux et liquidités dans un seul portefeuille, avec analyse par IA, scan des risques et alertes de prix. Gratuit, sans compte.',
     ctaLaunch: 'Réveillez votre patrimoine — gratuit',
     ctaMarket: 'Explorer le marché',
     badge1: '🔒 100 % privé',

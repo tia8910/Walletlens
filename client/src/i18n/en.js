@@ -97,7 +97,7 @@ export default {
     brandTag: 'SEE YOUR WEALTH CLEARLY',
     heroH1a: 'You deserve to know',
     heroH1b: 'exactly where you stand.',
-    heroSub: 'Most investors are flying blind — guessing their P&L, missing rug pulls, holding underwater positions without a plan. WalletLens gives you the clarity, protection, and intelligence to take back control. Free. Private. No account needed.',
+    heroSub: 'The complete management toolkit for crypto and digital assets. Add holdings by voice or straight from a screenshot, keep crypto, stocks, metals and cash in one portfolio, and get AI analysis, risk scans and price alerts on top. Free, no account needed.',
     ctaLaunch: 'Wake Up My Wealth — Free',
     ctaMarket: 'Explore Market',
     badge1: '🔒 100% Private',

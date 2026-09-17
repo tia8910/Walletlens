@@ -97,7 +97,7 @@ export default {
     brandTag: 'SEHEN SIE IHR VERMÖGEN KLAR',
     heroH1a: 'Sie verdienen es zu wissen,',
     heroH1b: 'wo genau Sie stehen.',
-    heroSub: 'Die meisten Anleger tappen im Dunkeln — sie schätzen ihre Gewinne, übersehen Rug Pulls und halten Verlustpositionen ohne Plan. WalletLens gibt Ihnen die Klarheit, den Schutz und die Intelligenz, um die Kontrolle zurückzugewinnen. Kostenlos. Privat. Ohne Konto.',
+    heroSub: 'Das komplette Toolkit für Krypto und digitale Assets. Positionen per Sprache oder direkt aus einem Screenshot erfassen, Krypto, Aktien, Metalle und Bargeld in einem Portfolio führen, dazu KI-Analyse, Risiko-Scans und Kursalarme. Kostenlos, ohne Konto.',
     ctaLaunch: 'Vermögen aufwecken — kostenlos',
     ctaMarket: 'Markt entdecken',
     badge1: '🔒 100 % privat',

@@ -207,7 +207,7 @@ export default function Landing() {
 
           <p className="lp-hero-sub">{t('heroSub')}</p>
 
-          <p className="lp-privacy-caption">Your data never leaves your device.</p>
+          <p className="lp-privacy-caption">Crypto, stocks, metals and cash in one place.</p>
 
           <div className="lp-cta-row">
             <button className="lp-cta-primary" onMouseEnter={prefetchDashboard} onClick={() => { track('landing_cta_net_worth'); navigate('/dashboard') }}>
@@ -228,10 +228,13 @@ export default function Landing() {
             <div className="lp-store-note">Free on every platform · no account, no signup</div>
           </div>
 
+          {/* Feature-led, not privacy-led: these are the three things nothing
+              else in the category does, which is what a first-time visitor is
+              actually deciding on. */}
           <div className="lp-trust-strip">
-            <span className="lp-trust-pill">🔒 No wallet connection</span>
-            <span className="lp-trust-pill">🖥️ No server — 100% local</span>
             <span className="lp-trust-pill">🎙️ Import by voice</span>
+            <span className="lp-trust-pill">📸 Import from a screenshot</span>
+            <span className="lp-trust-pill">🤖 Built-in AI analysis</span>
           </div>
 
           <div className="lp-badges">
@@ -629,8 +632,9 @@ export default function Landing() {
           <span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>or straight from the web</span>
         </h2>
         <p className="lp-section-sub" style={{ maxWidth: 620, margin: '0 auto 2.5rem' }}>
-          Same portfolio, same privacy model — pick whichever fits the moment. Everything
-          stays on your device, so there's no account to keep in sync.
+          One portfolio across all three, pick whichever fits the moment. Add a trade by
+          voice on your phone, check the total from your toolbar, run the numbers on a
+          full screen.
         </p>
 
         <div className="lp-plat-grid">
@@ -755,7 +759,7 @@ export default function Landing() {
                   ['Price', ['free', 'Free forever'], ['muted', 'Free*'], ['muted', '$199/yr'], ['muted', 'Freemium'], ['free', 'Free']],
                   ['No account required', ['yes'], ['no'], ['no'], ['no'], ['yes']],
                   ['Crypto + stocks + metals + cash', ['yes'], ['yes'], ['yes'], ['part', 'Crypto-led'], ['part', 'Manual']],
-                  ['Data stays on your device', ['yes'], ['no'], ['no'], ['no'], ['yes']],
+                  ['Voice & screenshot import', ['yes'], ['no'], ['no'], ['no'], ['no']],
                   ['No bank / exchange login', ['yes'], ['no'], ['part', 'Optional'], ['no'], ['yes']],
                   ['Built-in AI analysis', ['yes'], ['part', 'Limited'], ['no'], ['part', 'Limited'], ['no']],
                   ['Live prices & auto-update', ['yes'], ['yes'], ['yes'], ['yes'], ['no']],
