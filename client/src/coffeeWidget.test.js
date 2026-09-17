@@ -46,6 +46,15 @@ describe('the widget is on the page', () => {
     expect(html).toContain('data-position="Right"')
     expect(html).toContain('data-color="#40DCA5"')
   })
+
+  it('sits clear of everything else in that corner', () => {
+    // The snippet ships with y_margin 18. The bottom nav is fixed at bottom:0
+    // and ~85px tall, and it renders only in the installed app — so at 18 the
+    // widget was invisible in the app and overlapped the assistant launcher on
+    // the website. Anything under ~100 puts it back behind one of them.
+    const y = Number(html.match(/data-y_margin="(\d+)"/)[1])
+    expect(y).toBeGreaterThanOrEqual(100)
+  })
 })
 
 describe('the CSP lets it run', () => {
