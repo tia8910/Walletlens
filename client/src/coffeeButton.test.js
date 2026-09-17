@@ -35,8 +35,22 @@ describe('how it looks', () => {
   })
 
   it('matches the size of the controls beside it', () => {
-    expect(block).toContain('width: 34px; height: 34px')
-    expect(css).toMatch(/\.wl-topbar-x \{[\s\S]*?width: 34px; height: 34px;/)
+    expect(block).toContain('width: 36px; height: 36px')
+    expect(css).toMatch(/\.wl-topbar \.wl-topbar-x \{\s*width: 36px; height: 36px;/)
+  })
+
+  it('stays a circle on a phone, not an oval', () => {
+    // Measured at 34x44 on a 390px viewport while looking perfect on desktop.
+    // A global rule sets `button, a, select { min-height: 44px }` below 768px
+    // and this is an <a>, so the disc kept its width and grew 10px taller.
+    // The class-level min-height is the only thing outranking it.
+    expect(block).toContain('min-height: 36px')
+    expect(css).toMatch(/@media \(max-width: 768px\) \{[\s\S]{0,400}?button, a, select \{\s*min-height: 44px;/)
+  })
+
+  it('keeps the 44px touch target the global rule was after', () => {
+    // Shrinking the button must not shrink what a thumb has to hit.
+    expect(css).toMatch(/\.wl-coffee-btn::after \{[\s\S]*?top: -4px; right: -4px; bottom: -4px; left: -4px;/)
   })
 
   it('keeps the same cup drawing it has always had', () => {

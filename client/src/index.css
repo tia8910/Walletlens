@@ -12574,8 +12574,16 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
    than doing something is the one that is filled. Same 34px box as
    .wl-topbar-x, so it sits on the same baseline. */
 .wl-coffee-btn {
+  position: relative;
   display: flex; align-items: center; justify-content: center;
-  width: 34px; height: 34px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;
+  /* THE min-height IS LOAD-BEARING, NOT DUPLICATION.
+     A global touch-target rule sets `button, a, select { min-height: 44px }`
+     below 768px. This is an <a>, so it matched: the disc kept its 36px width,
+     grew to 44px tall and rendered as an oval on every phone while looking
+     perfect on a desktop. A class beats the bare element selector, so pinning
+     min-height here is what keeps the circle round. */
+  min-height: 36px;
   flex-shrink: 0; text-decoration: none;
   color: #1f1400;
   background: linear-gradient(135deg, #ffdd00, #ffc700);
@@ -12585,6 +12593,12 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .wl-coffee-btn:hover { transform: translateY(-1px) scale(1.06); box-shadow: 0 5px 16px rgba(255,199,0,0.55); }
 .wl-coffee-btn:active { transform: scale(0.94); }
 .wl-coffee-btn:focus-visible { outline: 2px solid #ffdd00; outline-offset: 2px; }
+
+/* The 44px the touch-target rule was after, without letting it deform the
+   disc: the circle stays 36px and the tappable area extends past it. */
+.wl-coffee-btn::after {
+  content: ''; position: absolute; top: -4px; right: -4px; bottom: -4px; left: -4px;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .wl-coffee-btn { transition: none; }
