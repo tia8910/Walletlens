@@ -68,7 +68,7 @@ describe('restoring leaves the device in step', () => {
   it('stamps the fingerprint of what it applied, not just the time', () => {
     // Without this a restored device reads as permanently changed: autoBackup
     // re-uploads the copy it just downloaded and autoRestore never pulls again.
-    expect(sync).toMatch(/writeKey\(LAST_HASH, await fingerprint\(code\)\)/)
+    expect(sync).toMatch(/writeKey\(LAST_HASH, await fingerprint\(await snapshotSignature\(\)\)\)/)
   })
 
   it('tells the app to re-read, and cannot ping-pong doing it', () => {
@@ -99,5 +99,95 @@ describe('when it runs', () => {
 
   it('tears the poll down with everything else', () => {
     expect(sched).toContain('clearInterval(pullTimer)')
+  })
+})
+
+// The bug that made all of the above do nothing.
+//
+// generateBackupCode() puts `ts: Date.now()` in the payload, so it returns a
+// different string on every call. Every change check hashed that string, which
+// meant "has anything changed?" answered yes forever: autoBackup's skip never
+// matched and re-uploaded the whole file every sweep, and autoRestore read the
+// device as dirty and chose 'conflict' instead of pulling. The symptom was a
+// trade added on one device never appearing on the other.
+describe('change detection compares content, not the moment it was asked', () => {
+  it('the snapshot signature leaves the wall clock out', () => {
+    const core = readFileSync(join(here, 'backupCore.js'), 'utf8')
+    const fn = core.slice(core.indexOf('async function buildSnapshot'), core.indexOf('export async function generateBackupCode'))
+    expect(fn).not.toMatch(/Date\.now\(\)/)
+    expect(fn).toContain('const payload = { v: 3, txs: compactTxs, ws }')
+  })
+
+  it('the stamp is still written into the backup itself', () => {
+    // applyBackupCode reads it back to say when a backup was made.
+    const core = readFileSync(join(here, 'backupCore.js'), 'utf8')
+    expect(core).toContain('JSON.stringify({ ...payload, ts: Date.now() })')
+    expect(core).toMatch(/when: parsed\.ts \? new Date\(parsed\.ts\) : null/)
+  })
+
+  it.each([
+    ['the backup skip', /const hash = await fingerprint\(await snapshotSignature\(\)\)/],
+    ['the dirty check', /return \(await fingerprint\(await snapshotSignature\(\)\)\) !== stamped/],
+    ['the restore stamp', /writeKey\(LAST_HASH, await fingerprint\(await snapshotSignature\(\)\)\)/],
+  ])('%s hashes the signature', (_name, pattern) => {
+    expect(sync).toMatch(pattern)
+  })
+
+  it('nothing hashes the timestamped code any more', () => {
+    // The shape of the original bug, in case it is reintroduced.
+    expect(sync).not.toMatch(/fingerprint\(code\)/)
+  })
+})
+
+// The bug that made all of the above do nothing.
+//
+// generateBackupCode() put `ts: Date.now()` in the payload, so it returned a
+// different string on every call. Every change check hashed that string, so
+// "has anything changed?" answered yes forever: autoBackup's skip never
+// matched and re-uploaded the whole file every sweep, and autoRestore read the
+// device as dirty and chose 'conflict' instead of pulling. The symptom was a
+// trade added on one device never reaching the other.
+describe('change detection compares content, not the moment it was asked', () => {
+  const core = readFileSync(join(here, 'backupCore.js'), 'utf8')
+
+  it('the snapshot signature leaves the wall clock out', () => {
+    const fn = core.slice(core.indexOf('async function buildSnapshot'),
+                          core.indexOf('export async function generateBackupCode'))
+    expect(fn).not.toMatch(/Date\.now\(\)/)
+    expect(fn).toContain('const payload = { v: 3, txs: compactTxs, ws }')
+  })
+
+  it('the stamp is still written into the backup itself', () => {
+    // applyBackupCode reads it back to say when a backup was made.
+    expect(core).toContain('JSON.stringify({ ...payload, ts: Date.now() })')
+    expect(core).toMatch(/when: parsed\.ts \? new Date\(parsed\.ts\) : null/)
+  })
+
+  it.each([
+    ['the backup skip', /const hash = await fingerprint\(await snapshotSignature\(\)\)/],
+    ['the dirty check', /return \(await fingerprint\(await snapshotSignature\(\)\)\) !== stamped/],
+    ['the restore stamp', /writeKey\(LAST_HASH, await fingerprint\(await snapshotSignature\(\)\)\)/],
+  ])('%s hashes the signature', (_name, pattern) => {
+    expect(sync).toMatch(pattern)
+  })
+
+  it('nothing hashes the timestamped code any more', () => {
+    expect(sync).not.toMatch(/fingerprint\(code\)/)
+  })
+})
+
+describe('the one-minute budget', () => {
+  it('uploads within five seconds of a trade', () => {
+    expect(sched).toContain('const AFTER_CHANGE_MS = 5 * 1000')
+  })
+
+  it('the other device notices within thirty', () => {
+    expect(sched).toContain('const PULL_MS = 30 * 1000')
+  })
+
+  it('leaves a hidden tab alone', () => {
+    // It gets a foreground check the instant it comes back, so polling a
+    // sleeping phone every 30s is battery spent for nothing.
+    expect(sched).toMatch(/why === 'poll' && typeof document !== 'undefined' && document\.hidden/)
   })
 })

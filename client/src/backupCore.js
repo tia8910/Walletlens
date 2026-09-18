@@ -225,7 +225,25 @@ function b64decode(str) { return decodeURIComponent(escape(atob(str))) }
 
 // WL3 format — compact parsed objects, coin_image stripped (re-fetched on load),
 // empty optional fields omitted. Avoids the double-encoding of WL2.
-export async function generateBackupCode() {
+/**
+ * Everything worth backing up, WITHOUT the wall-clock stamp.
+ *
+ * Split out because two callers need the same bytes for opposite reasons: the
+ * backup itself wants a timestamp in it, and change detection cannot have one.
+ * generateBackupCode() used to be the only entry point, and it put
+ * `ts: Date.now()` in the payload, so it returned a different string on every
+ * call. Everything downstream that hashed that string to ask "has anything
+ * changed?" got yes, forever:
+ *
+ *   • autoBackup()'s "unchanged, skip" branch never once matched, so every
+ *     connected device re-uploaded the whole encrypted backup on every sweep.
+ *   • autoRestore() read the device as having unsaved edits every time, so it
+ *     decided 'conflict' and never pulled another device's trade down.
+ *
+ * The stamp is still in the file, because applyBackupCode() reads it back to
+ * tell people when the backup was made.
+ */
+async function buildSnapshot() {
   const txsRaw = localStorage.getItem('crypto_tracker_transactions')
   const wsRaw  = localStorage.getItem('crypto_tracker_wallets')
   const txs = txsRaw ? JSON.parse(txsRaw) : []
@@ -243,7 +261,7 @@ export async function generateBackupCode() {
     return out
   })
 
-  const payload = { v: 3, ts: Date.now(), txs: compactTxs, ws }
+  const payload = { v: 3, txs: compactTxs, ws }
 
   const wId = localStorage.getItem('crypto_tracker_next_wallet_id')
   const tId = localStorage.getItem('crypto_tracker_next_tx_id')
@@ -256,10 +274,27 @@ export async function generateBackupCode() {
     if (raw != null) { try { payload[alias] = JSON.parse(raw) } catch { payload[alias] = raw } }
   }
 
-  const json = JSON.stringify(payload)
+  return { payload, txCount: txs.length, walletCount: ws.length }
+}
+
+export async function generateBackupCode() {
+  const { payload, txCount, walletCount } = await buildSnapshot()
+  const json = JSON.stringify({ ...payload, ts: Date.now() })
   const compressed = await gzipB64(json)
   const code = compressed ? `WL3-${compressed}` : `WL1-${b64encode(json)}`
-  return { code, txCount: txs.length, walletCount: ws.length }
+  return { code, txCount, walletCount }
+}
+
+/**
+ * A stable string for "what this device is holding right now".
+ *
+ * Identical inputs give identical output, which is the entire point: it is
+ * what change detection hashes. Cheaper than generateBackupCode() too, since
+ * nothing is gzipped or base64'd on a path that only ever compares.
+ */
+export async function snapshotSignature() {
+  const { payload } = await buildSnapshot()
+  return JSON.stringify(payload)
 }
 
 export async function applyBackupCode(raw) {

@@ -5,7 +5,7 @@
 // improvised inside a click handler. Auto-restore fires in exactly one case:
 // the device has no portfolio at all. Anything else asks first.
 
-import { generateBackupCode, applyBackupCode } from './backupCore'
+import { generateBackupCode, snapshotSignature, applyBackupCode } from './backupCore'
 import {
   decryptBackup, isEncryptedBackup, newDataKey, dataKeyToString, dataKeyFromString,
   encryptBackupEnvelope, encryptBackupWithWrap, wrapBlockOf,
@@ -230,7 +230,9 @@ export async function backupNow(passphrase, { automatic = true } = {}) {
   } else {
     forgetAutoBackup()
   }
-  writeKey(LAST_HASH, await fingerprint(code))
+  // The content, not the code: code carries ts: Date.now(), so stamping its
+  // hash left the device reading as changed the instant after a manual backup.
+  writeKey(LAST_HASH, await fingerprint(await snapshotSignature()))
   writeKey(FILE_ID, id)
   writeKey(LAST_BACKUP_AT, String(Date.now()))
   writeKey(REMOTE_AT, String(Date.now()))
@@ -260,7 +262,9 @@ export async function autoBackup() {
   // Nothing new to say. Skipping here is what keeps this from rewriting the
   // same file every few minutes for someone who is only reading their
   // dashboard.
-  const hash = await fingerprint(code)
+  // The CONTENT, not `code`. code carries ts: Date.now(), so hashing it made
+  // this comparison fail every single time and the skip never happened.
+  const hash = await fingerprint(await snapshotSignature())
   if (hash === readKey(LAST_HASH)) return { ok: false, reason: 'unchanged' }
 
   // The token, refreshed if needed.
@@ -335,8 +339,7 @@ export async function localChangedSinceBackup() {
   const stamped = readKey(LAST_HASH)
   if (!stamped) return true
   try {
-    const { code } = await generateBackupCode()
-    return (await fingerprint(code)) !== stamped
+    return (await fingerprint(await snapshotSignature())) !== stamped
   } catch {
     return true
   }
@@ -434,7 +437,7 @@ export async function restoreNow(passphrase) {
   // the fingerprint stamped, a restored device is in step with Drive, which is
   // the truth.
   try {
-    writeKey(LAST_HASH, await fingerprint(code))
+    writeKey(LAST_HASH, await fingerprint(await snapshotSignature()))
     writeKey(LAST_BACKUP_AT, String(Date.now()))
     writeKey(REMOTE_AT, String(Date.now()))
   } catch { /* private mode */ }

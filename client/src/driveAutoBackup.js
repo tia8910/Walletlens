@@ -26,9 +26,9 @@
 
 import { autoBackup, autoRestore, canAutoBackup } from './driveSync'
 
-// Long enough that a burst of edits settles into one upload, short enough that
-// closing the app straight after adding a trade still catches it.
-const AFTER_CHANGE_MS = 20 * 1000
+// Long enough that a burst of edits settles into one upload, short enough to
+// fit inside the end-to-end budget below.
+const AFTER_CHANGE_MS = 5 * 1000
 
 // The catch-all. Deliberately slow: it exists for changes nothing told us
 // about, not as the main path.
@@ -39,11 +39,19 @@ const SWEEP_MS = 10 * 60 * 1000
 const AFTER_OPEN_MS = 45 * 1000
 
 // How often to ask Drive whether another device has written something newer.
-// One metadata call, and most of them stop at a timestamp comparison without
-// reading the portfolio or downloading anything, so this can be brisk without
-// costing much. Foreground is the trigger that actually matters; this is the
-// catch-all for a window left open on a desk.
-const PULL_MS = 3 * 60 * 1000
+//
+// THE BUDGET IS ONE MINUTE, END TO END. A trade uploads 5s after it is made
+// and the other device notices within 30s, so the worst case a user can hit is
+// about 35 seconds, and the typical case is half that.
+//
+// Affordable because of what a poll actually costs: one Drive metadata call,
+// and most of them stop at comparing two timestamps without hashing the
+// portfolio or downloading anything.
+//
+// Only while the tab is visible, though. A backgrounded phone polling every
+// 30 seconds all night would spend battery to learn something it will be told
+// the instant it comes back to the foreground anyway.
+const PULL_MS = 30 * 1000
 
 let started = false
 let changeTimer = null
@@ -80,6 +88,9 @@ async function run(why) {
  */
 async function pull(why) {
   if (pulling || !canAutoBackup()) return
+  // A hidden tab has nothing to show and gets a foreground check the moment it
+  // comes back. Polling it is battery spent for no one.
+  if (why === 'poll' && typeof document !== 'undefined' && document.hidden) return
   pulling = true
   try {
     const res = await autoRestore()
