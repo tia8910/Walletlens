@@ -270,9 +270,9 @@ const METAL_TICKERS = { xau: 'XAU', xag: 'XAG', xpt: 'XPT', xpd: 'XPD' }
 
 export async function fetchMetalQuotes(ids) {
   const out = {}
-  for (const id of new Set(ids)) {
+  await mapLimited([...new Set(ids)], STOCK_CONCURRENCY, async (id) => {
     const ticker = METAL_TICKERS[String(id).toLowerCase()]
-    if (!ticker) continue
+    if (!ticker) return
     try {
       const j = await getJson(`https://api.gold-api.com/price/${ticker}`)
       const price = Number(j?.price)
@@ -280,7 +280,7 @@ export async function fetchMetalQuotes(ids) {
         out[String(id).toLowerCase()] = { price, change24h: Number(j?.change_percentage) || 0 }
       }
     } catch { /* metal skipped this cycle */ }
-  }
+  })
   return out
 }
 
