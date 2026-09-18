@@ -304,6 +304,98 @@ export async function autoBackup() {
 }
 
 /**
+ * Should this device pull the backup down on its own?
+ *
+ * Pure, and separate from doing it, because the difference between "bring a
+ * trade over from the phone" and "delete a trade the laptop just made" is
+ * these three values, and that is not a decision to make inline.
+ *
+ * @returns {'pull'|'conflict'|'none'}
+ */
+export function decideAutoPull({ localDirty, remoteAt = 0, lastBackupAt = 0 }) {
+  if (!remoteAt) return 'none'
+  // This device wrote the newest copy, or Drive is behind. Nothing to fetch.
+  if (remoteAt <= lastBackupAt) return 'none'
+  // Drive is ahead AND this device has edits of its own. The two have
+  // diverged, and silently picking either one throws the other away. Never
+  // automatic: last-writer-wins is already what an unattended upload does, and
+  // adding a download that does the same in reverse would make it worse.
+  if (localDirty) return 'conflict'
+  return 'pull'
+}
+
+/**
+ * Has anything changed here since this device's own last upload?
+ *
+ * Compares a fresh snapshot against the fingerprint autoBackup() stamped. A
+ * device that has never uploaded counts as changed, which is the safe answer
+ * in both directions: it stops a pull rather than starting one.
+ */
+export async function localChangedSinceBackup() {
+  const stamped = readKey(LAST_HASH)
+  if (!stamped) return true
+  try {
+    const { code } = await generateBackupCode()
+    return (await fingerprint(code)) !== stamped
+  } catch {
+    return true
+  }
+}
+
+/**
+ * Bring another device's changes down, when it is safe to do so without asking.
+ *
+ * Safe means one specific thing: this device's data is byte-identical to what
+ * it last uploaded. In that state the local copy IS the backup, so replacing
+ * it with a newer one cannot lose anything. Every other case returns without
+ * touching the portfolio.
+ *
+ * Cheap on the common path. The metadata lookup is one Drive call and most
+ * polls stop at the timestamp comparison without hashing the portfolio or
+ * downloading the file.
+ */
+export async function autoRestore() {
+  if (!canAutoBackup()) return { ok: false, reason: 'no-key' }
+
+  // Never raises a sign-in. Same rule as autoBackup: a background task that
+  // pops a Google prompt is worse than one that waits.
+  const token = await (async () => {
+    try { return await getAccessToken({ interactive: false }) } catch { return null }
+  })()
+  if (!token) return { ok: false, reason: 'signed-out' }
+
+  let remote
+  try { remote = await findBackup() } catch { return { ok: false, reason: 'failed' } }
+  if (!remote) return { ok: false, reason: 'no-backup' }
+
+  const remoteAt = remote.modifiedTime ? Date.parse(remote.modifiedTime) : 0
+  const lastBackupAt = Number(readKey(LAST_BACKUP_AT)) || 0
+  writeKey(REMOTE_AT, String(remoteAt || Date.now()))
+
+  // Timestamps first: this settles most polls without reading the portfolio.
+  if (decideAutoPull({ localDirty: false, remoteAt, lastBackupAt }) === 'none') {
+    return { ok: false, reason: 'up-to-date' }
+  }
+
+  const action = decideAutoPull({
+    localDirty: await localChangedSinceBackup(), remoteAt, lastBackupAt,
+  })
+  if (action !== 'pull') return { ok: false, reason: action }
+
+  try {
+    await restoreNow()
+  } catch {
+    return { ok: false, reason: 'failed' }
+  }
+
+  // The dashboard re-reads on this. driveAutoBackup hears it too and schedules
+  // a run, which finds the fingerprint unchanged and does nothing — that is
+  // why restoreNow stamps LAST_HASH, and why this does not ping-pong.
+  try { window.dispatchEvent(new Event('wl:portfolio-updated')) } catch { /* no window */ }
+  return { ok: true, reason: 'pulled' }
+}
+
+/**
  * Pull the backup down and apply it. Replaces local data — callers must have
  * confirmed that with the user unless decideAction said 'auto-restore'.
  */
@@ -333,7 +425,19 @@ export async function restoreNow(passphrase) {
     } catch { /* a WLE1 backup has no wrapped key; nothing to learn */ }
   }
   const result = await applyBackupCode(code)
-  try { localStorage.setItem(LAST_BACKUP_AT, String(Date.now())) } catch { /* ignore */ }
+  // STAMP WHAT WAS APPLIED, NOT JUST WHEN.
+  //
+  // This used to record only the time. That left a restored device looking
+  // permanently changed: LAST_HASH still described whatever it held before,
+  // so autoBackup would immediately re-upload the copy it had just downloaded,
+  // and autoRestore would read the device as dirty and never pull again. With
+  // the fingerprint stamped, a restored device is in step with Drive, which is
+  // the truth.
+  try {
+    writeKey(LAST_HASH, await fingerprint(code))
+    writeKey(LAST_BACKUP_AT, String(Date.now()))
+    writeKey(REMOTE_AT, String(Date.now()))
+  } catch { /* private mode */ }
   return result
 }
 
