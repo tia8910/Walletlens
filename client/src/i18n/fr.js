@@ -1734,6 +1734,10 @@ export default {
     atUseMarketPrice: 'Utiliser le prix du marché actuel',
     atAssistant: 'Assistant WalletLens',
     coffeeSupport: 'Soutenir WalletLens — offrez-moi un café',
+    supportNudgeTitle: "L'app vous plaît ?",
+    supportNudgeBody: 'walletlens.live est gratuit et sans publicité. Un café garde les cours à jour.',
+    supportNudgeCta: 'Offrez-moi un café',
+    supportNudgeLater: 'Plus tard',
     atHome: 'Accueil WalletLens',
     atTagline: 'Slogan WalletLens',
     // ── Attributes: input placeholders ──────────────────────────

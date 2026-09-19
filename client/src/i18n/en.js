@@ -1755,6 +1755,10 @@ export default {
     atUseMarketPrice: 'Use current market price',
     atAssistant: 'WalletLens assistant',
     coffeeSupport: 'Support WalletLens — buy me a coffee',
+    supportNudgeTitle: 'Loved the app?',
+    supportNudgeBody: 'walletlens.live is free and has no ads. A coffee keeps the prices flowing.',
+    supportNudgeCta: 'Buy me a coffee',
+    supportNudgeLater: 'Not now',
     atHome: 'WalletLens home',
     atTagline: 'WalletLens tagline',
     // ── Attributes: input placeholders ──────────────────────────

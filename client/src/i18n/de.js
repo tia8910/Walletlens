@@ -1694,6 +1694,10 @@ export default {
     atUseMarketPrice: 'Aktuellen Marktkurs verwenden',
     atAssistant: 'WalletLens-Assistent',
     coffeeSupport: 'WalletLens unterstützen — spendier mir einen Kaffee',
+    supportNudgeTitle: 'Gefällt dir die App?',
+    supportNudgeBody: 'walletlens.live ist kostenlos und werbefrei. Ein Kaffee hält die Kurse am Laufen.',
+    supportNudgeCta: 'Spendier mir einen Kaffee',
+    supportNudgeLater: 'Später',
     atHome: 'WalletLens Startseite',
     atTagline: 'WalletLens Slogan',
     // ── Attributes: input placeholders ──────────────────────────

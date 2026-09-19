@@ -1760,6 +1760,10 @@ export default {
     atUseMarketPrice: 'استخدم سعر السوق الحالي',
     atAssistant: 'مساعد WalletLens',
     coffeeSupport: 'ادعم WalletLens — اشترِ لي قهوة',
+    supportNudgeTitle: 'أعجبك التطبيق؟',
+    supportNudgeBody: 'walletlens.live مجاني وبلا إعلانات. فنجان قهوة يبقي الأسعار تتدفق.',
+    supportNudgeCta: 'اشترِ لي قهوة',
+    supportNudgeLater: 'ليس الآن',
     atHome: 'الصفحة الرئيسية لـ WalletLens',
     atTagline: 'شعار WalletLens',
     // ── Attributes: input placeholders ──────────────────────────

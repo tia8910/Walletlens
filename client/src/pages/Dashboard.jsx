@@ -43,6 +43,8 @@ import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
 import Tip from '../components/Tip'
 import { syncWidgets } from '../nativeWidgets'
 import { noteAppOpen, maybeAskForReview, noteMoment } from '../reviewPrompt'
+import { noteSupportOpen } from '../supportNudge'
+import SupportNudge from '../components/SupportNudge'
 import { VOICE_API, voiceProxy } from '../apiHosts.js'
 import { dataUrl } from '../apiHosts.js'
 import { sevenDayMap, sparkMap, trendFor } from '../assetTrend'
@@ -4055,6 +4057,10 @@ export default function Dashboard() {
   useEffect(() => {
     if (!loaded) return
     noteAppOpen()
+    // Counted on every launch, not only Android ones: the support card shows
+    // wherever the site runs, so its own open count cannot ride on the review
+    // prompt's, which no-ops outside the installed app.
+    noteSupportOpen()
     // Pass the ref's getter, not its current value: a timer that finds every
     // rule satisfied still has no user gesture to send the intent on, so the
     // ask is armed and fires on the next tap. By then this snapshot has moved
@@ -5171,6 +5177,11 @@ export default function Dashboard() {
           <div className="dvx-grid">
             {/* Left column */}
             <div className="dvx-col-main">
+
+              {/* "Loved the app?" support card. Placed above Spin & Learn and
+                  below the portfolio itself, so the ask only ever comes after
+                  the numbers it is asking about. */}
+              <SupportNudge holdingsCount={enriched.length} busy={sheetOpen || importChooser} />
 
               {/* Spin & Learn — link to the Academy Knowledge Wheel */}
               {cardVis.spin_learn && (

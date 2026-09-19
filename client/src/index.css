@@ -9803,6 +9803,70 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
   border-radius: 999px; padding: 0.3rem 0.7rem; box-shadow: 0 2px 8px rgba(var(--g-rgb),0.3);
 }
 
+/* ── Dashboard "loved the app?" support card ───────────────────────────── */
+/* The amber is the coffee button's, not the app's green. This is the one
+   thing on the dashboard that asks for something rather than reporting
+   something, and borrowing the green would file it with the data cards. */
+.wl-support-nudge {
+  display: flex; align-items: center; gap: 0.85rem;
+  padding: 0.9rem 1rem;
+  background: linear-gradient(135deg, rgba(255, 221, 0, 0.14), rgba(255, 199, 0, 0.05));
+  border: 1px solid rgba(255, 199, 0, 0.38);
+  animation: wl-support-in 0.32s ease-out both;
+}
+.wl-support-nudge-out { animation: wl-support-out 0.22s ease-in both; }
+.wl-support-cup {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px; border-radius: 50%;
+  color: #1f1400;
+  background: linear-gradient(135deg, #ffdd00, #ffc700);
+}
+.wl-support-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.wl-support-title { font-size: 0.95rem; font-weight: 800; color: var(--text); }
+.wl-support-sub {
+  font-size: 0.78rem; color: var(--text-muted); font-weight: 600;
+  margin-top: 0.15rem; line-height: 1.35;
+}
+.wl-support-actions { flex-shrink: 0; display: flex; align-items: center; gap: 0.5rem; }
+.wl-support-go {
+  display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap;
+  font-size: 0.78rem; font-weight: 800; color: #1f1400;
+  background: linear-gradient(135deg, #ffdd00, #ffc700);
+  border-radius: 999px; padding: 0.45rem 0.9rem;
+  box-shadow: 0 2px 8px rgba(255, 199, 0, 0.32);
+}
+.wl-support-go:hover { filter: brightness(1.04); }
+/* A global rule pads buttons 8.8px 17.6px, and a global min-height of 44px
+   applies at <=768px. Both are pinned here so "Not now" stays the quiet
+   option beside the amber pill instead of growing into a second button. */
+.wl-support-later {
+  background: none; border: 0; cursor: pointer; white-space: nowrap;
+  font-size: 0.76rem; font-weight: 700; color: var(--text-muted);
+  padding: 0.45rem 0.55rem; min-height: 0;
+}
+.wl-support-later:hover { color: var(--text); }
+
+@keyframes wl-support-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes wl-support-out {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(-4px); }
+}
+
+/* Stacks on a phone, where the row would otherwise squeeze the copy to two
+   words per line. */
+@media (max-width: 560px) {
+  .wl-support-nudge { flex-wrap: wrap; }
+  .wl-support-actions { width: 100%; justify-content: flex-end; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-support-nudge, .wl-support-nudge-out { animation: none; }
+}
+
+
 /* ── Sell-target reality check ─────────────────────────────────────────── */
 .dvx-trc {
   margin: 0.6rem 0 0.2rem; padding: 0.7rem 0.8rem; border-radius: 12px;
