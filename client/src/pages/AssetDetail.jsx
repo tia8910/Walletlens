@@ -499,7 +499,15 @@ export default function AssetDetail() {
         type={sheetType}
         onClose={() => setSheetOpen(false)}
         wallets={wallets}
-        onDone={loadData}
+        onDone={() => {
+          // Back to the dashboard rather than refreshing this page. A trade is
+          // the one action here that changes the whole portfolio, and the
+          // number it changes lives on the dashboard: reloading the asset page
+          // left someone looking at one coin, having to navigate back to see
+          // what their net worth had become. useScrollTop puts them at the top,
+          // so the new total is the first thing on screen.
+          navigate('/dashboard')
+        }}
         holdings={allHoldings}
         prefillCoin={coin ? { id: coinId, symbol: coin.symbol, name: coin.name, image: coin.image } : null}
         variant="page"

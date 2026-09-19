@@ -1,5 +1,6 @@
 import { lazy, Suspense, memo, useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
+import useScrollTop from './useScrollTop'
 const Landing       = lazy(() => import('./pages/Landing'))
 const TrackCoin     = lazy(() => import('./pages/TrackCoin'))
 const Calculator    = lazy(() => import('./pages/Calculator'))
@@ -388,6 +389,10 @@ const AppFooter = memo(function AppFooter() {
 // ── App shell ─────────────────────────────────────────────────────────
 export default function App() {
   const location = useLocation()
+  // Called here rather than mounted as a component, because App returns from
+  // two different branches (the landing shell and the app shell) and a hook in
+  // the body covers both with one line.
+  useScrollTop()
   const [drawerOpen, setDrawerOpen] = useState(false)
   // Only mount the Drawer DOM tree after the user first opens it — saves the
   // initial mount cost on every page load when the drawer is never opened.
