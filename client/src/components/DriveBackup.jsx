@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { noteFriction } from '../reviewPrompt'
+import { noteSupportFriction } from '../supportNudge'
 import {
   connect, backupNow, restoreNow, driveState, previouslyConnected,
   disconnectDrive, autoBackupEnabled, forgetAutoBackup,
@@ -224,6 +225,7 @@ export default function DriveBackup({ embedded = false }) {
       // the review flow per user, it also spends an ask that cannot be got
       // back. Losing a backup is the single worst moment to be asked.
       noteFriction(which === 'backup' ? 'sync_failed' : 'restore_failed')
+      noteSupportFriction(which === 'backup' ? 'sync_failed' : 'restore_failed')
       say('err', explain(e, which === 'backup'
         ? 'Backup failed. Nothing on this device was changed.'
         : 'Restore failed. Nothing on this device was changed.'))

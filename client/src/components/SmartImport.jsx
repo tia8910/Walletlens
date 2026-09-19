@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { noteMoment, noteFriction } from '../reviewPrompt'
+import { noteSupportFriction } from '../supportNudge'
 import { api } from '../api'
 import { parseScreenshotWithClaude } from '../visionAi'
 import { track, trackImport, importCompleted, trackProfileCreated } from '../analytics'
@@ -377,6 +378,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       // filename and the offending cell, and neither belongs in GA.
       trackImport({ method: 'spreadsheet', step: 'failed', reason: 'parse_error', format })
       noteFriction('import_failed')
+      noteSupportFriction('import_failed')
       showMsg(t('errParsePrefix') + e.message)
     } finally {
       setBusy(false)
@@ -435,6 +437,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
         reason: 'save_error',
       })
       noteFriction('import_failed')
+      noteSupportFriction('import_failed')
       showMsg(t('errImportPrefix') + e.message)
     } finally {
       setBusy(false)

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -241,5 +241,60 @@ describe('the ask is never screened on sentiment', () => {
     // here should ever read one.
     const code = src.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
     expect(code).not.toMatch(/sentiment|\bmood\b|\brating\b|enjoy/i)
+  })
+})
+
+describe('every app failure the support card cares about is actually reported', () => {
+  // Mirrors reviewWiring.test.js. The support card has its own FRICTIONS set
+  // and its own call sites, because reviewPrompt's noteFriction no-ops outside
+  // the Android build: forwarding through it would leave the web card asking
+  // for money moments after a failed import.
+  const sources = () => {
+    const out = []
+    const walk = (dir) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, e.name)
+        if (e.isDirectory()) { walk(full); continue }
+        if (!/\.(js|jsx)$/.test(e.name) || e.name.endsWith('.test.js')) continue
+        out.push(full)
+      }
+    }
+    walk(SRC)
+    return out
+  }
+  const all = () => sources().map(f => readFileSync(f, 'utf8')).join('\n')
+
+  it('reports each declared failure somewhere', async () => {
+    const m = await load()
+    const src = all()
+    const live = new Set()
+    // The Drive call site passes the name through a ternary, so every literal
+    // in the argument list counts, not just a lone one after the paren.
+    for (const c of src.matchAll(/noteSupportFriction\??\.?\(([^)]*)\)/g)) {
+      for (const lit of c[1].matchAll(/'([^']+)'/g)) live.add(lit[1])
+    }
+    expect([...m.FRICTIONS].filter(f => !live.has(f)),
+      'declared in FRICTIONS but never reported').toEqual([])
+  })
+
+  it('reports nothing the set does not declare', async () => {
+    const m = await load()
+    const direct = [...all().matchAll(/noteSupportFriction\??\.?\('([^']+)'\)/g)].map(x => x[1])
+    for (const f of direct) expect(m.FRICTIONS.has(f), `noteSupportFriction('${f}')`).toBe(true)
+  })
+
+  it('silences the ask on both halves of a Drive failure', () => {
+    // Backup and restore fail through one shared catch and carry very
+    // different weight: a failed restore is someone who thinks they have lost
+    // their portfolio.
+    const drive = readFileSync(join(SRC, 'components/DriveBackup.jsx'), 'utf8')
+    expect(drive).toMatch(/noteSupportFriction\(which === 'backup' \? 'sync_failed' : 'restore_failed'\)/)
+  })
+
+  it('counts an open on every platform, not only the Android build', () => {
+    // noteSupportOpen must not inherit reviewPrompt's isAndroidTWA gate, or
+    // the card can never reach the five-open bar on the web.
+    const s = readFileSync(join(SRC, 'supportNudge.js'), 'utf8')
+    expect(s).not.toMatch(/isAndroidTWA/)
   })
 })
