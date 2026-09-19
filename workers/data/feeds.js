@@ -237,17 +237,33 @@ export function parseFeed(xml, feed, seen = new Set(), limit = 30) {
 }
 
 export async function fetchFeedGroup(feeds, now = Date.now()) {
-  const articles = []
-  const seen = new Set()
-  for (const feed of feeds) {
+  // Fetched concurrently: these are independent hosts, so the group's total
+  // wait is the slowest single feed rather than the sum of all four. That
+  // matters most on the cold-KV path in index.js's serve(), where a real
+  // request is blocked on this call — four 15s timeouts in series could hold
+  // a page open for a full minute where one held it for 15s.
+  //
+  // Parsing stays sequential over the settled results, in feed order, so the
+  // first-60-characters de-dup keeps picking the same "first seen" article it
+  // always did — concurrency changes when the bytes arrive, not the order
+  // they're processed in.
+  const texts = await Promise.all(feeds.map(async (feed) => {
     try {
-      articles.push(...parseFeed(await getText(feed.url, 15000), feed, seen))
+      return await getText(feed.url, 15000)
     } catch (e) {
       // One dead feed must not empty the group. Three of four still makes a
       // usable news page; failing the whole job makes an empty one.
       console.warn(`${feed.name} failed: ${e}`)
+      return null
     }
-  }
+  }))
+
+  const articles = []
+  const seen = new Set()
+  feeds.forEach((feed, i) => {
+    if (texts[i] == null) return
+    articles.push(...parseFeed(texts[i], feed, seen))
+  })
   articles.sort((a, b) => pubDateMs(b.pubDate) - pubDateMs(a.pubDate))
   return { updated: isoStamp(now), count: articles.length, articles: articles.slice(0, 120) }
 }
@@ -312,14 +328,24 @@ export function parseCalendarRows(rows, seen = new Set()) {
 }
 
 export async function fetchCalendar(now = Date.now()) {
-  const events = []
-  const seen = new Set()
-  for (const url of CALENDAR_FEEDS) {
+  // Same concurrency-without-reordering fix as fetchFeedGroup above: the two
+  // feeds are independent requests, so fetch them in parallel (30s worst case
+  // instead of 60s) but still merge this-week before next-week so the
+  // boundary de-dup keeps its "this week wins" behaviour.
+  const rowsList = await Promise.all(CALENDAR_FEEDS.map(async (url) => {
     try {
-      events.push(...parseCalendarRows(await getJson(url, 30000), seen))
+      return await getJson(url, 30000)
     } catch (e) {
       console.warn(`calendar feed failed ${url}: ${e}`)
+      return null
     }
+  }))
+
+  const events = []
+  const seen = new Set()
+  for (const rows of rowsList) {
+    if (rows == null) continue
+    events.push(...parseCalendarRows(rows, seen))
   }
   if (!events.length) return null
   // Undated items sink to the end rather than sorting as epoch zero.
