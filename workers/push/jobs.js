@@ -12,9 +12,11 @@
 // the adapter, so the same logic runs on Workers here and could run anywhere
 // else that provides a store and a sender.
 //
-//   store.all()          every subscription, cached
-//   store.save(key, sub) write a row a cron mutated, without clobbering the user
-//   store.get(key)       one row
+//   store.all()             every subscription, cached
+//   store.save(key, sub)    write a row a cron mutated, without clobbering the user
+//   store.saveMany(entries) same, batched: one read and one write for the whole
+//                           run instead of one round trip per changed row
+//   store.get(key)          one row
 //   send(sub, payload, opts) deliver one notification; returns truthy on success
 
 import {
@@ -58,6 +60,7 @@ export function createJobs({ store, send }) {
     const quotes = await fetchCryptoQuotes([...ids])
     if (!Object.keys(quotes).length) return
 
+    const toSave = []
     for (const { key, sub } of subs) {
       let changed = false
       for (const a of sub.alerts) {
@@ -86,8 +89,9 @@ export function createJobs({ store, send }) {
           changed = true
         }
       }
-      if (changed) await store.save(key, sub)
+      if (changed) toSave.push({ key, sub })
     }
+    await store.saveMany(toSave)
   }
 
   async function checkMoves({ kinds = null, refreshSeen = true } = {}) {
@@ -112,6 +116,7 @@ export function createJobs({ store, send }) {
 
     const now = Date.now()
 
+    const toSave = []
     for (const { key, sub } of watching) {
       let changed = false
 
@@ -216,8 +221,9 @@ export function createJobs({ store, send }) {
       for (const k of Object.keys(sub.lastPrice)) if (!live.has(k)) { delete sub.lastPrice[k]; changed = true }
       for (const k of Object.keys(sub.lastLevel)) if (!live.has(k)) { delete sub.lastLevel[k]; changed = true }
 
-      if (changed) await store.save(key, sub)
+      if (changed) toSave.push({ key, sub })
     }
+    await store.saveMany(toSave)
   }
 
   async function checkNews() {
@@ -231,6 +237,7 @@ export function createJobs({ store, send }) {
     const articles = (await fetchNews()).filter(a => isBreaking(a, now))
     if (!articles.length) return
 
+    const toSave = []
     for (const { key, sub } of subs) {
       // One story per window: a busy news day should not become a news feed on
       // the lock screen.
@@ -279,8 +286,9 @@ export function createJobs({ store, send }) {
         if (sent) { sub.lastNewsAt = now; break }
       }
 
-      if (changed) await store.save(key, sub)
+      if (changed) toSave.push({ key, sub })
     }
+    await store.saveMany(toSave)
   }
 
   async function checkDaily() {
@@ -322,6 +330,7 @@ export function createJobs({ store, send }) {
     for (const { sub } of due) for (const a of sub.watch) assets.set(`${a.kind}:${a.id}:${a.symbol}`, a)
     const quotes = assets.size ? await fetchQuotes([...assets.values()]) : {}
 
+    const toSave = []
     for (const { key, sub } of due) {
       const hour = localHour(now, sub.tz)
       let changed = false
@@ -405,7 +414,7 @@ export function createJobs({ store, send }) {
             }),
             RETENTION_MIN_PCT,
           )
-          if (!mover) { if (changed) await store.save(key, sub); continue }
+          if (!mover) { if (changed) toSave.push({ key, sub }); continue }
 
           const body = copy("retentionMoverBody", sub.lang)(
             mover.symbol, fmtPct(mover.pct), mover.pct > 0,
@@ -551,8 +560,9 @@ export function createJobs({ store, send }) {
         }
       }
 
-      if (changed) await store.save(key, sub)
+      if (changed) toSave.push({ key, sub })
     }
+    await store.saveMany(toSave)
   }
   return { checkTargets, checkMoves, checkNews, checkDaily }
 }

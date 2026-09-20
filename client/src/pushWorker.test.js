@@ -23,6 +23,7 @@ function fakeStore(rows = []) {
     async all() { return [...map.entries()].map(([key, sub]) => ({ key, sub })) },
     async get(k) { return map.get(k) ?? null },
     async save(k, sub) { this.saved.push(k); map.set(k, sub) },
+    async saveMany(entries) { for (const { key, sub } of entries) { this.saved.push(key); map.set(key, sub) } },
     async delete(k) { map.delete(k) },
     invalidate() {},
   }
@@ -654,6 +655,15 @@ describe('a token-addressed device reaches Firebase', () => {
           },
         }
         return st
+      },
+      // saveMany() sends its UPDATEs through batch() rather than run() one at a
+      // time — real D1 executes a batch as one round trip. The double just runs
+      // each prepared statement in order; the point under test is that the
+      // store ends up with the right rows, not the transport.
+      async batch(statements) {
+        const results = []
+        for (const st of statements) results.push(await st.run())
+        return results
       },
     }
   }
