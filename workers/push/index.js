@@ -253,9 +253,13 @@ async function handle(req, env, store) {
         .replace(/\/+$/, '')
       if (!base) throw new Error('DATA_WORKER_URL not set')
       const url = base + '/market.json'
-      const r = await fetch(url, { signal: AbortSignal.timeout(8_000) })
-      const text = await r.text()
-      assetUrlSample = { url, ok: r.ok, status: r.status, bytes: text.length }
+      // HEAD, not GET — this endpoint only reports reachability and size, and
+      // /health can be hit by an uptime monitor far more often than a person
+      // opens the app. A GET here downloaded the full market dataset (250
+      // coins) on every single check just to read its byte length.
+      const r = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(8_000) })
+      const len = r.headers.get('content-length')
+      assetUrlSample = { url, ok: r.ok, status: r.status, bytes: len != null ? Number(len) : null }
     } catch (e) {
       assetUrlSample = { error: String(e?.message || e) }
     }

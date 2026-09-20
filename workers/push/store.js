@@ -18,6 +18,10 @@ import { mergeSubForWrite, normalizeSub } from '../../push-api/notify-logic.js'
 
 const SUBS_CACHE_MS = 5 * 60_000
 
+// D1's bound-parameter cap is comfortably above this, so a chunk is one round
+// trip in the overwhelmingly common case; it exists as a ceiling, not a target.
+const SAVE_CHUNK = 100
+
 /** SHA-256 of the endpoint, truncated. Same derivation the Deno service used. */
 export async function endpointKey(endpoint) {
   return hashKey(endpoint)
@@ -164,6 +168,54 @@ export class SubStore {
       .prepare('UPDATE subs SET data = ?, updated_at = ? WHERE key = ?')
       .bind(JSON.stringify(merged), this.now(), key)
       .run()
+  }
+
+  /**
+   * Write many cron-mutated rows in two round trips per chunk, instead of the
+   * 2N a loop of save() calls costs.
+   *
+   * Every job runs this once per tick over every subscription it touched, on
+   * a cron as tight as once a minute — save()'s one extra read is fine for a
+   * single row, but paid N times sequentially it was the actual cost of the
+   * job. Same merge semantics as save(): each row is re-read fresh right
+   * before merging (batched into one SELECT ... IN per chunk here), and a row
+   * deleted mid-run is not resurrected.
+   *
+   * Chunked at SAVE_CHUNK keys per round trip — D1 caps bound parameters per
+   * statement, so one subscriber base large enough to exceed that would
+   * otherwise fail this in one shot rather than degrade to more round trips.
+   *
+   * @param {Array<{key: string, sub: object}>} entries
+   */
+  async saveMany(entries) {
+    for (let i = 0; i < entries.length; i += SAVE_CHUNK) {
+      await this.saveChunk(entries.slice(i, i + SAVE_CHUNK))
+    }
+  }
+
+  async saveChunk(entries) {
+    if (!entries.length) return
+
+    const keys = [...new Set(entries.map(e => e.key))]
+    const placeholders = keys.map(() => '?').join(',')
+    const { results } = await this.db
+      .prepare(`SELECT key, data FROM subs WHERE key IN (${placeholders})`)
+      .bind(...keys)
+      .all()
+    const freshByKey = new Map((results || []).map(r => [r.key, parse(r.data)]))
+
+    const ts = this.now()
+    const statements = []
+    for (const { key, sub } of entries) {
+      const merged = mergeSubForWrite(sub, freshByKey.get(key) ?? null)
+      if (!merged) continue
+      statements.push(
+        this.db
+          .prepare('UPDATE subs SET data = ?, updated_at = ? WHERE key = ?')
+          .bind(JSON.stringify(merged), ts, key)
+      )
+    }
+    if (statements.length) await this.db.batch(statements)
   }
 
   async delete(key) {

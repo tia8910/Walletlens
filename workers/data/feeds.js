@@ -237,17 +237,32 @@ export function parseFeed(xml, feed, seen = new Set(), limit = 30) {
 }
 
 export async function fetchFeedGroup(feeds, now = Date.now()) {
-  const articles = []
-  const seen = new Set()
-  for (const feed of feeds) {
+  // Fetched concurrently — sequentially this was up to feeds.length * 15s of
+  // upstream latency stacked on the request that triggers a cache-miss
+  // refresh (see serve() in index.js), which is exactly the request a
+  // visitor is waiting on. Parsing stays in feed order afterward so `seen`
+  // dedupes identically to before; only the network wait is parallel now.
+  const texts = await Promise.all(feeds.map(async feed => {
     try {
-      articles.push(...parseFeed(await getText(feed.url, 15000), feed, seen))
+      return await getText(feed.url, 15000)
     } catch (e) {
       // One dead feed must not empty the group. Three of four still makes a
       // usable news page; failing the whole job makes an empty one.
       console.warn(`${feed.name} failed: ${e}`)
+      return null
     }
-  }
+  }))
+
+  const articles = []
+  const seen = new Set()
+  feeds.forEach((feed, i) => {
+    if (texts[i] == null) return
+    try {
+      articles.push(...parseFeed(texts[i], feed, seen))
+    } catch (e) {
+      console.warn(`${feed.name} failed: ${e}`)
+    }
+  })
   articles.sort((a, b) => pubDateMs(b.pubDate) - pubDateMs(a.pubDate))
   return { updated: isoStamp(now), count: articles.length, articles: articles.slice(0, 120) }
 }
@@ -312,15 +327,22 @@ export function parseCalendarRows(rows, seen = new Set()) {
 }
 
 export async function fetchCalendar(now = Date.now()) {
-  const events = []
-  const seen = new Set()
-  for (const url of CALENDAR_FEEDS) {
+  // Both feeds fetched concurrently rather than one after the other — see
+  // fetchFeedGroup above for why that matters on a cache-miss refresh.
+  const rows = await Promise.all(CALENDAR_FEEDS.map(async url => {
     try {
-      events.push(...parseCalendarRows(await getJson(url, 30000), seen))
+      return await getJson(url, 30000)
     } catch (e) {
       console.warn(`calendar feed failed ${url}: ${e}`)
+      return null
     }
-  }
+  }))
+
+  const events = []
+  const seen = new Set()
+  CALENDAR_FEEDS.forEach((url, i) => {
+    if (rows[i] != null) events.push(...parseCalendarRows(rows[i], seen))
+  })
   if (!events.length) return null
   // Undated items sink to the end rather than sorting as epoch zero.
   events.sort((a, b) => (a.ts == null) - (b.ts == null) || (a.ts || 0) - (b.ts || 0))
