@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { execSync } from 'child_process'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -54,10 +55,82 @@ function asyncCssPlugin() {
   }
 }
 
+// Which build is this?
+//
+// Three rounds of diagnosis were spent not knowing whether the site running on
+// a phone included the fix being discussed. The worker reports its own version
+// on /health; the site could not, so "still the same error" was ambiguous
+// between "the fix does not work" and "the fix is not there yet" — and those
+// need opposite responses.
+//
+// The commit, or the build time if this is not a git checkout (a zip, a
+// tarball). Read once at config time, never at runtime.
+const BUILD_ID = (() => {
+  try {
+    return execSync('git rev-parse --short HEAD', { cwd: __dirname, stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString().trim()
+  } catch {
+    return `t${Math.floor(Date.now() / 1000).toString(36)}`
+  }
+})()
+
+
+// Bundle the Pages functions into dist/_worker.js, so a zip deploy carries them.
+//
+// Cloudflare compiles functions/ only when the deploy runs through
+// `wrangler pages deploy` from the project root. A direct upload of the built
+// directory carries static assets and nothing else — every function is simply
+// absent from that deployment, which is what /api/push/subscribe answering 405
+// meant: no handler for the path, so Pages served it as a static asset and a
+// static asset refuses a POST.
+//
+// _worker.js is the one server-side mechanism a direct upload does honour.
+// _routes.json narrows it to /api/*, so everything else is served by the normal
+// asset pipeline and _headers and _redirects keep applying — the CSP and the
+// SPA fallback included.
+function pagesWorkerPlugin() {
+  return {
+    name: 'pages-worker-bundle',
+    apply: 'build',
+    async closeBundle() {
+      const { build } = await import('esbuild')
+      const outfile = resolve(__dirname, 'dist/_worker.js')
+      await build({
+        entryPoints: [resolve(__dirname, 'scripts/pages-worker-entry.js')],
+        outfile,
+        bundle: true,
+        format: 'esm',
+        platform: 'neutral',
+        target: 'es2022',
+        mainFields: ['module', 'main'],
+        conditions: ['worker', 'browser'],
+        legalComments: 'none',
+      })
+      writeFileSync(
+        resolve(__dirname, 'dist/_routes.json'),
+        JSON.stringify({
+          version: 1,
+          // The dataset paths are here because the build still ships a static
+          // file at each of them, and Pages would serve that frozen copy
+          // rather than the live worker.
+          include: [
+            '/api/*',
+            '/news.json', '/market.json', '/stocks.json',
+            '/economy.json', '/economic-calendar.json', '/stock-prices.json',
+            '/coins.json', '/smartmoney.json',
+          ],
+          exclude: [],
+        }, null, 2) + '\n',
+      )
+    },
+  }
+}
+
 export default defineConfig({
   plugins: [
     react(),
     swVersionPlugin(),
+    pagesWorkerPlugin(),
     asyncCssPlugin(),
     // Bundle visualizer: run `ANALYZE=true npm run build` to generate dist/stats.html
     process.env.ANALYZE && visualizer({
@@ -68,6 +141,10 @@ export default defineConfig({
       template: 'treemap',
     }),
   ].filter(Boolean),
+  define: {
+    // Stamped in, not read from an env file, so it cannot be stale or absent.
+    __WL_BUILD__: JSON.stringify(BUILD_ID),
+  },
   // Absolute base — the app is served from the domain root. Relative './'
   // breaks asset URLs on hard-loads of nested routes (e.g. /blog/<slug>) and
   // on the prerendered content pages.

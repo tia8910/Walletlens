@@ -5,7 +5,7 @@ import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line,
   PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
 } from 'recharts'
-import { api } from '../api'
+import { api, getCachedCoinImage } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
 import { observe, primeEffectAudio } from '../screenEffectsRuntime'
@@ -24,7 +24,7 @@ import { LongPressMenu, bindLongPress, consumeLongPress } from '../components/Lo
 import { useLanguage } from '../LanguageContext'
 import { CLASS_LABEL_KEYS, renderTip, renderMaybe } from '../data/walletEvalTips'
 import { useTheme, THEMES } from '../ThemeContext'
-import { track, trackPortfolioLoaded, trackProfileCreated } from '../analytics'
+import { track, trackPortfolioLoaded, trackProfileCreated, trackImport, importCompleted, importMethod } from '../analytics'
 import { saveSnapshot, getSnapshotsForDays, hasRealData, getGenesisTs } from '../snapshots'
 // Subscribing lives in Settings. The dashboard only keeps the stored snapshot
 // fresh for people who already subscribed, so the weekly email carries current
@@ -43,7 +43,12 @@ import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
 import Tip from '../components/Tip'
 import { syncWidgets } from '../nativeWidgets'
 import { noteAppOpen, maybeAskForReview, noteMoment } from '../reviewPrompt'
+import { noteSupportOpen } from '../supportNudge'
+import SupportNudge from '../components/SupportNudge'
 import { VOICE_API, voiceProxy } from '../apiHosts.js'
+import { dataUrl } from '../apiHosts.js'
+import { sevenDayMap, sparkMap, trendFor } from '../assetTrend'
+import TrendArrow, { TrendBadge } from '../components/TrendArrow'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -768,6 +773,18 @@ const DEMO = {
 }
 
 const fmt   = n => { const v = Number(n); return isFinite(v) ? v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00' }
+
+// Two decimals is right for an amount and wrong for a sub-dollar price: a
+// token at $0.0087 and one at $0.0149 both rendered as $0.01, and anything
+// under half a cent as $0.00, which reads as worthless rather than small.
+// Significant digits let the precision follow the magnitude without padding a
+// $75,964 bitcoin with zeroes.
+const fmtPx = n => {
+  const v = Number(n)
+  if (!isFinite(v) || v === 0) return fmt(v)
+  if (Math.abs(v) >= 1) return fmt(v)
+  return v.toLocaleString(undefined, { maximumSignificantDigits: 6 })
+}
 const fmtN  = n => { const v = Number(n); if (!isFinite(v)) return '$0'; const s = Math.abs(v) >= 1000 ? `$${(Math.abs(v)/1000).toFixed(1)}k` : `$${Math.abs(v).toFixed(0)}`; return v < 0 ? `-${s}` : s }
 const fmtAmt = n => { const v = parseFloat(n); if (!isFinite(v)) return '0'; if (v >= 100) return v.toLocaleString(undefined, { maximumFractionDigits: 2 }); if (v >= 1) return v.toLocaleString(undefined, { maximumFractionDigits: 4 }); return v.toLocaleString(undefined, { maximumSignificantDigits: 4 }) }
 const pct   = n => { const v = Number(n); if (!isFinite(v)) return '0.00%'; return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` }
@@ -1411,19 +1428,13 @@ function TradePanel({ wallets, onRefresh, defaultType = 'buy' }) {
         amount: amt, price_per_unit: ppu,
         date, category: 'crypto',
       })
-      const valueUsd = Math.round(amt * ppu)
+      // Which category was traded, and nothing else; see TradeSheet.jsx.
+      // Which category was traded, and nothing else; see TradeSheet.jsx.
       track(type === 'buy' ? 'buy_transaction' : 'sell_transaction', {
-        asset_symbol:   symbol.toUpperCase(),
-        asset_name:     coin,
         asset_category: 'crypto',
-        value_usd:      valueUsd,
-        value_tier:     valueUsd >= 10000 ? '10k+' : valueUsd >= 1000 ? '1k-10k' : valueUsd >= 100 ? '100-1k' : '<100',
-        amount:         parseFloat(amt.toFixed(6)),
-        price_usd:      Math.round(ppu),
-        source:         'manage_tab',
+        source: 'manage_tab',
       })
-      // Same leak as the transactions page: ticker and USD value per trade.
-      track('trade_submitted', { trade_type: type, source: 'manage_tab' })
+      track('trade_submitted', { trade_type: type, asset_category: 'crypto', source: 'manage_tab' })
       if (isFirstHolding) trackProfileCreated({ method: 'manual_trade', source: 'manage_tab' })
       setMsg(t('errTradeAdded')); setCoin(''); setSymbol(''); setAmount(''); setPrice('')
       onRefresh(); setTimeout(() => setMsg(''), 2500)
@@ -1669,6 +1680,11 @@ function DataPanel({ onRefresh, onImported, drive = false }) {
     setBusy(false)
     if (result?.success === false) { setMsg(t('errImportFailedPrefix') + (result.error || 'unknown error')); return }
     setMsg('Imported! Redirecting…'); setCode(''); setPreview(null)
+    // Backup restore is one of the four import tiles and was the only one
+    // sending nothing, so a funnel on import_step under-counted by its whole
+    // share and read as "nobody restores a backup".
+    trackImport({ method: 'backup', step: 'saved' })
+    importCompleted({ method: 'backup' })
     onRefresh()
     // Jump to the portfolio overview so the user sees their restored holdings.
     if (onImported) setTimeout(() => onImported(), 300)
@@ -1849,204 +1865,53 @@ const StatCard = memo(function StatCard({ label, value, sub, color, tone, spark 
 // ── Portfolio Heatmap (dynamic treemap, fills card) ─────────────────────
 const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, totalValue }) {
   const { t } = useLanguage()
-  const gridRef = useRef(null)
-  const [dims, setDims] = useState({ w: 340, h: 300 })
-  const [tick, setTick] = useState(0)
-
-  // Re-measure on mount/resize + drive ambient animations continuously
-  useEffect(() => {
-    if (!gridRef.current) return
-    const el = gridRef.current
-    const measure = () => {
-      const w = el.clientWidth
-      if (w > 0) setDims({ w, h: Math.max(240, Math.min(Math.round(w * 0.82), 360)) })
-    }
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
-  // Continuous heartbeat — keeps the map "alive" even when prices are flat
-  useEffect(() => {
-    const id = setInterval(() => setTick(n => n + 1), 1600)
-    return () => clearInterval(id)
-  }, [])
-
-  const cells = useMemo(() => {
-    const arr = enriched
-      .filter(h => h.value > 0)
-      .map(h => {
-        const chg = prices[h.coin_id]?.usd_24h_change ?? 0
-        const sizePct = totalValue > 0 ? (h.value / totalValue) * 100 : 0
-        const intensity = Math.min(Math.abs(chg) / 12, 1)
-        let color
-        if (chg > 0)      color = intensity < 0.4 ? `rgba(45,212,191,${0.5 + intensity * 0.35})`
-                        : intensity < 0.75 ? `rgba(16,185,129,${0.7 + intensity * 0.2})`
-                        : 'rgba(5,150,105,0.98)'
-        else if (chg < 0) color = intensity < 0.4 ? `rgba(251,113,133,${0.5 + intensity * 0.35})`
-                        : intensity < 0.75 ? `rgba(244,63,94,${0.7 + intensity * 0.2})`
-                        : 'rgba(225,29,72,0.98)'
-        else color = 'rgba(100,116,139,0.4)'
-        const isMover = Math.abs(chg) >= 2
-        return { ...h, chg, sizePct, color, isMover, intensity }
-      })
-      .sort((a, b) => b.sizePct - a.sizePct)
-    return arr
-  }, [enriched, prices, totalValue])
+  const cells = enriched
+    .filter(h => h.value > 0)
+    .map(h => {
+      const chg = prices[h.coin_id]?.usd_24h_change ?? 0
+      const sizePct = totalValue > 0 ? (h.value / totalValue) * 100 : 0
+      const intensity = Math.min(Math.abs(chg) / 15, 1)
+      const color = chg > 0
+        ? intensity < 0.35 ? `rgba(74,222,128,${0.28 + intensity * 0.4})` : intensity < 0.7 ? `rgba(34,197,94,${0.42 + intensity * 0.35})` : `rgba(22,163,74,${0.6 + intensity * 0.3})`
+        : chg < 0
+          ? intensity < 0.35 ? `rgba(248,113,113,${0.28 + intensity * 0.4})` : intensity < 0.7 ? `rgba(239,68,68,${0.42 + intensity * 0.35})` : `rgba(220,38,38,${0.6 + intensity * 0.3})`
+          : 'rgba(255,255,255,0.06)'
+      return { ...h, chg, sizePct, color }
+    })
+    .sort((a, b) => b.sizePct - a.sizePct)
 
   if (!cells.length) return null
 
-  // Squarified treemap layout (0..1 space)
-  const layout = useMemo(() => {
-    const total = cells.reduce((s, c) => s + c.sizePct, 0)
-    if (total <= 0) return cells.map(() => ({}))
-    const arr = cells.map((c, i) => ({ ...c, i, v: c.sizePct }))
-    const out = []
-    function worst(rows, area, remTot, side) {
-      let w = 0
-      const rowLen = area / side
-      rows.forEach(r => {
-        const frac = r.v / remTot
-        const len = (frac * total * dims.w * dims.h) / rowLen
-        const ratio = Math.max(rowLen / len, len / rowLen)
-        if (ratio > w) w = ratio
-      })
-      return w
-    }
-    let cx = 0, cy = 0, cw = 1, ch = 1
-    let rest = [...arr]
-    while (rest.length) {
-      const remTotal = rest.reduce((s, r) => s + r.v, 0)
-      const isWide = cw >= ch
-      const side = isWide ? ch : cw
-      let row = [rest[0]]
-      const rowArea = (rest[0].v / remTotal) * total
-      while (true) {
-        if (row.length === rest.length) break
-        const cand = [...row, rest[row.length]]
-        const candArea = rowArea + (rest[row.length].v / remTotal) * total
-        if (worst(cand, candArea, remTotal, side) <= worst(row, rowArea, remTotal, side)) {
-          row = cand
-        } else break
-      }
-      const rowFrac = row.reduce((s, r) => s + r.v, 0) / remTotal
-      const rowLen = (rowFrac * total) / side
-      let off = 0
-      for (const r of row) {
-        const frac = r.v / remTotal
-        const len = (frac * total) / rowLen
-        if (isWide) out.push({ i: r.i, x: cx, y: cy + off, w: rowLen, h: len })
-        else out.push({ i: r.i, x: cx + off, y: cy, w: len, h: rowLen })
-        off += len
-      }
-      if (isWide) { cx += rowLen; cw -= rowLen }
-      else { cy += rowLen; ch -= rowLen }
-      rest = rest.filter(r => !row.includes(r))
-    }
-    return out
-  }, [cells, dims])
-
-  const upCount   = cells.filter(c => c.chg > 0.5).length
-  const downCount = cells.filter(c => c.chg < -0.5).length
-  const topMover = [...cells].sort((a, b) => Math.abs(b.chg) - Math.abs(a.chg))[0]
-  // Overall portfolio "heat index" — weighted net momentum
-  const netMomentum = cells.reduce((s, c) => s + (c.chg * c.sizePct) / 100, 0)
-
   return (
-    <div className="glass-card heatmap-card hm-glow" style={{ padding: '1rem', position:'relative', overflow:'hidden' }}>
-      {/* Ambient scan-line shimmer that sweeps the whole map */}
-      <div className="hm-scan" aria-hidden="true" />
-
-      <h3 style={{ margin: '0 0 0.8rem', fontSize: '1rem', fontWeight: 800, display:'flex', alignItems:'center', gap:'0.5em' }}>
-        <Icon name="grid" size={18} style={{ color: 'var(--g-ink)' }} />
-        {t('dsPortfolioHeatmap')}
-        <span className="hm-live-chip" style={{ display:'inline-flex', alignItems:'center', gap:'0.35em', marginLeft:'auto', fontSize:'0.66rem', fontWeight:700, background: netMomentum >= 0 ? 'rgba(16,185,129,0.18)' : 'rgba(244,63,94,0.18)', color: netMomentum >= 0 ? '#10b981' : '#f43f5e', borderRadius:999, padding:'0.2rem 0.55rem' }}>
-          <span className="hm-live-dot" /> LIVE&nbsp;·&nbsp;{netMomentum >= 0 ? '+' : ''}{netMomentum.toFixed(1)}%
-        </span>
-      </h3>
-
-      {/* Top mover banner */}
-      {topMover && Math.abs(topMover.chg) >= 2 && (
-        <div className="hm-mover-banner" style={{
-          display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.7rem',
-          padding:'0.5rem 0.75rem', borderRadius:'0.6rem', fontSize:'0.75rem', fontWeight:600,
-          background: 'linear-gradient(90deg, rgba(16,185,129,0.14), rgba(16,185,129,0.02))',
-          color: topMover.chg > 0 ? '#34d399' : '#fb7185',
-          borderLeft: `3px solid ${topMover.chg > 0 ? '#10b981' : '#f43f5e'}`,
-        }}>
-          <span style={{ fontSize:'1rem' }}>{topMover.chg > 0 ? '▲' : '▼'}</span>
-          <span className={topMover.chg > 0 ? 'hm-ticker-up' : 'hm-ticker-down'} style={{ fontWeight:800 }}>
-            {topMover.coin_symbol?.toUpperCase()}
-          </span>
-          <span>#1 mover</span>
-          <span style={{ marginLeft:'auto', fontWeight:800 }}>
-            {topMover.chg >= 0 ? '+' : ''}{topMover.chg.toFixed(1)}%
-          </span>
-        </div>
-      )}
-
-      {/* Treemap container fills the card */}
-      <div ref={gridRef} className="hm-treemap" style={{ position:'relative', width:'100%', height: dims.h, borderRadius:'0.7rem', overflow:'hidden', background:'rgba(255,255,255,0.03)' }}>
-        {layout.map(({ i, x, y, w, h }) => {
-          const c = cells[i]
-          if (!c) return null
-          const W = w * dims.w, H = h * dims.h
-          const showSym = W > 34 && H > 26
-          const showChg = W > 52 && H > 40
-          const showShare = W > 72 && H > 56
-          // Alternate breathing phase per tile so the map "ripples" organically
-          const phase = (c.coin_id.length % 3) * 0.5
+    <div className="glass-card heatmap-card">
+      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 700, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('dsPortfolioHeatmap')}</h3>
+      <div className="heatmap-grid">
+        {cells.map((c, i) => {
+          const minSize = 60
+          const size = Math.max(minSize, Math.min(180, (c.sizePct / 100) * 800))
           return (
             <div
               key={c.coin_id}
-              className={`heatmap-cell${c.isMover ? ' hm-pulse' : ' hm-breathe'}`}
-              style={{
-                position:'absolute', left: x*dims.w, top: y*dims.h, width: W, height: H,
-                background: c.color,
-                animation: c.isMover
-                  ? `hmPulse ${0.9 + Math.abs(c.chg)*0.05}s ease-in-out ${phase}s infinite`
-                  : `hmBreathe 3.2s ease-in-out ${phase}s infinite`,
-                alignItems:'center', justifyContent:'center', display:'flex', flexDirection:'column',
-                boxShadow: c.isMover ? `inset 0 0 0 1px rgba(255,255,255,0.18), 0 0 ${8 + c.intensity*14}px rgba(80,220,200,0.35)` : 'inset 0 0 0 1px rgba(255,255,255,0.08)',
-              }}
+              className="heatmap-cell"
+              style={{ background: c.color, width: size, height: size }}
               title={`${c.coin_symbol?.toUpperCase()} — ${c.sizePct.toFixed(1)}% · ${c.chg >= 0 ? '+' : ''}${c.chg.toFixed(2)}%`}
             >
-              {c.isMover && <div className="hm-mover-badge" style={{ position:'absolute', top:3, right:3, fontSize:'0.55rem', background:'rgba(0,0,0,0.55)', borderRadius:5, padding:'1px 5px', color:'#fff', fontWeight:800 }}>{Math.abs(c.chg) >= 8 ? '⚡' : '▲'}</div>}
-              {showSym && (
-                <>
-                  <CoinLogo image={c.coin_image} symbol={c.coin_symbol} coinId={c.coin_id} size={Math.max(14, Math.min(30, Math.round(W * 0.28)))} className="heatmap-img" />
-                  <div className="heatmap-sym" style={{ fontSize: W < 70 ? '0.62rem' : '0.85rem', marginTop:'0.1rem' }}>{c.coin_symbol?.toUpperCase()}</div>
-                </>
-              )}
-              {showChg && (
-                <div className={`heatmap-chg ${c.chg >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: W < 70 ? '0.55rem' : '0.72rem', fontWeight:800, marginTop:'0.1rem' }}>
-                  {c.chg >= 0 ? '+' : ''}{c.chg.toFixed(1)}%
-                </div>
-              )}
-              {showShare && (
-                <div className="heatmap-pct" style={{ fontSize:'0.58rem', opacity:0.85, marginTop:2 }}>{c.sizePct.toFixed(1)}%</div>
+              <CoinLogo image={c.coin_image} symbol={c.coin_symbol} coinId={c.coin_id} size={Math.min(28, Math.floor(size * 0.35))} className="heatmap-img" />
+              <div className="heatmap-sym" style={{ fontSize: size < 80 ? '0.6rem' : '0.75rem' }}>{c.coin_symbol?.toUpperCase()}</div>
+              <div className={`heatmap-chg ${c.chg >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: size < 80 ? '0.55rem' : '0.7rem' }}>
+                {c.chg >= 0 ? '+' : ''}{c.chg.toFixed(1)}%
+              </div>
+              {size >= 90 && (
+                <div className="heatmap-pct" style={{ fontSize: '0.58rem', opacity: 0.7, marginTop: 2 }}>{t('dsPortfolioShare')(c.sizePct.toFixed(1))}</div>
               )}
             </div>
           )
         })}
       </div>
-
-      {/* Legend + heat bar */}
-      <div className="heatmap-legend" style={{ marginTop:'0.7rem', paddingTop:'0.5rem', borderTop:'1px solid rgba(255,255,255,0.08)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <span>
-          <span style={{ color:'rgba(16,185,129,0.95)', fontWeight:700 }}>{upCount} ▲</span>
-          <span style={{ margin:'0 0.5rem', color:'var(--text-sub)' }}>·</span>
-          <span style={{ color:'rgba(244,63,94,0.95)', fontWeight:700 }}>{downCount} ▼</span>
-        </span>
-        <span style={{ color:'var(--text-sub)', fontSize:'0.62rem' }}>{t('dsDarkerBigger')}</span>
-      </div>
-
-      {/* Momentum heat bar */}
-      <div style={{ marginTop:'0.55rem', height:'6px', borderRadius:'999px', overflow:'hidden', display:'flex', background:'rgba(15,23,42,0.6)' }}>
-        <div style={{ flex: `${Math.max(0, upCount)}`, background:'linear-gradient(90deg,#0d9488,#34d399)' }} />
-        {downCount > 0 && upCount > 0 && <div style={{ width:'2px', background:'rgba(255,255,255,0.35)' }} />}
-        <div style={{ flex: `${Math.max(0, downCount)}`, background:'linear-gradient(90deg,#fb7185,#e11d48)' }} />
+      <div className="heatmap-legend">
+        <span style={{ color:'rgba(248,113,113,0.9)' }}>■ {t('dsLosing')}</span>
+        <span style={{ color:'var(--text-sub)' }}>{t('dsDarkerBigger')}</span>
+        <span style={{ color:'rgba(var(--g-rgb),0.9)' }}>■ {t('dsGaining')}</span>
       </div>
     </div>
   )
@@ -2875,6 +2740,10 @@ function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLo
 }
 
 // ── Targets Tab ──────────────────────────────────────────────────────────
+// One mask for every hidden figure on this page, so a masked chip and a masked
+// holding look like the same thing rather than two different bugs.
+const VALUE_MASK = '••••'
+
 function fmtQty(n) {
   if (!n && n !== 0) return '0'
   return n.toFixed(4).replace(/\.?0+$/, '') || '0'
@@ -3369,12 +3238,27 @@ const PortfolioBrief = memo(function PortfolioBrief({ enriched, totalValue, tota
       parts.push(t('dsSummaryTrails')(worstSym, worstChg.toFixed(1)))
     }
 
-    return parts.join('. ') + '.'
+    // Returned split rather than joined. The opening clause is the one that
+    // carries the verdict, and it is the only part that should take the
+    // status colour: a whole paragraph in red is harder to read than a grey
+    // one and says nothing the first six words did not.
+    return { head: parts[0] + '.', rest: parts.slice(1).join('. ') + (parts.length > 1 ? '.' : '') }
     // `t` is a dependency: without it the sentence would keep the language it
     // was first built in until the numbers happened to change.
   }, [enriched, totalValue, totalPnLPct, t])
 
   if (!statement) return null
+
+  // Three states, not two. `>= 0` called a portfolio that has not moved a
+  // winner, so a flat day was reported in green with an up arrow. Anything
+  // inside a tenth of a percent is neither, and says so in neutral.
+  const tone = totalPnLPct > 0.05 ? 'up' : totalPnLPct < -0.05 ? 'down' : 'flat'
+  const TONES = {
+    up:   { accent: 'var(--g)', tint: 'rgba(var(--g-rgb),0.07)', edge: 'rgba(var(--g-rgb),0.22)' },
+    down: { accent: '#f87171',  tint: 'rgba(248,113,113,0.08)',  edge: 'rgba(248,113,113,0.22)' },
+    flat: { accent: 'var(--text2)', tint: 'rgba(255,255,255,0.03)', edge: 'var(--border)' },
+  }
+  const c = TONES[tone]
 
   return (
     <div style={{
@@ -3384,10 +3268,12 @@ const PortfolioBrief = memo(function PortfolioBrief({ enriched, totalValue, tota
       color: 'var(--text2)',
       lineHeight: 1.5,
       borderRadius: '12px',
-      background: 'rgba(255,255,255,0.03)',
-      borderLeft: '3px solid ' + (totalPnLPct >= 0 ? 'var(--g)' : '#f87171'),
+      background: c.tint,
+      border: '1px solid ' + c.edge,
+      borderLeft: '3px solid ' + c.accent,
     }}>
-      {statement}
+      <b style={{ color: c.accent, fontWeight: 600 }}>{statement.head}</b>
+      {statement.rest ? ' ' + statement.rest : ''}
     </div>
   )
 })
@@ -3407,6 +3293,11 @@ export default function Dashboard() {
   const portfolioRef = useRef([])
   const loadAllRef = useRef(null)
   const [prices, setPrices]               = useState({})
+  // Weekly change per coin, used only to give the trend marker a window
+  // longer than a day. Absent until market.json loads, and absent for every
+  // coin outside its top 250, in which case trendFor falls back to 24h.
+  const [sevenDay, setSevenDay]           = useState({})
+  const [sparks, setSparks]               = useState({})
   const [coinImages, setCoinImages]       = useState({})
   const [transactions, setTransactions]   = useState([])
   const [wallets, setWallets]             = useState([])
@@ -3416,6 +3307,76 @@ export default function Dashboard() {
   const [coinTargets, setCoinTargets]     = useState({})
   const [loaded, setLoaded]               = useState(false)
   const [pricesLoading, setPricesLoading] = useState(false)
+
+  /**
+   * Fold new quotes into the ones already held. Never replace, never clear.
+   *
+   * api.getPrices fans out per asset class, each with its own timeout and its
+   * own upstream: crypto in one batch, stocks in a batch plus a request per
+   * ticker the batch missed, metals, fiat. A tick where any one of those is
+   * slow or rate-limited resolves with a SUBSET, and assigning that subset
+   * dropped every id missing from it.
+   *
+   * What that looked like on screen: the holding valued at 0, and because each
+   * category is sorted by value, it fell to the bottom of its list and read as
+   * having vanished — then came back on the next tick that happened to include
+   * it. Merging means a price, once known, stays until a better one arrives.
+   */
+  /**
+   * Logos, folded in the same way as quotes, and for the same reason.
+   *
+   * This assigned getCoinImages' result straight over the map. That call
+   * reaches CoinGecko and a proxy, so a slow or blocked one resolves with a
+   * subset — and every asset missing from it lost its image URL. CoinLogo
+   * then restarted its fallback ladder without its best stage, walked a set
+   * of CDNs, and settled on the generated letter badge, where it stayed for
+   * the session. A logo that has been on screen is never taken away now.
+   */
+  const mergeCoinImages = useCallback((next) => {
+    if (!next) return
+    const keys = Object.keys(next).filter(k => next[k])
+    if (!keys.length) return
+    setCoinImages(prev => {
+      let changed = false
+      for (const k of keys) if (prev[k] !== next[k]) { changed = true; break }
+      if (!changed) return prev
+      const merged = { ...prev }
+      for (const k of keys) merged[k] = next[k]
+      return merged
+    })
+  }, [])
+
+  const mergePrices = useCallback((next) => {
+    if (!next) return
+    const keys = Object.keys(next)
+    if (!keys.length) return
+    setPrices(prev => {
+      // Same object identity when nothing actually moved, so the memo below
+      // does not recompute and the rows do not re-render on a no-op refresh.
+      let changed = false
+      for (const k of keys) {
+        const a = prev[k], b = next[k]
+        if (!a || a.usd !== b.usd || a.usd_24h_change !== b.usd_24h_change) { changed = true; break }
+      }
+      return changed ? { ...prev, ...next } : prev
+    })
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    // One request, no polling. A weekly number does not change fast enough to
+    // be worth refetching, and a failure here costs the arrows their longer
+    // window, not the dashboard.
+    fetch(dataUrl('market.json') + '?t=' + Math.floor(Date.now() / 3_600_000))
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (cancelled || !d?.coins) return
+        setSevenDay(sevenDayMap(d.coins))
+        setSparks(sparkMap(d.coins))
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const [activeTab, setActiveTab]         = useState(() => {
     // If a QR deep-link import is waiting in sessionStorage, open the manage tab
     // so DataPanel mounts and its auto-import effect fires immediately.
@@ -3663,17 +3624,31 @@ export default function Dashboard() {
   }, [displayCurrency, fxRates, btcUsd, prices])
 
   // Full-precision money string in the active currency (e.g. "E£ 410,233.50").
-  const cv = useCallback((usd) => {
+  // ── Hiding values ──────────────────────────────────────────────────────────
+  //
+  // Hiding values has to hide the values. The total was masked while the
+  // category chips directly beneath it still read $13.4k · $7.1k · $6.3k, and
+  // every holding still showed its own value, cost basis and quantity — so the
+  // one figure that was covered could be reconstructed by adding up the ones
+  // that were not.
+  //
+  // The mask therefore lives inside the formatters rather than at each call
+  // site. Every amount this page prints goes through cv or cvN, so a figure
+  // added later is hidden by default instead of by somebody remembering to
+  // hide it. That is the property the first version lacked.
+  const cvPub = useCallback((usd) => {
     const n = Number(usd) || 0
-    if (!curConv.rate) return `$${fmt(Math.abs(n))}`
+    if (!curConv.rate) return `$${fmtPx(Math.abs(n))}`
     const v = n * curConv.rate
     if (curConv.btc) return `₿ ${Math.abs(v) < 1 ? Math.abs(v).toFixed(6) : Math.abs(v).toFixed(4)}`
     const sp = curConv.sym.length > 1 ? ' ' : ''
-    return `${curConv.sym}${sp}${fmt(Math.abs(v))}`
+    return `${curConv.sym}${sp}${fmtPx(Math.abs(v))}`
   }, [curConv])
 
-  // Compact variant for chart axes (e.g. "E£12k", "₿0.45").
-  const cvN = useCallback((usd) => {
+  const cv = useCallback((usd) => (hidden ? VALUE_MASK : cvPub(usd)), [hidden, cvPub])
+
+  // Compact variant for chart axes and the category chips (e.g. "E£12k").
+  const cvNPub = useCallback((usd) => {
     const n = Number(usd) || 0
     const rate = curConv.rate || 1
     const v = n * rate
@@ -3683,6 +3658,8 @@ export default function Dashboard() {
     const s = abs >= 1000 ? `${(abs / 1000).toFixed(1)}k` : `${abs.toFixed(0)}`
     return `${v < 0 ? '-' : ''}${curConv.sym}${sp}${s}`
   }, [curConv])
+
+  const cvN = useCallback((usd) => (hidden ? VALUE_MASK : cvNPub(usd)), [hidden, cvNPub])
 
   function saveCurrency(code) {
     setDisplayCurrency(code)
@@ -3751,8 +3728,12 @@ export default function Dashboard() {
       // nisab even when the user does not hold metals as portfolio assets.
       const metalIds = [GOLD_ID, SILVER_ID].filter(id => !p.some(h => h.coin_id === id))
       const allIds = metalIds.length ? ids + ',' + metalIds.join(',') : ids
+      // The cache first, synchronously. getCachedPrices holds the last quote
+      // for every id already seen, so rows open with a real value instead of
+      // zero while the network call is still out.
+      mergePrices(api.getCachedPrices(allIds))
       try {
-        setPrices(await api.getPrices(allIds) || {})
+        mergePrices(await api.getPrices(allIds))
       } catch {}
       setPricesLoading(false)
 
@@ -3765,7 +3746,15 @@ export default function Dashboard() {
       // overlay falls back to the symbol on a disc, and rows to a letter
       // badge. Trading a correct number arriving sooner for a picture arriving
       // later is the right way round.
-      api.getCoinImages(ids).then(imgs => setCoinImages(imgs || {})).catch(() => {})
+      // The persisted cache first, synchronously, so rows open with their real
+      // logos rather than initials that are then replaced.
+      const cachedLogos = {}
+      for (const id of ids.split(',')) {
+        const url = getCachedCoinImage(id)
+        if (url) cachedLogos[id] = url
+      }
+      mergeCoinImages(cachedLogos)
+      api.getCoinImages(ids).then(mergeCoinImages).catch(() => {})
     }
     setLoaded(true)
   }
@@ -3788,8 +3777,9 @@ export default function Dashboard() {
     const allIds = extra.length ? ids + ',' + extra.join(',') : ids
     setPricesLoading(true)
     try {
-      const px = await api.getPrices(allIds)
-      if (px && Object.keys(px).length) setPrices(px)
+      // Merged, not assigned. The old guard only caught a wholly empty
+      // response; a partial one still dropped every id it did not carry.
+      mergePrices(await api.getPrices(allIds))
     } catch {}
     setPricesLoading(false)
   }
@@ -4067,6 +4057,10 @@ export default function Dashboard() {
   useEffect(() => {
     if (!loaded) return
     noteAppOpen()
+    // Counted on every launch, not only Android ones: the support card shows
+    // wherever the site runs, so its own open count cannot ride on the review
+    // prompt's, which no-ops outside the installed app.
+    noteSupportOpen()
     // Pass the ref's getter, not its current value: a timer that finds every
     // rule satisfied still has no user gesture to send the intent on, so the
     // ask is armed and fires on the next tap. By then this snapshot has moved
@@ -4324,7 +4318,13 @@ export default function Dashboard() {
       const invested = investeds[cat] || 0
       const pnl = pnls[cat] || 0
       const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0
-      const assets = (assetsByCat[cat] || []).sort((a, b) => b.value - a.value)
+      // Copied before sorting, and tie-broken by symbol. sort() mutates, so
+      // this was reordering the memoised array in place on every render; and
+      // two holdings of equal value could swap places between renders for no
+      // reason the reader could see.
+      const assets = (assetsByCat[cat] || []).slice().sort((a, b) =>
+        (b.value - a.value) ||
+        String(a.coin_symbol || a.coin_id || '').localeCompare(String(b.coin_symbol || b.coin_id || '')))
       return {
         cat, label: t(CATEGORY_LABELS[cat]),
         value: totals[cat],
@@ -4412,13 +4412,45 @@ export default function Dashboard() {
     return { value, invested, pnl, pnlPct, count: sel.size || selectedAssets.size }
   }, [filteredHoldings, selectedAssets])
 
+  // How many holdings the collapsed list shows before "show all".
+  //
+  // Six was low enough that most portfolios had something just outside it, and
+  // the list is sorted by value — so a holding sitting near the boundary
+  // crossed it whenever a quote moved, and appeared and disappeared on the
+  // 60-second refresh. When it was the only asset in its category, the whole
+  // category heading went with it. Twelve covers a normal portfolio outright,
+  // and the window below keeps the larger ones steady.
+  const PREVIEW_ROWS = 12
+
+  // The ids the preview is showing, pinned against price movement.
+  //
+  // Membership is chosen when the SET of holdings changes, or the sort or the
+  // filter does — not when a value does. Prices then reorder rows within the
+  // window without ever swapping one out for another, which is the difference
+  // between a list that updates and a list that flickers.
+  const previewRef = useRef({ key: '', ids: [] })
+
   // Memoized because .slice() returns a fresh array identity on every render
   // even when filteredHoldings has not changed — which silently defeated the
   // groupedHoldings memo below, whose only dependency this is.
-  const displayHoldings = useMemo(
-    () => (showAllHoldings || isHoldingsFiltered) ? filteredHoldings : filteredHoldings.slice(0, 6),
-    [filteredHoldings, showAllHoldings, isHoldingsFiltered]
-  )
+  const displayHoldings = useMemo(() => {
+    if (showAllHoldings || isHoldingsFiltered) return filteredHoldings
+    if (filteredHoldings.length <= PREVIEW_ROWS) return filteredHoldings
+
+    // `priced` is part of the key on purpose: the first pass runs before any
+    // quote has arrived, when every value is 0 and the order is arbitrary.
+    // Pinning that would freeze the wrong twelve. The key changes once prices
+    // land, the window is chosen again from real values, and it settles there.
+    const priced = filteredHoldings.some(h => h.value > 0)
+    const key = `${filteredHoldings.map(h => h.coin_id).sort().join('|')}#${holdingsSort}#${holdingsSortDir}#${priced}`
+    if (previewRef.current.key !== key) {
+      previewRef.current = { key, ids: filteredHoldings.slice(0, PREVIEW_ROWS).map(h => h.coin_id) }
+    }
+    const keep = new Set(previewRef.current.ids)
+    const pinned = filteredHoldings.filter(h => keep.has(h.coin_id))
+    // Never render an empty list because the pin went stale.
+    return pinned.length ? pinned : filteredHoldings.slice(0, PREVIEW_ROWS)
+  }, [filteredHoldings, showAllHoldings, isHoldingsFiltered, holdingsSort, holdingsSortDir])
 
   // Holdings grouped by category for the holdings list — memoized so this
   // grouping pass doesn't re-run on every render (e.g. the ticker count-up
@@ -4500,7 +4532,13 @@ export default function Dashboard() {
             <div className={`wl-import-branch${open ? ' open' : ''}`} key={m.key}>
               <button className="wl-import-node" style={{ '--c':`rgb(${m.color})`, '--cbg':`rgba(${m.color},0.12)` }}
                 aria-expanded={open}
-                onClick={() => { const next = open ? null : m.key; setOpenImport(next); if (next) track('quick_import_open', { method: m.key }) }}>
+                onClick={() => { const next = open ? null : m.key; setOpenImport(next)
+                  // 'opened' is where the user starts. 'started' does not fire
+                  // until a file comes back from the picker, so without this the
+                  // funnel cannot see anyone who opened an importer and never
+                  // chose a file, which is where they are being lost.
+                  if (next) { track('quick_import_open', { import_method: importMethod(m.key) })
+                    trackImport({ method: m.key, step: 'opened' }) } }}>
                 <span className="wl-import-node-icon"><Icon name={m.icon} size={18} /></span>
                 <span className="wl-import-node-text">
                   <span className="wl-import-node-label">{m.label}</span>
@@ -4537,10 +4575,6 @@ export default function Dashboard() {
           the six tabs. */}
       <ScreenEffect effect={effect?.effect} payload={effect?.payload} onDone={() => setEffect(null)} />
 
-      {/* Live news ticker — above the tab navigation so it's always visible */}
-      <NewsTicker />
-
-
       {/* Tab nav — labeled tile grid on the web. Inside the native app the tile
           grid is redundant with the native bottom nav, so we replace it with the
           quick import options (for populated dashboards; the empty profile shows
@@ -4557,6 +4591,17 @@ export default function Dashboard() {
         ))}
       </div>
       ) : (activeTab === 'overview' && enriched.length > 0 && importOptions)}
+
+      {/* Live news ticker, demoted but not buried.
+          It was the second thing on the page, under the price strip, so a
+          dashboard opened with two marquees running before any figure of the
+          user's own. Moving it to the end of .dvx overcorrected: on a
+          populated dashboard that is thousands of pixels down, past every tab
+          block, which is not lower but gone. Here it sits under the tab grid
+          and above the tab content, so the numbers still come first and the
+          headlines are still on screen. Outside the tab blocks, as before, so
+          it stays reachable from every tab. */}
+      <NewsTicker />
 
       {/* Tab content — opacity fades slightly during lazy-load transitions */}
       <div style={isTabPending ? { opacity: 0.7, transition: 'opacity 0.15s' } : undefined}>
@@ -5133,6 +5178,11 @@ export default function Dashboard() {
             {/* Left column */}
             <div className="dvx-col-main">
 
+              {/* "Loved the app?" support card. Placed above Spin & Learn and
+                  below the portfolio itself, so the ask only ever comes after
+                  the numbers it is asking about. */}
+              <SupportNudge holdingsCount={enriched.length} busy={sheetOpen || importChooser} />
+
               {/* Spin & Learn — link to the Academy Knowledge Wheel */}
               {cardVis.spin_learn && (
                 <Link to="/academy?tab=wheel" className="glass-card dvx-spin-card"
@@ -5360,8 +5410,27 @@ export default function Dashboard() {
                                   ? Math.min(100, (h.price / breakEvenPrice) * 100) : 0
                                 const isSelected = selectedAssets.has(h.coin_id)
                                 const isDimmed   = selectedAssets.size > 0 && !isSelected
-                                const trendVal = Number(h.pct24h) || 0
-                                const trendStatus = trendVal > 0.5 ? 'up' : trendVal < -0.5 ? 'down' : 'flat'
+                                // One reading, shown three ways.
+                                //
+                                // The pill computed its own direction from
+                                // pct24h with a ±0.5% band, while the chevron
+                                // beside it and the TREND row below it both
+                                // come from trendFor(), which prefers the
+                                // 7-day window and uses a ±2% band. Two
+                                // windows and two thresholds wearing the same
+                                // word: WLD read "Uptrend 7-day +3.0%" next to
+                                // a red DOWNTREND pill, and APT a green
+                                // UPTREND pill next to "Flat". Both were true
+                                // about different periods, which is not
+                                // something a reader can be expected to work
+                                // out from a row of badges.
+                                //
+                                // Where the two windows genuinely disagree the
+                                // row already says so, with the cooling dot
+                                // TrendArrow draws from trendFor's `diverging`
+                                // flag. That is the one place it belongs.
+                                const holdingTrend = trendFor({ pct24h: h.pct24h, pct7d: sevenDay[h.coin_id] })
+                                const trendStatus = holdingTrend.dir
                                 const holdingLpItems = isDemo ? [] : [
                                   { icon: '📊', label: 'Technical Analysis', onClick: () => navigate('/technicals') },
                                   { icon: '🎯', label: 'Set Sell Target', onClick: () => navigate('/dashboard', { state: { tab: 'targets' } }) },
@@ -5387,6 +5456,9 @@ export default function Dashboard() {
                                       <div className="dvx-holding-line1">
                                         <div className="dvx-holding-meta">
                                           <strong>{h.coin_symbol?.toUpperCase()}</strong>
+                                          {categorizeAsset(h) !== 'cash' && (
+                                            <TrendArrow trend={holdingTrend} />
+                                          )}
                                           {isStable && <span className="dvx-stable-badge">{t('dsStable')}</span>}
                                           {!isStable && (() => { const b = getAssetCategoryBadge(h); return b ? <span className="dvx-cat-badge" style={{ background: b.color + '22', color: b.color, borderColor: b.color + '44' }}>{b.label}</span> : null })()}
                                           {isDupTicker && <span className="dvx-cat-badge" style={{ background:'#f59e0b22', color:'#f59e0b', borderColor:'#f59e0b44', cursor:'help' }} title={`Two holdings share the ticker ${(h.coin_symbol||'').toUpperCase()} — one may have a wrong ID. Delete the one with no price and re-add it.`}><Icon name="warning" size={11} style={{ verticalAlign:'-1px', marginRight:'0.25em' }} />dup</span>}
@@ -5431,7 +5503,7 @@ export default function Dashboard() {
                                           <div className="dvx-holding-val">{cv(displayValue)}</div>
                                           {!showBreakEven && hasPnl && (
                                             <span className={`dvx-holding-pnl-pill ${h.pnl >= 0 ? 'pos' : 'neg'}`}>
-                                              {h.pnl >= 0 ? '▲' : '▼'} {cv(h.pnl)} ({pct(h.pnlPct)})
+                                              {hidden ? VALUE_MASK : `${h.pnl >= 0 ? '▲' : '▼'} ${cv(h.pnl)} (${pct(h.pnlPct)})`}
                                             </span>
                                           )}
                                         </div>
@@ -5447,15 +5519,21 @@ export default function Dashboard() {
                                         </span>
                                       ) : (
                                         <div className="dvx-holding-stats">
+                                          {categorizeAsset(h) !== 'cash' && (
+                                            <TrendBadge
+                                              trend={holdingTrend}
+                                              points={sparks[h.coin_id]}
+                                            />
+                                          )}
                                           {h.price > 0 ? (() => {
                                             const ch = Number(h.pct24h) || 0
                                             const priceColor = ch > 0 ? 'var(--g-ink)' : ch < 0 ? '#f87171' : undefined
-                                            return <span className="dvx-hstat"><em>{t('wtPrice')}</em><b style={{ color: priceColor }}>{cv(h.price)}</b></span>
+                                            return <span className="dvx-hstat"><em>{t('wtPrice')}</em><b style={{ color: priceColor }}>{cvPub(h.price)}</b></span>
                                           })() : <span className="dvx-hstat"><em>{t('invested')}</em><b>{cv(h.total_invested)}</b></span>}
                                           {breakEvenPrice > 0 && categorizeAsset(h) !== 'cash' && (
                                             <span className="dvx-hstat"><em>Avg</em><b>{cv(breakEvenPrice)}</b></span>
                                           )}
-                                          <span className="dvx-hstat dvx-hstat-qty"><em>Qty</em><b>{Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {Number(h.amount) === 1 ? 'unit' : 'units'}</b></span>
+                                          <span className="dvx-hstat dvx-hstat-qty"><em>Qty</em><b>{hidden ? VALUE_MASK : `${Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} ${Number(h.amount) === 1 ? 'unit' : 'units'}`}</b></span>
                                         </div>
                                       )}
                                       {showBreakEven && h.price > 0 && breakEvenPrice > 0 && (
@@ -5531,7 +5609,7 @@ export default function Dashboard() {
               </div>
 
               {/* Portfolio Heatmap */}
-              {cardVis.portfolio_heatmap && enriched.length >= 1 && !pricesFailed && (
+              {cardVis.portfolio_heatmap && !isDemo && enriched.length >= 2 && !pricesFailed && (
                 <PortfolioHeatmap enriched={enriched} prices={prices} totalValue={totalValue} />
               )}
 
@@ -5841,7 +5919,13 @@ export default function Dashboard() {
                   <div className={`wl-import-branch${open ? ' open' : ''}`} key={m.key}>
                     <button className="wl-import-node" style={{ '--c': `rgb(${m.color})`, '--cbg': `rgba(${m.color},0.12)` }}
                       aria-expanded={open}
-                      onClick={() => { const next = open ? null : m.key; setOpenImport(next); if (next) track('smart_import_open', { method: m.key }) }}>
+                      onClick={() => { const next = open ? null : m.key; setOpenImport(next)
+                  // 'opened' is where the user starts. 'started' does not fire
+                  // until a file comes back from the picker, so without this the
+                  // funnel cannot see anyone who opened an importer and never
+                  // chose a file, which is where they are being lost.
+                  if (next) { track('smart_import_open', { import_method: importMethod(m.key) })
+                    trackImport({ method: m.key, step: 'opened' }) } }}>
                       <span className="wl-import-node-icon"><Icon name={m.icon} size={18} /></span>
                       <span className="wl-import-node-text">
                         <span className="wl-import-node-label">{m.label}</span>

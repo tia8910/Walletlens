@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { VOICE_HOST, PUSH_HOST, NANSEN_HOST, VOICE_API, PUSH_API, NANSEN_API, voiceProxy } from './apiHosts.js'
+import { VOICE_HOST, PUSH_HOST, NANSEN_HOST, DATA_HOST, DRIVE_AUTH_HOST, SITE_ORIGIN, VOICE_API, PUSH_API, NANSEN_API, DATA_API, DRIVE_API, voiceProxy, dataUrl } from './apiHosts.js'
 
 // The backend hosts were string literals in twenty-odd files. Moving off Deno
 // Deploy was therefore a search-and-replace, where missing one site fails at
@@ -54,17 +54,47 @@ describe('apiHosts', () => {
   it('builds the two endpoint shapes the call sites expected', () => {
     // One has a trailing slash and the other does not. That asymmetry is
     // inherited from the call sites, and normalising it here would silently
-    // change the URLs every one of them builds.
-    expect(VOICE_API).toBe(`https://${VOICE_HOST}/`)
-    expect(PUSH_API).toBe(`https://${PUSH_HOST}`)
+    // change the URLs every one of them builds — voiceProxy() appends
+    // 'proxy?url=' straight onto VOICE_API.
+    //
+    // The voice worker moved behind the site for the same reason as the rest:
+    // screenshot import posted the image to workers.dev, the request never
+    // left the device, and the app answered "No holdings detected in any
+    // screenshot. Try clearer, tighter shots."
+    expect(VOICE_API).toBe(`${SITE_ORIGIN}/api/voice/`)
+    expect(VOICE_API.endsWith('/')).toBe(true)
+    // Both now go through the app's own origin rather than workers.dev: a
+    // connection check from the app showed every workers.dev host throwing
+    // "Failed to fetch" on a device that loaded the site fine, which is what a
+    // DNS or ISP blocklist looks like from a browser. Worker routes on the
+    // zone carry these the rest of the way.
+    expect(PUSH_API).toBe(`${SITE_ORIGIN}/api/push`)
     expect(PUSH_API.endsWith('/')).toBe(false)
+    expect(DATA_API).toBe(SITE_ORIGIN)
+    // And the Drive token exchange, for the same reason: a sign-in that cannot
+    // reach workers.dev fails with nothing to show but "Sign-in did not
+    // complete".
+    expect(DRIVE_API).toBe(`${SITE_ORIGIN}/api/drive`)
+  })
+
+  it('builds a dataset URL under the filename it had as a static asset', () => {
+    // Call sites fetched '/market.json' when this was a file the build
+    // shipped. Only the origin moved, so a changed filename here would
+    // silently 404 against a service that still serves the old name.
+    expect(dataUrl('market.json')).toBe(`${SITE_ORIGIN}/market.json`)
+  })
+
+  it('leaves the Nansen proxy on its workers.dev hostname', () => {
+    // The one service not routed through the site, because its wrangler.toml
+    // declares no route on this zone. Admitted by the *.workers.dev wildcard
+    // in the CSP rather than by a host entry of its own.
     expect(NANSEN_API).toBe(`https://${NANSEN_HOST}`)
     expect(NANSEN_API.endsWith('/')).toBe(false)
   })
 
   it('builds a proxy URL with the target encoded', () => {
     expect(voiceProxy('https://x.com/a?b=1&c=2'))
-      .toBe(`https://${VOICE_HOST}/proxy?url=https%3A%2F%2Fx.com%2Fa%3Fb%3D1%26c%3D2`)
+      .toBe(`${SITE_ORIGIN}/api/voice/proxy?url=https%3A%2F%2Fx.com%2Fa%3Fb%3D1%26c%3D2`)
   })
 })
 
@@ -75,7 +105,10 @@ describe('no call site hardcodes a backend host', () => {
       const rel = relative(CLIENT, file)
       if (rel.endsWith('src/apiHosts.js') || rel.endsWith('src/apiHosts.test.js')) continue
       const text = readFileSync(file, 'utf8')
-      if (text.includes(VOICE_HOST) || text.includes(PUSH_HOST)) offenders.push(rel)
+      if (text.includes(VOICE_HOST) || text.includes(PUSH_HOST)
+        || text.includes(DATA_HOST) || text.includes(DRIVE_AUTH_HOST)) {
+        offenders.push(rel)
+      }
     }
     // A failure here means a new call site hardcoded a host, and will keep
     // talking to the old service after the next move.
@@ -97,6 +130,7 @@ describe('the places that cannot import apiHosts.js', () => {
     const html = read('index.html')
     expect(cspAdmits(html, VOICE_HOST)).toBe(true)
     expect(cspAdmits(html, PUSH_HOST)).toBe(true)
+    expect(cspAdmits(html, DATA_HOST)).toBe(true)
     expect(cspAdmits(html, NANSEN_HOST)).toBe(true)
   })
 
@@ -107,6 +141,7 @@ describe('the places that cannot import apiHosts.js', () => {
     const headers = read('public/_headers')
     expect(cspAdmits(headers, VOICE_HOST)).toBe(true)
     expect(cspAdmits(headers, PUSH_HOST)).toBe(true)
+    expect(cspAdmits(headers, DATA_HOST)).toBe(true)
     expect(cspAdmits(headers, NANSEN_HOST)).toBe(true)
   })
 
@@ -117,8 +152,17 @@ describe('the places that cannot import apiHosts.js', () => {
     expect(read('public/sw.js')).toContain(VOICE_HOST)
   })
 
+  it('matches the data origin in the service worker', () => {
+    // The runtime cache for the scheduled datasets is gated on this origin.
+    // These used to be same-origin files, so a stale constant here does not
+    // error — it just stops matching, and every feed poll round-trips.
+    expect(read('public/sw.js')).toContain(`const DATA_ORIGIN = '${SITE_ORIGIN}'`)
+  })
+
   it('preconnects to the host the app actually calls', () => {
-    expect(read('index.html')).toContain(`<link rel="preconnect" href="https://${VOICE_HOST}"`)
+    const html = read('index.html')
+    expect(html).toContain(`<link rel="preconnect" href="https://${VOICE_HOST}"`)
+    expect(html).toContain(`<link rel="preconnect" href="https://${DATA_HOST}"`)
   })
 
   it('keeps the voice worker\'s own SELF_ORIGIN on the same host', () => {
@@ -136,7 +180,7 @@ describe('the places that cannot import apiHosts.js', () => {
     const html = read('index.html')
     const hinted = [...html.matchAll(/rel="(?:preconnect|dns-prefetch)" href="https:\/\/([^"]+)"/g)]
       .map((m) => m[1])
-      .filter((h) => h.endsWith('deno.net') || h.endsWith('workers.dev'))
-    for (const h of hinted) expect([VOICE_HOST, PUSH_HOST]).toContain(h)
+      .filter((h) => h.endsWith('deno.net') || h.endsWith('deno.dev') || h.endsWith('workers.dev'))
+    for (const h of hinted) expect([VOICE_HOST, PUSH_HOST, DATA_HOST]).toContain(h)
   })
 })

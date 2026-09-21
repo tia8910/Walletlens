@@ -1,3 +1,5 @@
+import { SITE_ORIGIN } from './site.js'
+
 // Delivery over Firebase Cloud Messaging.
 //
 // WHY THERE ARE TWO TRANSPORTS NOW
@@ -144,14 +146,14 @@ export function buildMessage({ token, payload, urgency, ttl }) {
   }
 
   // The native app only follows a URL on its own origin, checked in
-  // WalletLensMessagingService with a startsWith("https://walletlens.live/").
+  // WalletLensMessagingService with a startsWith(SITE_ORIGIN + "/").
   // Payload urls are relative by design down in jobs.js (assetUrl returns
-  // '/asset/bitcoin', tips return '/academy?tab=hacks'), and Web Push's sw.js
-  // resolves them against the page origin — so they land fine there. FCM data
-  // messages have no page to resolve against: without this prefix every
+  // '/asset/?id=bitcoin', tips return '/academy?tab=hacks'), and Web Push's
+  // sw.js resolves them against the page origin — so they land fine there. FCM
+  // data messages have no page to resolve against: without this prefix every
   // notification opened the dashboard instead of the page it was about.
   if (data.url && !data.url.startsWith('http')) {
-    data.url = 'https://walletlens.live' + (data.url.startsWith('/') ? '' : '/') + data.url
+    data.url = SITE_ORIGIN + (data.url.startsWith('/') ? '' : '/') + data.url
   }
 
   return {

@@ -25,8 +25,13 @@ import {
   fmtPct, fmtPrice, signedPct, dueZakatReminder, trimZakatSent,
   isMarketStory, pickHack, pickChallenge, portfolioPulse, assetUrl,
   HACK_GAP_MS, HACK_HOUR, ACADEMY_HOUR, PORTFOLIO_HOUR, PULSE_MIN_PCT, isStablecoin,
+  trendSwitched,
 } from '../../push-api/notify-logic.js'
-import { assetKey, fetchCryptoQuotes, fetchNews, fetchQuotes, quoteFor } from '../../push-api/markets.js'
+import { assetKey, fetchCryptoQuotes, fetchNews, fetchQuotes, fetchSevenDay, quoteFor } from '../../push-api/markets.js'
+// The same rule the dashboard draws with, imported rather than restated. A
+// second copy of the thresholds here would drift, and the failure would be a
+// notification contradicting the screen it links to.
+import { trendFor } from '../../client/src/assetTrend.js'
 // The Academy's own teaching material, in the six languages the app ships.
 // Imported rather than restated: a hack is a title and a paragraph written to
 // go together, and a second copy on the server is a second thing to translate
@@ -554,5 +559,71 @@ export function createJobs({ store, send }) {
       if (changed) await store.save(key, sub)
     }
   }
-  return { checkTargets, checkMoves, checkNews, checkDaily }
+  /**
+   * A holding's seven-day trend changed direction.
+   *
+   * Runs hourly, on the schedule that already exists. A weekly window does not
+   * turn over faster than that, and the account is at the Workers Free cron
+   * limit, so a fourth trigger was not available to spend.
+   *
+   * Crypto only, and deliberately: the weekly numbers come from market.json,
+   * which is a CoinGecko snapshot. A stock has no entry there, and inventing
+   * one from the 24h quote would mean this channel and the dashboard's own
+   * chip disagreeing about the same asset on the same screen.
+   */
+  async function checkTrend() {
+    const subs = await store.all()
+    const watching = subs.filter(s =>
+      s.sub.prefs.trend && s.sub.watch.some(a => (a.kind || 'crypto') === 'crypto' && !isStablecoin(a.symbol)))
+    if (!watching.length) return
+
+    const weekly = await fetchSevenDay()
+    if (!Object.keys(weekly).length) return
+
+    const now = Date.now()
+
+    for (const { key, sub } of watching) {
+      let changed = false
+      sub.trendRef ??= {}
+      sub.trendFired ??= {}
+
+      for (const a of sub.watch) {
+        if ((a.kind || 'crypto') !== 'crypto' || isStablecoin(a.symbol)) continue
+        const pct7d = weekly[String(a.id).toLowerCase()]
+        if (!Number.isFinite(pct7d)) continue
+
+        const k = assetKey(a)
+        const { dir } = trendFor({ pct7d })
+        const prev = sub.trendRef[k]
+
+        if (trendSwitched({ prev, next: dir, firedAt: sub.trendFired[k], now })) {
+          const sent = await send(sub, buildPayload({
+            channel: 'trend',
+            title: copy('trendTitle', sub.lang)(a.symbol, dir === 'up'),
+            body: copy('trendBody', sub.lang)(a.symbol, signedPct(pct7d)),
+            tag: `trend-${k}`,
+            sym: a.symbol,
+            url: assetUrl(a),
+          }), { now })
+          if (sent) { sub.trendFired[k] = now; changed = true }
+        }
+
+        // Recorded whether or not anything was sent, and that is what makes
+        // the first sighting silent rather than a notification per holding the
+        // moment the channel is switched on.
+        if (sub.trendRef[k] !== dir) { sub.trendRef[k] = dir; changed = true }
+      }
+
+      // Assets the user has since sold would otherwise keep their direction
+      // forever, growing the record on every portfolio edit.
+      const live = new Set(sub.watch.map(assetKey))
+      for (const k of Object.keys(sub.trendRef)) {
+        if (!live.has(k)) { delete sub.trendRef[k]; delete sub.trendFired[k]; changed = true }
+      }
+
+      if (changed) await store.save(key, sub)
+    }
+  }
+
+  return { checkTargets, checkMoves, checkNews, checkDaily, checkTrend }
 }

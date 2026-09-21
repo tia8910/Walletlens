@@ -1142,7 +1142,25 @@ input, select, textarea {
 [data-wl-light] .ticker-sep { color: var(--text-sub); }
 
 /* ── News ticker (new component) ── */
-[data-wl-light] .news-ticker-wrap { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
+[data-wl-light] /* Placeholder while the first news load is in flight. Same height as a real
+   row, so the strip does not change size when the headlines arrive. */
+.news-ticker-skeleton {
+  height: 1.1em;
+  border-radius: 4px;
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 100%);
+  background-size: 200% 100%;
+  animation: news-sk 1.4s ease-in-out infinite;
+}
+@keyframes news-sk { from { background-position: 200% 0 } to { background-position: -200% 0 } }
+@media (prefers-reduced-motion: reduce) { .news-ticker-skeleton { animation: none } }
+[data-wl-light] .news-ticker-skeleton {
+  background: linear-gradient(90deg,
+    rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.09) 50%, rgba(0,0,0,0.04) 100%);
+  background-size: 200% 100%;
+}
+
+.news-ticker-wrap { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
 [data-wl-light] .news-ticker-label { border-right-color: rgba(0,0,0,0.7); }
 [data-wl-light] .news-ticker-mask::before { background: linear-gradient(to right, var(--bg), transparent); }
 [data-wl-light] .news-ticker-mask::after  { background: linear-gradient(to left,  var(--bg), transparent); }
@@ -1814,46 +1832,100 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
 }
 
 /* ── Live price ticker ── */
+/* A row of chips that scrolls under a finger, not a marquee.
+   It lives inside .wl-topbar now, so it inherits the header's stickiness and
+   there is no second sticky element for the header to paint over. */
 .ticker-strip {
+  display: flex; gap: 7px;
+  padding: 7px 10px 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
   background: var(--ink);
-  padding: 9px 0;
-  overflow: hidden;
-  border-radius: 12px;
-  margin-bottom: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  position: relative;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  /* The scrollbar is 8px of permanent furniture on a 38px strip, and the row
+     already reads as scrollable from the clipped chip at its edge. */
+  scrollbar-width: none;
 }
-.ticker-strip::before,
-.ticker-strip::after {
-  content: ''; position: absolute; top: 0; bottom: 0; width: 32px;
-  z-index: 2; pointer-events: none;
-}
-.ticker-strip::before {
-  left: 0;
-  background: linear-gradient(90deg, var(--ink), transparent);
-}
-.ticker-strip::after {
-  right: 0;
-  background: linear-gradient(-90deg, var(--ink), transparent);
-}
-.ticker-inner {
-  display: flex; gap: 28px;
-  animation: tk-scroll 30s linear infinite;
-  white-space: nowrap;
-  width: max-content;
-  will-change: transform;
-}
-@keyframes tk-scroll {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ticker-inner { animation-play-state: paused; }
-}
+.ticker-strip::-webkit-scrollbar { display: none; }
 .tick {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 0.72rem; font-family: var(--mono);
+  flex: none;
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 0.7rem; font-family: var(--mono);
+  white-space: nowrap;
 }
+/* ── Direction, magnitude, and the moment a price moves ────────────────────
+   The strip was a row of identical neutral chips: the only thing that said
+   anything was the percentage at the end, and a 12% move looked exactly like
+   a 0.1% one. Three things carry it now.
+
+   1. Direction tints the whole chip and lights an inset bar down its leading
+      edge, so the row reads green/red at a glance without being read.
+   2. Magnitude sets the strength of that tint, so size is visible before the
+      number is.
+   3. A change flashes. A ticker's job is to say something is happening, and
+      repainting the same numbers every minute said nothing — a live feed and
+      a frozen one looked the same. The flash is on the CHANGE rather than the
+      day's direction: a coin that is down but ticking up flashes green for
+      that tick, which is what a trading screen does. */
+.tick { transition: background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease; }
+
+.tick--up {
+  border-color: rgba(16, 185, 129, 0.30);
+  box-shadow: inset 2px 0 0 rgba(16, 185, 129, 0.85);
+}
+.tick--down {
+  border-color: rgba(244, 63, 94, 0.30);
+  box-shadow: inset 2px 0 0 rgba(244, 63, 94, 0.85);
+}
+.tick--up.tick--soft   { background: rgba(16, 185, 129, 0.07); }
+.tick--up.tick--mid    { background: rgba(16, 185, 129, 0.13); }
+.tick--up.tick--strong { background: rgba(16, 185, 129, 0.20); border-color: rgba(16, 185, 129, 0.45); }
+.tick--down.tick--soft   { background: rgba(244, 63, 94, 0.07); }
+.tick--down.tick--mid    { background: rgba(244, 63, 94, 0.13); }
+.tick--down.tick--strong { background: rgba(244, 63, 94, 0.22); border-color: rgba(244, 63, 94, 0.45); }
+
+/* Not yet priced: no colour, no claim. */
+.tick--flat { background: rgba(255, 255, 255, 0.05); }
+
+@keyframes tickFlashUp {
+  0%   { background-color: rgba(16, 185, 129, 0.42); box-shadow: inset 2px 0 0 rgba(16,185,129,1), 0 0 12px rgba(16,185,129,0.35); }
+  100% { background-color: inherit; }
+}
+@keyframes tickFlashDown {
+  0%   { background-color: rgba(244, 63, 94, 0.42); box-shadow: inset 2px 0 0 rgba(244,63,94,1), 0 0 12px rgba(244,63,94,0.35); }
+  100% { background-color: inherit; }
+}
+.tick--flash-up   { animation: tickFlashUp 1s ease-out; }
+.tick--flash-down { animation: tickFlashDown 1s ease-out; }
+
+/* The number itself leads the flash by a beat. */
+.tick--flash-up .tick-val,
+.tick--flash-down .tick-val { color: #fff; transition: color 700ms ease; }
+
+[data-wl-light] .tick--up.tick--soft   { background: rgba(16, 185, 129, 0.10); }
+[data-wl-light] .tick--up.tick--mid    { background: rgba(16, 185, 129, 0.16); }
+[data-wl-light] .tick--up.tick--strong { background: rgba(16, 185, 129, 0.24); }
+[data-wl-light] .tick--down.tick--soft   { background: rgba(244, 63, 94, 0.10); }
+[data-wl-light] .tick--down.tick--mid    { background: rgba(244, 63, 94, 0.16); }
+[data-wl-light] .tick--down.tick--strong { background: rgba(244, 63, 94, 0.24); }
+[data-wl-light] .tick--flat { background: var(--surface-1); }
+[data-wl-light] .tick--flash-up .tick-val,
+[data-wl-light] .tick--flash-down .tick-val { color: var(--text); }
+
+/* The colour is the information; the movement is decoration. Keep the first,
+   drop the second. */
+@media (prefers-reduced-motion: reduce) {
+  .tick { transition: none; }
+  .tick--flash-up, .tick--flash-down { animation: none; }
+  .tick--flash-up .tick-val, .tick--flash-down .tick-val { transition: none; }
+}
+
 .tick-name { color: #fff; font-weight: 500; }
 .tick-val  { color: rgba(255,255,255,0.8); }
 .tick-up   { color: var(--g-ink); font-weight: 700; }
@@ -5319,7 +5391,7 @@ tr:last-child td { border-bottom: none; }
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 16px; padding: 0.35rem;
   margin-top: 1rem;
-  position: sticky; top: 82px; z-index: 50;
+  position: sticky; top: var(--wl-topbar-h, 82px); z-index: 50;
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
   mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
@@ -5923,19 +5995,33 @@ tr:last-child td { border-bottom: none; }
 .wl-content {
   width: 100%;
   max-width: 100vw;
-  padding-top: 0.75rem; /* the in-flow price ticker already clears the fixed topbar; keep just a small gap */
+  /* .wl-topbar is position:fixed, so it occupies no layout height and nothing
+     below it is pushed clear on its own. This used to be 0.75rem because the
+     price ticker sat in flow underneath the header and did the clearing; once
+     the ticker moved INSIDE the header to stop it being painted over, that
+     prop was gone and the first section of every page slid under the bar.
+     --wl-topbar-h is measured from the element itself in App.jsx rather than
+     hardcoded, because the header's height changes: the chips row can be
+     switched off in settings, and it wraps at narrow widths. */
+  padding-top: calc(var(--wl-topbar-h, 56px) + 0.75rem);
   padding-bottom: 4.5rem; /* bottom nav */
 }
 
 
-/* TWA app mode: no topbar, so reduce top padding */
-.wl-content.twa-mode {
-  padding-top: 0.5rem !important;
-}
+/* The app shell renders the SAME header the web does, so it needs the same
+   clearance. Two rules here used to force padding-top to 0.5rem and then to 0,
+   both !important, on the strength of "TWA app mode: no topbar" and "hide web
+   topbar in native mobile app". Neither is true any more: the Trusted Web
+   Activity was replaced by a WebView shell that loads walletlens.live and
+   draws .wl-topbar itself — nothing hides it — so the overrides beat every
+   calc(var(--wl-topbar-h)) rule, including the media-query ones, and tucked
+   the top of the first card under the fixed bar on every Android screen. The
+   import card lost its heading and its Excel row that way.
+
+   There is nothing app-specific left to say about this padding, so the app
+   inherits .wl-content's measured clearance and the rules are gone. */
 
 .twa-mode .news-ticker { margin-top: 0.75rem; }
-/* Hide web topbar in native mobile app */
-.twa-mode .wl-content { padding-top: 0 !important; }
 
 .twa-mode .dvx > .news-ticker:first-child { margin-top: 1rem; }
 
@@ -9717,6 +9803,70 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
   border-radius: 999px; padding: 0.3rem 0.7rem; box-shadow: 0 2px 8px rgba(var(--g-rgb),0.3);
 }
 
+/* ── Dashboard "loved the app?" support card ───────────────────────────── */
+/* The amber is the coffee button's, not the app's green. This is the one
+   thing on the dashboard that asks for something rather than reporting
+   something, and borrowing the green would file it with the data cards. */
+.wl-support-nudge {
+  display: flex; align-items: center; gap: 0.85rem;
+  padding: 0.9rem 1rem;
+  background: linear-gradient(135deg, rgba(255, 221, 0, 0.14), rgba(255, 199, 0, 0.05));
+  border: 1px solid rgba(255, 199, 0, 0.38);
+  animation: wl-support-in 0.32s ease-out both;
+}
+.wl-support-nudge-out { animation: wl-support-out 0.22s ease-in both; }
+.wl-support-cup {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px; border-radius: 50%;
+  color: #1f1400;
+  background: linear-gradient(135deg, #ffdd00, #ffc700);
+}
+.wl-support-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.wl-support-title { font-size: 0.95rem; font-weight: 800; color: var(--text); }
+.wl-support-sub {
+  font-size: 0.78rem; color: var(--text-muted); font-weight: 600;
+  margin-top: 0.15rem; line-height: 1.35;
+}
+.wl-support-actions { flex-shrink: 0; display: flex; align-items: center; gap: 0.5rem; }
+.wl-support-go {
+  display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap;
+  font-size: 0.78rem; font-weight: 800; color: #1f1400;
+  background: linear-gradient(135deg, #ffdd00, #ffc700);
+  border-radius: 999px; padding: 0.45rem 0.9rem;
+  box-shadow: 0 2px 8px rgba(255, 199, 0, 0.32);
+}
+.wl-support-go:hover { filter: brightness(1.04); }
+/* A global rule pads buttons 8.8px 17.6px, and a global min-height of 44px
+   applies at <=768px. Both are pinned here so "Not now" stays the quiet
+   option beside the amber pill instead of growing into a second button. */
+.wl-support-later {
+  background: none; border: 0; cursor: pointer; white-space: nowrap;
+  font-size: 0.76rem; font-weight: 700; color: var(--text-muted);
+  padding: 0.45rem 0.55rem; min-height: 0;
+}
+.wl-support-later:hover { color: var(--text); }
+
+@keyframes wl-support-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes wl-support-out {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(-4px); }
+}
+
+/* Stacks on a phone, where the row would otherwise squeeze the copy to two
+   words per line. */
+@media (max-width: 560px) {
+  .wl-support-nudge { flex-wrap: wrap; }
+  .wl-support-actions { width: 100%; justify-content: flex-end; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-support-nudge, .wl-support-nudge-out { animation: none; }
+}
+
+
 /* ── Sell-target reality check ─────────────────────────────────────────── */
 .dvx-trc {
   margin: 0.6rem 0 0.2rem; padding: 0.7rem 0.8rem; border-radius: 12px;
@@ -12478,6 +12628,76 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 [data-wl-light] .wlc-msg-assistant { background: rgba(0,0,0,0.04); color: #1e293b; }
 [data-wl-light] .wlc-suggestion { color: #1e293b; }
 [data-wl-light] .wlc-input { background: rgba(0,0,0,0.03); color: #1e293b; border-color: rgba(0,0,0,0.12); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SUPPORT BUTTON (buy me a coffee) — header, beside the settings gear
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* The filled disc is the point. Everything else in .wl-topbar-right is a
+   transparent line icon, so the one control that asks for something rather
+   than doing something is the one that is filled. Same 34px box as
+   .wl-topbar-x, so it sits on the same baseline. */
+.wl-coffee-btn {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 50%;
+  /* THE min-height IS LOAD-BEARING, NOT DUPLICATION.
+     A global touch-target rule sets `button, a, select { min-height: 44px }`
+     below 768px. This is an <a>, so it matched: the disc kept its 36px width,
+     grew to 44px tall and rendered as an oval on every phone while looking
+     perfect on a desktop. A class beats the bare element selector, so pinning
+     min-height here is what keeps the circle round. */
+  min-height: 36px;
+  /* A global rule pads buttons 8.8px 17.6px. This is an <a> today, but as a
+     <button> that padding plus border-box left a 0.8px content box and the cup
+     rendered at 0.8x0.8 — a blank yellow disc. Pinned so the shape survives
+     whichever element it is. */
+  padding: 0;
+  flex-shrink: 0; text-decoration: none;
+  color: #1f1400;
+  background: linear-gradient(135deg, #ffdd00, #ffc700);
+  box-shadow: 0 2px 10px rgba(255,199,0,0.38), 0 0 0 1px rgba(255,255,255,0.35) inset;
+  transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s;
+}
+.wl-coffee-btn:hover { transform: translateY(-1px) scale(1.06); box-shadow: 0 5px 16px rgba(255,199,0,0.55); }
+.wl-coffee-btn:active { transform: scale(0.94); }
+.wl-coffee-btn:focus-visible { outline: 2px solid #ffdd00; outline-offset: 2px; }
+
+/* Only the two wisps move; the cup and its handle stay put. A drifting cup
+   reads as a glitch, drifting steam reads as steam. */
+.wl-coffee-steam {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wl-coffee-rise 2.9s ease-in-out infinite;
+}
+.wl-coffee-steam-b { animation-delay: 0.75s; }
+@keyframes wl-coffee-rise {
+  0%, 100% { opacity: 0.4; transform: translateY(1.2px) scaleY(0.92); }
+  50%      { opacity: 1;   transform: translateY(-1.4px) scaleY(1.06); }
+}
+
+/* A slow breath on the glow, so the control catches the eye once in a while
+   without ever being the loudest thing on the screen. */
+.wl-coffee-btn { animation: wl-coffee-glow 4.5s ease-in-out infinite; }
+@keyframes wl-coffee-glow {
+  0%, 100% { box-shadow: 0 2px 10px rgba(255,199,0,0.38), 0 0 0 1px rgba(255,255,255,0.35) inset; }
+  50%      { box-shadow: 0 2px 16px rgba(255,199,0,0.62), 0 0 0 1px rgba(255,255,255,0.45) inset; }
+}
+/* Hover keeps its own shadow: the breathing animation would otherwise win and
+   the lift would have no weight behind it. */
+.wl-coffee-btn:hover { animation: none; }
+
+/* The 44px the touch-target rule was after, without letting it deform the
+   disc: the circle stays 36px and the tappable area extends past it. */
+.wl-coffee-btn::after {
+  content: ''; position: absolute; top: -4px; right: -4px; bottom: -4px; left: -4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-coffee-btn { transition: none; animation: none; }
+  .wl-coffee-btn:hover { transform: none; }
+  .wl-coffee-steam { animation: none; opacity: 0.85; }
+}
 
 /* ── Assistant history panel & buttons ── */
 .wlc-history-btn, .wlc-new-chat-btn { background: none; border: none; color: var(--text-muted, rgba(255,255,255,0.5)); cursor: pointer; padding: 0.25rem; border-radius: 8px; display: flex; transition: color 0.15s, background 0.15s; }
@@ -15693,20 +15913,45 @@ button.wl-topbar .wl-topbar-x, .wl-topbar button.wl-topbar-x { background: rgba(
 .dvx-holding-units { font-weight: 700; color: var(--text); }
 [data-wl-light] .dvx-holding-units { color: var(--text); }
 
-/* Price / Avg / Qty shown as small filled premium stat chips. */
-.dvx-holding-stats { display: flex; flex-wrap: wrap; gap: 0.3rem; width: 100%; margin-top: 0.15rem; }
+/* Price / Avg / Qty as stat chips, laid out on a GRID rather than a ragged
+   flex-wrap.
+   
+   Wrapping sized every chip to its own content, so each card packed itself
+   differently and nothing lined up from one holding to the next — a list of
+   cards instead of a table. Worse, a chip narrower than its text broke the
+   text: "TREND" rendered as "TREN / D" and "Uptrend" as "Uptre / nd" on a
+   phone, which is the screenshot that prompted this.
+   
+   Equal-width cells fix both. Labels and values land in the same place down
+   the whole list, and a cell that is too narrow now ellipsises its value
+   instead of breaking a word in half. */
+.dvx-holding-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.3rem;
+  width: 100%;
+  margin-top: 0.15rem;
+}
 .dvx-hstat {
-  display: inline-flex; align-items: baseline; gap: 0.3rem;
-  padding: 0.2rem 0.5rem; border-radius: 8px;
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  min-width: 0;
+  padding: 0.25rem 0.55rem; border-radius: 8px;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.08);
-  font-size: 0.72rem; line-height: 1.1;
+  font-size: 0.72rem; line-height: 1.25;
 }
 .dvx-hstat em {
+  flex: 0 0 auto; white-space: nowrap;
   font-style: normal; font-weight: 800; font-size: 0.56rem;
   text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-sub);
 }
-.dvx-hstat b { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+/* Right-aligned and tabular so the figures form a column the eye can run
+   down, and truncated rather than wrapped when a long quantity will not fit. */
+.dvx-hstat b {
+  min-width: 0; text-align: right;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums;
+}
 [data-wl-light] .dvx-hstat { background: rgba(16,24,40,0.05); border-color: rgba(16,24,40,0.09); }
 
 [data-wl-light] .dvx-holding {
@@ -15910,7 +16155,7 @@ button.wl-topbar .wl-topbar-x, .wl-topbar button.wl-topbar-x { background: rgba(
   .wl-live-badge { font-size: 0.6rem; padding: 0.2rem 0.5rem; }
   
   /* Reduce content padding-top so more is visible above the fold */
-  .wl-content { padding-top: 0.75rem; }
+  .wl-content { padding-top: calc(var(--wl-topbar-h, 56px) + 0.75rem); }
 
   /* Bottom nav — tighter spacing */
   .wl-nav-item { padding: 0.4rem 0.1rem 0.3rem; font-size: 0.52rem; }
@@ -15965,7 +16210,7 @@ button.wl-topbar .wl-topbar-x, .wl-topbar button.wl-topbar-x { background: rgba(
 /* ── Small screens (401px–480px) ── */
 @media (max-width: 480px) {
   .wl-topbar-inner { padding: 0.55rem 0.75rem; }
-  .wl-content { padding-top: 0.75rem; }
+  .wl-content { padding-top: calc(var(--wl-topbar-h, 56px) + 0.75rem); }
   
   /* Ensure full-width content */
   .dvx { padding-left: 0.75rem; padding-right: 0.75rem; }
@@ -15988,7 +16233,7 @@ button.wl-topbar .wl-topbar-x, .wl-topbar button.wl-topbar-x { background: rgba(
 
 /* ── Medium screens (481px–768px) ── */
 @media (max-width: 768px) {
-  .wl-content { padding-top: 0.75rem; }
+  .wl-content { padding-top: calc(var(--wl-topbar-h, 56px) + 0.75rem); }
 }
 
 /* ── Global word-break safeguard for long tickers / coin names ── */
@@ -16703,6 +16948,222 @@ input, select, textarea, .dvx-input {
 }
 .fx-ath .fx-glow { animation: fx-soft 2.6s ease-out forwards; }
 
+/* The trend chip: arrow, word, window and line. Built on .dvx-hstat so it
+   sits in the same row as Price, Avg and Qty without a second visual language.
+   The arrow alone tested badly next to a profit-and-loss pill measuring
+   something else: a green chevron beside a red pill reads as a contradiction
+   rather than as a different fact. The word settles it. */
+.wl-trend-badge {
+  /* Full row inside .dvx-holding-stats. It carries an arrow, a label, a word,
+     a window and a sparkline — four times the content of a Price chip — so
+     squeezing it into an equal cell is what broke "TREND" across two lines.
+     Taking the row keeps every part on one line and leaves Price / Avg / Qty
+     to line up underneath it. */
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 0.4rem;
+  min-width: 0; white-space: nowrap;
+  padding: 0.25rem 0.55rem; border-radius: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: 0.72rem; line-height: 1.25;
+}
+.wl-trend-badge em {
+  flex: 0 0 auto; white-space: nowrap;
+  font-style: normal; font-weight: 800; font-size: 0.56rem;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-sub);
+}
+.wl-trend-badge b {
+  display: inline-flex; align-items: center; gap: 0.28rem;
+  flex: 0 0 auto; white-space: nowrap; font-weight: 700;
+}
+/* The sparkline is the one part that may give up room; the words may not. */
+.wl-trend-badge .wl-trend-spark { margin-inline-start: auto; }
+.wl-trend-badge--up b   { color: var(--g-ink); }
+.wl-trend-badge--down b { color: #f87171; }
+.wl-trend-badge--flat b { color: var(--text-sub); }
+
+/* The window is part of the claim, so it is shown rather than left to the
+   tooltip, but at lower weight: the word is the headline, not the number. */
+.wl-trend-window { flex: 0 0 auto; white-space: nowrap; font-weight: 600; opacity: 0.55; font-variant-numeric: tabular-nums; }
+
+/* Coloured by direction, never by first-versus-last price, so the line, the
+   arrow and the word cannot disagree. */
+.wl-trend-spark { display: block; flex-shrink: 0; overflow: visible; }
+.wl-trend-spark--up   .wl-trend-spark-line { stroke: var(--g-ink); }
+.wl-trend-spark--down .wl-trend-spark-line { stroke: #f87171; }
+.wl-trend-spark--up   .wl-trend-spark-fill { fill: var(--g-ink); fill-opacity: 0.12; }
+.wl-trend-spark--down .wl-trend-spark-fill { fill: #f87171; fill-opacity: 0.12; }
+.wl-trend-spark-line { stroke-opacity: 0.75; }
+
+.wl-trend-cooling { color: #f59e0b; font-weight: 900; cursor: help; }
+
+[data-wl-light] .wl-trend-badge {
+  background: rgba(16,24,40,0.05); border-color: rgba(16,24,40,0.09);
+}
+
+
+/* ── Trend marker beside a holding ─────────────────────────────────────────
+   Direction is decided in assetTrend.js. Weight arrives as --wl-trend-weight,
+   set inline from the trend's strength, so two arrows of the same shape still
+   separate by conviction and the eye lands on what is actually moving.
+
+   Only strong arrows animate. Twenty holdings all breathing at once is a slot
+   machine, not a dashboard. */
+.wl-trend {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  line-height: 0;
+  vertical-align: -1px;
+}
+.wl-trend svg { overflow: visible; }
+
+/* A flat reading draws a dash, not nothing: an empty slot reads as missing
+   data, a dash reads as an answer. */
+.wl-trend--flat { color: var(--text-sub); opacity: 0.45; }
+.wl-trend--up   { color: var(--g-ink); opacity: var(--wl-trend-weight, 1); }
+.wl-trend--down { color: #f87171; opacity: var(--wl-trend-weight, 1); }
+.wl-trend--down svg { transform: rotate(180deg); }
+
+/* The glow is reserved for arrows that earned it, so it still means something
+   when it shows up. */
+.wl-trend--strong { filter: drop-shadow(0 0 3px currentColor); }
+.wl-trend--strong .wl-trend-chev--trail { opacity: 0.55; }
+
+/* A weekly direction the last day contradicts. The trailing chevron fades and
+   the glow goes, so a cooling rally does not look as certain as one still
+   running. */
+.wl-trend--diverging { filter: none; }
+.wl-trend--diverging .wl-trend-chev--trail { opacity: 0.25; }
+
+@keyframes wl-trend-drift {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1.2px); }
+}
+.wl-trend--strong .wl-trend-chev--lead {
+  animation: wl-trend-drift 2.6s ease-in-out infinite;
+}
+
+
+/* ── The selected theme's coin mark, behind the portfolio card ─────────────
+   ThemeContext writes --wl-motif from whichever theme is selected, so this
+   follows the picker with no component involvement. It is a background layer
+   under the figures in z-order (the card's own content is not positioned,
+   ::after is) and never takes a pointer event.
+
+   The opacity is deliberately low. This sits on the neutral graphite/white
+   card the app already has, where a mark heavy enough to "read" would compete
+   with the balance printed on top of it — the point is a watermark you notice
+   second, not a graphic you notice first.
+
+   No animation, so no reduced-motion block is needed, which is why it can sit
+   above the one below. */
+[data-wl-theme] .dvx-hero::after {
+  content: '';
+  position: absolute;
+  top: -12px;
+  inset-inline-end: -20px;
+  width: 136px;
+  height: 136px;
+  background-image: var(--wl-motif);
+  background-size: contain;
+  background-repeat: no-repeat;
+  filter: brightness(0) invert(1);
+  opacity: 0.055;
+  pointer-events: none;
+  z-index: 0;
+}
+/* Light mode puts the card on white, so the silhouette flips to dark. */
+[data-wl-light][data-wl-theme] .dvx-hero::after {
+  filter: brightness(0);
+  opacity: 0.05;
+}
+/* The card's children are static and would otherwise paint UNDER the
+   positioned ::after. Lifting them keeps the balance on top of the mark. */
+[data-wl-theme] .dvx-hero > * { position: relative; z-index: 1; }
+
+
+/* ── Zakat calculator landing page (/zakat-calculator, /ar/zakat-calculator) ─
+   Built on the .tc-* landing shell the other calculator pages use, so this
+   page inherits their typography rather than introducing a second one. Only
+   the calculator itself needs new rules. Everything here is logical-property
+   based (inline-start/end, not left/right) because the Arabic page renders the
+   same markup under dir="rtl". */
+.zk-lp-card {
+  margin: 1.4rem auto 0; max-width: 620px; text-align: start;
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 18px; padding: 1.1rem;
+}
+.zk-lp-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.7rem;
+}
+.zk-lp-field { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.zk-lp-label { font-size: 0.74rem; font-weight: 700; color: var(--text-muted); }
+.zk-lp-input {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 10px; padding: 0.5rem 0.7rem;
+}
+.zk-lp-input input {
+  flex: 1; min-width: 0; border: 0; background: none; color: var(--text);
+  font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; outline: none;
+}
+.zk-lp-input em { font-style: normal; font-size: 0.8rem; color: var(--text-sub); flex: 0 0 auto; }
+
+.zk-lp-opts { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+.zk-lp-seg {
+  display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+}
+.zk-lp-seg button {
+  padding: 0.45rem 0.8rem; font-size: 0.78rem; font-weight: 700;
+  background: none; border: 0; color: var(--text-muted); cursor: pointer;
+}
+.zk-lp-seg button.on { background: var(--accent); color: var(--ink); }
+
+.zk-lp-spot {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem;
+  margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid var(--border);
+}
+.zk-lp-spot > span {
+  grid-column: 1 / -1; font-size: 0.72rem; font-weight: 700; color: var(--text-sub);
+}
+
+.zk-lp-out { margin-top: 1rem; padding-top: 0.9rem; border-top: 1px solid var(--border); }
+.zk-lp-out-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+  padding: 0.35rem 0; font-size: 0.88rem; color: var(--text-muted);
+}
+.zk-lp-out-row b { color: var(--text); font-variant-numeric: tabular-nums; font-size: 1rem; }
+.zk-lp-out-total { border-top: 1px dashed var(--border); margin-top: 0.35rem; padding-top: 0.6rem; }
+.zk-lp-out-total b { font-size: 1.5rem; letter-spacing: -0.02em; }
+.zk-lp-out-total.due b { color: var(--g-ink); }
+.zk-lp-note { margin: 0.5rem 0 0; font-size: 0.8rem; color: var(--text-sub); }
+.zk-lp-ramadan { margin-top: 1rem; font-size: 0.92rem; color: var(--text-muted); }
+
+/* Term/definition pairs for "what counts" and the FAQ. A <dl> rather than a
+   table because these are definitions, and because a table cannot reflow to
+   one column on a phone without losing its header association. */
+.zk-lp-defs { margin: 0.6rem 0 0; padding: 0; }
+.zk-lp-defs > div { padding: 0.7rem 0; border-top: 1px solid var(--border); }
+.zk-lp-defs dt { font-weight: 700; color: var(--text); margin: 0 0 0.25rem; }
+.zk-lp-defs dd { margin: 0; color: var(--text-muted); }
+.zk-lp-disclaimer { font-size: 0.85rem; color: var(--text-sub); }
+
+@media (max-width: 480px) {
+  .zk-lp-spot { grid-template-columns: 1fr; }
+}
+
+/* Deliberately placed BEFORE the fx block below, never after it:
+   screenEffectsPlacement asserts on the LAST reduced-motion block in this
+   file, and a new one at the end silently breaks that test. */
+@media (prefers-reduced-motion: reduce) {
+  .wl-trend--strong .wl-trend-chev--lead { animation: none; }
+}
+
+
 /* Reduced motion keeps the moment and drops the travel: the component renders
    no logo, rocket or debris at all, so only the badge and the glow remain and
    they simply fade. */
@@ -16714,98 +17175,4 @@ input, select, textarea, .dvx-input {
   @keyframes fx-quiet-fade {
     0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
   }
-}
-
-/* ═══ Dynamic Portfolio Heatmap (treemap) ═══ */
-.hm-live-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #22c55e; display: inline-block;
-  animation: hmBlink 1s ease-in-out infinite;
-}
-@keyframes hmBlink {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.6); }
-  50% { opacity: 0.5; box-shadow: 0 0 0 5px rgba(34,197,94,0); }
-}
-@keyframes hmPulse {
-  0%   { transform: scale(1);    filter: brightness(1);   }
-  25%  { transform: scale(1.02); filter: brightness(1.2); }
-  50%  { transform: scale(1);    filter: brightness(1.05);}
-  75%  { transform: scale(1.015);filter: brightness(1.15);}
-  100% { transform: scale(1);    filter: brightness(1);   }
-}
-@keyframes hmTickerUp {
-  0%   { transform: translateY(0); }
-  50%  { transform: translateY(-3px); }
-  100% { transform: translateY(0); }
-}
-@keyframes hmTickerDown {
-  0%   { transform: translateY(0); }
-  50%  { transform: translateY(3px); }
-  100% { transform: translateY(0); }
-}
-.hm-ticker-up   { display:inline-block; animation: hmTickerUp   1.5s ease-in-out infinite; }
-.hm-ticker-down { display:inline-block; animation: hmTickerDown 1.5s ease-in-out infinite; }
-.heatmap-cell {
-  position: relative;
-  transition: filter 0.3s ease, transform 0.25s ease;
-}
-.heatmap-cell:hover { filter: brightness(1.3); z-index: 2; transform: scale(1.02); }
-.heatmap-cell.hm-pulse { will-change: transform, filter; }
-
-/* ═══ Dynamic Heatmap — enhanced live effects ═══ */
-.hm-glow {
-  border: 1px solid rgba(16,185,129,0.25);
-  box-shadow:
-    0 0 0 1px rgba(16,185,129,0.08),
-    0 0 22px rgba(16,185,129,0.18),
-    0 0 60px rgba(16,185,129,0.10),
-    inset 0 0 30px rgba(16,185,129,0.04);
-}
-@keyframes hmBreathe {
-  0%, 100% { transform: scale(1);      filter: brightness(1);    }
-  50%      { transform: scale(1.015);  filter: brightness(1.18); }
-}
-.heatmap-cell.hm-breathe { will-change: transform, filter; }
-@keyframes hmScan {
-  0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
-  35%  { opacity: 0.28; }
-  70%  { opacity: 0; }
-  100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
-}
-.hm-scan {
-  position: absolute;
-  top: 0; bottom: 0; left: 0;
-  width: 45%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), rgba(80,220,200,0.18), transparent);
-  pointer-events: none;
-  z-index: 3;
-  animation: hmScan 5s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .hm-scan, .heatmap-cell.hm-breathe, .heatmap-cell.hm-pulse { animation: none !important; }
-}
-/* Light theme tune-ups so labels stay legible */
-[data-wl-light] .hm-glow {
-  border-color: rgba(16,185,129,0.4);
-  box-shadow: 0 0 22px rgba(16,185,129,0.22);
-}
-[data-wl-light] .heatmap-cell .heatmap-sym,
-[data-wl-light] .heatmap-cell .heatmap-chg,
-[data-wl-light] .heatmap-cell .heatmap-pct { color: rgba(255,255,255,0.97); text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
-
-/* ── Trend arrow animations ─────────────────────────────────────── */
-@keyframes trendArrowUp {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-2px); }
-}
-@keyframes trendArrowDown {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(2px); }
-}
-.dvx-trend-badge {
-  animation: none;
-  vertical-align: middle;
-}
-@media (prefers-reduced-motion: reduce) {
-  .dvx-trend-badge svg { animation: none !important; }
 }

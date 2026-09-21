@@ -11,7 +11,7 @@
 // token. Every browser, desktop and iOS home-screen install still goes through
 // push.js, untouched.
 
-import { PUSH_API } from './apiHosts.js'
+import { PUSH_API, SIMPLE_JSON } from './apiHosts.js'
 import { getPushPrefs } from './push'
 
 const bridge = () => {
@@ -19,6 +19,13 @@ const bridge = () => {
     const b = typeof window !== 'undefined' ? window.AndroidBridge : null
     return b && typeof b.pushToken === 'function' ? b : null
   } catch { return null }
+}
+
+// The runtime's own description of a failure, trimmed to something a settings
+// line can carry. "Failed to fetch", "Load failed" and a CSP refusal are three
+// different problems wearing one sentence without it.
+function detailOf(e) {
+  return String(e?.message || e || '').trim().slice(0, 120)
 }
 
 /** Whether this device registers over FCM rather than Web Push. */
@@ -57,6 +64,21 @@ export function nativePushToken() {
  * @param {{force?: boolean, watch?: Array, setup?: object, lang?: string, tz?: number}} opts
  * @returns {Promise<{ok: boolean, reason?: string}>}
  */
+/**
+ * Can this device reach the push service at all?
+ *
+ * Deliberately the plainest request that exists: GET, no custom headers, no
+ * body. That makes it a CORS "simple request", which is never preflighted — so
+ * it isolates reachability from whether a preflight would have been allowed.
+ * Only called after a failure, never on the happy path.
+ */
+async function canReachServer() {
+  try {
+    const res = await fetch(`${PUSH_API}/health`, { method: 'GET' })
+    return res.ok
+  } catch { return false }
+}
+
 export async function registerNativePush(opts = {}) {
   const b = bridge()
   if (!b) return { ok: false, reason: 'not-in-shell' }
@@ -70,23 +92,59 @@ export async function registerNativePush(opts = {}) {
     catch { /* treat an unreadable flag as "not synced" and re-register */ }
   }
 
+  // Serialised BEFORE the request, and deliberately outside the try below.
+  //
+  // It used to be built inline in the fetch call, inside that try — so a
+  // throw from JSON.stringify (a circular value, a BigInt, a getter that
+  // raises) came back as `unreachable`, and the screen told the user to check
+  // their connection about a request that was never attempted. This is the
+  // same trap registrationFields() was written to escape on the web path.
+  //
+  // `alerts` and `zakatDue` are sent because the server reads both and the
+  // callers have always passed them: without alerts a price target is stored
+  // on the device and never armed on the server, and without zakatDue the
+  // reminder has no date to count down to. They were being dropped here, one
+  // layer below the function whose whole comment says they must not be.
+  let body
+  try {
+    body = JSON.stringify({
+      transport: 'fcm',
+      fcmToken: token,
+      alerts: opts.alerts,
+      watch: opts.watch,
+      setup: opts.setup,
+      prefs: opts.prefs ?? getPushPrefs(),
+      // An explicit null is meaningful here — the year lapsed, or zakat was
+      // paid — and the server honours it, so it is not filtered out.
+      zakatDue: opts.zakatDue,
+      lang: opts.lang,
+      tz: opts.tz,
+    })
+  } catch (e) {
+    return { ok: false, reason: 'payload', detail: detailOf(e) }
+  }
+
   try {
     const res = await fetch(`${PUSH_API}/subscribe`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        transport: 'fcm',
-        fcmToken: token,
-        watch: opts.watch,
-        setup: opts.setup,
-        prefs: opts.prefs ?? getPushPrefs(),
-        lang: opts.lang,
-        tz: opts.tz,
-      }),
+      headers: { 'Content-Type': SIMPLE_JSON },
+      body,
     })
     if (!res.ok) return { ok: false, reason: `http-${res.status}` }
-  } catch {
-    return { ok: false, reason: 'unreachable' }
+  } catch (e) {
+    // Keep the runtime's own words, and then answer the question they do not.
+    //
+    // "Failed to fetch" is one string for two unrelated faults: the device
+    // cannot reach the host at all, or it reached it and the browser refused
+    // the request before sending it — a failed CORS preflight, a connect-src
+    // the page's own policy blocks. They have nothing in common and neither is
+    // visible from inside a WebView, where there is no console to open.
+    //
+    // So ask a question that cannot preflight. A GET with no custom headers is
+    // a simple request; if it comes back while the POST did not, the network
+    // is fine and the POST was stopped on its way out. That is a fault on our
+    // side, and the user should not be told to check their connection.
+    return { ok: false, reason: 'unreachable', detail: detailOf(e), reachedServer: await canReachServer() }
   }
 
   // Marked only after the server accepted it. Marking on the attempt would

@@ -5,7 +5,8 @@ import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
 import { LanguageProvider } from './LanguageContext'
 import { ThemeProvider } from './ThemeContext'
-import { initAutoTrack, initErrorTracking, initHumanSignal } from './analytics'
+import { initAutoTrack, initErrorTracking, initHumanSignal, setInterestSegments } from './analytics'
+import { INTERESTS_EVENT } from './data/interestsEvent'
 import './index.css'
 
 // Auto-reload on stale chunk error (unhandled promise rejection path).
@@ -22,24 +23,43 @@ const CHUNK_ERR_PATTERNS = [
 const MAX_AUTO_RETRIES = 3
 const RETRY_KEY = 'wl_chunk_retry'
 function chunkReload() {
+  let attempt = 0
   try {
-    const n = parseInt(sessionStorage.getItem(RETRY_KEY) || '0', 10)
-    if (n >= MAX_AUTO_RETRIES) return
-    sessionStorage.setItem(RETRY_KEY, String(n + 1))
+    attempt = parseInt(sessionStorage.getItem(RETRY_KEY) || '0', 10)
+    if (attempt >= MAX_AUTO_RETRIES) return
+    sessionStorage.setItem(RETRY_KEY, String(attempt + 1))
   } catch {}
-  if ('caches' in window) {
-    // Only nuke API/versioned caches — preserve the static-asset cache (so the
-    // reload doesn't re-download every hashed JS/CSS chunk) AND the
-    // version-independent CDN cache (up to 500 coin icons that never change).
-    caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => !k.startsWith('walletlens-static-') && !k.startsWith('walletlens-cdn-'))
-          .map(k => caches.delete(k))
-      ))
-      .finally(() => window.location.reload())
-  } else {
+
+  if (!('caches' in window)) {
     window.location.reload()
+    return
   }
+
+  // The first attempts keep the static cache, so a reload does not re-download
+  // every hashed chunk for what is usually a one-off miss.
+  //
+  // The last one must not. A stale shell pointing at chunks the server has
+  // since deleted lives in exactly that cache, and preserving it means the
+  // routine meant to recover from a bad chunk can never actually escape one:
+  // it burns all three retries against the same broken copy and then gives up,
+  // leaving the boot splash on screen forever. On the final attempt take the
+  // cache and the worker with it and let the next load rebuild from network.
+  const lastTry = attempt >= MAX_AUTO_RETRIES - 1
+  const keep = k => !lastTry
+    ? (!k.startsWith('walletlens-static-') && !k.startsWith('walletlens-cdn-'))
+    : !k.startsWith('walletlens-cdn-')   // coin icons are content-addressed; they never go stale
+
+  const work = [
+    caches.keys().then(keys => Promise.all(keys.filter(keep).map(k => caches.delete(k)))),
+  ]
+  if (lastTry && 'serviceWorker' in navigator) {
+    work.push(
+      navigator.serviceWorker.getRegistrations()
+        .then(rs => Promise.all(rs.map(r => r.unregister())))
+        .catch(() => {})
+    )
+  }
+  Promise.all(work).catch(() => {}).finally(() => window.location.reload())
 }
 window.addEventListener('unhandledrejection', (e) => {
   const msg = e.reason?.message || ''
@@ -80,6 +100,12 @@ initAutoTrack()
 initErrorTracking()
 // Flag sessions that actually interacted, so crawler traffic can be segmented out.
 initHumanSignal()
+// Label this browser by the asset classes it asked for, so every later event
+// can be read per segment. Set on every start, not only when the picker is
+// answered: doing it only on answer labels the moment somebody chose and
+// leaves every returning user — which is most of them — unsegmented.
+setInterestSegments()
+window.addEventListener(INTERESTS_EVENT, (e) => setInterestSegments(e.detail))
 // Report Core Web Vitals (LCP, INP, CLS, FCP, TTFB) to GA4.
 //
 // Imported dynamically and started after first paint. A static import put the
@@ -143,10 +169,39 @@ if ('serviceWorker' in navigator && basename === '/') {
   // never loop.
   const hadController = !!navigator.serviceWorker.controller
   let refreshing = false
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!hadController || refreshing) return
+  let pendingReload = false
+
+  function reloadForUpdate() {
+    if (refreshing) return
     refreshing = true
     window.location.reload()
+  }
+
+  // Reload onto the new build while nobody is watching.
+  //
+  // This used to reload the moment a new worker took control. Combined with
+  // the reg.update() below — which runs every time the app becomes visible —
+  // that meant the reload landed almost exactly when someone reopened the app:
+  // the dashboard blanked and rebuilt itself on every reopen following a
+  // deploy. It reads as the holdings disappearing, and during a day of
+  // frequent deploys it happens on essentially every return.
+  //
+  // So a reload that arrives while the app is on screen is deferred to the
+  // next time the app leaves it. The user goes away, the page reloads unseen,
+  // and they come back to the new build already drawn.
+  //
+  // Deferring is safe because the stale bundle only matters if it asks for a
+  // chunk this deployment no longer has, and chunkReload() at the top of this
+  // file already catches that import failure and reloads — at the one moment
+  // where a reload is the honest thing to do.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || refreshing) return
+    if (document.visibilityState === 'hidden') reloadForUpdate()
+    else pendingReload = true
+  })
+
+  document.addEventListener('visibilitychange', () => {
+    if (pendingReload && document.visibilityState === 'hidden') reloadForUpdate()
   })
 
   // Auto-apply a ready update — no banner. If a new worker is waiting (the SW

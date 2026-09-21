@@ -19,7 +19,7 @@
 
     <!-- Primary -->
     <title>WalletLens — Private Net Worth & Investment Manager</title>
-    <meta name="description" content="WalletLens is a privacy-first net worth tracker & investment management tool for crypto, stocks, gold and cash — all in one place. No account, 100% free, your data stays on your device." />
+    <meta name="description" content="The complete management tool for crypto and digital assets. Add holdings by voice or from a screenshot, track crypto, stocks, gold and cash together, with AI analysis and price alerts. Free." />
     <meta name="keywords" content="net worth tracker, free net worth tracker, investment tracker, investment management app, track all investments in one place, crypto portfolio tracker, free portfolio tracker, no account portfolio tracker, all-asset tracker, crypto stocks tracker, gold silver tracker, AI portfolio analysis, net worth app, walletlens, portfolio tracker, free investment portfolio tracker, multi-asset portfolio tracker, portfolio p&l tracker, bitcoin portfolio tracker, DeFi portfolio tracker, AI portfolio tracker, portfolio health score, crypto portfolio diversification, portfolio risk analyzer, sell price targets crypto, net worth dashboard, personal net worth calculator, net worth tracker no bank account, free alternative to Personal Capital, free alternative to Kubera, free alternative to CoinStats, best free portfolio app, stock and crypto portfolio tracker, fear and greed index tracker, whale tracker Bitcoin, crypto portfolio no login, privacy portfolio tracker, local portfolio tracker, portfolio tracker no sign up, investment performance tracker, ROI tracker, portfolio rebalancing, crypto and stocks in one place" />
     <meta name="author" content="WalletLens" />
     <link rel="canonical" href="https://walletlens.live/" />
@@ -40,7 +40,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="WalletLens" />
     <meta property="og:title" content="WalletLens — Private Net Worth & Investment Manager" />
-    <meta property="og:description" content="A privacy-first net worth tracker & investment management tool. Track and manage crypto, stocks, gold, silver, cash & FX in one place. AI insights, 100% free, no account — your data stays on your device." />
+    <meta property="og:description" content="The complete management tool for crypto and digital assets. Add holdings by voice or from a screenshot, track crypto, stocks, gold, silver, cash and FX in one portfolio, with AI analysis, risk scans and price alerts. Free." />
     <meta property="og:url" content="https://walletlens.live/" />
     <meta property="og:image" content="https://walletlens.live/og-image.png" />
     <meta property="og:image:type" content="image/png" />
@@ -54,7 +54,7 @@
     <meta name="twitter:site" content="@wallet_lens" />
     <meta name="twitter:creator" content="@wallet_lens" />
     <meta name="twitter:title" content="WalletLens — Private Net Worth & Investment Manager" />
-    <meta name="twitter:description" content="A privacy-first net worth tracker & investment manager — track and manage crypto, stocks, gold, cash & FX in one place. Free, no account, data stays on your device." />
+    <meta name="twitter:description" content="The complete management tool for crypto and digital assets. Voice and screenshot import, crypto, stocks, gold, cash and FX in one portfolio, AI analysis and price alerts. Free." />
     <meta name="twitter:image" content="https://walletlens.live/og-image.png" />
     <meta name="twitter:image:alt" content="WalletLens portfolio dashboard showing crypto holdings, P&L, and AI insights" />
 
@@ -86,6 +86,7 @@
          Preconnected once, here, because it is the earliest point in <head>;
          repeating it further down is a no-op. -->
     <link rel="preconnect" href="https://walletlens-voice.tarek-abdelhameed.workers.dev" crossorigin />
+    <link rel="preconnect" href="https://walletlens-data.tarek-abdelhameed.workers.dev" crossorigin>
     <!-- Twitter/X pixel CDN and tracking endpoint -->
     <link rel="dns-prefetch" href="https://static.ads-twitter.com" />
     <link rel="dns-prefetch" href="https://analytics.twitter.com" />
@@ -222,7 +223,7 @@
         "Live whale tracking, Fear & Greed gauge, and market movers",
         "Multi-wallet support with per-wallet net-worth view",
         "100% free, no account, no sign-up",
-        "Local-first & private — your data never leaves your device",
+        "AI screenshot import — turn any exchange screenshot into holdings",
         "Backup as a single shareable code, or import from Excel/CSV",
         "Installable as a PWA on iOS, Android & desktop"
       ],
@@ -302,7 +303,6 @@
       "sameAs": [
         "https://play.google.com/store/apps/details?id=live.walletlens.twa",
         "https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn",
-        "https://github.com/tia8910/walletlens",
         "https://x.com/wallet_lens",
         "https://t.me/walletlenss",
         "https://youtube.com/@walletlens"
@@ -310,7 +310,7 @@
       "contactPoint": {
         "@type": "ContactPoint",
         "contactType": "customer support",
-        "url": "https://github.com/tia8910/walletlens/issues"
+        "email": "contact@walletlens.live"
       }
     }
     </script>
@@ -369,97 +369,15 @@
     }
     </script>
 
-    <!-- Structured data — FAQPage for rich FAQ snippets in Search + AI Overviews -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "Is WalletLens really free?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. WalletLens is 100% free with no premium tier, no paywall, and no hidden costs. It's open source under the MIT license."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Does WalletLens require an account?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "No. WalletLens requires zero accounts, zero sign-up, and zero email. All data is stored locally in your browser's localStorage and never leaves your device."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "What assets does WalletLens track?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "WalletLens tracks crypto (10,000+ coins via CoinGecko), US stocks and ETFs, gold, silver, platinum, copper, fiat currencies, and cash — all in one unified dashboard."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Is WalletLens private and secure?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. WalletLens has no backend, no database, and no analytics. Your portfolio data stays in your browser's localStorage and is never sent to any server. Even the developer cannot see your data."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Can I use WalletLens on mobile?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. WalletLens works as a Progressive Web App (PWA) on any mobile browser and is also available as an Android app on Google Play."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Does WalletLens have AI features?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. WalletLens includes AI voice import (say your holdings), AI screenshot import (screenshot exchange apps), AI Magic Indicator (5-signal analysis), AI Portfolio Guardian, and an AI Coach for personalized recommendations."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How does the Magic Indicator work?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "The Magic Indicator fuses five independent signal types — technical analysis, on-chain data, volume analysis, whale activity, and fundamentals — into one direction per holding (Bullish, Bearish, or Neutral). Each signal votes independently and they're weighted by reliability."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Can I export my portfolio data?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. WalletLens supports export to Excel, CSV, JSON, and generates QR codes for easy sharing. All exports are local — nothing is uploaded to any server."
-          }
-        }
-      ]
-    }
-    </script>
+    <!-- No global FAQPage here on purpose. This block shipped on every
+         prerendered page, so most pages declared two competing FAQPage
+         entities: this one plus the page's own. Google reads FAQ schema as a
+         claim about what the page shows, and these eight answers were visible
+         on none of them. Each page that renders an FAQ now builds its own from
+         the questions it actually displays; /faq does it from faqPageSections. -->
 
-    <!-- Structured data — SoftwareSourceCode for GitHub repository -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareSourceCode",
-      "name": "WalletLens",
-      "codeRepository": "https://github.com/tia8910/Walletlens",
-      "url": "https://github.com/tia8910/Walletlens",
-      "programmingLanguage": "JavaScript",
-      "license": "https://opensource.org/licenses/MIT",
-      "description": "Privacy-first net worth tracker — crypto, stocks, gold, fiat. No account, all data local, AI analysis. React + Vite + Cloudflare Pages.",
-      "isPartOf": {
-        "@type": "WebApplication",
-        "url": "https://walletlens.live/"
-      }
-    }
-    </script>
+    <!-- SoftwareSourceCode is parked: it exists only to point at the
+         repository, which 404s while the GitHub account is flagged. -->
 
  </head>
   <body>
@@ -546,10 +464,80 @@
     </div>
     <script type="module" src="/src/main.jsx" fetchpriority="high"></script>
 
+    <!-- Boot watchdog.
+         If the module bundle 404s or throws, nothing in main.jsx ever runs:
+         no error handler, no retry, no message. The splash below just spins
+         forever, which is what a stale cache pointing at deleted chunks looks
+         like from the user's side. This is deliberately inline and dependency
+         free so it survives the bundle failing to load at all.
+
+         React replaces the whole of #root on mount, so the splash element
+         going away is the signal that boot succeeded. -->
+    <script>
+      (function () {
+        var BOOT_TIMEOUT = 12000
+        var firstError = ''
+        function note(msg) { if (!firstError && msg) firstError = String(msg).slice(0, 300) }
+        addEventListener('error', function (e) {
+          note(e.message || (e.target && e.target.src ? 'Failed to load ' + e.target.src : ''))
+        }, true)
+        addEventListener('unhandledrejection', function (e) { note(e.reason && (e.reason.message || e.reason)) })
+
+        // Wipe every trace of the last build: caches, workers and the retry
+        // counter that stops main.jsx retrying after three attempts.
+        function reset(btn) {
+          if (btn) { btn.disabled = true; btn.textContent = 'Resetting…' }
+          try { sessionStorage.removeItem('wl_chunk_retry') } catch (err) {}
+          var jobs = []
+          if (window.caches) jobs.push(caches.keys().then(function (k) {
+            return Promise.all(k.map(function (n) { return caches.delete(n) }))
+          }))
+          if (navigator.serviceWorker) jobs.push(
+            navigator.serviceWorker.getRegistrations().then(function (rs) {
+              return Promise.all(rs.map(function (r) { return r.unregister() }))
+            }))
+          Promise.all(jobs).catch(function () {}).then(function () {
+            location.replace(location.pathname + '?r=' + Date.now())
+          })
+        }
+
+        setTimeout(function () {
+          var boot = document.querySelector('.wlboot')
+          if (!boot) return                       // React mounted; nothing to do
+          var panel = document.createElement('div')
+          panel.setAttribute('style', 'position:fixed;inset:0;width:100vw;height:100vh;overflow:auto;z-index:2;display:flex;align-items:center;' +
+            'justify-content:center;padding:1.5rem;background:#081209;color:#eafff2;' +
+            "font-family:system-ui,-apple-system,sans-serif;text-align:center")
+          panel.innerHTML =
+            '<div style="max-width:26rem">' +
+            '<div style="font-size:1.25rem;font-weight:800;margin-bottom:.6rem">WalletLens could not finish loading</div>' +
+            '<p style="margin:0 0 1.2rem;line-height:1.55;color:#a7c9b5">This is almost always a copy of an older ' +
+            'version left in this browser. Resetting clears it and reloads. Your portfolio is not affected: it is ' +
+            'stored separately and is not touched by this.</p>' +
+            '<button id="wlReset" style="background:#00c853;color:#04240f;border:0;border-radius:12px;' +
+            'padding:.8rem 1.4rem;font-weight:800;font-size:.95rem;cursor:pointer">Reset and reload</button> ' +
+            '<button id="wlRetry" style="background:transparent;color:#eafff2;border:1px solid #2c4a38;' +
+            'border-radius:12px;padding:.8rem 1.4rem;font-weight:700;font-size:.95rem;cursor:pointer;' +
+            'margin-inline-start:.5rem">Try again</button>' +
+            (firstError ? '<pre style="margin:1.4rem 0 0;padding:.7rem;background:#04120a;border-radius:8px;' +
+              'color:#7fae94;font-size:.72rem;text-align:start;white-space:pre-wrap;word-break:break-word">' +
+              firstError.replace(/[<&]/g, function (c) { return c === '<' ? '&lt;' : '&amp;' }) + '</pre>' : '') +
+            '</div>'
+          // the prerendered SEO text sits behind #root; without this the
+          // page still scrolls past the panel to reach it
+          document.documentElement.style.overflow = 'hidden'
+          document.body.appendChild(panel)
+          panel.querySelector('#wlReset').onclick = function () { reset(this) }
+          panel.querySelector('#wlRetry').onclick = function () { location.reload() }
+        }, BOOT_TIMEOUT)
+      })()
+    </script>
+
     <!-- X conversion tracking event — deferred to window load so it never
          competes with the initial render or module evaluation. -->
     <script>
       window.addEventListener('load', function() { twq('event', 'tw-rc7yj-rccu7', {}); }, { once: true });
     </script>
+
   </body>
 </html>

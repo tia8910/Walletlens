@@ -42,7 +42,15 @@ function trackingFiles(dir = SRC, out = []) {
 /** The params object of every track(...) / trackX(...) call, flattened. */
 function trackedParams(src) {
   const out = []
-  for (const m of src.matchAll(/\btrack[A-Za-z]*\(\s*(?:'[^']*'|"[^"]*")?\s*,?\s*\{/g)) {
+  // THE NAME ARGUMENT IS NOT ALWAYS A STRING LITERAL.
+  //
+  // This used to require a quoted event name before the params object, so
+  //   track(form.type === 'buy' ? 'buy_transaction' : 'sell_transaction', { … })
+  // matched nothing and its params were never scanned. The largest leak in the
+  // codebase was sitting inside exactly that call — asset_symbol, amount,
+  // value_usd and value_tier, on every trade — while this suite reported the
+  // contract kept. Match any first argument, up to the params object.
+  for (const m of src.matchAll(/\btrack[A-Za-z]*\(\s*(?:[^(){}]*?,\s*)?\{/g)) {
     // Walk braces from the opening one so nested objects come along whole.
     let depth = 0
     for (let i = src.indexOf('{', m.index + m[0].length - 1); i < src.length; i++) {
@@ -105,5 +113,58 @@ describe('the analytics privacy contract is actually kept', () => {
     const analytics = readFileSync(join(SRC, 'analytics.js'), 'utf8')
     expect(analytics).toMatch(/PRIVACY CONTRACT/)
     expect(analytics).toMatch(/no symbols/)
+  })
+})
+
+// What a trade IS allowed to report, and the hole that hid what it was.
+describe('trade events report a category and nothing else', () => {
+  const TRADE_FILES = ['components/TradeSheet.jsx', 'pages/Transactions.jsx', 'pages/Dashboard.jsx']
+
+  /** Every buy_transaction / sell_transaction params object in a file. */
+  function tradeCalls(src) {
+    const out = []
+    for (const m of src.matchAll(/track\([^{]*?'(?:buy|sell)_transaction'[^{]*?\{/g)) {
+      let depth = 0
+      for (let i = src.indexOf('{', m.index + m[0].length - 1); i < src.length; i++) {
+        if (src[i] === '{') depth++
+        else if (src[i] === '}' && --depth === 0) { out.push(src.slice(m.index, i + 1)); break }
+      }
+    }
+    return out
+  }
+
+  it.each(TRADE_FILES)('%s sends the category', (file) => {
+    const calls = tradeCalls(readFileSync(join(SRC, file), 'utf8'))
+    expect(calls.length, `no buy/sell_transaction call found in ${file}`).toBeGreaterThan(0)
+    for (const c of calls) expect(c).toMatch(/asset_category:/)
+  })
+
+  it.each(TRADE_FILES)('%s sends nothing the contract forbids', (file) => {
+    // The exact fourteen params these carried: the ticker, the name, the
+    // dollar size and a tier of it, the quantity, the price, the wallet, what
+    // it was paid for with, how much of the position went, and the realized
+    // profit or loss.
+    const FORBIDDEN = /asset_symbol|asset_name|value_usd|value_tier|price_usd|wallet_id|paid_with|received_as|pct_of_position|position_pct_tier|full_exit|realized_pnl|pnl_outcome|\bamount\s*:|\bexchange\s*:/
+    for (const c of tradeCalls(readFileSync(join(SRC, file), 'utf8'))) {
+      expect(c, `${file} still sends a forbidden trade param`).not.toMatch(FORBIDDEN)
+    }
+  })
+
+  it('trade_submitted carries the category from every screen', () => {
+    // It was missing on two of three, so the GA dimension read "(not set)"
+    // for anything added outside the trade sheet.
+    for (const file of TRADE_FILES) {
+      const src = readFileSync(join(SRC, file), 'utf8')
+      for (const m of src.matchAll(/track\('trade_submitted',\s*(\{[^}]*\})/g)) {
+        expect(m[1], `${file} sends trade_submitted without a category`).toMatch(/asset_category:/)
+      }
+    }
+  })
+
+  it('the scanner can see an event named by a ternary', () => {
+    // The whole reason the leak survived: the old pattern required a quoted
+    // event name, and both trade events are named by a conditional.
+    const sample = "track(x === 'buy' ? 'buy_transaction' : 'sell_transaction', { asset_symbol: s })"
+    expect(trackedParams(sample).length, 'the scanner is blind to ternary-named events again').toBe(1)
   })
 })

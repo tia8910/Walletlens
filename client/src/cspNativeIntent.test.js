@@ -56,6 +56,10 @@ describe('CSP admits the native intent bridge', () => {
   it('still confines frames to that and the Google sign-in origin', () => {
     // The point of the directive is that a frame cannot be pointed anywhere.
     // Widening it to '*' or dropping it would also make the test above pass.
+    //
+    // buymeacoffee has been in and out of here twice, for a widget and then a
+    // panel. Both embedded the support page; the button is a plain link now
+    // and frame-src does not govern navigations, so nothing needs the origin.
     for (const [file] of POLICIES) {
       const sources = frameSources(read(file))
       expect(sources).toEqual(['https://accounts.google.com', 'intent:'])

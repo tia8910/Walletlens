@@ -252,16 +252,85 @@ async function mapLimited(items, limit, fn) {
   return results
 }
 
-export async function fetchStockQuotes(symbols) {
+/**
+ * How many symbols may still be fetched ONE AT A TIME after the shared dataset
+ * has been consulted.
+ *
+ * Cloudflare Workers allow 50 subrequests per invocation on the Free plan, and
+ * that is the whole budget for a cron pass: quotes, news, the FCM token, and
+ * every notification sent. The old code fetched one Yahoo request per symbol up
+ * to STOCK_CAP = 40, so a pass could spend 40 of the 50 on quotes and then fail
+ * with "Too many subrequests by single Worker invocation" before delivering
+ * anything. That is exactly what happened in production.
+ *
+ * 8 is small because it is a REMAINDER: the dataset below already answers the
+ * ~120 tickers people actually hold, in one request.
+ */
+const STOCK_TAIL_CAP = 8
+
+/** Rotates which leftover symbols get the tail slots, so the same ones are not
+ *  starved every pass. Module state is fine: it only has to vary. */
+let tailCursor = 0
+
+/**
+ * Quotes for stock symbols, in as few subrequests as possible.
+ *
+ * Two sources, in order:
+ *
+ *  1. `stock-prices.json` from the data worker — ONE request covering the fixed
+ *     list of ~120 popular tickers it maintains on a 4-minute cadence. Most
+ *     watched symbols are in it, so most passes now spend a single subrequest
+ *     where they used to spend one per symbol.
+ *
+ *  2. Yahoo, per symbol, for whatever the dataset did not cover — capped at
+ *     STOCK_TAIL_CAP and rotated. An uncovered symbol is not dropped, it is
+ *     deferred: this runs every minute for crypto and every five for stocks, so
+ *     a symbol that misses one pass is picked up in the next.
+ *
+ * The dataset failing is not an error. It falls through to source 2 for
+ * everything, which is the old behaviour minus the cap that caused the outage.
+ */
+export async function fetchStockQuotes(symbols, tailCap = STOCK_TAIL_CAP) {
   const list = [...new Set(symbols)].filter(Boolean).slice(0, STOCK_CAP)
   const out = {}
-  await mapLimited(list, STOCK_CONCURRENCY, async (symbol) => {
-    try {
-      const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=2d`
-      const quote = parseYahooChart(await getJson(url, { 'User-Agent': 'Mozilla/5.0' }))
-      if (quote) out[symbol.toLowerCase()] = quote
-    } catch { /* symbol skipped this cycle */ }
-  })
+  if (!list.length) return out
+
+  let shared = {}
+  try {
+    const { dataUrl } = await import('../client/src/apiHosts.js')
+    const r = await fetch(dataUrl('stock-prices.json'), { signal: AbortSignal.timeout(TIMEOUT_MS) })
+    if (r.ok) shared = (await r.json())?.prices || {}
+  } catch { /* fall through to per-symbol below */ }
+
+  // Keys are `stock:<lowercase symbol>` and values {usd, usd_24h_change} —
+  // the shape parseStooqCsv writes, which is also the shape the client already
+  // reads, so this stays in step with the deployed dataset rather than
+  // inventing a second contract for it.
+  const missing = []
+  for (const symbol of list) {
+    const row = shared[`stock:${symbol.toLowerCase()}`]
+    const price = Number(row?.usd)
+    if (Number.isFinite(price) && price > 0) {
+      out[symbol.toLowerCase()] = { price, change24h: Number(row?.usd_24h_change) || 0 }
+    } else {
+      missing.push(symbol)
+    }
+  }
+
+  if (missing.length) {
+    // Rotate the window so a symbol the dataset never covers is not permanently
+    // last in line behind the same neighbours.
+    const start = missing.length > tailCap ? tailCursor % missing.length : 0
+    const tail = [...missing.slice(start), ...missing.slice(0, start)].slice(0, tailCap)
+    tailCursor = (tailCursor + tail.length) % Math.max(1, missing.length)
+    await mapLimited(tail, STOCK_CONCURRENCY, async (symbol) => {
+      try {
+        const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=2d`
+        const quote = parseYahooChart(await getJson(url, { 'User-Agent': 'Mozilla/5.0' }))
+        if (quote) out[symbol.toLowerCase()] = quote
+      } catch { /* symbol skipped this cycle */ }
+    })
+  }
   return out
 }
 
@@ -328,10 +397,16 @@ export function quoteFor(quotes, asset) {
 }
 
 // ── News ────────────────────────────────────────────────────────────────────
-// The site already publishes a merged, de-duplicated RSS digest for the app's
-// own news feed; re-using it means the cron adds no new upstream dependency
-// and always matches what the user sees in-app.
-const NEWS_URL = 'https://walletlens.live/news.json'
+// The same merged, de-duplicated RSS digest the app's own news feed reads, so
+// the cron adds no upstream dependency and a notification always matches what
+// the user sees in-app.
+//
+// It comes from the data worker now, not from walletlens.live. That digest
+// used to be a static file a GitHub Action committed into client/public/ every
+// two hours; when Actions was disabled the file froze, and because it ships
+// inside the Pages build it kept being served, nine days stale and looking
+// perfectly healthy. The client and the other two datasets here moved to the
+// worker in ea04a05c; this one line was left behind pointing at the corpse.
 const MAX_ARTICLES = 120
 
 export function parseNews(json) {
@@ -352,9 +427,43 @@ export function parseNews(json) {
 
 export async function fetchNews() {
   try {
-    return parseNews(await getJson(NEWS_URL))
+    const { dataUrl } = await import('../client/src/apiHosts.js')
+    return parseNews(await getJson(dataUrl('news.json')))
   } catch (e) {
     console.error('news fetch failed:', e instanceof Error ? e.message : e)
     return []
+  }
+}
+
+// ── Seven-day trend ─────────────────────────────────────────────────────────
+
+/**
+ * The same weekly numbers the dashboard draws its trend from.
+ *
+ * Read from the data service's market.json rather than called fresh from
+ * CoinGecko, and that is the whole point: a notification saying an asset
+ * turned down while the screen it links to shows an uptrend is worse than no
+ * notification at all. One source, one answer.
+ *
+ * Also cheaper. That file is already built every few hours for the app, so
+ * this is one request against an edge cache instead of another rate-limited
+ * upstream call on an hourly cron.
+ */
+export async function fetchSevenDay() {
+  try {
+    const { dataUrl } = await import('../client/src/apiHosts.js')
+    const r = await fetch(dataUrl('market.json'), { signal: AbortSignal.timeout(TIMEOUT_MS) })
+    if (!r.ok) return {}
+    const d = await r.json()
+    const out = {}
+    for (const c of Array.isArray(d?.coins) ? d.coins : []) {
+      const v = c?.price_change_percentage_7d_in_currency
+      // A coin with no weekly number is absent, never zero: zero would claim
+      // it is flat, and a flat reading is a direction the switch logic acts on.
+      if (c?.id && Number.isFinite(v)) out[c.id] = v
+    }
+    return out
+  } catch {
+    return {}
   }
 }

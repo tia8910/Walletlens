@@ -29,6 +29,8 @@
 // The refresh_token never leaves the device except to this one endpoint.
 // Nothing is stored server-side.
 
+import { DRIVE_API, GDRIVE_API } from './apiHosts'
+
 const CLIENT_ID = import.meta.env?.VITE_GOOGLE_CLIENT_ID
   || '630094688874-rilioqqic8004hk57skqi6oi2bs0g078.apps.googleusercontent.com'
 
@@ -37,9 +39,13 @@ const FILE_NAME = 'walletlens-backup.wl3'
 const API = 'https://www.googleapis.com/drive/v3/files'
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files'
 
-// The worker that holds GOOGLE_CLIENT_SECRET and does the token dance.
-const AUTH_WORKER = import.meta.env?.VITE_DRIVE_AUTH_URL
-  || 'https://walletlens-drive-auth.tarek-abdelhameed.workers.dev'
+// Where the token dance happens. The worker that holds GOOGLE_CLIENT_SECRET
+// still does the work, but the browser posts to the site instead of to the
+// worker's own hostname: workers.dev is filtered by some ISPs and resolvers,
+// and a sign-in that cannot reach it fails with nothing to show the person but
+// "Sign-in did not complete". /api/drive/* forwards to the worker from
+// Cloudflare's edge, which always resolves it.
+const AUTH_WORKER = import.meta.env?.VITE_DRIVE_AUTH_URL || DRIVE_API
 
 /** Feature switch: without a client ID the whole thing stays invisible. */
 export function isDriveConfigured() {
@@ -123,8 +129,12 @@ function isLikelyMobile() {
 // refresh_token to obtain a fresh access_token.  The token is returned
 // directly to this page; the worker sees nothing else.
 
+// Why the last silentRefresh() returned false: 'network' or 'rejected'.
+let lastRefreshFailure = null
+
 async function silentRefresh() {
   if (!refreshToken) return false
+  lastRefreshFailure = null
   // Dedup: if two callers hit this at the same time, only one network round
   // trip happens.
   if (refreshing) return refreshing
@@ -138,13 +148,20 @@ async function silentRefresh() {
       const data = await res.json()
       if (!res.ok || !data.access_token) {
         // Refresh token revoked or expired — user must re-sign-in.
+        lastRefreshFailure = 'rejected'
         forgetTokens()
         return false
       }
       rememberToken(data.access_token, data.expires_in)
       return true
     } catch {
-      // Network error — try again next time, don't nuke the token.
+      // The request never completed. Not the same thing as a refusal, and the
+      // difference decides what happens next: a rejected refresh token means
+      // sign in again, an unreachable one means try again in a minute. Sending
+      // someone through a full OAuth redirect on a network that just failed
+      // ends on "Sign-in did not complete" and costs them the refresh token
+      // they still had.
+      lastRefreshFailure = 'network'
       return false
     } finally {
       refreshing = null
@@ -214,11 +231,11 @@ export async function completeRedirectSignInWithCode(code) {
   } catch { /* private mode */ }
 
   const redirectUri = window.location.origin + REDIRECT_PATH
-  const res = await fetch(`${AUTH_WORKER}/exchange`, {
+  const res = await netFetch(`${AUTH_WORKER}/exchange`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ code, redirectUri }),
-  })
+  }, NET_AUTH)
   const data = await res.json()
   if (!res.ok) throw new Error(data.error_description || data.error || 'Token exchange failed')
 
@@ -300,6 +317,9 @@ export async function getAccessToken({ interactive = true } = {}) {
   if (refreshToken) {
     const ok = await silentRefresh()
     if (ok) return accessToken
+    // The refresh never reached Google. A redirect sign-in would not reach it
+    // either, and it would clear a refresh token that is probably still good.
+    if (lastRefreshFailure === 'network') throw new Error(NET_AUTH)
   }
 
   if (!isDriveConfigured()) throw new Error('Google Drive is not configured')
@@ -325,6 +345,106 @@ export function isSignedIn() {
 /** Thrown when Drive work needs a sign-in that only a user gesture may start. */
 export const NEEDS_SIGNIN = 'NEEDS_SIGNIN'
 
+/**
+ * Thrown when a request never completed — DNS, the radio, a filtering
+ * resolver, an offline device.
+ *
+ * fetch() rejects with TypeError("Failed to fetch"), and that string was going
+ * straight to the screen: it names no service, no step and no remedy, and it
+ * is the browser's wording rather than the app's. The suffix says which hop
+ * failed, because "Drive is unreachable" and "the token service is
+ * unreachable" are different problems with different fixes.
+ */
+export const NET_ERROR = 'NET_ERROR'
+export const NET_DRIVE = 'NET_ERROR:drive'
+export const NET_AUTH = 'NET_ERROR:auth'
+
+/**
+ * Drive answered, but would not accept the app's request.
+ *
+ * fetch() rejects identically whether the request never arrived or arrived and
+ * was refused by CORS, and those are opposite problems: one is the network or
+ * a filtering resolver, the other is ours to fix in the request. Only the
+ * device that fails can tell them apart, so it does it itself.
+ */
+export const NET_DRIVE_REFUSED = 'NET_ERROR:drive-refused'
+
+/**
+ * Which of the two just happened.
+ *
+ * no-cors makes this a pure reachability test: the browser sends the request
+ * and hands back an opaque response without applying CORS at all, so it
+ * resolves if anything answered and rejects only if nothing did. The response
+ * is deliberately unread — its opacity is the entire signal.
+ */
+async function classifyDriveFailure() {
+  try {
+    await fetch(`${API}?pageSize=1`, {
+      mode: 'no-cors',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5000),
+    })
+    return NET_DRIVE_REFUSED
+  } catch {
+    return NET_DRIVE
+  }
+}
+
+/** fetch(), with a rejection that says which hop failed instead of TypeError. */
+async function netFetch(url, init, hop) {
+  try {
+    return await fetch(url, init)
+  } catch {
+    throw new Error(hop === NET_DRIVE ? await classifyDriveFailure() : hop)
+  }
+}
+
+// Whether the direct route to Google is known to fail on this device.
+//
+// /diag on the reporting device showed every cross-origin request failing in
+// 3-5ms while same-origin answered in ~430ms: nothing reaches DNS in 4ms, so
+// those requests never left the phone. Once that is established there is no
+// point paying the failure on every call for the rest of the session, and no
+// point remembering it forever either — it is a property of the network, and
+// networks change.
+const RELAY_KEY = 'wl_drive_relay_until'
+const RELAY_FOR_MS = 12 * 60 * 60 * 1000
+
+function relaying() {
+  try { return Number(localStorage.getItem(RELAY_KEY) || 0) > Date.now() } catch { return false }
+}
+function useRelay(on) {
+  try {
+    if (on) localStorage.setItem(RELAY_KEY, String(Date.now() + RELAY_FOR_MS))
+    else localStorage.removeItem(RELAY_KEY)
+  } catch { /* private mode */ }
+}
+
+/** The same Drive URL, pointed at the site instead of at Google. */
+function viaRelay(url) {
+  return url.replace(/^https:\/\/www\.googleapis\.com\//, `${GDRIVE_API}/`)
+}
+
+/**
+ * A Drive request, direct if the device can manage it and relayed if not.
+ *
+ * Direct is always tried first on a device that has not already failed, so a
+ * working network keeps the access token off every server but Google's.
+ */
+async function driveRequest(url, init) {
+  if (!relaying()) {
+    try {
+      const res = await fetch(url, init)
+      return res
+    } catch { /* fall through — the device could not make the call itself */ }
+  }
+  const res = await netFetch(viaRelay(url), init, NET_DRIVE)
+  // Only now, once the relay has actually answered: a failure on both paths
+  // is a network problem, not proof that the direct route is the broken one.
+  useRelay(true)
+  return res
+}
+
 async function driveFetch(url, init = {}) {
   // If the token is expired but we have a refresh token, try refresh first.
   // This is the code path that previously returned null and broke auto-backup.
@@ -332,10 +452,11 @@ async function driveFetch(url, init = {}) {
   if (!token && refreshToken) {
     const ok = await silentRefresh()
     if (ok) token = storedAccessToken()
+    else if (lastRefreshFailure === 'network') throw new Error(NET_AUTH)
   }
   if (!token) throw new Error(NEEDS_SIGNIN)
 
-  const res = await fetch(url, {
+  const res = await driveRequest(url, {
     ...init,
     headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` },
   })
@@ -345,7 +466,7 @@ async function driveFetch(url, init = {}) {
       const ok = await silentRefresh()
       if (ok) {
         token = storedAccessToken()
-        const retry = await fetch(url, {
+        const retry = await driveRequest(url, {
           ...init,
           headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` },
         })

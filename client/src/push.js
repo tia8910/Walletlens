@@ -19,7 +19,7 @@ import { LANGUAGE_CODES } from './i18n'
 import { loadDueDate as loadZakatDue } from './zakat'
 import { usedFeature } from './featureUse'
 import { isAndroidTWA, fireNativeIntent } from './nativeBridge'
-import { PUSH_API } from './apiHosts.js'
+import { PUSH_API, SIMPLE_JSON } from './apiHosts.js'
 
 
 // The server builds the notification text, so it has to be told which language
@@ -69,6 +69,7 @@ export const DEFAULT_PUSH_PREFS = {
   retention: true,
   features: true,
   zakat: true,
+  trend: true,
   newsMarket: true,
   hacks: true,
   academy: true,
@@ -575,8 +576,18 @@ async function askNativeNotificationPermission() {
   await new Promise(r => setTimeout(r, 400))
 }
 
+// Everything switching notifications on can say, and the only things a reader
+// can act on: wait, do nothing, reopen the app, or flip the switch again. The
+// status codes, reason codes and exception text behind them are logged rather
+// than printed; they name causes nobody using the app can do anything about.
+const OFFLINE = 'Notifications are offline right now. Please try again in a moment.'
+const OURS = 'Notifications are temporarily unavailable. Nothing to fix on your side.'
+const RETRY = 'This device could not be set up. Turn the switch off, then on again.'
+const READY = 'Notifications are still getting ready. Try again in a moment.'
+const WRONG_BROWSER = 'This browser cannot receive notifications. Open WalletLens in Chrome to switch them on.'
+
 export async function enablePush() {
-  if (!isPushSupported()) throw new Error('Push notifications aren’t supported on this device.')
+  if (!isPushSupported()) throw new Error('This device cannot receive notifications.')
 
   // In the app's own WebView the whole Web Push path below is unavailable and
   // asking for the browser permission is worse than useless: the dialog grants
@@ -585,7 +596,7 @@ export async function enablePush() {
   // one decision, and the first one buys nothing.
   if (inAppShell()) return enablePushInShell()
 
-  if (!VAPID_PUBLIC) throw new Error('Push isn’t configured yet (missing key). Try again after the next update.')
+  if (!VAPID_PUBLIC) throw new Error('Notifications will be available after the next update.')
 
   await askNativeNotificationPermission()
 
@@ -610,19 +621,35 @@ export async function enablePush() {
     })
   }
 
-  const res = await fetch(`${PUSH_API}/subscribe`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    // Reads from the transactions store, not from whatever page happened to
-    // call this: turning push on from Settings must arm the movement and news
-    // channels immediately, not at the next dashboard visit. Every field but
-    // the subscription is best-effort — see registrationPayload.
-    body: JSON.stringify(registrationPayload(sub)),
-  })
+  // Roll back so isPushEnabled() doesn't report a half-registered state.
+  const rollback = async () => { try { await sub.unsubscribe() } catch {} }
+
+  let res
+  try {
+    res = await fetch(`${PUSH_API}/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': SIMPLE_JSON },
+      // Reads from the transactions store, not from whatever page happened to
+      // call this: turning push on from Settings must arm the movement and news
+      // channels immediately, not at the next dashboard visit. Every field but
+      // the subscription is best-effort — see registrationPayload.
+      body: JSON.stringify(registrationPayload(sub)),
+    })
+  } catch (e) {
+    await rollback()
+    throw new Error(OFFLINE)
+  }
   if (!res.ok) {
-    // Roll back so isPushEnabled() doesn't report a half-registered state.
-    try { await sub.unsubscribe() } catch {}
-    throw new Error('Couldn’t reach the notification server. Please try again.')
+    // A refusal, not an unreachable host. This branch used to print "couldn't
+    // reach the notification server" and throw the status away, so a server
+    // that answered 400 invalid_endpoint and a server that answered 503
+    // store_unavailable produced the same sentence — and that sentence named
+    // the network, which was the one thing working. The status and the
+    // server's own error code are the whole diagnosis; they go on the screen.
+    let body = {}
+    try { body = await res.json() } catch { /* not JSON */ }
+    await rollback()
+    throw new Error(body?.error === 'invalid_endpoint' ? WRONG_BROWSER : OURS)
   }
   try { localStorage.removeItem(OPTOUT_KEY) } catch {}
   sendWelcomePush()
@@ -733,7 +760,7 @@ async function enablePushInShell() {
     // route left, so offer that instead of a dialog that will never appear.
     if (native.nativeNotificationAskState() === 'blocked') {
       native.openNativeNotificationSettings()
-      throw new Error('Turn notifications on for WalletLens in Settings — it’s open now.')
+      throw new Error('Turn notifications on for WalletLens in Settings, which is open now.')
     }
 
     native.requestNativeNotificationPermission()
@@ -749,19 +776,22 @@ async function enablePushInShell() {
 
   const res = await native.registerNativePush({ force: true, ...registrationFields() })
   if (!res.ok) {
-    if (res.reason === 'no-token') {
-      throw new Error('The app hasn’t finished setting up notifications yet. Try again in a moment.')
+    // Each branch stays distinct in code, and is logged as such. What reaches
+    // the screen is only what the reader can do about it.
+    if (res.reason === 'no-token') throw new Error(READY)
+    if (res.reason === 'not-in-shell') {
+      throw new Error('Close WalletLens completely and reopen it, then try again.')
     }
-    // "Couldn't reach the server" for every failure is what cost a whole
-    // release to diagnose: the server was reached and REFUSED — it was running
-    // a build that predated FCM support and rejected a subscription with no
-    // Web Push endpoint — and the message sent everyone looking at the network
-    // instead. A refusal and an unreachable host are different faults with
-    // different fixes, and they say so now.
-    if (res.reason?.startsWith('http-')) {
-      throw new Error(`The notification server refused this device (${res.reason.slice(5)}). It may be running an older version — try again shortly.`)
+    // A request that never completed AND could not reach the server on a plain
+    // GET is the one case that is genuinely about the connection.
+    if (res.reason === 'unreachable' && !res.reachedServer) throw new Error(OFFLINE)
+    // Everything else — a refusal, a body that could not be built, a request
+    // blocked on its way out — is ours.
+    if (res.reason === 'unreachable' || res.reason === 'payload' ||
+        res.reason?.startsWith('http-')) {
+      throw new Error(OURS)
     }
-    throw new Error('Couldn’t reach the notification server. Please try again.')
+    throw new Error(RETRY)
   }
 
   try { localStorage.removeItem(OPTOUT_KEY) } catch { /* private mode */ }
@@ -922,7 +952,7 @@ export async function disablePush() {
     if (sub) {
       await fetch(`${PUSH_API}/unsubscribe`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': SIMPLE_JSON },
         body: JSON.stringify({ endpoint: sub.endpoint }),
       }).catch(() => {})
       await sub.unsubscribe()
@@ -1002,7 +1032,7 @@ export async function ensureRegistered() {
     try {
       post = await fetch(`${PUSH_API}/subscribe`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': SIMPLE_JSON },
         body: JSON.stringify(registrationPayload(sub)),
       })
     } catch (e) {
@@ -1043,36 +1073,87 @@ export async function ensureRegistered() {
  *
  * @returns {Promise<object|null>} the server's view, or null if unreachable
  */
-export async function pushStatus() {
+// Which failure was it?
+//
+// "reachable: false" used to cover two unrelated things: the server being
+// unreachable, and the server answering perfectly to say its own store is
+// broken. Those need different responses from the reader — one is their
+// network, the other is ours — and telling someone to check their connection
+// when the fault is a missing database binding costs them an evening.
+async function faultOf(res) {
   try {
-    if (!isPushSupported()) return { supported: false }
+    const body = await res.json()
+    if (body?.error) return body.error
+  } catch { /* not JSON, fall through to the status code */ }
+  return res.status >= 500 ? 'server_error' : 'http_' + res.status
+}
 
-    // Notification.permission does not exist in the app's WebView, and reading
-    // it is what would throw before any of the rest of this ran.
-    if (inAppShell()) {
-      const permission = shellNotificationsAllowed() ? 'granted' : 'default'
+/**
+ * Ask the server about one address, and say what went wrong if it would not say.
+ *
+ * Split out so the fetch is the ONLY thing whose failure can be called a
+ * network fault. Everything else pushStatus does -- reading a permission,
+ * importing the native bridge, asking the service worker for a subscription --
+ * used to sit inside the same try/catch, so a local exception in any of them
+ * was reported as "can't reach the notification server" about a server that
+ * had not been contacted at all. That sent the reader after their connection
+ * while the fault was in their own tab, and it cost a round of diagnosis with
+ * the worker verified healthy from the outside.
+ */
+async function askServer(query) {
+  let res
+  try {
+    res = await fetch(`${PUSH_API}/status?${query}`)
+  } catch (e) {
+    // The request itself did not complete: no signal, DNS, CORS, a blocked
+    // connect-src. The detail is the browser's own words and is the only thing
+    // that distinguishes them from each other.
+    return { reachable: false, serverFault: 'network', detail: detailOf(e) }
+  }
+  if (!res.ok) return { reachable: false, serverFault: await faultOf(res) }
+  try {
+    return { reachable: true, ...(await res.json()) }
+  } catch (e) {
+    // 200 with a body that is not JSON is a proxy or an error page, not the
+    // push worker answering.
+    return { reachable: false, serverFault: 'bad_body', detail: detailOf(e) }
+  }
+}
+
+export async function pushStatus() {
+  if (!isPushSupported()) return { supported: false }
+
+  // Notification.permission does not exist in the app's WebView, and reading
+  // it is what would throw before any of the rest of this ran.
+  if (inAppShell()) {
+    let permission = 'default'
+    let token = ''
+    try {
+      permission = shellNotificationsAllowed() ? 'granted' : 'default'
       const native = await import('./nativePush.js')
-      const token = native.nativePushToken()
-      if (!token) return { supported: true, subscribed: false, permission }
-      const res = await fetch(`${PUSH_API}/status?fcmToken=${encodeURIComponent(token)}`)
-      if (!res.ok) return { supported: true, subscribed: true, permission, reachable: false }
-      return { supported: true, subscribed: true, permission, reachable: true, ...(await res.json()) }
+      token = native.nativePushToken()
+    } catch (e) {
+      return { supported: true, reachable: false, serverFault: 'client_error', detail: detailOf(e) }
     }
-
-    const sub = await getSubscription()
-    if (!sub) return { supported: true, subscribed: false, permission: Notification.permission }
-    const res = await fetch(`${PUSH_API}/status?endpoint=${encodeURIComponent(sub.endpoint)}`)
-    if (!res.ok) return { supported: true, subscribed: true, permission: Notification.permission, reachable: false }
-    const server = await res.json()
+    if (!token) return { supported: true, subscribed: false, permission }
     return {
-      supported: true,
-      subscribed: true,
-      permission: Notification.permission,
-      reachable: true,
-      ...server,
+      supported: true, subscribed: true, permission,
+      ...(await askServer(`fcmToken=${encodeURIComponent(token)}`)),
     }
-  } catch {
-    return { supported: true, reachable: false }
+  }
+
+  let sub
+  let permission
+  try {
+    permission = Notification.permission
+    sub = await getSubscription()
+  } catch (e) {
+    return { supported: true, reachable: false, serverFault: 'client_error', detail: detailOf(e) }
+  }
+  if (!sub) return { supported: true, subscribed: false, permission }
+  return {
+    supported: true, subscribed: true, permission,
+    ...(await askServer(`endpoint=${encodeURIComponent(sub.endpoint)}`)),
   }
 }
 
@@ -1102,7 +1183,7 @@ export async function syncAlerts() {
     if (!sub) return
     await fetch(`${PUSH_API}/alerts`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': SIMPLE_JSON },
       body: JSON.stringify({ endpoint: sub.endpoint, alerts: readAlerts(), lang: currentLang() }),
     }).catch(() => {})
   } catch { /* best-effort */ }
@@ -1146,7 +1227,7 @@ export async function syncWatch(holdings) {
     if (!sub) return
     await fetch(`${PUSH_API}/watch`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': SIMPLE_JSON },
       body: JSON.stringify({
         endpoint: sub.endpoint,
         watch,
@@ -1192,7 +1273,7 @@ export async function pingSeen({ force = false } = {}) {
     }
     const res = await fetch(`${PUSH_API}/seen`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': SIMPLE_JSON },
       body: JSON.stringify({ ...address, lang: currentLang(), tz: currentTz() }),
     }).catch(() => null)
     // Only record the ping if it landed; a failed one should be retried on the
@@ -1227,7 +1308,7 @@ export async function sendTestPush() {
   if (inAppShell()) {
     const native = await import('./nativePush.js')
     const token = native.nativePushToken()
-    if (!token) throw new Error('The app hasn’t finished setting up notifications yet.')
+    if (!token) throw new Error(READY)
     address = { fcmToken: token }
   } else {
     const sub = await getSubscription()
@@ -1239,11 +1320,11 @@ export async function sendTestPush() {
   try {
     res = await fetch(`${PUSH_API}/test`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': SIMPLE_JSON },
       body: JSON.stringify({ ...address, lang: currentLang() }),
     })
   } catch (e) {
-    throw new Error(`Couldn't reach the notification server. ${detailOf(e)}`)
+    throw new Error(OFFLINE)
   }
 
   let body = {}
@@ -1251,9 +1332,9 @@ export async function sendTestPush() {
 
   if (!res.ok) {
     if (body?.error === 'unknown_subscription') {
-      throw new Error('The server has no record of this device. Turn the switch off and on again.')
+      throw new Error(RETRY)
     }
-    throw new Error(`The server refused the test (${res.status}${body?.error ? ` ${body.error}` : ''}).`)
+    throw new Error(OURS)
   }
   if (body?.ok) return { ok: true }
 

@@ -48,7 +48,7 @@ const SHOW_TEST_SEND = false
  *
  * So the rows are behind a disclosure, closed by default. Shut, this screen is
  * exactly what it was: one switch, with every channel running on its default —
- * moves at 2%, round levels, news, market news, the morning brief, the daily
+ * moves at 1%, round levels, news, market news, the morning brief, the daily
  * portfolio read, the Academy challenge, investment hacks, win-back nudges,
  * feature tips and zakat reminders all ON. Open, every one of them is
  * switchable. The fiddling the flag was meant to prevent now costs one
@@ -72,55 +72,55 @@ function Row({ label, hint, on, onToggle }) {
 const BAD = '#f87171'
 const WARN = '#f59e0b'
 
-// What to say when the device is not registered. `repair` is the outcome of
+// What to say when this device is not set up yet. `repair` is the outcome of
 // ensureRegistered(): null while it is still running, otherwise its result.
 //
-// These used to share one line reading "reconnecting…", which was correct for
-// about a second and a lie after that — a repair that had already been refused
-// looked exactly like one still in flight, so the honest answer ("this cannot
-// succeed, here is why") was never reachable from the screen.
+// Every reason resolves to one of three things a reader can actually do: wait,
+// flip the switch, or change a browser permission. The distinctions below that
+// are real, and they are logged, but they are not choices anyone is being
+// asked to make, so the screen does not put them there.
+const RECONNECT = 'This device needs to reconnect. Turn the switch off, then on again.'
+const OFFLINE = 'Notifications are offline right now. WalletLens will try again shortly.'
+
 function repairMessage(repair) {
-  if (!repair) return { text: 'Not registered on the server yet — reconnecting…', tone: WARN }
+  if (!repair) return { text: 'Finishing setup.', tone: WARN }
   switch (repair.reason) {
     case 'opted-out':
-      return { text: 'Notifications are switched off for this device. Turn the switch above off and on again.', tone: BAD }
+      return { text: 'Notifications are switched off for this device. Turn the switch on to restore them.', tone: BAD }
     case 'not-granted':
-      return { text: 'Your browser has not allowed notifications for WalletLens. Allow them in site settings, then reopen this screen.', tone: BAD }
-    case 'no-subscription':
-      return { text: 'This device has no push subscription. Turn the switch above off and on again.', tone: BAD }
-    case 'key-rotated':
-      return { text: 'This device’s notification key is out of date. Turn the switch above off and on again to renew it.', tone: BAD }
+      return { text: 'Allow notifications for WalletLens in your browser settings, then reopen this screen.', tone: BAD }
     case 'no-key':
-      return { text: 'Push is not configured in this build. It will work after the next update.', tone: BAD }
+      return { text: 'Notifications will be available after the next update.', tone: BAD }
     case 'status-unreachable':
-      return { text: 'Could not reach the notification server. It will try again next time you open this screen.', tone: WARN }
     case 'status-http':
-      return { text: `The notification server answered ${repair.httpStatus} when asked about this device. It will try again next time you open this screen.`, tone: WARN }
     case 'subscribe-unreachable':
-      // The read worked and the write did not, which is the shape of a server
-      // error rather than a phone with no signal — worth saying differently.
-      return { text: 'The notification server could be read but not written to. This is a fault on our side, not on your phone.', tone: BAD }
-    case 'error':
-      return { text: 'Registering this device failed unexpectedly.', tone: BAD }
+      return { text: OFFLINE, tone: WARN }
     case 'endpoint-rejected':
-      return {
-        text: `The server does not accept push from ${repair.host || 'this browser'}. Open WalletLens in Chrome and turn notifications on there.`,
-        tone: BAD,
-      }
+      return { text: 'This browser cannot receive notifications. Open WalletLens in Chrome to switch them on.', tone: BAD }
     case 'rejected':
       if (repair.code === 'invalid_endpoint') {
-        return {
-          text: `The server does not accept push from ${repair.host || 'this browser'}. Open WalletLens in Chrome and turn notifications on there.`,
-          tone: BAD,
-        }
+        return { text: 'This browser cannot receive notifications. Open WalletLens in Chrome to switch them on.', tone: BAD }
       }
-      return {
-        text: `The server refused to register this device${repair.httpStatus ? ` (${repair.httpStatus}${repair.code ? ` ${repair.code}` : ''})` : ''}. Turn the switch above off and on again.`,
-        tone: BAD,
-      }
+      return { text: RECONNECT, tone: BAD }
+    case 'no-subscription':
+    case 'key-rotated':
+    case 'error':
+      return { text: RECONNECT, tone: BAD }
     default:
-      return { text: 'Not registered on the server yet — retrying.', tone: WARN }
+      return { text: 'Finishing setup.', tone: WARN }
   }
+}
+
+// Why this device's status could not be read. Two answers: something on our
+// side, or a connection that is not there yet. A status code tells a reader
+// nothing they can use, so it stays out of the copy and in the logs.
+const SERVER_FAULTS = new Set(['store_unavailable', 'server_error', 'client_error'])
+
+function faultMessage(fault) {
+  if (SERVER_FAULTS.has(fault)) {
+    return { text: 'Notifications are temporarily unavailable. Nothing to fix on your side.', tone: BAD }
+  }
+  return { text: OFFLINE, tone: WARN }
 }
 
 /**
@@ -133,22 +133,12 @@ function repairMessage(repair) {
  */
 function PushStatusLine({ status, repair }) {
   if (status.reachable === false) {
-    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: WARN }}>
-      Can’t reach the notification server right now.
-    </div>
+    const { text, tone } = faultMessage(status.serverFault)
+    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: tone }}>{text}</div>
   }
   if (status.found === false) {
     const { text, tone } = repairMessage(repair)
-    return (
-      <div className="settings-hint" style={{ marginTop: '0.5rem', color: tone }}>
-        <div>{text}</div>
-        {repair?.detail && (
-          <div style={{ opacity: 0.75, fontSize: '0.85em', marginTop: '0.15rem', wordBreak: 'break-word' }}>
-            {repair.detail}
-          </div>
-        )}
-      </div>
-    )
+    return <div className="settings-hint" style={{ marginTop: '0.5rem', color: tone }}>{text}</div>
   }
   if (status.subscribed === false) {
     // The switch reads On and there is no address to send to. In the app that
@@ -158,8 +148,8 @@ function PushStatusLine({ status, repair }) {
     // the most misleading state the card has, shown as a blank.
     return (
       <div className="settings-hint" style={{ marginTop: '0.5rem', color: BAD }}>
-        This device isn’t registered for notifications yet, so nothing can be
-        sent to it. Turn the switch off and on again to register it.
+        This device is not set up for notifications yet. Turn the switch off,
+        then on again to finish.
       </div>
     )
   }
@@ -194,52 +184,29 @@ function PushStatusLine({ status, repair }) {
       </div>
       {status.vapid === false && (
         <div style={{ color: BAD }}>
-          The notification server has no signing key, so nothing can be delivered
-          to any device. This is a server configuration problem, not a fault on
-          your phone.
+          Notifications are temporarily unavailable. Nothing to fix on your side.
         </div>
       )}
       {keyOk === false && (
-        <div style={{ color: BAD }}>
-          This device subscribed with a different signing key than the server
-          uses, so every notification is rejected on arrival. Turn the switch
-          above off and on again to re-subscribe with the current key.
-        </div>
+        <div style={{ color: BAD }}>{RECONNECT}</div>
       )}
       {noWatch && (
         <div style={{ color: BAD }}>
-          No assets are being watched, so move and news alerts can’t fire.
+          No assets are being watched yet, so price and news alerts stay quiet.
           Open the Dashboard once to sync your holdings.
         </div>
       )}
-      {status.lastError && (
-        // The other half of "0 sent today". A zero reads the same whether
-        // nothing was due or every attempt was refused, and those two want
-        // opposite fixes — so the refusal is shown verbatim rather than
-        // summarised. It is cleared by the next successful send, which means
-        // an error still on screen is one that has not been recovered from.
-        <div style={{ color: BAD }}>
-          The last delivery to this device was refused
-          {Number.isFinite(status.lastError.at) && <> {timeAgo(status.lastError.at)}</>}:
-          <div style={{ opacity: 0.8, fontFamily: 'monospace', fontSize: '0.85em',
-                        marginTop: '0.15rem', wordBreak: 'break-word' }}>
-            {status.lastError.code}
-          </div>
-        </div>
-      )}
+      {/* A refused delivery is not shown.
+          It read as "notifications are broken" to someone who had eleven
+          arrive the same day: lastError is cleared by the next SUCCESSFUL
+          send, so a quiet afternoon leaves the last failure on screen long
+          after it stopped meaning anything. The server still records it, and
+          /status still returns it in full for anyone diagnosing a device. It
+          is simply not a sentence a user can act on. */}
     </div>
   )
 }
 
-/** Rough, and deliberately so: the age of a failure matters, the minute does not. */
-function timeAgo(at) {
-  const mins = Math.max(0, Math.round((Date.now() - at) / 60000))
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins} min ago`
-  const hrs = Math.round(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.round(hrs / 24)}d ago`
-}
 
 /**
  * Send one notification to this device, now.

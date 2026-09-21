@@ -1,10 +1,16 @@
-# www → apex (eliminates "www.walletlens.live" from Search Console duplicate reports)
-https://www.walletlens.live/* https://walletlens.live/:splat 301
-
 # Retired $LENZ token pages → home (avoids soft-404s on previously indexed URLs)
 /lenz    /    301
 /lenz/   /    301
 /airdrop /    301
 /airdrop/ /   301
 
+# /asset/:coinId is the target of every price alert, and it is the one
+# notification destination that cannot have a prerendered shell: the id is a
+# holding, not a fixed route. Tapping an alert is a cold navigation, so without
+# an explicit rewrite Pages finds no file and serves 404.html — the same
+# failure /guardian had before it was given a shell. An explicit splat is
+# matched ahead of the catch-all below and does not depend on it.
+/asset/* /index.html 200
+
+# Everything else React Router knows about.
 /* /index.html 200

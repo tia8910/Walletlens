@@ -88,6 +88,46 @@ def twaManifest = [
 ]
 
 
+// ── Release signing ─────────────────────────────────────────────────────────
+//
+// There was no signingConfigs block here at all. A local `./gradlew
+// assembleRelease` therefore wrote app-release-UNSIGNED.apk and said nothing
+// about it, and an unsigned APK installs nowhere: Softonic's upload check
+// rejected one with "we couldn't validate the file's signature", which is how
+// the gap was found.
+//
+// Credentials never enter the repo. They are read from Gradle properties in
+// ~/.gradle/gradle.properties, which lives outside the tree where `git add -A`
+// cannot reach it, or from the environment:
+//
+//   WL_KEYSTORE_FILE      absolute path to the keystore
+//   WL_KEYSTORE_PASSWORD  keystore password
+//   WL_KEY_ALIAS          key alias
+//   WL_KEY_PASSWORD       key password
+//
+// CI does not use any of these. build-aab.yml passes
+// -Pandroid.injected.signing.* instead, and AGP applies that over whatever is
+// configured here, so the two paths coexist and neither depends on the other.
+//
+// ── What this key is NOT ────────────────────────────────────────────────────
+//
+// This is the UPLOAD key. Play App Signing strips it and re-signs with the app
+// signing key before distributing, so an APK signed here does not carry the
+// same certificate as the WalletLens that is live on Play. Installing one
+// beside the other fails with INSTALL_FAILED_UPDATE_INCOMPATIBLE, and the only
+// way out is uninstall, which erases localStorage. There are no accounts and
+// no server copy, so that is the user's entire portfolio.
+//
+// So an APK from this build is for testing on your own device. Anything going
+// to a third-party store has to be the "Signed, universal APK" from the Play
+// Console's app bundle explorer, which carries the app signing key.
+def wlKeystoreFile = findProperty('WL_KEYSTORE_FILE') ?: System.getenv('WL_KEYSTORE_FILE')
+def wlKeystorePassword = findProperty('WL_KEYSTORE_PASSWORD') ?: System.getenv('WL_KEYSTORE_PASSWORD')
+def wlKeyAlias = findProperty('WL_KEY_ALIAS') ?: System.getenv('WL_KEY_ALIAS')
+def wlKeyPassword = findProperty('WL_KEY_PASSWORD') ?: System.getenv('WL_KEY_PASSWORD')
+def wlHasLocalSigning = wlKeystoreFile && wlKeystorePassword && wlKeyAlias && wlKeyPassword
+def wlHasInjectedSigning = project.hasProperty('android.injected.signing.store.file')
+
 android {
     compileSdk 36
     namespace "live.walletlens.twa"
@@ -216,6 +256,26 @@ android {
         // resource values, but the feature is disabled".
         resValues = true
     }
+    signingConfigs {
+        // Created only when all four values are present. An empty signing
+        // config is worse than none: AGP would attach it and then fail deep
+        // inside the packaging task with a null store file.
+        if (wlHasLocalSigning) {
+            release {
+                storeFile file(wlKeystoreFile)
+                storePassword wlKeystorePassword
+                keyAlias wlKeyAlias
+                keyPassword wlKeyPassword
+                // v1 as well as v2/v3. minSdk is 23, so v2 alone would be
+                // enough for Android itself, but several third-party store
+                // validators still read only the v1 JAR signature and report
+                // a v2-only APK as unsigned.
+                enableV1Signing true
+                enableV2Signing true
+                enableV3Signing true
+            }
+        }
+    }
     buildTypes {
         release {
             // R8 is ON, with the keep rules genuinely applied.
@@ -306,6 +366,11 @@ android {
             // the fault is in the toolchain and the pieces go back one at a
             // time with a device check between each. If it still crashes, the
             // fault is in the Java or the manifest and R8 was never involved.
+            // Left unset when no credentials are configured, so the guard
+            // at the bottom of this file is what reports the problem.
+            if (wlHasLocalSigning) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -411,4 +476,35 @@ dependencies {
     // messaging artifact carries no version of its own.
     implementation platform('com.google.firebase:firebase-bom:33.7.0')
     implementation 'com.google.firebase:firebase-messaging'
+}
+
+// Fail a release packaging task that has no signing configured either way,
+// rather than writing app-release-unsigned.apk and leaving it to be noticed by
+// a store's upload check days later.
+//
+// Scoped to the packaging tasks on purpose: android-compile.yml runs only
+// :app:compileReleaseJavaWithJavac, which needs no key and must keep working
+// without one.
+gradle.taskGraph.whenReady { graph ->
+    if (wlHasLocalSigning || wlHasInjectedSigning) {
+        return
+    }
+    def signed = graph.allTasks.any { t ->
+        t.path.startsWith(':app:') && t.name ==~ /^(assemble|bundle|package)Release$/
+    }
+    if (signed) {
+        throw new GradleException(
+            "No release signing configured, so this build would produce an " +
+            "UNSIGNED artifact that installs nowhere.\n\n" +
+            "Set these in ~/.gradle/gradle.properties (never in the repo):\n" +
+            "  WL_KEYSTORE_FILE=/absolute/path/to/upload.keystore\n" +
+            "  WL_KEYSTORE_PASSWORD=...\n" +
+            "  WL_KEY_ALIAS=...\n" +
+            "  WL_KEY_PASSWORD=...\n\n" +
+            "Or pass -Pandroid.injected.signing.store.file=... the way " +
+            ".github/workflows/build-aab.yml does.\n\n" +
+            "Remember this is the UPLOAD key. For a third-party store, " +
+            "download the signed universal APK from the Play Console instead."
+        )
+    }
 }

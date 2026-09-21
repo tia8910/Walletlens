@@ -57,3 +57,39 @@ describe('every source file parses', () => {
     expect(broken, 'these do not parse and will fail the production build').toEqual([])
   })
 })
+
+// The stylesheets parse too.
+//
+// Same hole, different language. The suite above reads index.css as text in a
+// dozen places and asserts on what it finds, so a stylesheet can be
+// syntactically broken and every one of those assertions still passes — the
+// text is all still there. That is not hypothetical: a stray closing brace
+// left behind by an edit sailed through 1995 green tests and was caught by the
+// production build, minutes later, with the whole suite already reported clean.
+//
+// postcss is what vite itself parses CSS with, so this fails on exactly what
+// the build would fail on, about a second after the edit instead of minutes.
+describe('every stylesheet parses', () => {
+  const styles = (function collect(dir) {
+    const out = []
+    for (const entry of readdirSync(dir)) {
+      const p = join(dir, entry)
+      if (statSync(p).isDirectory()) { out.push(...collect(p)); continue }
+      if (extname(entry) === '.css') out.push(p)
+    }
+    return out
+  })(SRC)
+
+  it('finds the stylesheets at all', () => {
+    expect(styles.length).toBeGreaterThan(0)
+    expect(styles.some(f => f.endsWith('index.css'))).toBe(true)
+  })
+
+  it.each(styles.map(f => [f.slice(SRC.length + 1), f]))('%s has no syntax errors', async (_name, file) => {
+    const { default: postcss } = await import('postcss')
+    const css = readFileSync(file, 'utf8')
+    let err = null
+    try { postcss.parse(css, { from: file }) } catch (e) { err = e }
+    expect(err && `${err.line}:${err.column} ${err.reason}`).toBeNull()
+  })
+})

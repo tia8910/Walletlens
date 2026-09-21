@@ -71,6 +71,7 @@ export default class ErrorBoundary extends Component {
       // someone. Imported lazily so the boundary keeps working even if this
       // module is the thing that failed.
       import('../reviewPrompt').then(m => m.noteFriction?.('exception')).catch(() => {})
+      import('../supportNudge').then(m => m.noteSupportFriction?.('exception')).catch(() => {})
     } catch { /* diagnostics must never mask the original error */ }
 
     if (this.state.isChunk) {

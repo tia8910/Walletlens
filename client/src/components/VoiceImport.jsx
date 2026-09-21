@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Icon from './Icon'
 import { loadData, saveData, bumpId } from '../data/storage'
-import { track, trackProfileCreated, trackImport } from '../analytics'
+import { track, trackProfileCreated, trackImport, importCompleted } from '../analytics'
 import { api } from '../api'
 import { useLanguage } from '../LanguageContext'
 import { parseTradesWithClaude } from '../voiceAi'
@@ -1889,6 +1889,7 @@ export default function VoiceImport({ hideTrigger = false, onImported, onClose }
     // here that could inform a decision about it.
     track('voice_import_saved', { lang })
     trackImport({ method: 'voice', step: 'saved' })
+    importCompleted({ method: 'voice' })
     onImported?.()
     window.dispatchEvent(new Event("wl:portfolio-updated"))
     setConfirmed(true)

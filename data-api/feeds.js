@@ -58,7 +58,7 @@ async function getJson(url, timeoutMs = 20000) {
 export const MARKET_URL =
   'https://api.coingecko.com/api/v3/coins/markets'
   + '?vs_currency=usd&order=market_cap_desc&per_page=250&page=1'
-  + '&sparkline=false&price_change_percentage=1h%2C24h%2C7d'
+  + '&sparkline=true&price_change_percentage=1h%2C24h%2C7d'
 
 /**
  * Accept a market payload, or reject it.
@@ -71,7 +71,304 @@ export const MARKET_URL =
  */
 export function parseMarket(data) {
   if (!Array.isArray(data) || data.length < 50) return null
-  return data
+  return data.map(withSpark)
+}
+
+/** How many points a stored 7-day sparkline keeps. */
+export const SPARK_POINTS = 28
+
+/**
+ * Thin a 7-day hourly series down to something worth shipping.
+ *
+ * CoinGecko returns about 168 hourly points per coin. Across 250 coins that
+ * is roughly 42,000 numbers, which would take market.json from 250 KB to near
+ * a megabyte, on a file the dashboard fetches on load. At the size these are
+ * actually drawn, a few hundred pixels wide, 28 points carries the same shape.
+ *
+ * Endpoints are always kept: the first and last prices are the ones a reader
+ * compares, and dropping either would let the line disagree with the 7-day
+ * percentage printed beside it.
+ */
+export function downsampleSpark(prices, points = SPARK_POINTS) {
+  if (!Array.isArray(prices)) return null
+  const clean = prices.filter((n) => Number.isFinite(n))
+  if (clean.length < 2) return null
+  if (clean.length <= points) return clean.map(round6)
+
+  const out = []
+  const step = (clean.length - 1) / (points - 1)
+  for (let i = 0; i < points; i++) out.push(round6(clean[Math.round(i * step)]))
+  return out
+}
+
+// Six significant digits, not fixed decimals: the same series has to hold
+// bitcoin near 100000 and a memecoin near 0.00000002 without flattening one
+// of them to zero.
+const round6 = (n) => Number(n.toPrecision(6))
+
+/**
+ * Swap the bulky hourly series for the thinned one the client draws.
+ *
+ * The original key is dropped rather than kept alongside, or the saving is
+ * spent twice over.
+ */
+function withSpark(coin) {
+  if (!coin || typeof coin !== 'object') return coin
+  const spark = downsampleSpark(coin.sparkline_in_7d?.price)
+  const { sparkline_in_7d: _drop, ...rest } = coin
+  return spark ? { ...rest, spark7d: spark } : rest
+}
+
+// ── Smart money (Nansen) ────────────────────────────────────────────────────
+//
+// Nansen bills by credit, and a ticker renders on every page load for every
+// visitor. A browser-initiated call would therefore make the bill scale with
+// traffic, which is the wrong shape for a free app: one good day on Hacker
+// News and the quota is gone. So the cron pays once per interval and every
+// client reads the result, the same way market.json works.
+//
+// The key lives in the nansen worker as NANSEN_API_KEY and is never sent from
+// here — this is a server-to-server call to a proxy that adds it.
+const NANSEN_PROXY = 'https://walletlens-nansen.tarek-abdelhameed.workers.dev'
+
+/** Tokens worth a ticker slot. Wide enough to be interesting, small enough to be cheap. */
+export const SMART_MONEY_TOKENS = [
+  'ETH', 'SOL', 'BTC', 'LINK', 'UNI', 'AAVE', 'ARB', 'OP',
+  'PEPE', 'WIF', 'ENA', 'ONDO', 'TIA', 'SUI', 'APT', 'SEI',
+]
+
+/**
+ * Pull one number out of a row, whatever the upstream decided to call it.
+ *
+ * Nansen's field names differ between endpoints and have changed across API
+ * versions, and this cannot be verified from the build sandbox — the egress
+ * proxy blocks api.nansen.ai and the key is deliberately not available here.
+ * So the shape is read defensively rather than pinned to one spelling, and
+ * anything unreadable is counted in `unparsed` instead of being dropped
+ * silently. A count that climbs says the upstream changed; the old stock
+ * snapshot went sparse for months precisely because nothing reported that.
+ */
+export function pick(row, names) {
+  for (const n of names) {
+    const v = row?.[n]
+    if (typeof v === 'number' && Number.isFinite(v)) return v
+    if (typeof v === 'string' && v.trim() && Number.isFinite(Number(v))) return Number(v)
+  }
+  return null
+}
+
+export function normalizeFlow(row) {
+  const symbol = String(
+    row?.symbol || row?.token_symbol || row?.tokenSymbol || row?.ticker || '',
+  ).toUpperCase().trim()
+  if (!symbol) return null
+
+  // Netflow is the signal: positive means smart money accumulated over the
+  // window, negative means it distributed. Price and volume are already in the
+  // app from other sources, so they are not duplicated here.
+  const netflow = pick(row, [
+    'netflow_usd', 'netflowUsd', 'net_flow_usd', 'netflow', 'smart_money_netflow',
+    'volume_netflow_usd', 'netFlow',
+  ])
+  if (netflow === null) return null
+
+  return {
+    symbol,
+    netflow: Math.round(netflow),
+    volume: pick(row, ['volume_usd', 'volumeUsd', 'volume']) ?? null,
+  }
+}
+
+/** Rows come back under a different key depending on the endpoint. */
+export function rowsOf(data) {
+  if (Array.isArray(data)) return data
+  for (const k of ['data', 'result', 'results', 'rows', 'tokens']) {
+    if (Array.isArray(data?.[k])) return data[k]
+  }
+  return []
+}
+
+/**
+ * Candidate paths, most likely first.
+ *
+ * All three shapes of `api/v1/token-screener` came back 404, and the proxy
+ * answers a DISALLOWED endpoint with 403 — so 404 is not the allowlist
+ * refusing, it is the path not existing. `tgm/indicators` is in the list as a
+ * CONTROL: it is verified working, so if it answers while the others 404 the
+ * convention is prefixed paths and the right one is among them.
+ *
+ * Every attempt's status is published, so one look says which path is real
+ * rather than one more round of guessing.
+ */
+export const SMART_MONEY_PATHS = [
+  // A CONTROL FIRST. The proxy's own /health answers without touching Nansen,
+  // so a 200 here and 404 everywhere else proves the worker is reachable and
+  // routing, and that the failure is purely which path is being asked for.
+  'health',
+
+  // The allowlist was described as: smart-money, profiler, tgm,
+  // token-screener, search, agent, hyperliquid, perp, prediction-market.
+  // Those read like path SEGMENTS, and the one endpoint quoted with a slash
+  // was `tgm/indicators` — so the likeliest shapes are a tgm or smart-money
+  // prefix, with the flat spelling kept because it is what was described.
+  'api/v1/tgm/token-screener',
+  'api/v1/smart-money/token-screener',
+  'api/v1/token-screener',
+  'api/v1/tgm/indicators',
+  'api/v1/smart-money/netflow',
+  'api/v1/smart-money/flows',
+  'api/v1/smart-money/holdings',
+  'api/v1/smart-money/dex-trades',
+  'api/v1/tgm/flows',
+  'api/v1/tgm/flow-intelligence',
+]
+
+/** Short enough that a dozen of them still fit on a phone screen. */
+const shortPath = (p) => p.replace('api/v1/', '')
+
+export async function fetchSmartMoney(now = Date.now()) {
+  let rows = []
+  let hit = null
+  const tried = []
+  let notFound = 0
+
+  for (const path of SMART_MONEY_PATHS) {
+    for (const method of ['GET', 'POST']) {
+      const init = method === 'GET'
+        ? { headers: { Accept: 'application/json' } }
+        : {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ symbols: SMART_MONEY_TOKENS, limit: SMART_MONEY_TOKENS.length }),
+          }
+      const url = method === 'GET'
+        ? `${NANSEN_PROXY}/${path}?symbols=${SMART_MONEY_TOKENS.join(',')}`
+        : `${NANSEN_PROXY}/${path}`
+      try {
+        const res = await fetch(url, { ...init, signal: AbortSignal.timeout(12000) })
+        const text = await res.text()
+        // 404 is the expected answer for a wrong path and there will be many,
+        // so they are counted rather than listed. Anything else is a finding.
+        if (res.status === 404) { notFound++; continue }
+        if (!res.ok) { tried.push(`${shortPath(path)} ${method}:${res.status}`); continue }
+        let data
+        try {
+          data = JSON.parse(text)
+        } catch {
+          tried.push(`${shortPath(path)} ${method}:200-not-json`)
+          continue
+        }
+        const r = rowsOf(data)
+        if (r.length) { rows = r; hit = `${path} ${method}`; break }
+        // A live endpoint that answered. Its top-level keys say where the rows
+        // are, if they are nested somewhere rowsOf does not look.
+        tried.push(`${shortPath(path)} ${method}:200[${Object.keys(data || {}).slice(0, 6).join(',')}]`)
+      } catch { tried.push(`${shortPath(path)} ${method}:threw`) }
+    }
+    if (hit) break
+  }
+
+  const flows = []
+  let unparsed = 0
+  for (const row of rows) {
+    const f = normalizeFlow(row)
+    if (f) flows.push(f)
+    else unparsed++
+  }
+
+  // Nothing usable — publish why, not nothing. A dataset that fails silently
+  // is indistinguishable from one that was never deployed, and that ambiguity
+  // cost several rounds before this envelope existed.
+  if (!flows.length) {
+    return {
+      updated: isoStamp(now),
+      count: 0,
+      flows: [],
+      diagnostic: {
+        hit,
+        // Everything that was NOT a plain 404, plus how many were.
+        tried,
+        notFound,
+        rows: rows.length,
+        unparsed,
+        sampleKeys: rows.length ? Object.keys(rows[0]).slice(0, 40) : [],
+      },
+    }
+  }
+
+  flows.sort((a, b) => Math.abs(b.netflow) - Math.abs(a.netflow))
+  return { updated: isoStamp(now), count: flows.length, unparsed, hit, flows }
+}
+
+// ── Coin catalogue: the top 1000 by market cap ──────────────────────────────
+//
+// market.json is the dashboard's load-time fetch, so it stays at 250 coins
+// with sparklines. This is the browsable catalogue, fetched only when someone
+// opens the coin list or searches, and it carries four times as many coins in
+// less space by dropping everything the list does not draw: no sparkline, no
+// 1h/7d series, no fully-diluted valuation.
+//
+// It is also the offline and filtered-network answer to search. api.searchCoins
+// queries CoinGecko directly, which returns nothing at all on a device that
+// cannot reach api.coingecko.com — and the app is full of devices like that.
+// Same-origin, this file works wherever the site itself loads.
+
+/** CoinGecko caps per_page at 250 on the free tier, so 1000 is four pages. */
+export const COIN_PAGES = 4
+export const coinsUrl = (page) =>
+  'https://api.coingecko.com/api/v3/coins/markets'
+  + `?vs_currency=usd&order=market_cap_desc&per_page=250&page=${page}`
+  + '&sparkline=false&price_change_percentage=24h'
+
+/** Only the fields a searchable list actually renders. */
+export function slimCoin(c) {
+  return {
+    id: c.id,
+    symbol: (c.symbol || '').toLowerCase(),
+    name: c.name,
+    image: c.image || null,
+    price: Number.isFinite(c.current_price) ? Number(c.current_price.toPrecision(6)) : null,
+    rank: c.market_cap_rank ?? null,
+    cap: Number.isFinite(c.market_cap) ? Math.round(c.market_cap) : null,
+    d24: Number.isFinite(c.price_change_percentage_24h)
+      ? Number(c.price_change_percentage_24h.toFixed(2)) : null,
+  }
+}
+
+export function parseCoinPage(data) {
+  // The same rate-limit trap parseMarket guards: CoinGecko answers a throttled
+  // request with a short valid JSON body rather than an error status, so a
+  // page that parses is not necessarily a page of coins. A full page is 250;
+  // the last one can legitimately be short, so accept anything substantial.
+  if (!Array.isArray(data) || data.length < 50) return null
+  return data.map(slimCoin)
+}
+
+export async function fetchCoins(now = Date.now()) {
+  const coins = []
+  const seen = new Set()
+  for (let page = 1; page <= COIN_PAGES; page++) {
+    let rows = null
+    for (let i = 0; i < 2 && !rows; i++) {
+      try {
+        rows = parseCoinPage(await getJson(coinsUrl(page), 30000))
+      } catch (e) {
+        console.warn(`coins page ${page} attempt ${i + 1} failed: ${e}`)
+      }
+    }
+    // A page that will not come is not a reason to throw away the ones that
+    // did. 750 coins is a worse catalogue than 1000 and a far better one than
+    // none, and the next run starts over from page 1 anyway.
+    if (!rows) break
+    for (const c of rows) {
+      if (!c.id || seen.has(c.id)) continue   // pages can overlap as caps move
+      seen.add(c.id)
+      coins.push(c)
+    }
+    if (rows.length < 250) break              // that was the last page
+  }
+  if (coins.length < 50) return null
+  return { updated: isoStamp(now), count: coins.length, coins }
 }
 
 export async function fetchMarket(now = Date.now()) {
@@ -392,13 +689,78 @@ export function parseStooqCsv(text) {
 
 const round4 = (n) => Math.round(n * 1e4) / 1e4
 
+/** Stooq answers a long symbol list with partial data, so ask in batches. */
+export const STOOQ_CHUNK = 20
+
+/** Symbols Stooq did not price, asked of Yahoo one at a time. Bounded. */
+export const YAHOO_FALLBACK_MAX = 25
+
+export function chunk(arr, size) {
+  const out = []
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+  return out
+}
+
+/**
+ * The stock snapshot every client reads.
+ *
+ * This asked Stooq for all 125 tickers in a single CSV request and kept
+ * whatever came back. Stooq does not answer a list that long in full: most
+ * symbols returned N/D, parseStooqCsv put them in `missing`, and `missing` was
+ * dropped on the floor. The published file therefore carried a handful of
+ * prices — in the Buy Asset picker, AAPL and MSFT had a price and the other
+ * 128 rows showed a dash, while the client went looking for them live one
+ * screen at a time.
+ *
+ * So: ask in batches Stooq will actually answer, then ask Yahoo about what is
+ * still missing. Both are bounded, because this runs in a Worker and the free
+ * plan allows 50 subrequests per invocation — 7 batches plus at most 25
+ * single-symbol lookups stays well inside it. That is the same ceiling that
+ * truncated push sends and broke /api/stocks.
+ */
 export async function fetchStockPrices(now = Date.now()) {
-  let prices = {}
-  try {
-    const { prices: p } = parseStooqCsv(await getText(stooqUrl(TICKERS), 30000))
-    prices = p
-  } catch (e) {
-    console.warn(`stooq batch failed: ${e}`)
+  const prices = {}
+  const unpriced = []
+
+  for (const group of chunk(TICKERS, STOOQ_CHUNK)) {
+    try {
+      const { prices: p, missing } = parseStooqCsv(await getText(stooqUrl(group), 20000))
+      Object.assign(prices, p)
+      unpriced.push(...missing)
+    } catch (e) {
+      // One bad batch is 20 symbols, not the whole file.
+      console.warn(`stooq batch [${group[0]}…] failed: ${e}`)
+      unpriced.push(...group)
+    }
   }
-  return { updated: isoStamp(now), count: Object.keys(prices).length, prices }
+
+  // Stooq does not carry every US listing, and answers a closed market for
+  // some with N/D. Yahoo fills those rather than leaving a dash in the picker.
+  for (const sym of unpriced.slice(0, YAHOO_FALLBACK_MAX)) {
+    const key = `stock:${sym.toLowerCase()}`
+    if (prices[key]) continue
+    try {
+      const data = await getJson(
+        `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`,
+        8000,
+      )
+      const meta = data?.chart?.result?.[0]?.meta
+      if (meta && Number.isFinite(meta.regularMarketPrice) && meta.regularMarketPrice > 0) {
+        prices[key] = {
+          usd: round4(meta.regularMarketPrice),
+          usd_24h_change: round4(meta.regularMarketChangePercent || 0),
+        }
+      }
+    } catch { /* the dash for this one symbol is the cost */ }
+  }
+
+  // `missing` is reported rather than discarded: a count that drops tells the
+  // next person the upstreams changed, instead of the picker doing it.
+  const missing = unpriced.filter((sym) => !prices[`stock:${sym.toLowerCase()}`])
+  return {
+    updated: isoStamp(now),
+    count: Object.keys(prices).length,
+    missing: missing.length,
+    prices,
+  }
 }

@@ -27,6 +27,20 @@ const gradle = readFileSync(
 
 const versionCode = Number(gradle.match(/^\s*versionCode\s+(\d+)/m)?.[1])
 
+// The release build type, isolated.
+//
+// This used to be sliced from the first `release {` in the file, which was the
+// buildTypes one only for as long as nothing else declared a release. Adding
+// signingConfigs.release made that anchor grab the wrong block, and the tests
+// below went on asserting confidently about R8 settings that were not in the
+// text they were reading. Anchor on buildTypes first, so the block is found by
+// where it lives rather than by being the only one of its name.
+const releaseBuildType = (() => {
+  const types = gradle.slice(gradle.indexOf('buildTypes {'))
+  const body = types.slice(types.indexOf('release {'))
+  return body.slice(0, body.indexOf('\n        }')).replace(/^\s*\/\/.*$/gm, '')
+})()
+
 describe('the Android release is uploadable', () => {
   it('has a versionCode Play will accept', () => {
     // 73 was accepted for the current production release. Anything at or below
@@ -157,13 +171,38 @@ describe('the Android release is uploadable', () => {
     //
     // Minify may be on or off. What must never happen again is on WITHOUT the
     // rules.
-    const release = gradle.slice(gradle.indexOf('release {'))
-    const decl = release.slice(0, release.indexOf('\n        }'))
-    const code = decl.replace(/^\s*\/\/.*$/gm, '')
+    const code = releaseBuildType
     if (/minifyEnabled\s+true/.test(code)) {
       expect(code, 'R8 is on, so the keep rules must be applied')
         .toMatch(/proguardFiles[^\n]*'proguard-rules\.pro'/)
     }
+  })
+
+  it('signs the release, and holds no credentials to do it with', () => {
+    // There was no signingConfigs block at all, so `./gradlew assembleRelease`
+    // wrote app-release-unsigned.apk and reported success. An unsigned APK
+    // installs nowhere, and the way that surfaced was a third-party store
+    // refusing the upload with "we couldn't validate the file's signature" —
+    // days after the build, with nothing in the build log pointing at it.
+    expect(gradle, 'a release build must be signable').toMatch(/signingConfigs\s*\{/)
+    expect(releaseBuildType, 'the release build type must use the config')
+      .toMatch(/signingConfig\s+signingConfigs\.release/)
+
+    // The credentials arrive from Gradle properties or the environment. The
+    // moment one is written here instead, it is in the history for good and
+    // the upload key has to be rotated, which costs a Play support round trip.
+    const literal = /(storePassword|keyPassword|storeFile\s+file)\s*\(?\s*['"]/
+    expect(gradle, 'no signing material may be written into this file')
+      .not.toMatch(literal)
+
+    // v1 as well as v2/v3. Android itself is satisfied by v2 at minSdk 23, but
+    // several third-party store validators read only the v1 JAR signature and
+    // call a v2-only APK unsigned.
+    expect(gradle).toMatch(/enableV1Signing\s+true/)
+
+    // And the guard that turns the silent failure into a loud one.
+    expect(gradle, 'an unsigned release must fail rather than be written')
+      .toMatch(/throw new GradleException/)
   })
 
   it('keeps the plugin and the wrapper on the same major', () => {
@@ -213,8 +252,7 @@ describe('the Android release is uploadable', () => {
     // protection while doing nothing — the exact misreading that made the v2.8
     // bisect ambiguous. Whether R8 is up or down is a release decision; that
     // the three settings tell the same story is not.
-    const release = gradle.slice(gradle.indexOf('release {'))
-    const code = release.slice(0, release.indexOf('\n        }')).replace(/^\s*\/\/.*$/gm, '')
+    const code = releaseBuildType
 
     const minify = /minifyEnabled\s+true/.test(code)
     const shrink = /shrinkResources\s+true/.test(code)

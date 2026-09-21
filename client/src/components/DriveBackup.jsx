@@ -4,12 +4,13 @@ import { useLocation } from 'react-router-dom'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { noteFriction } from '../reviewPrompt'
+import { noteSupportFriction } from '../supportNudge'
 import {
   connect, backupNow, restoreNow, driveState, previouslyConnected,
   disconnectDrive, autoBackupEnabled, forgetAutoBackup,
   latestBackupAt, knownBackup, hasLocalPortfolio,
 } from '../driveSync'
-import { NEEDS_SIGNIN } from '../googleDrive'
+import { NEEDS_SIGNIN, NET_DRIVE, NET_DRIVE_REFUSED, NET_AUTH } from '../googleDrive'
 
 // Google Drive backup panel.
 //
@@ -92,9 +93,43 @@ export default function DriveBackup({ embedded = false }) {
 
   const refresh = () => setState(driveState())
   const say = (kind, text) => setMsg({ kind, text })
-  const explain = (e) => (e?.message === NEEDS_SIGNIN
-    ? 'Your Google session expired. Tap Reconnect to sign in again.'
-    : null)
+  // Every failure gets a sentence written here. The fallback used to be
+  // e.message, which is how "Failed to fetch" ended up on screen under a card
+  // that said Connected: the browser's wording for a request that never
+  // completed, naming no service and no remedy. A person reading it cannot
+  // tell whether their portfolio is safe, and it is not even a sentence.
+  const explain = (e, fallback) => {
+    const m = e?.message || ''
+    if (m === NEEDS_SIGNIN) return 'Your Google session expired. Tap Reconnect to sign in again.'
+    // Two hops, two problems. Drive unreachable is usually the connection;
+    // the token service unreachable has been a blocked hostname, and saying
+    // which one failed is the difference between a report and a guess.
+    if (m === NET_DRIVE) {
+      return 'Could not reach Google Drive. Your data is safe on this device — check your connection and try again.'
+    }
+    // Reachable, and refused. Not the person's connection, so do not send them
+    // off to check it — say whose fault it is and stop there.
+    if (m === NET_DRIVE_REFUSED) {
+      return 'Google Drive answered but would not accept the request. Your data is safe on this device — this is a fault on our side, not your connection.'
+    }
+    if (m === NET_AUTH) {
+      return 'Could not reach the Google sign-in service. Your data is safe on this device — try again in a moment.'
+    }
+    // A raw TypeError from somewhere that is not tagged. Every fetch in the
+    // Drive path is, so this should be unreachable — and it must not name a
+    // hop it cannot know, or the message becomes a false lead in exactly the
+    // situation where the message is the only evidence there is.
+    if (/Failed to fetch|NetworkError|Load failed/i.test(m)) {
+      return 'The request did not complete. Your data is safe on this device — check your connection and try again.'
+    }
+    // A Drive error carries a status and Google's own English. Worth logging,
+    // not worth showing.
+    if (/^Drive error /.test(m)) {
+      console.warn('drive:', m.slice(0, 200))
+      return fallback
+    }
+    return m || fallback
+  }
 
   function ask(which) {
     setPrompt(which)
@@ -160,7 +195,7 @@ export default function DriveBackup({ embedded = false }) {
       else if (next === 'ask') say('ok', 'Backup found, and this device already has a portfolio.')
       else say('ok', 'Connected. Your backup is up to date.')
     } catch (e) {
-      say('err', explain(e) || e.message || 'Could not connect to Google Drive')
+      say('err', explain(e, 'Could not connect to Google Drive. Try again in a moment.'))
     } finally { setBusy(false) }
   }
 
@@ -190,7 +225,10 @@ export default function DriveBackup({ embedded = false }) {
       // the review flow per user, it also spends an ask that cannot be got
       // back. Losing a backup is the single worst moment to be asked.
       noteFriction(which === 'backup' ? 'sync_failed' : 'restore_failed')
-      say('err', explain(e) || e.message || (which === 'backup' ? 'Backup failed' : 'Restore failed'))
+      noteSupportFriction(which === 'backup' ? 'sync_failed' : 'restore_failed')
+      say('err', explain(e, which === 'backup'
+        ? 'Backup failed. Nothing on this device was changed.'
+        : 'Restore failed. Nothing on this device was changed.'))
     } finally { setBusy(false) }
   }
 

@@ -183,6 +183,29 @@ export const COPY = {
   // only colour a notification gets, and colour is how an exchange says up or
   // down at a glance — the sign says it again for anyone whose launcher draws
   // emoji flat.
+  // — A holding's seven-day trend changed direction —
+  //
+  // Deliberately not the same event as a move. A move is a jump inside a day;
+  // this is the week turning over, which is the slower fact people actually
+  // reposition on, and it fires far less often. The title says which way and
+  // the body gives the week's number, because "turned down" without a size is
+  // an alarm with no content.
+  trendTitle: {
+    en: (sym, up) => `${up ? '📈' : '📉'} ${sym} turned ${up ? 'up' : 'down'}`,
+    ar: (sym, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'تحوّل إلى صعود' : 'تحوّل إلى هبوط'}`,
+    fr: (sym, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'passe à la hausse' : 'passe à la baisse'}`,
+    es: (sym, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'cambia al alza' : 'cambia a la baja'}`,
+    de: (sym, up) => `${up ? '📈' : '📉'} ${sym} dreht ${up ? 'nach oben' : 'nach unten'}`,
+    it: (sym, up) => `${up ? '📈' : '📉'} ${sym} ${up ? 'passa al rialzo' : 'passa al ribasso'}`,
+  },
+  trendBody: {
+    en: (sym, pct) => `Its seven-day trend flipped. ${sym} is ${pct} over the week.`,
+    ar: (sym, pct) => `انقلب اتجاهه خلال سبعة أيام. ${sym} عند ${pct} خلال الأسبوع.`,
+    fr: (sym, pct) => `Sa tendance sur sept jours s'est inversée. ${sym} est à ${pct} sur la semaine.`,
+    es: (sym, pct) => `Su tendencia de siete días se invirtió. ${sym} está en ${pct} en la semana.`,
+    de: (sym, pct) => `Der Sieben-Tage-Trend hat gedreht. ${sym} steht bei ${pct} in der Woche.`,
+    it: (sym, pct) => `Il trend a sette giorni si è invertito. ${sym} è a ${pct} sulla settimana.`,
+  },
   moveTitle: {
     en: (sym, pct, up, price) => `${up ? '📈' : '📉'} ${sym} ${pct} · ${price}`,
     ar: (sym, pct, up, price) => `${up ? '📈' : '📉'} ${sym} ${pct} · ${price}`,
@@ -1284,6 +1307,7 @@ export const DEFAULT_PREFS = {
   retention: true,  // win-back nudges while idle
   features: true,   // one-off tips, each gated on the user's own state
   zakat: true,      // the zakat year completing — a date, never an amount
+  trend: true,      // a holding's 7-day trend flips direction
   // Scheduled content, rather than a reaction to a price. These are what make
   // the app worth a notification on a week when the market does nothing.
   newsMarket: true, // a breaking story that names no holding of yours
@@ -1310,6 +1334,7 @@ export function sanitizePrefs(raw) {
     retention: bool(p.retention, DEFAULT_PREFS.retention),
     features: bool(p.features, DEFAULT_PREFS.features),
     zakat: bool(p.zakat, DEFAULT_PREFS.zakat),
+    trend: bool(p.trend, DEFAULT_PREFS.trend),
     newsMarket: bool(p.newsMarket, DEFAULT_PREFS.newsMarket),
     hacks: bool(p.hacks, DEFAULT_PREFS.hacks),
     academy: bool(p.academy, DEFAULT_PREFS.academy),
@@ -2005,7 +2030,17 @@ export const CHANNEL_URL = {
  */
 export function assetUrl(asset) {
   const id = appAssetId(asset)
-  return id ? `/asset/${encodeURIComponent(id)}` : null
+  // Query param, not a path segment. Tapping a notification is a cold
+  // navigation to the host: the URL has to resolve to a real file before React
+  // Router ever runs. /asset/:coinId can never be a file — the id is a holding,
+  // not a route — so Pages found nothing and served 404.html. /asset/ is a
+  // prerendered shell that exists, and the id rides in the query where the host
+  // does not have to route on it.
+  //
+  // It also sidesteps the encoded separators in ids we really carry: 'metal:xau'
+  // and 'brk/b' become %3A and %2F in a path, and hosts disagree about whether
+  // %2F is a slash. In a query string neither is special.
+  return id ? `/asset/?id=${encodeURIComponent(id)}` : null
 }
 
 /**
@@ -2140,4 +2175,38 @@ export function buildPayload({ channel, title, body, tag, url, sym }) {
     channel,
     ...(sym ? { sym } : {}),
   }
+}
+
+// ── Trend switches ──────────────────────────────────────────────────────────
+
+/**
+ * How long one asset must wait before it may announce another turn.
+ *
+ * A seven-day trend that flips twice in two days is an asset sitting on the
+ * flat band, not two pieces of news. Three days is longer than the noise and
+ * far shorter than the window itself, so a genuine reversal still arrives
+ * while it is worth acting on.
+ */
+export const TREND_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000
+
+/**
+ * Whether a change of direction is worth sending.
+ *
+ * Three rules, and the first is the one that matters most:
+ *
+ * 1. The FIRST observation of an asset is always silent. There is nothing to
+ *    have switched from. Without this, enabling the channel, or adding five
+ *    holdings, would fire a notification per asset at once — which is exactly
+ *    how a useful channel gets switched off in its first hour.
+ * 2. Turning flat is not news. "This stopped trending" is not something anyone
+ *    repositions on, and it would double the traffic by making every reversal
+ *    two notifications instead of one.
+ * 3. One turn per asset per cooldown.
+ */
+export function trendSwitched({ prev, next, firedAt, now = Date.now() }) {
+  if (next !== 'up' && next !== 'down') return false
+  if (prev !== 'up' && prev !== 'down' && prev !== 'flat') return false
+  if (prev === next) return false
+  if (firedAt && now - firedAt < TREND_COOLDOWN_MS) return false
+  return true
 }

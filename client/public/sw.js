@@ -15,17 +15,20 @@ const CDN_CACHE = 'walletlens-cdn-v1'
 // Static files to pre-cache at install time for instant first-load.
 // '/' (the SPA shell HTML) is included so the app works offline from the
 // very first install, before any navigation has been served from cache.
-// stock-prices.json and market.json are updated every 30 min by GitHub Actions;
-// caching them avoids a network round-trip on the first price fetch after install.
+// The scheduled datasets are NOT precached any more. They moved off this origin
+// to the data service (see DATA_ORIGIN below), and precaching a cross-origin
+// URL means install fails wholesale whenever that service is briefly down —
+// addAll rejects if any single entry does, taking the whole service worker
+// with it. They are still cached at runtime, below, which is where the
+// round-trip actually mattered.
 // Icons are cached so the PWA home-screen experience works offline immediately.
+// Mirrors DATA_HOST in src/apiHosts.js. sw.js is not in the module graph, so
+// it cannot import the constant; apiHosts.test.js fails when the two drift.
+const DATA_ORIGIN = 'https://walletlens.live'
+
 const PRECACHE_URLS = [
   '/',
   '/dashboard',
-  '/news.json',
-  '/stocks.json',
-  '/economy.json',
-  '/stock-prices.json',
-  '/market.json',
   '/manifest.webmanifest',
   '/favicon.svg',
   '/icon-192.png',
@@ -252,14 +255,19 @@ self.addEventListener('fetch', e => {
     return
   }
 
-  // ── Periodically-updated same-origin JSON feeds: stale-while-revalidate
-  // news.json refreshes via RSS worker; stock-prices.json via GitHub Actions.
-  // Serve stale instantly then revalidate in background for fast perceived UX.
+  // ── Periodically-updated JSON feeds: stale-while-revalidate
+  // These are served by the data service, which refreshes them on its own
+  // schedule. Serve stale instantly then revalidate in the background.
+  //
+  // The origin check used to be same-origin, because these were static files
+  // this build shipped. They are cross-origin now, so it matches DATA_ORIGIN
+  // instead — a stale same-origin check here would silently stop caching them
+  // rather than fail, which is why apiHosts.test.js pins this constant.
   const feedTtl = url.pathname === '/news.json' ? NEWS_TTL_MS
     : url.pathname === '/stock-prices.json' ? STOCK_TTL_MS
     : url.pathname === '/market.json' ? MARKET_TTL_MS
     : null
-  if (url.origin === self.location.origin && feedTtl !== null) {
+  if (url.origin === DATA_ORIGIN && feedTtl !== null) {
     e.respondWith(
       caches.open(API_CACHE).then(async cache => {
         const cached = await cache.match(req)

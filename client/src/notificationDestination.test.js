@@ -33,12 +33,12 @@ describe('assetUrl', () => {
   it('uses the id the route is keyed by, not the symbol', () => {
     // /asset/:coinId takes the stored id. Two listings can share a symbol, so
     // a symbol would sometimes open the wrong asset and sometimes nothing.
-    expect(assetUrl({ id: 'bitcoin', symbol: 'BTC', kind: 'crypto' })).toBe('/asset/bitcoin')
+    expect(assetUrl({ id: 'bitcoin', symbol: 'BTC', kind: 'crypto' })).toBe('/asset/?id=bitcoin')
   })
 
   it('accepts either name the two stores use for it', () => {
     // Watch entries carry `id`; alerts carry `coin_id`.
-    expect(assetUrl({ coin_id: 'ethereum' })).toBe('/asset/ethereum')
+    expect(assetUrl({ coin_id: 'ethereum' })).toBe('/asset/?id=ethereum')
   })
 
   // ── The prefix ──────────────────────────────────────────────────────────
@@ -55,8 +55,8 @@ describe('assetUrl', () => {
   // of this feature would have been broken for the people most likely to tap it.
 
   it('puts back the prefix a watch entry had stripped', () => {
-    expect(assetUrl({ kind: 'metal', id: 'xau', symbol: 'XAU' })).toBe('/asset/metal%3Axau')
-    expect(assetUrl({ kind: 'stock', id: 'aapl', symbol: 'AAPL' })).toBe('/asset/stock%3Aaapl')
+    expect(assetUrl({ kind: 'metal', id: 'xau', symbol: 'XAU' })).toBe('/asset/?id=metal%3Axau')
+    expect(assetUrl({ kind: 'stock', id: 'aapl', symbol: 'AAPL' })).toBe('/asset/?id=stock%3Aaapl')
   })
 
   it('round-trips a real holding back to the id the app stores', () => {
@@ -67,22 +67,22 @@ describe('assetUrl', () => {
       const [watched] = toWatchAssets([{ coin_id, coin_symbol: 'X', amount: 1 }])
       expect(watched, `${coin_id} is watched`).toBeTruthy()
       expect(assetUrl(watched), `${coin_id} must link to itself`)
-        .toBe(`/asset/${encodeURIComponent(coin_id)}`)
+        .toBe(`/asset/?id=${encodeURIComponent(coin_id)}`)
     }
   })
 
   it('does not double the prefix if it is already there', () => {
-    expect(assetUrl({ kind: 'metal', id: 'metal:xau' })).toBe('/asset/metal%3Axau')
+    expect(assetUrl({ kind: 'metal', id: 'metal:xau' })).toBe('/asset/?id=metal%3Axau')
   })
 
   it('leaves an unfamiliar kind alone rather than guessing', () => {
     // A wrong prefix is a link to nothing; a bare id still works for crypto,
     // which is what an unrecognised kind most likely is.
-    expect(assetUrl({ kind: 'something-new', id: 'solana' })).toBe('/asset/solana')
+    expect(assetUrl({ kind: 'something-new', id: 'solana' })).toBe('/asset/?id=solana')
   })
 
   it('encodes an id that arrived from a device', () => {
-    expect(assetUrl({ id: 'brk/b' })).toBe('/asset/brk%2Fb')
+    expect(assetUrl({ id: 'brk/b' })).toBe('/asset/?id=brk%2Fb')
   })
 
   it('returns null rather than a link to nowhere', () => {

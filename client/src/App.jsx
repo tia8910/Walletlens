@@ -1,5 +1,6 @@
-import { lazy, Suspense, memo, useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { lazy, Suspense, memo, useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
+import useScrollTop from './useScrollTop'
 const Landing       = lazy(() => import('./pages/Landing'))
 const TrackCoin     = lazy(() => import('./pages/TrackCoin'))
 const Calculator    = lazy(() => import('./pages/Calculator'))
@@ -13,13 +14,13 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 // the landing page and every SEO content page (blog, about, FAQ, ...) load
 // price/technicals code they never use.
 const PriceTicker = lazy(() => import('./components/PriceTicker'))
+const SmartMoneyTicker = lazy(() => import('./components/SmartMoneyTicker'))
 import ErrorBoundary from './components/ErrorBoundary'
 import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
 import Icon from './components/Icon'
 import BottomNav from './components/BottomNav'
 import PullToRefresh from './components/PullToRefresh'
-import GitHubStarButton from './components/GitHubStarButton'
 // Non-critical shell components — lazy-loaded after the app shell renders
 const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
 const AssistantChat = lazy(() => import('./components/AssistantChat'))
@@ -29,6 +30,7 @@ const NativeOnboarding = lazy(() => import('./components/NativeOnboarding'))
 const HelpGuide = lazy(() => import('./components/HelpGuide'))
 const AddAssetTour = lazy(() => import('./components/AddAssetTour'))
 import { useLanguage } from './LanguageContext'
+import CoffeeButton from './components/CoffeeButton'
 import { useTheme, THEMES } from './ThemeContext'
 import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
@@ -47,6 +49,7 @@ const LANDING_PATH_SET = new Set([
   '/portfolio-tracker-no-account', '/import-portfolio-from-screenshot',
   '/add-holdings-by-voice', '/blog', '/about', '/market-index',
   '/fear-and-greed-index', '/rebalancing-calculator', '/faq', '/privacy',
+  '/zakat-calculator', '/ecosystem',
 ])
 const LANDING_PREFIXES = [
   '/blog/', '/track/', '/calculator/', '/learn/', '/vs/', '/price/', '/ar/', '/admin/',
@@ -94,6 +97,8 @@ const About            = lazy(() => import('./pages/About'))
 const MarketIndex      = lazy(() => import('./pages/MarketIndex'))
 const FearAndGreedIndex = lazy(() => import('./pages/FearAndGreedIndex'))
 const Rebalancing      = lazy(() => import('./pages/Rebalancing'))
+const ZakatLanding     = lazy(() => import('./pages/ZakatCalculatorPage'))
+const EcosystemLanding = lazy(() => import('./pages/EcosystemPage'))
 const FAQ              = lazy(() => import('./pages/FAQ'))
 const Privacy      = lazy(() => import('./pages/Privacy'))
 const Terms        = lazy(() => import('./pages/Terms'))
@@ -104,6 +109,7 @@ const Guardian     = lazy(() => import('./pages/Guardian'))
 const DriveCallback = lazy(() => import('./pages/DriveCallback'))
 const AdminMail    = lazy(() => import('./pages/AdminMail'))
 const Vision       = lazy(() => import('./pages/Vision'))
+const Diagnostics  = lazy(() => import('./pages/Diagnostics'))
 const GrowNetWorth = lazy(() => import('./pages/GrowNetWorth'))
 
 function PageFallback() {
@@ -383,6 +389,10 @@ const AppFooter = memo(function AppFooter() {
 // ── App shell ─────────────────────────────────────────────────────────
 export default function App() {
   const location = useLocation()
+  // Called here rather than mounted as a component, because App returns from
+  // two different branches (the landing shell and the app shell) and a hook in
+  // the body covers both with one line.
+  useScrollTop()
   const [drawerOpen, setDrawerOpen] = useState(false)
   // Only mount the Drawer DOM tree after the user first opens it — saves the
   // initial mount cost on every page load when the drawer is never opened.
@@ -404,6 +414,7 @@ export default function App() {
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
   const [isStandalone, setIsStandalone] = useState(false)
 
+  const topbarRef = useRef(null)
   const _guardianChecked = useRef(false)
   const _backupChecked = useRef(false)
 
@@ -629,18 +640,41 @@ export default function App() {
     })
   }, [location.pathname, location.search])
 
+  // Publish the fixed header's real height so content can clear it.
+  //
+  // .wl-topbar is position:fixed, so it contributes no layout height and
+  // .wl-content has to reserve the gap itself. A constant would be wrong twice
+  // over: the price strip inside the header can be turned off in settings, and
+  // it wraps at narrow widths, so the header is between one and two rows tall
+  // depending on both. ResizeObserver reports every one of those transitions,
+  // including the one on first paint when the lazy ticker chunk arrives.
+  useLayoutEffect(() => {
+    const el = topbarRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const publish = () => {
+      document.documentElement.style.setProperty('--wl-topbar-h', `${Math.round(el.offsetHeight)}px`)
+    }
+    publish()
+    const ro = new ResizeObserver(publish)
+    ro.observe(el)
+    return () => ro.disconnect()
+  })
+
   if (locked && !isLanding) return <BiometricLockScreen onUnlock={unlock} />
 
   if (isLanding) {
     return (
       <div className="wl-app wl-app-landing">
         <ErrorBoundary resetKey={location.pathname}><Suspense fallback={<PageFallback />}><Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<EcosystemLanding />} />
           <Route path="/free-net-worth-tracker" element={<Landing />} />
           <Route path="/crypto-and-stock-portfolio-tracker" element={<Landing />} />
           <Route path="/portfolio-tracker-no-account" element={<Landing />} />
           <Route path="/import-portfolio-from-screenshot" element={<Landing />} />
           <Route path="/add-holdings-by-voice" element={<Landing />} />
+          <Route path="/zakat-calculator" element={<ZakatLanding />} />
+          <Route path="/ecosystem" element={<EcosystemLanding />} />
+          <Route path="/ar/zakat-calculator" element={<ZakatLanding />} />
           <Route path="/ar/free-net-worth-tracker" element={<Landing />} />
           <Route path="/ar/import-portfolio-from-screenshot" element={<Landing />} />
           <Route path="/ar/add-holdings-by-voice" element={<Landing />} />
@@ -671,7 +705,7 @@ export default function App() {
       <DynamicBackground />
       <div className="wl-mood-aura" aria-hidden="true" />
 
-      <header className="wl-topbar">
+      <header className="wl-topbar" ref={topbarRef}>
         <div className="wl-topbar-inner">
           <button className="wl-hamburger" onClick={() => setDrawerOpen(true)} aria-label={t('menu')}>
             <IconMenu />
@@ -701,6 +735,7 @@ export default function App() {
             </div>
           </div>
           <div className="wl-topbar-right">
+            <CoffeeButton />
             <button
               className="wl-topbar-x wl-topbar-gear"
               onClick={() => { navigate('/settings'); track('settings_open', { source: 'topbar' }) }}
@@ -725,11 +760,19 @@ export default function App() {
             </button>
           </div>
         </div>
+        {/* Inside the header, not after it.
+            As a sibling the strip lost a stacking race it could not win: the
+            topbar is sticky with z-index 80 on narrow screens and the strip had
+            no z-index at all, so the moment anyone scrolled the header painted
+            straight over it and the first price was permanently unreadable.
+            One sticky element has no race to lose. */}
+        <Suspense fallback={<div className="ticker-strip" style={{ minHeight: '38px' }} aria-hidden="true" />}>
+          <PriceTicker />
+          {/* Renders nothing until the cron has published flows, so a
+              missing or reshaped upstream costs a row of screen, not an error. */}
+          <SmartMoneyTicker />
+        </Suspense>
       </header>
-
-      <Suspense fallback={<div className="ticker-strip" style={{ minHeight: '34px' }} aria-hidden="true" />}>
-        <PriceTicker />
-      </Suspense>
 
       {drawerMounted && <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}
         onHelp={() => { setHelpOpen(true); track('help_guide_open', { source: 'drawer' }) }} />}
@@ -749,12 +792,18 @@ export default function App() {
               <Route path="/grow" element={<GrowNetWorth />} />
               <Route path="/technicals" element={<Technicals />} />
               <Route path="/asset/:coinId" element={<AssetDetail />} />
+              {/* /asset/?id=… is what notifications link to: it resolves to a
+                  real prerendered file, which /asset/:coinId never can. */}
+              <Route path="/asset" element={<AssetDetail />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<Blog />} />
               <Route path="/about" element={<About />} />
               <Route path="/market-index" element={<MarketIndex />} />
               <Route path="/fear-and-greed-index" element={<FearAndGreedIndex />} />
               <Route path="/rebalancing-calculator" element={<Rebalancing />} />
+              <Route path="/zakat-calculator" element={<ZakatLanding />} />
+              <Route path="/ecosystem" element={<EcosystemLanding />} />
+              <Route path="/ar/zakat-calculator" element={<ZakatLanding />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
@@ -762,6 +811,9 @@ export default function App() {
               <Route path="/guardian" element={<Guardian />} />
               <Route path="/drive-callback" element={<DriveCallback />} />
               <Route path="/vision" element={<Vision />} />
+              {/* Not linked, not in the sitemap: a URL to type when something
+                  is wrong. Every backend hop, answered in one pass. */}
+              <Route path="/diag" element={<Diagnostics />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>
@@ -769,7 +821,6 @@ export default function App() {
       </PullToRefresh>
 
       <AppFooter />
-      <GitHubStarButton />
 
       {!isLanding && isStandalone && shellReady && <BottomNav />}
 

@@ -96,9 +96,9 @@ describe('BACKUP_KEYS', () => {
     // their own hand-typed copy of the alias map, so a field added to one was
     // missing from the other. Both must iterate BACKUP_FIELDS.
     const src = readFileSync('src/backupCore.js', 'utf8')
-    const gen = src.split('export async function generateBackupCode')[1].split('\nexport ')[0]
+    const gen = src.split('async function buildSnapshot')[1].split('\nexport ')[0]
     const app = src.split('export async function applyBackupCode')[1].split('\nexport ')[0]
-    expect(gen, 'generateBackupCode must iterate BACKUP_FIELDS').toContain('Object.entries(BACKUP_FIELDS)')
+    expect(gen, 'buildSnapshot must iterate BACKUP_FIELDS').toContain('Object.entries(BACKUP_FIELDS)')
     expect(app, 'applyBackupCode must iterate BACKUP_FIELDS').toContain('Object.entries(BACKUP_FIELDS)')
     expect(src, 'no hand-maintained alias map should remain').not.toMatch(/const OPT = \{/)
   })

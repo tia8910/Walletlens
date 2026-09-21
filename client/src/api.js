@@ -17,7 +17,7 @@ async function fetchStaticStockPrices() {
   const now = Date.now()
   if (staticStockPrices && now - staticStockPricesTime < STATIC_PRICES_TTL) return staticStockPrices
   try {
-    const res = await fetchWithTimeout('/stock-prices.json', 5000)
+    const res = await fetchWithTimeout(dataUrl('stock-prices.json'), 5000)
     if (res.ok) {
       const data = await res.json()
       if (data?.prices && typeof data.prices === 'object') {
@@ -46,7 +46,7 @@ import {
 } from './data/storage';
 import { foldBalances as _foldBalancesPure, diffHoldings } from './data/portfolio';
 import { analyzeTechnicals } from './technicals';
-import { voiceProxy } from './apiHosts.js'
+import { dataUrl, voiceProxy } from './apiHosts.js'
 
 export {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
@@ -397,7 +397,7 @@ async function _loadStaticMarket() {
   const now = Date.now();
   if (_staticMarket && now - _staticMarketAt < 10 * 60_000) return _staticMarket;
   try {
-    const res = await fetchWithTimeout('/market.json?t=' + Math.floor(now / 1_800_000), 5000);
+    const res = await fetchWithTimeout(dataUrl('market.json') + '?t=' + Math.floor(now / 1_800_000), 5000);
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data?.coins) && data.coins.length > 0) {
@@ -408,6 +408,72 @@ async function _loadStaticMarket() {
     }
   } catch {}
   return null;
+}
+
+// ── Coin catalogue (top 1000, same-origin) ──────────────────────────────────
+//
+// market.json is the dashboard's load-time fetch and stays at 250 coins with
+// sparklines. coins.json is the browsable catalogue: four times the coins in
+// less space, because it drops everything a list does not draw.
+//
+// It is fetched lazily — nothing asks for it until someone opens the coin list
+// or types in the picker — and cached for a day, because market-cap ranks do
+// not move on the timescale that prices do.
+const COIN_CATALOGUE_KEY = 'crypto_tracker_coin_catalogue_v1';
+const CATALOGUE_TTL = 24 * 60 * 60 * 1000;
+let _cataloguePromise = null;
+
+async function _loadCoinCatalogue() {
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(COIN_CATALOGUE_KEY) || 'null'); } catch {}
+  if (cached?.v?.length && Date.now() - cached.t < CATALOGUE_TTL) return cached.v;
+  if (_cataloguePromise) return _cataloguePromise;
+
+  _cataloguePromise = (async () => {
+    try {
+      const res = await fetchWithTimeout(dataUrl('coins.json'), 8000);
+      const data = res?.ok ? await res.json() : null;
+      const coins = Array.isArray(data?.coins) ? data.coins : null;
+      if (coins?.length) {
+        _saveCache(COIN_CATALOGUE_KEY, { t: Date.now(), v: coins });
+        return coins;
+      }
+    } catch { /* fall through */ }
+    // Stale beats empty: a day-old rank list still finds the coin.
+    return cached?.v || [];
+  })().finally(() => { _cataloguePromise = null; });
+  return _cataloguePromise;
+}
+
+/**
+ * Search the local catalogue the way a person expects a ticker box to behave:
+ * an exact symbol first, then symbols that start with what was typed, then
+ * names. Within each tier, higher market cap wins — typing "eth" should offer
+ * Ethereum before a rank-800 token whose name happens to contain it.
+ */
+export function rankCatalogueMatches(coins, query) {
+  const q = String(query || '').trim().toLowerCase();
+  if (!q) return [];
+  const tier = (c) => {
+    const sym = (c.symbol || '').toLowerCase();
+    const name = (c.name || '').toLowerCase();
+    if (sym === q) return 0;
+    if (sym.startsWith(q)) return 1;
+    if (name === q) return 2;
+    if (name.startsWith(q)) return 3;
+    if (name.includes(q) || sym.includes(q)) return 4;
+    return 99;
+  };
+  return coins
+    .map((c) => ({ c, t: tier(c) }))
+    .filter((x) => x.t < 99)
+    .sort((a, b) => a.t - b.t || (a.c.rank ?? 1e9) - (b.c.rank ?? 1e9))
+    .slice(0, 20)
+    .map(({ c }) => ({ id: c.id, symbol: c.symbol, name: c.name, thumb: c.image, large: c.image }));
+}
+
+async function searchCatalogue(query) {
+  return rankCatalogueMatches(await _loadCoinCatalogue(), query);
 }
 
 // ── Resilient market-snapshot loader (used by getMarketData and Whales) ──
@@ -887,11 +953,61 @@ function parseStooqBatchCsv(text) {
   return out;
 }
 
+/**
+ * Batch stock prices, the way crypto prices already work.
+ *
+ * Crypto does no live upstream work per request: a cron writes market.json,
+ * every client reads that one file from its own origin, and nothing fans out
+ * to a third party while somebody is waiting. Stocks did the opposite — the
+ * Buy Asset picker asked /api/stocks for all 130 popular tickers, and that
+ * function then queried Stooq and Yahoo live, per request, per visitor.
+ *
+ * It could not work. 130 symbols across two Yahoo hosts is up to 260
+ * subrequests against Cloudflare's limit of 50 per invocation, and the
+ * function's own timeouts summed past the caller's budget, so the picker
+ * showed a dash on every row while the price field sat on FETCHING.
+ *
+ * stock-prices.json already existed and already covered 125 of those 130
+ * tickers — it is why the dashboard ticker kept working while this did not.
+ * The five it misses are bStock entries, which Stooq cannot price anyway.
+ *
+ * So the file comes first here, exactly as market.json does for crypto, and
+ * the edge function is asked only about whatever is genuinely missing. On the
+ * common path that is nothing, and no third-party request happens at all.
+ */
 async function fetchTwelveDataBatch(tickers) {
+  const out = {};
+  const staticPrices = await fetchStaticStockPrices();
+  if (staticPrices) {
+    for (const t of tickers) {
+      const p = staticPrices[`${STOCK_PREFIX}${String(t).toLowerCase()}`];
+      if (p && p.usd > 0) {
+        out[String(t).toUpperCase()] = {
+          usd: p.usd,
+          usd_24h_change: p.usd_24h_change || 0,
+          name: '',
+          source: 'snapshot',
+        };
+      }
+    }
+  }
+
+  const remaining = tickers.filter(t => !out[String(t).toUpperCase()]);
+  if (remaining.length === 0) return out;
+
+  const live = await _fetchStocksRemote(remaining);
+  return live ? { ...out, ...live } : out;
+}
+
+/** The live paths, for the few tickers the snapshot does not carry. */
+async function _fetchStocksRemote(tickers) {
   // ── 0. Same-origin /api/stocks Pages Function — runs server-side, no CORS ──
   try {
+    // Headroom over the function's own 4.5s budget. At 6s this raced the
+    // edge and lost: the response was discarded and every fallback below is
+    // a third-party host, which on a filtered device reaches nothing at all.
     const url = `/api/stocks?symbols=${encodeURIComponent(tickers.join(','))}`;
-    const res = await fetchWithTimeout(url, 6000);
+    const res = await fetchWithTimeout(url, 9000);
     if (res.ok) {
       const data = await res.json();
       if (data && typeof data === 'object' && !data.error) {
@@ -1813,10 +1929,18 @@ export const api = {
     };
   })(),
 
+  getCoinCatalogue: () => _loadCoinCatalogue(),
+
   searchCoins: async (query) => {
     if (!query) return [];
     const data = await fetchJSONFast(`${COINGECKO_BASE}/search?query=${encodeURIComponent(query)}`);
-    if (!data) return [];
+    // CoinGecko unreachable, or throttled into an empty answer. Searching the
+    // local catalogue is the difference between finding a coin and the picker
+    // looking broken — and on a device that cannot reach any third-party host,
+    // this is the only path that ever returns anything.
+    if (!data || !Array.isArray(data.coins) || !data.coins.length) {
+      return searchCatalogue(query);
+    }
     const results = (data.coins || []).slice(0, 20).map(c => ({
       id: c.id,
       symbol: c.symbol,
@@ -2859,7 +2983,7 @@ export const api = {
   getEconomicCalendar: async () => {
     try {
       const res = await fetchWithTimeout(
-        '/economic-calendar.json?t=' + Math.floor(Date.now() / 1_800_000),
+        dataUrl('economic-calendar.json') + '?t=' + Math.floor(Date.now() / 1_800_000),
         5000
       )
       if (res.ok) {

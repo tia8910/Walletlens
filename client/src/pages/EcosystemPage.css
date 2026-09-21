@@ -1,0 +1,335 @@
+/* WalletLens ecosystem landing page.
+   Every rule is scoped to .wl-eco so this page can carry its own
+   identity without leaking into the app's stylesheet. */
+/* ══ tokens ═══════════════════════════════════════════════════════════════
+   The lens gradient out of Logo.jsx (#4ade80 → #16a34a → #14532d) plus the
+   gold that is both a WalletLens theme and a real asset class. The hero is
+   mint rather than deep green, so the page opens light and the deep emerald
+   is spent on the two bands that carry the argument. ── */ .wl-eco{
+  --paper:#F1F4F1; --paper-2:#E5EAE6; --raise:#FFFFFF;
+  --ink:#0A140F; --ink-2:#5A6B61; --ink-3:#637368;
+  --hair:rgba(10,20,15,.12); --hair-2:rgba(10,20,15,.07);
+
+  --em-deep:#14532D; --em:#16A34A; --em-lit:#4ADE80; --em-txt:#11803A;
+  --em-ground:#0F5B2E; --gold:#E8B825; --gold-deep:#6E4F06;
+
+  --mint-1:#E6F8EE; --mint-2:#C3ECD7; --mint-3:#A4E1C0;
+  --mint-ink:#0C3A20; --mint-ink-2:#2E5C43;
+
+  --on-band:#FFFFFF; --on-band-2:rgba(255,255,255,.80); --on-band-3:rgba(255,255,255,.70);
+  --band-hair:rgba(255,255,255,.22); --band-fill:rgba(255,255,255,.10);
+
+  --disp:Archivo,"Helvetica Neue",Arial,sans-serif;
+  --body:Figtree,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --max:1180px; --navh:64px;
+}
+@media (prefers-color-scheme:dark){
+  .wl-eco{
+    --paper:#0A120D; --paper-2:#101B15; --raise:#13201A;
+    --ink:#E9F1EB; --ink-2:#8FA398; --ink-3:#718277; --em-txt:#4ADE80;
+    --hair:rgba(233,241,235,.14); --hair-2:rgba(233,241,235,.08);
+  }
+}
+
+
+.wl-eco *{box-sizing:border-box}
+
+.wl-eco{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;
+  line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:clip}
+.wl-eco p{margin:0}
+.wl-eco a{color:inherit;text-decoration:none}
+.wl-eco .wrap{max-width:var(--max);margin:0 auto;padding:0 clamp(20px,5vw,52px)}
+.wl-eco section{padding:clamp(66px,9vw,126px) 0}
+
+.wl-eco h1, .wl-eco h2{margin:0;font-family:var(--disp);font-weight:800;font-variation-settings:'wdth' 116;
+  letter-spacing:-.026em;line-height:.95;text-wrap:balance}
+.wl-eco h1{font-size:clamp(38px,7.2vw,88px)}
+.wl-eco h2{font-size:clamp(30px,5.4vw,62px)}
+.wl-eco h3{margin:0;font-family:var(--disp);font-weight:700;font-variation-settings:'wdth' 108;letter-spacing:-.018em}
+
+/* label rows are spaced, never joined by a punctuation mark */ .wl-eco .kicker{display:flex;flex-wrap:wrap;gap:4px clamp(16px,2.4vw,30px);font-family:var(--mono);font-size:11.5px;
+  font-weight:500;letter-spacing:.17em;text-transform:uppercase;color:var(--ink-2)}
+.wl-eco .band .kicker{color:var(--on-band-3)}
+.wl-eco .hero .kicker{justify-content:center;color:var(--mint-ink-2)}
+.wl-eco .dek{color:var(--ink-2);font-size:clamp(16px,1.7vw,19px);margin-top:20px;max-width:56ch}
+.wl-eco .band .dek{color:var(--on-band-2)}
+.wl-eco .lede{margin-top:18px}
+
+/* ══ ticker tape ══════════════════════════════════════════════════════════
+   Symbols only, never prices: an invented tape would be a lie on a page whose
+   whole argument is that it does not fake anything. */ .wl-eco .tape{background:var(--em-deep);color:#fff;overflow:hidden;position:relative;z-index:6;min-height:40px}
+.wl-eco .tape-run{display:flex;width:max-content;padding:10px 0;animation:tape 46s linear infinite}
+.wl-eco .tape-run span{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.08em;white-space:nowrap;
+  padding:0 22px;border-right:1px solid rgba(255,255,255,.16);color:rgba(255,255,255,.86)}
+.wl-eco .tape-run span.hi{color:var(--em-lit);font-weight:700}
+@keyframes tape{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ══ the lens sweep ═══════════════════════════════════════════════════════
+   The background motion is the product's own gesture: rings opening outward
+   from a single point, the way a lens takes in what is around it. */ .wl-eco .stage{position:relative;overflow:hidden;isolation:isolate}
+.wl-eco .sweep{position:absolute;inset:0;z-index:0;display:grid;place-items:center;pointer-events:none}
+.wl-eco .sweep i{position:absolute;width:min(150vw,1500px);aspect-ratio:1;border-radius:50%;
+  border:1.5px solid var(--ring);opacity:0;animation:sweep 15s ease-out infinite}
+.wl-eco .sweep i:nth-child(2){animation-delay:-2.5s}.wl-eco .sweep i:nth-child(3){animation-delay:-5s}
+.wl-eco .sweep i:nth-child(4){animation-delay:-7.5s}.wl-eco .sweep i:nth-child(5){animation-delay:-10s}
+.wl-eco .sweep i:nth-child(6){animation-delay:-12.5s}
+@keyframes sweep{0%{transform:scale(.04);opacity:0}7%{opacity:1}100%{transform:scale(1);opacity:0}}
+.wl-eco .stage>.wrap{position:relative;z-index:1;width:100%;min-width:0}
+
+/* ══ sticky header ════════════════════════════════════════════════════════ */ .wl-eco .nav{position:sticky;top:0;z-index:50;margin-bottom:calc(-1 * var(--navh));
+  transition:background .25s,box-shadow .25s}
+.wl-eco .nav-in{max-width:var(--max);margin:0 auto;padding:0 clamp(16px,5vw,52px);height:var(--navh);display:flex;
+  align-items:center;gap:clamp(12px,3vw,34px)}
+.wl-eco .brand{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-variation-settings:'wdth' 110;
+  font-weight:800;font-size:17px;letter-spacing:-.02em;color:var(--mint-ink);margin-right:auto}
+.wl-eco .brand svg{width:27px;height:27px;display:block;flex:none}
+.wl-eco .nav-links{display:flex;gap:clamp(14px,2.2vw,28px);font-family:var(--mono);font-size:11.5px;font-weight:500;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--mint-ink-2)}
+.wl-eco .nav-links a{padding:6px 0;border-bottom:1px solid transparent}
+.wl-eco .nav-links a:hover{color:var(--mint-ink);border-bottom-color:currentColor}
+.wl-eco .nav-cta{display:flex;align-items:center;gap:8px;margin-left:auto}
+.wl-eco .nav-store{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+  border:1px solid rgba(12,58,32,.16);background:rgba(255,255,255,.7);transition:background .18s}
+.wl-eco .nav-store:hover{background:#fff}
+.wl-eco .nav-store .ic{width:18px;height:18px}
+.wl-eco .nav-go{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:11px 17px;border-radius:12px;background:var(--em-deep);color:#fff;white-space:nowrap;
+  transition:transform .18s}
+.wl-eco .nav-go:hover{transform:translateY(-1px)}
+.wl-eco .nav a:focus-visible{outline:2px solid currentColor;outline-offset:3px;border-radius:8px}
+.wl-eco .nav.solid{background:color-mix(in srgb,var(--paper) 90%,transparent);backdrop-filter:blur(16px);
+  box-shadow:0 1px 0 var(--hair)}
+.wl-eco .nav.solid .brand{color:var(--ink)}
+.wl-eco .nav.solid .nav-links{color:var(--ink-2)}
+.wl-eco .nav.solid .nav-links a:hover{color:var(--ink)}
+.wl-eco .nav.solid .nav-store{border-color:var(--hair);background:transparent}
+@media (max-width:900px){.wl-eco .nav-links{display:none}}
+@media (max-width:560px){.wl-eco{--navh:58px}.wl-eco .nav-store{display:none}}
+
+/* ══ hero ═════════════════════════════════════════════════════════════════ */ .wl-eco .hero{--ring:rgba(12,58,32,.16);text-align:center;color:var(--mint-ink);
+  background:linear-gradient(165deg,var(--mint-1) 0%,var(--mint-2) 52%,var(--mint-3) 100%);
+  padding:calc(var(--navh) + clamp(44px,7vw,84px)) 0 clamp(58px,7vw,92px)}
+.wl-eco .hero h1{color:var(--mint-ink);margin-top:18px}
+.wl-eco .hero h1 em{font-style:normal;color:var(--em)}
+.wl-eco .hero .sub{color:var(--mint-ink-2);font-size:clamp(16px,1.9vw,20px);margin-top:22px;max-width:42ch;
+  margin-inline:auto}
+.wl-eco .hero-cta{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:32px}
+.wl-eco .hcta{display:inline-flex;align-items:center;gap:10px;padding:13px 20px;border-radius:14px;
+  font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  white-space:nowrap;background:#fff;color:var(--mint-ink);border:1px solid rgba(12,58,32,.12);
+  transition:transform .18s,box-shadow .18s}
+.wl-eco .hcta:hover{transform:translateY(-1px);box-shadow:0 8px 20px -10px rgba(12,58,32,.5)}
+.wl-eco .hcta.primary{background:var(--em-deep);color:#fff;border-color:var(--em-deep)}
+.wl-eco .hcta:focus-visible{outline:2px solid var(--em-deep);outline-offset:3px}
+.wl-eco .hcta .ic{width:19px;height:19px}
+.wl-eco .facts{display:flex;flex-wrap:wrap;justify-content:center;gap:0;margin-top:30px;font-family:var(--mono);
+  font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--mint-ink-2)}
+.wl-eco .facts span{padding:0 clamp(12px,2vw,20px);border-left:1px solid rgba(12,58,32,.2)}
+.wl-eco .facts span:first-child{border-left:0}
+.wl-eco .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:38px}
+.wl-eco .chip{width:70px;height:70px;border-radius:19px;display:grid;place-items:center;align-content:center;
+  background:#fff;border:1px solid rgba(12,58,32,.1);color:var(--mint-ink-2);
+  box-shadow:0 6px 16px -12px rgba(12,58,32,.7);animation:bob 5.4s ease-in-out infinite}
+.wl-eco .chip:nth-child(2){animation-delay:-.35s}.wl-eco .chip:nth-child(3){animation-delay:-.7s}
+.wl-eco .chip:nth-child(4){animation-delay:-1.05s}.wl-eco .chip:nth-child(5){animation-delay:-1.4s}
+.wl-eco .chip:nth-child(6){animation-delay:-1.75s}
+.wl-eco .chip img{width:28px;height:28px;display:block;border-radius:7px}
+.wl-eco .chip small{display:block;font-family:var(--mono);font-size:8.5px;font-weight:600;letter-spacing:.11em;
+  margin-top:5px}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+
+/* ══ the orbit ════════════════════════════════════════════════════════════
+   No mocked-up app screens: a fake screenshot never matches the real thing
+   and dates the moment the app changes. What is actually worth drawing is
+   the arrangement — one local store at the centre, three ways in around it. */ .wl-eco .orbit{--orb:min(540px,86vw);position:relative;width:var(--orb);height:var(--orb);
+  margin:clamp(34px,5vw,58px) auto clamp(10px,2vw,22px)}
+.wl-eco .orb-ring{position:absolute;border-radius:50%;border:1px dashed var(--hair)}
+.wl-eco .orb-ring.a{inset:0}.wl-eco .orb-ring.b{inset:15%;border-style:solid;border-color:var(--hair-2)}
+.wl-eco .orb-ring.c{inset:30%}
+.wl-eco .orb-core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:44%;
+  display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px}
+.wl-eco .orb-core svg{width:clamp(42px,9vw,58px);height:clamp(42px,9vw,58px)}
+.wl-eco .orb-core b{font-family:var(--disp);font-variation-settings:'wdth' 110;font-weight:800;
+  font-size:clamp(15px,2.2vw,19px);letter-spacing:-.02em}
+.wl-eco .orb-core span{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--ink-3);line-height:1.5}
+.wl-eco .orb-spin{position:absolute;inset:0;animation:orbit 46s linear infinite}
+.wl-eco .sat{position:absolute;left:50%;top:50%;pointer-events:none;
+  transform:translate(-50%,-50%) rotate(var(--a)) translateY(calc(var(--orb) * -.415)) rotate(calc(-1 * var(--a)))}
+.wl-eco .satin{display:flex;flex-direction:column;align-items:center;gap:8px;animation:orbit 46s linear infinite reverse}
+.wl-eco .sat .tile{width:clamp(52px,10vw,66px);height:clamp(52px,10vw,66px);border-radius:18px;background:var(--raise);
+  border:1px solid var(--hair);display:grid;place-items:center;box-shadow:0 10px 26px -18px rgba(10,20,15,.9);
+  transition:transform .18s}
+.wl-eco .sat:hover .tile{transform:translateY(-3px)}
+.wl-eco .sat .tile .ic{width:26px;height:26px}
+.wl-eco .sat em{font-style:normal;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+@keyframes orbit{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+.wl-eco .surfaces-note{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0 clamp(28px,4vw,60px);
+  border-top:1px solid var(--hair);margin-top:clamp(18px,3vw,34px)}
+.wl-eco .sn{padding:22px 0;border-bottom:1px solid var(--hair)}
+.wl-eco .sn h3{font-size:17px}
+.wl-eco .sn p{color:var(--ink-2);font-size:15px;margin-top:6px}
+.wl-eco .sn a{display:inline-flex;align-items:center;gap:7px;margin-top:10px;font-family:var(--mono);font-size:10.5px;
+  font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--em-txt)}
+.wl-eco .sn a:focus-visible, .wl-eco .surf .go:focus-visible, .wl-eco .foot a:focus-visible{outline:2px solid currentColor;outline-offset:3px;border-radius:6px}
+.wl-eco .sn a .ic{width:15px;height:15px}
+.wl-eco .sn a:hover{text-decoration:underline;text-underline-offset:4px}
+
+/* ══ bands ════════════════════════════════════════════════════════════════ */ .wl-eco .band{--ring:rgba(255,255,255,.13);color:var(--on-band);padding:clamp(66px,9vw,122px) 0;background:var(--em-ground)}
+.wl-eco .band h2{color:#fff}
+.wl-eco .band.warm{background:var(--gold-deep);--ring:rgba(255,255,255,.15);--on-band-3:rgba(255,255,255,.76)}
+
+/* ══ privacy traffic ══════════════════════════════════════════════════════
+   The diagram is the argument: one line carries packets all the way to a
+   price feed, the other throws them at a wall and they come back. */ .wl-eco .traffic{margin-top:clamp(38px,4.6vw,58px);display:flex;flex-direction:column;gap:clamp(26px,3.4vw,40px)}
+.wl-eco .lane{border-top:1px solid var(--band-hair);padding-top:20px}
+.wl-eco .lane-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.wl-eco .lane-head h3{font-size:clamp(17px,2vw,21px);color:#fff}
+.wl-eco .verdict{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  padding:5px 11px;border-radius:999px;white-space:nowrap}
+.wl-eco .verdict.go{background:rgba(255,255,255,.16);color:#fff;border:1px solid var(--band-hair)}
+.wl-eco .verdict.no{background:rgba(255,255,255,.06);color:var(--on-band-3);border:1px solid rgba(255,255,255,.16)}
+.wl-eco .wire{position:relative;height:44px;margin-top:16px;display:flex;align-items:center;gap:12px}
+.wl-eco .node{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;
+  padding:7px 12px;border-radius:9px;border:1px solid var(--band-hair);background:var(--band-fill);color:#fff}
+.wl-eco .node.ghost{color:var(--on-band-3);border-style:dashed;background:transparent}
+.wl-eco .line{position:relative;flex:1;min-width:0;height:2px;background:rgba(255,255,255,.2);border-radius:2px}
+.wl-eco .pk{position:absolute;top:-4px;width:10px;height:10px;border-radius:3px;background:#fff;display:block}
+.wl-eco .lane.out .pk{animation:flowout 3.4s linear infinite}
+.wl-eco .lane.out .pk:nth-child(2){animation-delay:-1.13s}.wl-eco .lane.out .pk:nth-child(3){animation-delay:-2.26s}
+@keyframes flowout{0%{left:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:calc(100% - 10px);opacity:0}}
+.wl-eco .lane.stop .line{background:repeating-linear-gradient(90deg,rgba(255,255,255,.22) 0 6px,transparent 6px 12px)}
+.wl-eco .lane.stop .pk{background:var(--em-lit);animation:bounceback 3.4s cubic-bezier(.4,0,.5,1) infinite}
+.wl-eco .lane.stop .pk:nth-child(2){animation-delay:-1.13s}.wl-eco .lane.stop .pk:nth-child(3){animation-delay:-2.26s}
+@keyframes bounceback{0%{left:0;opacity:0}12%{opacity:1}46%{left:calc(58% - 5px);opacity:1}
+  52%{left:calc(58% - 5px);background:#fff}54%{background:var(--em-lit)}88%{left:0;opacity:1}100%{left:0;opacity:0}}
+.wl-eco .wall{position:absolute;left:58%;top:-15px;width:3px;height:32px;border-radius:2px;background:#fff;
+  animation:hit 3.4s ease-out infinite}
+@keyframes hit{0%,44%{box-shadow:0 0 0 0 rgba(255,255,255,.42)}52%{box-shadow:0 0 0 9px rgba(255,255,255,0)}
+  100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
+.wl-eco .lane-list{margin:16px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+.wl-eco .lane-list li{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;padding:6px 11px;border-radius:8px;
+  background:var(--band-fill);border:1px solid rgba(255,255,255,.14);color:var(--on-band-2)}
+.wl-eco .lane.stop .lane-list li{text-decoration:line-through;text-decoration-color:rgba(255,255,255,.45)}
+
+/* ══ features ═════════════════════════════════════════════════════════════ */ .wl-eco .feats{margin-top:clamp(32px,4vw,52px);display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));
+  gap:0 clamp(30px,4vw,64px);border-top:1px solid var(--hair)}
+.wl-eco .feat{display:grid;grid-template-columns:24px 1fr;gap:16px;padding:22px 0;border-bottom:1px solid var(--hair)}
+.wl-eco .feat .ic{width:24px;height:24px;color:var(--em-txt);margin-top:3px}
+.wl-eco .feat h3{font-size:17px}
+.wl-eco .feat p{color:var(--ink-2);font-size:15px;margin-top:5px}
+.wl-eco .feat .tag{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--em-txt);
+  margin-top:8px;display:block}
+
+/* ══ FAQ ══════════════════════════════════════════════════════════════════ */ .wl-eco .faq{margin-top:clamp(26px,3.2vw,42px);border-top:1px solid var(--hair)}
+.wl-eco .faq details{border-bottom:1px solid var(--hair)}
+.wl-eco .faq summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;
+  padding:clamp(18px,2.2vw,26px) 0;font-size:clamp(16px,1.9vw,21px);font-weight:500;color:var(--ink-2)}
+.wl-eco .faq summary::-webkit-details-marker{display:none}
+.wl-eco .faq summary:focus-visible{outline:2px solid var(--em-txt);outline-offset:4px;border-radius:4px}
+.wl-eco .faq summary h3{font:inherit;font-weight:500;letter-spacing:normal}
+.wl-eco .faq .arw{color:var(--ink-3);transition:transform .28s}
+.wl-eco .faq details[open] summary{color:var(--ink)}
+.wl-eco .faq details[open] .arw{transform:rotate(90deg)}
+.wl-eco .faq .ans{padding:0 0 24px;color:var(--ink-2);font-size:16px;max-width:66ch}
+
+/* ══ close ════════════════════════════════════════════════════════════════ */ .wl-eco .surfs{margin-top:clamp(32px,4vw,50px);border-top:1px solid var(--band-hair)}
+.wl-eco .surf{display:grid;grid-template-columns:auto 1fr auto;gap:clamp(14px,3vw,34px);align-items:center;
+  padding:clamp(18px,2.4vw,26px) 0;border-bottom:1px solid var(--band-hair)}
+.wl-eco .surf .plat{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--on-band-3);min-width:96px}
+.wl-eco .surf p{color:var(--on-band-2);font-size:15.5px}
+.wl-eco .surf .go{display:inline-flex;align-items:center;gap:9px;white-space:nowrap;font-family:var(--mono);font-size:11.5px;
+  font-weight:700;letter-spacing:.11em;text-transform:uppercase;padding:11px 18px;border-radius:11px;
+  background:#fff;color:var(--em-deep)}
+.wl-eco .surf .go .ic{width:17px;height:17px}
+.wl-eco .surf .go:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.wl-eco .close-note{display:flex;flex-wrap:wrap;gap:4px clamp(16px,2.4vw,30px);margin-top:24px;color:var(--on-band-3);
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase}
+
+.wl-eco .visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.wl-eco .skip{position:absolute;left:-9999px;top:0;z-index:99;background:var(--em-deep);color:#fff;padding:12px 18px;
+  border-radius:0 0 10px 0;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase}
+.wl-eco .skip:focus{left:0}
+
+/* a third lane: the traffic that exists only once you switch a feature on */ .wl-eco .verdict.opt{background:rgba(255,255,255,.1);color:#fff;border:1px solid var(--band-hair)}
+.wl-eco .lane.optin .line{background:repeating-linear-gradient(90deg,rgba(255,255,255,.3) 0 10px,transparent 10px 16px)}
+.wl-eco .lane.optin .pk{background:var(--em-lit);animation:flowout 3.4s linear infinite}
+.wl-eco .lane.optin .pk:nth-child(2){animation-delay:-1.13s}.wl-eco .lane.optin .pk:nth-child(3){animation-delay:-2.26s}
+.wl-eco .lane-note{margin-top:12px;font-size:14.5px;color:var(--on-band-2);max-width:62ch}
+
+.wl-eco .foot{border-top:1px solid var(--hair);padding:clamp(30px,4vw,44px) 0 clamp(40px,5vw,56px)}
+.wl-eco .foot-in{display:flex;flex-wrap:wrap;gap:14px clamp(18px,3vw,34px);align-items:center;
+  font-family:var(--mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-2)}
+.wl-eco .foot a:hover{color:var(--ink-2);text-decoration:underline;text-underline-offset:4px}
+.wl-eco .foot .brandline{margin-right:auto;color:var(--ink);font-weight:700}
+.wl-eco .disclaimer{margin-top:18px;font-size:13px;color:var(--ink-3);max-width:72ch}
+
+.wl-eco .ic{width:22px;height:22px;display:block;flex:none}
+
+@media (max-width:640px){
+  .wl-eco .surf{grid-template-columns:1fr auto;gap:10px 14px}
+  .wl-eco .surf .plat{grid-column:1 / -1}
+  .wl-eco .chip{width:60px;height:60px;border-radius:17px}
+  .wl-eco .wire{gap:8px}
+  .wl-eco .node{font-size:9.5px;padding:6px 9px}
+  .wl-eco .orbit{--orb:min(400px,92vw)}
+  .wl-eco .orb-core{width:48%}
+}
+@media (prefers-reduced-motion:reduce){
+  .wl-eco *{animation:none!important;transition:none!important}
+  .wl-eco{scroll-behavior:auto}
+  /* the packets carry the argument, so park them as a trail rather than a stack */ .wl-eco .lane .pk:nth-child(1){left:6%}.wl-eco .lane .pk:nth-child(2){left:26%}.wl-eco .lane .pk:nth-child(3){left:46%}
+}
+
+
+.wl-eco .feat-link{display:inline-flex;align-items:center;margin-top:8px;font-size:14px;color:var(--em-txt);
+  text-decoration:underline;text-underline-offset:4px}
+.wl-eco .feat-link:focus-visible{outline:2px solid currentColor;outline-offset:3px;border-radius:5px}
+.wl-eco .dek-tail{margin-top:34px}
+.wl-eco .inline-link{text-decoration:underline;text-underline-offset:4px}
+
+/* ══ product shot ═════════════════════════════════════════════════════════
+   The real app, not a drawing of it. Two crops rather than one: the trio
+   shows breadth, but at phone width three devices shrink to unreadable, so
+   the single dashboard takes over below 720px. */
+.wl-eco .shots{--ring:rgba(12,58,32,.10);padding:clamp(58px,8vw,104px) 0}
+.wl-eco .shots-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);
+  gap:clamp(26px,5vw,64px);align-items:center}
+.wl-eco .shots-copy h2{margin-bottom:0}
+.wl-eco .shot-stage{position:relative;display:flex;justify-content:center}
+.wl-eco .shot-stage picture{display:block;width:100%}
+.wl-eco .shot{display:block;width:100%;height:auto;
+  filter:drop-shadow(0 34px 60px rgba(10,30,20,.26));
+  animation:shotFloat 9s ease-in-out infinite}
+@keyframes shotFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+
+/* Naming the three screens is the point of the animation: the highlight
+   walks them in the order the images sit, so the label and the device agree. */
+.wl-eco .screen-keys{list-style:none;margin:clamp(22px,3vw,32px) 0 0;padding:0;
+  display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--hair)}
+.wl-eco .screen-keys li{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:baseline;
+  padding:14px 0;border-bottom:1px solid var(--hair)}
+.wl-eco .screen-keys .n{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-3);transition:color .5s}
+.wl-eco .screen-keys b{font-size:16px;font-weight:700}
+.wl-eco .screen-keys p{color:var(--ink-2);font-size:14.5px;margin-top:3px}
+.wl-eco .screen-keys li::before{content:"";position:absolute}
+.wl-eco .screen-keys li{position:relative}
+.wl-eco .screen-keys li::after{content:"";position:absolute;left:0;bottom:-1px;height:1px;width:0;
+  background:var(--em-txt);animation:keyWalk 12s linear infinite}
+.wl-eco .screen-keys li:nth-child(2)::after{animation-delay:-8s}
+.wl-eco .screen-keys li:nth-child(3)::after{animation-delay:-4s}
+@keyframes keyWalk{0%{width:0}4%{width:100%}29%{width:100%}33%,100%{width:0}}
+.wl-eco .shot-note{margin-top:16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3)}
+
+@media (max-width:860px){
+  .wl-eco .shots-in{grid-template-columns:1fr}
+  .wl-eco .shot-stage{order:-1}
+}

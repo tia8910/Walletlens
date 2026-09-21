@@ -4,6 +4,14 @@
 // asset counts, no asset-class mix, no profit/loss signals, no user-typed
 // text. Events describe WHICH features are used — never WHAT the user owns.
 // If you add an event, keep every param free of portfolio-derived data.
+//
+// WHAT A TRADE MAY REPORT: its direction and its asset CATEGORY (crypto,
+// stocks, gold…), plus which screen it came from. Not the symbol, not the
+// amount, not the dollar value or a tier of it, not the price, not what it was
+// paid for with, not how much of a position was exited, and not the realized
+// profit or loss. All fourteen of those were being sent on every trade from
+// three different screens until they were removed; the guard could not see the
+// calls because both events are named by a ternary rather than a literal.
 
 // KNOWN GAP, recorded rather than quietly left: `page` below is the raw path,
 // and this app has routes that name an asset — /asset/bitcoin, /track/solana.
@@ -19,6 +27,63 @@ export function track(eventName, params = {}) {
     ...params,
   })
 }
+
+/**
+ * GA4 user properties — the segment every later event is read against.
+ *
+ * WHY THIS IS NOT THE SAME AS SENDING THE PORTFOLIO
+ *
+ * The contract above forbids "asset-class mix", and it means what the user
+ * OWNS: the mix of a real portfolio, which is a financial fact about them.
+ * What this sends is what they TOLD US THEY CARE ABOUT — the asset classes
+ * ticked in the interest picker, which already ride out in the
+ * interests_selected event and which steer what the app shows. Someone can
+ * tick crypto and hold nothing; someone can hold gold and never tick it.
+ * Declared interest is a preference, a holding is a balance, and only the
+ * second one is what the contract was written to keep on the device.
+ *
+ * Grouped into three coarse buckets rather than the ten raw ids. That is what
+ * the question "how many of my users are crypto people" actually needs, it
+ * keeps each value inside GA4's 36-character limit without truncation, and it
+ * is a smaller claim about any individual than a ten-way fingerprint would be.
+ */
+const SEGMENTS = {
+  seg_crypto: ['crypto', 'stablecoins'],
+  seg_stocks: ['stocks', 'etfs'],
+  seg_metals: ['gold', 'silver'],
+  seg_other: ['cash', 'realestate', 'bonds', 'commodities'],
+}
+
+/** The declared interests, or null when the picker has not been answered. */
+export function readInterests() {
+  try {
+    const v = JSON.parse(localStorage.getItem('wl_interests') || 'null')
+    return Array.isArray(v) ? v : null
+  } catch { return null }
+}
+
+/**
+ * Label this browser by the asset classes it asked for. Safe to call on every
+ * start and again whenever the choice changes — GA4 keeps the latest value and
+ * stamps it on subsequent events, which is the whole point: an event-only
+ * version labels the moment somebody picked and leaves every returning user
+ * unsegmented.
+ */
+export function setInterestSegments(list = readInterests()) {
+  if (typeof window.gtag !== 'function') return
+  const picked = Array.isArray(list) ? list : []
+  const props = { interest_count: String(picked.length) }
+  for (const [prop, ids] of Object.entries(SEGMENTS)) {
+    props[prop] = ids.some(id => picked.includes(id)) ? 'yes' : 'no'
+  }
+  // "unset" is a real answer and a different one from "picked nothing": the
+  // picker can be skipped, and a skipped picker means the app fell back to its
+  // defaults rather than the user choosing them.
+  props.interest_state = list == null ? 'unset' : (picked.length ? 'picked' : 'none')
+  gtag('set', 'user_properties', props)
+}
+
+export { SEGMENTS }
 
 // Redact digits from any captured on-screen text so amounts/prices that
 // happen to sit inside a clicked element can never reach analytics.
@@ -246,13 +311,47 @@ export function trackProfileCreated({ method, source } = {}) {
 //   step:   'opened' | 'started' | 'parsed' | 'saved' | 'failed'
 //   reason: a fixed code, never a message or user text — exception strings
 //           routinely carry filenames and cell contents.
+//
+// The dashboard's import tiles are keyed for the UI, where the spreadsheet one
+// is called 'excel' because that is what people call it. The funnel is keyed
+// for the data, where it is 'spreadsheet' because the same path takes .csv.
+// One map, so a rename on either side cannot silently split one method into
+// two rows in GA.
+const IMPORT_METHODS = {
+  excel: 'spreadsheet',
+  spreadsheet: 'spreadsheet',
+  screenshot: 'screenshot',
+  voice: 'voice',
+  backup: 'backup',
+}
+export function importMethod(key) {
+  return IMPORT_METHODS[key] || 'other'
+}
+
 export function trackImport({ method, step, reason, format } = {}) {
   track('import_step', {
-    import_method: method,
+    import_method: importMethod(method),
     import_step: step,
     ...(reason ? { failure_reason: reason } : {}),
     ...(format ? { file_format: format } : {}),
   })
+}
+
+// A successful import, as its own event name rather than only a step.
+//
+// import_step is the right shape for a funnel and the wrong shape for the
+// question actually being asked most of the time, which is "did anyone manage
+// to import today". Answering that from import_step means registering
+// import_step as a custom dimension first, because GA4 shows event names in
+// Realtime and reports but hides parameters until they are declared, and the
+// declaration is not retroactive. So a success is also emitted under a name of
+// its own: it is visible with no configuration, and it can be marked as a Key
+// Event, which import_step cannot be without also counting every failure.
+//
+// Fired ALONGSIDE trackImport({ step: 'saved' }) rather than replacing it, so
+// the funnel still adds up.
+export function importCompleted({ method } = {}) {
+  track('import_completed', { import_method: importMethod(method) })
 }
 
 // Track referral link clicks

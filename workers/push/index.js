@@ -17,7 +17,7 @@
 // and web-push → WebCrypto (webpush.js), which is the only genuinely new code.
 
 import {
-  asLang, bumpSent, copy, DEFAULT_PREFS, deliveryFor, localDayKey,
+  asLang, assetUrl, bumpSent, copy, DEFAULT_PREFS, deliveryFor, localDayKey,
   pushTopic, sanitizeAlerts, sanitizePrefs, sanitizeSetup, sanitizeTz,
   sanitizeWatch, sanitizeZakatDue, trimZakatSent,
   normalizeSub as normalize,
@@ -25,6 +25,7 @@ import {
 import { accessToken, buildMessage, isDeadToken, FCM_ENDPOINT } from './fcm.js'
 import { SubStore, endpointKey, tokenKey } from './store.js'
 import { createJobs } from './jobs.js'
+import { SITE_ORIGIN } from './site.js'
 import { encryptPayload, vapidHeader } from './webpush.js'
 
 // ── CORS ────────────────────────────────────────────────────────────────────
@@ -36,15 +37,28 @@ const ALLOWED_ORIGINS = new Set([
 ])
 const PAGES_PREVIEW = /^https:\/\/([a-z0-9-]+\.)?walletlenslive1?\.pages\.dev$/
 
-function corsHeaders(origin) {
+function corsHeaders(origin, requestedHeaders) {
   const allow = origin && (ALLOWED_ORIGINS.has(origin) || PAGES_PREVIEW.test(origin))
     ? origin
     : 'https://walletlens.live'
   return {
     'Access-Control-Allow-Origin': allow,
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': '*',
-    'Vary': 'Origin',
+    // Echo what was asked for, and name Content-Type outright rather than
+    // relying on the wildcard.
+    //
+    // '*' here is only understood by Chromium 77 and later. Every GET this
+    // service answers is a simple request and never preflights, so the
+    // wildcard was never exercised by them — but /subscribe is a POST with a
+    // JSON content type, which always preflights. On an older Android System
+    // WebView that '*' is not a match for 'content-type', the preflight fails,
+    // and the POST surfaces in the page as a bare "Failed to fetch" with no
+    // console entry the user can see. Echoing the request is what the spec
+    // recommends and works on every version.
+    'Access-Control-Allow-Headers': requestedHeaders || 'Content-Type',
+    // A preflight per registration attempt is a round trip nobody needs.
+    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin, Access-Control-Request-Headers',
     'Content-Type': 'application/json',
   }
 }
@@ -156,8 +170,49 @@ async function sendViaFcm(env, store, sub, payload, { now }) {
  * Firebase — which is exactly where the crons' blindness to the Android app
  * lived.
  */
-export function makeSender(env, store) {
+/**
+ * The subrequest budget for one Worker invocation.
+ *
+ * Cloudflare allows 50 outbound subrequests per invocation on the Free plan,
+ * and a cron pass spends them on everything: quote fetches, the news feed, the
+ * FCM OAuth token, and one per notification delivered. Exceeding it does not
+ * degrade — the next fetch throws "Too many subrequests by single Worker
+ * invocation", which surfaced to users as a refused delivery.
+ *
+ * So sends draw from a counted budget and stop when it runs out, instead of
+ * throwing. A subscriber who misses a pass is not skipped: nothing about their
+ * state is written unless the send succeeded, so the next tick — a minute away
+ * for targets and crypto, five for everything else — picks them up. Degrading
+ * beats failing, and deferring by a minute is invisible.
+ *
+ * The reserve exists because the budget is shared with the fetches that already
+ * happened before the first send, and those are not counted here. Leaving room
+ * is cheaper than counting every call site.
+ */
+export const SUBREQUEST_LIMIT = 50
+export const SUBREQUEST_RESERVE = 12
+
+export function makeBudget(limit = SUBREQUEST_LIMIT - SUBREQUEST_RESERVE) {
+  let left = limit
+  return {
+    get remaining() { return left },
+    /** True while there is room for one more outbound call. */
+    take() {
+      if (left <= 0) return false
+      left -= 1
+      return true
+    },
+  }
+}
+
+export function makeSender(env, store, budget = null) {
   return async function send(sub, payload, { now = Date.now() } = {}) {
+    // Out of budget: report not-sent rather than throwing. jobs.js already
+    // treats a falsy return as "did not deliver" and leaves the subscriber's
+    // channel state untouched, which is exactly the retry-next-tick behaviour
+    // this needs — no extra bookkeeping.
+    if (budget && !budget.take()) return false
+
     // One decision, two transports. Which one a device wants is a property of
     // the subscription, not of the notification — jobs.js has no idea either
     // exists and should not.
@@ -221,9 +276,48 @@ async function readJson(req) {
 }
 
 // ── HTTP ────────────────────────────────────────────────────────────────────
+/**
+ * Fetch the page a price alert opens, and report what came back.
+ *
+ * Never throws and never fails /health: a health check that goes red because
+ * something it depends on is slow is reporting the wrong service. A timeout, a
+ * DNS failure and a 500 all come back as fields.
+ *
+ * redirect: 'manual' on purpose. A 301 onto the 404 shell still answers 200
+ * once the redirect is followed, which is the failure this is meant to catch,
+ * so the status is worth more than the destination.
+ *
+ * `?probe=0` skips it, for an uptime pinger that wants this endpoint to cost
+ * nothing outbound.
+ */
+export async function probeAssetPage(probeParam) {
+  const path = assetUrl({ coin_id: 'bitcoin' })
+  if (!path) return { skipped: 'no_sample' }
+  const target = SITE_ORIGIN + path
+  if (probeParam === '0') return { url: target, skipped: 'probe=0' }
+
+  const started = Date.now()
+  try {
+    const res = await fetch(target, {
+      method: 'GET',
+      redirect: 'manual',
+      headers: { 'User-Agent': 'walletlens-push/health' },
+      signal: AbortSignal.timeout(4000),
+    })
+    return { url: target, status: res.status, ok: res.ok, ms: Date.now() - started }
+  } catch (e) {
+    // The runtime's own words. "The operation was aborted" is a timeout and a
+    // DNS failure is not; they need different responses.
+    return {
+      url: target, ok: false, ms: Date.now() - started,
+      error: String(e?.message || e).slice(0, 120),
+    }
+  }
+}
+
 async function handle(req, env, store) {
   const origin = req.headers.get('origin')
-  const headers = corsHeaders(origin)
+  const headers = corsHeaders(origin, req.headers.get('access-control-request-headers'))
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers })
 
   // Anything that is not a read may write a subscription, so the cached scan
@@ -232,35 +326,25 @@ async function handle(req, env, store) {
   if (req.method !== 'GET') store.invalidate()
 
   const url = new URL(req.url)
-  const path = url.pathname
+  // Two front doors, one set of handlers. The app reaches this through the
+  // route walletlens.live/api/push/* — same origin as the page, so no CORS and
+  // nothing for a DNS blocklist to catch — while the workers.dev subdomain
+  // stays live for deploys and health checks. Strip the route prefix so every
+  // handler below sees the same path either way.
+  const path = url.pathname.replace(/^\/api\/push(?=\/|$)/, '') || '/'
   const vapidReady = !!(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY)
 
   if (path === '/' || path === '/health') {
-    let db = false
-    let dbError = ''
-    try {
-      const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM subs').first()
-      db = row != null
-      if (!db) dbError = 'no row returned'
-    } catch (e) {
-      dbError = String(e?.message || e)
-    }
-    let assetUrlSample = null
-    try {
-      const base = String(env.SITE_ORIGIN || env.DATA_WORKER_URL || '').trim()
-        .replace(/^DATA_WORKER_URL=/i, '')
-        .replace(/\/__refresh$/, '')
-        .replace(/\/+$/, '')
-      if (!base) throw new Error('DATA_WORKER_URL not set')
-      const url = base + '/market.json'
-      const r = await fetch(url, { signal: AbortSignal.timeout(8_000) })
-      const text = await r.text()
-      assetUrlSample = { url, ok: r.ok, status: r.status, bytes: text.length }
-    } catch (e) {
-      assetUrlSample = { error: String(e?.message || e) }
-    }
+    // Query the store, do not just claim to be up. Until this was here /health
+    // returned ok:true with the D1 binding missing, because nothing on this
+    // route touched the database — so the one failure most likely to follow a
+    // redeploy was the one the health check could not see, and Settings said
+    // "can't reach the notification server" about a server that was answering.
+    const db = await store.probe()
     return json({
-      ok: true,
+      ok: db.ok,
+      db: db.ok,
+      ...(db.ok ? {} : { dbError: db.error }),
       service: 'walletlens-push',
       runtime: 'cloudflare-workers',
       db,
@@ -270,7 +354,41 @@ async function handle(req, env, store) {
       // already, and without it a server key that no longer matches the one
       // clients subscribed with is undetectable from either side.
       vapidKey: env.VAPID_PUBLIC_KEY || '',
-      assetUrlSample,
+      // The channel roster of the RUNNING build, so deployment drift is
+      // visible instead of guessed at. "Why do I only get price alerts" has
+      // two possible answers -- the content channels have not fired yet
+      // today, or the deployed worker predates them -- and they need
+      // completely different responses. A short list here means the second.
+      channels: Object.keys(DEFAULT_PREFS).filter(k => typeof DEFAULT_PREFS[k] === 'boolean').sort(),
+      // The asset link SHAPE this build produces — a reported string, not a
+      // request. A price alert is only as good as the page it opens, and the
+      // difference between '/asset/?id=bitcoin' and '/asset/bitcoin' is a
+      // working deep link and a 404; from outside there is no way to tell
+      // which one a running worker emits until a notification fires and
+      // somebody taps it. This answers that without tapping anything.
+      //
+      // It is relative on purpose, because that is exactly what the payload
+      // carries: Web Push resolves it against the page, and fcm.js prefixes
+      // SITE_ORIGIN for the native app. Fetching this against the worker's own
+      // subdomain would 404 correctly — the push worker has no /asset/ route
+      // and should not — and pointing the field at a URL that answers instead
+      // loses the shape signal it exists for. The live fetch is its own field.
+      assetUrlSample: assetUrl({ coin_id: 'bitcoin' }),
+      // Whether that shape actually resolves on the site notifications send
+      // people to. The shape can be right and the page still missing: a Pages
+      // deploy that drops the prerendered /asset/ shell breaks every price
+      // alert while this worker stays perfectly healthy, and nothing here
+      // could see it.
+      //
+      // SITE_ORIGIN, not a host of its own, so the probe cannot drift onto a
+      // different origin than fcm.js writes into the payload.
+      assetPage: await probeAssetPage(url.searchParams.get('probe')),
+      // What each cron is responsible for. A channel present above but absent
+      // here is defined and never scheduled, which is its own failure mode.
+      schedules: {
+        '*/5 * * * *': ['targets', 'moves', 'news'],
+        '5 * * * *': ['daily (digest, retention, zakat, portfolio, academy, hacks, features)', 'trend'],
+      },
     }, headers)
   }
 
@@ -473,46 +591,32 @@ export async function runSchedule(cron, jobs, env) {
     }
   }
 
-  if (cron === '* * * * *') {
-    await run('targets', () => jobs.checkTargets())
-    // Crypto every minute: one batched request however many coins are held.
-    await run('moves-crypto', () => jobs.checkMoves({ kinds: ['crypto'], refreshSeen: false }))
-    return
-  }
   if (cron === '*/5 * * * *') {
-    // Everything else — stocks cost one request per symbol — plus news.
+    // Targets first. A hit target is the most time-sensitive thing this worker
+    // sends, and it used to have a minute of its own until the CPU ceiling made
+    // that unaffordable — see the comment on `crons` in wrangler.toml.
+    await run('targets', () => jobs.checkTargets())
+    // All kinds, which already covers the crypto the minute pass used to do on
+    // its own. Stocks cost one request per symbol, which is why this never ran
+    // more often than every five minutes.
     await run('moves', () => jobs.checkMoves())
     await run('news', () => jobs.checkNews())
-    // Trigger the data worker's public-market refresh (no own cron triggers).
-    await run('data-refresh', async () => {
-      const token = env.DATA_REFRESH_TOKEN || ''
-      const headers = { 'x-refresh-token': token }
-      const opts = {
-        method: 'POST',
-        headers,
-        signal: AbortSignal.timeout(15_000),
-      }
-      let res
-      let url = ''
-      if (env.DATA) {
-        // Service binding: no hostname routing, no 1042.
-        url = 'service:walletlens-data/__refresh'
-        res = await env.DATA.fetch('http://data/__refresh', opts)
-      } else {
-        const raw = String(env.DATA_WORKER_URL || '').trim()
-          .replace(/^DATA_WORKER_URL=/i, '')
-        if (!raw) return
-        url = raw.endsWith('/__refresh') ? raw : raw.replace(/\/+$/, '') + '/__refresh'
-        res = await fetch(url, opts)
-      }
-      if (!res.ok) {
-        console.error('data-refresh rejected:', res.status, (await res.text()).slice(0, 120), 'target:', url)
-      }
-    })
+    // main carried a 'data-refresh' step here that poked the data worker from
+    // this cron, because that worker had no triggers of its own. It is dropped
+    // rather than merged, for three separate reasons: `env` is not in scope in
+    // runSchedule (the reference threw on every pass and was swallowed by
+    // run()'s catch, so it had never once worked); the replacement data worker
+    // serves no /__refresh route, only /__health; and it does not need poking
+    // anyway, since it carries its own */15 cron AND serve() refreshes any
+    // dataset it finds past its maxAge while answering a request.
     return
   }
   if (cron === '5 * * * *') {
     await run('daily', () => jobs.checkDaily())
+    // Hourly is the right cadence for a seven-day window, and it rides this
+    // schedule rather than adding a fourth: the account is at the Workers Free
+    // cron-trigger limit.
+    await run('trend', () => jobs.checkTrend())
     return
   }
   console.warn('unrecognised cron schedule:', cron)
@@ -524,14 +628,29 @@ export default {
     try {
       return await handle(req, env, store)
     } catch (e) {
-      console.error('request failed:', String(e?.message || e).slice(0, 300))
-      return json({ error: 'internal' }, corsHeaders(req.headers.get('origin')), 500)
+      const msg = String(e?.message || e)
+      console.error('request failed:', msg.slice(0, 300))
+      // A missing D1 binding surfaces here as a TypeError on `undefined`,
+      // because SubStore accepts undefined at construction and only throws
+      // when a route reaches the database. Reported as its own status and
+      // reason rather than a blanket 500: the app can then say the server's
+      // store is unavailable instead of claiming it cannot be reached, which
+      // sent everyone looking at their own connection.
+      const noStore = !env.DB || /prepare|of undefined|no such table/i.test(msg)
+      return json(
+        noStore ? { error: 'store_unavailable' } : { error: 'internal' },
+        corsHeaders(req.headers.get('origin')),
+        noStore ? 503 : 500,
+      )
     }
   },
 
   async scheduled(event, env, ctx) {
     const store = new SubStore(env.DB)
-    const jobs = createJobs({ store, send: makeSender(env, store) })
-    ctx.waitUntil(runSchedule(event.cron, jobs, env))
+    // One budget per invocation, so the crons that fan out the most (moves and
+    // news at */5, the daily channels at :05) cannot spend the platform's whole
+    // subrequest allowance before they start delivering.
+    const jobs = createJobs({ store, send: makeSender(env, store, makeBudget()) })
+    ctx.waitUntil(runSchedule(event.cron, jobs))
   },
 }

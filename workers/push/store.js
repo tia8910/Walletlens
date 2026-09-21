@@ -71,6 +71,30 @@ export class SubStore {
     this.cache = null
   }
 
+  /**
+   * Can this store actually be read?
+   *
+   * A missing D1 binding does not fail at construction — `new SubStore(env.DB)`
+   * happily takes undefined and the throw lands later, inside whichever route
+   * touched the database first. That made a redeploy that lost the binding look
+   * to the app exactly like a network outage, because /health never queried
+   * anything and stayed green while /status returned 500.
+   *
+   * Cheap on purpose: one row, no scan, no cache interaction.
+   */
+  async probe() {
+    if (!this.db) return { ok: false, error: 'no_binding' }
+    try {
+      await this.db.prepare('SELECT key FROM subs LIMIT 1').first()
+      return { ok: true }
+    } catch (e) {
+      // The table being absent is a different fault from the binding being
+      // absent, and needs a different fix (migrate vs. rebind).
+      const msg = String(e?.message || e)
+      return { ok: false, error: /no such table/i.test(msg) ? 'no_table' : 'query_failed' }
+    }
+  }
+
   /** Every subscription, cached across cron ticks within the window. */
   async all() {
     const t = this.now()

@@ -10,6 +10,8 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { hacks, questions } from './data/academyContent.js'
 
+const here = dirname(fileURLToPath(import.meta.url))
+
 // The jobs were extracted from the Deno service mechanically, so what needs
 // proving is the WIRING: that the adapter is shaped the way the job bodies
 // expect, that a hit actually reaches the sender, and that each schedule runs
@@ -63,21 +65,43 @@ describe('cron dispatch', () => {
     checkDaily: vi.fn().mockResolvedValue(undefined),
   })
 
-  it('runs targets and the crypto-only move pass every minute', async () => {
+  it('runs targets, moves and news on the five-minute pass', async () => {
+    const jobs = spyJobs()
+    await runSchedule('*/5 * * * *', jobs)
+    expect(jobs.checkTargets).toHaveBeenCalled()
+    expect(jobs.checkMoves).toHaveBeenCalled()
+    expect(jobs.checkNews).toHaveBeenCalled()
+    expect(jobs.checkDaily).not.toHaveBeenCalled()
+  })
+
+  it('has no per-minute schedule left to dispatch', async () => {
+    // The minute pass is gone: on Workers Free the CPU ceiling is per
+    // invocation, and 1,440 of them a day was the whole overrun. A revert that
+    // reinstates the branch without reinstating the cron, or the reverse,
+    // leaves one of the two silently doing nothing.
     const jobs = spyJobs()
     await runSchedule('* * * * *', jobs)
-    expect(jobs.checkTargets).toHaveBeenCalled()
-    expect(jobs.checkMoves).toHaveBeenCalledWith({ kinds: ['crypto'], refreshSeen: false })
-    expect(jobs.checkNews).not.toHaveBeenCalled()
-    expect(jobs.checkDaily).not.toHaveBeenCalled()
+    expect(jobs.checkTargets).not.toHaveBeenCalled()
+    expect(jobs.checkMoves).not.toHaveBeenCalled()
+  })
+
+  it('checks targets at least as often as the cron that fires them', () => {
+    // The dispatcher and wrangler.toml have to agree. They are two files, and
+    // a schedule listed in one and not the other is a job that never runs.
+    const toml = readFileSync(join(here, '../../workers/push/wrangler.toml'), 'utf8')
+    const crons = [...toml.matchAll(/"([^"]*\*[^"]*)"/g)].map(m => m[1])
+    expect(crons, 'the five-minute cron is what now carries targets').toContain('*/5 * * * *')
+    expect(crons, 'the per-minute cron is gone').not.toContain('* * * * *')
   })
 
   it('runs the all-kinds pass and news every five minutes', async () => {
     const jobs = spyJobs()
     await runSchedule('*/5 * * * *', jobs)
+    // No argument: all kinds, which is what absorbed the crypto-only pass the
+    // minute cron used to run.
     expect(jobs.checkMoves).toHaveBeenCalledWith()
     expect(jobs.checkNews).toHaveBeenCalled()
-    expect(jobs.checkTargets).not.toHaveBeenCalled()
+    expect(jobs.checkDaily).not.toHaveBeenCalled()
   })
 
   it('runs the hourly job at :05', async () => {
@@ -741,7 +765,7 @@ describe('a token-addressed device reaches Firebase', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     // The real schedule, not the job called by hand.
-    await runSchedule('* * * * *', jobs)
+    await runSchedule('*/5 * * * *', jobs)
 
     const send = calls.find(c => c.url.includes('fcm.googleapis.com'))
     expect(send, 'a message was posted to Firebase').toBeTruthy()
@@ -801,7 +825,7 @@ describe('a token-addressed device reaches Firebase', () => {
     vi.stubGlobal('fetch', fetchMock)
     vi.setSystemTime(now)
 
-    await runSchedule('* * * * *', jobs)
+    await runSchedule('*/5 * * * *', jobs)
 
     expect(calls.some(c => c.url.includes('fcm.googleapis.com')), 'it did send').toBe(true)
 
@@ -838,7 +862,7 @@ describe('a token-addressed device reaches Firebase', () => {
     }))
     vi.setSystemTime(now)
 
-    await runSchedule('* * * * *', jobs)
+    await runSchedule('*/5 * * * *', jobs)
 
     store.invalidate()
     const rows = await store.all()
@@ -866,7 +890,7 @@ describe('a token-addressed device reaches Firebase', () => {
     vi.stubGlobal('fetch', fetchMock)
     vi.setSystemTime(now)
 
-    await runSchedule('* * * * *', jobs)
+    await runSchedule('*/5 * * * *', jobs)
 
     store.invalidate()
     const [{ sub: after }] = await store.all()

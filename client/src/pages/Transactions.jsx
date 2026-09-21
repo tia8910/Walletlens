@@ -546,24 +546,16 @@ export default function Transactions({ showAdd, onCloseAdd }) {
       }
     }
 
-    // GA4 transaction tracking
-    const valueUsd = Math.round(amount * pricePerUnit)
+    // Which category was traded, and nothing else. This used to send
+    // asset_symbol, asset_name, value_usd, value_tier, amount, price_usd and
+    // exchange; see the note at the equivalent call in TradeSheet.jsx.
     track(form.type === 'buy' ? 'buy_transaction' : 'sell_transaction', {
-      asset_symbol:   (form.coin_symbol || form.coin_id || '').toUpperCase(),
-      asset_name:     form.coin_name || form.coin_id,
       asset_category: form.category || 'crypto',
-      value_usd:      valueUsd,
-      value_tier:     valueUsd >= 10000 ? '10k+' : valueUsd >= 1000 ? '1k-10k' : valueUsd >= 100 ? '100-1k' : '<100',
-      amount:         parseFloat(amount.toFixed(6)),
-      price_usd:      Math.round(pricePerUnit),
-      exchange:       form.exchange || 'unspecified',
-      source:         'transactions_page',
+      source: 'transactions_page',
     })
-    // WAS: asset_symbol + trade_value_usd — the ticker and the dollar size of
-    // every trade the user makes, to Google Analytics. The single largest leak
-    // in this file's history and a direct contradiction of the product's pitch.
-    // Which DIRECTION was traded is a feature signal and stays.
-    track('trade_submitted', { trade_type: form.type })
+    // asset_category was missing here, so the dimension was empty for every
+    // trade added from this screen and the GA report read "(not set)".
+    track('trade_submitted', { trade_type: form.type, asset_category: form.category || 'crypto', source: 'transactions_page' })
     if (isFirstHolding) {
       trackProfileCreated({ method: 'manual_trade', source: 'transactions_page' })
       noteMoment('first_holding')

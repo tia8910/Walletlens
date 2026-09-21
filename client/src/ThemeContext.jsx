@@ -10,13 +10,23 @@ const SOLANA_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'
 // the orange tile, matching the ETH/Solana logo treatment.
 const BTC_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23f7931a'/%3E%3Cpath fill='%23ffffff' d='M28.2 18c.3-2.3-1.4-3.5-3.8-4.3l.8-3.1-1.9-.5-.8 3c-.5-.1-1-.2-1.5-.4l.8-3-1.9-.5-.8 3.1c-.4-.1-.8-.2-1.2-.3l-2.6-.7-.5 2.1s1.4.3 1.4.4c.8.2.9.7.9 1.1l-1 3.9c.1 0 .1 0 .2.1h-.2l-1.3 5.4c-.1.3-.4.6-.9.5 0 0-1.4-.4-1.4-.4l-1 2.3 2.5.6c.5.1.9.2 1.3.4l-.8 3.2 1.9.5.8-3.1c.5.1 1 .3 1.5.4l-.8 3.1 1.9.5.8-3.2c3.3.6 5.7.4 6.8-2.6.9-2.4 0-3.8-1.7-4.7 1.2-.3 2.2-1.1 2.5-2.8zm-4.4 6.2c-.6 2.4-4.7 1.1-6 .8l1-4.1c1.3.3 5.6 1 5 3.3zm.6-6.2c-.6 2.2-4 1.1-5.1.8l.9-3.7c1.1.3 4.9.8 4.2 2.9z'/%3E%3C/svg%3E`
 
+
+// Watermark marks: the same artwork as the picker logos with the tile removed,
+// so the silhouette index.css paints behind the portfolio card reads as the
+// coin itself rather than as a rounded rectangle. Delivered through --wl-motif.
+const MARK_BTC = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23000' d='M28.2 18c.3-2.3-1.4-3.5-3.8-4.3l.8-3.1-1.9-.5-.8 3c-.5-.1-1-.2-1.5-.4l.8-3-1.9-.5-.8 3.1c-.4-.1-.8-.2-1.2-.3l-2.6-.7-.5 2.1s1.4.3 1.4.4c.8.2.9.7.9 1.1l-1 3.9c.1 0 .1 0 .2.1h-.2l-1.3 5.4c-.1.3-.4.6-.9.5 0 0-1.4-.4-1.4-.4l-1 2.3 2.5.6c.5.1.9.2 1.3.4l-.8 3.2 1.9.5.8-3.1c.5.1 1 .3 1.5.4l-.8 3.1 1.9.5.8-3.2c3.3.6 5.7.4 6.8-2.6.9-2.4 0-3.8-1.7-4.7 1.2-.3 2.2-1.1 2.5-2.8zm-4.4 6.2c-.6 2.4-4.7 1.1-6 .8l1-4.1c1.3.3 5.6 1 5 3.3zm.6-6.2c-.6 2.2-4 1.1-5.1.8l.9-3.7c1.1.3 4.9.8 4.2 2.9z'/%3E%3C/svg%3E`
+const MARK_ETH = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg fill='%23000'%3E%3Cpath d='M20 4L20 16.1 30 20.6Z'/%3E%3Cpath d='M20 4L10 20.6 20 16.1Z'/%3E%3Cpath d='M20 18.4L10 22.8 20 28.6 30 22.8Z'/%3E%3Cpath d='M20 30.8L10 25 20 36 30 25Z'/%3E%3C/g%3E%3C/svg%3E`
+const MARK_SOL = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg fill='%23000'%3E%3Cpath d='M4,32L28,32L36,25L12,25Z'/%3E%3Cpath d='M4,23.5L28,23.5L36,16.5L12,16.5Z'/%3E%3Cpath d='M4,15L28,15L36,8L12,8Z'/%3E%3C/g%3E%3C/svg%3E`
+const MARK_BAR = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23000' d='M2 17h36v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z'/%3E%3Cpath fill='%23000' d='M8 10h24l5 6H3z'/%3E%3C/svg%3E`
+const MARK_GEM = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23000' d='M20 5l12 10-12 21L8 15z'/%3E%3C/svg%3E`
+
 export const THEMES = [
-  { id: 'emerald',  name: 'Emerald',  swatch: '#00ffaa', light: '#a7f3d0', icon: 'sparkles' },
-  { id: 'gold',     name: 'Gold',     swatch: '#e8b825', light: '#fde68a', icon: 'award', logo: GOLD_BAR_SVG },
-  { id: 'silver',   name: 'Silver',   swatch: '#c0c8d8', light: '#e8ecf4', icon: 'award', logo: SILVER_BAR_SVG },
-  { id: 'bitcoin',  name: 'Bitcoin',  swatch: '#f7931a', light: '#fed7aa', icon: '₿', logo: BTC_SVG },
-  { id: 'ethereum', name: 'Ethereum', swatch: '#627eea', light: '#c7d2fe', icon: 'Ξ',  logo: ETH_SVG },
-  { id: 'solana',   name: 'Solana',   swatch: '#9945ff', light: '#d8b4fe', icon: '◎',  logo: SOLANA_SVG },
+  { id: 'emerald',  name: 'Emerald',  swatch: '#00ffaa', light: '#a7f3d0', icon: 'sparkles', mark: MARK_GEM },
+  { id: 'gold',     name: 'Gold',     swatch: '#e8b825', light: '#fde68a', icon: 'award', logo: GOLD_BAR_SVG,   mark: MARK_BAR },
+  { id: 'silver',   name: 'Silver',   swatch: '#c0c8d8', light: '#e8ecf4', icon: 'award', logo: SILVER_BAR_SVG, mark: MARK_BAR },
+  { id: 'bitcoin',  name: 'Bitcoin',  swatch: '#f7931a', light: '#fed7aa', icon: '₿', logo: BTC_SVG,    mark: MARK_BTC },
+  { id: 'ethereum', name: 'Ethereum', swatch: '#627eea', light: '#c7d2fe', icon: 'Ξ',  logo: ETH_SVG,    mark: MARK_ETH },
+  { id: 'solana',   name: 'Solana',   swatch: '#9945ff', light: '#d8b4fe', icon: '◎',  logo: SOLANA_SVG, mark: MARK_SOL },
 ]
 
 // ── Mercury-style neutral-slate system ──────────────────────────────────────
@@ -86,14 +96,21 @@ const PALETTE = {
   },
 }
 
+
 // CSS variables written as inline styles on <html> — these always win over any
 // stylesheet rule including index.css fallbacks (inline style > specificity).
 // The previous approach also wrote a <style> tag with a :root block, which was
 // redundant (same vars, lower specificity) and caused a second style recalculation
 // on every theme change. Dropped in favour of a single setProperty pass.
+// The single place a look is resolved, exported so it is testable without
+// exposing the palette table itself.
+export function paletteFor(id, mode) {
+  const known = PALETTE[id] ? id : 'emerald'
+  return PALETTE[known][mode === 'light' ? 'light' : 'dark']
+}
+
 function applyTheme(id, mode) {
-  const theme = PALETTE[id] || PALETTE.emerald
-  const p = theme[mode] || theme.dark
+  const p = paletteFor(id, mode)
   const r = document.documentElement
   r.style.setProperty('--g',            p.g)
   r.style.setProperty('--gd',           p.gd)
@@ -138,6 +155,11 @@ function applyTheme(id, mode) {
   } else {
     r.removeAttribute('data-wl-light')
   }
+  // The selected theme's coin mark, painted behind the portfolio card by
+  // index.css. Pure CSS off this variable, so no component knows about it.
+  const mark = (THEMES.find(t => t.id === id) || THEMES[0]).mark
+  r.setAttribute('data-wl-theme', id)
+  r.style.setProperty('--wl-motif', `url("${mark}")`)
   document.dispatchEvent(new CustomEvent('wl-theme'))
 }
 

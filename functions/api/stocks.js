@@ -17,11 +17,26 @@ export async function onRequestOptions() {
 
 const CACHE_SECONDS = 60
 
-// The client gives this whole function a 6s budget before falling back to a
-// slower path (see fetchTwelveDataBatch in client/src/api.js). That is what
-// sizes the AbortSignal.timeout() calls below: without a cap, one hung
-// upstream blocks past the budget and the caller discards the entire
-// response, including the symbols that came back fine.
+// TWO CEILINGS, AND THIS USED TO BREACH BOTH.
+//
+// The Buy Asset picker asks for all 130 popular tickers in one call. Stooq got
+// an 8s timeout against a client budget of 6s, and every symbol Stooq missed
+// then went to Yahoo individually, trying two hosts at 6s each. Worst case was
+// around 20 seconds for a caller that had already given up at six, so the
+// picker showed a dash for every row and the price field sat on FETCHING.
+//
+// The harder ceiling is Cloudflare's: 50 subrequests per invocation on the
+// free plan. 130 symbols across two Yahoo hosts is up to 260, so a cold call
+// for the full list could not have completed at any speed. It is the same
+// ceiling that silently truncated push notification sends.
+//
+// So the budget is now explicit. The deadline is checked before each stage,
+// Yahoo is capped and reduced to one host, and whatever arrived in time is
+// returned rather than discarded.
+const BUDGET_MS = 4500          // comfortably inside the client's timeout
+const STOOQ_MS = 3500           // one subrequest, fills nearly everything
+const YAHOO_MS = 1500           // per symbol, and only while time remains
+const YAHOO_MAX = 12            // 1 + 12 subrequests, far under the 50 cap
 
 export async function onRequestGet(context) {
   const { request } = context
@@ -32,6 +47,7 @@ export async function onRequestGet(context) {
   }
 
   const symbols = raw.split(',').map(s => s.trim()).filter(Boolean)
+  const deadline = Date.now() + BUDGET_MS
 
   // Edge cache keyed on the sorted symbol set, so requests for the same
   // tickers from every visitor worldwide share one Stooq/Yahoo fetch instead
@@ -54,7 +70,7 @@ export async function onRequestGet(context) {
     const s = symbols.map(x => `${x.toLowerCase()}.us`).join(';')
     const res = await fetch(
       `https://stooq.com/q/l/?s=${encodeURIComponent(s)}&f=sd2t2ohlcvn&h&e=csv`,
-      { signal: AbortSignal.timeout(8000) }
+      { signal: AbortSignal.timeout(STOOQ_MS) }
     )
     if (res.ok) {
       const text = await res.text()
@@ -84,29 +100,31 @@ export async function onRequestGet(context) {
     }
   } catch {}
 
-  // ── 2. Yahoo Finance v8 — only for symbols Stooq missed. ──────────────────
-  const missing = symbols.filter(sym => !result[sym])
-  if (missing.length > 0) {
+  // ── 2. Yahoo Finance v8 — only for symbols Stooq missed, and only a few.
+  //
+  // One host rather than two, and capped: this is the gap-filler for a handful
+  // of tickers Stooq does not carry, not a second full pass. Uncapped it was
+  // both the subrequest breach and the reason the response never arrived.
+  const missing = symbols.filter(sym => !result[sym]).slice(0, YAHOO_MAX)
+  if (missing.length > 0 && Date.now() < deadline) {
     await Promise.all(missing.map(async sym => {
-      for (const host of ['query1', 'query2']) {
-        try {
-          const res = await fetchWithTimeout(
-            `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`,
-            { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WalletLens/1.0)' }, signal: AbortSignal.timeout(6000) }
-          )
-          if (!res.ok) continue
-          const meta = (await res.json())?.chart?.result?.[0]?.meta
-          if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
-            result[sym] = {
-              price: meta.regularMarketPrice,
-              change_pct: meta.regularMarketChangePercent || 0,
-              name: meta.longName || meta.shortName || sym,
-              source: 'yahoo',
-            }
-            return
+      if (Date.now() >= deadline) return
+      try {
+        const res = await fetchWithTimeout(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`,
+          { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WalletLens/1.0)' }, signal: AbortSignal.timeout(YAHOO_MS) }
+        )
+        if (!res.ok) return
+        const meta = (await res.json())?.chart?.result?.[0]?.meta
+        if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
+          result[sym] = {
+            price: meta.regularMarketPrice,
+            change_pct: meta.regularMarketChangePercent || 0,
+            name: meta.longName || meta.shortName || sym,
+            source: 'yahoo',
           }
-        } catch {}
-      }
+        }
+      } catch {}
     }))
   }
 
