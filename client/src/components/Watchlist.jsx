@@ -107,8 +107,10 @@ export default function Watchlist({ portfolioPrices = {} }) {
   const alertsRef  = useRef(alerts)
   const searchRef  = useRef(null)
   const itemsRef   = useRef(items)
+  const portfolioPricesRef = useRef(portfolioPrices)
   alertsRef.current = alerts
   itemsRef.current  = items
+  portfolioPricesRef.current = portfolioPrices
 
   // Persist locally and mirror rules to the push server (no-op if push is off)
   // so price targets can fire even when the app is closed.
@@ -116,12 +118,21 @@ export default function Watchlist({ portfolioPrices = {} }) {
 
   // Reads from itemsRef (not items state) so the polling interval is set up
   // once and never torn down/recreated every time the watchlist is edited.
+  // Skips ids already covered by Dashboard's portfolioPrices poll (same 60s
+  // cadence) so a coin held in the portfolio and watched here isn't fetched
+  // twice per tick. Any stale leftover for a now-covered id is dropped so it
+  // can't outrank the fresher portfolioPrices value in the merge below.
   const fetchPrices = useCallback(async () => {
     if (!itemsRef.current.length) return
-    const ids = itemsRef.current.map(i => i.coin_id).join(',')
+    const portfolioIds = new Set(Object.keys(portfolioPricesRef.current))
+    const missingIds = itemsRef.current.map(i => i.coin_id).filter(id => !portfolioIds.has(id))
     try {
-      const px = await api.getPrices(ids)
-      if (px) setPrices(px)
+      const px = missingIds.length ? await api.getPrices(missingIds.join(',')) : {}
+      setPrices(prev => {
+        const next = { ...prev, ...px }
+        for (const id of portfolioIds) delete next[id]
+        return next
+      })
     } catch {}
   }, [])
 
