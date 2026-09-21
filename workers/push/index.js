@@ -347,6 +347,8 @@ async function handle(req, env, store) {
       ...(db.ok ? {} : { dbError: db.error }),
       service: 'walletlens-push',
       runtime: 'cloudflare-workers',
+      db,
+      dbError,
       vapid: vapidReady,
       // The public half, deliberately: it ships in every client bundle
       // already, and without it a server key that no longer matches the one
@@ -582,7 +584,7 @@ async function handle(req, env, store) {
 // Each job is isolated: one throwing must not cancel the others, because they
 // serve different channels and a news outage is not a reason to stop price
 // alerts.
-export async function runSchedule(cron, jobs) {
+export async function runSchedule(cron, jobs, env) {
   const run = async (name, fn) => {
     try { await fn() } catch (e) {
       console.error(`cron ${name} failed:`, String(e?.message || e).slice(0, 300))

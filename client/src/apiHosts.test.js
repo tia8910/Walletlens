@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { VOICE_HOST, PUSH_HOST, DATA_HOST, DRIVE_AUTH_HOST, SITE_ORIGIN, VOICE_API, PUSH_API, DATA_API, DRIVE_API, voiceProxy, dataUrl } from './apiHosts.js'
+import { VOICE_HOST, PUSH_HOST, NANSEN_HOST, DATA_HOST, DRIVE_AUTH_HOST, SITE_ORIGIN, VOICE_API, PUSH_API, NANSEN_API, DATA_API, DRIVE_API, voiceProxy, dataUrl } from './apiHosts.js'
 
 // The backend hosts were string literals in twenty-odd files. Moving off Deno
 // Deploy was therefore a search-and-replace, where missing one site fails at
@@ -84,6 +84,14 @@ describe('apiHosts', () => {
     expect(dataUrl('market.json')).toBe(`${SITE_ORIGIN}/market.json`)
   })
 
+  it('leaves the Nansen proxy on its workers.dev hostname', () => {
+    // The one service not routed through the site, because its wrangler.toml
+    // declares no route on this zone. Admitted by the *.workers.dev wildcard
+    // in the CSP rather than by a host entry of its own.
+    expect(NANSEN_API).toBe(`https://${NANSEN_HOST}`)
+    expect(NANSEN_API.endsWith('/')).toBe(false)
+  })
+
   it('builds a proxy URL with the target encoded', () => {
     expect(voiceProxy('https://x.com/a?b=1&c=2'))
       .toBe(`${SITE_ORIGIN}/api/voice/proxy?url=https%3A%2F%2Fx.com%2Fa%3Fb%3D1%26c%3D2`)
@@ -123,6 +131,7 @@ describe('the places that cannot import apiHosts.js', () => {
     expect(cspAdmits(html, VOICE_HOST)).toBe(true)
     expect(cspAdmits(html, PUSH_HOST)).toBe(true)
     expect(cspAdmits(html, DATA_HOST)).toBe(true)
+    expect(cspAdmits(html, NANSEN_HOST)).toBe(true)
   })
 
   it('admits both hosts in the _headers CSP that Pages actually serves', () => {
@@ -133,6 +142,7 @@ describe('the places that cannot import apiHosts.js', () => {
     expect(cspAdmits(headers, VOICE_HOST)).toBe(true)
     expect(cspAdmits(headers, PUSH_HOST)).toBe(true)
     expect(cspAdmits(headers, DATA_HOST)).toBe(true)
+    expect(cspAdmits(headers, NANSEN_HOST)).toBe(true)
   })
 
   it('caches the proxy in the service worker under the current host', () => {

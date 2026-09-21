@@ -16,6 +16,7 @@
 
 export const VOICE_HOST = 'walletlens-voice.tarek-abdelhameed.workers.dev'
 export const PUSH_HOST = 'walletlens-push.tarek-abdelhameed.workers.dev'
+export const NANSEN_HOST = 'walletlens-nansen.tarek-abdelhameed.workers.dev'
 
 // The scheduled datasets — market, news, stocks, economy, the economic
 // calendar and stock prices. These used to be static files the Pages build
@@ -111,6 +112,17 @@ export const SIMPLE_JSON = 'text/plain;charset=UTF-8'
  * service, the service worker and every call site still agree on one word.
  */
 export const dataUrl = (name) => `${DATA_API}/${name}`
+
+// Nansen's on-chain API, through a stateless proxy that holds the key.
+//
+// NOT routed through the site like everything above it, because
+// workers/nansen/wrangler.toml declares no route on this zone, only the
+// workers.dev subdomain. Pointing this at SITE_ORIGIN would name a path that
+// does not exist. Nothing in the client calls it yet, so it costs nothing to
+// leave as main has it; the day something does, it needs a route first or it
+// will fail on exactly the filtered networks the rest of this file works
+// around.
+export const NANSEN_API = `https://${NANSEN_HOST}`
 
 /** The voice service's CORS proxy, used for prices, logos and RSS. */
 export const voiceProxy = (url) => `${VOICE_API}proxy?url=${encodeURIComponent(url)}`

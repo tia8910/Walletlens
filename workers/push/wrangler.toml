@@ -36,6 +36,13 @@ binding = "DB"
 database_name = "walletlens-push"
 database_id = "d3e0f37d-bc3e-4525-9007-fd90c6cf35fa"
 
+# Direct call to the data worker's refresh endpoint. A service binding avoids
+# the workers.dev hostname routing that intermittently 404s (error 1042) when
+# one worker fetches another worker's public URL.
+[[services]]
+binding = "DATA"
+service = "walletlens-data"
+
 # The cadences are carried over unchanged from the Deno service. They are set
 # by what the OUTBOUND call costs, not by storage: crypto is one batched
 # CoinGecko request however many coins are held, so it can run every minute,
@@ -67,3 +74,4 @@ crons = [
 # hand.
 [vars]
 VAPID_SUBJECT = "mailto:contact@walletlens.live"
+SITE_ORIGIN = "https://walletlens.live"
