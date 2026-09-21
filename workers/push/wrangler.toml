@@ -42,8 +42,18 @@ database_id = "d3e0f37d-bc3e-4525-9007-fd90c6cf35fa"
 # while stocks cost one request per symbol and stay on five.
 [triggers]
 crons = [
-  "* * * * *",     # price targets, and the crypto-only move pass
-  "*/5 * * * *",   # all-kinds moves, and news
+  # Price targets used to have a minute of their own. On Workers Free the CPU
+  # ceiling is per invocation, and 1,440 invocations a day of a job that reads
+  # every subscription out of D1 and parses it blew that ceiling roughly 1,000
+  # times in 24 hours: Cloudflare stops a worker mid-task when it does, so the
+  # overrun was not a billing footnote, it was targets and moves being cut off
+  # part way through delivering.
+  #
+  # Folding targets into this pass takes the day from 1,752 invocations to 312.
+  # It costs four minutes of latency on an alert, and it costs almost nothing
+  # in CPU here: SubStore caches for five minutes, so checkMoves finds the rows
+  # checkTargets already loaded and parsed rather than reading D1 again.
+  "*/5 * * * *",   # price targets, all-kinds moves, and news
   "5 * * * *",     # hourly: morning brief, win-back ladder, zakat, feature tips
 ]
 

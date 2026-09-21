@@ -384,8 +384,7 @@ async function handle(req, env, store) {
       // What each cron is responsible for. A channel present above but absent
       // here is defined and never scheduled, which is its own failure mode.
       schedules: {
-        '* * * * *': ['targets', 'moves-crypto'],
-        '*/5 * * * *': ['moves', 'news'],
+        '*/5 * * * *': ['targets', 'moves', 'news'],
         '5 * * * *': ['daily (digest, retention, zakat, portfolio, academy, hacks, features)', 'trend'],
       },
     }, headers)
@@ -590,14 +589,14 @@ export async function runSchedule(cron, jobs) {
     }
   }
 
-  if (cron === '* * * * *') {
-    await run('targets', () => jobs.checkTargets())
-    // Crypto every minute: one batched request however many coins are held.
-    await run('moves-crypto', () => jobs.checkMoves({ kinds: ['crypto'], refreshSeen: false }))
-    return
-  }
   if (cron === '*/5 * * * *') {
-    // Everything else — stocks cost one request per symbol — plus news.
+    // Targets first. A hit target is the most time-sensitive thing this worker
+    // sends, and it used to have a minute of its own until the CPU ceiling made
+    // that unaffordable — see the comment on `crons` in wrangler.toml.
+    await run('targets', () => jobs.checkTargets())
+    // All kinds, which already covers the crypto the minute pass used to do on
+    // its own. Stocks cost one request per symbol, which is why this never ran
+    // more often than every five minutes.
     await run('moves', () => jobs.checkMoves())
     await run('news', () => jobs.checkNews())
     // main carried a 'data-refresh' step here that poked the data worker from
