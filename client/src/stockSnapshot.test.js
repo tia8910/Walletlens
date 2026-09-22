@@ -84,7 +84,7 @@ describe('building the snapshot', () => {
     // One request for all 125 symbols came back mostly N/D, which is how the
     // published file ended up with a handful of prices in it.
     expect(feeds).toMatch(/export const STOOQ_CHUNK = 20/)
-    expect(feeds).toMatch(/for \(const group of chunk\(TICKERS, STOOQ_CHUNK\)\)/)
+    expect(feeds).toMatch(/chunk\(TICKERS, STOOQ_CHUNK\)\.map\(/)
   })
 
   it('does not discard the symbols Stooq could not price', () => {

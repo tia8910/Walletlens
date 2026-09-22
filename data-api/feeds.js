@@ -536,15 +536,27 @@ export function parseFeed(xml, feed, seen = new Set(), limit = 30) {
 export async function fetchFeedGroup(feeds, now = Date.now()) {
   const articles = []
   const seen = new Set()
-  for (const feed of feeds) {
-    try {
-      articles.push(...parseFeed(await getText(feed.url, 15000), feed, seen))
-    } catch (e) {
+  // Fetch every feed concurrently — up to 4 feeds x 15s timeout each used to
+  // be a fully serial chain (worst case ~60s for the news group alone),
+  // eating into this worker's scheduled-invocation time budget for no
+  // reason: the feeds don't depend on each other. Parsing stays a sequential
+  // pass over the results in original feed order so cross-feed de-dup via
+  // `seen` is unaffected by which request happens to finish first.
+  const results = await Promise.allSettled(feeds.map(feed => getText(feed.url, 15000)))
+  feeds.forEach((feed, i) => {
+    const result = results[i]
+    if (result.status === 'rejected') {
       // One dead feed must not empty the group. Three of four still makes a
       // usable news page; failing the whole job makes an empty one.
+      console.warn(`${feed.name} failed: ${result.reason}`)
+      return
+    }
+    try {
+      articles.push(...parseFeed(result.value, feed, seen))
+    } catch (e) {
       console.warn(`${feed.name} failed: ${e}`)
     }
-  }
+  })
   articles.sort((a, b) => pubDateMs(b.pubDate) - pubDateMs(a.pubDate))
   return { updated: isoStamp(now), count: articles.length, articles: articles.slice(0, 120) }
 }
@@ -701,6 +713,18 @@ export function chunk(arr, size) {
   return out
 }
 
+/** Runs `fn` over `items` with at most `limit` in flight at once. */
+async function mapLimited(items, limit, fn) {
+  let i = 0
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) {
+      const idx = i++
+      await fn(items[idx])
+    }
+  })
+  await Promise.all(workers)
+}
+
 /**
  * The stock snapshot every client reads.
  *
@@ -722,7 +746,12 @@ export async function fetchStockPrices(now = Date.now()) {
   const prices = {}
   const unpriced = []
 
-  for (const group of chunk(TICKERS, STOOQ_CHUNK)) {
+  // The 7 batches don't depend on each other, so fetch them concurrently
+  // instead of one at a time — this was a fully serial chain of up to 7x20s
+  // timeouts, all counting against this Worker's execution-time budget, when
+  // the comment above already establishes the *count* (not the concurrency)
+  // is what the 50-subrequest ceiling bounds.
+  await Promise.all(chunk(TICKERS, STOOQ_CHUNK).map(async (group) => {
     try {
       const { prices: p, missing } = parseStooqCsv(await getText(stooqUrl(group), 20000))
       Object.assign(prices, p)
@@ -732,13 +761,18 @@ export async function fetchStockPrices(now = Date.now()) {
       console.warn(`stooq batch [${group[0]}…] failed: ${e}`)
       unpriced.push(...group)
     }
-  }
+  }))
 
   // Stooq does not carry every US listing, and answers a closed market for
   // some with N/D. Yahoo fills those rather than leaving a dash in the picker.
-  for (const sym of unpriced.slice(0, YAHOO_FALLBACK_MAX)) {
+  // Capped at a modest concurrency rather than one at a time — up to 25
+  // single-symbol lookups were a fully serial chain, and rather than fully
+  // parallel (which could look like a burst to Yahoo), a small in-flight
+  // limit keeps the same request count while cutting wall-clock.
+  const YAHOO_CONCURRENCY = 5
+  await mapLimited(unpriced.slice(0, YAHOO_FALLBACK_MAX), YAHOO_CONCURRENCY, async (sym) => {
     const key = `stock:${sym.toLowerCase()}`
-    if (prices[key]) continue
+    if (prices[key]) return
     try {
       const data = await getJson(
         `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`,
@@ -752,7 +786,7 @@ export async function fetchStockPrices(now = Date.now()) {
         }
       }
     } catch { /* the dash for this one symbol is the cost */ }
-  }
+  })
 
   // `missing` is reported rather than discarded: a count that drops tells the
   // next person the upstreams changed, instead of the picker doing it.
