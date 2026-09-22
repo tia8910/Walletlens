@@ -215,6 +215,22 @@ function _saveCache(key, val) {
 }
 let priceCache = _loadCache(PRICE_CACHE_KEY);
 let lastPriceFetch = 0;
+// When each coin was last ASKED for, by id.
+//
+// lastPriceFetch above is one timestamp for the whole app, and using it to
+// decide freshness is a bug with a very specific shape: the dashboard polls
+// the coins you hold every minute, so that clock is almost always inside
+// CACHE_DURATION, and a coin you did NOT just poll is then judged fresh on the
+// strength of somebody else's fetch. priceCache is persisted to localStorage,
+// so what came back was a price from whenever you last looked at that coin —
+// a day earlier, in the report that found this — presented as current, in the
+// trade sheet, as the price you are about to record a buy at.
+//
+// Per id, so a coin is refetched when IT is stale. Attempts are stamped rather
+// than successes, so a coin no source can price is still retried only once a
+// minute instead of on every keystroke. In memory only: a reload should go and
+// ask again, which is exactly what you want after the app has been shut.
+const priceFetchedAt = Object.create(null);
 let coinImageCache = _loadCache(IMAGE_CACHE_KEY);
 let lastImageFetch = 0;
 const _idAliasCache = _loadCache(ID_ALIAS_CACHE_KEY);
@@ -1713,7 +1729,10 @@ export const api = {
     if (cryptoIds.length > 0) {
       tasks.push((async () => {
         const now = Date.now();
-        const needsFresh = now - lastPriceFetch > CACHE_DURATION || cryptoIds.some(id => !priceCache[id]);
+        // Per coin. See priceFetchedAt for why the global clock was wrong.
+        const needsFresh = cryptoIds.some(
+          id => !priceCache[id] || now - (priceFetchedAt[id] || 0) > CACHE_DURATION,
+        );
         if (needsFresh) {
           // ── Primary fast path: Binance public /api/v3/ticker/24hr ──
           // CORS-enabled, no key, very fast. We map each CoinGecko id to its
@@ -1981,6 +2000,9 @@ export const api = {
               }
             }
           }
+        // Stamped after the sources have been tried, not before, so a pass
+        // that throws does not mark these coins as recently asked for.
+        if (needsFresh) for (const id of cryptoIds) priceFetchedAt[id] = Date.now();
         for (const id of cryptoIds) {
           if (priceCache[id]) result[id] = { ...priceCache[id], source: priceCache[id].source || 'coingecko' };
         }
