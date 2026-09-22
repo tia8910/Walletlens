@@ -1753,6 +1753,34 @@ export const api = {
         // afterwards is one nothing came back for.
         const beforeFetch = {};
         for (const id of cryptoIds) beforeFetch[id] = priceCache[id];
+        // Ids THIS pass has not filled yet — which is not the same question as
+        // "ids with nothing in the cache", and the difference is the whole bug.
+        //
+        // priceCache is persisted, so a coin you have ever seen a price for
+        // has an entry forever. Every stage below used to skip any id that had
+        // one, so the moment a coin was cached, Binance was the only source
+        // that could ever refresh it again. For a coin Binance does not list —
+        // STONKBROKER, BASECAT, any small token — that meant never: CoinGecko,
+        // CryptoCompare, CoinCap, CoinPaprika, the static market snapshot and
+        // the id-resolver were all skipped on its behalf, and the entry from
+        // whenever it was first fetched was handed back for good.
+        //
+        // That is the original report. STONKBROKER was not offered a day-old
+        // 0.0112966 because the network failed; it was offered a day-old price
+        // because nothing was ever going to ask again.
+        //
+        // Identity against the pre-fetch entry, so an id another stage has
+        // already filled this pass is still skipped and the stages stay cheap.
+        //
+        // Gated on needsFresh because the old filter was doing double duty: it
+        // decided which ids a stage still needed AND, by going empty once
+        // everything was cached, throttled the stages between polls. Only the
+        // first job was its to do, so the throttle is stated here instead of
+        // being a side effect of the bug. When needsFresh is false every id is
+        // cached and inside the window, so there is nothing to ask for anyway.
+        const unfilled = () => (needsFresh
+          ? cryptoIds.filter(id => !priceCache[id] || priceCache[id] === beforeFetch[id])
+          : []);
         if (needsFresh) {
           // ── Primary fast path: Binance public /api/v3/ticker/24hr ──
           // CORS-enabled, no key, very fast. We map each CoinGecko id to its
@@ -1824,7 +1852,7 @@ export const api = {
 
           // Only call CoinGecko for IDs Binance didn't fill — skip the whole
           // round-trip if Binance covered everything (common case for top coins).
-          const afterBinance = cryptoIds.filter(id => !priceCache[id]);
+          const afterBinance = unfilled();
           if (afterBinance.length > 0) {
             // Race CoinGecko (all proxies in parallel) and CryptoCompare simultaneously.
             // Whichever responds first fills the cache; the other fills any gaps.
@@ -1875,7 +1903,7 @@ export const api = {
             }
           }
           // Fallback: CoinCap for any IDs still missing
-          const missing = cryptoIds.filter(id => !priceCache[id]);
+          const missing = unfilled();
           if (missing.length > 0) {
             // Raced across the proxies, not walked through them one by one:
             // this is the fourth tier, and the sequential version added up to
@@ -1901,7 +1929,7 @@ export const api = {
             }
           }
           // Last resort: CoinPaprika (no key, native CORS)
-          const stillMissing = cryptoIds.filter(id => !priceCache[id]);
+          const stillMissing = unfilled();
           if (stillMissing.length > 0) {
             // CoinPaprika uses its own IDs (e.g. "btc-bitcoin") — map common CoinGecko IDs
             const PAPRIKA_ID_MAP = {
@@ -1938,7 +1966,7 @@ export const api = {
           // Absolute last resort: the same-origin /market.json snapshot
           // (≤30 min old) — works even when every crypto API and proxy is
           // blocked by the user's network.
-          const finalMissing = cryptoIds.filter(id => !priceCache[id]);
+          const finalMissing = unfilled();
           if (finalMissing.length > 0) {
             const mkt = await _loadStaticMarket();
             if (mkt) {
@@ -1971,7 +1999,7 @@ export const api = {
           // that ticker, then price the real id and file the answer under the
           // id the user's holding uses. The mapping is persisted, so this costs
           // one extra request per unknown coin, ever.
-          const unresolved = cryptoIds.filter(id => !priceCache[id]);
+          const unresolved = unfilled();
           if (unresolved.length > 0) {
             const _txs3 = loadData('transactions');
             const resolvedPairs = [];
