@@ -103,6 +103,39 @@ describe('price freshness is decided per coin', () => {
     expect(px.stonkbroker?.stale, 'but it is labelled for what it is').toBe(true)
   })
 
+  it('does not call a warm cache hit stale', async () => {
+    // THE PHONE BUG. The dashboard polls the coins you hold every minute, so
+    // by the time you open the trade sheet the cache is usually seconds old
+    // and no fetch runs at all. Judging freshness on "did this pass refetch"
+    // then flagged a current price as stale, and the sheet refused to prefill
+    // it — "couldn't fetch — enter manually" for a price the same coin showed
+    // correctly in a freshly opened browser tab.
+    localStorage.setItem('crypto_tracker_transactions', JSON.stringify([
+      { id: 1, coin_id: 'bitcoin', coin_symbol: 'BTC', type: 'buy', amount: 1, price: 80000 },
+    ]))
+    const calls = []
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      calls.push(String(url))
+      return {
+        ok: true, status: 200,
+        async json() { return [{ symbol: 'BTCUSDT', lastPrice: '91234', priceChangePercent: '2' }] },
+        async text() { return '' },
+      }
+    }))
+    const { api } = await import('./api')
+
+    // The dashboard's poll.
+    const first = await api.getPrices('bitcoin')
+    expect(first.bitcoin?.stale, 'the poll itself is fresh').toBeUndefined()
+
+    // The trade sheet opening moments later, inside the cache window.
+    calls.length = 0
+    const second = await api.getPrices('bitcoin')
+    expect(calls.length, 'served from cache, as intended').toBe(0)
+    expect(second.bitcoin?.usd).toBe(91234)
+    expect(second.bitcoin?.stale, 'a cache hit inside the window is fresh, not stale').toBeUndefined()
+  })
+
   it('does not mark a price stale when it did come back fresh', async () => {
     localStorage.setItem('crypto_tracker_transactions', JSON.stringify([
       { id: 1, coin_id: 'bitcoin', coin_symbol: 'BTC', type: 'buy', amount: 1, price: 80000 },

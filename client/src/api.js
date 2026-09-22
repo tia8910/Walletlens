@@ -231,6 +231,21 @@ let lastPriceFetch = 0;
 // minute instead of on every keystroke. In memory only: a reload should go and
 // ask again, which is exactly what you want after the app has been shut.
 const priceFetchedAt = Object.create(null);
+
+// When an entry was last REPLACED by a source that actually answered, which is
+// a different question from when we last asked.
+//
+// Marking staleness off "did this pass refetch" alone was wrong in the common
+// case: a warm cache under CACHE_DURATION skips the fetch entirely, so nothing
+// was replaced and a perfectly current quote got flagged stale. On the phone,
+// where the dashboard keeps these coins warm, opening the trade sheet almost
+// always lands inside that window — the price the browser showed fine came
+// back as "couldn't fetch — enter manually".
+//
+// A cache hit inside CACHE_DURATION is fresh. That is what the duration means.
+// In memory only, for the same reason as priceFetchedAt: after a reload we
+// have not yet heard from anyone, and should say so until we have.
+const priceFreshAt = Object.create(null);
 let coinImageCache = _loadCache(IMAGE_CACHE_KEY);
 let lastImageFetch = 0;
 const _idAliasCache = _loadCache(ID_ALIAS_CACHE_KEY);
@@ -2007,7 +2022,16 @@ export const api = {
           }
         // Stamped after the sources have been tried, not before, so a pass
         // that throws does not mark these coins as recently asked for.
-        if (needsFresh) for (const id of cryptoIds) priceFetchedAt[id] = Date.now();
+        const doneAt = Date.now();
+        if (needsFresh) {
+          for (const id of cryptoIds) {
+            priceFetchedAt[id] = doneAt;
+            // Identity, not value: a source that reprices a coin to the same
+            // number still writes a new object, and a coin nothing answered
+            // for still holds the one it had.
+            if (priceCache[id] && priceCache[id] !== beforeFetch[id]) priceFreshAt[id] = doneAt;
+          }
+        }
         for (const id of cryptoIds) {
           if (!priceCache[id]) continue;
           // A cached value nothing refreshed is STALE, and saying so is the
@@ -2021,7 +2045,7 @@ export const api = {
           // the site to survive — the trade sheet then prefilled a price from
           // whenever the coin was last reachable AS THE COST BASIS OF A BUY.
           // Reported as STONKBROKER offering 0.0112966 against a live 0.01285.
-          const fresh = needsFresh && priceCache[id] !== beforeFetch[id];
+          const fresh = doneAt - (priceFreshAt[id] || 0) <= CACHE_DURATION;
           result[id] = {
             ...priceCache[id],
             source: priceCache[id].source || 'coingecko',
