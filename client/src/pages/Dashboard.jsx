@@ -3923,6 +3923,13 @@ export default function Dashboard() {
     }
   }, [portfolio, prices, coinImages, loaded, pricesLoading])
 
+  // Whether the sector heatmap card should show at all — memoized because
+  // hasCryptoExposure() does a localStorage read + JSON.parse for
+  // crypto-free portfolios, and this value is read on every frame of the
+  // ~1.4s count-up animation that fires on each price poll (see
+  // tickerValue below), not just on real data changes.
+  const cryptoExposure = useMemo(() => hasCryptoExposure(enriched), [enriched])
+
   // Feed the Android home-screen widgets. They are native and cannot read this
   // page's localStorage, so the numbers are handed over through a local intent.
   // No-op outside the installed Android app, and throttled internally.
@@ -5791,7 +5798,7 @@ export default function Dashboard() {
           {/* Correlation, heatmap — below-fold, loaded lazily */}
           <Suspense fallback={null}>
             {cardVis.correlation && enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
-            {cardVis.sector_heatmap && hasCryptoExposure(enriched) && <SectorHeatmap />}
+            {cardVis.sector_heatmap && cryptoExposure && <SectorHeatmap />}
           </Suspense>
         </>
       )}

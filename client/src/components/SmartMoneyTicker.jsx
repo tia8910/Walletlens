@@ -79,8 +79,27 @@ export default function SmartMoneyTicker() {
       } catch { /* the strip stays hidden rather than showing an error */ }
     }
     load()
-    const id = setInterval(load, REFRESH_MS)
-    return () => { alive = false; clearInterval(id) }
+    let id = setInterval(load, REFRESH_MS)
+
+    // Pause polling while the tab is hidden — this strip is mounted at the
+    // App shell level for the whole session, so an ungated 15-minute timer
+    // kept firing an outbound fetch from backgrounded tabs indefinitely.
+    // Mirrors the same handleVisibility pattern in PriceTicker.
+    function handleVisibility() {
+      if (document.hidden) {
+        clearInterval(id); id = null
+      } else {
+        load()
+        if (!id) id = setInterval(load, REFRESH_MS)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      alive = false
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [show])
 
   // Nothing to say is better than an empty bar taking up a row of a phone

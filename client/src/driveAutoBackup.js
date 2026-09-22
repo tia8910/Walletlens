@@ -64,6 +64,11 @@ let pulling = false
 /** One at a time, and never louder than a console warning. */
 async function run(why) {
   if (running || !canAutoBackup()) return
+  // A hidden tab has nothing to show and gets a foreground check (run('foreground'))
+  // the moment it comes back via onVisible — mirrors the same guard on pull()
+  // below. Without it, a backgrounded tab with Drive connected still rebuilt
+  // the full backup payload and hashed it every 10 minutes for no one to see.
+  if (why === 'sweep' && typeof document !== 'undefined' && document.hidden) return
   running = true
   try {
     const res = await autoBackup()

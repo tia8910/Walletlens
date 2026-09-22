@@ -30,9 +30,26 @@ export default function SupportNudge({ holdingsCount = 0, busy = false }) {
   useEffect(() => {
     if (show) return
     const check = () => { if (shouldShowSupport({ holdingsCount, busy })) setShow(true) }
-    const iv = setInterval(check, 15000)
+    let iv = setInterval(check, 15000)
     check()
-    return () => clearInterval(iv)
+
+    // Pause polling while the tab is hidden — this gate can run for days of
+    // a session (it waits on a multi-open, multi-day dwell rule), so an
+    // ungated timer meant it kept firing in backgrounded tabs indefinitely.
+    function handleVisibility() {
+      if (document.hidden) {
+        clearInterval(iv); iv = null
+      } else {
+        check()
+        if (!iv) iv = setInterval(check, 15000)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      clearInterval(iv)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [show, holdingsCount, busy])
 
   // Track the impression once, when it actually reaches the screen. Firing on
