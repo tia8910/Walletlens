@@ -25,8 +25,24 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      # `packages: ''` is the fix, and it has to be here rather than left to
+      # the default.
+      #
+      # setup-android@v3 installs `tools platform-tools` unless told otherwise,
+      # and `tools` is the OLD SDK Tools package Google removed from the
+      # repository. sdkmanager answers "Failed to find package 'tools'" and
+      # exits 1, which fails the step before a single line of our source is
+      # compiled. It broke on its own, with no change on our side: run 27 of
+      # this workflow passed on 1 September and run 28 failed on 21 September,
+      # and in between the only thing that moved was the runner image.
+      #
+      # Empty means install nothing extra. The runner image already ships
+      # platform-tools and the build-tools Gradle asks for, and Gradle resolves
+      # anything else it needs through the SDK it is handed.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: ''
 
       - name: Accept Android SDK licenses
         run: |
