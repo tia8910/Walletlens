@@ -145,6 +145,28 @@ describe('the places that cannot import apiHosts.js', () => {
     expect(cspAdmits(headers, NANSEN_HOST)).toBe(true)
   })
 
+  it('admits the app\'s own backend origin by name, not by \'self\'', () => {
+    // SITE_ORIGIN is where every dataset, the CORS proxy, push registration
+    // and the Drive token exchange are called. On walletlens.live itself
+    // 'self' covers all of them, which is why its absence from connect-src
+    // went unnoticed — and why it broke everywhere else at once.
+    //
+    // A Pages preview deployment (walletlenslive1.pages.dev) is a different
+    // origin, so 'self' is the preview host and every request to
+    // walletlens.live is refused by the browser before it is sent: market.json,
+    // news.json, smartmoney.json, economic-calendar.json and the voice proxy
+    // that relays CoinGecko, Binance, Stooq and Yahoo. The app looked like it
+    // had lost its backend — an empty ticker, "PRICES OFFLINE", dashes in the
+    // asset picker — on a build whose backend was fine.
+    //
+    // Naming the origin explicitly makes the policy independent of where the
+    // bundle is served from: previews, the packaged store build, and a local
+    // `vite preview` all reach the same services the production site does.
+    const host = SITE_ORIGIN.replace(/^https?:\/\//, '')
+    expect(cspAdmits(read('index.html'), host)).toBe(true)
+    expect(cspAdmits(read('public/_headers'), host)).toBe(true)
+  })
+
   it('caches the proxy in the service worker under the current host', () => {
     // sw.js caches proxy responses so repeat price polls are served locally.
     // A stale host here does not break the app — it silently stops caching,

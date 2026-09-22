@@ -94,3 +94,33 @@ describe('the critical path stays lean', () => {
     expect(app).not.toMatch(/^import .*from '\.\/driveAutoBackup'/m)
   })
 })
+
+// The other half of "critical path": what the first painted frame is allowed
+// to be missing. Leanness is worth nothing if the app paints before its CSS.
+describe('the app never paints before its stylesheet', () => {
+  // Comments stripped for the same reason staticImports does it: the config's
+  // own prose explains the pattern this test forbids, and prose is not code.
+  const config = readFileSync(resolve(src, '..', 'vite.config.js'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1 ')
+
+  it('leaves the entry stylesheet render-blocking', () => {
+    // The build used to rewrite <link rel="stylesheet"> into the preload+swap
+    // pattern to keep ~90 KB of mostly-unused CSS off the critical path, on
+    // the reasoning that index.html's inline boot screen needs no CSS.
+    //
+    // That stops being true the moment React mounts. The bundle and the
+    // stylesheet are two independent downloads racing, and the JS regularly
+    // wins: React replaces the boot screen with the entire app while `rel` is
+    // still "preload" and no rule has been applied. What the user sees is the
+    // real app — header, ticker, nav, dashboard — in the browser's default
+    // serif on a white page, until the CSS catches up. Delaying the .css
+    // response by ~1.5s reproduces it every time.
+    //
+    // A render-blocking link costs one round-trip the preload scanner starts
+    // immediately anyway. An unstyled render of the whole app costs the user's
+    // belief that the app works.
+    expect(config).not.toMatch(/rel=['"]preload['"]\s+as=['"]style['"]/)
+    expect(config).not.toMatch(/this\.rel\s*=\s*['"]stylesheet['"]/)
+  })
+})

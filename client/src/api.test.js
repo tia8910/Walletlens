@@ -168,3 +168,69 @@ describe('api.restoreLastImport', () => {
     expect(wallets[0].name).toBe('Restored')
   })
 })
+
+// A holding seeded without a price is a holding bought at nothing, which the
+// P&L reads as an infinite gain. The onboarding screen is allowed to give up
+// on a slow price fetch — it stops "Setting up…" from spinning for half a
+// minute on a blocked network — but only because this repairs what it skipped.
+describe('backfillCostBasis', () => {
+  const tx = (over) => ({
+    id: 1, wallet_id: 1, type: 'buy', category: 'crypto',
+    coin_id: 'bitcoin', coin_symbol: 'BTC', coin_name: 'Bitcoin',
+    amount: 2, price_per_unit: 0, total_cost: 0, date: '2026-01-01', ...over,
+  })
+  const seed = (txs) => localStorage.setItem('crypto_tracker_transactions', JSON.stringify(txs))
+  const stored = () => JSON.parse(localStorage.getItem('crypto_tracker_transactions'))
+
+  // Prices come from the module's own cache, so no network is involved.
+  const cachePrice = (id, usd) =>
+    localStorage.setItem('crypto_tracker_price_cache_v1', JSON.stringify({ [id]: { usd } }))
+
+  it('does nothing when asked about nothing', async () => {
+    seed([tx()])
+    expect(await api.backfillCostBasis([])).toBe(0)
+    expect(stored()[0].price_per_unit).toBe(0)
+  })
+
+  it('leaves a transaction that already has a cost basis alone', async () => {
+    cachePrice('bitcoin', 90000)
+    seed([tx({ price_per_unit: 61234, total_cost: 122468 })])
+    expect(await api.backfillCostBasis(['bitcoin'])).toBe(0)
+    // Not re-priced at today's number: the user bought at what they bought at.
+    expect(stored()[0].price_per_unit).toBe(61234)
+  })
+
+  it('leaves transactions for other assets alone', async () => {
+    cachePrice('bitcoin', 90000)
+    seed([tx({ coin_id: 'ethereum', coin_symbol: 'ETH' })])
+    expect(await api.backfillCostBasis(['bitcoin'])).toBe(0)
+    expect(stored()[0].price_per_unit).toBe(0)
+  })
+
+  it('repairs a zero cost basis, and the total cost with it', async () => {
+    seed([tx()])
+    const real = api.getPrices
+    api.getPrices = async () => ({ bitcoin: { usd: 90000 } })
+    try {
+      expect(await api.backfillCostBasis(['bitcoin'])).toBe(1)
+    } finally { api.getPrices = real }
+    expect(stored()[0].price_per_unit).toBe(90000)
+    // total_cost is what the P&L divides by; leaving it at 0 would move the
+    // wrong number rather than fix it.
+    expect(stored()[0].total_cost).toBe(180000)
+  })
+
+  it('is a no-op the second time, so a retry cannot double-price a holding', async () => {
+    seed([tx()])
+    const real = api.getPrices
+    let calls = 0
+    api.getPrices = async () => { calls++; return { bitcoin: { usd: 90000 } } }
+    try {
+      await api.backfillCostBasis(['bitcoin'])
+      expect(await api.backfillCostBasis(['bitcoin'])).toBe(0)
+    } finally { api.getPrices = real }
+    // The second run found nothing to repair and never asked for a price.
+    expect(calls).toBe(1)
+    expect(stored()[0].price_per_unit).toBe(90000)
+  })
+})
