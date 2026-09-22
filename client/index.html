@@ -564,9 +564,19 @@
     </script>
 
     <!-- X conversion tracking event — deferred to window load so it never
-         competes with the initial render or module evaluation. -->
+         competes with the initial render or module evaluation.
+
+         Guarded, because twq() does not always exist. The block that defines
+         its stub returns early inside the installed app: the pixel is skipped
+         there on purpose, so that the Play Data safety form does not have to
+         declare advertising. This call sat outside that guard and would have
+         thrown a ReferenceError on every app launch — except that until the
+         load event was fixed it never fired in the app at all, so the bug was
+         invisible. Making load reliable is what surfaced it. -->
     <script>
-      window.addEventListener('load', function() { twq('event', 'tw-rc7yj-rccu7', {}); }, { once: true });
+      window.addEventListener('load', function () {
+        if (typeof twq === 'function') twq('event', 'tw-rc7yj-rccu7', {})
+      }, { once: true });
     </script>
 
   </body>
