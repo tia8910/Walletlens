@@ -135,18 +135,24 @@ describe('the scheduled datasets', () => {
     expect(assets.fetch).toHaveBeenCalledOnce()
   })
 
-  it('passes the upstream explanation through instead of burying it', async () => {
-    // serve() answers a cold store with 503 {"error":"no data yet"}. Replacing
-    // that with the site's HTML 404 made "never deployed" and "deployed but
-    // the upstream failed" arrive identically, and four diagnostic reports in
-    // a row could not tell them apart.
+  it('keeps the upstream explanation without spending the shipped copy on it', async () => {
+    // serve() answers a cold store with 503 {"error":"no data yet"}, and that
+    // used to be returned INSTEAD of the shipped copy so the diagnosis was not
+    // lost. It bought the diagnosis with the data: a cold data worker answered
+    // /news.json with a 503, the client fell through to live RSS, and on a
+    // network that blocks the public CORS proxies the news strip rendered
+    // nothing — while 95 fresh articles sat in the same deployment.
+    //
+    // The explanation rides on a header now, so both survive.
+    assets.fetch.mockResolvedValueOnce(new Response('{"articles":[{"title":"x"}]}', { status: 200 }))
     vi.stubGlobal('fetch', async () => new Response('{"error":"no data yet"}', {
       status: 503, headers: { 'Content-Type': 'application/json' },
     }))
-    const res = await call('/smartmoney.json')
-    expect(res.status).toBe(503)
-    expect((await res.json()).error).toBe('no data yet')
-    expect(assets.fetch, 'buried a JSON explanation under the asset server').not.toHaveBeenCalled()
+    const res = await call('/news.json')
+    expect(res.status).toBe(200)
+    expect((await res.json()).articles).toHaveLength(1)
+    expect(res.headers.get('X-WL-Dataset')).toBe('shipped')
+    expect(res.headers.get('X-WL-Upstream'), 'lost why the live copy was missed').toBe('503')
   })
 
   it('names the dataset and the upstream status when nothing ships a copy', async () => {
@@ -162,8 +168,32 @@ describe('the scheduled datasets', () => {
     expect(body.upstream).toBe(404)
   })
 
+  it('carries the upstream\'s own words into the 502 when nothing ships', async () => {
+    // This is the line that separates a cold store from a worker that was
+    // never deployed, and it used to be the whole response body.
+    assets.fetch.mockResolvedValueOnce(new Response('<!DOCTYPE html>', { status: 404 }))
+    vi.stubGlobal('fetch', async () => new Response('{"error":"no data yet"}', {
+      status: 503, headers: { 'Content-Type': 'application/json' },
+    }))
+    const body = await (await call('/smartmoney.json')).json()
+    expect(body.upstream).toBe(503)
+    expect(body.detail).toContain('no data yet')
+  })
+
+  it('does not serve the SPA shell as a dataset', async () => {
+    // Pages rewrites an unknown path to index.html with a 200, so `shipped.ok`
+    // is true for a dataset that ships no file at all. Without a content check
+    // the client is handed a page of HTML where it expects JSON.
+    assets.fetch.mockResolvedValueOnce(new Response('<!DOCTYPE html><title>WalletLens</title>', { status: 200 }))
+    vi.stubGlobal('fetch', async () => new Response('Not found', { status: 404 }))
+    const res = await call('/smartmoney.json')
+    expect(res.status).toBe(502)
+    expect((await res.json()).error).toBe('dataset_unavailable')
+  })
+
   it('still prefers a shipped copy when one exists', async () => {
     // Stale beats empty for the datasets the build does ship.
+    assets.fetch.mockResolvedValueOnce(new Response('{"articles":[]}', { status: 200 }))
     vi.stubGlobal('fetch', async () => new Response('Not found', { status: 404 }))
     const res = await call('/news.json')
     expect(assets.fetch).toHaveBeenCalledOnce()
