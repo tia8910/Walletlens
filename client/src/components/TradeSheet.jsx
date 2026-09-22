@@ -335,8 +335,18 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     if (!resolvedId) { setPrice(''); setPriceFetchFailed(false); return }
     setPrice('…'); setPriceFetchFailed(false)
     api.getPrices(resolvedId).then(px => {
-      const p = px?.[resolvedId]?.usd ?? px?.[resolvedId]?.price
-      if (p) { setPrice(String(p)); setPriceFetchFailed(false) }
+      const quote = px?.[resolvedId]
+      const p = quote?.usd ?? quote?.price
+      // A stale quote is a cached value nothing could refresh, and it must not
+      // become the cost basis of a trade. Left to fill the box it looks exactly
+      // like a live price, and the number it writes into the portfolio is
+      // whatever the coin cost the last time the network could reach it: the
+      // reported case offered 0.0112966 for a coin trading at 0.01285.
+      //
+      // Treated as a failed fetch, which it is. The field clears and says so,
+      // and the price becomes something the person types deliberately rather
+      // than something the app quietly asserted.
+      if (p && !quote?.stale) { setPrice(String(p)); setPriceFetchFailed(false) }
       else { setPrice(''); setPriceFetchFailed(true) }
     }).catch(() => { setPrice(''); setPriceFetchFailed(true) })
   }, [selectedCoin, category, stockTicker, fiatCode]) // eslint-disable-line

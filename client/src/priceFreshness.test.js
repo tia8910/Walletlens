@@ -85,6 +85,46 @@ describe('price freshness is decided per coin', () => {
     expect(first).toBeGreaterThan(0)
   })
 
+  it('marks a cached crypto price stale when nothing could refresh it', async () => {
+    // The case the device was in. Metals, fiat and stocks already flagged
+    // their fallbacks; crypto handed back localStorage as if it were a live
+    // quote, so a price from whenever the network last worked was offered as
+    // the cost basis of a buy.
+    localStorage.setItem('crypto_tracker_price_cache_v1', JSON.stringify({
+      stonkbroker: { usd: 0.0112966, usd_24h_change: 0, symbol: 'STONKBROKER', source: 'coingecko' },
+    }))
+    // Every source down, the way a filtering resolver drops them.
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('blocked') }))
+
+    const { api } = await import('./api')
+    const px = await api.getPrices('stonkbroker')
+
+    expect(px.stonkbroker?.usd, 'the last known price is still offered').toBe(0.0112966)
+    expect(px.stonkbroker?.stale, 'but it is labelled for what it is').toBe(true)
+  })
+
+  it('does not mark a price stale when it did come back fresh', async () => {
+    localStorage.setItem('crypto_tracker_transactions', JSON.stringify([
+      { id: 1, coin_id: 'bitcoin', coin_symbol: 'BTC', type: 'buy', amount: 1, price: 80000 },
+    ]))
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true, status: 200,
+      async json() { return [{ symbol: 'BTCUSDT', lastPrice: '91234', priceChangePercent: '2' }] },
+      async text() { return '' },
+    })))
+    const { api } = await import('./api')
+    const px = await api.getPrices('bitcoin')
+    expect(px.bitcoin?.usd).toBe(91234)
+    expect(px.bitcoin?.stale, 'a live quote carries no stale flag').toBeUndefined()
+  })
+
+  it('the trade sheet refuses to prefill a stale price', () => {
+    // A stale quote in the price box is indistinguishable from a live one, and
+    // whatever it says becomes the recorded cost basis.
+    const sheet = readFileSync(join(SRC, 'components/TradeSheet.jsx'), 'utf8')
+    expect(sheet).toMatch(/if \(p && !quote\?\.stale\)/)
+  })
+
   it('does not decide freshness from the app-wide clock', () => {
     // A source guard, because the behaviour above is easy to reintroduce by
     // "optimising" the predicate back to one timestamp.

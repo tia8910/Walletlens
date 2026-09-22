@@ -1733,6 +1733,11 @@ export const api = {
         const needsFresh = cryptoIds.some(
           id => !priceCache[id] || now - (priceFetchedAt[id] || 0) > CACHE_DURATION,
         );
+        // Entry identity before the fetch. Every write below replaces the entry
+        // with a new object, so an id still holding the same reference
+        // afterwards is one nothing came back for.
+        const beforeFetch = {};
+        for (const id of cryptoIds) beforeFetch[id] = priceCache[id];
         if (needsFresh) {
           // ── Primary fast path: Binance public /api/v3/ticker/24hr ──
           // CORS-enabled, no key, very fast. We map each CoinGecko id to its
@@ -2004,7 +2009,24 @@ export const api = {
         // that throws does not mark these coins as recently asked for.
         if (needsFresh) for (const id of cryptoIds) priceFetchedAt[id] = Date.now();
         for (const id of cryptoIds) {
-          if (priceCache[id]) result[id] = { ...priceCache[id], source: priceCache[id].source || 'coingecko' };
+          if (!priceCache[id]) continue;
+          // A cached value nothing refreshed is STALE, and saying so is the
+          // whole point.
+          //
+          // Metals, fiat and stocks have always marked their fallbacks this
+          // way. Crypto did not: when every source failed it handed back
+          // whatever was in localStorage, indistinguishable from a live quote.
+          // On a network whose resolver drops api.coingecko.com — and that is
+          // a real network, it is the one this app was already routed through
+          // the site to survive — the trade sheet then prefilled a price from
+          // whenever the coin was last reachable AS THE COST BASIS OF A BUY.
+          // Reported as STONKBROKER offering 0.0112966 against a live 0.01285.
+          const fresh = needsFresh && priceCache[id] !== beforeFetch[id];
+          result[id] = {
+            ...priceCache[id],
+            source: priceCache[id].source || 'coingecko',
+            ...(fresh ? {} : { stale: true }),
+          };
         }
       })());
     }
