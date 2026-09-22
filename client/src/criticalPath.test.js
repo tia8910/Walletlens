@@ -124,3 +124,29 @@ describe('the app never paints before its stylesheet', () => {
     expect(config).not.toMatch(/this\.rel\s*=\s*['"]stylesheet['"]/)
   })
 })
+
+// The market snapshot has two sources that can both answer. Which one the
+// dashboard waits for is the difference between prices appearing at once and
+// prices appearing "after a while".
+describe('the market snapshot paints from whichever source answers first', () => {
+  const api = readFileSync(join(src, 'api.js'), 'utf8')
+
+  it('races CoinGecko against the same-origin snapshot rather than awaiting both', () => {
+    // Promise.all here meant paying CoinGecko's latency even when market.json
+    // had already been served from our own origin — the data arrived early and
+    // sat unused behind a slower request.
+    const fn = api.slice(api.indexOf('async function _loadMarketSnapshotUncached'))
+      .slice(0, 3000)
+    expect(fn).toContain('Promise.any([')
+    expect(fn).not.toMatch(/await Promise\.all\(\[\s*fetchJSONFast/)
+  })
+
+  it('still upgrades to the live rows when the snapshot won the race', () => {
+    // market.json carries the same fields, only older; letting CoinGecko
+    // overwrite the cache means the next 60s poll reads the fresher rows.
+    const fn = api.slice(api.indexOf('async function _loadMarketSnapshotUncached'))
+      .slice(0, 3000)
+    expect(fn).toMatch(/first\.label === 'snapshot'/)
+    expect(fn).toMatch(/cgPromise\.then\(/)
+  })
+})

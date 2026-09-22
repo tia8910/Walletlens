@@ -546,27 +546,48 @@ async function _loadMarketSnapshotUncached(perPage = 250) {
   // snapshot could have supplied in the first second.
   //
   // fetchJSONFast races the direct request and every proxy at once (4s cap),
-  // and the snapshot runs alongside it, so the whole tier is bounded by its
-  // slowest member instead of by their sum. CoinGecko still wins when it
-  // answers — it carries the 1h/7d change fields the snapshot does not — but
-  // losing it now costs seconds, not tens of them.
-  const [data, staticMkt] = await Promise.all([
-    fetchJSONFast(
-      `${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=false&price_change_percentage=1h%2C24h%2C7d`
-    ),
-    _loadStaticMarket(),
-  ]);
-  if (Array.isArray(data) && data.length > 0) {
-    cache[perPage] = { t: now, v: data };
+  // and the snapshot runs alongside it.
+  //
+  // Whichever produces rows FIRST is the answer, rather than both being
+  // awaited together. Our own origin usually answers market.json in a fraction
+  // of the time CoinGecko's free tier takes to decide whether it is rate-
+  // limiting us, and waiting for the pair meant paying CoinGecko's latency
+  // even when the data was already in hand. That is the "prices take time to
+  // load" the dashboard still showed after the cross-origin fix: the data
+  // arrived early and sat unused behind a slower request.
+  //
+  // Nothing is given up by painting from the snapshot: market.json is built
+  // from this same CoinGecko endpoint with 1h/24h/7d, so it carries every
+  // field, only up to a refresh interval older. If CoinGecko does land later
+  // it overwrites the cache, and the next 60s poll reads the fresher rows.
+  const cgPromise = fetchJSONFast(
+    `${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=false&price_change_percentage=1h%2C24h%2C7d`
+  );
+  const snapshotPromise = _loadStaticMarket();
+  const rowsOrBust = (label) => (v) => {
+    if (Array.isArray(v) && v.length > 0) return { label, rows: v };
+    throw new Error(`${label} empty`);
+  };
+  const store = (rows) => {
+    cache[perPage] = { t: Date.now(), v: rows };
     _saveCache(MARKET_CACHE_KEY, cache);
-    return data;
-  }
+  };
 
-  // Fallback: same-origin snapshot — reachable wherever the site itself is
-  if (staticMkt) {
-    cache[perPage] = { t: now, v: staticMkt };
-    _saveCache(MARKET_CACHE_KEY, cache);
-    return staticMkt.slice(0, perPage);
+  const first = await Promise.any([
+    cgPromise.then(rowsOrBust('coingecko')),
+    snapshotPromise.then(rowsOrBust('snapshot')),
+  ]).catch(() => null);
+
+  if (first) {
+    store(first.rows);
+    if (first.label === 'snapshot') {
+      // Deliberately not awaited: the snapshot has already been returned, and
+      // this only refreshes what the next read will find.
+      cgPromise.then((live) => {
+        if (Array.isArray(live) && live.length > 0) store(live);
+      }).catch(() => {});
+    }
+    return first.rows.slice(0, perPage);
   }
 
   // Fallback: CoinCap. Raced across the proxies for the same reason as above —
