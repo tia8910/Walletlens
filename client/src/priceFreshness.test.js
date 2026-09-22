@@ -85,6 +85,55 @@ describe('price freshness is decided per coin', () => {
     expect(first).toBeGreaterThan(0)
   })
 
+  it('refreshes a cached coin that Binance does not list', async () => {
+    // THE ROOT CAUSE, and the reason STONKBROKER was a day out of date.
+    //
+    // priceCache is persisted, so a coin you have ever priced keeps an entry
+    // forever. Every source after Binance was gated on "has no cache entry",
+    // so the moment a coin was cached, Binance became the only thing that
+    // could ever refresh it. For a coin Binance does not list, that meant
+    // nothing ever asked again — CoinGecko, CryptoCompare, CoinCap, Paprika
+    // and the id-resolver were all skipped on its behalf.
+    //
+    // A fresh browser tab has an empty cache, so it asked and got the live
+    // price. The phone, carrying months of localStorage, never did. That is
+    // the whole of "works on browser, not on app".
+    localStorage.setItem('crypto_tracker_price_cache_v1', JSON.stringify({
+      stonkbroker: { usd: 0.0112966, usd_24h_change: 0, symbol: 'STONKBROKER', source: 'coingecko' },
+    }))
+    localStorage.setItem('crypto_tracker_transactions', JSON.stringify([
+      { id: 1, coin_id: 'stonkbroker', coin_symbol: 'STONKBROKER', type: 'buy', amount: 1, price: 0.01 },
+    ]))
+
+    const calls = []
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      const u = String(url)
+      calls.push(u)
+      // Binance answers, and simply does not carry this token.
+      if (u.includes('binance')) {
+        return { ok: true, status: 200, async json() { return [{ symbol: 'BTCUSDT', lastPrice: '90000', priceChangePercent: '1' }] }, async text() { return '' } }
+      }
+      if (u.includes('coins/markets')) {
+        return {
+          ok: true, status: 200,
+          async json() {
+            return [{ id: 'stonkbroker', current_price: 0.01296858, price_change_percentage_24h: 3, name: 'StonkBroker', symbol: 'stonkbroker' }]
+          },
+          async text() { return '' },
+        }
+      }
+      throw new Error('blocked')
+    }))
+
+    const { api } = await import('./api')
+    const px = await api.getPrices('stonkbroker')
+
+    expect(calls.some(u => u.includes('coins/markets')),
+      'a cached coin Binance cannot price must still be asked about').toBe(true)
+    expect(px.stonkbroker?.usd, 'and comes back at the live price, not the stored one').toBe(0.01296858)
+    expect(px.stonkbroker?.stale, 'so it is not stale either').toBeUndefined()
+  })
+
   it('marks a cached crypto price stale when nothing could refresh it', async () => {
     // The case the device was in. Metals, fiat and stocks already flagged
     // their fallbacks; crypto handed back localStorage as if it were a live
