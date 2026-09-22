@@ -70,14 +70,37 @@ export default function WelcomeStart({ onDone }) {
       const date = new Date().toISOString().split('T')[0]
       const fiatId = `fiat:${currency.toLowerCase()}`
 
-      // Fetch live prices so cost basis ≈ current value (P&L starts ~0).
+      // Fetch live prices so cost basis ≈ current value (P&L starts ~0) —
+      // but never let that fetch decide how long this button spins.
+      //
+      // getPrices fans out per asset class over four tiers of sources and
+      // proxies. When the first ones are unreachable — a blocked network, a
+      // rate-limited CoinGecko — the fan-out still resolves, eventually, and
+      // the await here had no ceiling. "Setting up…" for half a minute, on the
+      // first thing a new user ever does, for four numbers they typed
+      // themselves and that get written to localStorage either way.
+      //
+      // So the fetch is given a short deadline it usually beats. Whatever has
+      // not landed by then falls back to the prices already cached, and
+      // anything still missing is repaired by backfillCostBasis below, after
+      // the dashboard is already on screen.
       const ids = []
       if (cashN > 0) ids.push(fiatId)
       if (usdtN > 0) ids.push('tether')
       if (goldN > 0) ids.push(GOLD_ID)
       if (btcN > 0)  ids.push('bitcoin')
-      let prices = {}
-      try { prices = ids.length ? await api.getPrices(ids.join(',')) : {} } catch {}
+      const PRICE_DEADLINE_MS = 2500
+      let prices = ids.length ? api.getCachedPrices(ids.join(',')) : {}
+      if (ids.length) {
+        // The un-raced promise is kept: it is what backfillCostBasis rides on,
+        // and dropping it would throw away a fetch already in flight.
+        const live = api.getPrices(ids.join(',')).catch(() => ({}))
+        const onTime = await Promise.race([
+          live,
+          new Promise(r => setTimeout(() => r(null), PRICE_DEADLINE_MS)),
+        ])
+        if (onTime) prices = { ...prices, ...onTime }
+      }
       const px = (id, fallback) => (prices[id]?.usd ?? prices[id]?.price ?? fallback)
 
       let count = 0
@@ -85,7 +108,11 @@ export default function WelcomeStart({ onDone }) {
         await api.addTransaction({
           wallet_id: wallet.id, type: 'buy', category: 'fiat',
           coin_id: fiatId, coin_symbol: currency, coin_name: `${currency} Cash`,
-          amount: cashN, price_per_unit: px(fiatId, 1), date,
+          // One unit of USD is a dollar and always will be. One unit of any
+          // other currency is not, so falling back to 1 there would price an
+          // EGP balance as dollars and look like a fifty-fold gain; 0 marks it
+          // for backfillCostBasis to repair once the FX rate lands.
+          amount: cashN, price_per_unit: px(fiatId, currency === 'USD' ? 1 : 0), date,
         })
         count++
       }
@@ -118,6 +145,9 @@ export default function WelcomeStart({ onDone }) {
       track('welcome_start_seed', { cash: cashN > 0, usdt: usdtN > 0, gold: goldN > 0, btc: btcN > 0, currency })
       trackProfileCreated({ method: 'welcome_balances', source: 'welcome_start' })
       sfx.haptic([10, 30, 12])
+      // Deliberately not awaited: anything the deadline above cut short gets
+      // its cost basis repaired while the dashboard is already on screen.
+      if (ids.length) api.backfillCostBasis(ids).catch(() => {})
       finish()
     } catch {
       finish()

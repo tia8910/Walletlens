@@ -47,10 +47,49 @@ export const DRIVE_AUTH_HOST = 'walletlens-drive-auth.tarek-abdelhameed.workers.
 // every other cause of a TypeError. Nothing in the app can fix that, and no
 // amount of CORS work was ever going to.
 //
-// So the browser talks to walletlens.live, which it plainly reaches, and
-// Worker routes on the zone carry the request the rest of the way. It also
-// makes every one of these same-origin: no CORS, no preflight, no allowlist.
-export const SITE_ORIGIN = 'https://walletlens.live'
+// So the browser talks to the site, which it plainly reaches, and the Pages
+// Worker carries the request the rest of the way. It also makes every one of
+// these same-origin: no CORS, no preflight, no allowlist.
+//
+// The canonical origin, for the callers that have no page to ask: push-api
+// builds dataset URLs from inside the push Worker, and a Worker has no
+// `location` to read.
+export const CANONICAL_ORIGIN = 'https://walletlens.live'
+
+/**
+ * The origin the browser talks to: whichever one it is already on.
+ *
+ * This was the literal 'https://walletlens.live', and "same-origin" was true
+ * only on the one deployment that happens to be served there. Everywhere else
+ * — every Pages preview, every branch deploy — the app fetched its own
+ * datasets and its own CORS proxy ACROSS origins, and walletlens.live answers
+ * /* with `Cross-Origin-Resource-Policy: same-origin` and no
+ * `Access-Control-Allow-Origin`. So the browser refused every response: no
+ * market.json, no news, no proxy, no prices. "PRICES OFFLINE" on a build whose
+ * backend was working perfectly, and unreproducible on production by
+ * construction.
+ *
+ * Nothing needed to be cross-origin. Every deployment ships dist/_worker.js
+ * and dist/_routes.json, so /market.json, /news.json and /api/* are served by
+ * that deployment's OWN worker, which then reaches the upstream services
+ * server-side where neither CORS nor a DNS blocklist applies. Asking our own
+ * origin for them is both correct and strictly cheaper.
+ *
+ * Only origins that carry that worker qualify. A Vite dev server on http does
+ * not, a native shell on file:// or a custom scheme does not, and pointing
+ * either at itself would name paths that 404 — so they fall back to canonical,
+ * which is what they have always used.
+ */
+export function resolveSiteOrigin(loc = typeof location === 'undefined' ? null : location) {
+  if (!loc) return CANONICAL_ORIGIN
+  const { protocol, hostname, origin } = loc
+  if (protocol !== 'https:') return CANONICAL_ORIGIN
+  // walletlens.live itself, and the Pages project's preview deployments.
+  if (hostname === 'walletlens.live' || hostname.endsWith('.pages.dev')) return origin
+  return CANONICAL_ORIGIN
+}
+
+export const SITE_ORIGIN = resolveSiteOrigin()
 
 // The trailing slash on one and not the other is what the call sites already
 // expected; both shapes are preserved so this change stays a pure refactor.

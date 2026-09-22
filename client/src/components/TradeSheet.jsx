@@ -135,6 +135,32 @@ function presetForCategory(cat, stockTicker, fiatCode, otherInput) {
 }
 
 // ── Leg resolvers ─────────────────────────────────────────────────────────
+// A USD price for a counter-asset leg, without letting the price fan-out hold
+// the Confirm button open.
+//
+// These legs are the "bought with USDT" / "sold for BTC" side of a trade: the
+// user has already entered the amount and the price for the asset they care
+// about, and this lookup only converts that figure into units of the OTHER
+// asset. It was an unbounded `await api.getPrices(...)` in the middle of the
+// submit path, so on a network where the upstream sources are slow or blocked
+// the button sat on "Setting up…" for as long as every tier took to give up.
+//
+// Cached first, because a dashboard that has been open for a moment already
+// holds a price no older than the poll interval, and a counter-leg does not
+// need a fresher one than the screen behind it. Then a live fetch with a
+// deadline, and 0 when even that does not land — which the callers already
+// treat as "no usable price".
+const LEG_PRICE_DEADLINE_MS = 3000
+async function legPriceUsd(id) {
+  const cached = api.getCachedPrices(id)?.[id]?.usd
+  if (cached > 0) return cached
+  const live = await Promise.race([
+    api.getPrices(id).catch(() => null),
+    new Promise(resolve => setTimeout(() => resolve(null), LEG_PRICE_DEADLINE_MS)),
+  ])
+  return live?.[id]?.usd || 0
+}
+
 async function buildReceiveLeg(target, proceedsUsd) {
   const T = (target || '').toUpperCase()
   if (!T) return null
@@ -142,13 +168,13 @@ async function buildReceiveLeg(target, proceedsUsd) {
   if (T === 'USDT') return { coin_id: 'tether',            symbol: 'USDT', name: 'Tether',    category: 'crypto', amount: proceedsUsd, pricePerUnit: 1 }
   if (T === 'USDC') return { coin_id: 'usd-coin',          symbol: 'USDC', name: 'USD Coin',  category: 'crypto', amount: proceedsUsd, pricePerUnit: 1 }
   if (T === 'BTC') {
-    const px = await api.getPrices('bitcoin'); const usd = px?.bitcoin?.usd || 0
+    const usd = await legPriceUsd('bitcoin')
     if (!usd) return null
     return { coin_id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', category: 'crypto', amount: proceedsUsd / usd, pricePerUnit: usd }
   }
   if (T === 'EUR') {
     let eurUsd = null
-    try { const r = await api.getPrices(`${FIAT_PREFIX}eur`); eurUsd = r?.[`${FIAT_PREFIX}eur`]?.usd || null } catch {}
+    try { eurUsd = (await legPriceUsd(`${FIAT_PREFIX}eur`)) || null } catch {}
     if (!eurUsd) eurUsd = 1.08
     return { coin_id: `${FIAT_PREFIX}eur`, symbol: 'EUR', name: 'Euro', category: 'fiat', amount: proceedsUsd / eurUsd, pricePerUnit: eurUsd }
   }
@@ -157,7 +183,7 @@ async function buildReceiveLeg(target, proceedsUsd) {
     const search = await api.searchCoins?.(lower)
     const hit = Array.isArray(search) ? search.find(c => (c.symbol || '').toLowerCase() === lower) : null
     if (hit) {
-      const px = await api.getPrices(hit.id); const usd = px?.[hit.id]?.usd || 0
+      const usd = await legPriceUsd(hit.id)
       if (usd > 0) return { coin_id: hit.id, symbol: T, name: hit.name || T, category: 'crypto', amount: proceedsUsd / usd, pricePerUnit: usd }
     }
   } catch {}
@@ -171,13 +197,13 @@ async function buildSpendLeg(source, costUsd) {
   if (T === 'USDT') return { coin_id: 'tether',            symbol: 'USDT', name: 'Tether',    category: 'crypto', amount: costUsd, pricePerUnit: 1 }
   if (T === 'USDC') return { coin_id: 'usd-coin',          symbol: 'USDC', name: 'USD Coin',  category: 'crypto', amount: costUsd, pricePerUnit: 1 }
   if (T === 'BTC') {
-    const px = await api.getPrices('bitcoin'); const usd = px?.bitcoin?.usd || 0
+    const usd = await legPriceUsd('bitcoin')
     if (!usd) return null
     return { coin_id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', category: 'crypto', amount: costUsd / usd, pricePerUnit: usd }
   }
   if (T === 'EUR') {
     let eurUsd = null
-    try { const r = await api.getPrices(`${FIAT_PREFIX}eur`); eurUsd = r?.[`${FIAT_PREFIX}eur`]?.usd || null } catch {}
+    try { eurUsd = (await legPriceUsd(`${FIAT_PREFIX}eur`)) || null } catch {}
     if (!eurUsd) eurUsd = 1.08
     return { coin_id: `${FIAT_PREFIX}eur`, symbol: 'EUR', name: 'Euro', category: 'fiat', amount: costUsd / eurUsd, pricePerUnit: eurUsd }
   }
@@ -186,7 +212,7 @@ async function buildSpendLeg(source, costUsd) {
     const search = await api.searchCoins?.(lower)
     const hit = Array.isArray(search) ? search.find(c => (c.symbol || '').toLowerCase() === lower) : null
     if (hit) {
-      const px = await api.getPrices(hit.id); const usd = px?.[hit.id]?.usd || 0
+      const usd = await legPriceUsd(hit.id)
       if (usd > 0) return { coin_id: hit.id, symbol: T, name: hit.name || T, category: 'crypto', amount: costUsd / usd, pricePerUnit: usd }
     }
   } catch {}

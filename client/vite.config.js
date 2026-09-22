@@ -28,32 +28,31 @@ function swVersionPlugin() {
   }
 }
 
-// The entry stylesheet bundles CSS for every route (dashboard, blog,
-// technicals, academy, ...) into one file, but Chrome DevTools coverage on
-// the landing page shows only ~5% of it is actually used there — as a
-// default render-blocking <link>, the browser must still fetch and parse
-// the whole ~90 KB (gzip) file before First Contentful Paint, even though
-// index.html already paints an inline, CSS-independent boot screen. This
-// plugin rewrites the built stylesheet link(s) into the standard
-// preload+swap pattern so CSS loads in parallel with the JS bundle instead
-// of blocking paint, with a <noscript> fallback for non-JS clients.
-function asyncCssPlugin() {
-  return {
-    name: 'async-css',
-    apply: 'build',
-    transformIndexHtml: {
-      order: 'post',
-      handler(html) {
-        return html.replace(
-          /<link rel="stylesheet"([^>]*?)href="([^"]+\.css)"([^>]*)>/g,
-          (_match, before, href, after) =>
-            `<link rel="preload" as="style"${before}href="${href}"${after} onload="this.onload=null;this.rel='stylesheet'">` +
-            `<noscript><link rel="stylesheet"${before}href="${href}"${after}></noscript>`
-        )
-      },
-    },
-  }
-}
+// The entry stylesheet stays a render-blocking <link rel="stylesheet">.
+//
+// It used to be rewritten into the preload+swap pattern
+// (`rel="preload" as="style" onload="this.rel='stylesheet'"`) to keep ~90 KB
+// of mostly-unused CSS off the critical path. The premise was that
+// index.html's inline boot screen paints without CSS, so nothing on screen
+// needs the stylesheet early.
+//
+// That premise only holds until React mounts. The bundle and the stylesheet
+// are then two independent downloads racing each other, and the JS routinely
+// wins: React replaces the boot screen with the whole app — header, ticker,
+// nav, dashboard — while `rel` is still "preload" and not one rule has been
+// applied. The result is the real app rendered in Times New Roman on the
+// browser's default background, for as long as the CSS takes to arrive. It
+// is reproducible by delaying the .css response by ~1.5s, and it is what a
+// first visit on a slow connection actually looked like.
+//
+// An unstyled first render costs far more than the FCP it bought: it reads
+// as a broken app, and a store reviewer who sees it once has seen it. Blocking
+// on the stylesheet costs one round-trip that the preload scanner starts
+// immediately anyway, and guarantees the first painted frame is styled.
+//
+// If this is ever worth optimising again, the fix is to split the entry CSS
+// per route (so the dashboard blocks on dashboard CSS only), NOT to let the
+// app paint before its stylesheet.
 
 // Which build is this?
 //
@@ -131,7 +130,6 @@ export default defineConfig({
     react(),
     swVersionPlugin(),
     pagesWorkerPlugin(),
-    asyncCssPlugin(),
     // Bundle visualizer: run `ANALYZE=true npm run build` to generate dist/stats.html
     process.env.ANALYZE && visualizer({
       filename: 'dist/stats.html',

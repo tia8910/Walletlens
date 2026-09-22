@@ -94,3 +94,59 @@ describe('the critical path stays lean', () => {
     expect(app).not.toMatch(/^import .*from '\.\/driveAutoBackup'/m)
   })
 })
+
+// The other half of "critical path": what the first painted frame is allowed
+// to be missing. Leanness is worth nothing if the app paints before its CSS.
+describe('the app never paints before its stylesheet', () => {
+  // Comments stripped for the same reason staticImports does it: the config's
+  // own prose explains the pattern this test forbids, and prose is not code.
+  const config = readFileSync(resolve(src, '..', 'vite.config.js'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1 ')
+
+  it('leaves the entry stylesheet render-blocking', () => {
+    // The build used to rewrite <link rel="stylesheet"> into the preload+swap
+    // pattern to keep ~90 KB of mostly-unused CSS off the critical path, on
+    // the reasoning that index.html's inline boot screen needs no CSS.
+    //
+    // That stops being true the moment React mounts. The bundle and the
+    // stylesheet are two independent downloads racing, and the JS regularly
+    // wins: React replaces the boot screen with the entire app while `rel` is
+    // still "preload" and no rule has been applied. What the user sees is the
+    // real app — header, ticker, nav, dashboard — in the browser's default
+    // serif on a white page, until the CSS catches up. Delaying the .css
+    // response by ~1.5s reproduces it every time.
+    //
+    // A render-blocking link costs one round-trip the preload scanner starts
+    // immediately anyway. An unstyled render of the whole app costs the user's
+    // belief that the app works.
+    expect(config).not.toMatch(/rel=['"]preload['"]\s+as=['"]style['"]/)
+    expect(config).not.toMatch(/this\.rel\s*=\s*['"]stylesheet['"]/)
+  })
+})
+
+// The market snapshot has two sources that can both answer. Which one the
+// dashboard waits for is the difference between prices appearing at once and
+// prices appearing "after a while".
+describe('the market snapshot paints from whichever source answers first', () => {
+  const api = readFileSync(join(src, 'api.js'), 'utf8')
+
+  it('races CoinGecko against the same-origin snapshot rather than awaiting both', () => {
+    // Promise.all here meant paying CoinGecko's latency even when market.json
+    // had already been served from our own origin — the data arrived early and
+    // sat unused behind a slower request.
+    const fn = api.slice(api.indexOf('async function _loadMarketSnapshotUncached'))
+      .slice(0, 3000)
+    expect(fn).toContain('Promise.any([')
+    expect(fn).not.toMatch(/await Promise\.all\(\[\s*fetchJSONFast/)
+  })
+
+  it('still upgrades to the live rows when the snapshot won the race', () => {
+    // market.json carries the same fields, only older; letting CoinGecko
+    // overwrite the cache means the next 60s poll reads the fresher rows.
+    const fn = api.slice(api.indexOf('async function _loadMarketSnapshotUncached'))
+      .slice(0, 3000)
+    expect(fn).toMatch(/first\.label === 'snapshot'/)
+    expect(fn).toMatch(/cgPromise\.then\(/)
+  })
+})

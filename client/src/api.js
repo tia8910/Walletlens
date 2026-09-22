@@ -147,6 +147,36 @@ async function fetchJSONFast(url) {
   } catch { return null }
 }
 
+// First of several URLs to answer with a 2xx, or null if none does.
+//
+// For the pairs written as "try A, and if that fails try B": a direct call and
+// the same call through our proxy, where B exists because A is geo-blocked in
+// some countries rather than because A is usually wrong.
+//
+// In sequence, everyone A blocks pays A's full timeout before B — the one that
+// works for them — is even attempted, and on the crypto path that was 10.5s
+// spent before CoinGecko was reached. Raced, the pair costs one timeout, the
+// loser is aborted the moment the winner lands, and the region that cannot
+// reach A is no longer the region that waits longest for it.
+//
+// One AbortController per attempt rather than one shared by all of them:
+// Promise.any resolves with a Response whose body has not been read yet, so a
+// shared signal would abort the winner's own stream along with the losers'.
+async function fetchFirstOk(urls, ms) {
+  const controllers = urls.map(() => new AbortController());
+  const attempts = urls.map((u, i) =>
+    fetchWithTimeout(u, ms, controllers[i].signal).then(r => {
+      if (!r?.ok) throw new Error(String(r?.status ?? 'failed'));
+      return { r, i };
+    })
+  );
+  try {
+    const { r, i } = await Promise.any(attempts);
+    controllers.forEach((c, j) => { if (j !== i) c.abort(); });
+    return r;
+  } catch { return null }
+}
+
 // ─── Asset Categories ───
 // Non-crypto assets track manually-entered prices in localStorage under
 // `crypto_tracker_manual_prices` as { [coin_id]: { usd, usd_24h_change, updated_at } }.
@@ -506,27 +536,66 @@ async function _loadMarketSnapshotUncached(perPage = 250) {
     return fresh.v.slice(0, perPage);
   }
 
-  // Primary: CoinGecko
-  const data = await fetchJSON(
+  // CoinGecko and our own snapshot, together rather than one after the other.
+  //
+  // These ran in sequence: fetchJSON tries the direct URL and then each CORS
+  // proxy one at a time, so a rate-limited CoinGecko — the ordinary case for
+  // the free tier from a browser — burned up to 15s before the snapshot was
+  // asked for at all, and another 15s of sequential proxies on CoinCap after
+  // that. Half a minute of an empty dashboard, ending in data that the
+  // snapshot could have supplied in the first second.
+  //
+  // fetchJSONFast races the direct request and every proxy at once (4s cap),
+  // and the snapshot runs alongside it.
+  //
+  // Whichever produces rows FIRST is the answer, rather than both being
+  // awaited together. Our own origin usually answers market.json in a fraction
+  // of the time CoinGecko's free tier takes to decide whether it is rate-
+  // limiting us, and waiting for the pair meant paying CoinGecko's latency
+  // even when the data was already in hand. That is the "prices take time to
+  // load" the dashboard still showed after the cross-origin fix: the data
+  // arrived early and sat unused behind a slower request.
+  //
+  // Nothing is given up by painting from the snapshot: market.json is built
+  // from this same CoinGecko endpoint with 1h/24h/7d, so it carries every
+  // field, only up to a refresh interval older. If CoinGecko does land later
+  // it overwrites the cache, and the next 60s poll reads the fresher rows.
+  const cgPromise = fetchJSONFast(
     `${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=false&price_change_percentage=1h%2C24h%2C7d`
   );
-  if (Array.isArray(data) && data.length > 0) {
-    cache[perPage] = { t: now, v: data };
+  const snapshotPromise = _loadStaticMarket();
+  const rowsOrBust = (label) => (v) => {
+    if (Array.isArray(v) && v.length > 0) return { label, rows: v };
+    throw new Error(`${label} empty`);
+  };
+  const store = (rows) => {
+    cache[perPage] = { t: Date.now(), v: rows };
     _saveCache(MARKET_CACHE_KEY, cache);
-    return data;
+  };
+
+  const first = await Promise.any([
+    cgPromise.then(rowsOrBust('coingecko')),
+    snapshotPromise.then(rowsOrBust('snapshot')),
+  ]).catch(() => null);
+
+  if (first) {
+    store(first.rows);
+    if (first.label === 'snapshot') {
+      // Deliberately not awaited: the snapshot has already been returned, and
+      // this only refreshes what the next read will find.
+      cgPromise.then((live) => {
+        if (Array.isArray(live) && live.length > 0) store(live);
+      }).catch(() => {});
+    }
+    return first.rows.slice(0, perPage);
   }
 
-  // Fallback: same-origin snapshot — reachable wherever the site itself is
-  const staticMkt = await _loadStaticMarket();
-  if (staticMkt) {
-    cache[perPage] = { t: now, v: staticMkt };
-    _saveCache(MARKET_CACHE_KEY, cache);
-    return staticMkt.slice(0, perPage);
-  }
-
-  // Fallback: CoinCap
+  // Fallback: CoinCap. Raced across the proxies for the same reason as above —
+  // by the time execution reaches here two tiers have already failed, and a
+  // sequential walk through four proxies is the difference between a late
+  // dashboard and one that never fills before the user gives up.
   try {
-    const ccData = await fetchJSON(`https://rest.coincap.io/v3/assets?limit=${perPage}`);
+    const ccData = await fetchJSONFast(`https://rest.coincap.io/v3/assets?limit=${perPage}`);
     const list = Array.isArray(ccData?.data) ? ccData.data : [];
     if (list.length > 0) {
       const mapped = list.map((a, i) => ({
@@ -1437,6 +1506,53 @@ export const api = {
     return null;
   },
 
+  /**
+   * Fill in a cost basis the network was too slow to supply, after the fact.
+   *
+   * Seeding a holding at its live price is what makes P&L start at zero. When
+   * the price fetch has to be abandoned to keep a screen responsive, the
+   * alternative is a price of 0 — and a position bought at nothing shows as an
+   * infinite gain, which is worse than the wait it avoided.
+   *
+   * So the write goes ahead at 0 and this repairs it once prices arrive, in
+   * the background, with nobody watching a spinner. Only transactions still
+   * sitting at 0 are touched, so a real edit is never overwritten and running
+   * this twice changes nothing the second time.
+   *
+   * Returns the number of transactions repaired.
+   */
+  backfillCostBasis: async (coinIds) => {
+    const wanted = new Set();
+    for (const id of coinIds || []) {
+      if (!id) continue;
+      wanted.add(id);
+      // addTransaction stores crypto under its canonical id, which is not
+      // always the id the caller asked for a price by.
+      wanted.add(normalizeCoinId(id));
+    }
+    if (wanted.size === 0) return 0;
+
+    // Check for work before going looking for prices. The common case is that
+    // the fetch beat its deadline and there is nothing here to repair, and a
+    // price fan-out fired for no reason is the same cost as one fired for a
+    // reason.
+    const txs = loadData('transactions');
+    const needy = txs.filter(tx => !(tx.price_per_unit > 0) && wanted.has(tx.coin_id));
+    if (needy.length === 0) return 0;
+
+    const prices = await api.getPrices([...wanted].join(','));
+    let patched = 0;
+    for (const tx of needy) {
+      const usd = prices?.[tx.coin_id]?.usd;
+      if (!(usd > 0)) continue;
+      tx.price_per_unit = usd;
+      tx.total_cost = tx.amount * usd;
+      patched++;
+    }
+    if (patched > 0) saveData('transactions', txs);
+    return patched;
+  },
+
   // Manual (non-crypto) prices
   getManualPrices: () => loadData('manual_prices', {}),
   setManualPrice: (coinId, price) => {
@@ -1620,12 +1736,14 @@ export const api = {
             // tickers locally so unknown symbols can never poison the batch.
             if (tradeable.length > 0) {
               try {
-                // Binance is geo-blocked from some IPs (e.g. Egypt, Turkey). Try
-                // direct first, then fall back to our server-side proxy so those
-                // users still get Binance's fast, complete price + 24h data.
+                // Binance is geo-blocked from some IPs (e.g. Egypt, Turkey), so
+                // the request also goes through our server-side proxy — both at
+                // once rather than proxy-after-direct. See fetchFirstOk: run in
+                // sequence, the users the direct call blocks were exactly the
+                // users who paid its full timeout first, with the rest of the
+                // crypto pipeline queued behind them.
                 const _bUrl = 'https://api.binance.com/api/v3/ticker/24hr';
-                let res = await fetchWithTimeout(_bUrl, 4500).catch(() => null);
-                if (!res || !res.ok) res = await fetchWithTimeout(DENO_PROXY(_bUrl), 6000).catch(() => null);
+                const res = await fetchFirstOk([_bUrl, DENO_PROXY(_bUrl)], 6000);
                 if (res && res.ok) {
                   const list = await res.json();
                   if (Array.isArray(list)) {
@@ -1720,7 +1838,11 @@ export const api = {
           // Fallback: CoinCap for any IDs still missing
           const missing = cryptoIds.filter(id => !priceCache[id]);
           if (missing.length > 0) {
-            const ccData = await fetchJSON(
+            // Raced across the proxies, not walked through them one by one:
+            // this is the fourth tier, and the sequential version added up to
+            // 15s on its own to a request chain that had already spent most of
+            // a minute failing.
+            const ccData = await fetchJSONFast(
               `https://rest.coincap.io/v3/assets?ids=${missing.join(',')}&limit=${missing.length}`
             );
             const list = Array.isArray(ccData?.data) ? ccData.data : [];

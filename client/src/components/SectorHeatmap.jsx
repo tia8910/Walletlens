@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { voiceProxy } from '../apiHosts.js'
+import { api } from '../api'
 
 const SECTORS = {
   'Layer 1':    ['bitcoin','ethereum','solana','avalanche-2','cardano','near','aptos','sui'],
@@ -14,6 +15,7 @@ const SECTORS = {
 }
 
 const ALL_IDS = [...new Set(Object.values(SECTORS).flat())]
+const WANTED = new Set(ALL_IDS)
 
 const CG_TO_CAP = { 'ripple':'xrp','binancecoin':'binance-coin','avalanche-2':'avalanche','matic-network':'polygon','near':'near-protocol','the-sandbox':'the-sandbox-land','axie-infinity':'axie-infinity-shards','fetch-ai':'fetch','kucoin-shares':'kucoin-shares','immutable-x':'immutable-x','lido-dao':'lido-dao','render-token':'render-token','bittensor':'bittensor','curve-dao-token':'curve-dao-token','compound-governance-token':'compound','singularitynet':'singularitynet' }
 const toCapId = id => CG_TO_CAP[id] || id
@@ -56,7 +58,38 @@ const PROXIES = [
   u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
 ]
 
+/** How much of the sector list a source must cover to be worth using. */
+const MIN_COVERAGE = Math.ceil(ALL_IDS.length / 2)
+
 async function fetchSectors() {
+  // The snapshot the dashboard has already loaded.
+  //
+  // Every tier below this one is a third-party host reached through a public
+  // CORS proxy, so on a network where those are slow or blocked the heatmap
+  // spent twenty seconds working through them and then gave up — while the
+  // ticker two elements above it was showing live prices for most of these
+  // same coins, out of a snapshot served by our own origin.
+  //
+  // getWhaleMarketSnapshot is the top 250 by market cap with the 7d change
+  // already on it, in-flight-deduped and cached, and it falls back to
+  // market.json on our own origin. The dashboard has usually loaded it before
+  // this component mounts, which makes the common case a cache hit and no
+  // request at all.
+  try {
+    const snapshot = await api.getWhaleMarketSnapshot()
+    if (Array.isArray(snapshot)) {
+      const byId = {}
+      for (const c of snapshot) if (c?.id && WANTED.has(c.id)) byId[c.id] = c
+      // A handful of these sit outside the top 250 (kucoin-shares, floki,
+      // ocean-protocol). Missing a few is fine — buildSectorResult averages
+      // whatever it is given — but a snapshot covering almost none of them
+      // would draw a confident heatmap out of two coins, so fall through.
+      if (Object.keys(byId).length >= MIN_COVERAGE) {
+        return buildSectorResult(byId, 'price_change_percentage_7d_in_currency')
+      }
+    }
+  } catch { /* fall through to the proxy ladder */ }
+
   // Try CoinGecko via all CORS proxies in parallel
   const cgUrl = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ALL_IDS.join(',')}&price_change_percentage=7d&per_page=250`
   try {
@@ -135,11 +168,22 @@ export default function SectorHeatmap() {
     const now = Date.now()
     if (_cache && now - _cacheTime < 10 * 60 * 1000) { setTiles(_cache); return }
     setLoading(true); setError(null)
-    fetchSectors().then(result => {
-      if (result) { _cache = result; _cacheTime = Date.now(); setTiles(result) }
-      else setError(t('errSectorLoad'))
-      setLoading(false)
-    })
+    let live = true
+    fetchSectors()
+      .then(result => {
+        if (result) { _cache = result; _cacheTime = Date.now(); if (live) setTiles(result) }
+        else if (live) setError(t('errSectorLoad'))
+      })
+      // fetchSectors swallows each tier's failure and returns null, but it had
+      // no catch of its own and setLoading(false) lived inside the success
+      // path. Anything that threw outside those inner try blocks therefore
+      // left the panel reading "Loading…" with no error, no retry and no way
+      // back — a spinner that outlived the request that started it.
+      .catch(() => { if (live) setError(t('errSectorLoad')) })
+      .finally(() => { if (live) setLoading(false) })
+    // The panel can be collapsed, and the dashboard unmounted, long before a
+    // ladder of six-second timeouts gets to the end of itself.
+    return () => { live = false }
   }, [open])
 
   const hot  = tiles ? tiles.filter(t => t.avg >= 3).length : 0

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { VOICE_HOST, PUSH_HOST, NANSEN_HOST, DATA_HOST, DRIVE_AUTH_HOST, SITE_ORIGIN, VOICE_API, PUSH_API, NANSEN_API, DATA_API, DRIVE_API, voiceProxy, dataUrl } from './apiHosts.js'
+import { VOICE_HOST, PUSH_HOST, NANSEN_HOST, DATA_HOST, DRIVE_AUTH_HOST, SITE_ORIGIN, CANONICAL_ORIGIN, resolveSiteOrigin, VOICE_API, PUSH_API, NANSEN_API, DATA_API, DRIVE_API, voiceProxy, dataUrl } from './apiHosts.js'
 
 // The backend hosts were string literals in twenty-odd files. Moving off Deno
 // Deploy was therefore a search-and-replace, where missing one site fails at
@@ -98,6 +98,56 @@ describe('apiHosts', () => {
   })
 })
 
+// The app asks its OWN origin for its datasets and its CORS proxy, because
+// every deployment ships dist/_worker.js and dist/_routes.json and therefore
+// serves /market.json and /api/* itself.
+//
+// This was the literal canonical origin, which made "same-origin" true only on
+// walletlens.live. On every preview the app fetched across origins, and
+// walletlens.live answers /* with no Access-Control-Allow-Origin, so the
+// browser refused every response — no market data, no news, no proxy,
+// "PRICES OFFLINE" — on a build whose backend was fine, and unreproducible on
+// production by construction.
+describe('resolveSiteOrigin', () => {
+  const loc = (href) => new URL(href)
+
+  it('uses the canonical origin on walletlens.live itself', () => {
+    expect(resolveSiteOrigin(loc('https://walletlens.live/dashboard')))
+      .toBe('https://walletlens.live')
+  })
+
+  it('uses a Pages preview\'s own origin, not the canonical one', () => {
+    // The whole bug: this used to return walletlens.live here, and the browser
+    // refused every response it got back.
+    expect(resolveSiteOrigin(loc('https://walletlenslive1.pages.dev/dashboard')))
+      .toBe('https://walletlenslive1.pages.dev')
+    expect(resolveSiteOrigin(loc('https://claude-fervent-lamport-1n3bs.walletlenslive1.pages.dev/x')))
+      .toBe('https://claude-fervent-lamport-1n3bs.walletlenslive1.pages.dev')
+  })
+
+  it('falls back to canonical where there is no page to ask', () => {
+    // push-api/markets.js calls dataUrl() from inside the push Worker, which
+    // has no `location`; a relative URL there has no origin and fetch throws.
+    expect(resolveSiteOrigin(null)).toBe(CANONICAL_ORIGIN)
+  })
+
+  it('falls back to canonical on a dev server or a native shell', () => {
+    // Neither carries the Pages worker, so pointing them at themselves would
+    // name /market.json and /api/voice/ paths that simply 404.
+    expect(resolveSiteOrigin(loc('http://localhost:5173/dashboard'))).toBe(CANONICAL_ORIGIN)
+    expect(resolveSiteOrigin(loc('http://192.168.1.10:5173/'))).toBe(CANONICAL_ORIGIN)
+    expect(resolveSiteOrigin(loc('file:///android_asset/index.html'))).toBe(CANONICAL_ORIGIN)
+  })
+
+  it('does not hand the app to a lookalike host', () => {
+    // endsWith('.pages.dev') must not match a domain that merely ends in the
+    // same letters, or a compromised page could point the app at itself.
+    expect(resolveSiteOrigin(loc('https://evilpages.dev/'))).toBe(CANONICAL_ORIGIN)
+    expect(resolveSiteOrigin(loc('https://walletlens.live.attacker.com/'))).toBe(CANONICAL_ORIGIN)
+    expect(resolveSiteOrigin(loc('https://notwalletlens.live/'))).toBe(CANONICAL_ORIGIN)
+  })
+})
+
 describe('no call site hardcodes a backend host', () => {
   it('leaves apiHosts.js as the only source of the hostnames', () => {
     const offenders = []
@@ -145,6 +195,28 @@ describe('the places that cannot import apiHosts.js', () => {
     expect(cspAdmits(headers, NANSEN_HOST)).toBe(true)
   })
 
+  it('admits the app\'s own backend origin by name, not by \'self\'', () => {
+    // SITE_ORIGIN is where every dataset, the CORS proxy, push registration
+    // and the Drive token exchange are called. On walletlens.live itself
+    // 'self' covers all of them, which is why its absence from connect-src
+    // went unnoticed — and why it broke everywhere else at once.
+    //
+    // A Pages preview deployment (walletlenslive1.pages.dev) is a different
+    // origin, so 'self' is the preview host and every request to
+    // walletlens.live is refused by the browser before it is sent: market.json,
+    // news.json, smartmoney.json, economic-calendar.json and the voice proxy
+    // that relays CoinGecko, Binance, Stooq and Yahoo. The app looked like it
+    // had lost its backend — an empty ticker, "PRICES OFFLINE", dashes in the
+    // asset picker — on a build whose backend was fine.
+    //
+    // Naming the origin explicitly makes the policy independent of where the
+    // bundle is served from: previews, the packaged store build, and a local
+    // `vite preview` all reach the same services the production site does.
+    const host = SITE_ORIGIN.replace(/^https?:\/\//, '')
+    expect(cspAdmits(read('index.html'), host)).toBe(true)
+    expect(cspAdmits(read('public/_headers'), host)).toBe(true)
+  })
+
   it('caches the proxy in the service worker under the current host', () => {
     // sw.js caches proxy responses so repeat price polls are served locally.
     // A stale host here does not break the app — it silently stops caching,
@@ -152,11 +224,20 @@ describe('the places that cannot import apiHosts.js', () => {
     expect(read('public/sw.js')).toContain(VOICE_HOST)
   })
 
-  it('matches the data origin in the service worker', () => {
+  it('matches the canonical data origin in the service worker', () => {
     // The runtime cache for the scheduled datasets is gated on this origin.
-    // These used to be same-origin files, so a stale constant here does not
-    // error — it just stops matching, and every feed poll round-trips.
-    expect(read('public/sw.js')).toContain(`const DATA_ORIGIN = '${SITE_ORIGIN}'`)
+    // A stale constant here does not error — it just stops matching, and every
+    // feed poll round-trips.
+    expect(read('public/sw.js')).toContain(`const DATA_ORIGIN = '${CANONICAL_ORIGIN}'`)
+  })
+
+  it('also caches datasets served from the deployment\'s own origin', () => {
+    // The client asks its own origin for them whenever that origin carries the
+    // Pages worker, so a gate that only knew the canonical host would stop
+    // caching on every preview deployment.
+    const sw = read('public/sw.js')
+    expect(sw).toContain('url.origin === self.location.origin')
+    expect(sw).toMatch(/if \(isDataOrigin\(url\) && feedTtl !== null\)/)
   })
 
   it('preconnects to the host the app actually calls', () => {

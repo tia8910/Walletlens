@@ -26,6 +26,16 @@ const CDN_CACHE = 'walletlens-cdn-v1'
 // it cannot import the constant; apiHosts.test.js fails when the two drift.
 const DATA_ORIGIN = 'https://walletlens.live'
 
+// The datasets are served by whichever deployment the app was loaded from —
+// its own _worker.js answers /market.json and the rest — so on a preview they
+// are same-origin, and only on a non-Pages host (a dev server, a native shell)
+// does the client fall back to the canonical origin. Matching just one of the
+// two meant the other silently stopped being cached: no error, every feed poll
+// round-tripping. See resolveSiteOrigin() in src/apiHosts.js.
+function isDataOrigin(url) {
+  return url.origin === self.location.origin || url.origin === DATA_ORIGIN
+}
+
 const PRECACHE_URLS = [
   '/',
   '/dashboard',
@@ -259,15 +269,13 @@ self.addEventListener('fetch', e => {
   // These are served by the data service, which refreshes them on its own
   // schedule. Serve stale instantly then revalidate in the background.
   //
-  // The origin check used to be same-origin, because these were static files
-  // this build shipped. They are cross-origin now, so it matches DATA_ORIGIN
-  // instead — a stale same-origin check here would silently stop caching them
-  // rather than fail, which is why apiHosts.test.js pins this constant.
+  // The origin check accepts both the deployment's own origin and the
+  // canonical one, because the client picks between them at runtime.
   const feedTtl = url.pathname === '/news.json' ? NEWS_TTL_MS
     : url.pathname === '/stock-prices.json' ? STOCK_TTL_MS
     : url.pathname === '/market.json' ? MARKET_TTL_MS
     : null
-  if (url.origin === DATA_ORIGIN && feedTtl !== null) {
+  if (isDataOrigin(url) && feedTtl !== null) {
     e.respondWith(
       caches.open(API_CACHE).then(async cache => {
         const cached = await cache.match(req)

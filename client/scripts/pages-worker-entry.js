@@ -52,6 +52,7 @@ const DATASETS = new Set([
 
 async function serveDataset(url, request, env) {
   let upstream = null
+  let upstreamBody = null
   try {
     const res = await fetch(`${DATA_ORIGIN}${url.pathname}${url.search}`, {
       headers: { Accept: 'application/json' },
@@ -72,25 +73,48 @@ async function serveDataset(url, request, env) {
 
     // THE UPSTREAM'S OWN EXPLANATION IS THE DIAGNOSIS, SO DO NOT DISCARD IT.
     //
-    // serve() answers a cold store with 503 {"error":"no data yet"}. That was
-    // being thrown away for the shipped copy below, which for a dataset that
-    // ships no copy means the site's HTML 404 — so "the worker has not been
-    // deployed" and "the worker is deployed and the upstream fetch failed"
-    // arrived identically, as a page of HTML. Four diagnostic reports in a row
-    // could not tell them apart.
-    const type = res.headers.get('content-type') || ''
-    if (type.includes('json')) {
-      return new Response(res.body, {
-        status: res.status,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-      })
-    }
+    // serve() answers a cold store with 503 {"error":"no data yet"}, and
+    // replacing that with the site's HTML 404 made "never deployed" and
+    // "deployed but the upstream failed" arrive identically.
+    //
+    // It was kept by returning the upstream's error INSTEAD of the shipped
+    // copy, which bought that diagnosis at the cost of the datasets the build
+    // does ship. A cold data worker therefore answered /news.json with a 503,
+    // the client fell through to its live-RSS path, and on a network that
+    // blocks the public CORS proxies the news strip rendered nothing — while
+    // 95 fresh articles sat in the same deployment, one asset fetch away.
+    //
+    // The explanation does not need the body. It rides on a header, and the
+    // shipped copy is served, so a stale strip beats an empty one and
+    // diagnosis still works.
+    upstreamBody = await res.text().catch(() => '')
   } catch { /* unreachable — the shipped copy is the right answer */ }
 
   // Stale beats empty: news has no other source in the app, and the build
   // still ships a copy of the older datasets.
+  //
+  // `shipped.ok` alone is not enough to know there IS a copy. Pages rewrites
+  // an unknown path to the SPA shell with a 200, so a dataset that ships no
+  // file (coins.json, smartmoney.json) comes back as a page of HTML that
+  // parses as neither an error nor data. Checking that the body actually
+  // opens as JSON is what separates a real copy from the fallback shell.
   const shipped = await env.ASSETS.fetch(request)
-  if (shipped.ok) return shipped
+  if (shipped.ok) {
+    const body = await shipped.text()
+    if (/^\s*[[{]/.test(body)) {
+      return new Response(body, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=300',
+          // Which is it: live data, or the copy frozen at build time? Nothing
+          // in the payload says, and the answer changes what to go and fix.
+          'X-WL-Dataset': 'shipped',
+          'X-WL-Upstream': String(upstream ?? 'unreachable'),
+        },
+      })
+    }
+  }
 
   // No copy shipped and the upstream would not serve it. Say which, rather
   // than handing back a page of HTML that says neither.
@@ -98,6 +122,9 @@ async function serveDataset(url, request, env) {
     error: 'dataset_unavailable',
     name: url.pathname.replace(/^\//, ''),
     upstream,
+    // The upstream's own words, where it had any — this is the line that
+    // distinguishes a cold store from a worker that was never deployed.
+    detail: upstreamBody ? upstreamBody.slice(0, 200) : undefined,
   }), { status: 502, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })
 }
 
