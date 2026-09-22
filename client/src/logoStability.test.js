@@ -85,6 +85,27 @@ describe('the ladder does not advance past a load that never started', () => {
     expect(logo).not.toMatch(/loading: 'lazy'/)
   })
 
+  it('waits for the page load event before requesting any icon', () => {
+    // An <img> in the markup delays the window load event, and this ladder can
+    // put over a hundred image requests into that set on a cold start. On a
+    // network that drops rather than refuses, they hang, load never fires, and
+    // the Windows Store package sits on its splash screen: Microsoft
+    // certification failed the app for "freezes at launch", Error Message N/A.
+    expect(logo).toMatch(/function usePageLoaded\(\)/)
+    expect(logo).toMatch(/const canFetch = usePageLoaded\(\)/)
+    expect(logo).toMatch(/if \(!canFetch\) \{/)
+  })
+
+  it('holds the ladder clock until then, so no stage is skipped unrequested', () => {
+    // The same invariant the document.hidden guard protects: the timer may
+    // only run while the browser is actually fetching. Without this the clock
+    // would walk the whole ladder behind the placeholder and settle on the
+    // badge, which is exactly the bug loading="lazy" caused.
+    const eff = logo.slice(logo.indexOf('const arm = () => {'))
+    expect(eff.slice(0, eff.indexOf('\n    }'))).toMatch(/if \(!canFetch\) return/)
+    expect(logo).toMatch(/\}, \[stageIdx, STAGES\.length, canFetch\]\)/)
+  })
+
   it('stops the clock while the app is in the background', () => {
     // A hidden document throttles timers and defers image loads, so the timer
     // would advance past stages the browser never attempted.

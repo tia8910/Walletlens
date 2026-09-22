@@ -4,6 +4,43 @@ import { getCachedCoinImage } from '../api'
 // metal badges. See client/src/data/assetIcons.js.
 import { ASSET_ICONS, AssetIconBadge } from '../data/assetIcons'
 import { voiceProxy } from '../apiHosts.js'
+/**
+ * Whether the page's load event has fired.
+ *
+ * An <img> in the markup is part of the set of resources that delay that
+ * event, and this component walks a SEVEN STAGE fallback ladder per coin, so a
+ * ticker of twenty coins can put over a hundred image requests into it on a
+ * cold start. On a network that drops rather than refuses — what a filtered or
+ * corporate one does to a CDN it does not know — every one of those hangs and
+ * `load` never fires. The Windows Store package dismisses its splash screen
+ * when the content signals ready, so it sat on the splash for ever; Microsoft
+ * certification reported it as "the product freezes at launch" with "Error
+ * Message: N/A", because nothing had errored.
+ *
+ * `loading="lazy"` is the obvious fix and is the wrong one. It was tried, and
+ * below the fold it starts no fetch until the row is scrolled to while the
+ * ladder's advance timer starts at mount: the timer wins, every stage is
+ * skipped in turn, and the row settles on the letter badge. logoStability
+ * asserts against it for that reason.
+ *
+ * So the images wait for load instead. Inserted afterwards they cannot delay
+ * an event that has already fired, the ladder clock starts with them rather
+ * than before them, and the placeholder in the meantime is the same letter
+ * badge the ladder ends on, so nothing moves.
+ */
+function usePageLoaded() {
+  const [loaded, setLoaded] = useState(
+    () => typeof document === 'undefined' || document.readyState === 'complete',
+  )
+  useEffect(() => {
+    if (loaded) return
+    const done = () => setLoaded(true)
+    addEventListener('load', done, { once: true })
+    return () => removeEventListener('load', done)
+  }, [loaded])
+  return loaded
+}
+
 function isNonCrypto(coinId) {
   if (!coinId) return false
   return coinId.startsWith('stock:') || coinId.startsWith('fiat:') ||
@@ -268,6 +305,10 @@ const CryptoLogo = memo(function CryptoLogo({
   ].filter(Boolean), [image, cachedImg, sym, resolved])
 
   const [stageIdx, setStageIdx] = useState(0)
+  // Above every return in this component: hook order is fixed by
+  // hooksOrder.test.js, and a hook below a guard is the React #310 this
+  // codebase has already shipped once.
+  const canFetch = usePageLoaded()
   const stageIdxRef = useRef(stageIdx)
   const loadedRef   = useRef(false)
   stageIdxRef.current = stageIdx
@@ -304,6 +345,8 @@ const CryptoLogo = memo(function CryptoLogo({
     const arm = () => {
       clearTimeout(t)
       if (document.hidden) return
+      // Nothing has been requested yet, so there is nothing to time out.
+      if (!canFetch) return
       t = setTimeout(() => {
         if (stageIdxRef.current === stageIdx && !loadedRef.current) setStageIdx(s => s + 1)
       }, timeout)
@@ -312,7 +355,7 @@ const CryptoLogo = memo(function CryptoLogo({
     const onVisible = () => { if (!document.hidden) arm() }
     document.addEventListener('visibilitychange', onVisible)
     return () => { clearTimeout(t); document.removeEventListener('visibilitychange', onVisible) }
-  }, [stageIdx, STAGES.length])
+  }, [stageIdx, STAGES.length, canFetch])
 
   // One more try when the app returns, for a ladder that ran out while it was
   // away. Without this the row keeps its badge until something remounts it.
@@ -356,7 +399,11 @@ const CryptoLogo = memo(function CryptoLogo({
   const withPlate = plate
     ? { ...common, style: { ...(common.style || {}), background: '#fff' } }
     : common
-  if (!currentStage) {
+  if (!canFetch) {
+    // Deliberately falls through to the letter badge below: the same thing the
+    // ladder ends on, so swapping the real icon in when load fires moves
+    // nothing on the page.
+  } else if (!currentStage) {
     // exhausted all stages
   } else if (currentStage.startsWith('img:')) {
     const src = currentStage.slice(4)

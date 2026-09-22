@@ -103,8 +103,34 @@
       } catch (e) {}
     </script>
 
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB"></script>
+    <!-- Google Analytics.
+
+         The remote script is fetched AFTER the load event, not with `async` in
+         the markup, and that is a certification fix rather than a performance
+         one.
+
+         An async script still delays `load` while it is in flight. The Windows
+         Store package dismisses its splash screen when the web content signals
+         it is ready, so any off-site request that hangs — a dropped packet on a
+         filtered network, not a refused one — keeps `load` pending and leaves
+         the wrapper showing a splash with no error. That is what Microsoft
+         certification reported as "the product freezes at launch", with
+         "Error Message: N/A", because there is no error: the page is running
+         perfectly behind a splash that is never told to go away.
+
+         Nothing is lost by waiting. The gtag() stub below is defined inline and
+         pushes into dataLayer, so window.gtag is a function from the first
+         line of script on the page and every event raised before this file
+         arrives is queued and drained when it does. analytics.js checks for
+         that stub, not for the remote library. -->
+    <script>
+      addEventListener('load', function () {
+        var g = document.createElement('script')
+        g.async = true
+        g.src = 'https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB'
+        document.head.appendChild(g)
+      }, { once: true })
+    </script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
@@ -126,7 +152,11 @@
     <script>
       (function () {
         try { if (localStorage.getItem('wl_twa') === '1') return; } catch (e) {}
-        !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+        // Stub now, remote file after load — see the note on the analytics
+        // tag above. This one matters more than most: an ad domain is exactly
+        // what a filtered or corporate network drops rather than refuses, and
+        // a dropped request hangs instead of failing.
+        !function(e,t,n,s){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],addEventListener('load',function(){var u=t.createElement(n);u.async=!0,u.fetchPriority='low',u.src='https://static.ads-twitter.com/uwt.js';var a=t.getElementsByTagName(n)[0];a.parentNode.insertBefore(u,a)},{once:!0}))}(window,document,'script');
         twq('config','rc7yj');
       })();
     </script>
