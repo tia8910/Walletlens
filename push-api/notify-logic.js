@@ -1837,12 +1837,39 @@ function escapeRe(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// Word-boundary RegExp for a term, built once and reused. The news cron calls
+// matchArticle/isMarketStory once per (subscriber x article), and popular
+// assets like BTC/ETH are on nearly every watch list — without this cache,
+// the exact same `new RegExp(...)` was being recompiled from scratch on
+// every single one of those calls. None of these regexes carry /g or /y, so
+// reusing one across many `.test()` calls is safe (no lastIndex state).
+const wordBoundaryReCache = new Map()
+function wordBoundaryRe(term) {
+  let re = wordBoundaryReCache.get(term)
+  if (!re) {
+    re = new RegExp(`\\b${escapeRe(term)}\\b`)
+    wordBoundaryReCache.set(term, re)
+  }
+  return re
+}
+
 /**
  * Search terms for one watched asset. The symbol is used only when it is
  * unambiguous; the CoinGecko id ("avalanche-2" → "avalanche") is the safer
  * signal and is always included when it is a real word.
+ *
+ * Memoized per asset id+symbol: this is pure over those two fields, and gets
+ * called once per (subscriber x watched asset) on every news-cron tick — the
+ * derivation is trivial per call, but across thousands of subscribers most
+ * of those calls recompute the exact same result for the same handful of
+ * popular assets.
  */
+const termsForCache = new Map()
 export function termsFor(asset) {
+  const key = `${asset?.id || ''}|${asset?.symbol || ''}`
+  const cached = termsForCache.get(key)
+  if (cached) return cached
+
   const terms = []
   const sym = String(asset?.symbol || '').toLowerCase()
   if (sym.length >= 3 && !AMBIGUOUS_SYMBOLS.has(sym)) terms.push(sym)
@@ -1850,6 +1877,7 @@ export function termsFor(asset) {
   const name = String(asset?.id || '').replace(/-\d+$/, '').replace(/-/g, ' ').toLowerCase()
   if (name.length >= 4 && !AMBIGUOUS_SYMBOLS.has(name) && name !== sym) terms.push(name)
 
+  termsForCache.set(key, terms)
   return terms
 }
 
@@ -1862,7 +1890,7 @@ export function matchArticle(article, watch) {
   if (!hay.trim()) return null
   for (const asset of watch || []) {
     for (const term of termsFor(asset)) {
-      if (new RegExp(`\\b${escapeRe(term)}\\b`).test(hay)) return asset
+      if (wordBoundaryRe(term).test(hay)) return asset
     }
   }
   return null
@@ -1910,10 +1938,12 @@ const MARKET_TERMS = [
  *
  * @param {{title?:string, description?:string}} article
  */
+const MARKET_TERM_RES = MARKET_TERMS.map(wordBoundaryRe)
+
 export function isMarketStory(article) {
   const hay = `${article?.title || ''} ${article?.description || ''}`.toLowerCase()
   if (!hay.trim()) return false
-  return MARKET_TERMS.some(term => new RegExp(`\\b${escapeRe(term)}\\b`).test(hay))
+  return MARKET_TERM_RES.some(re => re.test(hay))
 }
 
 /** Only genuinely fresh stories are worth a lock-screen interrupt. */

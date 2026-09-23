@@ -46,6 +46,28 @@ const DIGEST_HOUR = 9
 const ZAKAT_HOUR = 11
 
 /**
+ * Runs `fn` over `items` with at most `limit` in flight at once.
+ *
+ * Each subscriber in a cron pass is independent — different KV/D1 row,
+ * different push endpoint — so awaiting `send()` and `store.save()` for one
+ * before starting the next was N sequential network round trips per tick for
+ * no reason. `send()`'s budget check (`budget.take()`) runs synchronously
+ * before its first await, so it stays correct however many calls are in
+ * flight together.
+ */
+async function mapLimited(items, limit, fn) {
+  let i = 0
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) {
+      const idx = i++
+      await fn(items[idx])
+    }
+  })
+  await Promise.all(workers)
+}
+const SUBSCRIBER_CONCURRENCY = 8
+
+/**
  * Bind the jobs to a storage adapter and a sender.
  *
  * @param store an object with all(), get(), save()
@@ -63,7 +85,7 @@ export function createJobs({ store, send }) {
     const quotes = await fetchCryptoQuotes([...ids])
     if (!Object.keys(quotes).length) return
 
-    for (const { key, sub } of subs) {
+    await mapLimited(subs, SUBSCRIBER_CONCURRENCY, async ({ key, sub }) => {
       let changed = false
       for (const a of sub.alerts) {
         const p = quotes[a.coin_id]?.price
@@ -92,7 +114,7 @@ export function createJobs({ store, send }) {
         }
       }
       if (changed) await store.save(key, sub)
-    }
+    })
   }
 
   async function checkMoves({ kinds = null, refreshSeen = true } = {}) {
