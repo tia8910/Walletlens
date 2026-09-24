@@ -1832,6 +1832,35 @@ const AnimatedMoney = memo(function AnimatedMoney({ value, format, signed }) {
   return <>{sign}{format(n)}</>
 })
 
+// Hero net-worth figure: counts up to `totalValue` (starting from whatever is
+// currently displayed, to avoid a $0 flash) whenever a fresh price tick lands.
+// Isolated into its own memoized leaf so the ~60fps `setState` calls the
+// animation drives re-render only this node, not the whole (6000+ line)
+// Dashboard — the animation used to live as top-level Dashboard state, which
+// meant every one of the ~84 frames of a single count-up re-rendered the
+// entire page.
+const HeroNetWorth = memo(function HeroNetWorth({ loaded, totalValue, perfCat, perfCatValue, cv }) {
+  const tickerStart = useRef(null)
+  const tickerValueRef = useRef(0)
+  const [tickerValue, setTickerValue] = useState(0)
+  useEffect(() => {
+    if (!loaded) return
+    if (tickerStart.current === totalValue) return
+    tickerStart.current = totalValue
+    const t0 = performance.now(), dur = 1400, from = tickerValueRef.current, to = totalValue
+    let raf = 0
+    const step = now => {
+      const ease = 1 - Math.pow(1 - Math.min(1, (now - t0) / dur), 3)
+      const next = from + (to - from) * ease
+      tickerValueRef.current = next
+      setTickerValue(next)
+      if (ease < 1) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step); return () => cancelAnimationFrame(raf)
+  }, [loaded, totalValue])
+  return cv(loaded ? (perfCat === 'all' ? tickerValue : perfCatValue) : 0)
+})
+
 // Tiny SVG sparkline built from a [{ v }] series — sits faintly behind a card.
 const Sparkline = memo(function Sparkline({ data, up, width = 120, height = 40 }) {
   const pts = (data || []).map(d => Number(d.v) || 0)
@@ -3524,8 +3553,6 @@ export default function Dashboard() {
   const [hidden, setHidden]               = useState(() => {
     try { return JSON.parse(localStorage.getItem('wl_settings') || '{}').hideValues === true } catch { return false }
   })
-  const tickerStart = useRef(null)
-  const [tickerValue, setTickerValue] = useState(0)
   // Brief "heartbeat" on the net-worth figure whenever a fresh price tick moves
   // it — a small sign of life so the number feels live, not frozen.
   const [valuePulse, setValuePulse] = useState(false)
@@ -4074,24 +4101,6 @@ export default function Dashboard() {
     return () => { clearTimeout(t); clearInterval(iv) }
   }, [loaded])
 
-  // Count-up animation — starts from current displayed value to avoid $0 flash
-  const tickerValueRef = useRef(0)
-  useEffect(() => {
-    if (!loaded) return
-    if (tickerStart.current === totalValue) return
-    tickerStart.current = totalValue
-    const t0 = performance.now(), dur = 1400, from = tickerValueRef.current, to = totalValue
-    let raf = 0
-    const step = now => {
-      const ease = 1 - Math.pow(1 - Math.min(1, (now - t0) / dur), 3)
-      const next = from + (to - from) * ease
-      tickerValueRef.current = next
-      setTickerValue(next)
-      if (ease < 1) raf = requestAnimationFrame(step)
-    }
-    raf = requestAnimationFrame(step); return () => cancelAnimationFrame(raf)
-  }, [loaded, totalValue])
-
   // Pulse the figure once whenever a fresh value lands (price poll / refresh).
   useEffect(() => {
     if (!loaded || totalValue <= 0) return
@@ -4470,6 +4479,19 @@ export default function Dashboard() {
     [groupedHoldings]
   )
 
+  // Trend per holding, computed once per (holdings, sevenDay) change rather
+  // than fresh on every row on every render. trendFor() always returns a new
+  // object, so calling it inline in the row map defeated TrendArrow's own
+  // memo() — it never saw the same `trend` prop reference twice, so every
+  // visible row re-rendered its arrow on every Dashboard render.
+  const holdingTrendMap = useMemo(() => {
+    const map = new Map()
+    displayHoldings.forEach(h => {
+      map.set(h.coin_id, trendFor({ pct24h: h.pct24h, pct7d: sevenDay[h.coin_id] }))
+    })
+    return map
+  }, [displayHoldings, sevenDay])
+
   // Stale manual price check — warn if any non-crypto asset price is >7 days old
   const staleAssets = useMemo(() => {
     const manual = api.getManualPrices ? api.getManualPrices() : {}
@@ -4789,7 +4811,7 @@ export default function Dashboard() {
               <GuardianBadge />
             </p>
             <h2 className={`dvx-hero-value ${hidden ? 'dvx-hidden-val' : ''} ${valuePulse ? 'dvx-value-beat' : ''} mood-ring mood-ring-${mood}`}>
-              {hidden ? '••••••' : cv(loaded ? (perfCat === 'all' ? tickerValue : perfCatValue) : 0)}
+              {hidden ? '••••••' : <HeroNetWorth loaded={loaded} totalValue={totalValue} perfCat={perfCat} perfCatValue={perfCatValue} cv={cv} />}
             </h2>
             {perfCat !== 'all' && !hidden && (
               <p className="dvx-hero-catlabel">
@@ -5429,7 +5451,7 @@ export default function Dashboard() {
                                 // row already says so, with the cooling dot
                                 // TrendArrow draws from trendFor's `diverging`
                                 // flag. That is the one place it belongs.
-                                const holdingTrend = trendFor({ pct24h: h.pct24h, pct7d: sevenDay[h.coin_id] })
+                                const holdingTrend = holdingTrendMap.get(h.coin_id)
                                 const trendStatus = holdingTrend.dir
                                 const holdingLpItems = isDemo ? [] : [
                                   { icon: '📊', label: 'Technical Analysis', onClick: () => navigate('/technicals') },
