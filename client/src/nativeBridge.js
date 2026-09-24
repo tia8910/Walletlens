@@ -113,6 +113,25 @@ export function isAndroidTWA() {
   return false
 }
 
+/**
+ * True only for Android users: the app's own WebView shell (which injects
+ * AndroidBridge) or the legacy Android TWA.
+ *
+ * This is NOT isInstalledApp(). That is true for any installed PWA —
+ * including the Windows Store (MSIX) build, which launches in
+ * `display-mode: standalone`. Gating Android-only UI on it showed the
+ * phone onboarding (swipe/arrow-key navigation, no mouse controls) to
+ * desktop users, where it read as a freeze on the welcome slide. Anything
+ * that is actually Android-only gates on this instead.
+ */
+export function isAndroidApp() {
+  try {
+    if (typeof window !== 'undefined' && window.AndroidBridge &&
+        typeof window.AndroidBridge.shellVersion === 'function') return true
+  } catch { /* fall through to the TWA check */ }
+  return isAndroidTWA()
+}
+
 const LAST_INTENT_KEY = 'wl_last_intent'
 
 /**

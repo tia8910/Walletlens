@@ -144,6 +144,47 @@ describe('isAndroidTWA', () => {
   })
 })
 
+describe('isAndroidApp', () => {
+  beforeEach(() => {
+    try { delete window.AndroidBridge } catch {}
+  })
+
+  it('is true inside the app shell, whatever the UA or referrer', async () => {
+    setUA(DESKTOP)
+    setReferrer('')
+    window.AndroidBridge = { shellVersion: () => '7.0' }
+    const { isAndroidApp } = await load()
+    expect(isAndroidApp()).toBe(true)
+    try { delete window.AndroidBridge } catch {}
+  })
+
+  it('is true in the legacy TWA with no bridge object', async () => {
+    setUA(CHROME_ANDROID)
+    setReferrer('android-app://live.walletlens.twa')
+    const { isAndroidApp } = await load()
+    expect(isAndroidApp()).toBe(true)
+  })
+
+  it('is false for an installed Windows PWA: standalone, but no bridge and no app referrer', async () => {
+    // The Microsoft certification failure: the Store (MSIX) build launches in
+    // display-mode standalone, so isInstalledApp() is true there, but nothing
+    // Android is present. Android-only UI must stay off.
+    setUA(DESKTOP)
+    setReferrer('')
+    const { isAndroidApp } = await load()
+    expect(isAndroidApp()).toBe(false)
+  })
+
+  it('ignores a bridge-shaped object without shellVersion', async () => {
+    setUA(DESKTOP)
+    setReferrer('')
+    window.AndroidBridge = {}
+    const { isAndroidApp } = await load()
+    expect(isAndroidApp()).toBe(false)
+    try { delete window.AndroidBridge } catch {}
+  })
+})
+
 describe('fireNativeIntent', () => {
   beforeEach(() => {
     localStorage.clear()

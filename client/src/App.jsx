@@ -35,7 +35,7 @@ import { useTheme, THEMES } from './ThemeContext'
 import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
 import { setAppInteractive } from './reviewPrompt'
-import { isInstalledApp } from './nativeBridge'
+import { isInstalledApp, isAndroidApp } from './nativeBridge'
 import { applySettings } from './settingsUtils'
 import { initMood } from './moodEngine'
 import { pendingVaultPayload, consumeVaultPayload } from './nativeVault'
@@ -413,6 +413,7 @@ export default function App() {
   const { locked, unlock } = useBiometricLock()
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
   const [isStandalone, setIsStandalone] = useState(false)
+  const [isAndroid, setIsAndroid] = useState(false)
 
   const topbarRef = useRef(null)
   const _guardianChecked = useRef(false)
@@ -462,6 +463,11 @@ export default function App() {
       setIsStandalone(true)
       track('pwa_session', { installed: true })
     }
+    // NativeOnboarding is Android-only: the Windows Store build is also
+    // "installed" (standalone display-mode) but its users are not Android
+    // users, and the phone-first swipe flow stranded them. They get the
+    // mouse-friendly browser welcome instead.
+    try { if (isAndroidApp()) setIsAndroid(true) } catch {}
   }, [])
 
   // The rating card must never land on top of the App Lock prompt.
@@ -824,8 +830,8 @@ export default function App() {
 
       {!isLanding && isStandalone && shellReady && <BottomNav />}
 
-      {shellReady && isStandalone && !onboardDone && <Suspense fallback={null}><NativeOnboarding onDone={() => setOnboardDone(true)} /></Suspense>}
-      {shellReady && !isStandalone && <Suspense fallback={null}><WelcomeModal /></Suspense>}
+      {shellReady && isStandalone && isAndroid && !onboardDone && <Suspense fallback={null}><NativeOnboarding onDone={() => setOnboardDone(true)} /></Suspense>}
+      {shellReady && (!isStandalone || !isAndroid) && <Suspense fallback={null}><WelcomeModal /></Suspense>}
       {shellReady && <Suspense fallback={null}><AssistantChat /></Suspense>}
 
       {/* Asks permission to notify, in the app's own words, before the browser

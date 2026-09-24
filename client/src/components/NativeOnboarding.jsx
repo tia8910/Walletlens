@@ -152,6 +152,32 @@ export default function NativeOnboarding({ onDone }) {
     }
   }, [goNext, goPrev])
 
+  // Mouse-drag mirrors the touch-swipe above. Desktop and Windows-packaged
+  // users have no touchscreen: without this (and the buttons below) the
+  // first slides offered nothing clickable and the app read as frozen.
+  const onMouseDown = useCallback((e) => {
+    if (e.button !== 0) return
+    touchStartX.current = e.clientX
+    setSwiping(true)
+    setSwipeOffset(0)
+  }, [])
+
+  const onMouseMove = useCallback((e) => {
+    if (!swiping || e.buttons !== 1) return
+    setSwipeOffset((e.clientX - touchStartX.current) * 0.4)
+  }, [swiping])
+
+  const onMouseUp = useCallback((e) => {
+    if (!swiping) return
+    const dx = e.clientX - touchStartX.current
+    setSwiping(false)
+    setSwipeOffset(0)
+    if (Math.abs(dx) > 60) {
+      if (dx < 0) goNext()
+      else goPrev()
+    }
+  }, [swiping, goNext, goPrev])
+
   useEffect(() => {
     const h = (e) => {
       if (e.key === 'ArrowRight' || e.key === 'Enter') goNext()
@@ -175,6 +201,11 @@ export default function NativeOnboarding({ onDone }) {
       else setBioError(t('obBioSetupFailed'))
     } catch (e) { setBioError(t('obBioSetupError')) }
     finally { setBioBusy(false) }
+  }
+
+  function skip() {
+    try { track('onboarding_skipped', { at_step: step }) } catch {}
+    finish()
   }
 
   function finish() {
@@ -205,7 +236,8 @@ export default function NativeOnboarding({ onDone }) {
 
   return (
     <div className="no-container" style={{ background: s.gradient }}
-      onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+      onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+      onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp}>
 
       <div className="no-slide" key={step}
         style={swiping ? { transform: `translateX(${swipeOffset}px)`, transition: 'none' } : {}}>
@@ -332,6 +364,25 @@ export default function NativeOnboarding({ onDone }) {
               aria-label={t('obSlide')(i + 1)} />
           ))}
         </div>
+      </div>
+
+      {/* Explicit mouse/keyboard navigation. The slides used to advance
+          only on touch-swipe, arrow keys/Enter or the invisible trend dots,
+          so a desktop mouse user had nothing to click and the app was
+          reported as frozen on the welcome slide. */}
+      <div className="no-nav">
+        {step > 0
+          ? <button className="no-nav-btn" onClick={goPrev}>{t('obBack')}</button>
+          : <span />}
+        {!s.final ? (
+          <div className="no-nav-right">
+            <button className="no-nav-skip" onClick={skip}>{t('obSkip')}</button>
+            <button className="no-nav-next" style={{ background: s.accent }} onClick={goNext}>{t('obNext')}</button>
+          </div>
+        ) : (
+          <button className="no-nav-next" style={{ background: s.accent }}
+            onClick={() => { try { sfx.playTriumph() } catch {}; finish() }}>{t('obStart')}</button>
+        )}
       </div>
 
       {/* Final slide: pulsing circle */}
