@@ -114,6 +114,10 @@ html.wl-v2 .wl-topbar .ticker-strip { background: transparent; }
   html.wl-v2 .wl-topbar-right { gap: 0.3rem; }
   html.wl-v2 .wl-topbar-right .wl-topbar-x { width: 34px !important; height: 34px !important; min-width: 34px; flex-shrink: 0; }
   html.wl-v2 .wl-topbar-right .wl-topbar-stats { padding: 0.3rem 0.5rem; margin-left: 0.15rem; flex-shrink: 0; }
+  /* The install shortcut appears only when the browser offers installing,
+     and then it alone cost the wordmark its ".live". The install prompt
+     (PWAInstallPrompt) still offers it on phones. */
+  html.wl-v2 .wl-topbar-install { display: none !important; }
 }
 
 /* ── Glass cards ──────────────────────────────────────────────────────── */
