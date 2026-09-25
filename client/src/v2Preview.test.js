@@ -148,3 +148,12 @@ describe('v2 Coach Wallet Score', () => {
     expect(coach).toContain("{!v2 && activeSection === 'eval'")
   })
 })
+
+describe('v2 asset page', () => {
+  const page = read('pages/AssetDetail.jsx')
+  it('draws the indicator chart only in the preview and keeps the classic chart otherwise', () => {
+    expect(page).toMatch(/v2 && candleData\.candles\.length \? computeChartSignals/)
+    expect(page).toContain('{!v2 && <>')
+    expect(page).toMatch(/if \(v2\) return\s+const alive = \{ current: true \}\s+loadChart\(alive\)/)
+  })
+})

@@ -2283,6 +2283,48 @@ export const api = {
     return [];
   },
 
+  // Candles for the v2 asset chart: [{ t, o, h, l, c }], oldest first.
+  //
+  // Crypto comes from Binance (SYMBOL/USDT), which has real open/high/low/close
+  // at every interval and is already allowed by the CSP. `warmup` extra candles
+  // are fetched before the visible range so long EMAs (200) are settled by the
+  // first candle on screen. Anything Binance does not list — stocks, metals,
+  // stablecoins, obscure tokens — falls back to the close-only series the
+  // classic chart uses, turned into candles (candlesFromCloses marks them).
+  getCandles: async (id, symbol, days = 90, warmup = 200) => {
+    const { candlesFromCloses } = await import('./chartSignals');
+    const sym = String(symbol || '').toUpperCase();
+    const isCrypto = !!id && !/^(stock:|xstock:|fiat:|bond:|other:|metal:)/.test(id) && id !== GOLD_ID && id !== SILVER_ID;
+    const STABLE = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'FDUSD', 'USDP', 'PYUSD', 'USDE'];
+    if (isCrypto && sym && !STABLE.includes(sym)) {
+      const plan = days <= 1 ? ['15m', 96] : days <= 7 ? ['1h', 168] : days <= 30 ? ['4h', 180]
+        : days <= 365 ? ['1d', Math.round(days)] : ['1w', 260];
+      const limit = Math.min(1000, plan[1] + warmup);
+      const cacheKey = `candles::${sym}::${plan[0]}::${limit}`;
+      const hit = _chartCache[cacheKey];
+      if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length) return { candles: hit.v, visible: plan[1], closeOnly: false };
+      try {
+        const res = await fetchWithTimeout(`https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(sym + 'USDT')}&interval=${plan[0]}&limit=${limit}`, 8000);
+        if (res.ok) {
+          const rows = await res.json();
+          const candles = (Array.isArray(rows) ? rows : [])
+            .map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4] }))
+            .filter(k => k.c > 0 && k.h >= k.l);
+          if (candles.length > 10) {
+            try { _chartCache[cacheKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
+            return { candles, visible: plan[1], closeOnly: false };
+          }
+        }
+      } catch {}
+    }
+    // Fallback: the classic close-only series. Longer history for warm-up
+    // when the range allows it.
+    const pts = await api.getChartData(id, Math.max(days, days >= 90 ? 365 : days));
+    const candles = candlesFromCloses((pts || []).map(p => ({ ...p, t: p.date })));
+    const visible = days >= 90 ? Math.max(10, Math.round(candles.length * Math.min(1, days / 365))) : candles.length;
+    return { candles, visible, closeOnly: true };
+  },
+
   // Holdings for a specific coin (for sell quantity picker)
   getHoldingsForCoin: async (coinId) => {
     const portfolio = await api.getPortfolio();
