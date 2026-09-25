@@ -2070,5 +2070,4 @@ export default {
     refBuyWithBonus: (s) => `Achetez du ${s} avec un bonus de bienvenue`,
     refNoExchangeSub: (a) => `Ouvrez-en une et obtenez jusqu'à ${a} de bonus de bienvenue`,
     refStarterSub: (a) => `Jusqu'à ${a} de bonus de bienvenue en ouvrant un compte chez nos partenaires.`,
-    setDiagnostics: "Diagnostic de l'app",
 }
