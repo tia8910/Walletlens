@@ -84,13 +84,23 @@ const NAV_ITEMS = [
   },
 ]
 
-// v2 keeps four tabs. Watchlist, Alerts and Backup moved into the menu, and
-// Coach takes a tab of its own. Coach is a page rather than a dashboard tab,
-// so it carries a route instead of a tab id.
+// v2 keeps four tabs. Watchlist, Alerts and Backup moved into the menu,
+// Analysis folded into Coach, and Goals and Coach take tabs of their own.
+// Both are pages rather than dashboard tabs, so they carry a route.
 const byId = (id) => NAV_ITEMS.find(i => i.id === id)
 const V2_NAV_ITEMS = [
   byId('dashboard'),
-  byId('analysis'),
+  {
+    id: 'goals',
+    labelKey: 'navGoals',
+    route: '/vision',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 21V4"/>
+        <path d="M5 4h11l-2 4 2 4H5"/>
+      </svg>
+    ),
+  },
   byId('targets'),
   {
     id: 'coach',
@@ -163,7 +173,11 @@ const BottomNav = memo(function BottomNav({ v2 = false }) {
             className={`wl-nav-item${isActive ? ' active' : ''}`}
             onClick={() => {
               track('bottomnav_click', { tab: item.id, v2 })
-              if (item.route) { navigate(item.route); return }
+              if (item.route) {
+                // The menu marks Goals as seen the same way.
+                if (item.id === 'goals') { try { localStorage.setItem('wl_vision_visited', '1') } catch {} }
+                navigate(item.route); return
+              }
               setActiveTab(item.tab)
               navigate(v2 ? home : item.path, { state: { tab: item.tab } })
             }}

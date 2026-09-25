@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { noteFeatureUse } from '../featureUse'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { isV2Active } from '../v2Preview'
 import { api } from '../api'
 import { assetClass, getStockSector } from '../data/assets'
 import { track } from '../analytics'
@@ -10,6 +11,8 @@ import { CLASS_LABEL_KEYS, renderTip } from '../data/walletEvalTips'
 import Alpha from './Alpha'
 
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
+// v2 merges the dashboard's Analysis tab (AI analysis, Technicals, Risk) in here.
+const ToolsTab = lazy(() => import('./Dashboard').then(m => ({ default: m.ToolsTab })))
 
 // ── Asset-mix helpers ──────────────────────────────────────────────────────
 // The wallet evaluation adapts to what's actually in the portfolio: a stock
@@ -200,7 +203,21 @@ export default function Coach() {
   const [targets, setTargets]         = useState([])
   const [loaded, setLoaded]           = useState(false)
   const [evalExpanded, setEvalExpanded] = useState(null)
-  const [activeSection, setActiveSection] = useState('engine')
+  const location = useLocation()
+  const v2 = isV2Active(location.pathname)
+  const ANALYSIS_TOOLS = ['ai', 'ta', 'risk']
+  const [activeSection, setActiveSection] = useState(() =>
+    v2 && location.state?.section === 'analysis' ? 'analysis' : 'engine')
+  const [analysisTool, setAnalysisTool] = useState(() =>
+    ANALYSIS_TOOLS.includes(location.state?.tool) ? location.state.tool : 'ai')
+  const [pricesLoading, setPricesLoading] = useState(true)
+  // A second link into the Analysis section while Coach is already open.
+  useEffect(() => {
+    if (!v2 || location.state?.section !== 'analysis') return
+    setActiveSection('analysis')
+    if (ANALYSIS_TOOLS.includes(location.state?.tool)) setAnalysisTool(location.state.tool)
+  }, [location.state]) // eslint-disable-line react-hooks/exhaustive-deps
+  const openAnalysis = (tool) => { setAnalysisTool(tool); setActiveSection('analysis') }
 
   useEffect(() => {
     track('coach_page_view')
@@ -213,8 +230,8 @@ export default function Coach() {
       setTargets(Object.entries(ct || {}).map(([coin_id, v]) => ({ coin_id, ...v })))
       if (p?.length) {
         const ids = p.map(h => h.coin_id).join(',')
-        api.getPrices(ids).then(px => setPrices(px || {})).catch(() => {})
-      }
+        api.getPrices(ids).then(px => setPrices(px || {})).catch(() => {}).finally(() => setPricesLoading(false))
+      } else setPricesLoading(false)
       setLoaded(true)
     }
     load()
@@ -226,7 +243,8 @@ export default function Coach() {
       const value = h.amount * price
       const invested = h.total_invested || 0
       const pnl = value - invested
-      return { ...h, price, value, invested, pnl, pnlPct: invested > 0 ? (pnl / invested) * 100 : 0 }
+      const pct24h = prices[h.coin_id]?.usd_24h_change ?? 0
+      return { ...h, price, value, invested, pnl, pnlPct: invested > 0 ? (pnl / invested) * 100 : 0, pct24h }
     }).sort((a, b) => b.value - a.value)
     const totalValue = raw.reduce((s, h) => s + h.value, 0)
     const totalInvested = raw.reduce((s, h) => s + h.invested, 0)
@@ -238,6 +256,7 @@ export default function Coach() {
 
   const SECTIONS = [
     { id: 'engine',  label: t('cchSecEngine'),  icon: 'zap' },
+    ...(v2 ? [{ id: 'analysis', label: t('analysis'), icon: 'trend-up' }] : []),
     { id: 'eval',    label: t('cchSecEval'),    icon: 'search' },
     { id: 'actions', label: t('cchSecActions'), icon: 'cpu' },
     { id: 'alpha',   label: t('cchSecAlpha'),   icon: 'α' },
@@ -389,6 +408,19 @@ export default function Coach() {
         </div>
       )}
 
+      {/* ── Analysis (v2): the dashboard's AI analysis, Technicals and Risk ── */}
+      {v2 && activeSection === 'analysis' && enriched.length > 0 && (
+        <div style={{ padding: '1rem' }}>
+          <Suspense fallback={<div className="coach-loading-bar"><span className="coach-loading-dot" /></div>}>
+            {/* Holdings without a quote count at cost, as on the dashboard, so the
+                tools never divide by a zero total while prices are loading. */}
+            <ToolsTab key={analysisTool} enriched={enriched} prices={prices} transactions={transactions}
+              totalValue={enriched.reduce((sum, h) => sum + (h.price > 0 ? h.value : h.invested), 0)}
+              isDemo={false} pricesLoading={pricesLoading} initialTool={analysisTool} />
+          </Suspense>
+        </div>
+      )}
+
       {/* ── Alpha Signals ── */}
       {activeSection === 'alpha' && (
         <div style={{ padding: '0 0 1.5rem' }}>
@@ -399,7 +431,7 @@ export default function Coach() {
       {/* ── Portfolio Analysis ── */}
       {activeSection === 'actions' && (
         <div style={{ padding: '1rem' }}>
-          <div className="glass-card coach-action-card" onClick={() => { navigate('/dashboard', { state: { tab: 'tools', tool: 'ai' } }); track('coach_action', { action: 'ai_analysis' }) }}>
+          <div className="glass-card coach-action-card" onClick={() => { if (v2) openAnalysis('ai'); else navigate('/dashboard', { state: { tab: 'tools', tool: 'ai' } }); track('coach_action', { action: 'ai_analysis' }) }}>
             <div className="coach-action-icon" data-action="ai">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4"/><path d="M12 10v4"/><path d="M8 18a4 4 0 0 1 8 0"/><path d="M3 7h2M19 7h2"/></svg>
             </div>
@@ -432,7 +464,7 @@ export default function Coach() {
             <span className="coach-action-arrow">→</span>
           </div>
 
-          <div className="glass-card coach-action-card" onClick={() => { navigate('/dashboard', { state: { tab: 'tools', tool: 'risk' } }); track('coach_action', { action: 'risk' }) }}>
+          <div className="glass-card coach-action-card" onClick={() => { if (v2) openAnalysis('risk'); else navigate('/dashboard', { state: { tab: 'tools', tool: 'risk' } }); track('coach_action', { action: 'risk' }) }}>
             <div className="coach-action-icon" data-action="risk">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>

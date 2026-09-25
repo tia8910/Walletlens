@@ -444,7 +444,7 @@ const DrawerV2 = memo(function DrawerV2({ open, onClose, onHelp }) {
         <div className="wl-v2-label">{t('v2GroupAi')}</div>
         <div className="wl-v2-group">
           <Row icon={<IconCoach />} hue="var(--g)" label={t('coach')} current={onPage('/coach')} onClick={() => go('/coach')} />
-          <Row icon={V2_ICONS.brain} hue="#9b7bff" label={t('portfolioAnalysisNav')} onClick={() => go(home, { tab: 'ai' })} />
+          <Row icon={V2_ICONS.brain} hue="#9b7bff" label={t('portfolioAnalysisNav')} onClick={() => go('/coach', { section: 'analysis', tool: 'ai' })} />
           <Row icon={<IconAcademy />} hue="#f5c542" label={t('academy')} current={onPage('/academy')} onClick={() => go('/academy')} />
         </div>
 
@@ -452,7 +452,7 @@ const DrawerV2 = memo(function DrawerV2({ open, onClose, onHelp }) {
         <div className="wl-v2-group">
           <Row icon={V2_ICONS.bell} hue="#ff9f43" label={t('priceAlerts')} onClick={() => go(home, { tab: 'alerts' })} />
           <Row icon={V2_ICONS.target} hue="var(--g)" label={t('priceTargets')} onClick={() => go(home, { tab: 'targets' })} />
-          <Row icon={V2_ICONS.risk} hue="#ff5c7a" label={t('riskScanner')} onClick={() => go(home, { tab: 'risk' })} />
+          <Row icon={V2_ICONS.risk} hue="#ff5c7a" label={t('riskScanner')} onClick={() => go('/coach', { section: 'analysis', tool: 'risk' })} />
           <Row icon={V2_ICONS.shield} hue="#4f8cff" label={t('portfolioGuardian')} current={onPage('/guardian')} onClick={() => go('/guardian')} />
           <Row icon={V2_ICONS.zakat} hue="#22c7c7" label={t('zkTitle')} onClick={() => go(home, { tab: 'zakat' })} />
         </div>

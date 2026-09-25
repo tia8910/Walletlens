@@ -330,7 +330,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     setCoinSearch(''); setCoinResults([]); setHoldingsFilter(''); setMsg(''); setSuccess(false)
     setAmount(''); setPrice(''); setBuyWith('NONE'); setBuyWithCustom(''); setSpendPct(null); setSellPct(null); setConfirmNoneOpen(false)
     setSellFor('REMOVE'); setSellForCustom(''); setAmtMode(v2 && type === 'buy' ? 'usd' : 'qty'); setUsdInput(''); setMetalUnit('oz')
-    setV2Step(prefillCoin ? 'ticket' : 'asset'); setAssetChg(null)
+    setV2Step(prefillCoin ? 'ticket' : 'asset'); setAssetChg(null); setSignalOpen(v2)
     setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('')
     setDate(new Date().toISOString().split('T')[0])
     if (wallets.length) setWalletId(String(wallets[0].id))
@@ -1063,6 +1063,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       : (!price || price === '…') ? t('tkEnterPrice')
       : `${isBuy ? t('tkSlideBuy') : t('tkSlideSell')} ${isMetal ? asset.name : sym}`
     const chg = Number(assetChg)
+    const chipColor = (c) => (String(c).startsWith('var(') ? '#10b981' : c)
     const bigVal = amtMode === 'usd' ? usdInput : amount
     const cryptoHeld = isBuy && category === 'crypto' && !selectedCoin && !coinSearch.trim()
       ? (holdings || []).filter(h => (h.amount ?? 0) > 0 && !/^(fiat:|stock:|bond:|other:|xstock:)/.test(h.coin_id || '') && h.coin_id !== 'gold' && h.coin_id !== 'silver').slice(0, 5)
@@ -1116,7 +1117,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                     {!prefillCoin && (
                       <div className="tk-cats" data-tour="ts-category">
                         {CATEGORIES.map(c => (
-                          <button key={c.key} type="button" className={`tk-cat${category === c.key ? ' on' : ''}`} style={{ '--c': c.color }} onClick={() => pickCategory(c.key)}>
+                          <button key={c.key} type="button" className={`tk-cat${category === c.key ? ' on' : ''}`} style={{ '--c': chipColor(c.color) }} onClick={() => pickCategory(c.key)}>
                             <span className="tk-cat-ico"><CatIcon icon={c.icon} size={13} /></span>{t(c.labelKey)}
                           </button>
                         ))}
@@ -1207,7 +1208,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       </div>
                       <div className="tk-legs">
                         {legOptions.map(o => (
-                          <button key={o.key} type="button" className={`tk-leg${legValue === o.key ? ' on' : ''}`} style={{ '--c': o.color }} onClick={() => setLeg(o.key)}>
+                          <button key={o.key} type="button" className={`tk-leg${legValue === o.key ? ' on' : ''}`} style={{ '--c': chipColor(o.color) }} onClick={() => setLeg(o.key)}>
                             <span className="tk-leg-ico"><CatIcon icon={o.icon} size={12} /></span>{o.labelKey ? t(o.labelKey) : o.label}
                           </button>
                         ))}
@@ -1255,13 +1256,17 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                     )}
 
                     {asset?.id && ['crypto', 'stock', 'gold', 'silver', 'tstock'].includes(category) && (
-                      <div className="tk-card tk-signal">
+                      <div className={`tk-card tk-signal${signalOpen ? '' : ' is-closed'}`}>
                         <button type="button" className="tk-signal-toggle" aria-expanded={signalOpen} onClick={() => setSignalOpen(v => !v)}>
                           <span>{isBuy ? t('tkEntrySignal') : t('tkExitSignal')}</span>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><polyline points={signalOpen ? '18 15 12 9 6 15' : '6 9 12 15 18 9'}/></svg>
                         </button>
+                        {/* Open by default, and drawn flat inside this card
+                            rather than as a second box nested in it. */}
                         {signalOpen && (
-                          <TradeSignal coinId={asset.id} currentPrice={parseFloat(price) || null} userAvgCost={avgCost} mode={isBuy ? 'buy' : 'sell'} />
+                          <div className="tk-signal-body">
+                            <TradeSignal coinId={asset.id} currentPrice={parseFloat(price) || null} userAvgCost={avgCost} mode={isBuy ? 'buy' : 'sell'} />
+                          </div>
                         )}
                       </div>
                     )}

@@ -43,9 +43,9 @@ describe('v2 navigation keeps every destination', () => {
   const v2Bar = nav.slice(nav.indexOf('const V2_NAV_ITEMS'), nav.indexOf('const DASHBOARD_LP_ITEMS'))
   const v2Menu = app.slice(app.indexOf('const DrawerV2'), app.indexOf('// ── Memoized app footer'))
 
-  it('has four tabs: Dashboard, Analysis, Targets, Coach', () => {
+  it('has four tabs: Dashboard, Goals, Targets, Coach', () => {
     const ids = [...v2Bar.matchAll(/byId\('(\w+)'\)|id: '(\w+)'/g)].map(m => m[1] || m[2])
-    expect(ids).toEqual(['dashboard', 'analysis', 'targets', 'coach'])
+    expect(ids).toEqual(['dashboard', 'goals', 'targets', 'coach'])
   })
 
   it('moves Watchlist, Alerts and Backup into the menu', () => {
@@ -59,6 +59,8 @@ describe('v2 navigation keeps every destination', () => {
     const dests = (src) => new Set([
       ...[...src.matchAll(/go\('(\/[a-z/-]*)'/g)].map(m => m[1]).filter(p => p !== '/dashboard'),
       ...[...src.matchAll(/tab: '(\w+)'/g)].map(m => m[1]),
+      // v2 opens the analysis tools (ai, risk) in Coach, named by tool.
+      ...[...src.matchAll(/tool: '(\w+)'/g)].map(m => m[1]),
     ])
     const missing = [...dests(classic)].filter(d => !dests(v2Menu).has(d))
     expect(missing).toEqual([])
@@ -105,5 +107,25 @@ describe('v2 trade ticket', () => {
 
   it('confirms with a slide, and the slide is disabled until the trade is complete', () => {
     expect(ticket).toMatch(/<SlideToConfirm[^>]*disabled=\{!ready\}/)
+  })
+})
+
+describe('v2 merges Analysis into Coach', () => {
+  const coach = read('pages/Coach.jsx')
+  const dash = read('pages/Dashboard.jsx')
+
+  it('hosts the same AI analysis, Technicals and Risk tools in Coach', () => {
+    expect(dash).toMatch(/export function ToolsTab\(/)
+    expect(coach).toMatch(/import\('\.\/Dashboard'\)\.then\(m => \(\{ default: m\.ToolsTab \}\)\)/)
+    expect(coach).toMatch(/v2 && activeSection === 'analysis'[\s\S]*<ToolsTab /)
+  })
+
+  it('sends anything that opens the tools tab to Coach while previewing', () => {
+    expect(dash).toMatch(/navigate\('\/coach', \{ state: \{ section: 'analysis', tool \} \}\)/)
+  })
+
+  it('keeps Coach shortcuts inside Coach instead of bouncing to the old tab', () => {
+    expect(coach).toContain("if (v2) openAnalysis('ai')")
+    expect(coach).toContain("if (v2) openAnalysis('risk')")
   })
 })

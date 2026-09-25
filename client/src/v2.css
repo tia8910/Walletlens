@@ -459,7 +459,13 @@ html.wl-v2 .bs-v2 .tk-pnl-t { flex: 1; display: flex; flex-direction: column; }
 html.wl-v2 .bs-v2 .tk-pnl-t small { color: var(--text-sub); font-size: 0.66rem; }
 html.wl-v2 .bs-v2 .tk-pnl-ico { width: 32px; height: 32px; border-radius: 11px; display: grid; place-items: center; color: var(--tk-up); background: color-mix(in srgb, var(--tk-up) 16%, transparent); }
 html.wl-v2 .bs-v2 .tk-pnl-ico.is-loss { color: var(--tk-dn); background: color-mix(in srgb, var(--tk-dn) 16%, transparent); transform: scaleY(-1); }
-html.wl-v2 .bs-v2 .tk-signal { padding: 0.2rem 0.9rem; }
+html.wl-v2 .bs-v2 .tk-signal { padding: 0.2rem 0.9rem 0.6rem; }
+html.wl-v2 .bs-v2 .tk-signal.is-closed { padding-bottom: 0.2rem; }
+/* The signal component draws its own tinted box; inside this card it is
+   drawn flat so the card reads as one piece. Its styles are inline. */
+html.wl-v2 .bs-v2 .tk-signal-body > div {
+  border: 0 !important; background: none !important; padding: 0 !important; margin: 0 !important;
+}
 html.wl-v2 .bs-v2 .tk-signal-toggle {
   width: 100%; display: flex; align-items: center; justify-content: space-between; min-height: 44px;
   border: 0; background: none; cursor: pointer; font: inherit; font-size: 0.8rem; font-weight: 700; color: var(--text-muted);
