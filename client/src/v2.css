@@ -38,7 +38,7 @@ html.wl-v2[data-wl-theme="solana"] {
   --v2-b1: #1c0f3a; --v2-b2: #150f33; --v2-b3: #291044;
 }
 html.wl-v2[data-wl-light] {
-  --v2-glass: rgba(255,255,255,0.86);
+  --v2-glass: #ffffff;
   --v2-glass-border: rgba(15,40,30,0.08);
   --v2-glass-shadow: 0 10px 26px -14px rgba(16,60,48,0.28), inset 0 1px 0 rgba(255,255,255,0.9);
   --v2-bar: #ffffff;
@@ -73,7 +73,7 @@ html.wl-v2[data-wl-light] body::before {
 html.wl-v2 .wl-app { background: transparent; }
 /* The particle field was tuned to sit behind opaque cards. Behind glass it
    reads through every card, so it steps back to a texture. */
-html.wl-v2 .dynamic-bg { opacity: 0.35; }
+html.wl-v2 .dynamic-bg { opacity: 0.25; }
 html.wl-v2[data-wl-light] .dynamic-bg { opacity: 0.12; }
 
 /* ── Top bar ──────────────────────────────────────────────────────────── */
@@ -84,8 +84,6 @@ html.wl-v2 .wl-topbar {
   background:
     radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--v2-t1) 55%, transparent), transparent 70%),
     var(--v2-b1);
-  backdrop-filter: blur(18px) saturate(1.4);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
   border-bottom: 1px solid rgba(255,255,255,0.08);
   box-shadow: 0 10px 30px -18px rgba(0,0,0,0.6);
 }
@@ -111,8 +109,6 @@ html.wl-v2 .glass-card {
   background: var(--v2-glass);
   border: 1px solid var(--v2-glass-border);
   box-shadow: var(--v2-glass-shadow);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
   border-radius: 22px;
 }
 
@@ -130,9 +126,32 @@ html.wl-v2 .dvx-hero.glass-card {
 html.wl-v2[data-wl-light] .dvx-hero.glass-card {
   background:
     radial-gradient(70% 90% at 100% 0%, rgba(var(--g-rgb),0.16), transparent 60%),
-    linear-gradient(140deg, rgba(var(--g-rgb),0.10), rgba(255,255,255,0.92) 60%);
+    linear-gradient(140deg, rgba(var(--g-rgb),0.10), rgba(255,255,255,0.92) 60%),
+    #ffffff;
   border-color: rgba(var(--g-rgb),0.18);
   box-shadow: 0 20px 40px -24px rgba(var(--g-rgb),0.45), inset 0 1px 0 #fff;
+}
+
+/* ── Scrolling stays painted ─────────────────────────────────────────────
+   Phones drop the painted content of big blurred layers while scrolling,
+   and the value card made it worse by re-painting a pulsing shadow every
+   frame: the chart and cards went blank mid-scroll. The canvas behind the
+   cards is a smooth gradient, so the blur showed nothing anyway; cards and
+   bars go without it. The heartbeat keeps pulsing, but as the opacity of
+   a glow layer, which the compositor animates without re-painting. */
+html.wl-v2 .wl-content .glass-card { backdrop-filter: none; -webkit-backdrop-filter: none; }
+html.wl-v2 .dvx-hero.heartbeat { animation: none; }
+html.wl-v2 .dvx-hero.heartbeat::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0;
+  box-shadow: inset 0 0 26px rgba(var(--g-rgb),0.22);
+  opacity: 0; animation: v2-heartbeat 2.2s ease-in-out infinite;
+}
+html.wl-v2 .dvx-hero.heartbeat-v0::before { animation-duration: 3.5s; }
+html.wl-v2 .dvx-hero.heartbeat-v2::before { animation-duration: 1.4s; }
+html.wl-v2 .dvx-hero.heartbeat-v3::before { animation-duration: 0.8s; }
+@keyframes v2-heartbeat { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  html.wl-v2 .dvx-hero.heartbeat::before { animation: none; }
 }
 
 /* ── Content clearance for the bottom bar, shown in the browser in v2 ─── */
@@ -142,8 +161,6 @@ html.wl-v2 .wlc-fab { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
 /* ── Bottom bar ───────────────────────────────────────────────────────── */
 html.wl-v2 .wl-bottom-nav {
   background: var(--v2-bar);
-  backdrop-filter: blur(22px) saturate(1.5);
-  -webkit-backdrop-filter: blur(22px) saturate(1.5);
   border-top: 1px solid rgba(255,255,255,0.08);
   box-shadow: 0 -10px 30px -12px rgba(0,0,0,0.45);
   padding: 0.45rem 0.5rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
@@ -621,7 +638,6 @@ html.wl-v2 .coach-ring-wrap svg circle:first-child { stroke: rgba(127,127,127,0.
 html.wl-v2 .eval-cat-card {
   border-radius: 20px; padding: 0.9rem 1rem;
   background: var(--v2-glass); border: 1px solid var(--v2-glass-border); box-shadow: var(--v2-glass-shadow);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
 }
 html.wl-v2 .eval-cat-card::before { display: none; }
 html.wl-v2 .eval-cat-card:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--eval-color) 40%, transparent); }
@@ -682,7 +698,6 @@ html.wl-v2 .ac-hold b { font-size: 0.9rem; color: var(--text); }
 
 html.wl-v2 .ac-chart, html.wl-v2 .ac-sig {
   border-radius: 22px; background: var(--v2-glass); border: 1px solid var(--v2-glass-border); box-shadow: var(--v2-glass-shadow);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
 }
 html.wl-v2 .ac-chart { padding: 0.65rem 0.5rem 0.6rem; display: flex; flex-direction: column; gap: 0.5rem; }
 html.wl-v2 .ac-tf { display: flex; justify-content: space-between; gap: 0.2rem; padding: 0 0.2rem; }

@@ -181,4 +181,15 @@ describe('v2 bars are solid', () => {
     expect(css).toMatch(/--v2-bar: var\(--v2-b2\);/)
     expect(css).toMatch(/--v2-bar: #ffffff;/)
   })
+
+  it('keeps big scrolling cards from being dropped mid-scroll on phones', () => {
+    const css = read('v2.css').replace(/\/\*[\s\S]*?\*\//g, '')
+    // No blur on the cards or bars, and the value card's pulse animates
+    // opacity, not a re-painted shadow.
+    expect(css).toMatch(/html\.wl-v2 \.wl-content \.glass-card \{ backdrop-filter: none;/)
+    expect(css).toMatch(/html\.wl-v2 \.dvx-hero\.heartbeat \{ animation: none; \}/)
+    expect(css).toMatch(/@keyframes v2-heartbeat \{[^}]*opacity/)
+    const blurred = [...css.matchAll(/([^{}]+)\{[^}]*backdrop-filter:\s*blur/g)].map(m => m[1].trim())
+    expect(blurred).toEqual(['html.wl-v2 .bs-v2 .tk-foot'])
+  })
 })
