@@ -167,6 +167,23 @@ html.wl-v2 .wlc-fab { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
    which keeps support links out of the Play build. */
 html.wl-v2 body:has(.wl-bottom-nav) #bmc-wbtn { bottom: calc(160px + env(safe-area-inset-bottom, 0px)) !important; }
 html.wl-v2 body:has(.ac-page) #bmc-wbtn { bottom: calc(222px + env(safe-area-inset-bottom, 0px)) !important; }
+/* Its panel opens as a sheet that fits the screen: from just under the top
+   edge to just above the bottom bar, full width on a phone and capped on
+   wider screens. Left alone it keeps a fixed height and runs off the top.
+   The launcher stays above it, so its close chevron is always reachable. */
+html.wl-v2 #bmc-iframe {
+  top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 84px) !important;
+  left: auto !important; right: 12px !important;
+  /* An iframe's auto size is 300×150, so both are spelled out: the height
+     is whatever lies between the top and bottom offsets. */
+  width: min(440px, calc(100vw - 24px)) !important;
+  height: calc(100dvh - 96px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+  max-height: none !important; min-height: 0 !important; max-width: none !important;
+  border-radius: 20px !important; z-index: 2147483646 !important;
+}
+html.wl-v2 #bmc-wbtn { z-index: 2147483647 !important; cursor: grab; }
+html.wl-v2 #bmc-wbtn.wl-bmc-dragging { cursor: grabbing; transition: none !important; }
 html.wl-v2 body:has(.bs-v2.bs-sheet-open) #bmc-wbtn,
 html.wl-v2 body:has(.ac-sheet-wrap) #bmc-wbtn,
 html.wl-v2 body:has(.ic-full) #bmc-wbtn,
