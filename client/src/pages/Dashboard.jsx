@@ -72,7 +72,7 @@ const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
 const SmartAlerts    = lazy(() => import('../components/SmartAlerts'))
 const RiskScanner    = lazy(() => import('../components/RiskScanner'))
 const LiquidityRisk  = lazy(() => import('../components/LiquidityRisk'))
-const MagicAnalysisPanel = lazy(() => import('../components/MagicAnalysisPanel'))
+const TechChartPanel = lazy(() => import('../components/TechChartPanel'))
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
 const AISellPlan     = lazy(() => import('../components/AISellPlan'))
 const WeeklyReport   = lazy(() => import('../components/WeeklyReport'))
@@ -2739,7 +2739,7 @@ export function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, p
         ))}
       </div>
       {tool === 'ai'     && <AIPanel enriched={enriched} prices={prices} transactions={transactions} totalValue={totalValue} isDemo={isDemo} pricesLoading={pricesLoading} />}
-      {tool === 'ta'     && <Suspense fallback={<TabFallback />}><MagicAnalysisPanel enriched={isDemo ? [] : enriched} totalValue={totalValue} /></Suspense>}
+      {tool === 'ta'     && <Suspense fallback={<TabFallback />}><TechChartPanel enriched={isDemo ? [] : enriched} /></Suspense>}
       {tool === 'risk'   && <Suspense fallback={<TabFallback />}><LiquidityRisk holdings={riskHoldings} /><RiskScanner enriched={isDemo ? [] : enriched} /></Suspense>}
     </div>
   )

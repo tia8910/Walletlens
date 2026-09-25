@@ -2033,4 +2033,9 @@ export default {
     acSlow: "Lenta",
     acTargets: "Obiettivi",
     acYouHold: "Possiedi",
+    acFullScreen: "Schermo intero",
+    acExitFullScreen: "Esci da schermo intero",
+    acTimeframe: "Timeframe",
+    acPickAsset: "Scegli un asset",
+    acOpenAsset: "Apri",
 }

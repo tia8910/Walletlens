@@ -2012,4 +2012,9 @@ export default {
     acSlow: "Lente",
     acTargets: "Objectifs",
     acYouHold: "Vous détenez",
+    acFullScreen: "Plein écran",
+    acExitFullScreen: "Quitter le plein écran",
+    acTimeframe: "Unité de temps",
+    acPickAsset: "Choisir un actif",
+    acOpenAsset: "Ouvrir",
 }

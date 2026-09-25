@@ -172,6 +172,17 @@ export function computeChartSignals(candles, rawParams) {
 }
 
 /** Candles from a close-only series (no highs or lows available). */
+// Chart timeframes: candle size, how many candles are on screen, and the
+// span (days) the close-only fallback covers. 1D is the default.
+export const CHART_TIMEFRAMES = {
+  '15m': { label: '15m', interval: '15m', visible: 96, days: 1 },
+  '1h': { label: '1H', interval: '1h', visible: 120, days: 7 },
+  '4h': { label: '4H', interval: '4h', visible: 120, days: 30 },
+  '1d': { label: '1D', interval: '1d', visible: 120, days: 365 },
+  '1w': { label: '1W', interval: '1w', visible: 156, days: 1825 },
+}
+export const DEFAULT_TIMEFRAME = '1d'
+
 export function candlesFromCloses(points) {
   const out = []
   for (let i = 0; i < (points || []).length; i++) {

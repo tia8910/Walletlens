@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { V2_PATH, isV2Path, isV2Active, homePath } from './v2Preview'
+import { CHART_TIMEFRAMES, DEFAULT_TIMEFRAME } from './chartSignals'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const read = (p) => readFileSync(join(here, p), 'utf8')
@@ -140,9 +141,44 @@ describe('v2 Coach Wallet Score', () => {
 
 describe('v2 asset page', () => {
   const page = read('pages/AssetDetail.jsx')
-  it('draws the indicator chart only in the preview and keeps the classic chart otherwise', () => {
-    expect(page).toMatch(/v2 && candleData\.candles\.length \? computeChartSignals/)
+  it('draws the indicator chart only in v2 and keeps the classic chart otherwise', () => {
+    expect(page).toMatch(/<IndicatorChart coinId=\{coinId\}/)
     expect(page).toContain('{!v2 && <>')
     expect(page).toMatch(/if \(v2\) return\s+const alive = \{ current: true \}\s+loadChart\(alive\)/)
+  })
+})
+
+describe('indicator chart', () => {
+  const chart = read('components/IndicatorChart.jsx')
+  it('opens on daily candles every time, with 1H and 4H available', () => {
+    expect(chart).toMatch(/useState\(DEFAULT_TIMEFRAME\)/)
+    expect(DEFAULT_TIMEFRAME).toBe('1d')
+    expect(Object.keys(CHART_TIMEFRAMES)).toEqual(['15m', '1h', '4h', '1d', '1w'])
+  })
+  it('has a full-screen view', () => {
+    expect(chart).toContain('className="ic-full"')
+    expect(chart).toMatch(/setFull\(false\)/)
+  })
+})
+
+describe('Technicals uses the asset page chart', () => {
+  it('replaces the Magic Indicator in Coach → Analysis and on the Technicals page', () => {
+    const dash = read('pages/Dashboard.jsx')
+    const tech = read('pages/Technicals.jsx')
+    expect(dash).toMatch(/tool === 'ta'[^\n]*<TechChartPanel /)
+    expect(tech).toContain('<TechChartPanel ')
+    expect(dash + tech).not.toContain('MagicAnalysisPanel')
+    expect(read('components/TechChartPanel.jsx')).toContain('<IndicatorChart ')
+  })
+})
+
+describe('v2 bars are solid', () => {
+  it('keeps scrolling content from showing through the top and bottom bars', () => {
+    const css = read('v2.css')
+    const top = css.slice(css.indexOf('html.wl-v2 .wl-topbar {'), css.indexOf('}', css.indexOf('html.wl-v2 .wl-topbar {')))
+    expect(top).not.toMatch(/transparent\);\s*$/m)
+    expect(top).toMatch(/var\(--v2-b1\);/)
+    expect(css).toMatch(/--v2-bar: var\(--v2-b2\);/)
+    expect(css).toMatch(/--v2-bar: #ffffff;/)
   })
 })

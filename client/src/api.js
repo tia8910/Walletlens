@@ -2291,20 +2291,28 @@ export const api = {
   // first candle on screen. Anything Binance does not list — stocks, metals,
   // stablecoins, obscure tokens — falls back to the close-only series the
   // classic chart uses, turned into candles (candlesFromCloses marks them).
-  getCandles: async (id, symbol, days = 90, warmup = 200) => {
-    const { candlesFromCloses } = await import('./chartSignals');
+  // Whether an asset has real exchange candles (Binance), so intraday
+  // timeframes mean something. Everything else charts from daily closes.
+  hasLiveCandles: (id, symbol) => {
     const sym = String(symbol || '').toUpperCase();
-    const isCrypto = !!id && !/^(stock:|xstock:|fiat:|bond:|other:|metal:)/.test(id) && id !== GOLD_ID && id !== SILVER_ID;
     const STABLE = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'FDUSD', 'USDP', 'PYUSD', 'USDE'];
-    if (isCrypto && sym && !STABLE.includes(sym)) {
-      const plan = days <= 1 ? ['15m', 96] : days <= 7 ? ['1h', 168] : days <= 30 ? ['4h', 180]
-        : days <= 365 ? ['1d', Math.round(days)] : ['1w', 260];
-      const limit = Math.min(1000, plan[1] + warmup);
-      const cacheKey = `candles::${sym}::${plan[0]}::${limit}`;
+    return !!id && !!sym && !STABLE.includes(sym) && !/^(stock:|xstock:|fiat:|bond:|other:|metal:)/.test(id) && id !== GOLD_ID && id !== SILVER_ID;
+  },
+
+  // Candles for the indicator chart, by timeframe (candle size): 15m, 1h,
+  // 4h, 1d or 1w. `warmup` extra candles load before the visible window so
+  // the long EMAs are settled by the time they are drawn.
+  getCandles: async (id, symbol, tf = '1d', warmup = 200) => {
+    const { candlesFromCloses, CHART_TIMEFRAMES } = await import('./chartSignals');
+    const plan = CHART_TIMEFRAMES[tf] || CHART_TIMEFRAMES['1d'];
+    const sym = String(symbol || '').toUpperCase();
+    if (api.hasLiveCandles(id, sym)) {
+      const limit = Math.min(1000, plan.visible + warmup);
+      const cacheKey = `candles::${sym}::${plan.interval}::${limit}`;
       const hit = _chartCache[cacheKey];
-      if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length) return { candles: hit.v, visible: plan[1], closeOnly: false };
+      if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length) return { candles: hit.v, visible: plan.visible, closeOnly: false };
       try {
-        const res = await fetchWithTimeout(`https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(sym + 'USDT')}&interval=${plan[0]}&limit=${limit}`, 8000);
+        const res = await fetchWithTimeout(`https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(sym + 'USDT')}&interval=${plan.interval}&limit=${limit}`, 8000);
         if (res.ok) {
           const rows = await res.json();
           const candles = (Array.isArray(rows) ? rows : [])
@@ -2312,17 +2320,15 @@ export const api = {
             .filter(k => k.c > 0 && k.h >= k.l);
           if (candles.length > 10) {
             try { _chartCache[cacheKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
-            return { candles, visible: plan[1], closeOnly: false };
+            return { candles, visible: plan.visible, closeOnly: false };
           }
         }
       } catch {}
     }
-    // Fallback: the classic close-only series. Longer history for warm-up
-    // when the range allows it.
-    const pts = await api.getChartData(id, Math.max(days, days >= 90 ? 365 : days));
+    // Fallback: the classic close-only series over the timeframe's span.
+    const pts = await api.getChartData(id, plan.days);
     const candles = candlesFromCloses((pts || []).map(p => ({ ...p, t: p.date })));
-    const visible = days >= 90 ? Math.max(10, Math.round(candles.length * Math.min(1, days / 365))) : candles.length;
-    return { candles, visible, closeOnly: true };
+    return { candles, visible: candles.length, closeOnly: true };
   },
 
   // Holdings for a specific coin (for sell quantity picker)

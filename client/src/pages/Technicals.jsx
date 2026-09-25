@@ -4,7 +4,7 @@ import Icon from '../components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
-import MagicAnalysisPanel from '../components/MagicAnalysisPanel'
+import TechChartPanel from '../components/TechChartPanel'
 import { useLanguage } from '../LanguageContext'
 
 export default function Technicals() {
@@ -36,7 +36,7 @@ export default function Technicals() {
     return () => { alive = false }
   }, [])
 
-  const { enriched, totalValue } = useMemo(() => {
+  const { enriched } = useMemo(() => {
     const raw = portfolio.map(h => {
       const price = prices[h.coin_id]?.usd ?? prices[h.coin_id]?.price ?? 0
       const value = h.amount * price
@@ -44,7 +44,7 @@ export default function Technicals() {
       const pnl = value - invested
       return { ...h, price, value, invested, pnl, pnlPct: invested > 0 ? (pnl / invested) * 100 : 0 }
     })
-    return { enriched: raw, totalValue: raw.reduce((s, h) => s + h.value, 0) }
+    return { enriched: raw }
   }, [portfolio, prices])
 
   if (!loaded) {
@@ -70,9 +70,9 @@ export default function Technicals() {
     <div className="dvx-page">
       <div className="magic-hero">
         <h1 className="magic-hero-title" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:'0.35rem' }}><Icon name="ruler" size={20} /> <span>{t('tnTitle')}</span></h1>
-        <p className="magic-hero-sub"><b>{t('miTitle')}</b> — {t('miSubtitle')}</p>
+        <p className="magic-hero-sub">{t('acSignalsDesc')}</p>
       </div>
-      <MagicAnalysisPanel enriched={enriched} totalValue={totalValue} />
+      <TechChartPanel enriched={enriched} />
     </div>
   )
 }
