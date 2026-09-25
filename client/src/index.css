@@ -17268,3 +17268,10 @@ input, select, textarea, .dvx-input {
     0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
   }
 }
+
+/* Settings → App diagnostics: a quiet text link at the foot of the page. */
+.settings-diag-link {
+  display: block; margin: 1.5rem auto 0.5rem; padding: 0.5rem 0.9rem;
+  border: 0 !important; background: none !important; box-shadow: none !important;
+  color: var(--text-muted, #94a3b8); font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+}

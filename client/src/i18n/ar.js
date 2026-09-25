@@ -2096,4 +2096,5 @@ export default {
     refBuyWithBonus: (s) => `اشترِ ${s} مع مكافأة ترحيب`,
     refNoExchangeSub: (a) => `افتح حسابًا واحصل على مكافآت ترحيب تصل إلى ${a}`,
     refStarterSub: (a) => `مكافآت ترحيب تصل إلى ${a} عند فتح حساب لدى شركائنا.`,
+    setDiagnostics: "تشخيص التطبيق",
 }

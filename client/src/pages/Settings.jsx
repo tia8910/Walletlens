@@ -397,6 +397,13 @@ export default function Settings() {
         </div>
       )}
 
+      {/* The one way into /diag from inside the installed app, which has no
+          address bar. Quiet on purpose: it is for checking why something (the
+          rating card, a sync) is not working, not a feature. */}
+      <button type="button" className="settings-diag-link" onClick={() => navigate('/diag')}>
+        {t('setDiagnostics')} ›
+      </button>
+
       {editInterests && (
         <InterestPicker
           editMode
