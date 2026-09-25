@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { makeDraggable, clampToViewport, BMC_POS_KEY } from './bmcWidget'
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { makeDraggable, clampToViewport, BMC_POS_KEY, BMC_HIDDEN_KEY, HIDE_MS, isHidden, tagMessage } from './bmcWidget'
 
 // The launcher is the widget's element with the widget's click handler; the
 // drag has to move it without ever letting a drag count as a tap.
@@ -15,7 +15,8 @@ function launcher() {
   return { el, clicks: () => clicks }
 }
 
-beforeEach(() => { document.body.innerHTML = ''; localStorage.clear() })
+beforeEach(() => { document.body.innerHTML = ''; localStorage.clear(); document.documentElement.classList.remove('wl-bmc-hidden') })
+afterEach(() => { vi.useRealTimers() })
 
 describe('the coffee launcher drag', () => {
   it('keeps a tap a tap', () => {
@@ -53,5 +54,60 @@ describe('the coffee launcher drag', () => {
   it('never leaves the screen', () => {
     expect(clampToViewport(-50, 5000, 64, 64, 390, 844)).toEqual({ x: 8, y: 772 })
     expect(clampToViewport(1000, -10, 64, 64, 390, 844)).toEqual({ x: 318, y: 8 })
+  })
+})
+
+describe('hiding it with a long press', () => {
+  it('shows an ✕ after a long press, and that press does not open the panel', () => {
+    vi.useFakeTimers()
+    const { el, clicks } = launcher()
+    makeDraggable(el)
+    ev('pointerdown', 100, 100, el)
+    vi.advanceTimersByTime(600)
+    ev('pointerup', 100, 100)
+    el.click()
+    expect(clicks()).toBe(0)
+    expect(document.querySelector('.wl-bmc-close')).not.toBeNull()
+  })
+
+  it('hides the widget for a week when the ✕ is tapped', () => {
+    vi.useFakeTimers()
+    const { el } = launcher()
+    makeDraggable(el)
+    ev('pointerdown', 100, 100, el); vi.advanceTimersByTime(600); ev('pointerup', 100, 100)
+    document.querySelector('.wl-bmc-close').click()
+    expect(document.documentElement.classList.contains('wl-bmc-hidden')).toBe(true)
+    expect(document.querySelector('.wl-bmc-close')).toBeNull()
+    const until = Number(localStorage.getItem(BMC_HIDDEN_KEY))
+    expect(isHidden(until - 1)).toBe(true)
+    expect(isHidden(until + 1)).toBe(false)
+    expect(until - Date.now()).toBeLessThanOrEqual(HIDE_MS)
+  })
+
+  it('puts the ✕ away on a tap elsewhere, and a short tap never shows it', () => {
+    vi.useFakeTimers()
+    const { el } = launcher()
+    makeDraggable(el)
+    ev('pointerdown', 100, 100, el); vi.advanceTimersByTime(200); ev('pointerup', 100, 100)
+    vi.advanceTimersByTime(600)
+    expect(document.querySelector('.wl-bmc-close')).toBeNull()
+    ev('pointerdown', 100, 100, el); vi.advanceTimersByTime(600); ev('pointerup', 100, 100)
+    ev('pointerdown', 5, 5, document.body)
+    expect(document.querySelector('.wl-bmc-close')).toBeNull()
+  })
+})
+
+describe('the message bubble', () => {
+  it('finds the box holding the tag message and tags it', () => {
+    const tag = document.createElement('script')
+    tag.dataset.name = 'BMC-Widget'
+    tag.dataset.message = 'WalletLens is an independent project built to help people'
+    document.body.appendChild(tag)
+    const box = document.createElement('div')
+    box.style.position = 'fixed'
+    box.innerHTML = '<p>WalletLens is an independent project built to help people track</p>'
+    document.body.appendChild(box)
+    expect(tagMessage()).toBe(box)
+    expect(box.classList.contains('wl-bmc-msg')).toBe(true)
   })
 })
