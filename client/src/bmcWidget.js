@@ -169,44 +169,38 @@ export function makeDraggable(el) {
 }
 
 /**
- * Whether the widget has its panel open. The fit-to-screen sizing in v2.css
- * has to be !important to beat the widget's own size, so on a closed panel it
- * would hold the panel on screen and the close chevron would seem to do
- * nothing. The sizing therefore applies only under html.wl-bmc-open.
+ * Open and close, owned here. The widget's own close did not work inside the
+ * app (the chevron did nothing, twice, for reasons its third-party code does
+ * not let us see), so after the widget has opened its panel once, every
+ * later tap on the launcher is caught before the widget sees it and the panel
+ * is shown or hidden here instead:
  *
- * The widget's own code is third-party and may close the panel through its
- * inline style or through classes from its own stylesheet, so this reads the
- * COMPUTED style with our sizing switched off for the moment of the reading,
- * i.e. what the widget itself wants shown.
+ *   html.wl-bmc-open    the panel is showing (v2.css sizes it to the screen)
+ *   html.wl-bmc-closed  it is hidden again (index.css hides it and puts the
+ *                       cup back on the launcher, which the widget left on
+ *                       its chevron)
+ *
+ * The widget keeps the iframe loaded, so reopening is instant.
  */
-export function panelIsOpen(frame) {
-  if (!frame || !frame.isConnected) return false
-  const cs = getComputedStyle(frame)
-  if (cs.display === 'none' || cs.visibility === 'hidden') return false
-  if (cs.opacity !== '' && Number(cs.opacity) < 0.05) return false
-  if (/^0(\.0+)?(px)?$/.test(cs.height) || /^0(\.0+)?(px)?$/.test(cs.width)) return false
-  if (/matrix\(0(\.0+)?, 0, 0, 0(\.0+)?|scale\(0(\.0+)?\)/.test(cs.transform)) return false
-  return true
-}
-
-export function syncPanel(frame) {
+export function ownToggle(el) {
+  if (!el || el.dataset.wlToggle) return
+  el.dataset.wlToggle = '1'
   const root = document.documentElement
-  root.classList.remove('wl-bmc-open')
-  const open = panelIsOpen(frame)
-  root.classList.toggle('wl-bmc-open', open)
-  return open
-}
-
-function watchPanel(frame, launcher) {
-  if (!frame || frame.dataset.wlWatch) return
-  frame.dataset.wlWatch = '1'
-  const sync = () => syncPanel(frame)
-  sync()
-  new MutationObserver(sync).observe(frame, { attributes: true, attributeFilter: ['style', 'class', 'hidden'] })
-  frame.addEventListener('transitionend', sync)
-  // After any tap on the launcher (the widget's open/close), and again once
-  // its animation has run.
-  launcher?.addEventListener('click', () => { for (const ms of [0, 80, 450, 900]) setTimeout(sync, ms) })
+  let openedOnce = false
+  let open = false
+  const set = (v) => {
+    open = v
+    root.classList.toggle('wl-bmc-open', v)
+    root.classList.toggle('wl-bmc-closed', !v && openedOnce)
+  }
+  window.addEventListener('click', (e) => {
+    if (!el.contains(e.target)) return
+    if (!openedOnce) { openedOnce = true; set(true); return }   // the widget opens it
+    e.stopImmediatePropagation()
+    e.preventDefault()
+    set(!open)
+  }, true)
+  return { isOpen: () => open }
 }
 
 /**
@@ -246,8 +240,7 @@ export function initBmcDrag() {
   let tagged = false
   const attach = () => {
     const el = document.getElementById('bmc-wbtn')
-    if (el) makeDraggable(el)
-    watchPanel(document.getElementById('bmc-iframe'), el)
+    if (el) { makeDraggable(el); ownToggle(el) }
     if (!tagged) tagged = !!tagMessage()
     return !!el && tagged && !!document.getElementById('bmc-iframe')
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { makeDraggable, clampToViewport, BMC_POS_KEY, BMC_HIDDEN_KEY, HIDE_MS, isHidden, tagMessage, panelIsOpen, syncPanel, widgetReady, watchReady } from './bmcWidget'
+import { makeDraggable, clampToViewport, BMC_POS_KEY, BMC_HIDDEN_KEY, HIDE_MS, isHidden, tagMessage, ownToggle, widgetReady, watchReady } from './bmcWidget'
 
 // The launcher is the widget's element with the widget's click handler; the
 // drag has to move it without ever letting a drag count as a tap.
@@ -112,31 +112,41 @@ describe('the message bubble', () => {
   })
 })
 
-describe('the panel open state', () => {
-  // The fit-to-screen sizing applies only while this says open; if it read a
-  // closed panel as open, the chevron would appear to do nothing.
-  const frame = (css) => { const f = document.createElement('iframe'); f.style.cssText = css; document.body.appendChild(f); return f }
-  it('reads every way the widget can close it as closed', () => {
-    for (const css of ['height: 0px; opacity: 1', 'opacity: 0', 'visibility: hidden', 'display: none', 'transform: scale(0)', 'width: 0px']) {
-      expect(panelIsOpen(frame(css)), css).toBe(false)
-    }
+describe('opening and closing the panel', () => {
+  // The widget's own close did nothing inside the app, so after its first
+  // open every tap is handled here and never reaches the widget.
+  const root = document.documentElement
+  beforeEach(() => root.classList.remove('wl-bmc-open', 'wl-bmc-closed'))
+
+  it('lets the widget open it the first time, then toggles it itself', () => {
+    const { el, clicks } = launcher()
+    const t = ownToggle(el)
+    el.click()
+    expect(clicks()).toBe(1)                       // the widget opened it
+    expect(t.isOpen()).toBe(true)
+    expect(root.classList.contains('wl-bmc-open')).toBe(true)
+
+    el.click()                                     // the chevron
+    expect(clicks()).toBe(1)                       // the widget never saw it
+    expect(t.isOpen()).toBe(false)
+    expect(root.classList.contains('wl-bmc-open')).toBe(false)
+    expect(root.classList.contains('wl-bmc-closed')).toBe(true)
+
+    el.click()
+    expect(clicks()).toBe(1)
+    expect(root.classList.contains('wl-bmc-open')).toBe(true)
+    expect(root.classList.contains('wl-bmc-closed')).toBe(false)
   })
-  it('reads the open panel as open', () => {
-    expect(panelIsOpen(frame('height: calc(100% - 120px); opacity: 1; visibility: visible'))).toBe(true)
-    expect(panelIsOpen(null)).toBe(false)
-  })
-  it('reads a panel closed by a class from the widget stylesheet as closed', () => {
-    const style = document.createElement('style')
-    style.textContent = '.bmc-closed { height: 0px; opacity: 0; }'
-    document.head.appendChild(style)
-    const f = frame('height: 600px')
-    f.className = 'bmc-closed'
-    expect(syncPanel(f)).toBe(false)
-    expect(document.documentElement.classList.contains('wl-bmc-open')).toBe(false)
-    f.className = ''
-    expect(syncPanel(f)).toBe(true)
-    expect(document.documentElement.classList.contains('wl-bmc-open')).toBe(true)
-    style.remove()
+
+  it('ignores clicks elsewhere, and a drag never toggles it', () => {
+    const { el } = launcher()
+    makeDraggable(el)
+    const t = ownToggle(el)
+    document.body.click()
+    expect(t.isOpen()).toBe(false)
+    ev('pointerdown', 100, 100, el); ev('pointermove', 60, 220); ev('pointerup', 60, 220)
+    el.click()
+    expect(t.isOpen()).toBe(false)
   })
 })
 

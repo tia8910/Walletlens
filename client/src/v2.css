@@ -171,9 +171,8 @@ html.wl-v2 body:has(.ac-page) #bmc-wbtn { bottom: calc(222px + env(safe-area-ins
    edge to just above the bottom bar, full width on a phone and capped on
    wider screens. Left alone it keeps a fixed height and runs off the top.
    The launcher stays above it, so its close chevron is always reachable.
-   Only while the widget has it open (html.wl-bmc-open, bmcWidget.js): these
-   have to be !important to beat the widget's inline size, and on a closed
-   panel they would hold it on screen, so the chevron seemed to do nothing. */
+   Only while it is open (html.wl-bmc-open, set by ownToggle in bmcWidget.js,
+   which owns open/close after the first open). */
 html.wl-v2.wl-bmc-open #bmc-iframe {
   top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 84px) !important;

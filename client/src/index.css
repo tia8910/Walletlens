@@ -17257,6 +17257,18 @@ input, select, textarea, .dvx-input {
   animation: wl-bmc-pop 0.18s ease-out;
 }
 @keyframes wl-bmc-pop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+/* Closed by the app (ownToggle in bmcWidget.js): the panel is hidden but kept
+   loaded, and the launcher, which the widget leaves on its chevron, shows the
+   cup again. */
+html.wl-bmc-closed #bmc-iframe {
+  visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;
+}
+html.wl-bmc-closed #bmc-wbtn > * { visibility: hidden !important; }
+html.wl-bmc-closed #bmc-wbtn::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: center / 46% no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8h12l-1.2 12.1a1 1 0 0 1-1 .9H8.2a1 1 0 0 1-1-.9z'/%3E%3Cpath d='M5 5h14v3H5z'/%3E%3Cpath d='M9 2.5h6'/%3E%3C/svg%3E");
+}
+
 /* Not until onboarding is done and an asset is added (widgetReady()). */
 html:not(.wl-bmc-ready) #bmc-wbtn,
 html:not(.wl-bmc-ready) #bmc-iframe,
