@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- Records CSP refusals from the very first request, so Diagnostics can
+         name the directive and host that blocked something instead of only
+         seeing that it never happened. Inline scripts are allowed by the CSP. -->
+    <script>window.__cspViolations=[];document.addEventListener('securitypolicyviolation',function(e){if(window.__cspViolations.length<50)window.__cspViolations.push({d:e.effectiveDirective||e.violatedDirective,u:String(e.blockedURI||'').slice(0,120)})});</script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
@@ -579,12 +583,16 @@
       }, { once: true });
     </script>
 
-    <!-- Buy Me a Coffee widget, exactly as the Buy Me a Coffee studio gives
-         it. Inside the app v2.css lifts the launcher (#bmc-wbtn) above the
-         bottom bar and chat button, and hides it where a sheet or the
-         full-screen chart owns the screen and in the installed Play app.
-         Checked by Diagnostics → "support widget". -->
-    <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="Walletlens" data-description="Support me on Buy me a coffee!" data-message="WalletLens is an independent project built to help people track, understand, and grow their net worth, from crypto and stocks to cash, precious metals, and other assets.No sign up. No wallet connection. Your financial data stays under your control.If you find WalletLens useful, you can support the project with a coffee ☕. It helps me keep improving the app and adding new features.Thank you for supporting WalletLens ❤️" data-color="#40DCA5" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
+    <!-- Buy Me a Coffee widget: the studio's tag, loading its script through
+         /api/bmc (functions/api/bmc.js, a same-origin relay of
+         cdnjs.buymeacoffee.com). Straight from the CDN it drew on the
+         *.pages.dev previews but never on walletlens.live, where a policy the
+         deployed CSP does not show refused it; 'self' is allowed everywhere.
+         `defer` runs it before DOMContentLoaded, when the widget draws. Inside
+         the app v2.css lifts the launcher above the bottom bar and chat button
+         and hides it under sheets, the full-screen chart and in the installed
+         app. Checked by Diagnostics → "support widget". -->
+    <script data-name="BMC-Widget" data-cfasync="false" defer src="/api/bmc" data-id="Walletlens" data-description="Support me on Buy me a coffee!" data-message="WalletLens is an independent project built to help people track, understand, and grow their net worth, from crypto and stocks to cash, precious metals, and other assets.No sign up. No wallet connection. Your financial data stays under your control.If you find WalletLens useful, you can support the project with a coffee ☕. It helps me keep improving the app and adding new features.Thank you for supporting WalletLens ❤️" data-color="#40DCA5" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
 
   </body>
 </html>

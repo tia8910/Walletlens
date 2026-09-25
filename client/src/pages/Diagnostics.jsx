@@ -114,6 +114,10 @@ const CHECKS = [
         ? { state: 'ok', detail: `rendered ${Math.round(r.width)}x${Math.round(r.height)} at bottom ${Math.round(window.innerHeight - r.bottom)}px` }
         : { state: 'fail', detail: 'ran, but drawn off-screen or behind something' }
     }
+    // A CSP refusal names itself: which directive, which host. Recorded from
+    // the first request by the inline listener at the top of index.html.
+    const refused = (window.__cspViolations || []).find(v => /buymeacoffee|\/api\/bmc/.test(v.u))
+    if (refused) return { state: 'fail', detail: `blocked by CSP ${refused.d} · ${refused.u.replace(/^https?:\/\//, '').slice(0, 50)}` }
     // Tag present, nothing injected. Ask /api/bmc, which fetches the same
     // script through the edge, and report what it actually returned — the
     // previous version guessed between "unreachable" and "blocked by CSP" and
