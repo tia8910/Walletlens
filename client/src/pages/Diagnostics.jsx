@@ -114,8 +114,8 @@ const CHECKS = [
         ? { state: 'ok', detail: `rendered ${Math.round(r.width)}x${Math.round(r.height)} at bottom ${Math.round(window.innerHeight - r.bottom)}px` }
         : { state: 'fail', detail: 'ran, but drawn off-screen or behind something' }
     }
-    // Tag present, nothing injected. The script now comes from /api/bmc, so
-    // ask the relay directly and report what it actually returned — the
+    // Tag present, nothing injected. Ask /api/bmc, which fetches the same
+    // script through the edge, and report what it actually returned — the
     // previous version guessed between "unreachable" and "blocked by CSP" and
     // could not tell them apart, which cost two rounds.
     try {

@@ -53,16 +53,18 @@ describe('CSP admits the native intent bridge', () => {
     })
   }
 
-  it('still confines frames to that and the Google sign-in origin', () => {
+  it('still confines frames to that, Google sign-in and the support widget', () => {
     // The point of the directive is that a frame cannot be pointed anywhere.
     // Widening it to '*' or dropping it would also make the test above pass.
     //
-    // buymeacoffee has been in and out of here twice, for a widget and then a
-    // panel. Both embedded the support page; the button is a plain link now
-    // and frame-src does not govern navigations, so nothing needs the origin.
+    // buymeacoffee has been in and out of here twice before, for a widget and
+    // then a panel, and both came back blocked. The widget is back (see
+    // bmcWidget.test.js) and its panel is a buymeacoffee.com frame, so that
+    // origin is listed, in BOTH policies: the meta tag and the _headers
+    // header are each enforced, and a frame one of them omits is blocked.
     for (const [file] of POLICIES) {
       const sources = frameSources(read(file))
-      expect(sources).toEqual(['https://accounts.google.com', 'intent:'])
+      expect(sources).toEqual(['https://accounts.google.com', 'intent:', 'https://www.buymeacoffee.com', 'https://buymeacoffee.com'])
     }
   })
 

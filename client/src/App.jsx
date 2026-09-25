@@ -37,6 +37,7 @@ import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
 import { setAppInteractive } from './reviewPrompt'
 import { isInstalledApp, isAndroidApp } from './nativeBridge'
+import { useCanInstall, promptInstall } from './pwaInstall'
 import { applySettings } from './settingsUtils'
 import { initMood } from './moodEngine'
 import { pendingVaultPayload, consumeVaultPayload } from './nativeVault'
@@ -140,33 +141,17 @@ function IconClose()  { return <svg width="22" height="22" viewBox="0 0 24 24" f
 // Only shown on Chrome/Edge where beforeinstallprompt fires — no-op on Firefox/iOS
 function PWATopbarButton() {
   const { t } = useLanguage()
-  const [prompt, setPrompt] = useState(null)
-  const [installed, setInstalled] = useState(false)
+  const available = useCanInstall()
+  if (!available) return null
 
-  useEffect(() => {
-    if (isInstalledApp()) {
-      setInstalled(true); return
-    }
-    const handler = (e) => { e.preventDefault(); setPrompt(e) }
-    const onInstalled = () => { setInstalled(true); setPrompt(null); track('pwa_installed', { source: 'app_installed_event' }) }
-    window.addEventListener('beforeinstallprompt', handler)
-    window.addEventListener('appinstalled', onInstalled)
-    return () => { window.removeEventListener('beforeinstallprompt', handler); window.removeEventListener('appinstalled', onInstalled) }
-  }, [])
-
-  // Only show when native install prompt is available and not yet installed
-  if (!prompt || installed) return null
-
-  async function handleClick() {
+  function handleClick() {
     track('pwa_topbar_install_click')
-    prompt.prompt()
-    const { outcome } = await prompt.userChoice
-    track('pwa_install_outcome', { outcome, source: 'topbar' })
-    if (outcome === 'accepted') setInstalled(true)
+    promptInstall('topbar')
   }
 
   return (
     <button
+      className="wl-topbar-install"
       onClick={handleClick}
       title={t('installApp')}
       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--accent)', display: 'flex', alignItems: 'center' }}
@@ -384,6 +369,7 @@ const V2_ICONS = {
   backup: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 16.6A5 5 0 0 0 18 7h-1.3A8 8 0 1 0 4 15.3"/><path d="M12 12v9M8.5 15.5L12 12l3.5 3.5"/></svg>,
   gear: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
   help: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9.2a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4"/><circle cx="12" cy="17.4" r="0.7" fill="currentColor" stroke="none"/></svg>,
+  install: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 6v6M9 9l3-3 3 3M9 16h6"/></svg>,
   coffee: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M4 10h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5v-5Z"/><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M7.5 3.5c-.7.9-.7 1.8 0 2.7.7.9.7 1.8 0 2.7"/><path d="M12.5 3.5c-.7.9-.7 1.8 0 2.7.7.9.7 1.8 0 2.7"/></svg>,
 }
 
@@ -393,6 +379,7 @@ const DrawerV2 = memo(function DrawerV2({ open, onClose, onHelp }) {
   const { t } = useLanguage()
   const { theme, mode, setTheme, setMode } = useTheme()
   const home = homePath(true)
+  const canInstallApp = useCanInstall()
   const go = (path, state) => { track('drawer_nav', { to: path, tab: state?.tab, v2: true }); navigate(path, state ? { state } : undefined); onClose() }
   const onPage = (p) => location.pathname === p
   // A menu row. `hue` tints its icon tile; a row for the page you are on is lit.
@@ -495,6 +482,8 @@ const DrawerV2 = memo(function DrawerV2({ open, onClose, onHelp }) {
         <div className="wl-v2-group">
           <Row icon={V2_ICONS.gear} hue="#94a3b8" label={t('settingsNav')} current={onPage('/settings')} onClick={() => go('/settings')} />
           <Row icon={V2_ICONS.help} hue="#4f8cff" label={t('howItWorks')} onClick={() => { onHelp(); onClose() }} />
+          {/* Install lives here on phones, where the top bar has no room for it. */}
+          {canInstallApp && <Row icon={V2_ICONS.install} hue="#10b981" label={t('installApp')} onClick={() => { track('pwa_menu_install_click'); onClose(); promptInstall('menu') }} />}
           {/* The coffee link left the v2 top bar for the bell; it lives here. */}
           <a className="wl-v2-row" href={SUPPORT_URL} target="_blank" rel="noopener noreferrer"
             onClick={() => { track('coffee_support_click', { source: 'menu' }); onClose() }}>

@@ -10,6 +10,7 @@ import { INTERESTS_EVENT } from './data/interestsEvent'
 import './index.css'
 // The /v2test redesign preview. Scoped under html.wl-v2, inert otherwise.
 import './v2.css'
+import { initBmcDrag } from './bmcWidget'
 
 // Auto-reload on stale chunk error (unhandled promise rejection path).
 // Uses a retry counter (max 3) instead of a time-based TTL so rapid
@@ -241,3 +242,6 @@ if ('serviceWorker' in navigator && basename === '/') {
 }
 
 const _deployId = "178415073";
+
+// The Buy Me a Coffee launcher can be dragged anywhere, like the chat button.
+initBmcDrag()
