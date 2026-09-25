@@ -3787,16 +3787,17 @@ export default function Dashboard() {
   // Soft pull-to-refresh: refresh data in place (no page reload), then signal
   // PullToRefresh to spring back. Uses refs so the listener always runs the
   // latest refresh logic without re-binding.
-  const refreshPricesRef = useRef(refreshPrices)
-  refreshPricesRef.current = refreshPrices
   useEffect(() => {
     let busy = false
     const onPull = async () => {
       if (busy) return
       busy = true
       try {
+        // loadAll() already refreshes prices for the same id set (portfolio +
+        // gold/silver) internally — calling refreshPrices() again right after
+        // was a second, fully redundant fan-out to every price upstream
+        // (CoinGecko, Stooq, metals, fiat) on every pull-to-refresh gesture.
         await (loadAllRef.current ? loadAllRef.current() : Promise.resolve())
-        await refreshPricesRef.current?.()
       } catch { /* keep the UX smooth even if a fetch fails */ }
       busy = false
       window.dispatchEvent(new Event('wl:pull-refresh-done'))

@@ -736,23 +736,32 @@ export async function fetchStockPrices(now = Date.now()) {
 
   // Stooq does not carry every US listing, and answers a closed market for
   // some with N/D. Yahoo fills those rather than leaving a dash in the picker.
-  for (const sym of unpriced.slice(0, YAHOO_FALLBACK_MAX)) {
-    const key = `stock:${sym.toLowerCase()}`
-    if (prices[key]) continue
-    try {
-      const data = await getJson(
-        `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`,
-        8000,
-      )
-      const meta = data?.chart?.result?.[0]?.meta
-      if (meta && Number.isFinite(meta.regularMarketPrice) && meta.regularMarketPrice > 0) {
-        prices[key] = {
-          usd: round4(meta.regularMarketPrice),
-          usd_24h_change: round4(meta.regularMarketChangePercent || 0),
+  //
+  // Fired in parallel, not one at a time: `serve()` in core.js awaits this
+  // whole function synchronously on a cold store (no cached value yet), so a
+  // sequential loop of up to 25 Yahoo requests at an 8s timeout each could
+  // hold that request open for tens of seconds. functions/api/stocks.js hit
+  // the same shape and fixed it with Promise.all under a shared deadline;
+  // this mirrors that.
+  await Promise.all(
+    unpriced.slice(0, YAHOO_FALLBACK_MAX).map(async (sym) => {
+      const key = `stock:${sym.toLowerCase()}`
+      if (prices[key]) return
+      try {
+        const data = await getJson(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`,
+          8000,
+        )
+        const meta = data?.chart?.result?.[0]?.meta
+        if (meta && Number.isFinite(meta.regularMarketPrice) && meta.regularMarketPrice > 0) {
+          prices[key] = {
+            usd: round4(meta.regularMarketPrice),
+            usd_24h_change: round4(meta.regularMarketChangePercent || 0),
+          }
         }
-      }
-    } catch { /* the dash for this one symbol is the cost */ }
-  }
+      } catch { /* the dash for this one symbol is the cost */ }
+    }),
+  )
 
   // `missing` is reported rather than discarded: a count that drops tells the
   // next person the upstreams changed, instead of the picker doing it.
