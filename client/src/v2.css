@@ -3,16 +3,15 @@
    preview is active (see v2Preview.js), so the classic design is untouched.
 
    The look: a glowing gradient canvas behind frosted-glass cards. The
-   gradient's stops come from the selected theme, so Gold glows amber, Bitcoin
-   orange, Ethereum indigo, and so on. Emerald keeps the teal-into-purple of
-   the reference design. The accent itself still comes from ThemeContext
+   gradient's stops come from the selected theme: Emerald teal into mint,
+   Gold amber, Silver steel, Bitcoin orange, Ethereum indigo, Solana purple. The accent itself still comes from ThemeContext
    (--g, --g-rgb), so buttons and highlights follow the theme as before. */
 
 html.wl-v2 {
   /* Dark canvas stops: t1 glows top-left, t2 mid-right, t3 at the bottom;
      b1..b3 are the base gradient underneath them. */
-  --v2-t1: #0f6b52; --v2-t2: #0b4a5e; --v2-t3: #4a1f7a;
-  --v2-b1: #0b2a2c; --v2-b2: #0c1b2e; --v2-b3: #161438;
+  --v2-t1: #0e6663; --v2-t2: #0c4d52; --v2-t3: #16805e;
+  --v2-b1: #0a2a2c; --v2-b2: #0b1d22; --v2-b3: #0c2a22;
   --v2-glass: linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.03));
   --v2-glass-border: rgba(255,255,255,0.10);
   --v2-glass-shadow: 0 10px 30px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
@@ -35,8 +34,8 @@ html.wl-v2[data-wl-theme="ethereum"] {
   --v2-b1: #111a44; --v2-b2: #0e132b; --v2-b3: #1c1548;
 }
 html.wl-v2[data-wl-theme="solana"] {
-  --v2-t1: #0e7066; --v2-t2: #45208a; --v2-t3: #8424b8;
-  --v2-b1: #0c2432; --v2-b2: #150f33; --v2-b3: #291044;
+  --v2-t1: #5b21b6; --v2-t2: #45208a; --v2-t3: #8424b8;
+  --v2-b1: #1c0f3a; --v2-b2: #150f33; --v2-b3: #291044;
 }
 html.wl-v2[data-wl-light] {
   --v2-glass: rgba(255,255,255,0.86);
