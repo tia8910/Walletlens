@@ -168,6 +168,32 @@ export function makeDraggable(el) {
   })
 }
 
+/**
+ * Whether the widget has its panel open, read from the widget's own inline
+ * style on #bmc-iframe. It closes the panel by shrinking or fading that
+ * style, and the fit-to-screen sizing in v2.css (which has to be
+ * !important to beat the inline size) would otherwise keep a closed panel
+ * on screen. So the sizing only applies under html.wl-bmc-open, which
+ * this keeps in step with the widget.
+ */
+export function panelIsOpen(frame) {
+  if (!frame) return false
+  const st = frame.style
+  if (st.display === 'none' || st.visibility === 'hidden') return false
+  if (st.opacity !== '' && Number(st.opacity) === 0) return false
+  if (/^0(px|%)?$/.test(st.height) || /^0(px|%)?$/.test(st.width)) return false
+  if (/scale\(0(\.0+)?\)/.test(st.transform)) return false
+  return true
+}
+
+function watchPanel(frame) {
+  if (!frame || frame.dataset.wlWatch) return
+  frame.dataset.wlWatch = '1'
+  const sync = () => document.documentElement.classList.toggle('wl-bmc-open', panelIsOpen(frame))
+  sync()
+  new MutationObserver(sync).observe(frame, { attributes: true, attributeFilter: ['style', 'class', 'hidden'] })
+}
+
 /** Waits for the widget to inject its launcher, then makes it draggable. */
 export function initBmcDrag() {
   if (typeof document === 'undefined') return
@@ -176,8 +202,9 @@ export function initBmcDrag() {
   const attach = () => {
     const el = document.getElementById('bmc-wbtn')
     if (el) makeDraggable(el)
+    watchPanel(document.getElementById('bmc-iframe'))
     if (!tagged) tagged = !!tagMessage()
-    return !!el && tagged
+    return !!el && tagged && !!document.getElementById('bmc-iframe')
   }
   if (attach()) return
   // The widget adds its launcher on load and its bubble a moment later.

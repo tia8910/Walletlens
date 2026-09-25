@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { makeDraggable, clampToViewport, BMC_POS_KEY, BMC_HIDDEN_KEY, HIDE_MS, isHidden, tagMessage } from './bmcWidget'
+import { makeDraggable, clampToViewport, BMC_POS_KEY, BMC_HIDDEN_KEY, HIDE_MS, isHidden, tagMessage, panelIsOpen } from './bmcWidget'
 
 // The launcher is the widget's element with the widget's click handler; the
 // drag has to move it without ever letting a drag count as a tap.
@@ -109,5 +109,20 @@ describe('the message bubble', () => {
     document.body.appendChild(box)
     expect(tagMessage()).toBe(box)
     expect(box.classList.contains('wl-bmc-msg')).toBe(true)
+  })
+})
+
+describe('the panel open state', () => {
+  // The fit-to-screen sizing applies only while this says open; if it read a
+  // closed panel as open, the chevron would appear to do nothing.
+  const frame = (css) => { const f = document.createElement('iframe'); f.style.cssText = css; return f }
+  it('reads every way the widget can close it as closed', () => {
+    for (const css of ['height: 0px; opacity: 1', 'opacity: 0', 'visibility: hidden', 'display: none', 'transform: scale(0)', 'width: 0px']) {
+      expect(panelIsOpen(frame(css)), css).toBe(false)
+    }
+  })
+  it('reads the open panel as open', () => {
+    expect(panelIsOpen(frame('height: calc(100% - 120px); opacity: 1; visibility: visible'))).toBe(true)
+    expect(panelIsOpen(null)).toBe(false)
   })
 })
