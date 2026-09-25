@@ -1952,4 +1952,11 @@ export default {
     faqNoAccount: '— sin necesidad de cuenta.',
     docBackTo: '← Volver a WalletLens',
     navMarketIndex: 'Índice de mercado',
+    v2GroupPortfolio: 'Cartera',
+    v2GroupMarkets: 'Mercados',
+    v2GroupAi: 'IA y aprendizaje',
+    v2GroupProtection: 'Protección',
+    v2GroupData: 'Datos',
+    backupRestore: 'Copia de seguridad y restauración',
+    v2ExitPreview: 'Volver al diseño clásico',
 }

@@ -1,6 +1,7 @@
 import { lazy, Suspense, memo, useEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { isV2Active } from '../v2Preview'
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line,
   PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
@@ -3424,7 +3425,9 @@ export default function Dashboard() {
     mq.addEventListener('change', onChange)
     return () => mq.removeEventListener('change', onChange)
   }, [])
-  const showTabGrid = !IS_NATIVE_APP && isDesktop
+  // The v2 preview navigates tabs from its bottom bar and menu, as the app
+  // does, so it drops the desktop tile grid and leads with the import options.
+  const showTabGrid = !IS_NATIVE_APP && isDesktop && !isV2Active(location.pathname)
   const [holdingsSearch,  setHoldingsSearch]  = useState('')
   const [holdingsCat,     setHoldingsCat]     = useState('all')
   const [holdingsSort,    setHoldingsSort]    = useState('value')

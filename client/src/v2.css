@@ -1,0 +1,263 @@
+/* ═══ v2 redesign (/v2test preview) ═══════════════════════════════════════
+   Every rule here is scoped under html.wl-v2, which App sets only while the
+   preview is active (see v2Preview.js), so the classic design is untouched.
+
+   The look: a glowing gradient canvas behind frosted-glass cards. The
+   gradient's stops come from the selected theme, so Gold glows amber, Bitcoin
+   orange, Ethereum indigo, and so on. Emerald keeps the teal-into-purple of
+   the reference design. The accent itself still comes from ThemeContext
+   (--g, --g-rgb), so buttons and highlights follow the theme as before. */
+
+html.wl-v2 {
+  /* Dark canvas stops: t1 glows top-left, t2 mid-right, t3 at the bottom;
+     b1..b3 are the base gradient underneath them. */
+  --v2-t1: #0f5a47; --v2-t2: #0c3d52; --v2-t3: #3a1c62;
+  --v2-b1: #0b2a2c; --v2-b2: #0c1b2e; --v2-b3: #141434;
+  --v2-glass: linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.03));
+  --v2-glass-border: rgba(255,255,255,0.10);
+  --v2-glass-shadow: 0 10px 30px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+  --v2-bar: color-mix(in srgb, var(--v2-b2) 72%, transparent);
+}
+html.wl-v2[data-wl-theme="gold"] {
+  --v2-t1: #5a4312; --v2-t2: #3b2b0e; --v2-t3: #5c2c12;
+  --v2-b1: #231a0b; --v2-b2: #17130e; --v2-b3: #21120c;
+}
+html.wl-v2[data-wl-theme="silver"] {
+  --v2-t1: #2e3d52; --v2-t2: #1f2b3c; --v2-t3: #3c4660;
+  --v2-b1: #161d28; --v2-b2: #10151e; --v2-b3: #1b2030;
+}
+html.wl-v2[data-wl-theme="bitcoin"] {
+  --v2-t1: #5e330a; --v2-t2: #3e230a; --v2-t3: #5e1f12;
+  --v2-b1: #26160a; --v2-b2: #18110c; --v2-b3: #22100d;
+}
+html.wl-v2[data-wl-theme="ethereum"] {
+  --v2-t1: #1f2e6e; --v2-t2: #172552; --v2-t3: #3b1f70;
+  --v2-b1: #10173c; --v2-b2: #0e1329; --v2-b3: #1a1442;
+}
+html.wl-v2[data-wl-theme="solana"] {
+  --v2-t1: #0d5a55; --v2-t2: #3a1a6a; --v2-t3: #6a1f96;
+  --v2-b1: #0c2230; --v2-b2: #140f30; --v2-b3: #24103e;
+}
+html.wl-v2[data-wl-light] {
+  --v2-glass: rgba(255,255,255,0.86);
+  --v2-glass-border: rgba(15,40,30,0.08);
+  --v2-glass-shadow: 0 10px 26px -14px rgba(16,60,48,0.28), inset 0 1px 0 rgba(255,255,255,0.9);
+  --v2-bar: rgba(255,255,255,0.80);
+}
+
+/* ── Canvas ─────────────────────────────────────────────────────────────
+   ThemeContext paints body inline, so the base needs !important. The glow
+   sits on a fixed layer beneath the particle canvas and mood aura, which keep
+   working on top of it. */
+html.wl-v2 body { background: var(--v2-b2) !important; }
+html.wl-v2[data-wl-light] body { background: #f4f7f6 !important; }
+html.wl-v2 body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -4;
+  pointer-events: none;
+  background:
+    radial-gradient(110% 38% at 0% 0%, var(--v2-t1) 0%, transparent 62%),
+    radial-gradient(80% 30% at 100% 22%, var(--v2-t2) 0%, transparent 65%),
+    radial-gradient(100% 34% at 100% 72%, color-mix(in srgb, var(--v2-t3) 80%, transparent) 0%, transparent 65%),
+    radial-gradient(110% 36% at 0% 100%, var(--v2-t3) 0%, transparent 62%),
+    linear-gradient(180deg, var(--v2-b1) 0%, var(--v2-b2) 45%, var(--v2-b3) 100%);
+  transition: background 0.4s;
+}
+html.wl-v2[data-wl-light] body::before {
+  background:
+    radial-gradient(90% 32% at 0% 0%, rgba(var(--g-rgb),0.14) 0%, transparent 62%),
+    radial-gradient(80% 30% at 100% 85%, rgba(var(--g-rgb),0.08) 0%, transparent 62%),
+    linear-gradient(180deg, #f7faf9, #f1f5f4);
+}
+html.wl-v2 .wl-app { background: transparent; }
+/* The particle field was tuned to sit behind opaque cards. Behind glass it
+   reads through every card, so it steps back to a texture. */
+html.wl-v2 .dynamic-bg { opacity: 0.35; }
+html.wl-v2[data-wl-light] .dynamic-bg { opacity: 0.12; }
+
+/* ── Top bar ──────────────────────────────────────────────────────────── */
+html.wl-v2 .wl-topbar {
+  background: color-mix(in srgb, var(--v2-b1) 70%, transparent);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 10px 30px -18px rgba(0,0,0,0.6);
+}
+html.wl-v2[data-wl-light] .wl-topbar {
+  background: rgba(255,255,255,0.78);
+  border-bottom-color: rgba(0,0,0,0.06);
+  box-shadow: 0 8px 24px -18px rgba(16,60,48,0.35);
+}
+/* The flowing line along the top takes the theme's colours. */
+html.wl-v2 .wl-topbar::before {
+  background: linear-gradient(90deg, var(--g), var(--v2-t3), var(--gd), var(--g));
+  background-size: 300% 100%;
+  box-shadow: 0 0 10px rgba(var(--g-rgb),0.35);
+}
+html.wl-v2[data-wl-light] .wl-topbar::before {
+  background: linear-gradient(90deg, var(--g), var(--gd), var(--g));
+  background-size: 300% 100%;
+}
+html.wl-v2 .wl-topbar .ticker-strip { background: transparent; }
+
+/* ── Glass cards ──────────────────────────────────────────────────────── */
+html.wl-v2 .glass-card {
+  background: var(--v2-glass);
+  border: 1px solid var(--v2-glass-border);
+  box-shadow: var(--v2-glass-shadow);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border-radius: 22px;
+}
+
+/* The portfolio value card: the theme's glow, as in the reference. */
+html.wl-v2 .dvx-hero.glass-card {
+  background:
+    radial-gradient(70% 90% at 100% 0%, rgba(var(--g-rgb),0.22), transparent 60%),
+    linear-gradient(140deg,
+      rgba(var(--g-rgb),0.26),
+      color-mix(in srgb, var(--v2-t2) 70%, transparent) 55%,
+      color-mix(in srgb, var(--v2-t3) 80%, transparent));
+  border-color: rgba(255,255,255,0.14);
+  box-shadow: 0 24px 48px -22px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.16);
+}
+html.wl-v2[data-wl-light] .dvx-hero.glass-card {
+  background:
+    radial-gradient(70% 90% at 100% 0%, rgba(var(--g-rgb),0.16), transparent 60%),
+    linear-gradient(140deg, rgba(var(--g-rgb),0.10), rgba(255,255,255,0.92) 60%);
+  border-color: rgba(var(--g-rgb),0.18);
+  box-shadow: 0 20px 40px -24px rgba(var(--g-rgb),0.45), inset 0 1px 0 #fff;
+}
+
+/* ── Content clearance for the bottom bar, shown in the browser in v2 ─── */
+html.wl-v2 .wl-app { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+html.wl-v2 .wlc-fab { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+
+/* ── Bottom bar ───────────────────────────────────────────────────────── */
+html.wl-v2 .wl-bottom-nav {
+  background: var(--v2-bar);
+  backdrop-filter: blur(22px) saturate(1.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 -10px 30px -12px rgba(0,0,0,0.45);
+  padding: 0.45rem 0.5rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
+}
+html.wl-v2[data-wl-light] .wl-bottom-nav {
+  border-top-color: rgba(0,0,0,0.06);
+  box-shadow: 0 -8px 24px -14px rgba(16,60,48,0.25);
+}
+html.wl-v2 .wl-nav-item { color: rgba(255,255,255,0.55); gap: 0.25rem; }
+html.wl-v2[data-wl-light] .wl-nav-item { color: rgba(0,0,0,0.45); }
+html.wl-v2 .wl-nav-item .wl-nav-icon { width: 48px; height: 30px; border-radius: 12px; }
+html.wl-v2 .wl-nav-item .wl-nav-label { font-size: 0.66rem; }
+html.wl-v2 .wl-nav-item.active,
+html.wl-v2 .wl-nav-item.active .wl-nav-icon,
+html.wl-v2 .wl-nav-item.active .wl-nav-label { color: var(--g); }
+html.wl-v2 .wl-nav-item.active .wl-nav-icon {
+  background: rgba(var(--g-rgb),0.15);
+  box-shadow: inset 0 0 0 1px rgba(var(--g-rgb),0.30);
+}
+html.wl-v2 .wl-nav-item .wl-nav-indicator { display: none; }
+
+/* ── Menu ─────────────────────────────────────────────────────────────── */
+html.wl-v2 .wl-drawer-v2 {
+  width: min(340px, 88vw);
+  max-width: 88vw;
+  padding: 0 0.85rem 1rem;
+  gap: 0.55rem;
+  background:
+    radial-gradient(120% 35% at 0% 0%, var(--v2-t1), transparent 65%),
+    radial-gradient(120% 35% at 0% 100%, var(--v2-t3), transparent 65%),
+    linear-gradient(180deg, var(--v2-b1), var(--v2-b2) 50%, var(--v2-b3));
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+html.wl-v2[data-wl-light] .wl-drawer-v2 {
+  background:
+    radial-gradient(120% 30% at 0% 0%, rgba(var(--g-rgb),0.14), transparent 65%),
+    #f6f9f8;
+  border-right-color: rgba(0,0,0,0.06);
+}
+.wl-v2-head {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: calc(1rem + env(safe-area-inset-top, 0px)) 0.2rem 0.4rem;
+}
+.wl-v2-head-text { flex: 1; min-width: 0; }
+.wl-v2-close {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; padding: 0;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  background: rgba(255,255,255,0.06); border: 1px solid var(--v2-glass-border);
+  color: var(--text-muted);
+}
+.wl-v2-close svg { width: 18px; height: 18px; min-width: 18px; flex-shrink: 0; }
+[data-wl-light] .wl-v2-close { background: #fff; }
+
+.wl-v2-quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+.wl-v2-tile {
+  --hue: var(--g);
+  display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+  padding: 0.65rem 0.2rem; border-radius: 16px; cursor: pointer;
+  background: var(--v2-glass); border: 1px solid var(--v2-glass-border);
+  box-shadow: var(--v2-glass-shadow);
+  color: var(--text); font: inherit; font-size: 0.66rem; font-weight: 700; line-height: 1.15; text-align: center;
+}
+.wl-v2-tile > span {
+  width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center;
+  color: #fff; background: linear-gradient(135deg, var(--hue), color-mix(in srgb, var(--hue) 70%, #000));
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--hue) 70%, transparent);
+}
+.wl-v2-tile-buy { --hue: #10b981; }
+.wl-v2-tile-sell { --hue: #f43f5e; }
+
+.wl-v2-label {
+  font-size: 0.6rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-sub); padding: 0.45rem 0.4rem 0;
+}
+.wl-v2-group {
+  border-radius: 18px; overflow: hidden; flex-shrink: 0;
+  background: var(--v2-glass); border: 1px solid var(--v2-glass-border); box-shadow: var(--v2-glass-shadow);
+}
+.wl-v2-row {
+  --hue: var(--g);
+  width: 100%; display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.6rem 0.75rem; border: 0; border-top: 1px solid rgba(255,255,255,0.06);
+  background: none; color: var(--text); font: inherit; font-size: 0.86rem; font-weight: 600;
+  text-align: start; cursor: pointer;
+}
+[data-wl-light] .wl-v2-row { border-top-color: rgba(0,0,0,0.05); }
+.wl-v2-row:first-child { border-top: 0; }
+.wl-v2-row:hover, .wl-v2-row:focus-visible { background: rgba(var(--g-rgb),0.08); outline: none; }
+.wl-v2-row-on { background: rgba(var(--g-rgb),0.14); }
+.wl-v2-row-ico {
+  width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+  display: grid; place-items: center;
+  color: var(--hue); background: color-mix(in srgb, var(--hue) 16%, transparent);
+}
+.wl-v2-row-ico svg { width: 18px; height: 18px; }
+.wl-v2-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.wl-v2-row-text small { font-size: 0.68rem; font-weight: 500; color: var(--text-sub); }
+.wl-v2-row-chev { color: var(--text-sub); font-size: 1.1rem; }
+[dir="rtl"] .wl-v2-row-chev { transform: scaleX(-1); }
+
+.wl-v2-prefs { padding: 0.75rem 0.6rem; display: flex; flex-direction: column; gap: 0.7rem; }
+.wl-v2-prefs .wl-drawer-theme-grid { margin: 0; padding: 0; }
+.wl-v2-mode {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 12px;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--v2-glass-border);
+}
+[data-wl-light] .wl-v2-mode { background: rgba(0,0,0,0.035); }
+.wl-v2-mode button {
+  display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  padding: 0.5rem; border-radius: 9px; border: 0; cursor: pointer;
+  background: none; color: var(--text-muted); font: inherit; font-size: 0.78rem; font-weight: 600;
+}
+.wl-v2-mode button.on {
+  background: rgba(var(--g-rgb),0.16); color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(var(--g-rgb),0.30);
+}
+html.wl-v2 .wl-drawer-v2 .wl-drawer-footer { border-top: 0; padding: 0.4rem 0 0; justify-content: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  html.wl-v2 body::before { transition: none; }
+}

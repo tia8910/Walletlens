@@ -1978,4 +1978,11 @@ export default {
     faqNoAccount: '— بلا حاجة إلى حساب.',
     docBackTo: '← العودة إلى WalletLens',
     navMarketIndex: 'مؤشّر السوق',
+    v2GroupPortfolio: 'المحفظة',
+    v2GroupMarkets: 'الأسواق',
+    v2GroupAi: 'الذكاء الاصطناعي والتعلّم',
+    v2GroupProtection: 'الحماية',
+    v2GroupData: 'البيانات',
+    backupRestore: 'النسخ الاحتياطي والاستعادة',
+    v2ExitPreview: 'العودة إلى التصميم الكلاسيكي',
 }

@@ -8,6 +8,8 @@ import { ThemeProvider } from './ThemeContext'
 import { initAutoTrack, initErrorTracking, initHumanSignal, setInterestSegments } from './analytics'
 import { INTERESTS_EVENT } from './data/interestsEvent'
 import './index.css'
+// The /v2test redesign preview. Scoped under html.wl-v2, inert otherwise.
+import './v2.css'
 
 // Auto-reload on stale chunk error (unhandled promise rejection path).
 // Uses a retry counter (max 3) instead of a time-based TTL so rapid

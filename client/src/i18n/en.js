@@ -1973,4 +1973,11 @@ export default {
     faqNoAccount: '— no account needed.',
     docBackTo: '← Back to WalletLens',
     navMarketIndex: 'Market Index',
+    v2GroupPortfolio: 'Portfolio',
+    v2GroupMarkets: 'Markets',
+    v2GroupAi: 'AI & learning',
+    v2GroupProtection: 'Protection',
+    v2GroupData: 'Data',
+    backupRestore: 'Backup & Restore',
+    v2ExitPreview: 'Back to classic design',
 }

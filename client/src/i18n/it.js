@@ -1973,4 +1973,11 @@ export default {
     dvVaultEmpty: 'L’app non aveva ancora nessuna copia.',
     dvVaultCorrupt: 'Non è stato possibile leggere la copia dell’app.',
     npPrivacy: 'Dal dispositivo escono solo i simboli, mai importi, valori o identità.',
+    v2GroupPortfolio: 'Portafoglio',
+    v2GroupMarkets: 'Mercati',
+    v2GroupAi: 'IA e apprendimento',
+    v2GroupProtection: 'Protezione',
+    v2GroupData: 'Dati',
+    backupRestore: 'Backup e ripristino',
+    v2ExitPreview: 'Torna al design classico',
 }
