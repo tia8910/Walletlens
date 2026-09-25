@@ -4979,18 +4979,16 @@ tr:last-child td { border-bottom: none; }
 
 /* ═══ Portfolio Heatmap ═══ */
 .heatmap-card { padding: 1rem 1rem 0.75rem; }
-.heatmap-grid {
-  display: flex; flex-wrap: wrap; gap: 5px;
-  align-items: flex-start;
-}
+.heatmap-grid { position: relative; width: 100%; }
 .heatmap-cell {
+  position: absolute; box-sizing: border-box;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  border-radius: 10px; cursor: default;
-  transition: transform 0.15s ease, filter 0.15s ease;
-  flex-shrink: 0; overflow: hidden; padding: 5px;
-  gap: 3px;
+  border-radius: 10px; cursor: default; overflow: hidden; padding: 4px; gap: 2px; min-width: 0;
+  transition: filter 0.15s ease;
 }
-.heatmap-cell:hover { transform: scale(1.06); filter: brightness(1.2); z-index: 2; }
+.heatmap-cell:hover { filter: brightness(1.2); z-index: 2; }
+.heatmap-cell > * { max-width: 100%; }
+.heatmap-sym { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .heatmap-img { border-radius: 50%; object-fit: cover; }
 .heatmap-sym { font-size: 0.72rem; font-weight: 800; color: rgba(255,255,255,0.95); text-align: center; letter-spacing: 0.02em; }
 .heatmap-chg { font-size: 0.65rem; font-weight: 700; text-align: center; }
