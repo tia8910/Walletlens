@@ -79,7 +79,31 @@ describe('v2 styles stay inside the preview', () => {
     const selectors = [...css.matchAll(/(^|\})\s*([^{}@]+)\{/g)]
       .flatMap(m => m[2].split(',').map(s => s.trim()))
       .filter(Boolean)
-    const loose = selectors.filter(s => !s.startsWith('html.wl-v2') && !/\.wl-v2-/.test(s))
+    // Keyframe steps (30%, from, to) are not selectors and match nothing.
+    const isKeyframeStep = (s) => /^(\d+(\.\d+)?%|from|to)$/.test(s)
+    const loose = selectors.filter(s => !isKeyframeStep(s) && !s.startsWith('html.wl-v2') && !/\.wl-v2-/.test(s))
     expect(loose).toEqual([])
+  })
+})
+
+describe('v2 trade ticket', () => {
+  const sheet = read('components/TradeSheet.jsx')
+  const ticket = sheet.slice(sheet.indexOf('// ── v2 ticket'), sheet.lastIndexOf('\n  return (\n    <>'))
+
+  it('records the side the user is on, not the side the sheet opened on', () => {
+    // Opening Buy and switching to Sell used to save a buy.
+    expect(sheet).toMatch(/wallet_id: wid, type: mode,/)
+    expect(sheet).not.toMatch(/wallet_id: wid, type,/)
+  })
+
+  it('keeps every choice the classic sheet offers', () => {
+    for (const piece of ['CATEGORIES.map', 'BUY_WITH_OPTIONS', 'SELL_FOR_OPTIONS', '{assetPicker}',
+      '{confirmNoneOverlay}', '<TradeSignal', 'setWalletId', 'setDate', 'switchMetalUnit', 'switchAmtMode', 'submit()']) {
+      expect(ticket, piece).toContain(piece)
+    }
+  })
+
+  it('confirms with a slide, and the slide is disabled until the trade is complete', () => {
+    expect(ticket).toMatch(/<SlideToConfirm[^>]*disabled=\{!ready\}/)
   })
 })
