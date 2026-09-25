@@ -10,7 +10,7 @@ import { api, getCachedCoinImage } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
 import { observe, primeEffectAudio } from '../screenEffectsRuntime'
-import { EXPLODE, ROCKET, ATH } from '../screenEffects'
+import { EXPLODE, ROCKET, ATH, pickLeader } from '../screenEffects'
 import ScreenEffect from '../components/ScreenEffect'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset, GOLD_ID, SILVER_ID } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
@@ -4122,9 +4122,7 @@ export default function Dashboard() {
     if (![EXPLODE, ROCKET, ATH].includes(want)) return undefined
     const once = () => {
       primeEffectAudio()
-      const leader = enriched[0]
-        ? { symbol: (enriched[0].coin_symbol || '').toUpperCase(), image: enriched[0].coin_image || '' }
-        : null
+      const leader = pickLeader(enriched)
       setEffect({ effect: want, payload: { leader, changePct: 7.4, totalValue } })
     }
     document.addEventListener('click', once, { once: true })

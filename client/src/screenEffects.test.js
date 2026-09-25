@@ -194,6 +194,10 @@ describe('pickLeader', () => {
     expect(pickLeader([h('btc', 2), h('sol', 19), h('eth', 5)]).symbol).toBe('SOL')
   })
 
+  it("carries the leader's day so the explode can show it", () => {
+    expect(pickLeader([h('btc', 2), h('sol', 19.25)]).pct).toBe(19.25)
+  })
+
   it('ignores holdings with no daily change', () => {
     expect(pickLeader([h('btc', null), h('eth', 1)]).symbol).toBe('ETH')
   })

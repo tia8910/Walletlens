@@ -205,6 +205,14 @@ export default function ScreenEffect({ effect, payload, onDone }) {
           {/* originY matches the logo's own centre; debris starting above the
               thing that exploded reads as two unrelated effects. */}
           <BurstCanvas duration={DURATION_MS[EXPLODE]} delay={0.44} originY={0.5} />
+          {/* The day's move that earned the asset the explode, after the
+              flash in the markup so the white-out never hides it. */}
+          {Number.isFinite(leader?.pct) && (
+            <div className={`fx-champ-label ${leader.pct < 0 ? 'is-down' : ''}`} dir="ltr">
+              <span className="fx-champ-sym">{leader.symbol}</span>
+              <span className="fx-champ-pct">{leader.pct >= 0 ? '+' : ''}{leader.pct.toFixed(1)}%</span>
+            </div>
+          )}
         </>
       )}
 
