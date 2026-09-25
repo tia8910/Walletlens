@@ -613,7 +613,6 @@ html.wl-v2 .coach-eval-header.glass-card {
 html.wl-v2 .coach-eval-title { color: var(--text); }
 html.wl-v2 .coach-ring-wrap svg circle:first-child { stroke: rgba(127,127,127,0.18); }
 
-html.wl-v2 .eval-grid { display: flex; flex-direction: column; gap: 0.6rem; }
 html.wl-v2 .eval-cat-card {
   border-radius: 20px; padding: 0.9rem 1rem;
   background: var(--v2-glass); border: 1px solid var(--v2-glass-border); box-shadow: var(--v2-glass-shadow);

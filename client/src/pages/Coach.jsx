@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { noteFeatureUse } from '../featureUse'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { isV2Active } from '../v2Preview'
+import { isV2Active, homePath } from '../v2Preview'
 import { api } from '../api'
 import { assetClass, getStockSector } from '../data/assets'
 import { track } from '../analytics'
@@ -13,6 +13,8 @@ import Alpha from './Alpha'
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
 // v2 merges the dashboard's Analysis tab (AI analysis, Technicals, Risk) in here.
 const ToolsTab = lazy(() => import('./Dashboard').then(m => ({ default: m.ToolsTab })))
+// v2 shows the dashboard's Wallet Evaluation, not the older copy below.
+const WalletEvalTab = lazy(() => import('./Dashboard').then(m => ({ default: m.WalletEvalTab })))
 
 // ── Asset-mix helpers ──────────────────────────────────────────────────────
 // The wallet evaluation adapts to what's actually in the portfolio: a stock
@@ -252,6 +254,9 @@ export default function Coach() {
   }, [portfolio, prices])
 
   const eval_ = useMemo(() => computeEval(enriched, totalValue), [enriched, totalValue])
+  // The total the dashboard's tools see: holdings without a quote count at
+  // cost, so nothing divides by a zero total while prices are loading.
+  const evalTotal = useMemo(() => enriched.reduce((sum, h) => sum + (h.price > 0 ? h.value : h.invested), 0), [enriched])
   const hasPrices = enriched.some(h => h.value > 0)
 
   // v2 drops the "actions" section: every card in it now lives elsewhere
@@ -292,7 +297,7 @@ export default function Coach() {
             <p className="coach-hero-sub">{t('cchSub')}</p>
           </div>
         </div>
-        {hasPrices && eval_ && (
+        {!v2 && hasPrices && eval_ && (
           <div className="coach-hero-score">
             <div className="coach-score-pill" style={{
               color: eval_.overall >= 80 ? 'var(--g-ink)' : eval_.overall >= 55 ? '#fbbf24' : '#f87171',
@@ -366,7 +371,19 @@ export default function Coach() {
       )}
 
       {/* ── Wallet Evaluation ── */}
-      {activeSection === 'eval' && enriched.length > 0 && (
+      {/* ── Wallet Score (v2): the dashboard's evaluation ── */}
+      {v2 && activeSection === 'eval' && enriched.length > 0 && (
+        <div className="coach-v2-eval" style={{ padding: '0.75rem 1rem 1.5rem' }}>
+          <Suspense fallback={<div className="coach-loading-bar"><span className="coach-loading-dot" /></div>}>
+            <WalletEvalTab enriched={enriched} totalValue={evalTotal} targets={targets}
+              onAction={(kind) => kind === 'targets'
+                ? navigate(homePath(true), { state: { tab: 'targets' } })
+                : navigate('/transactions', { state: { openAdd: true, type: 'buy' } })} />
+          </Suspense>
+        </div>
+      )}
+
+      {!v2 && activeSection === 'eval' && enriched.length > 0 && (
         <div style={{ padding: '0 0 1.5rem' }}>
           {!eval_ ? (
             <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)' }}>{t('cchCalculating')}</div>
@@ -427,10 +444,8 @@ export default function Coach() {
       {v2 && activeSection === 'analysis' && enriched.length > 0 && (
         <div style={{ padding: '1rem' }}>
           <Suspense fallback={<div className="coach-loading-bar"><span className="coach-loading-dot" /></div>}>
-            {/* Holdings without a quote count at cost, as on the dashboard, so the
-                tools never divide by a zero total while prices are loading. */}
             <ToolsTab key={analysisTool} enriched={enriched} prices={prices} transactions={transactions}
-              totalValue={enriched.reduce((sum, h) => sum + (h.price > 0 ? h.value : h.invested), 0)}
+              totalValue={evalTotal}
               isDemo={false} pricesLoading={pricesLoading} initialTool={analysisTool} />
           </Suspense>
         </div>

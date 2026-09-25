@@ -139,3 +139,12 @@ describe('v2 Coach has no duplicate sections', () => {
     expect(ids).toEqual(['engine', 'eval', 'analysis', 'alpha'])
   })
 })
+
+describe('v2 Coach Wallet Score', () => {
+  const coach = read('pages/Coach.jsx')
+  it("shows the dashboard's evaluation, not Coach's older copy", () => {
+    expect(read('pages/Dashboard.jsx')).toMatch(/export const WalletEvalTab = memo\(/)
+    expect(coach).toMatch(/v2 && activeSection === 'eval'[\s\S]*?<WalletEvalTab /)
+    expect(coach).toContain("{!v2 && activeSection === 'eval'")
+  })
+})

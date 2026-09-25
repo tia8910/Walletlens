@@ -1141,7 +1141,8 @@ function EvalPassStrip({ items }) {
   )
 }
 
-const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, targets, onAction }) {
+// Exported so the v2 Coach page shows this evaluation rather than its older copy.
+export const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, targets, onAction }) {
   const { t } = useLanguage()
   const eval_ = useMemo(() => computeWalletEval(enriched, totalValue, targets), [enriched, totalValue, targets])
 
