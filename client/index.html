@@ -172,11 +172,11 @@
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
       script-src 'self' 'unsafe-inline' https://accounts.google.com https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
-      style-src 'self' 'unsafe-inline';
-      font-src 'self' data:;
+      style-src 'self' 'unsafe-inline' https://*.buymeacoffee.com https://fonts.googleapis.com;
+      font-src 'self' data: https://fonts.gstatic.com;
       img-src 'self' data: blob: https:;
-      connect-src 'self' https://walletlens.live https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://*.workers.dev https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://api.rss2json.com https://wsrv.nl https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co;
-      frame-src https://accounts.google.com intent:;
+      connect-src 'self' https://walletlens.live https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://*.workers.dev https://api.anthropic.com https://api.coingecko.com https://api.binance.com https://rest.coincap.io https://api.gold-api.com https://stooq.com https://*.stooq.com https://blockchain.info https://api.exchangerate.host https://open.er-api.com https://corsproxy.io https://api.allorigins.win https://cors.eu.org https://api.codetabs.com https://finnhub.io https://www.alphavantage.co https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://frankfurter.app https://api.frankfurter.app https://min-api.cryptocompare.com https://api.kraken.com https://api.coinpaprika.com https://api.coincap.io https://api.blockchair.com https://api.gopluslabs.io https://api.rss2json.com https://wsrv.nl https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.twitter.com https://t.co https://*.buymeacoffee.com;
+      frame-src https://accounts.google.com intent: https://www.buymeacoffee.com https://buymeacoffee.com;
       form-action 'self';
       object-src 'none';
       base-uri 'self';
@@ -578,6 +578,15 @@
         if (typeof twq === 'function') twq('event', 'tw-rc7yj-rccu7', {})
       }, { once: true });
     </script>
+
+    <!-- Buy Me a Coffee widget. Served from /api/bmc (functions/api/bmc.js),
+         a same-origin relay of cdnjs.buymeacoffee.com, so networks that
+         block that host still get it. `defer` runs it before
+         DOMContentLoaded, which is when the widget draws itself. It sits
+         above the chat button and bottom bar (data-y_margin), and v2.css
+         moves or hides it where something else owns that corner. The
+         installed Play app hides it (v2.css, .twa-mode). Checked by Diagnostics → "support widget". -->
+    <script data-name="BMC-Widget" data-cfasync="false" defer src="/api/bmc" data-id="Walletlens" data-description="Support me on Buy me a coffee!" data-message="WalletLens is an independent project built to help people track, understand, and grow their net worth, from crypto and stocks to cash, precious metals, and other assets.No sign up. No wallet connection. Your financial data stays under your control.If you find WalletLens useful, you can support the project with a coffee ☕. It helps me keep improving the app and adding new features.Thank you for supporting WalletLens ❤️" data-color="#40DCA5" data-position="Right" data-x_margin="18" data-y_margin="160"></script>
 
   </body>
 </html>

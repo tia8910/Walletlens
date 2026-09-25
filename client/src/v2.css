@@ -158,6 +158,19 @@ html.wl-v2 .dvx-hero.heartbeat-v3::before { animation-duration: 0.8s; }
 html.wl-v2 .wl-app { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
 html.wl-v2 .wlc-fab { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
 
+/* ── Buy Me a Coffee widget (index.html, /api/bmc) ───────────────────────
+   Its launcher (#bmc-wbtn) sits above the chat button via the tag's
+   data-y_margin. On the asset page the Buy / Sell bar pushes the chat button
+   up, so the launcher goes with it; it steps aside wherever a sheet or the
+   full-screen chart owns the screen, and in the installed app, which keeps
+   support links out of the Play build. */
+html.wl-v2 body:has(.ac-page) #bmc-wbtn { bottom: calc(222px + env(safe-area-inset-bottom, 0px)) !important; }
+html.wl-v2 body:has(.bs-v2.bs-sheet-open) #bmc-wbtn,
+html.wl-v2 body:has(.ac-sheet-wrap) #bmc-wbtn,
+html.wl-v2 body:has(.ic-full) #bmc-wbtn,
+html.wl-v2 body:has(.twa-mode) #bmc-wbtn,
+html.wl-v2 body:has(.twa-mode) #bmc-iframe { display: none !important; }
+
 /* ── Bottom bar ───────────────────────────────────────────────────────── */
 html.wl-v2 .wl-bottom-nav {
   background: var(--v2-bar);
