@@ -30,14 +30,20 @@ afterEach(() => { vi.unstubAllGlobals() })
 
 describe('the widget tag', () => {
   const tag = html.match(/<script data-name="BMC-Widget"[^>]*>/)?.[0] || ''
-  it('is the studio tag, unchanged', () => {
-    expect(tag).toContain('src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"')
+  it('is the studio tag, loading its script through the same-origin relay', () => {
+    // Straight from the CDN it drew on the previews but never on walletlens.live.
+    expect(tag).toContain('defer src="/api/bmc"')
     expect(tag).toContain('data-id="Walletlens"')
     expect(tag).toContain('data-color="#40DCA5"')
     expect(tag).toContain('data-position="Right" data-x_margin="18" data-y_margin="18"')
   })
   it('may load its script under both CSPs', () => {
-    for (const policy of [html, headers]) expect(policy).toMatch(/script-src [^;]*https:\/\/cdnjs\.buymeacoffee\.com/)
+    for (const policy of [html, headers]) expect(policy).toMatch(/script-src 'self'/)
+  })
+  it('records CSP refusals from the first request, for Diagnostics', () => {
+    const head = html.slice(html.indexOf('<head>'), html.indexOf('<head>') + 600)
+    expect(head).toContain("addEventListener('securitypolicyviolation'")
+    expect(readFileSync(join(here, 'pages/Diagnostics.jsx'), 'utf8')).toContain('window.__cspViolations')
   })
   it('stays hidden until onboarding is done and an asset is added', () => {
     const css = readFileSync(join(here, 'index.css'), 'utf8')
