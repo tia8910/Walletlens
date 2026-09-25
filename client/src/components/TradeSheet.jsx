@@ -621,7 +621,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
           <>
           <div className="bs-body">
             {/* ── Binance-style Buy / Sell tab toggle ── */}
-            <div className="bs-mode-tabs">
+            <div className="bs-mode-tabs bs-sec-mode">
               <button type="button"
                 className={`bs-mode-tab ${isBuy ? 'active buy' : ''}`}
                 onClick={() => { if (isBuy) return; track('trade_mode_switch', { to: 'buy' }); setMode('buy'); setAmount(''); setUsdInput(''); setSpendPct(null); setSellPct(null); setBuyWith('NONE'); setMsg('') }}>
@@ -636,7 +636,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
             {/* ── Buy with (first — drives balance & % fill) ── */}
             {isBuy && (
-              <div className="bs-field">
+              <div className="bs-field bs-sec-buywith">
                 <label className="bs-label">{t('txBuyWith')} <span className="bs-req">*</span></label>
                 <div className="bs-leg-grid">
                   {BUY_WITH_OPTIONS.map(o => (
@@ -705,7 +705,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
             {/* ── Category selector ── */}
             {!prefillCoin && (
-              <div className="bs-field">
+              <div className="bs-field bs-sec-cat">
                 <label className="bs-label">{t('tsAssetCategory')}</label>
                 <div className="bs-cat-grid" data-tour="ts-category">
                   {CATEGORIES.map(c => (
@@ -723,7 +723,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             )}
 
             {/* ── Asset selector by category ── */}
-            <div className="bs-field" data-tour="ts-asset">
+            <div className="bs-field bs-sec-asset" data-tour="ts-asset">
               <label className="bs-label">{t('tsAsset')}</label>
 
               {/* Crypto: search (buy) or holdings list (sell) */}
@@ -1003,7 +1003,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
             {/* Available balance + % quick-fill for sells (mirrors Buy) */}
             {!isBuy && holdingForCoin && (
-              <div className="bs-field">
+              <div className="bs-field bs-sec-balance">
                 <div className="bs-buywith-balance">
                   <div className="bs-balance-row">
                     <span className="muted">{t('tsAvailableToSell')}</span>
@@ -1036,7 +1036,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             )}
 
             {/* Amount + Price */}
-            <div className="bs-row-2">
+            <div className="bs-row-2 bs-sec-amount">
               <div className="bs-field">
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.25rem' }}>
                   <label className="bs-label" style={{ margin:0 }}>
@@ -1104,7 +1104,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             </div>
 
             {/* Date + Wallet */}
-            <div className="bs-row-2">
+            <div className="bs-row-2 bs-sec-date">
               <div className="bs-field">
                 <label className="bs-label">{t('txDate')}</label>
                 <input className="bs-input" type="date" value={date} onChange={e => setDate(e.target.value)} />
@@ -1122,7 +1122,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
             {/* Sell for — icon selector, mandatory */}
             {!isBuy && (
-              <div className="bs-field">
+              <div className="bs-field bs-sec-sellfor">
                 <label className="bs-label">{t('txSellFor')} <span className="bs-req">*</span></label>
                 <div className="bs-leg-grid">
                   {SELL_FOR_OPTIONS.map(o => (
@@ -1155,7 +1155,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
             {/* Total */}
             {total > 0 && (
-              <div className="bs-total">
+              <div className="bs-total bs-sec-total">
                 <span className="muted">{t('txTotal')}</span>
                 <strong style={{ color: accent, fontSize:'1.2rem' }}>
                   ${total.toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 })}
@@ -1165,7 +1165,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
             {/* Trade signal — only for assets we can build one for (price history) */}
             {asset?.id && ['crypto', 'stock', 'gold', 'silver', 'tstock'].includes(category) && (
-              <div className="bs-signal-wrap">
+              <div className="bs-signal-wrap bs-sec-signal">
                 <button className="bs-signal-toggle" onClick={() => setSignalOpen(v => !v)}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points={signalOpen ? '18 15 12 9 6 15' : '6 9 12 15 18 9'}/></svg>
                   {isBuy ? 'Entry signal' : 'Exit signal'}

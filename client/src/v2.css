@@ -11,32 +11,32 @@
 html.wl-v2 {
   /* Dark canvas stops: t1 glows top-left, t2 mid-right, t3 at the bottom;
      b1..b3 are the base gradient underneath them. */
-  --v2-t1: #0f5a47; --v2-t2: #0c3d52; --v2-t3: #3a1c62;
-  --v2-b1: #0b2a2c; --v2-b2: #0c1b2e; --v2-b3: #141434;
+  --v2-t1: #0f6b52; --v2-t2: #0b4a5e; --v2-t3: #4a1f7a;
+  --v2-b1: #0b2a2c; --v2-b2: #0c1b2e; --v2-b3: #161438;
   --v2-glass: linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.03));
   --v2-glass-border: rgba(255,255,255,0.10);
   --v2-glass-shadow: 0 10px 30px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
   --v2-bar: color-mix(in srgb, var(--v2-b2) 72%, transparent);
 }
 html.wl-v2[data-wl-theme="gold"] {
-  --v2-t1: #5a4312; --v2-t2: #3b2b0e; --v2-t3: #5c2c12;
-  --v2-b1: #231a0b; --v2-b2: #17130e; --v2-b3: #21120c;
+  --v2-t1: #7a5a12; --v2-t2: #4a3510; --v2-t3: #6e3514;
+  --v2-b1: #2a1f0b; --v2-b2: #19140d; --v2-b3: #26140c;
 }
 html.wl-v2[data-wl-theme="silver"] {
-  --v2-t1: #2e3d52; --v2-t2: #1f2b3c; --v2-t3: #3c4660;
-  --v2-b1: #161d28; --v2-b2: #10151e; --v2-b3: #1b2030;
+  --v2-t1: #3c4f6b; --v2-t2: #26364c; --v2-t3: #4a5576;
+  --v2-b1: #18202c; --v2-b2: #11161f; --v2-b3: #1d2234;
 }
 html.wl-v2[data-wl-theme="bitcoin"] {
-  --v2-t1: #5e330a; --v2-t2: #3e230a; --v2-t3: #5e1f12;
-  --v2-b1: #26160a; --v2-b2: #18110c; --v2-b3: #22100d;
+  --v2-t1: #7a400a; --v2-t2: #4d2a0a; --v2-t3: #72240f;
+  --v2-b1: #2b180a; --v2-b2: #1a110b; --v2-b3: #27110d;
 }
 html.wl-v2[data-wl-theme="ethereum"] {
-  --v2-t1: #1f2e6e; --v2-t2: #172552; --v2-t3: #3b1f70;
-  --v2-b1: #10173c; --v2-b2: #0e1329; --v2-b3: #1a1442;
+  --v2-t1: #26399a; --v2-t2: #1c2d66; --v2-t3: #4a2590;
+  --v2-b1: #111a44; --v2-b2: #0e132b; --v2-b3: #1c1548;
 }
 html.wl-v2[data-wl-theme="solana"] {
-  --v2-t1: #0d5a55; --v2-t2: #3a1a6a; --v2-t3: #6a1f96;
-  --v2-b1: #0c2230; --v2-b2: #140f30; --v2-b3: #24103e;
+  --v2-t1: #0e7066; --v2-t2: #45208a; --v2-t3: #8424b8;
+  --v2-b1: #0c2432; --v2-b2: #150f33; --v2-b3: #291044;
 }
 html.wl-v2[data-wl-light] {
   --v2-glass: rgba(255,255,255,0.86);
@@ -257,6 +257,106 @@ html.wl-v2[data-wl-light] .wl-drawer-v2 {
   box-shadow: inset 0 0 0 1px rgba(var(--g-rgb),0.30);
 }
 html.wl-v2 .wl-drawer-v2 .wl-drawer-footer { border-top: 0; padding: 0.4rem 0 0; justify-content: center; }
+
+/* ── Top bar notifications bell ─────────────────────────────────────── */
+html.wl-v2 .wl-topbar-bell svg { width: 18px; height: 18px; max-width: none; flex-shrink: 0; }
+
+/* ── Buy / Sell sheet ─────────────────────────────────────────────────────
+   Reordered to follow the decision: what kind of asset, which asset, what you
+   pay with (or what you hold, when selling), how much, then the total. "Buy
+   with" sits right above Amount so its balance and % quick-fill land next to
+   the field they fill. Classic keeps its order; this is CSS order only. */
+html.wl-v2 .bs-body > *       { order: 50; }
+html.wl-v2 .bs-body > .bs-sec-mode    { order: 1; }
+html.wl-v2 .bs-body > .bs-sec-cat     { order: 2; }
+html.wl-v2 .bs-body > .bs-sec-asset   { order: 3; }
+html.wl-v2 .bs-body > .bs-sec-balance { order: 4; }
+html.wl-v2 .bs-body > .bs-sec-buywith { order: 5; }
+html.wl-v2 .bs-body > .bs-sec-amount  { order: 6; }
+html.wl-v2 .bs-body > .bs-sec-sellfor { order: 7; }
+html.wl-v2 .bs-body > .bs-sec-date    { order: 8; }
+html.wl-v2 .bs-body > .bs-sec-total   { order: 9; }
+html.wl-v2 .bs-body > .bs-sec-signal  { order: 10; }
+
+html.wl-v2 .bs-sheet {
+  background:
+    radial-gradient(120% 40% at 0% 0%, color-mix(in srgb, var(--v2-t1) 85%, transparent), transparent 65%),
+    radial-gradient(120% 40% at 100% 100%, color-mix(in srgb, var(--v2-t3) 70%, transparent), transparent 65%),
+    linear-gradient(180deg, var(--v2-b1), var(--v2-b2) 55%, var(--v2-b3));
+  border-color: rgba(255,255,255,0.10);
+}
+html.wl-v2[data-wl-light] .bs-sheet {
+  background:
+    radial-gradient(120% 35% at 0% 0%, rgba(var(--g-rgb),0.12), transparent 65%),
+    #f6f9f8;
+  border-color: rgba(0,0,0,0.06);
+}
+html.wl-v2 .bs-title { font-size: 1.15rem; letter-spacing: -0.01em; }
+
+/* Each step is its own glass panel, so the sheet reads as a sequence. */
+html.wl-v2 .bs-body > .bs-sec-cat,
+html.wl-v2 .bs-body > .bs-sec-asset,
+html.wl-v2 .bs-body > .bs-sec-balance,
+html.wl-v2 .bs-body > .bs-sec-buywith,
+html.wl-v2 .bs-body > .bs-sec-amount,
+html.wl-v2 .bs-body > .bs-sec-sellfor,
+html.wl-v2 .bs-body > .bs-sec-date {
+  padding: 0.85rem 0.85rem 0.9rem;
+  border-radius: 20px;
+  background: var(--v2-glass);
+  border: 1px solid var(--v2-glass-border);
+  box-shadow: var(--v2-glass-shadow);
+}
+html.wl-v2 .bs-body > .bs-sec-amount > .bs-field,
+html.wl-v2 .bs-body > .bs-sec-date > .bs-field { padding: 0; background: none; border: 0; box-shadow: none; }
+html.wl-v2 .bs-label { letter-spacing: 0.12em; font-weight: 800; color: var(--text-sub); }
+
+/* Buy / Sell switch: one pill with a lit half. */
+html.wl-v2 .bs-mode-tabs {
+  padding: 4px; border-radius: 16px;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--v2-glass-border);
+}
+html.wl-v2[data-wl-light] .bs-mode-tabs { background: rgba(0,0,0,0.04); }
+html.wl-v2 .bs-mode-tab { border-radius: 12px; }
+
+/* Chips and category tiles: glass at rest, the choice glows. */
+html.wl-v2 .bs-leg-chip,
+html.wl-v2 .bs-cat-btn {
+  border-radius: 14px;
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.09);
+}
+html.wl-v2[data-wl-light] .bs-leg-chip,
+html.wl-v2[data-wl-light] .bs-cat-btn { background: #fff; border-color: rgba(0,0,0,0.07); }
+html.wl-v2 .bs-leg-chip.active,
+html.wl-v2 .bs-cat-btn.active { box-shadow: 0 8px 20px -10px currentColor, inset 0 1px 0 rgba(255,255,255,0.10); }
+
+html.wl-v2 .bs-input,
+html.wl-v2 .bs-search-wrap input {
+  border-radius: 14px;
+  background: rgba(0,0,0,0.18);
+  border-color: rgba(255,255,255,0.10);
+}
+html.wl-v2[data-wl-light] .bs-input,
+html.wl-v2[data-wl-light] .bs-search-wrap input { background: #fff; border-color: rgba(0,0,0,0.08); }
+
+/* The total is the answer to the whole form: give it a card of its own. */
+html.wl-v2 .bs-body > .bs-sec-total {
+  padding: 0.9rem 1rem; border-radius: 18px;
+  background: linear-gradient(135deg, rgba(var(--g-rgb),0.16), rgba(var(--g-rgb),0.05));
+  border: 1px solid rgba(var(--g-rgb),0.28);
+}
+html.wl-v2 .bs-footer {
+  background: color-mix(in srgb, var(--v2-b3) 80%, transparent);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+html.wl-v2[data-wl-light] .bs-footer { background: rgba(255,255,255,0.85); border-top-color: rgba(0,0,0,0.06); }
+html.wl-v2 .bs-submit {
+  border-radius: 18px; min-height: 54px; font-size: 1rem; letter-spacing: 0.01em;
+  box-shadow: 0 14px 30px -12px rgba(var(--g-rgb),0.7), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+html.wl-v2 .bs-submit.dvx-btn-sell { box-shadow: 0 14px 30px -12px rgba(244,63,94,0.7), inset 0 1px 0 rgba(255,255,255,0.2); }
 
 @media (prefers-reduced-motion: reduce) {
   html.wl-v2 body::before { transition: none; }
