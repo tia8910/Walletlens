@@ -2038,4 +2038,6 @@ export default {
     acTimeframe: "Timeframe",
     acPickAsset: "Choose an asset",
     acOpenAsset: "Open",
+    acSearchAsset: "Search any coin, stock or metal",
+    acSearchNoMatch: "No match. Try a ticker like AAPL or a coin name.",
 }

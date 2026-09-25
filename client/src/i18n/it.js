@@ -2038,4 +2038,6 @@ export default {
     acTimeframe: "Timeframe",
     acPickAsset: "Scegli un asset",
     acOpenAsset: "Apri",
+    acSearchAsset: "Cerca qualsiasi crypto, azione o metallo",
+    acSearchNoMatch: "Nessun risultato. Prova un simbolo come AAPL o il nome di una crypto.",
 }

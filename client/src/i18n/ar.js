@@ -2043,4 +2043,6 @@ export default {
     acTimeframe: "الإطار الزمني",
     acPickAsset: "اختر أصلاً",
     acOpenAsset: "فتح",
+    acSearchAsset: "ابحث عن أي عملة أو سهم أو معدن",
+    acSearchNoMatch: "لا نتائج. جرّب رمزاً مثل AAPL أو اسم عملة.",
 }

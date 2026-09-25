@@ -2017,4 +2017,6 @@ export default {
     acTimeframe: "Temporalidad",
     acPickAsset: "Elige un activo",
     acOpenAsset: "Abrir",
+    acSearchAsset: "Busca cualquier cripto, acción o metal",
+    acSearchNoMatch: "Sin resultados. Prueba un símbolo como AAPL o el nombre de una cripto.",
 }
