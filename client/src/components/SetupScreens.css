@@ -1,0 +1,275 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Setup screens — "What do you want to track?" and "Build your dashboard".
+
+   They follow straight on from the welcome slides, so they wear the same
+   clothes: the dark green grid header, a gradient title, and the green CTA.
+   Always dark, like the slides, whatever theme is picked. Sora carries the
+   titles, names and numbers; Manrope the text.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.su-screen {
+  --su-bg: #070b09;
+  --su-card: #111a16;
+  --su-line: rgba(255, 255, 255, 0.08);
+  --su-text: #eef5f1;
+  --su-dim: rgba(238, 245, 241, 0.64);
+  --su-faint: rgba(238, 245, 241, 0.4);
+  --su-accent: #12d47a;
+  --su-glow: rgba(18, 212, 122, 0.35);
+  --su-display: 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --su-body: 'Manrope', 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  position: fixed; inset: 0; z-index: 4000;
+  display: flex; flex-direction: column;
+  background: var(--su-bg);
+  color: var(--su-text);
+  font-family: var(--su-body);
+  -webkit-font-smoothing: antialiased;
+  animation: su-fade .25s ease;
+  overflow: hidden;
+}
+/* Arabic keeps the app's Arabic face; the Latin fonts have no Arabic glyphs. */
+html[dir='rtl'] .su-screen {
+  --su-display: 'IBM Plex Sans Arabic', 'Sora', system-ui, sans-serif;
+  --su-body: 'IBM Plex Sans Arabic', 'Manrope', system-ui, sans-serif;
+}
+@keyframes su-fade { from { opacity: 0 } to { opacity: 1 } }
+.su-screen button, .su-screen input { font-family: inherit; }
+
+.su-inner {
+  flex: 1; min-height: 0;
+  width: 100%; max-width: 560px; margin: 0 auto;
+  display: flex; flex-direction: column;
+}
+
+/* ── Header band ─────────────────────────────────────────────────────────── */
+.su-hero {
+  position: relative; overflow: hidden;
+  padding: calc(env(safe-area-inset-top, 0px) + 30px) 22px 20px;
+  background: radial-gradient(90% 120% at 50% 0%, rgba(18, 212, 122, 0.2), transparent 70%), #08110d;
+  border-bottom: 1px solid rgba(18, 212, 122, 0.18);
+}
+.su-hero::before {
+  content: ''; position: absolute; inset: 0; opacity: .35; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(18, 212, 122, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18, 212, 122, 0.12) 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-mask-image: linear-gradient(#000, transparent 95%);
+  mask-image: linear-gradient(#000, transparent 95%);
+}
+.su-hero > * { position: relative; }
+.su-close {
+  position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); inset-inline-end: 14px;
+  width: 36px; height: 36px; border-radius: 50%; border: 0; cursor: pointer;
+  display: grid; place-items: center;
+  background: rgba(255, 255, 255, 0.07); color: var(--su-dim);
+}
+.su-eyebrow {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--su-display); font-size: 11px; font-weight: 700; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--su-accent);
+}
+.su-title {
+  margin: 12px 0 0;
+  font-family: var(--su-display); font-size: clamp(26px, 7.4vw, 32px); line-height: 1.1;
+  font-weight: 700; letter-spacing: -.035em;
+  background: linear-gradient(100deg, #fff 20%, #7ff0b9 70%, #12d47a);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.su-sub { margin: 10px 0 0; font-size: 14px; line-height: 1.5; color: var(--su-dim); }
+
+.su-body {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding: 18px 18px 10px;
+  scrollbar-width: none;
+}
+.su-body::-webkit-scrollbar { display: none; }
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.su-foot {
+  padding: 12px 18px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  background: linear-gradient(transparent, var(--su-bg) 30%);
+}
+.su-cta {
+  width: 100%; border: 0; border-radius: 16px; padding: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--su-display) !important; font-size: 16px; font-weight: 700; letter-spacing: -.01em;
+  color: #fff; background: linear-gradient(100deg, #0b8f5a, #12d47a);
+  box-shadow: 0 12px 30px -10px var(--su-glow);
+  transition: transform .15s, opacity .2s;
+}
+.su-cta:active { transform: scale(.98); }
+.su-cta:disabled { opacity: .55; box-shadow: none; }
+.su-count {
+  display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px;
+  border-radius: 99px; background: rgba(255, 255, 255, 0.22); font-size: 12px;
+}
+html[dir='rtl'] .su-cta-arrow { transform: scaleX(-1); }
+.su-ghost {
+  display: block; margin: 10px auto 0; padding: 4px 10px; border: 0; background: none; cursor: pointer;
+  color: var(--su-faint); font-size: 14px; font-weight: 600;
+  transition: opacity .4s ease;
+}
+.su-privacy { margin: 8px 0 0; text-align: center; font-size: 11.5px; color: var(--su-faint); }
+
+/* ── Interest tiles ──────────────────────────────────────────────────────── */
+.su-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.su-tile {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+  padding: 14px 12px 12px; border-radius: 18px; cursor: pointer; text-align: start;
+  background: var(--su-card); border: 1px solid var(--su-line); color: inherit;
+  transition: transform .18s cubic-bezier(.3, 1.6, .5, 1), border-color .2s, background .2s, box-shadow .2s;
+}
+.su-tile:active { transform: scale(.96); }
+.su-tile-ic {
+  width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+  background: rgba(255, 255, 255, 0.05);
+}
+.su-tile-ic img { width: 26px; height: 26px; object-fit: contain; }
+.su-tile-name { font-family: var(--su-display); font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.su-tile-ex { margin-top: -6px; font-size: 12px; color: var(--su-faint); }
+.su-tile-ck {
+  position: absolute; top: 12px; inset-inline-end: 12px;
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  border: 1.5px solid rgba(255, 255, 255, 0.18); color: #04120b;
+  transition: all .2s;
+}
+.su-tile-ck svg { opacity: 0; transform: scale(.4); transition: all .25s cubic-bezier(.3, 1.6, .5, 1); }
+.su-tile.on {
+  border-color: rgba(18, 212, 122, 0.65);
+  background: linear-gradient(160deg, rgba(18, 212, 122, 0.16), rgba(18, 212, 122, 0.04));
+  box-shadow: 0 0 0 3px rgba(18, 212, 122, 0.12), 0 10px 30px -12px var(--su-glow);
+}
+.su-tile.on .su-tile-ck { background: var(--su-accent); border-color: var(--su-accent); }
+.su-tile.on .su-tile-ck svg { opacity: 1; transform: none; }
+.su-tile.pop { animation: su-pop .35s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes su-pop { 0% { transform: scale(.94) } 60% { transform: scale(1.04) } 100% { transform: scale(1) } }
+
+/* ── Net worth card ──────────────────────────────────────────────────────── */
+.su-nw {
+  border-radius: 20px; padding: 16px;
+  background: linear-gradient(150deg, rgba(18, 212, 122, 0.18), rgba(18, 212, 122, 0.03) 60%), var(--su-card);
+  border: 1px solid rgba(18, 212, 122, 0.3);
+}
+.su-nw-label { font-family: var(--su-display); font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--su-dim); }
+.su-nw-val {
+  margin-top: 4px; font-family: var(--su-display); font-size: 34px; font-weight: 700; letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums; direction: ltr; text-align: start;
+}
+html[dir='rtl'] .su-nw-val { text-align: end; }
+.su-nw-val.bump { animation: su-bump .3s ease; }
+@keyframes su-bump { 50% { transform: scale(1.04); color: #7ff0b9 } }
+.su-alloc { display: flex; gap: 2px; height: 8px; margin-top: 12px; border-radius: 99px; overflow: hidden; background: rgba(255, 255, 255, 0.06); }
+.su-alloc span { transition: flex-grow .45s cubic-bezier(.3, 1, .4, 1); flex-basis: 0; }
+.su-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 11.5px; color: var(--su-faint); }
+.su-legend i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-inline-end: 5px; }
+
+/* ── Asset rows ──────────────────────────────────────────────────────────── */
+.su-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.su-row {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 16px;
+  background: var(--su-card); border: 1px solid var(--su-line);
+  transition: border-color .2s, box-shadow .2s;
+  animation: su-row-in .35s cubic-bezier(.3, 1.3, .5, 1);
+}
+@keyframes su-row-in { from { opacity: 0; transform: translateY(8px) } }
+.su-row:focus-within { border-color: rgba(18, 212, 122, 0.6); box-shadow: 0 0 0 3px rgba(18, 212, 122, 0.12); }
+.su-mark {
+  width: 38px; height: 38px; flex: none; border-radius: 50%; overflow: hidden;
+  display: grid; place-items: center;
+  font-family: var(--su-display); font-size: 14px; font-weight: 700;
+}
+.su-mark img, .su-mark svg { width: 100%; height: 100%; object-fit: cover; }
+.su-mark.plain img { width: 70%; height: 70%; object-fit: contain; }
+.su-mark.empty { background: rgba(255, 255, 255, 0.05); color: var(--su-faint); }
+.su-meta { flex: 1; min-width: 0; }
+.su-cat { font-family: var(--su-display); font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--su-faint); }
+.su-pick {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%; margin-top: 2px;
+  padding: 4px 9px 4px 10px; border-radius: 10px; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.05); color: var(--su-text);
+  font-family: var(--su-display); font-size: 13.5px; font-weight: 600;
+  white-space: nowrap; overflow: hidden;
+}
+.su-pick small { font-family: var(--su-body); font-size: 12px; font-weight: 600; color: var(--su-faint); overflow: hidden; text-overflow: ellipsis; }
+.su-pick svg { flex: none; opacity: .7; }
+.su-pick.empty { color: var(--su-accent); border-style: dashed; border-color: rgba(18, 212, 122, 0.45); }
+.su-amt { flex: none; text-align: end; }
+.su-amt input {
+  /* The app styles every input as a boxed field; these are bare numbers. */
+  width: 100px; height: auto !important; min-height: 0 !important; margin: 0 !important;
+  padding: 0 !important; border: 0 !important; border-radius: 0 !important; outline: 0;
+  background: transparent !important; box-shadow: none !important; color: var(--su-text);
+  font-family: var(--su-display); font-size: 18px; font-weight: 600; text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.su-amt input::placeholder { color: rgba(255, 255, 255, 0.22); }
+.su-amt input:disabled { opacity: .5; }
+.su-usd { font-size: 11px; color: var(--su-faint); font-variant-numeric: tabular-nums; direction: ltr; }
+.su-remove {
+  position: absolute; top: -7px; inset-inline-end: -7px;
+  width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--su-line); cursor: pointer;
+  display: grid; place-items: center; background: #1a2420; color: var(--su-dim);
+}
+.su-more {
+  width: 100%; margin-top: 8px; padding: 12px; border-radius: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1.5px dashed rgba(18, 212, 122, 0.35); background: transparent; color: var(--su-accent);
+  font-size: 14px; font-weight: 700;
+}
+
+/* ── Asset picker sheet ──────────────────────────────────────────────────── */
+.su-scrim {
+  position: fixed; inset: 0; z-index: 4001; background: rgba(0, 0, 0, 0.55);
+  animation: su-fade .25s ease;
+}
+.su-sheet {
+  position: fixed; inset-inline: 0; bottom: 0; z-index: 4002;
+  width: 100%; max-width: 560px; margin: 0 auto; height: min(78dvh, 640px);
+  display: flex; flex-direction: column;
+  background: #0c1310; border-top: 1px solid rgba(18, 212, 122, 0.25);
+  border-radius: 26px 26px 0 0; box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6);
+  animation: su-sheet-up .38s cubic-bezier(.2, 1, .3, 1);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@keyframes su-sheet-up { from { transform: translateY(102%) } }
+.su-grab { width: 40px; height: 4px; margin: 10px auto 6px; border-radius: 9px; background: rgba(255, 255, 255, 0.2); }
+.su-sheet-title { padding: 4px 18px 10px; font-family: var(--su-display); font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
+.su-tabs { display: flex; gap: 6px; padding: 0 18px 10px; overflow-x: auto; scrollbar-width: none; }
+.su-tabs::-webkit-scrollbar { display: none; }
+.su-tab {
+  flex: none; padding: 7px 13px; border-radius: 99px; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1); background: transparent; color: var(--su-dim);
+  font-size: 13px; font-weight: 700;
+}
+.su-tab.on { background: var(--su-accent); border-color: var(--su-accent); color: #04120b; }
+.su-search {
+  display: flex; align-items: center; gap: 8px; margin: 0 18px 8px; padding: 10px 12px; border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.08); color: var(--su-faint);
+}
+.su-search input {
+  flex: 1; min-width: 0; height: auto !important; min-height: 0 !important; margin: 0 !important;
+  padding: 0 !important; border: 0 !important; border-radius: 0 !important; outline: 0;
+  background: none !important; box-shadow: none !important; color: var(--su-text); font-size: 15px;
+}
+.su-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 10px 16px; }
+.su-opt {
+  width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 12px;
+  border: 0; background: none; color: var(--su-text); cursor: pointer; text-align: start;
+}
+.su-opt:hover, .su-opt.sel { background: rgba(18, 212, 122, 0.1); }
+.su-opt .su-mark { width: 36px; height: 36px; font-size: 13px; }
+.su-opt-t { flex: 1; min-width: 0; }
+.su-opt-t b { display: block; font-family: var(--su-display); font-size: 14px; font-weight: 600; }
+.su-opt-t small { display: block; font-size: 12px; color: var(--su-faint); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.su-opt-px { text-align: end; font-family: var(--su-display); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; direction: ltr; }
+.su-opt-px small { display: block; font-family: var(--su-body); font-size: 11px; font-weight: 700; }
+.su-up { color: #34d399; }
+.su-dn { color: #f87171; }
+.su-empty { padding: 22px; text-align: center; font-size: 13px; color: var(--su-faint); }
+
+@media (prefers-reduced-motion: reduce) {
+  .su-screen, .su-row, .su-sheet, .su-scrim, .su-tile.pop, .su-nw-val.bump { animation: none !important; }
+}

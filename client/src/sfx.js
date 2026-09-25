@@ -166,12 +166,60 @@ function playTriumph() {
   })
 }
 
+// ── Selection note: one step up the scale per pick ───────────────────────
+// Picking assets plays a rising pentatonic line, so choosing three things
+// sounds like progress; unpicking plays one low, soft note instead.
+const PICK_SCALE = [261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25, 783.99, 880]
+function playSelect(n = 0, on = true) {
+  if (!enabled) return
+  const c = ensure(); if (!c) return
+  const now = c.currentTime
+  const note = (freq, t, type, peak, dur) => {
+    const o = c.createOscillator(); const g = c.createGain()
+    o.type = type; o.frequency.value = freq
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.02)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+    o.connect(g); g.connect(master)
+    o.start(t); o.stop(t + dur + 0.05)
+  }
+  if (on) {
+    const f = PICK_SCALE[Math.max(0, Math.min(n, PICK_SCALE.length - 1))]
+    note(f, now, 'sine', 0.16, 0.55)
+    note(f * 2, now + 0.03, 'sine', 0.04, 0.35)
+  } else {
+    note(196, now, 'triangle', 0.07, 0.25)
+  }
+}
+
+// ── Keeping the pad going across screens ─────────────────────────────────
+// The setup screens follow one another, and each one holds the ambient pad
+// while it is up. Releasing waits a moment before fading, so the pad carries
+// straight on into the next screen instead of dipping between them.
+let ambientHolds = 0
+let ambientStopTimer = null
+function holdAmbient() {
+  ambientHolds++
+  clearTimeout(ambientStopTimer)
+  startAmbient()
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    ambientHolds = Math.max(0, ambientHolds - 1)
+    clearTimeout(ambientStopTimer)
+    ambientStopTimer = setTimeout(() => { if (!ambientHolds) stopAmbient() }, 400)
+  }
+}
+
 const sfx = {
   startAmbient,
   stopAmbient,
   playChime,
   playWhoosh,
   playTriumph,
+  playSelect,
+  holdAmbient,
   isPlaying() { return !!bg },
   haptic(pattern) { try { if (enabled && navigator.vibrate) navigator.vibrate(pattern) } catch {} },
   isEnabled() { return enabled },
