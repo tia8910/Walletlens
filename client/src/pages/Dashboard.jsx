@@ -1,6 +1,7 @@
 import { lazy, Suspense, memo, useEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { isV2Active } from '../v2Preview'
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line,
   PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
@@ -247,7 +248,10 @@ function computeAI(enriched, prices, transactions, totalValue, t) {
 
   // 1. Concentration (Herfindahl-Hirschman Index, 0=perfect, 1=single asset)
   const hhi = weights.reduce((s, w) => s + w * w, 0)
-  const hhiNorm = (hhi - 1/n) / (1 - 1/n + 1e-9)   // 0=diverse, 1=concentrated
+  // Clamped: with one holding and no quote yet every weight is 0, the
+  // numerator goes negative over a denominator of ~1e-9, and the score read
+  // 100000000100.
+  const hhiNorm = Math.min(1, Math.max(0, (hhi - 1/n) / (1 - 1/n + 1e-9)))   // 0=diverse, 1=concentrated
   const concentrationScore = Math.round((1 - hhiNorm) * 100)
 
   // 2. Diversification (unique assets, ideal 5-12)
@@ -1137,7 +1141,8 @@ function EvalPassStrip({ items }) {
   )
 }
 
-const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, targets, onAction }) {
+// Exported so the v2 Coach page shows this evaluation rather than its older copy.
+export const WalletEvalTab = memo(function WalletEvalTab({ enriched, totalValue, targets, onAction }) {
   const { t } = useLanguage()
   const eval_ = useMemo(() => computeWalletEval(enriched, totalValue, targets), [enriched, totalValue, targets])
 
@@ -2705,7 +2710,8 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
 }
 
 // ── Tools Tab (AI + Risk Scanner + Wallet Eval) ──────────────────────────
-function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLoading, coinTargets, initialTool }) {
+// Exported so the v2 Coach page can host the same tools (Analysis lives there in v2).
+export function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, pricesLoading, coinTargets, initialTool }) {
   const { t } = useLanguage()
   const [tool, setTool] = useState(initialTool || 'ai')
   // A push deep-link can land directly on the risk scanner; record that the
@@ -3410,6 +3416,21 @@ export default function Dashboard() {
   useEffect(() => {
     try { sessionStorage.setItem(ACTIVE_TAB_KEY, activeTab) } catch { /* ignore */ }
   }, [activeTab])
+  // The v2 preview folds Analysis into Coach, so the tools tab lives there.
+  // Anything that opens it (a link, a button, a notification's ?tool=) goes
+  // to Coach's Analysis section instead. A tab merely restored from the last
+  // session is not a request, so that one just falls back to the overview.
+  const tabRestoredRef = useRef(true)
+  useEffect(() => {
+    const restored = tabRestoredRef.current
+    tabRestoredRef.current = false
+    if (activeTab !== 'tools' || !isV2Active(location.pathname)) return
+    const asked = !restored || location.state?.tab || toolFromSearch
+    const raw = location.state?.tab
+    const tool = location.state?.tool || toolFromSearch || (raw === 'risk' ? 'risk' : 'ai')
+    setActiveTab('overview')
+    if (asked) navigate('/coach', { state: { section: 'analysis', tool } })
+  }, [activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
   const [showAllHoldings, setShowAllHoldings] = useState(false)
   const [showBreakEven, setShowBreakEven]     = useState(false)
 
@@ -3424,7 +3445,9 @@ export default function Dashboard() {
     mq.addEventListener('change', onChange)
     return () => mq.removeEventListener('change', onChange)
   }, [])
-  const showTabGrid = !IS_NATIVE_APP && isDesktop
+  // The v2 preview navigates tabs from its bottom bar and menu, as the app
+  // does, so it drops the desktop tile grid and leads with the import options.
+  const showTabGrid = !IS_NATIVE_APP && isDesktop && !isV2Active(location.pathname)
   const [holdingsSearch,  setHoldingsSearch]  = useState('')
   const [holdingsCat,     setHoldingsCat]     = useState('all')
   const [holdingsSort,    setHoldingsSort]    = useState('value')

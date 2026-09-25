@@ -61,12 +61,19 @@ describe('how it looks', () => {
 
 describe('where it sits', () => {
   it('is rendered in the header, next to the settings gear', () => {
-    expect(app).toMatch(/<CoffeeButton \/>\s*\n\s*<button\s*\n\s*className="wl-topbar-x wl-topbar-gear"/)
+    // Classic only: the v2 preview gives this slot to notifications.
+    expect(app).toMatch(/\{!v2 && <CoffeeButton \/>\}\s*\n\s*<button\s*\n\s*className="wl-topbar-x wl-topbar-gear"/)
+  })
+
+  it('moves into the menu in the v2 preview rather than disappearing', () => {
+    const v2Menu = app.slice(app.indexOf('const DrawerV2'), app.indexOf('// ── Memoized app footer'))
+    expect(v2Menu).toContain('href={SUPPORT_URL}')
+    expect(v2Menu).toContain("track('coffee_support_click', { source: 'menu' })")
   })
 
   it('is imported directly, not lazily', () => {
     // A lazy chunk would pop into the header a beat after everything else.
-    expect(app).toContain("import CoffeeButton from './components/CoffeeButton'")
+    expect(app).toMatch(/import CoffeeButton(, \{ SUPPORT_URL \})? from '\.\/components\/CoffeeButton'/)
     expect(app).not.toMatch(/lazy\(\(\) => import\('\.\/components\/CoffeeButton'\)\)/)
   })
 

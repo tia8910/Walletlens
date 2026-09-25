@@ -44,6 +44,8 @@ import CoinLogo from './CoinLogo'
 import { track, trackProfileCreated } from '../analytics'
 import TradeSignal from './BuySignal'
 import { useLanguage } from '../LanguageContext'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { isV2Active, homePath } from '../v2Preview'
 
 
 const IcoClose  = <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
@@ -219,6 +221,58 @@ async function buildSpendLeg(source, costUsd) {
   return { coin_id: `other:${lower}`, symbol: T, name: T, category: 'other', amount: costUsd, pricePerUnit: 1 }
 }
 
+// ── Slide to confirm (v2 ticket) ──────────────────────────────────────────
+// A trade is the one action here that writes to the portfolio, so v2 asks for
+// a deliberate slide instead of a tap that a scroll can trigger by accident.
+// Keyboard users confirm with Enter or Space on the focused control.
+function SlideToConfirm({ label, disabled, busy, onConfirm, tone }) {
+  const trackRef = useRef(null)
+  const [x, setX] = useState(0)
+  const [nudge, setNudge] = useState(false)
+  const drag = useRef(null)
+  const max = () => Math.max(0, (trackRef.current?.clientWidth || 0) - 58)
+
+  function onDown(e) {
+    if (disabled || busy) return
+    drag.current = { startX: e.clientX, moved: false }
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+  }
+  function onMove(e) {
+    if (!drag.current) return
+    const dx = Math.min(max(), Math.max(0, e.clientX - drag.current.startX))
+    if (dx > 4) drag.current.moved = true
+    setX(dx)
+  }
+  function onUp() {
+    if (!drag.current) return
+    const done = x >= max() * 0.85
+    const tapped = !drag.current.moved
+    drag.current = null
+    if (done) { setX(max()); onConfirm() } else {
+      setX(0)
+      if (tapped) { setNudge(true); setTimeout(() => setNudge(false), 600) }
+    }
+  }
+  useEffect(() => { if (!busy) setX(0) }, [busy])
+
+  return (
+    <div ref={trackRef}
+      className={`tk-slide tk-slide-${tone}${disabled ? ' is-off' : ''}${nudge ? ' is-nudge' : ''}`}
+      role="button" tabIndex={disabled ? -1 : 0} aria-disabled={disabled || busy} aria-label={label}
+      onKeyDown={e => { if (!disabled && !busy && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onConfirm() } }}>
+      <span className="tk-slide-fill" style={{ width: x + 58 }} />
+      <span className="tk-slide-label">{label}</span>
+      <span className="tk-slide-arrows" aria-hidden="true">›››</span>
+      <span className="tk-slide-knob" style={{ transform: `translateX(${x}px)` }}
+        onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+        {busy
+          ? <span className="tk-spin" aria-hidden="true" />
+          : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>}
+      </span>
+    </div>
+  )
+}
+
 // ── TradeSheet ────────────────────────────────────────────────────────────
 export default function TradeSheet({ open, type, onClose, wallets, onDone, holdings, prefillCoin, prefillCategory, prefillStockTicker, variant = 'sheet' }) {
   const { t } = useLanguage()
@@ -254,6 +308,14 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [sellPct, setSellPct]           = useState(null)
   const [confirmNoneOpen, setConfirmNoneOpen] = useState(false)
   const [mode, setMode]                 = useState(type)
+  // v2 ticket: 'asset' (choose what) then 'ticket' (how much, confirm).
+  const [v2Step, setV2Step]             = useState('asset')
+  const [assetChg, setAssetChg]         = useState(null)
+  const [receipt, setReceipt]           = useState(null)
+  const fetchedPrice                    = useRef('')
+  const location = useLocation()
+  const navigate = useNavigate()
+  const v2 = isV2Active(location.pathname)
   const searchTimer                     = useRef(null)
   const dragStartY                      = useRef(null)
 
@@ -267,7 +329,8 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     setMode(type)
     setCoinSearch(''); setCoinResults([]); setHoldingsFilter(''); setMsg(''); setSuccess(false)
     setAmount(''); setPrice(''); setBuyWith('NONE'); setBuyWithCustom(''); setSpendPct(null); setSellPct(null); setConfirmNoneOpen(false)
-    setSellFor('REMOVE'); setSellForCustom(''); setAmtMode('qty'); setUsdInput(''); setMetalUnit('oz')
+    setSellFor('REMOVE'); setSellForCustom(''); setAmtMode(v2 && type === 'buy' ? 'usd' : 'qty'); setUsdInput(''); setMetalUnit('oz')
+    setV2Step(prefillCoin ? 'ticket' : 'asset'); setAssetChg(null); setSignalOpen(v2)
     setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('')
     setDate(new Date().toISOString().split('T')[0])
     if (wallets.length) setWalletId(String(wallets[0].id))
@@ -292,13 +355,13 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
 
   // Fetch live prices for the browsable popular-coins list (full-page only).
   useEffect(() => {
-    if (!isPage || !open) return
+    if ((!isPage && !v2) || !open) return
     let alive = true
     api.getPrices(POPULAR_COINS.map(c => c.id).join(',')).then(px => {
       if (alive && px) setPopPrices(px)
     }).catch(() => {})
     return () => { alive = false }
-  }, [isPage, open])
+  }, [isPage, v2, open])
 
   // Fetch live prices for the stock markets list when the Stocks tab is open.
   // Fetch the whole popular list (one batched request server-side) so every
@@ -346,7 +409,8 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       // Treated as a failed fetch, which it is. The field clears and says so,
       // and the price becomes something the person types deliberately rather
       // than something the app quietly asserted.
-      if (p && !quote?.stale) { setPrice(String(p)); setPriceFetchFailed(false) }
+      setAssetChg(quote?.usd_24h_change ?? null)
+      if (p && !quote?.stale) { fetchedPrice.current = String(p); setPrice(String(p)); setPriceFetchFailed(false) }
       else { setPrice(''); setPriceFetchFailed(true) }
     }).catch(() => { setPrice(''); setPriceFetchFailed(true) })
   }, [selectedCoin, category, stockTicker, fiatCode]) // eslint-disable-line
@@ -469,6 +533,25 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     }
   }
 
+  function switchMetalUnit(u) {
+    if (u === metalUnit) return
+    const TROY_OZ = 31.1034768
+    const px = parseFloat(price)
+    if (u === 'g') {
+      setAmount(v => v ? String(parseFloat((parseFloat(v) * TROY_OZ).toFixed(4))) : v)
+      if (px > 0) setPrice(String(parseFloat((px / TROY_OZ).toFixed(4))))
+    } else {
+      setAmount(v => v ? String(parseFloat((parseFloat(v) / TROY_OZ).toFixed(6))) : v)
+      if (px > 0) setPrice(String(parseFloat((px * TROY_OZ).toFixed(2))))
+    }
+    setMetalUnit(u)
+  }
+
+  function pickCategory(key) {
+    track('trade_category_select', { category: key, trade_type: mode })
+    setCategory(key); setSelectedCoin(null); setCoinSearch(''); setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('')
+  }
+
   // Swipe-to-close disabled — use the × button only
 
   async function submit(force = false) {
@@ -491,6 +574,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       setConfirmNoneOpen(true); return
     }
     setBusy(true); setMsg('')
+    const heldBefore = Number(holdingForCoin?.amount) || 0
     // Whether this is the very first holding — drives the "profile_created" event
     // so we learn the user STARTED their portfolio with a manual trade.
     const isFirstHolding = !Array.isArray(holdings) || holdings.length === 0
@@ -511,7 +595,10 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       const ppu = isMetal && metalUnit === 'g' ? rawPpu * TROY_OZ : rawPpu
 
       await api.addTransaction({
-        wallet_id: wid, type,
+        // `mode`, not the `type` prop: the Buy/Sell switch inside the sheet
+        // changes the side, and recording the side it opened on turned a
+        // switched-to sell into a buy (plus a buy of the "sell for" asset).
+        wallet_id: wid, type: mode,
         coin_id: asset.id,
         coin_symbol: asset.symbol,
         coin_name: asset.name,
@@ -550,6 +637,14 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
         }
       }
 
+      const legKey = isBuy ? (buyWith === 'CUSTOM' ? buyWithCustom.trim().toUpperCase() : buyWith)
+                           : (sellFor === 'CUSTOM' ? sellForCustom.trim().toUpperCase() : sellFor)
+      setReceipt({
+        id: asset.id, symbol: asset.symbol, amount: amt, price: ppu, total: amt * ppu,
+        leg: legKey === 'NONE' || legKey === 'REMOVE' ? '' : legKey,
+        newBalance: isBuy ? heldBefore + amt : Math.max(0, heldBefore - amt),
+        date, wallet: (wallets.find(w => String(w.id) === String(wid)) || {}).name || '',
+      })
       setSuccess(true)
       // Force dashboard to refresh holdings immediately
       window.dispatchEvent(new Event('wl:portfolio-updated'))
@@ -570,13 +665,13 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       // from trade_submitted only, while this event kept sending all of it.
       // analyticsPrivacy.test.js could not see either call because its scanner
       // required a quoted event name and both are named by a ternary.
-      track(type === 'buy' ? 'buy_transaction' : 'sell_transaction', {
+      track(mode === 'buy' ? 'buy_transaction' : 'sell_transaction', {
         asset_category: assetCat,
         source: 'trade_sheet',
       })
 
       // Kept for backwards compatibility with the existing GA reports.
-      track('trade_submitted', { trade_type: type, asset_category: assetCat, source: 'trade_sheet' })
+      track('trade_submitted', { trade_type: mode, asset_category: assetCat, source: 'trade_sheet' })
 
       // First manual trade = the user started their profile this way.
       if (isFirstHolding) {
@@ -585,9 +680,625 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
         // single-asset users the old holdings floor excluded entirely.
         noteMoment('first_holding')
       }
-      setTimeout(() => { onClose(); onDone() }, 1200)
+      // v2 shows a receipt the user dismisses; classic closes itself.
+      if (!v2) setTimeout(() => { onClose(); onDone() }, 1200)
     } catch { setMsg('Failed. Try again.') }
     finally { setBusy(false) }
+  }
+
+  // The asset picker, shared by the classic sheet and the v2 ticket.
+  const assetPicker = (
+    <>
+
+      {/* Crypto: search (buy) or holdings list (sell) */}
+      {category === 'crypto' && (
+        selectedCoin ? (
+          <div className="bs-coin-selected">
+            <CoinLogo image={selectedCoin.thumb || selectedCoin.image} symbol={selectedCoin.symbol} coinId={selectedCoin.id} size={28} className="bs-coin-thumb" />
+            <div className="bs-coin-info">
+              <strong>{selectedCoin.name}</strong>
+              <span className="muted">{selectedCoin.symbol?.toUpperCase()}</span>
+            </div>
+            {!prefillCoin && (
+              <button className="bs-coin-clear" onClick={() => { setSelectedCoin(null); setCoinSearch(''); setHoldingsFilter('') }}>
+                {IcoClose}
+              </button>
+            )}
+          </div>
+        ) : isBuy ? (
+          <>
+          <div className="bs-search-wrap">
+            <span className="bs-search-icon">{IcoSearch}</span>
+            <input className="bs-input bs-search-input" placeholder={t('txSearchCoin')}
+              value={coinSearch} onChange={e => setCoinSearch(e.target.value)} />
+            {coinResults.length > 0 && (
+              <div className="bs-dropdown">
+                {coinResults.map(c => (
+                  <button key={c.id} className="bs-dropdown-item"
+                    onClick={() => { setSelectedCoin(c); setCoinSearch(c.name); setCoinResults([]) }}>
+                    <CoinLogo image={c.thumb || c.image} symbol={c.symbol} size={22} className="bs-dropdown-logo" />
+                    <span>{c.name}</span>
+                    <span className="muted bs-sym">{c.symbol?.toUpperCase()}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Browsable "markets" list (full-page only) — tap to pick, like an exchange */}
+          {(isPage || v2) && !coinSearch.trim() && coinResults.length === 0 && (
+            <div className="bs-markets">
+              <div className="bs-markets-head">
+                <span>{t('txPopular')}</span><span>{t('tsPrice24h')}</span>
+              </div>
+              <div className="bs-markets-list">
+                {POPULAR_COINS.map(c => {
+                  const p = popPrices[c.id]?.usd ?? popPrices[c.id]?.price
+                  const ch = popPrices[c.id]?.usd_24h_change
+                  const up = Number(ch) >= 0
+                  return (
+                    <button key={c.id} type="button" className="bs-market-row"
+                      onClick={() => { track('trade_market_pick'); setSelectedCoin({ id: c.id, symbol: c.symbol, name: c.name }); setCoinSearch(c.name); setCoinResults([]) }}>
+                      <CoinLogo symbol={c.symbol} coinId={c.id} size={30} className="bs-coin-thumb" />
+                      <div className="bs-coin-info">
+                        <strong>{c.symbol}</strong>
+                        <span className="muted">{c.name}</span>
+                      </div>
+                      <div className="bs-market-px">
+                        <span className="bs-market-price">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: p < 1 ? 6 : 2 })}` : '—'}</span>
+                        {ch != null && <span className="bs-market-chg" style={{ color: up ? 'var(--g-ink)' : '#f87171' }}>{up ? '+' : ''}{Number(ch).toFixed(2)}%</span>}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          </>
+        ) : (() => {
+          const cryptoHoldings = (holdings || []).filter(h =>
+            !h.coin_id?.startsWith('fiat:') &&
+            !h.coin_id?.startsWith('stock:') &&
+            h.coin_id !== 'gold' && h.coin_id !== 'silver' &&
+            !h.coin_id?.startsWith('bond:') &&
+            !h.coin_id?.startsWith('other:') &&
+            (h.amount ?? 0) > 0
+          )
+          const q = holdingsFilter.trim().toLowerCase()
+          const filtered = q
+            ? cryptoHoldings.filter(h =>
+                h.coin_name?.toLowerCase().includes(q) ||
+                h.coin_symbol?.toLowerCase().includes(q)
+              )
+            : cryptoHoldings
+          if (!cryptoHoldings.length) return (
+            <p className="bs-hint" style={{ margin: '0.4rem 0' }}>{t('tsNoCryptoYet')}</p>
+          )
+          return (
+            <div className="bs-holdings-sel">
+              {cryptoHoldings.length > 5 && (
+                <div className="bs-search-wrap" style={{ marginBottom: '0.4rem' }}>
+                  <span className="bs-search-icon">{IcoSearch}</span>
+                  <input className="bs-input bs-search-input" placeholder={t('tsFilterHoldings')}
+                    value={holdingsFilter} onChange={e => setHoldingsFilter(e.target.value)} />
+                </div>
+              )}
+              <div className="bs-holdings-list">
+                {filtered.map(h => (
+                  <button key={h.coin_id} className="bs-holding-row"
+                    onClick={() => setSelectedCoin({ id: h.coin_id, symbol: h.coin_symbol, name: h.coin_name, image: h.coin_image || h.image || '' })}>
+                    <CoinLogo image={h.coin_image || h.image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} className="bs-coin-thumb" />
+                    <div className="bs-coin-info">
+                      <strong>{h.coin_name}</strong>
+                      <span className="muted">{h.coin_symbol?.toUpperCase()}</span>
+                    </div>
+                    <div className="bs-holding-bal">
+                      <span className="bs-holding-amt">{parseFloat(h.amount?.toFixed(6))}</span>
+                      {h.value > 0 && <span className="muted" style={{ fontSize: '0.72rem' }}>${h.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>}
+                    </div>
+                  </button>
+                ))}
+                {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>{t('tsNoMatch')}</p>}
+              </div>
+            </div>
+          )
+        })()
+      )}
+
+      {/* Gold / Silver: preset, no search needed */}
+      {(category === 'gold' || category === 'silver') && (
+        <div className="bs-coin-selected">
+          <span style={{ fontSize: '1.6rem' }}>{category === 'gold' ? IcoGoldBar : IcoSilverBar}</span>
+          <div className="bs-coin-info">
+            <strong>{category === 'gold' ? 'Gold (1 troy oz)' : 'Silver (1 troy oz)'}</strong>
+            <span className="muted">{category === 'gold' ? 'XAU' : 'XAG'} · live spot price</span>
+          </div>
+        </div>
+      )}
+
+      {/* Stock: sector filter + searchable ticker list */}
+      {category === 'stock' && (() => {
+        const sectors = ['All', ...Array.from(new Set(POPULAR_TICKERS.map(t => t.sector)))]
+        const query = stockInput.toUpperCase()
+        const filtered = POPULAR_TICKERS.filter(t =>
+          (stockSector === 'All' || t.sector === stockSector) &&
+          (!query || t.ticker.includes(query) || t.name.toUpperCase().includes(query))
+        )
+        const selectedInfo = POPULAR_TICKERS.find(t => t.ticker === stockTicker)
+        return (
+          <div className="bs-stock-wrap">
+            {/* Sector filter pills */}
+            <div className="bs-sector-row">
+              {sectors.map(s => (
+                <button key={s} className={`bs-sector-btn ${stockSector === s ? 'active' : ''}`}
+                  onClick={() => setStockSector(s)}>{s}</button>
+              ))}
+            </div>
+            {/* Search input */}
+            <div className="bs-search-wrap" style={{marginBottom:'0.4rem'}}>
+              <span className="bs-search-icon">{IcoSearch}</span>
+              <input className="bs-input bs-search-input"
+                placeholder={t('txSearchTicker')}
+                value={stockInput}
+                onChange={e => { setStockInput(e.target.value); const v = e.target.value.trim().toUpperCase(); if (!POPULAR_TICKERS.find(t=>t.ticker===v)) setStockTicker(v); }}
+              />
+            </div>
+            {/* Markets-style ticker list (same look as the crypto list) */}
+            <div className="bs-markets">
+              <div className="bs-markets-head"><span>{stockSector === 'All' ? 'Popular' : stockSector}</span><span>{t('tsPrice24h')}</span></div>
+              <div className="bs-markets-list">
+                {filtered.slice(0, 40).map(t => {
+                  const sid = `${STOCK_PREFIX}${t.ticker.toLowerCase()}`
+                  const rec = stockPrices[sid]
+                  const p = rec?.usd ?? rec?.price
+                  const ch = rec?.usd_24h_change
+                  const up = Number(ch) >= 0
+                  const on = stockTicker === t.ticker
+                  return (
+                    <button key={t.ticker} type="button" className={`bs-market-row ${on ? 'active' : ''}`}
+                      title={t.name}
+                      onClick={() => { setStockTicker(t.ticker); setStockInput(t.ticker) }}>
+                      <CoinLogo symbol={t.ticker} coinId={sid} size={30} className="bs-coin-thumb" />
+                      <div className="bs-coin-info">
+                        <strong>{t.ticker}</strong>
+                        <span className="muted">{t.name}</span>
+                      </div>
+                      <div className="bs-market-px">
+                        <span className="bs-market-price">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</span>
+                        {ch != null && isFinite(ch) && <span className="bs-market-chg" style={{ color: up ? 'var(--g-ink)' : '#f87171' }}>{up ? '+' : ''}{Number(ch).toFixed(2)}%</span>}
+                      </div>
+                    </button>
+                  )
+                })}
+                {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>{t('tsNoMatch')}</p>}
+              </div>
+            </div>
+            {stockTicker && (
+              <div className="bs-stock-selected">
+                <span style={{color: catInfo.color, fontWeight:700}}>{stockTicker}</span>
+                {selectedInfo && <span className="muted"> — {selectedInfo.name}</span>}
+                <span className="bs-hint" style={{marginLeft:'auto', color:catInfo.color}}>{t('tsLiveYahoo')}</span>
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* Tokenized stocks (xStocks) — browsable list, live prices from Binance */}
+      {category === 'tstock' && (() => {
+        const query = stockInput.toUpperCase()
+        const filtered = POPULAR_XSTOCKS.filter(t =>
+          !query || t.ticker.includes(query) || t.name.toUpperCase().includes(query)
+        )
+        const selectedInfo = POPULAR_XSTOCKS.find(t => t.ticker === stockTicker)
+        return (
+          <div className="bs-stock-wrap">
+            <div className="bs-search-wrap" style={{marginBottom:'0.4rem'}}>
+              <span className="bs-search-icon">{IcoSearch}</span>
+              <input className="bs-input bs-search-input"
+                placeholder={t('txSearchStock')}
+                value={stockInput}
+                onChange={e => { setStockInput(e.target.value); const v = e.target.value.trim().toUpperCase(); if (!POPULAR_XSTOCKS.find(t=>t.ticker===v)) setStockTicker(v); }}
+              />
+            </div>
+            <div className="bs-markets">
+              <div className="bs-markets-head"><span>Popular · Tokenized xStocks</span><span>{t('tsPrice24h')}</span></div>
+              <div className="bs-markets-list">
+                {filtered.map(t => {
+                  const sid = `${XSTOCK_PREFIX}${t.ticker.toLowerCase()}`
+                  const rec = xstockPrices[sid]
+                  const p = rec?.usd ?? rec?.price
+                  const ch = rec?.usd_24h_change
+                  const up = Number(ch) >= 0
+                  const on = stockTicker === t.ticker
+                  return (
+                    <button key={t.ticker} type="button" className={`bs-market-row ${on ? 'active' : ''}`}
+                      title={t.name}
+                      onClick={() => { setStockTicker(t.ticker); setStockInput(t.ticker) }}>
+                      <CoinLogo symbol={t.ticker} coinId={`${STOCK_PREFIX}${t.ticker.toLowerCase()}`} size={30} className="bs-coin-thumb" />
+                      <div className="bs-coin-info">
+                        <strong>{t.ticker}<span className="dvx-cat-badge" style={{ background:'#f0b90b22', color:'#f0b90b', borderColor:'#f0b90b44', marginLeft:'0.4rem' }}>xStock</span></strong>
+                        <span className="muted">{t.name}</span>
+                      </div>
+                      <div className="bs-market-px">
+                        <span className="bs-market-price">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</span>
+                        {ch != null && isFinite(ch) && <span className="bs-market-chg" style={{ color: up ? 'var(--g-ink)' : '#f87171' }}>{up ? '+' : ''}{Number(ch).toFixed(2)}%</span>}
+                      </div>
+                    </button>
+                  )
+                })}
+                {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>{t('tsNoMatch')}</p>}
+              </div>
+            </div>
+            {stockTicker && (
+              <div className="bs-stock-selected">
+                <span style={{color: catInfo.color, fontWeight:700}}>{stockTicker}X</span>
+                {selectedInfo && <span className="muted"> — {selectedInfo.name}</span>}
+                <span className="bs-hint" style={{marginLeft:'auto', color:catInfo.color}}>{t('tsLiveCoinGecko')}</span>
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* Fiat: popular list + custom */}
+      {category === 'fiat' && (
+        <div className="bs-stock-wrap">
+          <div className="bs-popular-chips">
+            {POPULAR_FIAT.map(f => (
+              <button key={f.code}
+                className={`bs-chip ${fiatCode === f.code ? 'active' : ''}`}
+                onClick={() => { setFiatCode(f.code) }}>
+                {f.symbol} {f.code}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Bond / Other: name input */}
+      {(category === 'bond' || category === 'other') && (
+        <input className="bs-input"
+          placeholder={category === 'bond' ? 'e.g. US Treasury 10Y, I-Bond' : 'e.g. Real estate, Art, Watch'}
+          value={otherName}
+          onChange={e => setOtherName(e.target.value)}
+        />
+      )}
+    </>
+  )
+
+  // "None / Remove" confirmation, shared by both layouts.
+  const confirmNoneOverlay = confirmNoneOpen && (
+    <div className="bs-confirm-overlay" onClick={() => setConfirmNoneOpen(false)}>
+      <div className="bs-confirm-card" onClick={e => e.stopPropagation()}>
+        <div className="bs-confirm-icon" style={{ color: accent }}>
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/>
+          </svg>
+        </div>
+        {isBuy ? (
+          <>
+            <h4 className="bs-confirm-title">{t('txBuyNothing')}</h4>
+            <p className="bs-confirm-text">{t('txChoseNone')(asset?.symbol)}</p>
+          </>
+        ) : (
+          <>
+            <h4 className="bs-confirm-title">{t('txSellNothing')}</h4>
+            <p className="bs-confirm-text">{t('txChoseRemove')(asset?.symbol)}</p>
+          </>
+        )}
+        <div className="bs-confirm-actions">
+          <button className="bs-confirm-switch" onClick={() => setConfirmNoneOpen(false)}>
+            {isBuy ? t('tcChoosePaid') : t('tcChooseReceived')}
+          </button>
+          <button className="bs-confirm-go" style={{ background: accent }}
+            onClick={() => { setConfirmNoneOpen(false); submit(true) }}>
+            {isBuy ? t('tcJustAddIt') : t('tcJustRemoveIt')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+  // ── v2 ticket (/v2test preview) ───────────────────────────────────────
+  // The same state and submit() as the classic sheet, laid out as a short
+  // flow: choose the asset, then one ticket with a large amount, how it is
+  // paid for (or received), the details, and a slide to confirm.
+  useEffect(() => {
+    if (v2 && open && selectedCoin && v2Step === 'asset') setV2Step('ticket')
+  }, [v2, open, selectedCoin]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (v2) {
+    const sym = asset?.symbol?.toUpperCase() || ''
+    const isMetal = category === 'gold' || category === 'silver'
+    const fmtUsd = (n) => `$${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    const fmtQty = (n) => Number(parseFloat(Number(n || 0).toFixed(8))).toLocaleString(undefined, { maximumFractionDigits: 8 })
+    const legMissing = isBuy ? (!buyWith || (buyWith === 'CUSTOM' && !buyWithCustom.trim()))
+                             : (!sellFor || (sellFor === 'CUSTOM' && !sellForCustom.trim()))
+    const ready = !!asset && parseFloat(amount) > 0 && !!price && price !== '…' && !legMissing
+    const step = v2Step === 'asset' ? 1 : ready ? 3 : 2
+    const avgCost = holdingForCoin?.total_invested && holdingForCoin?.amount ? holdingForCoin.total_invested / holdingForCoin.amount : null
+    const pnl = !isBuy && avgCost && parseFloat(amount) > 0 && parseFloat(price) > 0 ? (parseFloat(price) - avgCost) * parseFloat(amount) : null
+    const heldAmt = Number(holdingForCoin?.amount) || 0
+    const sellShare = heldAmt > 0 && parseFloat(amount) > 0 ? Math.min(100, (parseFloat(amount) / heldAmt) * 100) : 0
+    const pctBase = isBuy ? buyWithBalanceUsd : heldAmt
+    const closeAll = () => { if (success) { onClose(); onDone() } else onClose() }
+    const leave = (fn) => { onClose(); onDone(); fn() }
+
+    const applyPct = (pct) => {
+      const px = parseFloat(price)
+      if (isBuy) {
+        setSpendPct(pct)
+        const spend = buyWithBalanceUsd * pct / 100
+        if (px > 0) setAmount(String(parseFloat((spend / px).toFixed(8))))
+        if (amtMode === 'usd') setUsdInput(String(parseFloat(spend.toFixed(2))))
+      } else {
+        setSellPct(pct)
+        const q = heldAmt * pct / 100
+        setAmount(String(parseFloat(q.toFixed(8))))
+        if (amtMode === 'usd' && px > 0) setUsdInput(String(parseFloat((q * px).toFixed(2))))
+      }
+    }
+    const onBig = (e) => {
+      const v = e.target.value.replace(/[^0-9.]/g, '')
+      if (amtMode === 'usd') handleUsdInput(v)
+      else { setAmount(v); setSpendPct(null); setSellPct(null) }
+    }
+    const switchSide = (to) => {
+      if (to === mode) return
+      track('trade_mode_switch', { to, v2: true })
+      setMode(to); setAmount(''); setUsdInput(''); setSpendPct(null); setSellPct(null); setMsg('')
+      if (to === 'buy') { setBuyWith('NONE'); setAmtMode('usd') } else { setSellFor('REMOVE'); setAmtMode('qty') }
+    }
+    const legOptions = isBuy ? BUY_WITH_OPTIONS : SELL_FOR_OPTIONS
+    const legValue = isBuy ? buyWith : sellFor
+    const setLeg = (k) => { if (isBuy) { setBuyWith(k); setSpendPct(null) } else setSellFor(k) }
+    const legCustom = isBuy ? buyWithCustom : sellForCustom
+    const setLegCustom = isBuy ? setBuyWithCustom : setSellForCustom
+    const legLabel = legValue === 'CUSTOM' ? legCustom.trim().toUpperCase() : legValue
+    const legNote = isBuy
+      ? (buyWith === 'NONE' ? t('tkOnlyAdds') : buyWith === 'CUSTOM' || buyWithHolding ? '' : t('tkNoBalance'))
+      : (sellFor === 'REMOVE' ? t('tkOnlyRemoves') : '')
+    const slideLabel = busy ? t('obSettingUp')
+      : !asset ? t('tkChooseAsset')
+      : !(parseFloat(amount) > 0) ? t('tkEnterAmount')
+      : (!price || price === '…') ? t('tkEnterPrice')
+      : `${isBuy ? t('tkSlideBuy') : t('tkSlideSell')} ${isMetal ? asset.name : sym}`
+    const chg = Number(assetChg)
+    const chipColor = (c) => (String(c).startsWith('var(') ? '#10b981' : c)
+    const bigVal = amtMode === 'usd' ? usdInput : amount
+    const cryptoHeld = isBuy && category === 'crypto' && !selectedCoin && !coinSearch.trim()
+      ? (holdings || []).filter(h => (h.amount ?? 0) > 0 && !/^(fiat:|stock:|bond:|other:|xstock:)/.test(h.coin_id || '') && h.coin_id !== 'gold' && h.coin_id !== 'silver').slice(0, 5)
+      : []
+
+    return (
+      <>
+        <div className={`bs-backdrop ${open ? 'bs-backdrop-open' : ''}`} />
+        <div className={`bs-sheet bs-v2 ${open ? 'bs-sheet-open' : ''} ${isPage ? 'bs-page' : ''}`}>
+          {!isPage && <div className="bs-handle" />}
+
+          <div className="tk-head">
+            <button type="button" className="tk-ib" aria-label="Back"
+              onClick={() => (!success && v2Step === 'ticket' && !prefillCoin) ? setV2Step('asset') : closeAll()}>{IcoBack}</button>
+            {!success ? (
+              <div className={`tk-mode${isBuy ? '' : ' is-sell'}`} role="tablist">
+                <button type="button" role="tab" aria-selected={isBuy} className={isBuy ? 'on' : ''} onClick={() => switchSide('buy')}>{t('buy')}</button>
+                <button type="button" role="tab" aria-selected={!isBuy} className={!isBuy ? 'on' : ''} onClick={() => switchSide('sell')}>{t('sell')}</button>
+              </div>
+            ) : <span style={{ flex: 1 }} />}
+            <button type="button" className="tk-ib" onClick={closeAll} aria-label={t('close')}>{IcoClose}</button>
+          </div>
+
+          {success && receipt ? (
+            <div className="tk-done">
+              <div className={`tk-ring${isBuy ? '' : ' is-sell'}`}><span><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div>
+              <h3 className="tk-num">{isBuy ? t('tkBought') : t('tkSold')} {fmtQty(receipt.amount)} {receipt.symbol?.toUpperCase()}</h3>
+              <p className="tk-num">{fmtUsd(receipt.total)}{receipt.leg ? ` · ${receipt.leg}` : ''}</p>
+              <div className="tk-card tk-receipt">
+                <div className="tk-kv"><span className="tk-k">{t('tkPricePer')} {receipt.symbol?.toUpperCase()}</span><span className="tk-v tk-num">{fmtUsd(receipt.price)}</span></div>
+                {receipt.leg && <div className="tk-kv"><span className="tk-k">{isBuy ? t('tkPaid') : t('tkReceived')}</span><span className="tk-v tk-num">{fmtUsd(receipt.total)} · {receipt.leg}</span></div>}
+                <div className="tk-kv"><span className="tk-k">{t('tkNewBalance')}</span><span className="tk-v tk-num">{fmtQty(receipt.newBalance)} {receipt.symbol?.toUpperCase()}</span></div>
+                <div className="tk-kv"><span className="tk-k">{t('txDate')}{receipt.wallet ? ` · ${t('txWallet')}` : ''}</span><span className="tk-v">{receipt.date}{receipt.wallet ? ` · ${receipt.wallet}` : ''}</span></div>
+              </div>
+              <button type="button" className="tk-nudge" onClick={() => leave(() => navigate(homePath(true), { state: { tab: 'alerts' } }))}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                {t('tkPriceAlert')} {receipt.symbol?.toUpperCase()}
+              </button>
+              <div className="tk-btns">
+                <button type="button" className="tk-btn" onClick={() => leave(() => navigate(`/asset/?id=${encodeURIComponent(receipt.id)}`))}>{t('tkViewHolding')}</button>
+                <button type="button" className="tk-btn tk-btn-main" onClick={() => leave(() => {})}>{t('tkDone')}</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="tk-steps" aria-hidden="true">{[1, 2, 3].map(i => <i key={i} className={i <= step ? 'on' : ''} />)}</div>
+
+              <div className="bs-body tk-body">
+                {v2Step === 'asset' ? (
+                  <>
+                    {!prefillCoin && (
+                      <div className="tk-cats" data-tour="ts-category">
+                        {CATEGORIES.map(c => (
+                          <button key={c.key} type="button" className={`tk-cat${category === c.key ? ' on' : ''}`} style={{ '--c': chipColor(c.color) }} onClick={() => pickCategory(c.key)}>
+                            <span className="tk-cat-ico"><CatIcon icon={c.icon} size={13} /></span>{t(c.labelKey)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {cryptoHeld.length > 0 && (
+                      <>
+                        <div className="tk-sec"><span>{t('tkYourHoldings')}</span><span>{t('tsPrice24h')}</span></div>
+                        <div className="tk-card tk-list">
+                          {cryptoHeld.map(h => (
+                            <button key={h.coin_id} type="button" className="bs-market-row"
+                              onClick={() => setSelectedCoin({ id: h.coin_id, symbol: h.coin_symbol, name: h.coin_name, image: h.coin_image || h.image || '' })}>
+                              <CoinLogo image={h.coin_image || h.image} symbol={h.coin_symbol} coinId={h.coin_id} size={30} className="bs-coin-thumb" />
+                              <div className="bs-coin-info"><strong>{h.coin_name}</strong><span className="muted">{h.coin_symbol?.toUpperCase()} · {fmtQty(h.amount)}</span></div>
+                              <div className="bs-market-px"><span className="bs-market-price">{h.value > 0 ? fmtUsd(h.value) : '—'}</span></div>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    <div className="tk-asset" data-tour="ts-asset">{assetPicker}</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="tk-card tk-assetbar">
+                      {isMetal
+                        ? <span className="tk-metal">{category === 'gold' ? IcoGoldBar : IcoSilverBar}</span>
+                        : <CoinLogo image={asset?.image} symbol={asset?.symbol} coinId={asset?.id} size={38} className="bs-coin-thumb" />}
+                      <div className="tk-assetbar-n">
+                        <b>{asset?.name}</b>
+                        <small className="tk-num">
+                          {price && price !== '…' ? fmtUsd(price) : t('tkFetching')}
+                          {assetChg != null && isFinite(chg) && <span className={chg >= 0 ? 'tk-up' : 'tk-dn'}> · {chg >= 0 ? '▲' : '▼'} {Math.abs(chg).toFixed(2)}%</span>}
+                        </small>
+                      </div>
+                      {!prefillCoin && <button type="button" className="tk-chip" onClick={() => { setV2Step('asset'); if (category === 'crypto') { setSelectedCoin(null); setCoinSearch('') } }}>{t('tkChange')}</button>}
+                    </div>
+
+                    {!isBuy && holdingForCoin && (
+                      <div className="tk-card tk-hold">
+                        <div className="tk-hold-row"><span>{t('tkYouHold')}</span><b className="tk-num">{fmtQty(heldAmt)} {sym}{holdingForCoin.value > 0 ? ` · ${fmtUsd(holdingForCoin.value)}` : ''}</b></div>
+                        <div className="tk-meter"><i style={{ width: `${sellShare}%` }} /></div>
+                        {sellShare > 0 && <div className="tk-hold-row"><span>{t('tkSelling')} {sellShare.toFixed(sellShare < 10 ? 1 : 0)}%</span><span className="tk-num">{fmtQty(Math.max(0, heldAmt - parseFloat(amount)))} {sym}</span></div>}
+                      </div>
+                    )}
+
+                    <div className="tk-amount">
+                      <span className="tk-lbl">{isBuy ? t('tkYouSpend') : t('tkYouSell')}</span>
+                      <label className="tk-big">
+                        {amtMode === 'usd' && <span className="tk-cur">$</span>}
+                        <input data-tour="ts-amount" inputMode="decimal" autoComplete="off" placeholder="0"
+                          aria-label={isBuy ? t('tkYouSpend') : t('tkYouSell')}
+                          value={bigVal} onChange={onBig}
+                          style={{ width: `${Math.max(1, String(bigVal).length) + 0.5}ch` }} />
+                        {amtMode !== 'usd' && <span className="tk-cur">{isMetal ? metalUnit : sym}</span>}
+                      </label>
+                      <div className="tk-conv tk-num">
+                        <span>{amtMode === 'usd'
+                          ? (parseFloat(amount) > 0 ? `≈ ${fmtQty(amount)} ${sym}` : sym)
+                          : (total > 0 ? `≈ ${fmtUsd(total)}` : 'USD')}</span>
+                        {isMetal ? (
+                          <span className="tk-seg">{['oz', 'g'].map(u => <button key={u} type="button" className={metalUnit === u ? 'on' : ''} onClick={() => switchMetalUnit(u)}>{u}</button>)}</span>
+                        ) : (
+                          <button type="button" className="tk-swap" aria-label="USD / quantity" onClick={() => switchAmtMode(amtMode === 'usd' ? 'qty' : 'usd')}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {pctBase > 0 && (
+                      <div className="tk-pct">
+                        {[25, 50, 75, 100].map(pct => (
+                          <button key={pct} type="button" className={pctIsActive(isBuy ? spendPct : sellPct, pct) ? 'on' : ''} onClick={() => applyPct(pct)}>
+                            {pct === 100 ? t('tsMax') : `${pct}%`}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="tk-card">
+                      <div className="tk-kv">
+                        <span className="tk-k">{isBuy ? t('tkPayWith') : t('tkReceiveIn')}</span>
+                        <span className="tk-v tk-num">
+                          {legValue !== 'NONE' && legValue !== 'REMOVE' ? legLabel : ''}
+                          {isBuy && buyWithHolding && <small> {fmtQty(buyWithBalanceAmt)} {buyWith}{buyWithBalanceUsd > 0 ? ` ≈ ${fmtUsd(buyWithBalanceUsd)}` : ''}</small>}
+                        </span>
+                      </div>
+                      <div className="tk-legs">
+                        {legOptions.map(o => (
+                          <button key={o.key} type="button" className={`tk-leg${legValue === o.key ? ' on' : ''}`} style={{ '--c': chipColor(o.color) }} onClick={() => setLeg(o.key)}>
+                            <span className="tk-leg-ico"><CatIcon icon={o.icon} size={12} /></span>{o.labelKey ? t(o.labelKey) : o.label}
+                          </button>
+                        ))}
+                      </div>
+                      {legValue === 'CUSTOM' && (
+                        <input className="bs-input tk-custom" type="text" placeholder="e.g. SOL, DAI" value={legCustom} onChange={e => setLegCustom(e.target.value)} />
+                      )}
+                      {legNote && <p className="tk-note">{legNote}</p>}
+                    </div>
+
+                    <div className="tk-card">
+                      <div className="tk-kv">
+                        <span className="tk-k">{t('tkPricePer')} {isMetal ? metalUnit : sym}</span>
+                        <span className="tk-v">
+                          <input className="tk-inline tk-num" inputMode="decimal"
+                            placeholder={price === '…' ? t('tkFetching') : t('tsEnterPrice')}
+                            value={price === '…' ? '' : priceFocused ? price : fmtPriceDisplay(price)}
+                            onFocus={() => setPriceFocused(true)} onBlur={() => setPriceFocused(false)}
+                            onChange={e => { setPrice(e.target.value.replace(/,/g, '')); setPriceFetchFailed(false) }}
+                            disabled={price === '…'} aria-label={t('tkPricePer')} />
+                          {price && price !== '…' && price === fetchedPrice.current && <span className="tk-tag">{t('tkMarket')}</span>}
+                        </span>
+                      </div>
+                      {priceFetchFailed && <p className="tk-note tk-warn">{t('tkEnterPrice')}</p>}
+                      <div className="tk-kv">
+                        <span className="tk-k">{t('txDate')}</span>
+                        <span className="tk-v"><input className="tk-inline" type="date" value={date} onChange={e => setDate(e.target.value)} aria-label={t('txDate')} /></span>
+                      </div>
+                      {wallets.length > 1 && (
+                        <div className="tk-kv">
+                          <span className="tk-k">{t('txWallet')}</span>
+                          <span className="tk-v"><select className="tk-inline" value={walletId} onChange={e => setWalletId(e.target.value)} aria-label={t('txWallet')}>
+                            {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                          </select></span>
+                        </div>
+                      )}
+                    </div>
+
+                    {pnl != null && (
+                      <div className="tk-card tk-pnl">
+                        <span className={`tk-pnl-ico${pnl >= 0 ? '' : ' is-loss'}`}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span>
+                        <div className="tk-pnl-t"><b>{pnl >= 0 ? t('tkProfitSale') : t('tkLossSale')}</b><small className="tk-num">{t('tkAvgCost')} {fmtUsd(avgCost)}</small></div>
+                        <b className={`tk-num ${pnl >= 0 ? 'tk-up' : 'tk-dn'}`}>{pnl >= 0 ? '+' : '−'}{fmtUsd(Math.abs(pnl))}</b>
+                      </div>
+                    )}
+
+                    {asset?.id && ['crypto', 'stock', 'gold', 'silver', 'tstock'].includes(category) && (
+                      <div className={`tk-card tk-signal${signalOpen ? '' : ' is-closed'}`}>
+                        <button type="button" className="tk-signal-toggle" aria-expanded={signalOpen} onClick={() => setSignalOpen(v => !v)}>
+                          <span>{isBuy ? t('tkEntrySignal') : t('tkExitSignal')}</span>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><polyline points={signalOpen ? '18 15 12 9 6 15' : '6 9 12 15 18 9'}/></svg>
+                        </button>
+                        {/* Open by default, and drawn flat inside this card
+                            rather than as a second box nested in it. */}
+                        {signalOpen && (
+                          <div className="tk-signal-body">
+                            <TradeSignal coinId={asset.id} currentPrice={parseFloat(price) || null} userAvgCost={avgCost} mode={isBuy ? 'buy' : 'sell'} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div className="bs-footer tk-foot">
+                {msg && <p className="tk-msg">{msg}</p>}
+                {v2Step === 'asset' ? (
+                  <button type="button" className="tk-btn tk-btn-main tk-continue" disabled={!asset} onClick={() => setV2Step('ticket')}>
+                    {asset ? `${t('tkContinue')} · ${asset.symbol?.toUpperCase()}` : t('tkChooseAsset')}
+                  </button>
+                ) : (
+                  <>
+                    {total > 0 && (
+                      <div className="tk-sum tk-num">
+                        <span>{isBuy ? t('tkYouGet') : t('tkYouReceive')}</span>
+                        <b>{isBuy ? `${fmtQty(amount)} ${isMetal ? metalUnit : sym}` : `${fmtUsd(total)}${sellFor !== 'REMOVE' && legLabel ? ` · ${legLabel}` : ''}`}</b>
+                      </div>
+                    )}
+                    <SlideToConfirm tone={isBuy ? 'buy' : 'sell'} label={slideLabel} disabled={!ready} busy={busy}
+                      onConfirm={() => { playTradeSound(isBuy); submit() }} />
+                  </>
+                )}
+              </div>
+            </>
+          )}
+          {confirmNoneOverlay}
+        </div>
+      </>
+    )
   }
 
   return (
@@ -713,7 +1424,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       key={c.key}
                       className={`bs-cat-btn ${category === c.key ? 'active' : ''}`}
                       style={category === c.key ? { borderColor: c.color, background: c.color + '18', color: c.color } : {}}
-                      onClick={() => { track('trade_category_select', { category: c.key, trade_type: type }); setCategory(c.key); setSelectedCoin(null); setCoinSearch(''); setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('') }}
+                      onClick={() => pickCategory(c.key)}
                     >
                       <span><CatIcon icon={c.icon} size={15} /></span> {t(c.labelKey)}
                     </button>
@@ -725,280 +1436,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             {/* ── Asset selector by category ── */}
             <div className="bs-field" data-tour="ts-asset">
               <label className="bs-label">{t('tsAsset')}</label>
-
-              {/* Crypto: search (buy) or holdings list (sell) */}
-              {category === 'crypto' && (
-                selectedCoin ? (
-                  <div className="bs-coin-selected">
-                    <CoinLogo image={selectedCoin.thumb || selectedCoin.image} symbol={selectedCoin.symbol} coinId={selectedCoin.id} size={28} className="bs-coin-thumb" />
-                    <div className="bs-coin-info">
-                      <strong>{selectedCoin.name}</strong>
-                      <span className="muted">{selectedCoin.symbol?.toUpperCase()}</span>
-                    </div>
-                    {!prefillCoin && (
-                      <button className="bs-coin-clear" onClick={() => { setSelectedCoin(null); setCoinSearch(''); setHoldingsFilter('') }}>
-                        {IcoClose}
-                      </button>
-                    )}
-                  </div>
-                ) : isBuy ? (
-                  <>
-                  <div className="bs-search-wrap">
-                    <span className="bs-search-icon">{IcoSearch}</span>
-                    <input className="bs-input bs-search-input" placeholder={t('txSearchCoin')}
-                      value={coinSearch} onChange={e => setCoinSearch(e.target.value)} />
-                    {coinResults.length > 0 && (
-                      <div className="bs-dropdown">
-                        {coinResults.map(c => (
-                          <button key={c.id} className="bs-dropdown-item"
-                            onClick={() => { setSelectedCoin(c); setCoinSearch(c.name); setCoinResults([]) }}>
-                            <CoinLogo image={c.thumb || c.image} symbol={c.symbol} size={22} className="bs-dropdown-logo" />
-                            <span>{c.name}</span>
-                            <span className="muted bs-sym">{c.symbol?.toUpperCase()}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {/* Browsable "markets" list (full-page only) — tap to pick, like an exchange */}
-                  {isPage && !coinSearch.trim() && coinResults.length === 0 && (
-                    <div className="bs-markets">
-                      <div className="bs-markets-head">
-                        <span>{t('txPopular')}</span><span>{t('tsPrice24h')}</span>
-                      </div>
-                      <div className="bs-markets-list">
-                        {POPULAR_COINS.map(c => {
-                          const p = popPrices[c.id]?.usd ?? popPrices[c.id]?.price
-                          const ch = popPrices[c.id]?.usd_24h_change
-                          const up = Number(ch) >= 0
-                          return (
-                            <button key={c.id} type="button" className="bs-market-row"
-                              onClick={() => { track('trade_market_pick'); setSelectedCoin({ id: c.id, symbol: c.symbol, name: c.name }); setCoinSearch(c.name); setCoinResults([]) }}>
-                              <CoinLogo symbol={c.symbol} coinId={c.id} size={30} className="bs-coin-thumb" />
-                              <div className="bs-coin-info">
-                                <strong>{c.symbol}</strong>
-                                <span className="muted">{c.name}</span>
-                              </div>
-                              <div className="bs-market-px">
-                                <span className="bs-market-price">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: p < 1 ? 6 : 2 })}` : '—'}</span>
-                                {ch != null && <span className="bs-market-chg" style={{ color: up ? 'var(--g-ink)' : '#f87171' }}>{up ? '+' : ''}{Number(ch).toFixed(2)}%</span>}
-                              </div>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  </>
-                ) : (() => {
-                  const cryptoHoldings = (holdings || []).filter(h =>
-                    !h.coin_id?.startsWith('fiat:') &&
-                    !h.coin_id?.startsWith('stock:') &&
-                    h.coin_id !== 'gold' && h.coin_id !== 'silver' &&
-                    !h.coin_id?.startsWith('bond:') &&
-                    !h.coin_id?.startsWith('other:') &&
-                    (h.amount ?? 0) > 0
-                  )
-                  const q = holdingsFilter.trim().toLowerCase()
-                  const filtered = q
-                    ? cryptoHoldings.filter(h =>
-                        h.coin_name?.toLowerCase().includes(q) ||
-                        h.coin_symbol?.toLowerCase().includes(q)
-                      )
-                    : cryptoHoldings
-                  if (!cryptoHoldings.length) return (
-                    <p className="bs-hint" style={{ margin: '0.4rem 0' }}>{t('tsNoCryptoYet')}</p>
-                  )
-                  return (
-                    <div className="bs-holdings-sel">
-                      {cryptoHoldings.length > 5 && (
-                        <div className="bs-search-wrap" style={{ marginBottom: '0.4rem' }}>
-                          <span className="bs-search-icon">{IcoSearch}</span>
-                          <input className="bs-input bs-search-input" placeholder={t('tsFilterHoldings')}
-                            value={holdingsFilter} onChange={e => setHoldingsFilter(e.target.value)} />
-                        </div>
-                      )}
-                      <div className="bs-holdings-list">
-                        {filtered.map(h => (
-                          <button key={h.coin_id} className="bs-holding-row"
-                            onClick={() => setSelectedCoin({ id: h.coin_id, symbol: h.coin_symbol, name: h.coin_name, image: h.coin_image || h.image || '' })}>
-                            <CoinLogo image={h.coin_image || h.image} symbol={h.coin_symbol} coinId={h.coin_id} size={28} className="bs-coin-thumb" />
-                            <div className="bs-coin-info">
-                              <strong>{h.coin_name}</strong>
-                              <span className="muted">{h.coin_symbol?.toUpperCase()}</span>
-                            </div>
-                            <div className="bs-holding-bal">
-                              <span className="bs-holding-amt">{parseFloat(h.amount?.toFixed(6))}</span>
-                              {h.value > 0 && <span className="muted" style={{ fontSize: '0.72rem' }}>${h.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>}
-                            </div>
-                          </button>
-                        ))}
-                        {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>{t('tsNoMatch')}</p>}
-                      </div>
-                    </div>
-                  )
-                })()
-              )}
-
-              {/* Gold / Silver: preset, no search needed */}
-              {(category === 'gold' || category === 'silver') && (
-                <div className="bs-coin-selected">
-                  <span style={{ fontSize: '1.6rem' }}>{category === 'gold' ? IcoGoldBar : IcoSilverBar}</span>
-                  <div className="bs-coin-info">
-                    <strong>{category === 'gold' ? 'Gold (1 troy oz)' : 'Silver (1 troy oz)'}</strong>
-                    <span className="muted">{category === 'gold' ? 'XAU' : 'XAG'} · live spot price</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Stock: sector filter + searchable ticker list */}
-              {category === 'stock' && (() => {
-                const sectors = ['All', ...Array.from(new Set(POPULAR_TICKERS.map(t => t.sector)))]
-                const query = stockInput.toUpperCase()
-                const filtered = POPULAR_TICKERS.filter(t =>
-                  (stockSector === 'All' || t.sector === stockSector) &&
-                  (!query || t.ticker.includes(query) || t.name.toUpperCase().includes(query))
-                )
-                const selectedInfo = POPULAR_TICKERS.find(t => t.ticker === stockTicker)
-                return (
-                  <div className="bs-stock-wrap">
-                    {/* Sector filter pills */}
-                    <div className="bs-sector-row">
-                      {sectors.map(s => (
-                        <button key={s} className={`bs-sector-btn ${stockSector === s ? 'active' : ''}`}
-                          onClick={() => setStockSector(s)}>{s}</button>
-                      ))}
-                    </div>
-                    {/* Search input */}
-                    <div className="bs-search-wrap" style={{marginBottom:'0.4rem'}}>
-                      <span className="bs-search-icon">{IcoSearch}</span>
-                      <input className="bs-input bs-search-input"
-                        placeholder={t('txSearchTicker')}
-                        value={stockInput}
-                        onChange={e => { setStockInput(e.target.value); const v = e.target.value.trim().toUpperCase(); if (!POPULAR_TICKERS.find(t=>t.ticker===v)) setStockTicker(v); }}
-                      />
-                    </div>
-                    {/* Markets-style ticker list (same look as the crypto list) */}
-                    <div className="bs-markets">
-                      <div className="bs-markets-head"><span>{stockSector === 'All' ? 'Popular' : stockSector}</span><span>{t('tsPrice24h')}</span></div>
-                      <div className="bs-markets-list">
-                        {filtered.slice(0, 40).map(t => {
-                          const sid = `${STOCK_PREFIX}${t.ticker.toLowerCase()}`
-                          const rec = stockPrices[sid]
-                          const p = rec?.usd ?? rec?.price
-                          const ch = rec?.usd_24h_change
-                          const up = Number(ch) >= 0
-                          const on = stockTicker === t.ticker
-                          return (
-                            <button key={t.ticker} type="button" className={`bs-market-row ${on ? 'active' : ''}`}
-                              title={t.name}
-                              onClick={() => { setStockTicker(t.ticker); setStockInput(t.ticker) }}>
-                              <CoinLogo symbol={t.ticker} coinId={sid} size={30} className="bs-coin-thumb" />
-                              <div className="bs-coin-info">
-                                <strong>{t.ticker}</strong>
-                                <span className="muted">{t.name}</span>
-                              </div>
-                              <div className="bs-market-px">
-                                <span className="bs-market-price">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</span>
-                                {ch != null && isFinite(ch) && <span className="bs-market-chg" style={{ color: up ? 'var(--g-ink)' : '#f87171' }}>{up ? '+' : ''}{Number(ch).toFixed(2)}%</span>}
-                              </div>
-                            </button>
-                          )
-                        })}
-                        {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>{t('tsNoMatch')}</p>}
-                      </div>
-                    </div>
-                    {stockTicker && (
-                      <div className="bs-stock-selected">
-                        <span style={{color: catInfo.color, fontWeight:700}}>{stockTicker}</span>
-                        {selectedInfo && <span className="muted"> — {selectedInfo.name}</span>}
-                        <span className="bs-hint" style={{marginLeft:'auto', color:catInfo.color}}>{t('tsLiveYahoo')}</span>
-                      </div>
-                    )}
-                  </div>
-                )
-              })()}
-
-              {/* Tokenized stocks (xStocks) — browsable list, live prices from Binance */}
-              {category === 'tstock' && (() => {
-                const query = stockInput.toUpperCase()
-                const filtered = POPULAR_XSTOCKS.filter(t =>
-                  !query || t.ticker.includes(query) || t.name.toUpperCase().includes(query)
-                )
-                const selectedInfo = POPULAR_XSTOCKS.find(t => t.ticker === stockTicker)
-                return (
-                  <div className="bs-stock-wrap">
-                    <div className="bs-search-wrap" style={{marginBottom:'0.4rem'}}>
-                      <span className="bs-search-icon">{IcoSearch}</span>
-                      <input className="bs-input bs-search-input"
-                        placeholder={t('txSearchStock')}
-                        value={stockInput}
-                        onChange={e => { setStockInput(e.target.value); const v = e.target.value.trim().toUpperCase(); if (!POPULAR_XSTOCKS.find(t=>t.ticker===v)) setStockTicker(v); }}
-                      />
-                    </div>
-                    <div className="bs-markets">
-                      <div className="bs-markets-head"><span>Popular · Tokenized xStocks</span><span>{t('tsPrice24h')}</span></div>
-                      <div className="bs-markets-list">
-                        {filtered.map(t => {
-                          const sid = `${XSTOCK_PREFIX}${t.ticker.toLowerCase()}`
-                          const rec = xstockPrices[sid]
-                          const p = rec?.usd ?? rec?.price
-                          const ch = rec?.usd_24h_change
-                          const up = Number(ch) >= 0
-                          const on = stockTicker === t.ticker
-                          return (
-                            <button key={t.ticker} type="button" className={`bs-market-row ${on ? 'active' : ''}`}
-                              title={t.name}
-                              onClick={() => { setStockTicker(t.ticker); setStockInput(t.ticker) }}>
-                              <CoinLogo symbol={t.ticker} coinId={`${STOCK_PREFIX}${t.ticker.toLowerCase()}`} size={30} className="bs-coin-thumb" />
-                              <div className="bs-coin-info">
-                                <strong>{t.ticker}<span className="dvx-cat-badge" style={{ background:'#f0b90b22', color:'#f0b90b', borderColor:'#f0b90b44', marginLeft:'0.4rem' }}>xStock</span></strong>
-                                <span className="muted">{t.name}</span>
-                              </div>
-                              <div className="bs-market-px">
-                                <span className="bs-market-price">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</span>
-                                {ch != null && isFinite(ch) && <span className="bs-market-chg" style={{ color: up ? 'var(--g-ink)' : '#f87171' }}>{up ? '+' : ''}{Number(ch).toFixed(2)}%</span>}
-                              </div>
-                            </button>
-                          )
-                        })}
-                        {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>{t('tsNoMatch')}</p>}
-                      </div>
-                    </div>
-                    {stockTicker && (
-                      <div className="bs-stock-selected">
-                        <span style={{color: catInfo.color, fontWeight:700}}>{stockTicker}X</span>
-                        {selectedInfo && <span className="muted"> — {selectedInfo.name}</span>}
-                        <span className="bs-hint" style={{marginLeft:'auto', color:catInfo.color}}>{t('tsLiveCoinGecko')}</span>
-                      </div>
-                    )}
-                  </div>
-                )
-              })()}
-
-              {/* Fiat: popular list + custom */}
-              {category === 'fiat' && (
-                <div className="bs-stock-wrap">
-                  <div className="bs-popular-chips">
-                    {POPULAR_FIAT.map(f => (
-                      <button key={f.code}
-                        className={`bs-chip ${fiatCode === f.code ? 'active' : ''}`}
-                        onClick={() => { setFiatCode(f.code) }}>
-                        {f.symbol} {f.code}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Bond / Other: name input */}
-              {(category === 'bond' || category === 'other') && (
-                <input className="bs-input"
-                  placeholder={category === 'bond' ? 'e.g. US Treasury 10Y, I-Bond' : 'e.g. Real estate, Art, Watch'}
-                  value={otherName}
-                  onChange={e => setOtherName(e.target.value)}
-                />
-              )}
+              {assetPicker}
             </div>
 
             {/* Available balance + % quick-fill for sells (mirrors Buy) */}
@@ -1049,19 +1487,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                   {(category === 'gold' || category === 'silver') ? (
                     <div className="bs-seg">
                       {['oz', 'g'].map(u => (
-                        <button key={u} type="button" className={`bs-seg-btn${metalUnit === u ? ' active' : ''}`} onClick={() => {
-                          if (u === metalUnit) return
-                          const TROY_OZ = 31.1034768
-                          const px = parseFloat(price)
-                          if (u === 'g') {
-                            setAmount(v => v ? String(parseFloat((parseFloat(v) * TROY_OZ).toFixed(4))) : v)
-                            if (px > 0) setPrice(String(parseFloat((px / TROY_OZ).toFixed(4))))
-                          } else {
-                            setAmount(v => v ? String(parseFloat((parseFloat(v) / TROY_OZ).toFixed(6))) : v)
-                            if (px > 0) setPrice(String(parseFloat((px * TROY_OZ).toFixed(2))))
-                          }
-                          setMetalUnit(u)
-                        }}>{u}</button>
+                        <button key={u} type="button" className={`bs-seg-btn${metalUnit === u ? ' active' : ''}`} onClick={() => switchMetalUnit(u)}>{u}</button>
                       ))}
                     </div>
                   ) : (
@@ -1194,38 +1620,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
           </>
         )}
 
-        {/* ── "None / Remove" confirmation ── */}
-        {confirmNoneOpen && (
-          <div className="bs-confirm-overlay" onClick={() => setConfirmNoneOpen(false)}>
-            <div className="bs-confirm-card" onClick={e => e.stopPropagation()}>
-              <div className="bs-confirm-icon" style={{ color: accent }}>
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/>
-                </svg>
-              </div>
-              {isBuy ? (
-                <>
-                  <h4 className="bs-confirm-title">{t('txBuyNothing')}</h4>
-                  <p className="bs-confirm-text">{t('txChoseNone')(asset?.symbol)}</p>
-                </>
-              ) : (
-                <>
-                  <h4 className="bs-confirm-title">{t('txSellNothing')}</h4>
-                  <p className="bs-confirm-text">{t('txChoseRemove')(asset?.symbol)}</p>
-                </>
-              )}
-              <div className="bs-confirm-actions">
-                <button className="bs-confirm-switch" onClick={() => setConfirmNoneOpen(false)}>
-                  {isBuy ? t('tcChoosePaid') : t('tcChooseReceived')}
-                </button>
-                <button className="bs-confirm-go" style={{ background: accent }}
-                  onClick={() => { setConfirmNoneOpen(false); submit(true) }}>
-                  {isBuy ? t('tcJustAddIt') : t('tcJustRemoveIt')}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {confirmNoneOverlay}
       </div>
     </>
   )

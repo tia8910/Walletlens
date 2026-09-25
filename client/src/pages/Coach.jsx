@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { noteFeatureUse } from '../featureUse'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { isV2Active, homePath } from '../v2Preview'
 import { api } from '../api'
 import { assetClass, getStockSector } from '../data/assets'
 import { track } from '../analytics'
@@ -10,6 +11,10 @@ import { CLASS_LABEL_KEYS, renderTip } from '../data/walletEvalTips'
 import Alpha from './Alpha'
 
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
+// v2 merges the dashboard's Analysis tab (AI analysis, Technicals, Risk) in here.
+const ToolsTab = lazy(() => import('./Dashboard').then(m => ({ default: m.ToolsTab })))
+// v2 shows the dashboard's Wallet Evaluation, not the older copy below.
+const WalletEvalTab = lazy(() => import('./Dashboard').then(m => ({ default: m.WalletEvalTab })))
 
 // ── Asset-mix helpers ──────────────────────────────────────────────────────
 // The wallet evaluation adapts to what's actually in the portfolio: a stock
@@ -200,7 +205,21 @@ export default function Coach() {
   const [targets, setTargets]         = useState([])
   const [loaded, setLoaded]           = useState(false)
   const [evalExpanded, setEvalExpanded] = useState(null)
-  const [activeSection, setActiveSection] = useState('engine')
+  const location = useLocation()
+  const v2 = isV2Active(location.pathname)
+  const ANALYSIS_TOOLS = ['ai', 'ta', 'risk']
+  const [activeSection, setActiveSection] = useState(() =>
+    v2 && location.state?.section === 'analysis' ? 'analysis' : 'engine')
+  const [analysisTool, setAnalysisTool] = useState(() =>
+    ANALYSIS_TOOLS.includes(location.state?.tool) ? location.state.tool : 'ai')
+  const [pricesLoading, setPricesLoading] = useState(true)
+  // A second link into the Analysis section while Coach is already open.
+  useEffect(() => {
+    if (!v2 || location.state?.section !== 'analysis') return
+    setActiveSection('analysis')
+    if (ANALYSIS_TOOLS.includes(location.state?.tool)) setAnalysisTool(location.state.tool)
+  }, [location.state]) // eslint-disable-line react-hooks/exhaustive-deps
+  const openAnalysis = (tool) => { setAnalysisTool(tool); setActiveSection('analysis') }
 
   useEffect(() => {
     track('coach_page_view')
@@ -213,8 +232,8 @@ export default function Coach() {
       setTargets(Object.entries(ct || {}).map(([coin_id, v]) => ({ coin_id, ...v })))
       if (p?.length) {
         const ids = p.map(h => h.coin_id).join(',')
-        api.getPrices(ids).then(px => setPrices(px || {})).catch(() => {})
-      }
+        api.getPrices(ids).then(px => setPrices(px || {})).catch(() => {}).finally(() => setPricesLoading(false))
+      } else setPricesLoading(false)
       setLoaded(true)
     }
     load()
@@ -226,7 +245,8 @@ export default function Coach() {
       const value = h.amount * price
       const invested = h.total_invested || 0
       const pnl = value - invested
-      return { ...h, price, value, invested, pnl, pnlPct: invested > 0 ? (pnl / invested) * 100 : 0 }
+      const pct24h = prices[h.coin_id]?.usd_24h_change ?? 0
+      return { ...h, price, value, invested, pnl, pnlPct: invested > 0 ? (pnl / invested) * 100 : 0, pct24h }
     }).sort((a, b) => b.value - a.value)
     const totalValue = raw.reduce((s, h) => s + h.value, 0)
     const totalInvested = raw.reduce((s, h) => s + h.invested, 0)
@@ -234,14 +254,28 @@ export default function Coach() {
   }, [portfolio, prices])
 
   const eval_ = useMemo(() => computeEval(enriched, totalValue), [enriched, totalValue])
+  // The total the dashboard's tools see: holdings without a quote count at
+  // cost, so nothing divides by a zero total while prices are loading.
+  const evalTotal = useMemo(() => enriched.reduce((sum, h) => sum + (h.price > 0 ? h.value : h.invested), 0), [enriched])
   const hasPrices = enriched.some(h => h.value > 0)
 
-  const SECTIONS = [
+  // v2 drops the "actions" section: every card in it now lives elsewhere
+  // (AI analysis and Risk in Analysis here, Alpha in its own section,
+  // Targets in the bottom bar, Alerts behind the top-bar bell).
+  const SECTIONS = v2 ? [
+    { id: 'engine',   label: t('cchSecEngine'), icon: 'zap' },
+    { id: 'eval',     label: t('cchSecEval'),   icon: 'search' },
+    { id: 'analysis', label: t('analysis'),     icon: 'trend-up' },
+    { id: 'alpha',    label: t('cchSecAlpha'),  icon: 'α' },
+  ] : [
     { id: 'engine',  label: t('cchSecEngine'),  icon: 'zap' },
     { id: 'eval',    label: t('cchSecEval'),    icon: 'search' },
     { id: 'actions', label: t('cchSecActions'), icon: 'cpu' },
     { id: 'alpha',   label: t('cchSecAlpha'),   icon: 'α' },
   ]
+  // Theme-variable colours (--g-ink) read as white on the v2 canvas, and a
+  // hex-suffix alpha cannot be appended to a var(); v2 uses the accent.
+  const evalColor = (c) => (v2 && String(c).startsWith('var(') ? 'var(--g)' : c)
 
   return (
     <div className="dvx-page">
@@ -263,7 +297,7 @@ export default function Coach() {
             <p className="coach-hero-sub">{t('cchSub')}</p>
           </div>
         </div>
-        {hasPrices && eval_ && (
+        {!v2 && hasPrices && eval_ && (
           <div className="coach-hero-score">
             <div className="coach-score-pill" style={{
               color: eval_.overall >= 80 ? 'var(--g-ink)' : eval_.overall >= 55 ? '#fbbf24' : '#f87171',
@@ -337,7 +371,19 @@ export default function Coach() {
       )}
 
       {/* ── Wallet Evaluation ── */}
-      {activeSection === 'eval' && enriched.length > 0 && (
+      {/* ── Wallet Score (v2): the dashboard's evaluation ── */}
+      {v2 && activeSection === 'eval' && enriched.length > 0 && (
+        <div className="coach-v2-eval" style={{ padding: '0.75rem 1rem 1.5rem' }}>
+          <Suspense fallback={<div className="coach-loading-bar"><span className="coach-loading-dot" /></div>}>
+            <WalletEvalTab enriched={enriched} totalValue={evalTotal} targets={targets}
+              onAction={(kind) => kind === 'targets'
+                ? navigate(homePath(true), { state: { tab: 'targets' } })
+                : navigate('/transactions', { state: { openAdd: true, type: 'buy' } })} />
+          </Suspense>
+        </div>
+      )}
+
+      {!v2 && activeSection === 'eval' && enriched.length > 0 && (
         <div style={{ padding: '0 0 1.5rem' }}>
           {!eval_ ? (
             <div style={{ padding:'2rem', textAlign:'center', color:'var(--text-sub)' }}>{t('cchCalculating')}</div>
@@ -363,18 +409,23 @@ export default function Coach() {
                   <div key={cat.id}
                     className={`eval-cat-card ${cat.pass ? 'eval-cat-pass' : 'eval-cat-fail'} ${evalExpanded === cat.id ? 'eval-cat-open' : ''}`}
                     onClick={() => { const o = evalExpanded !== cat.id; setEvalExpanded(o ? cat.id : null); if (o) track('coach_eval_expand', { cat: cat.id }) }}
-                    style={{ '--eval-color': cat.color }}
+                    style={{ '--eval-color': evalColor(cat.color) }}
                   >
                     <div className="eval-cat-header">
-                      <span className="eval-cat-icon" style={{ background: cat.color + '22', color: cat.color }}><Icon name={cat.icon} size={16} /></span>
+                      <span className="eval-cat-icon" style={v2
+                        ? { background: `color-mix(in srgb, ${evalColor(cat.color)} 16%, transparent)`, color: evalColor(cat.color) }
+                        : { background: cat.color + '22', color: cat.color }}>
+                        {/* Some categories use a glyph (₿) rather than an icon name, which rendered blank. */}
+                        {/^[a-z][a-z-]*$/.test(cat.icon) ? <Icon name={cat.icon} size={16} /> : <span className="eval-cat-glyph">{cat.icon}</span>}
+                      </span>
                       <div className="eval-cat-info">
                         <div className="eval-cat-label">{t(cat.labelKey)}</div>
                         <div className="eval-cat-bar-wrap">
-                          <div className="eval-cat-bar" style={{ width: `${cat.score}%`, background: cat.color }} />
+                          <div className="eval-cat-bar" style={{ width: `${cat.score}%`, background: v2 ? undefined : cat.color }} />
                         </div>
                       </div>
                       <div className="eval-cat-right">
-                        <span className="eval-cat-score" style={{ color: cat.color }}>{cat.score}</span>
+                        <span className="eval-cat-score" style={{ color: evalColor(cat.color) }}>{cat.score}</span>
                         <span className={`eval-cat-badge ${cat.pass ? 'eval-badge-pass' : 'eval-badge-fail'}`}>{cat.pass ? '✓' : '✗'}</span>
                       </div>
                     </div>
@@ -389,6 +440,17 @@ export default function Coach() {
         </div>
       )}
 
+      {/* ── Analysis (v2): the dashboard's AI analysis, Technicals and Risk ── */}
+      {v2 && activeSection === 'analysis' && enriched.length > 0 && (
+        <div style={{ padding: '1rem' }}>
+          <Suspense fallback={<div className="coach-loading-bar"><span className="coach-loading-dot" /></div>}>
+            <ToolsTab key={analysisTool} enriched={enriched} prices={prices} transactions={transactions}
+              totalValue={evalTotal}
+              isDemo={false} pricesLoading={pricesLoading} initialTool={analysisTool} />
+          </Suspense>
+        </div>
+      )}
+
       {/* ── Alpha Signals ── */}
       {activeSection === 'alpha' && (
         <div style={{ padding: '0 0 1.5rem' }}>
@@ -399,7 +461,7 @@ export default function Coach() {
       {/* ── Portfolio Analysis ── */}
       {activeSection === 'actions' && (
         <div style={{ padding: '1rem' }}>
-          <div className="glass-card coach-action-card" onClick={() => { navigate('/dashboard', { state: { tab: 'tools', tool: 'ai' } }); track('coach_action', { action: 'ai_analysis' }) }}>
+          <div className="glass-card coach-action-card" onClick={() => { if (v2) openAnalysis('ai'); else navigate('/dashboard', { state: { tab: 'tools', tool: 'ai' } }); track('coach_action', { action: 'ai_analysis' }) }}>
             <div className="coach-action-icon" data-action="ai">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4"/><path d="M12 10v4"/><path d="M8 18a4 4 0 0 1 8 0"/><path d="M3 7h2M19 7h2"/></svg>
             </div>
@@ -432,7 +494,7 @@ export default function Coach() {
             <span className="coach-action-arrow">→</span>
           </div>
 
-          <div className="glass-card coach-action-card" onClick={() => { navigate('/dashboard', { state: { tab: 'tools', tool: 'risk' } }); track('coach_action', { action: 'risk' }) }}>
+          <div className="glass-card coach-action-card" onClick={() => { if (v2) openAnalysis('risk'); else navigate('/dashboard', { state: { tab: 'tools', tool: 'risk' } }); track('coach_action', { action: 'risk' }) }}>
             <div className="coach-action-icon" data-action="risk">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>

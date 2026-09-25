@@ -5840,6 +5840,10 @@ tr:last-child td { border-bottom: none; }
   cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .dvx-wallet-item .dvx-btn-danger:hover { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.35); color: #f87171; }
+/* The ghost-button padding left a ~6px content box inside this 34px square,
+   and the responsive max-width reset shrank the trash icon to fit it. */
+.dvx-wallet-item .dvx-btn-danger { padding: 0; width: 38px; height: 38px; color: #f87171; border-color: rgba(248,113,113,0.28); }
+.dvx-wallet-item .dvx-btn-danger svg { width: 18px; height: 18px; max-width: none; flex-shrink: 0; }
 .dvx-type-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
 .dv-type-btn {
   flex: 1; padding: 0.65rem; border-radius: 10px;

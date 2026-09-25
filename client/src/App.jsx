@@ -20,6 +20,7 @@ import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
 import Icon from './components/Icon'
 import BottomNav from './components/BottomNav'
+import { V2_PATH, isV2Active, isV2Path, homePath, useV2Class } from './v2Preview'
 import PullToRefresh from './components/PullToRefresh'
 // Non-critical shell components — lazy-loaded after the app shell renders
 const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
@@ -30,7 +31,7 @@ const NativeOnboarding = lazy(() => import('./components/NativeOnboarding'))
 const HelpGuide = lazy(() => import('./components/HelpGuide'))
 const AddAssetTour = lazy(() => import('./components/AddAssetTour'))
 import { useLanguage } from './LanguageContext'
-import CoffeeButton from './components/CoffeeButton'
+import CoffeeButton, { SUPPORT_URL } from './components/CoffeeButton'
 import { useTheme, THEMES } from './ThemeContext'
 import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
@@ -365,6 +366,152 @@ const Drawer = memo(function Drawer({ open, onClose, onHelp }) {
   )
 })
 
+// ── v2 menu (/v2test preview) ─────────────────────────────────────────
+// Every destination the classic drawer has, plus Watchlist and Backup, which
+// left the bottom bar in v2. Grouped by what the user is trying to do rather
+// than by page-or-tab, with the four quick actions as tiles on top. The theme
+// swatches are the classic ones, unchanged.
+const V2_ICONS = {
+  watch: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+  goals: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>,
+  calendar: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,
+  brain: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4"/><path d="M12 10v4"/><path d="M8 18a4 4 0 0 1 8 0"/><path d="M3 7h2M19 7h2"/></svg>,
+  bell: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+  target: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+  risk: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  shield: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  zakat: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/><path d="M17 5l1 3M15.5 4.5v3M18.5 4.5v3"/></svg>,
+  backup: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 16.6A5 5 0 0 0 18 7h-1.3A8 8 0 1 0 4 15.3"/><path d="M12 12v9M8.5 15.5L12 12l3.5 3.5"/></svg>,
+  gear: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  help: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9.2a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4"/><circle cx="12" cy="17.4" r="0.7" fill="currentColor" stroke="none"/></svg>,
+  coffee: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M4 10h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5v-5Z"/><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M7.5 3.5c-.7.9-.7 1.8 0 2.7.7.9.7 1.8 0 2.7"/><path d="M12.5 3.5c-.7.9-.7 1.8 0 2.7.7.9.7 1.8 0 2.7"/></svg>,
+}
+
+const DrawerV2 = memo(function DrawerV2({ open, onClose, onHelp }) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { t } = useLanguage()
+  const { theme, mode, setTheme, setMode } = useTheme()
+  const home = homePath(true)
+  const go = (path, state) => { track('drawer_nav', { to: path, tab: state?.tab, v2: true }); navigate(path, state ? { state } : undefined); onClose() }
+  const onPage = (p) => location.pathname === p
+  // A menu row. `hue` tints its icon tile; a row for the page you are on is lit.
+  const Row = ({ icon, hue, label, sub, onClick, current }) => (
+    <button className={`wl-v2-row${current ? ' wl-v2-row-on' : ''}`} onClick={onClick}>
+      <span className="wl-v2-row-ico" style={{ '--hue': hue }}>{icon}</span>
+      <span className="wl-v2-row-text">{label}{sub && <small>{sub}</small>}</span>
+      <span className="wl-v2-row-chev" aria-hidden="true">›</span>
+    </button>
+  )
+
+  return (
+    <>
+      <div className={`wl-overlay ${open ? 'wl-overlay-open' : ''}`} onClick={onClose} />
+      <aside className={`wl-drawer wl-drawer-v2 ${open ? 'wl-drawer-open' : ''}`}>
+        <div className="wl-v2-head">
+          <Logo size={42} animated />
+          <div className="wl-v2-head-text">
+            <div className="wl-drawer-name">WalletLens</div>
+            <div className="wl-drawer-tag">{t('brandTag')}</div>
+          </div>
+          <button className="wl-v2-close" onClick={onClose} aria-label={t('close')}><IconClose /></button>
+        </div>
+
+        <div className="wl-v2-quick">
+          <button className="wl-v2-tile wl-v2-tile-buy" onClick={() => go('/transactions', { openAdd: true, type: 'buy' })}><span><IconBuy /></span>{t('buy')}</button>
+          <button className="wl-v2-tile wl-v2-tile-sell" onClick={() => go('/transactions', { openAdd: true, type: 'sell' })}><span><IconSell /></span>{t('sell')}</button>
+          <button className="wl-v2-tile" style={{ '--hue': '#4f8cff' }} onClick={() => go(home, { tab: 'wallets' })}><span><IconWallet /></span>{t('wallets')}</button>
+          <button className="wl-v2-tile" style={{ '--hue': '#9b7bff' }} onClick={() => go(home, { tab: 'data' })}><span><IconData /></span>{t('importExport')}</button>
+        </div>
+
+        <div className="wl-v2-label">{t('v2GroupPortfolio')}</div>
+        <div className="wl-v2-group">
+          <Row icon={<IconHome />} hue="var(--g)" label={t('dashboard')} current={onPage(home)} onClick={() => go(home, { tab: 'overview' })} />
+          <Row icon={V2_ICONS.watch} hue="#4f8cff" label={t('watchlist')} onClick={() => go(home, { tab: 'watchlist' })} />
+          <Row icon={<IconTrades />} hue="#22c7c7" label={t('trades')} current={onPage('/transactions')} onClick={() => go('/transactions')} />
+          <Row icon={V2_ICONS.goals} hue="#9b7bff" label={t('navGoals')} sub={t('visionPlanner')} current={onPage('/vision')} onClick={() => { localStorage.setItem('wl_vision_visited', '1'); go('/vision') }} />
+        </div>
+
+        <div className="wl-v2-label">{t('v2GroupMarkets')}</div>
+        <div className="wl-v2-group">
+          <Row icon={<IconTechnicals />} hue="#4f8cff" label={t('analysis')} current={onPage('/technicals')} onClick={() => go('/technicals')} />
+          <Row icon={<IconAlpha />} hue="#f5c542" label={t('alpha')} current={onPage('/alpha')} onClick={() => go('/alpha')} />
+          <Row icon={<IconWhale />} hue="#22c7c7" label={t('whaleTracker')} current={onPage('/whales')} onClick={() => go('/whales')} />
+          <Row icon={V2_ICONS.calendar} hue="#ff9f43" label={t('calendar')} current={onPage('/calendar')} onClick={() => go('/calendar')} />
+        </div>
+
+        <div className="wl-v2-label">{t('v2GroupAi')}</div>
+        <div className="wl-v2-group">
+          <Row icon={<IconCoach />} hue="var(--g)" label={t('coach')} current={onPage('/coach')} onClick={() => go('/coach')} />
+          <Row icon={V2_ICONS.brain} hue="#9b7bff" label={t('portfolioAnalysisNav')} onClick={() => go('/coach', { section: 'analysis', tool: 'ai' })} />
+          <Row icon={<IconAcademy />} hue="#f5c542" label={t('academy')} current={onPage('/academy')} onClick={() => go('/academy')} />
+        </div>
+
+        <div className="wl-v2-label">{t('v2GroupProtection')}</div>
+        <div className="wl-v2-group">
+          <Row icon={V2_ICONS.bell} hue="#ff9f43" label={t('priceAlerts')} onClick={() => go(home, { tab: 'alerts' })} />
+          <Row icon={V2_ICONS.target} hue="var(--g)" label={t('priceTargets')} onClick={() => go(home, { tab: 'targets' })} />
+          <Row icon={V2_ICONS.risk} hue="#ff5c7a" label={t('riskScanner')} onClick={() => go('/coach', { section: 'analysis', tool: 'risk' })} />
+          <Row icon={V2_ICONS.shield} hue="#4f8cff" label={t('portfolioGuardian')} current={onPage('/guardian')} onClick={() => go('/guardian')} />
+          <Row icon={V2_ICONS.zakat} hue="#22c7c7" label={t('zkTitle')} onClick={() => go(home, { tab: 'zakat' })} />
+        </div>
+
+        <div className="wl-v2-label">{t('v2GroupData')}</div>
+        <div className="wl-v2-group">
+          <Row icon={V2_ICONS.backup} hue="var(--g)" label={t('backupRestore')} onClick={() => go(home, { tab: 'manage' })} />
+        </div>
+
+        <div className="wl-v2-label">{t('preferences')}</div>
+        <div className="wl-v2-group wl-v2-prefs">
+          <div className="wl-drawer-theme-grid">
+            {THEMES.map(th => (
+              <button
+                key={th.id}
+                className={`wl-drawer-swatch-btn${theme === th.id ? ' wl-drawer-swatch-active' : ''}`}
+                onClick={() => { setTheme(th.id); track('theme_changed', { theme: th.id }) }}
+                title={th.name}
+              >
+                <span className="wl-drawer-swatch" style={{
+                  background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
+                  boxShadow: theme === th.id ? `0 0 10px ${th.swatch}88` : 'none',
+                }}>
+                  {th.logo ? <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%' }} /> : <Icon name={th.icon} size={14} />}
+                </span>
+                <span className="wl-drawer-swatch-label">{th.name}</span>
+              </button>
+            ))}
+          </div>
+          <div className="wl-v2-mode" role="group" aria-label={t('preferences')}>
+            <button className={mode === 'dark' ? 'on' : ''} aria-pressed={mode === 'dark'} onClick={() => { setMode('dark'); track('mode_changed', { mode: 'dark' }) }}>
+              <Icon name="moon" size={15} /><span>{t('darkMode')}</span>
+            </button>
+            <button className={mode === 'light' ? 'on' : ''} aria-pressed={mode === 'light'} onClick={() => { setMode('light'); track('mode_changed', { mode: 'light' }) }}>
+              <Icon name="sun" size={15} /><span>{t('lightMode')}</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="wl-v2-label">{t('account')}</div>
+        <div className="wl-v2-group">
+          <Row icon={V2_ICONS.gear} hue="#94a3b8" label={t('settingsNav')} current={onPage('/settings')} onClick={() => go('/settings')} />
+          <Row icon={V2_ICONS.help} hue="#4f8cff" label={t('howItWorks')} onClick={() => { onHelp(); onClose() }} />
+          {/* The coffee link left the v2 top bar for the bell; it lives here. */}
+          <a className="wl-v2-row" href={SUPPORT_URL} target="_blank" rel="noopener noreferrer"
+            onClick={() => { track('coffee_support_click', { source: 'menu' }); onClose() }}>
+            <span className="wl-v2-row-ico" style={{ '--hue': '#f5c400' }}>{V2_ICONS.coffee}</span>
+            <span className="wl-v2-row-text">{t('coffeeSupport')}</span>
+            <span className="wl-v2-row-chev" aria-hidden="true">›</span>
+          </a>
+        </div>
+
+        <div className="wl-drawer-footer">
+          <span className="wl-live-dot" /> {t('live')} · walletlens.live
+        </div>
+      </aside>
+    </>
+  )
+})
+
 // ── Memoized app footer — re-renders only when language changes, not on every App state update ──
 const AppFooter = memo(function AppFooter() {
   const navigate = useNavigate()
@@ -410,6 +557,15 @@ export default function App() {
     const p = location.pathname.replace(/\/+$/, '') || '/'
     return LANDING_PATH_SET.has(p) || LANDING_PREFIXES.some(pfx => p.startsWith(pfx))
   }, [location.pathname])
+  // The v2 design, live everywhere in the app. Landing pages keep their own look.
+  const v2 = !isLanding && isV2Active(location.pathname)
+  useV2Class(v2)
+  // /v2test was the preview URL; old links land on the dashboard, tab intact.
+  useEffect(() => {
+    if (isV2Path(location.pathname)) {
+      navigate(V2_PATH, { replace: true, state: location.state })
+    }
+  }, [location.pathname]) // eslint-disable-line react-hooks/exhaustive-deps
   const { locked, unlock } = useBiometricLock()
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
   const [isStandalone, setIsStandalone] = useState(false)
@@ -609,7 +765,7 @@ export default function App() {
         schedule(() => import('./pages/Blog'),         { timeout: 9000 }),
         schedule(() => import('./pages/Academy'),      { timeout: 11000 }),
       )
-    } else if (path === '/dashboard') {
+    } else if (path === '/dashboard' || isV2Path(path)) {
       ids.push(
         schedule(() => import('./pages/Transactions'), { timeout: 2000 }),
         schedule(() => import('./pages/Coach'),        { timeout: 4000 }),
@@ -728,7 +884,7 @@ export default function App() {
                 btn.classList.add('wl-logo-scanning')
                 try { navigator.vibrate && navigator.vibrate(8) } catch {}
                 window.setTimeout(() => btn.classList.remove('wl-logo-scanning'), 650)
-                navigate('/dashboard')
+                navigate(homePath(v2))
               }}
               aria-label={t('atHome')}
             >
@@ -741,7 +897,8 @@ export default function App() {
             </div>
           </div>
           <div className="wl-topbar-right">
-            <CoffeeButton />
+            {/* v2 gives this slot to notifications; the coffee link moves to its menu. */}
+            {!v2 && <CoffeeButton />}
             <button
               className="wl-topbar-x wl-topbar-gear"
               onClick={() => { navigate('/settings'); track('settings_open', { source: 'topbar' }) }}
@@ -750,6 +907,16 @@ export default function App() {
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
+            {v2 && (
+              <button
+                className="wl-topbar-x wl-topbar-bell"
+                onClick={() => { navigate(homePath(true), { state: { tab: 'alerts' } }); track('notifications_open', { source: 'topbar' }) }}
+                title={t('alerts')}
+                aria-label={t('alerts')}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </button>
+            )}
             <PWATopbarButton />
             <button
               className="wl-topbar-stats"
@@ -780,8 +947,11 @@ export default function App() {
         </Suspense>
       </header>
 
-      {drawerMounted && <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}
-        onHelp={() => { setHelpOpen(true); track('help_guide_open', { source: 'drawer' }) }} />}
+      {drawerMounted && (v2
+        ? <DrawerV2 open={drawerOpen} onClose={() => setDrawerOpen(false)}
+            onHelp={() => { setHelpOpen(true); track('help_guide_open', { source: 'drawer' }) }} />
+        : <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}
+            onHelp={() => { setHelpOpen(true); track('help_guide_open', { source: 'drawer' }) }} />)}
 
       <PullToRefresh>
       <main className={`wl-content${isStandalone ? ' twa-mode' : ''}`}>
@@ -789,6 +959,8 @@ export default function App() {
           <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
+              {/* The v2 redesign preview: the same Dashboard in the new shell. */}
+              <Route path="/v2test" element={<Dashboard />} />
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/whales" element={<Whales />} />
               <Route path="/alpha" element={<Alpha />} />
@@ -828,7 +1000,9 @@ export default function App() {
 
       <AppFooter />
 
-      {!isLanding && isStandalone && shellReady && <BottomNav />}
+      {/* The classic bar is app-only. The v2 preview shows its bar in the
+          browser too, since that is where it is being tested. */}
+      {!isLanding && shellReady && (isStandalone || v2) && <BottomNav v2={v2} />}
 
       {shellReady && isStandalone && isAndroid && !onboardDone && <Suspense fallback={null}><NativeOnboarding onDone={() => setOnboardDone(true)} /></Suspense>}
       {shellReady && (!isStandalone || !isAndroid) && <Suspense fallback={null}><WelcomeModal /></Suspense>}
