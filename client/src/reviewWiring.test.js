@@ -178,7 +178,10 @@ describe('the native rating gate is actually called by something', () => {
     // A flow that crashes or is killed must not come back on the next launch
     // and every launch after it. ReviewActivity hands the ask back when Play
     // shows nothing, so this ordering costs nothing in the case it guards.
-    const ask = /private void maybeAskForReview\(\) \{[\s\S]*?\n    \}/.exec(shell)[0]
+    // The launch lives in launchReviewCard() since the shell started asking
+    // the page whether now is a good moment before showing the card.
+    const ask = /private void launchReviewCard\(\) \{[\s\S]*?\n    \}/.exec(shell)[0]
+    expect(ask.indexOf('markAsked')).toBeGreaterThan(-1)
     expect(ask.indexOf('markAsked')).toBeLessThan(ask.indexOf('startActivity'))
   })
 

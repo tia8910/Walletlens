@@ -716,3 +716,62 @@ describe('the Diagnostics readout', async () => {
     expect(recent.detail).toMatch(/asked 12d ago, asks again after 60d$/)
   })
 })
+
+describe('timing the card', () => {
+  it('counts a new record and a big green day as happy moments', async () => {
+    const m = await loadModule()
+    expect(m.MOMENTS.has('all_time_high')).toBe(true)
+    expect(m.MOMENTS.has('big_day')).toBe(true)
+  })
+
+  it('waits while any dialog is open over the app', async () => {
+    seed()
+    const m = await loadModule()
+    vi.advanceTimersByTime(2 * 60 * 1000)
+    const dlg = document.createElement('div')
+    dlg.setAttribute('aria-modal', 'true')
+    document.body.appendChild(dlg)
+    expect(m.maybeAskForReview(READY)).toBe(false)
+    expect(m.reviewDiagnostics().pendingAsk).toBe(false)
+    dlg.remove()
+  })
+
+  it("tells the native shell whether now is a good moment", async () => {
+    const m = await loadModule()
+    expect(window.__wlReviewReady).toBe(m.reviewReadyNow)
+    m.maybeAskForReview({ holdingsCount: 0 })
+    expect(m.reviewReadyNow()).toBe(false)                  // no portfolio yet
+    m.maybeAskForReview({ holdingsCount: 3, busy: true })
+    expect(m.reviewReadyNow()).toBe(false)                  // a sheet or an effect is up
+    m.maybeAskForReview({ holdingsCount: 3 })
+    expect(m.reviewReadyNow()).toBe(true)
+    const dlg = document.createElement('div')
+    dlg.setAttribute('aria-modal', 'true')
+    document.body.appendChild(dlg)
+    expect(m.reviewReadyNow()).toBe(false)                  // a dialog is open
+    dlg.remove()
+    m.noteFriction('import_failed')
+    expect(m.reviewReadyNow()).toBe(false)                  // the app just failed at something
+  })
+
+  it('never says yes during setup or behind the lock', async () => {
+    const m = await loadModule()
+    m.maybeAskForReview({ holdingsCount: 3 })
+    m.setAppInteractive(false)
+    expect(m.reviewReadyNow()).toBe(false)
+    m.setAppInteractive(true)
+    localStorage.removeItem('wl_welcomed_v2')
+    expect(m.reviewReadyNow()).toBe(false)
+  })
+})
+
+describe('the native shell', () => {
+  const shell = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..',
+    'walletlens_source', 'release_package', 'app', 'src', 'main', 'java', 'live', 'walletlens', 'twa', 'AppShellActivity.java'), 'utf8')
+
+  it('asks the page before showing the card, and waits when the answer is no', () => {
+    expect(shell).toMatch(/window\.__wlReviewReady/)
+    expect(shell).toMatch(/"\\"no\\""\.equals\(answer\)/)
+    expect(shell).toMatch(/postDelayed\(this::maybeAskForReview, REVIEW_RETRY_MS\)/)
+  })
+})

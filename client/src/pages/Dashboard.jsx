@@ -4107,7 +4107,14 @@ export default function Dashboard() {
     const dayBase = totalValue - todayPnLVal
     const changePct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
     const fired = observe({ totalValue, changePct, holdings: enriched })
-    if (fired) setEffect(fired)
+    if (fired) {
+      setEffect(fired)
+      // A new record or a big green day is the happiest the app gets, and the
+      // best moment to be asked for a rating: the card follows once the effect
+      // has finished (busy above), not on top of it.
+      if (fired.effect === ATH) noteMoment('all_time_high')
+      else if (fired.effect === ROCKET) noteMoment('big_day')
+    }
   }, [loaded, enriched, totalValue])
 
   // ?fx=explode|rocket|ath — play one on demand.
@@ -4139,8 +4146,9 @@ export default function Dashboard() {
   // restart every time a price ticks.
   const reviewSnapshot = useRef({ holdingsCount: 0, totalValue: 0 })
   useEffect(() => {
-    reviewSnapshot.current = { holdingsCount: enriched.length, totalValue, busy: sheetOpen || importChooser }
-  }, [enriched, totalValue, sheetOpen, importChooser])
+    // A screen effect counts as busy: the card must not land mid-celebration.
+    reviewSnapshot.current = { holdingsCount: enriched.length, totalValue, busy: sheetOpen || importChooser || !!effect }
+  }, [enriched, totalValue, sheetOpen, importChooser, effect])
   useEffect(() => {
     if (!loaded) return
     noteAppOpen()

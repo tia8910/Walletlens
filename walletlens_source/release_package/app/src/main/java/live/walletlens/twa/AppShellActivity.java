@@ -172,6 +172,12 @@ public class AppShellActivity extends ComponentActivity {
     private boolean reviewAsked;
 
     private Handler reviewTimer;
+    /** Times the page has said "not now" this session. */
+    private int reviewWaits;
+    /** How long to wait before asking the page again. */
+    private static final long REVIEW_RETRY_MS = 30_000L;
+    /** Give up for the session after this many "not now" answers (about ten minutes). */
+    private static final int REVIEW_MAX_WAITS = 20;
 
     /**
      * The page's pending <input type="file">, waiting on the system picker.
@@ -486,6 +492,38 @@ public class AppShellActivity extends ComponentActivity {
 
         if (!ReviewGate.shouldAsk(this)) return;
 
+        // The rules say this launch has earned a card; the page says whether
+        // NOW is the moment. Native code cannot see what is on screen, and a
+        // fixed ninety seconds landed the card on onboarding, the buy ticket,
+        // an open dialog or the middle of a celebration. The page answers
+        // through window.__wlReviewReady (reviewPrompt.js): "no" means try
+        // again shortly; a page too old to answer is treated as a yes, which
+        // is how this behaved before.
+        if (web == null) { launchReviewCard(); return; }
+        try {
+            web.evaluateJavascript(
+                "(function(){try{return typeof window.__wlReviewReady==='function'"
+                        + "?(window.__wlReviewReady()?'yes':'no'):'unknown'}catch(e){return 'unknown'}})()",
+                answer -> {
+                    // The answer is asynchronous; if the app went to the
+                    // background meanwhile, onResume schedules a fresh check.
+                    if (reviewAsked || isFinishing() || isDestroyed() || resumedAt == 0) return;
+                    if ("\"no\"".equals(answer)) {
+                        if (++reviewWaits > REVIEW_MAX_WAITS) return;   // not this session
+                        if (reviewTimer != null) reviewTimer.postDelayed(this::maybeAskForReview, REVIEW_RETRY_MS);
+                        return;
+                    }
+                    launchReviewCard();
+                });
+        } catch (Throwable t) {
+            Log.w(TAG, "could not ask the page about the rating card: " + t);
+            launchReviewCard();
+        }
+    }
+
+    /** Start Play's rating card over the running app. */
+    private void launchReviewCard() {
+        if (reviewAsked || isFinishing() || isDestroyed()) return;
         reviewAsked = true;
         ReviewGate.markAsked(this);
         try {

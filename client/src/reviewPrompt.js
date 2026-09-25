@@ -163,6 +163,8 @@ export const MOMENTS = new Set([
   'streak',            // a multi-day usage streak milestone
   'guardian_active',   // finished setting up Portfolio Guardian
   'first_holding',     // added their very first asset
+  'all_time_high',     // the portfolio just set a new record (the ATH effect)
+  'big_day',           // a strong green day (the rocket effect)
 ])
 
 /** App failures. Not market losses — see the header. */
@@ -384,6 +386,17 @@ function hasActivation() {
  * and a snapshot captured back then would be stale about the one thing that
  * matters most — whether a sheet is now open.
  */
+/**
+ * Whether a dialog is up: a setup screen, the asset picker, the starter pack,
+ * the push primer, a full-screen chart. Read from the page rather than passed
+ * in, because these belong to components the dashboard does not own, and a
+ * card over any of them interrupts something the person chose to open.
+ */
+function dialogOpen() {
+  try { return typeof document !== 'undefined' && !!document.querySelector('[aria-modal="true"]') }
+  catch { return false }
+}
+
 function readSnapshot() {
   try {
     const v = typeof snapshotSource === 'function' ? snapshotSource() : snapshotSource
@@ -391,7 +404,7 @@ function readSnapshot() {
     return {
       holdingsCount: Number(o.holdingsCount) || 0,
       totalValue: Number(o.totalValue) || 0,
-      busy: !!o.busy,
+      busy: !!o.busy || dialogOpen(),
     }
   } catch {
     return { holdingsCount: 0, totalValue: 0, busy: false }
@@ -627,4 +640,30 @@ export function describeReviewState(diag, native, now = Date.now()) {
   if (b && state === 'ok') state = 'warn'
 
   return { state, detail: parts.join(' · ') }
+}
+
+/**
+ * Whether this is a good moment for the card, for the native shell to ask
+ * before it shows one (AppShellActivity.maybeAskForReview).
+ *
+ * The shell keeps its own launch and cooldown rules and cannot see the page,
+ * so it asks only about the moment: the app is unlocked, setup is finished,
+ * there is a portfolio, nothing is open over the dashboard and no effect is
+ * playing, and the app has not just failed at something. Our own stored
+ * counters are not consulted — they are the web path's, and the shell has its
+ * own.
+ */
+export function reviewReadyNow() {
+  try {
+    if (!interactive || !onboardingFinished()) return false
+    const snap = readSnapshot()
+    if (snap.busy || snap.holdingsCount < MIN_HOLDINGS) return false
+    const s = readState()
+    if (s.friction && Date.now() - s.friction < FRICTION_QUIET_MS) return false
+    return true
+  } catch { return false }
+}
+
+if (typeof window !== 'undefined') {
+  try { window.__wlReviewReady = reviewReadyNow } catch { /* frozen window */ }
 }
