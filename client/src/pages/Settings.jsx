@@ -15,6 +15,7 @@ import DriveBackup from '../components/DriveBackup'
 import DeviceVault from '../components/DeviceVault'
 import { isAndroidTWA } from '../nativeBridge'
 import { effectSettings, setEffectSettings, primeEffectAudio } from '../screenEffectsRuntime'
+import { offersSettingOn, setOffersSetting } from '../referrals'
 import { widgetSyncDiagnostics, forceSyncWidgets } from '../nativeWidgets'
 
 // Android by user-agent, OR the app told us so. The widgets panel is the one
@@ -82,6 +83,7 @@ export default function Settings() {
   const [editInterests, setEditInterests] = useState(false)
   const [wdiag, setWdiag] = useState(() => widgetSyncDiagnostics())
   const [fx, setFx] = useState(() => effectSettings())
+  const [showOffers, setShowOffers] = useState(() => offersSettingOn())
 
   return (
     <div className="page settings-page">
@@ -316,6 +318,24 @@ export default function Settings() {
             </div>
           </>
         )}
+
+        {/* Partner welcome offers (referrals.js). Off hides every placement. */}
+        <div className="settings-divider"/>
+        <div className="settings-row">
+          <div className="settings-label">
+            <span>{t('setShowOffers')}</span>
+            <span className="settings-hint">{t('setShowOffersHint')}</span>
+          </div>
+          <button className={`settings-chip ${showOffers ? 'active' : ''}`}
+            onClick={() => {
+              const next = !showOffers
+              setOffersSetting(next)
+              setShowOffers(next)
+              track('partner_offers_setting', { on: next })
+            }}>
+            {showOffers ? t('commonOn') : t('commonOff')}
+          </button>
+        </div>
       </div>
 
       {/* The Rate section that stood here is gone, by product decision.

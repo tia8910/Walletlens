@@ -911,3 +911,7 @@ html.wl-v2 .ac-page .sell-btn { background: linear-gradient(135deg, #f43f5e, #be
 @media (prefers-reduced-motion: reduce) {
   html.wl-v2 body::before { transition: none; }
 }
+
+/* Exchange marks in the buy ticket's "where did you buy?" chips sit on a
+   dark plate, as the brands draw them, instead of the chip colour. */
+html.wl-v2 .bs-v2 .tk-leg-ico.tk-ex-mark { background: #111; }

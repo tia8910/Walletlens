@@ -46,6 +46,7 @@ import TradeSignal from './BuySignal'
 import { useLanguage } from '../LanguageContext'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { isV2Active, homePath } from '../v2Preview'
+import { ExchangeMark, NoExchangeOffer } from './PartnerOffers'
 
 
 const IcoClose  = <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
@@ -292,6 +293,9 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [amount, setAmount]             = useState('')
   const [price, setPrice]               = useState('')
   const [date, setDate]                 = useState(new Date().toISOString().split('T')[0])
+  // Where a crypto buy was made — recorded on the transaction, and the moment
+  // to offer an exchange to someone who has none yet.
+  const [exchange, setExchange]         = useState('')
   const [buyWith, setBuyWith]           = useState('NONE')
   const [buyWithCustom, setBuyWithCustom] = useState('')
   const [sellFor, setSellFor]           = useState('REMOVE')
@@ -333,6 +337,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     setV2Step(prefillCoin ? 'ticket' : 'asset'); setAssetChg(null); setSignalOpen(v2)
     setStockTicker(''); setStockInput(''); setFiatCode('USD'); setOtherName('')
     setDate(new Date().toISOString().split('T')[0])
+    setExchange('')
     if (wallets.length) setWalletId(String(wallets[0].id))
     if (prefillCoin) {
       setSelectedCoin(prefillCoin)
@@ -605,6 +610,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
         coin_image: asset.image || '',
         amount: amt, price_per_unit: ppu,
         date, category: asset.category || category,
+        ...(exchange ? { exchange } : {}),
       })
 
       // Buy-with spend leg
@@ -1246,6 +1252,22 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                         </div>
                       )}
                     </div>
+
+                    {isBuy && category === 'crypto' && (
+                      <div className="tk-card">
+                        <div className="tk-kv"><span className="tk-k">{t('refWhereBought')}</span></div>
+                        <div className="tk-legs">
+                          {['Binance', 'OKX', 'Bybit', 'Coinbase', 'Kraken', 'Wallet'].map(x => (
+                            <button key={x} type="button" className={`tk-leg${exchange === x ? ' on' : ''}`} style={{ '--c': 'var(--gd)' }}
+                              onClick={() => setExchange(e => e === x ? '' : x)}>
+                              {['Binance', 'OKX', 'Bybit'].includes(x) && <span className="tk-leg-ico tk-ex-mark"><ExchangeMark id={x.toLowerCase()} size={12} /></span>}
+                              {x === 'Wallet' ? t('refWallet') : x}
+                            </button>
+                          ))}
+                        </div>
+                        {!exchange && <NoExchangeOffer />}
+                      </div>
+                    )}
 
                     {pnl != null && (
                       <div className="tk-card tk-pnl">

@@ -87,6 +87,8 @@ export default function NotificationPrimer() {
       // gate that was added to move the card ONTO the dashboard stopped it
       // appearing there at all. It keeps looking now.
       if (!onDashboard() || !onboardingSettled()) return
+      // Nor over the partner starter pack, which follows onboarding once.
+      if (document.querySelector('[data-wl-starter-pack]')) return
       stop()
       // Read at show time, not at mount: someone who adds their first holding
       // while this is waiting should get the promise about it.

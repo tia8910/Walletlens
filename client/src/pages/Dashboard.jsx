@@ -41,6 +41,7 @@ import { BiometricToggle } from '../components/BiometricLock'
 import { EMAIL_RE, loadBackupSub, clearBackupSub, subscribeBackupEmail, resendBackupNow, daysUntilNextBackup } from '../backupSubscription'
 import InterestPicker, { interestsDone } from '../components/InterestPicker'
 import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
+import { RewardsVault, StarterPack } from '../components/PartnerOffers'
 import Tip from '../components/Tip'
 import { syncWidgets } from '../nativeWidgets'
 import { noteAppOpen, maybeAskForReview, noteMoment } from '../reviewPrompt'
@@ -3590,6 +3591,8 @@ export default function Dashboard() {
   const [importMode, setImportMode]       = useState('menu') // 'menu' | 'voice' | 'screenshot' | 'excel' | 'backup'
   // First-run flow for brand-new users: (welcome tour) → interests → cash/USDT.
   // We wait for the global welcome tour to finish so the modals don't stack.
+  // The partner starter pack follows the first-run balances step, once.
+  const [starterReady, setStarterReady] = useState(false)
   const [obStep, setObStep] = useState(() => {
     if (hasStarted()) return 'done'
     let welcomed = false
@@ -4658,6 +4661,7 @@ export default function Dashboard() {
           tap, and never see the animation — it was unreachable from five of
           the six tabs. */}
       <ScreenEffect effect={effect?.effect} payload={effect?.payload} onDone={() => setEffect(null)} />
+      <StarterPack ready={starterReady} />
 
       {/* Tab nav — labeled tile grid on the web. Inside the native app the tile
           grid is redundant with the native bottom nav, so we replace it with the
@@ -5265,6 +5269,11 @@ export default function Dashboard() {
               {/* "Loved the app?" support card. Placed above Spin & Learn and
                   below the portfolio itself, so the ask only ever comes after
                   the numbers it is asking about. */}
+              {/* Partner welcome rewards, under the numbers like the nudge
+                  below; hidden by its own ✕, by Settings, remotely, or where
+                  the region rules say so (referrals.js). */}
+              {enriched.length > 0 && <RewardsVault />}
+
               <SupportNudge holdingsCount={enriched.length} busy={sheetOpen || importChooser} />
 
               {/* P&L bar chart */}
@@ -6208,7 +6217,7 @@ export default function Dashboard() {
         <InterestPicker onDone={() => setObStep(hasStarted() ? 'done' : 'balances')} />
       )}
       {loaded && !isDemo && transactions.length === 0 && obStep === 'balances' && (
-        <WelcomeStart onDone={() => { setObStep('done'); loadAll() }} />
+        <WelcomeStart onDone={() => { setObStep('done'); setStarterReady(true); loadAll() }} />
       )}
 
       {lpMenu && <LongPressMenu items={lpMenu.items} pos={{ x: lpMenu.x, y: lpMenu.y }} onClose={closeLpMenu} />}

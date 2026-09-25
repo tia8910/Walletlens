@@ -10,6 +10,7 @@ import TradeSheet from '../components/TradeSheet'
 import { useLanguage } from '../LanguageContext'
 import { isV2Active } from '../v2Preview'
 import IndicatorChart from '../components/IndicatorChart'
+import { WhereToBuy } from '../components/PartnerOffers'
 
 // assetClass() is the shared id-prefix classifier (api.js); these wrap it
 // for the page's two flavours of "is it crypto" / "what category".
@@ -289,6 +290,7 @@ export default function AssetDetail() {
         </div>
 
         <IndicatorChart coinId={coinId} symbol={coin?.symbol} name={coin?.name} price={price} onLastClose={setLastClose} />
+        {coinId && !isNonCryptoId(coinId) && <WhereToBuy symbol={coin?.symbol} />}
       </>
     )
   })()
@@ -407,6 +409,7 @@ export default function AssetDetail() {
 
       {/* Whale activity / smart signals */}
       {signals && <WhalePanel s={signals} symbol={coin?.symbol} />}
+      {!v2 && coinId && !isNonCryptoId(coinId) && <WhereToBuy symbol={coin?.symbol} />}
 
       {/* Dividend / income (dividend-paying stocks & ETFs only) */}
       {getAnnualDividend(coinId) != null && (
