@@ -106,10 +106,13 @@ describe('what it does', () => {
   it('never embeds the support page', () => {
     // Two attempts at that: the vendor widget's form and then our own panel.
     // Both came back net::ERR_BLOCKED_BY_CSP. A link is a top-level
-    // navigation and frame-src does not govern those. The vendor widget is
-    // back as its own thing (bmcWidget.test.js), with its frame allowed in
-    // both CSPs; this button stays a plain link either way.
+    // navigation and frame-src does not govern those. A third try, the vendor
+    // widget again, was removed too: on walletlens.live a route-bound worker
+    // replaced the CSP and blocked its panel frame.
     expect(src).not.toMatch(/iframe/)
+    for (const f of ['../index.html', '../public/_headers']) {
+      expect(readFileSync(join(here, f), 'utf8')).not.toContain('buymeacoffee')
+    }
   })
 
   it('pins padding so the cup cannot be squashed again', () => {

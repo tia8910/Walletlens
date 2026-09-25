@@ -1,5 +1,14 @@
 # Security-headers edge worker
 
+> **Now a fallback only.** The site is served by Cloudflare Pages, which applies
+> `client/public/_headers` (HSTS, X-Frame-Options, the full CSP including
+> `frame-ancestors`). This worker used to overwrite that CSP with an older copy
+> (`frame-src 'none'`), which blocked the Buy Me a Coffee widget on
+> walletlens.live only. It now adds a header only when the origin sent none.
+> Since Pages already sends all of them, the route can also simply be removed
+> (Cloudflare → Workers & Pages → walletlens-security-headers → Settings →
+> Domains & Routes).
+
 GitHub Pages serves `walletlens.live` but **cannot set custom HTTP response
 headers** — it ignores the repo's `client/public/_headers` file (that format is
 Netlify / Cloudflare Pages only). Because of this, a security scan of the live

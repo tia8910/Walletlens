@@ -92,52 +92,6 @@ async function swState() {
 }
 
 const CHECKS = [
-  // "Still no widget" has three completely different causes that look
-  // identical on screen: the build is not deployed, the script is deployed but
-  // the CSP refused it, or it ran and is sitting behind something. This
-  // separates them in one line, without a console or a cable.
-  ['support widget', async () => {
-    const tag = document.querySelector('script[data-name="BMC-Widget"]')
-    if (!tag) {
-      // The tag lives in index.html, so its absence means the HTML being
-      // served is older than the build that added it. Nothing else can cause
-      // this.
-      return { state: 'fail', detail: 'script tag not in the page — old build deployed' }
-    }
-    // The widget injects its own launcher into <body>. Present means the
-    // script was fetched, allowed by the CSP and executed.
-    const shown = document.querySelector('#bmc-wbtn, [id^="bmc-w"], iframe[src*="buymeacoffee"]')
-    if (shown) {
-      const r = shown.getBoundingClientRect()
-      const onScreen = r.width > 0 && r.bottom > 0 && r.top < window.innerHeight
-      return onScreen
-        ? { state: 'ok', detail: `rendered ${Math.round(r.width)}x${Math.round(r.height)} at bottom ${Math.round(window.innerHeight - r.bottom)}px` }
-        : { state: 'fail', detail: 'ran, but drawn off-screen or behind something' }
-    }
-    // A CSP refusal names itself: which directive, which host. Recorded from
-    // the first request by the inline listener at the top of index.html.
-    const refused = (window.__cspViolations || []).find(v => /buymeacoffee|\/api\/bmc/.test(v.u))
-    if (refused) return { state: 'fail', detail: `blocked by CSP ${refused.d} · ${refused.u.replace(/^https?:\/\//, '').slice(0, 50)}` }
-    // Tag present, nothing injected. Ask /api/bmc, which fetches the same
-    // script through the edge, and report what it actually returned — the
-    // previous version guessed between "unreachable" and "blocked by CSP" and
-    // could not tell them apart, which cost two rounds.
-    try {
-      const r = await fetch(`${SITE_ORIGIN}/api/bmc`, { cache: 'no-store', signal: AbortSignal.timeout(8000) })
-      const body = await r.text()
-      if (!r.ok) {
-        // 502 means the edge could not reach buymeacoffee either, which is a
-        // different problem from the device not reaching it.
-        return { state: 'fail', detail: `relay ${r.status} · ${body.slice(0, 60).replace(/\s+/g, ' ')}` }
-      }
-      if (body.length < 500) {
-        return { state: 'fail', detail: `relay returned ${body.length} bytes — not the widget` }
-      }
-      return { state: 'fail', detail: `relay served ${Math.round(body.length / 1024)}KB but the widget did not draw` }
-    } catch (e) {
-      return { state: 'fail', detail: `relay unreachable · ${String(e?.message || e).slice(0, 50)}` }
-    }
-  }],
   // The site's own functions. A 405 or an HTML body here means the zip
   // deployed without _worker.js and every /api path is a static asset.
   ['drive route', json(`${DRIVE_API}/__diag`, (r, b) => r.status === 404 && b.includes('not_found'))],

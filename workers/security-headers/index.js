@@ -1,6 +1,17 @@
 /**
  * Edge worker — security response headers
  *
+ * DOES NOT OVERRIDE THE SITE'S OWN HEADERS
+ * ---------------------------------------
+ * The site has since moved to Cloudflare Pages, which DOES apply
+ * client/public/_headers, including the full CSP. This worker used to replace
+ * that CSP with the older copy below (frame-src 'none', no buymeacoffee, no
+ * *.workers.dev), so on walletlens.live alone the Buy Me a Coffee widget's
+ * script was refused and then its panel frame was blank, while every
+ * *.pages.dev preview (which never passes through this worker) worked. Each
+ * header below is now only a FALLBACK, added when the origin sent none, so
+ * _headers stays the single source of truth.
+ *
  * WHY THIS EXISTS
  * ---------------
  * walletlens.live is hosted on GitHub Pages, which serves a fixed set of
@@ -57,8 +68,10 @@ export default {
 
     // Clone so headers are mutable (origin responses are immutable).
     const headers = new Headers(response.headers)
+    // Only fill gaps: a header the origin already sends (Cloudflare Pages
+    // sends all of these from client/public/_headers) is left exactly as is.
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
-      headers.set(name, value)
+      if (!headers.has(name)) headers.set(name, value)
     }
     // Drop server-identifying headers that leak the backend.
     headers.delete('X-GitHub-Request-Id')
