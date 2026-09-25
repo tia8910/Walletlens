@@ -39,11 +39,11 @@
 // and WalletLens runs inside a Custom Tab where that rule applies in full. An
 // AudioContext created before any gesture starts 'suspended' and stays there.
 //
-// So a cue that cannot play now is HELD, and released by the next real tap.
-// The picture plays immediately either way; only the sound waits. Dropping it
-// instead read as the sound being broken, because on any given day the first
-// effect — the burst on opening the app — is the one that arrives before any
-// gesture has happened.
+// So a cue that cannot play now waits for the context to resume or for a
+// tap, but only while the sound can still land on the picture; it then starts
+// partway in so its impact matches the animation's (see "Keeping the sound on
+// the picture's clock" below). Playing it from the top on a later tap put the
+// explode's boom after the burst had already finished.
 
 import { EXPLODE, ROCKET, ATH } from './screenEffects'
 
@@ -510,15 +510,30 @@ export const SOUND_MS = {
   [ATH]: 1600,
 }
 
-// ── Holding a cue that cannot be played yet ────────────────────────────────
+// ── Keeping the sound on the picture's clock ───────────────────────────────
+//
+// A cue that cannot be heard the moment its animation starts used to be held
+// until the next tap and then played from the top. The burst on opening the
+// app is exactly that case — it arrives before any gesture — so the tap came
+// during or after the animation and the whole sound, impact included, landed
+// after the picture had finished.
+//
+// Now every cue carries the time its animation started. Whenever audio
+// becomes available (the context resuming, or a tap), the sound is scheduled
+// that far into itself, so its impact still lands on the picture's impact.
+// Once the animation is past its impact there is nothing left to line up
+// with, and the cue is dropped: a boom after the picture has gone reads as
+// lag, not as a sound effect.
 
-let held = null       // a cue waiting for a gesture
-let heldAt = 0
+/** How late a cue may still start and land its impact on the picture's. */
+export const LATEST_START_MS = {
+  [EXPLODE]: 950,   // impact at 1.15 s
+  [ROCKET]: 1500,   // boom at 1.75 s
+  [ATH]: 400,       // bells from 0.18 s
+}
+
+let held = null       // { effect, startedAt } waiting for audio
 let armed = false     // whether the release listener is attached
-
-// Long enough to survive the animation and a moment's hesitation, short enough
-// that a tap two minutes later does not produce a noise with no picture.
-const HOLD_MS = 8000
 
 /**
  * Whether audio can be heard right now.
@@ -532,40 +547,30 @@ export function canPlay() {
   return !!ctx && ctx.state === 'running'
 }
 
-/** Schedule one voice now. Assumes the context is running. */
-function emit(voice, effect) {
+/** Schedule one voice, `lateSec` into itself. Assumes the context is running. */
+function emit(voice, effect, lateSec = 0) {
   voiceTrim = VOICE_TRIM[effect] || 1
-  try { voice(ctx.currentTime + 0.02) } finally { voiceTrim = 1 }
+  // A start time in the past is legal: layers that were due already start at
+  // once, partway through their envelopes, and later ones keep their places.
+  try { voice(ctx.currentTime + 0.02 - lateSec) } finally { voiceTrim = 1 }
 }
 
-function render(effect) {
-  const voice = VOICES[effect]
-  if (!voice || !ctx) return false
-  try {
-    if (ctx.state !== 'running') {
-      // Wait for the resume rather than dropping the note. Same asynchronous
-      // trap as in unlock(), one level up: a caller that unlocks and plays
-      // inside one handler finds the context still 'suspended' and gets
-      // silence. A few milliseconds late is imperceptible; not playing at all
-      // is the whole bug.
-      ctx.resume?.().then(() => {
-        if (ctx && ctx.state === 'running') emit(voice, effect)
-      }).catch(() => {})
-      return true
-    }
-    emit(voice, effect)
-    return true
-  } catch { return false }
+/** Play the held cue if audio is running and its moment has not passed. */
+function flush() {
+  if (!held || !canPlay()) return false
+  const { effect, startedAt } = held
+  held = null
+  detach()
+  const late = Math.max(0, Date.now() - startedAt)
+  if (late > (LATEST_START_MS[effect] ?? 0)) return false
+  try { emit(VOICES[effect], effect, late / 1000); return true } catch { return false }
 }
 
 function releaseHeld() {
   if (!held) return detach()
-  const fresh = Date.now() - heldAt < HOLD_MS
-  const cue = held
-  held = null
-  detach()
+  if (Date.now() - held.startedAt > (LATEST_START_MS[held.effect] ?? 0)) { held = null; return detach() }
   unlock()
-  if (fresh) render(cue)
+  if (!flush()) ctx?.resume?.().then(flush).catch(() => {})
 }
 
 function detach() {
@@ -585,22 +590,30 @@ function attach() {
 }
 
 /**
- * Play a cue, or hold it for the next gesture if the page may not make noise.
+ * Play a cue in step with an animation that started at `startedAt`.
  *
- * @returns {boolean} whether it was scheduled. False means held or
+ * Plays now when the context is running. Otherwise it asks the context to
+ * resume (which the browser allows without a tap once the page may play
+ * sound) and waits for that or for a tap, but only for as long as the sound
+ * can still land on the picture.
+ *
+ * @returns {boolean} whether it was scheduled now. False means waiting or
  *                    unavailable — never that something went wrong.
  */
-export function playEffectSound(effect) {
+export function playEffectSound(effect, startedAt = Date.now()) {
   if (!VOICES[effect]) return false
-  // No context at all means no gesture has happened yet this session: a
-  // resume() would be refused, so hold rather than spend the cue on silence.
-  if (!ctx) {
-    held = effect
-    heldAt = Date.now()
-    attach()
-    return false
-  }
-  return render(effect)
+  held = { effect, startedAt }
+  // Creating the context outside a gesture is harmless: where autoplay is
+  // allowed it runs, and elsewhere it stays suspended until a tap resumes it.
+  unlock()
+  if (flush()) return true
+  if (!ctx) { held = null; return false }
+  attach()
+  ctx.resume?.().then(flush).catch(() => {})
+  // Past its moment, stop listening for the tap that would have released it.
+  const wait = LATEST_START_MS[effect] ?? 0
+  setTimeout(() => { if (held?.startedAt === startedAt && Date.now() - startedAt > wait) { held = null; detach() } }, wait + 50)
+  return false
 }
 
 /**
@@ -612,7 +625,6 @@ export function playEffectSound(effect) {
  */
 export function resetEffectAudio() {
   held = null
-  heldAt = 0
   detach()
   try { ctx?.close() } catch { /* already gone */ }
   ctx = null

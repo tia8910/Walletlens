@@ -167,13 +167,16 @@ export default function ScreenEffect({ effect, payload, onDone }) {
   }, [])
 
   // Sound rides the same trigger as the picture, so they cannot disagree about
-  // whether an effect happened. It may be held for a gesture; that is the
-  // audio module's business, not this component's.
+  // whether an effect happened. It has its own effect so the reduced-motion
+  // check settling cannot play it twice. The start time is the animation's, so a sound that only becomes audible a
+  // moment later still lands its impact on the picture's.
+  useEffect(() => {
+    if (!effect || payload?.muted) return
+    try { playEffectSound(effect, Date.now()) } catch { /* never block the animation */ }
+  }, [effect, payload])
+
   useEffect(() => {
     if (!effect) return undefined
-    if (!payload?.muted) {
-      try { playEffectSound(effect) } catch { /* never block the animation */ }
-    }
     const ms = reduced ? 1400 : (DURATION_MS[effect] ?? 2000)
     const timer = setTimeout(() => doneRef.current?.(), ms)
     return () => clearTimeout(timer)
