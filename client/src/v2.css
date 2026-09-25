@@ -104,6 +104,18 @@ html.wl-v2[data-wl-light] .wl-topbar::before {
 }
 html.wl-v2 .wl-topbar .ticker-strip { background: transparent; }
 
+/* On phone widths the v2 controls (menu, gear, bell, Stats) are a little
+   larger than the classic ones and the bell is new, which left the wordmark
+   one or two pixels short on ~384px screens: "WalletLens…". These trims give
+   it about 20px back, so "WalletLens.live" shows in full. */
+@media (max-width: 440px) {
+  html.wl-v2 .wl-topbar-inner { gap: 0.4rem; padding-inline: 0.6rem; }
+  html.wl-v2 .wl-hamburger { width: 38px; height: 38px; min-width: 38px; }
+  html.wl-v2 .wl-topbar-right { gap: 0.3rem; }
+  html.wl-v2 .wl-topbar-right .wl-topbar-x { width: 34px !important; height: 34px !important; min-width: 34px; flex-shrink: 0; }
+  html.wl-v2 .wl-topbar-right .wl-topbar-stats { padding: 0.3rem 0.5rem; margin-left: 0.15rem; flex-shrink: 0; }
+}
+
 /* ── Glass cards ──────────────────────────────────────────────────────── */
 html.wl-v2 .glass-card {
   background: var(--v2-glass);
