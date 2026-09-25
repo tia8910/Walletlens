@@ -1979,7 +1979,6 @@ export default {
     v2GroupProtection: 'Schutz',
     v2GroupData: 'Daten',
     backupRestore: 'Sicherung & Wiederherstellung',
-    v2ExitPreview: 'Zurück zum klassischen Design',
     tkAvgCost: "Durchschnittskosten",
     tkBought: "Gekauft",
     tkChange: "Ändern",

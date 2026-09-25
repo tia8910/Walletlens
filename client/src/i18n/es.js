@@ -1958,7 +1958,6 @@ export default {
     v2GroupProtection: 'Protección',
     v2GroupData: 'Datos',
     backupRestore: 'Copia de seguridad y restauración',
-    v2ExitPreview: 'Volver al diseño clásico',
     tkAvgCost: "Costo promedio",
     tkBought: "Compraste",
     tkChange: "Cambiar",

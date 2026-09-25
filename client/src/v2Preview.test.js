@@ -1,39 +1,28 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { V2_PATH, isV2Path, isV2Active, exitV2, homePath } from './v2Preview'
+import { V2_PATH, isV2Path, isV2Active, homePath } from './v2Preview'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const read = (p) => readFileSync(join(here, p), 'utf8')
 
-describe('v2 preview session', () => {
-  beforeEach(() => { sessionStorage.clear(); document.documentElement.className = '' })
-
-  it('is off until /v2test is opened', () => {
-    expect(isV2Active('/dashboard')).toBe(false)
-    expect(isV2Active('/coach')).toBe(false)
+describe('v2 is live on /dashboard', () => {
+  it('is on for every app page', () => {
+    for (const p of ['/dashboard', '/coach', '/settings', '/asset/bitcoin']) expect(isV2Active(p)).toBe(true)
   })
 
-  it('follows the tab to other pages once /v2test is opened', () => {
-    expect(isV2Active('/v2test/')).toBe(true)
-    expect(isV2Active('/coach')).toBe(true)
-    expect(isV2Active('/settings')).toBe(true)
-  })
-
-  it('ends with "Back to classic design"', () => {
-    isV2Active(V2_PATH)
-    document.documentElement.classList.add('wl-v2')
-    exitV2()
-    expect(isV2Active('/dashboard')).toBe(false)
-    expect(document.documentElement.classList.contains('wl-v2')).toBe(false)
-  })
-
-  it('sends "Dashboard" to the preview URL only inside the preview', () => {
-    expect(homePath(true)).toBe('/v2test')
-    expect(homePath(false)).toBe('/dashboard')
+  it('sends "Dashboard" to /dashboard, and treats /v2test as the old preview URL', () => {
+    expect(homePath()).toBe('/dashboard')
+    expect(V2_PATH).toBe('/dashboard')
     expect(isV2Path('/v2test/')).toBe(true)
     expect(isV2Path('/dashboard')).toBe(false)
+  })
+
+  it('redirects the old preview URL to the dashboard', () => {
+    const app = read('App.jsx')
+    expect(app).toMatch(/if \(isV2Path\(location\.pathname\)\) \{\s*navigate\(V2_PATH, \{ replace: true/)
+    expect(app).not.toContain('exitV2')
   })
 })
 

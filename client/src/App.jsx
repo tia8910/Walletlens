@@ -20,7 +20,7 @@ import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
 import Icon from './components/Icon'
 import BottomNav from './components/BottomNav'
-import { V2_PATH, isV2Active, isV2Path, exitV2, homePath, useV2Class } from './v2Preview'
+import { V2_PATH, isV2Active, isV2Path, homePath, useV2Class } from './v2Preview'
 import PullToRefresh from './components/PullToRefresh'
 // Non-critical shell components — lazy-loaded after the app shell renders
 const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
@@ -385,7 +385,6 @@ const V2_ICONS = {
   gear: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
   help: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9.2a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4"/><circle cx="12" cy="17.4" r="0.7" fill="currentColor" stroke="none"/></svg>,
   coffee: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M4 10h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5v-5Z"/><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M7.5 3.5c-.7.9-.7 1.8 0 2.7.7.9.7 1.8 0 2.7"/><path d="M12.5 3.5c-.7.9-.7 1.8 0 2.7.7.9.7 1.8 0 2.7"/></svg>,
-  back: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>,
 }
 
 const DrawerV2 = memo(function DrawerV2({ open, onClose, onHelp }) {
@@ -503,7 +502,6 @@ const DrawerV2 = memo(function DrawerV2({ open, onClose, onHelp }) {
             <span className="wl-v2-row-text">{t('coffeeSupport')}</span>
             <span className="wl-v2-row-chev" aria-hidden="true">›</span>
           </a>
-          <Row icon={V2_ICONS.back} hue="#94a3b8" label={t('v2ExitPreview')} onClick={() => { exitV2(); go('/dashboard', { tab: 'overview' }) }} />
         </div>
 
         <div className="wl-drawer-footer">
@@ -559,17 +557,15 @@ export default function App() {
     const p = location.pathname.replace(/\/+$/, '') || '/'
     return LANDING_PATH_SET.has(p) || LANDING_PREFIXES.some(pfx => p.startsWith(pfx))
   }, [location.pathname])
-  // The /v2test redesign preview. Landing pages keep their own look.
+  // The v2 design, live everywhere in the app. Landing pages keep their own look.
   const v2 = !isLanding && isV2Active(location.pathname)
   useV2Class(v2)
-  // Inside the preview "the dashboard" is /v2test. Links that still say
-  // /dashboard (and there are many, inside the page itself) land back there
-  // with their tab intact rather than dropping the user out of the preview.
+  // /v2test was the preview URL; old links land on the dashboard, tab intact.
   useEffect(() => {
-    if (v2 && location.pathname.replace(/\/+$/, '') === '/dashboard') {
+    if (isV2Path(location.pathname)) {
       navigate(V2_PATH, { replace: true, state: location.state })
     }
-  }, [v2, location.pathname]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.pathname]) // eslint-disable-line react-hooks/exhaustive-deps
   const { locked, unlock } = useBiometricLock()
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
   const [isStandalone, setIsStandalone] = useState(false)
