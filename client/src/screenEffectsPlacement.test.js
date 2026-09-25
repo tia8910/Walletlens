@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 // Source-level guarantees about the screen effects that no unit test of the
 // decision logic can reach: where the overlay is mounted, that it cannot
-// swallow a tap, and that the sound is held rather than dropped.
+// swallow a tap, and that the sound keeps to the picture's clock.
 //
 // The predecessor of this file existed because the old overlay was mounted
 // inside `activeTab === 'overview' && (...)`. The effect was decided from
@@ -109,26 +109,12 @@ describe('the sound', () => {
     expect(audioCode).not.toMatch(/\bunlocked\b/)
   })
 
-  it('holds a cue it cannot play instead of dropping it', () => {
-    // The effect that matters most — the burst on the first open of the day —
-    // is the one guaranteed to arrive before any gesture, so dropping means
-    // the sound is never heard on the occasion it was written for.
-    expect(audio).toMatch(/held = effect/)
+  it('waits for audio only while the sound can still land on the picture', () => {
+    // The burst on opening the app arrives before any gesture. Holding it for
+    // the next tap and playing it from the top put its boom after the burst.
+    expect(audio).toMatch(/held = \{ effect, startedAt \}/)
     expect(audio).toMatch(/addEventListener\('pointerdown', releaseHeld, true\)/)
-  })
-
-  it('waits for the resume to settle before playing, rather than dropping the cue', () => {
-    // Same asynchrony one level up: a caller that unlocks and plays inside a
-    // single handler finds the context still 'suspended'. That is not an edge
-    // case — it is the first tap of every session. Playing from the resume's
-    // own promise is what makes it audible; a few milliseconds late is
-    // imperceptible, not playing at all is the entire bug.
-    expect(audioCode).toMatch(/ctx\.resume\?\.\(\)\.then\(\(\) => \{/)
-    expect(audioCode).toMatch(/if \(ctx && ctx\.state === 'running'\) emit\(voice, effect\)/)
-  })
-
-  it('gives up on a cue that has gone stale', () => {
-    expect(audio).toMatch(/Date\.now\(\) - heldAt < HOLD_MS/)
+    expect(audioCode).toMatch(/if \(late > \(LATEST_START_MS\[effect\] \?\? 0\)\) return false/)
   })
 
   it('is primed from taps, never from the poll that decides an effect', () => {

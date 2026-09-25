@@ -374,6 +374,56 @@ const CryptoLogo = memo(function CryptoLogo({
 
   const [needsPlate, setNeedsPlate] = useState(false)
 
+  // A logo must not stay initials because the network was slow.
+  //
+  // Each stage above has a clock, and on a slow mobile connection the clock
+  // can run out on the very URL that would have loaded a second later: the
+  // ladder moves on, runs out, and the row sits on the letter badge for the
+  // rest of the session ("the logo sometimes does not load"). So when the
+  // ladder is exhausted the strongest candidates keep loading in the
+  // background with no clock at all, and the first to arrive replaces the
+  // badge (and is remembered, so the next start opens on it). It looks again
+  // when the device comes back online or the app returns to the foreground.
+  const [lateSrc, setLateSrc] = useState(null)
+  const exhausted = stageIdx >= STAGES.length
+  useEffect(() => { setLateSrc(null) }, [coinId, sym])
+  useEffect(() => {
+    if (!exhausted || lateSrc || !canFetch || typeof Image === 'undefined') return
+    let alive = true
+    const imgs = []
+    const tryAll = () => {
+      const fresh = coinId ? getCachedCoinImage(coinId) : null
+      const urls = [...new Set([
+        resolved, image, fresh,
+        image ? `/api/icon?url=${encodeURIComponent(image)}` : null,
+        fresh && fresh !== image ? `/api/icon?url=${encodeURIComponent(fresh)}` : null,
+        sym ? `/api/icon?sym=${encodeURIComponent(sym)}` : null,
+      ].filter(Boolean))]
+      for (const url of urls) {
+        const im = new Image()
+        im.referrerPolicy = 'no-referrer'
+        im.onload = () => {
+          if (!alive || !im.naturalWidth) return
+          alive = false
+          rememberResolved(logoKey, url)
+          setLateSrc(url)
+        }
+        im.src = url
+        imgs.push(im)
+      }
+    }
+    tryAll()
+    const again = () => { if (alive && !document.hidden) tryAll() }
+    addEventListener('online', again)
+    document.addEventListener('visibilitychange', again)
+    return () => {
+      alive = false
+      removeEventListener('online', again)
+      document.removeEventListener('visibilitychange', again)
+      for (const im of imgs) { im.onload = null }
+    }
+  }, [exhausted, lateSrc, canFetch, coinId, sym, image, resolved, logoKey])
+
   const onLoad = (e) => {
     loadedRef.current = true
     const el = e?.currentTarget
@@ -404,7 +454,8 @@ const CryptoLogo = memo(function CryptoLogo({
     // ladder ends on, so swapping the real icon in when load fires moves
     // nothing on the page.
   } else if (!currentStage) {
-    // exhausted all stages
+    // Exhausted: a logo that arrived late in the background wins over initials.
+    if (lateSrc) return <img {...withPlate} src={lateSrc} />
   } else if (currentStage.startsWith('img:')) {
     const src = currentStage.slice(4)
     return <img {...withPlate} src={src} onError={advance} />

@@ -56,7 +56,7 @@ function normalize(state) {
  * @param {number}  o.tzOffsetMin     minutes east of UTC
  * @param {number}  o.totalValue      portfolio total, display currency
  * @param {number}  o.changePct       portfolio change on the day, percent
- * @param {object}  o.leader          best-performing holding: { symbol, image }
+ * @param {object}  o.leader          best-performing holding: { symbol, image, pct }
  * @param {object}  o.state           previous return's `nextState`
  * @returns {{ effect: string|null, payload: object|null, nextState: object }}
  */
@@ -171,6 +171,6 @@ export function pickLeader(holdings) {
     }
   }
   return best && best.symbol
-    ? { symbol: best.symbol, image: best.image, assetId: best.assetId }
+    ? { symbol: best.symbol, image: best.image, assetId: best.assetId, pct: best.pct }
     : null
 }

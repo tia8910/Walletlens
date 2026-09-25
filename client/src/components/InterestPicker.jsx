@@ -6,6 +6,7 @@ import { ASSET_CATEGORIES } from '../data/assets'
 import { THEMES } from '../ThemeContext'
 import { useLanguage } from '../LanguageContext'
 import { INTERESTS_EVENT } from '../data/interestsEvent'
+import './SetupScreens.css'
 
 // Metal bar logos ("Au" / "Ag") so gold & silver match the trade category.
 const GOLD_LOGO = THEMES.find(t => t.id === 'gold')?.logo || ''
@@ -22,20 +23,21 @@ const INTERESTS_KEY = 'wl_interests'
 const DONE_KEY = 'wl_interests_done'
 
 // Icons mirror the dashboard / trade "asset category" icons (ASSET_CATEGORIES)
-// so the app feels consistent. Glyph icons (₿, $) carry their category colour.
+// so the app feels consistent, each in its own colour, with a line of
+// examples under the name so a tile says what it covers.
 const C = ASSET_CATEGORIES
 // id must line up with INTEREST_TO_CAT in the dashboard quick-add ordering.
 const OPTIONS = [
-  { id: 'crypto',      emoji: C.crypto.icon, color: C.crypto.color, labelKey: 'catCrypto' },
-  { id: 'stablecoins', img: USDT_LOGO, labelKey: 'catStablecoins' },
-  { id: 'stocks',      emoji: C.stock.icon, labelKey: 'catStocks' },
-  { id: 'etfs',        emoji: 'package', labelKey: 'catEtfs' },
-  { id: 'gold',        img: GOLD_LOGO, emoji: C.gold.icon, labelKey: 'catGold' },
-  { id: 'silver',      img: SILVER_LOGO, emoji: C.silver.icon, labelKey: 'catSilver' },
-  { id: 'cash',        emoji: C.fiat.icon, color: C.fiat.color, labelKey: 'catCash' },
-  { id: 'realestate',  emoji: 'home', labelKey: 'catRealEstate' },
-  { id: 'bonds',       emoji: C.bond.icon, labelKey: 'catBonds' },
-  { id: 'commodities', emoji: 'droplet', labelKey: 'catCommodities' },
+  { id: 'crypto',      emoji: C.crypto.icon, color: '#f7931a', labelKey: 'catCrypto', ex: 'BTC, ETH, SOL…' },
+  { id: 'stablecoins', img: USDT_LOGO, labelKey: 'catStablecoins', ex: 'USDT, USDC' },
+  { id: 'stocks',      emoji: C.stock.icon, color: '#60a5fa', labelKey: 'catStocks', ex: 'AAPL, NVDA…' },
+  { id: 'etfs',        emoji: 'package', color: '#a78bfa', labelKey: 'catEtfs', ex: 'VOO, QQQ…' },
+  { id: 'gold',        img: GOLD_LOGO, emoji: C.gold.icon, labelKey: 'catGold', exKey: 'ipExMetal' },
+  { id: 'silver',      img: SILVER_LOGO, emoji: C.silver.icon, labelKey: 'catSilver', exKey: 'ipExMetal' },
+  { id: 'cash',        emoji: C.fiat.icon, color: '#34d399', labelKey: 'catCash', exKey: 'ipExCash' },
+  { id: 'realestate',  emoji: 'home', color: '#fbbf24', labelKey: 'catRealEstate', exKey: 'ipExRealEstate' },
+  { id: 'bonds',       emoji: C.bond.icon, color: '#f472b6', labelKey: 'catBonds', exKey: 'ipExBonds' },
+  { id: 'commodities', emoji: 'droplet', color: '#22d3ee', labelKey: 'catCommodities', exKey: 'ipExCommodities' },
 ]
 
 export default function InterestPicker({ onDone, onClose, editMode = false }) {
@@ -57,13 +59,20 @@ export default function InterestPicker({ onDone, onClose, editMode = false }) {
     return () => clearTimeout(t)
   }, [])
 
+  // The welcome slides' pad carries on through setup. Not when this is
+  // re-opened from Settings, where music would come out of nowhere.
+  useEffect(() => (editMode ? undefined : sfx.holdAmbient()), [editMode])
+
+  const [popped, setPopped] = useState(null)
   function toggle(id) {
-    sfx.haptic(6)
-    setSelected(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
+    const on = !selected.has(id)
+    const next = new Set(selected)
+    on ? next.add(id) : next.delete(id)
+    setSelected(next)
+    setPopped(id + ':' + Date.now())
+    // Each pick one note higher than the last.
+    try { sfx.playSelect(next.size - 1, on) } catch {}
+    sfx.haptic(on ? 9 : 5)
   }
 
   function finish(list) {
@@ -88,7 +97,8 @@ export default function InterestPicker({ onDone, onClose, editMode = false }) {
   }
 
   function getStarted() {
-    sfx.haptic(9)
+    sfx.haptic([10, 30, 12])
+    if (!editMode) { try { sfx.playWhoosh() } catch {} }
     const list = OPTIONS.filter(o => selected.has(o.id)).map(o => o.id)
     track('interests_selected', { count: list.length, interests: list.join(',') })
     finish(list)
@@ -103,85 +113,82 @@ export default function InterestPicker({ onDone, onClose, editMode = false }) {
   const count = selected.size
 
   return (
-    <div className="ip-overlay" role="dialog" aria-modal="true" aria-label={t('ipTitle')}>
-      <div className="ip-card">
-        <button className="wlm-close" onClick={editMode ? (onClose || skip) : skip} aria-label={t('close')} title={t('close')}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
-        </button>
+    <div className="su-screen" role="dialog" aria-modal="true" aria-label={t('ipTitle')}>
+      <div className="su-inner">
+        <header className="su-hero">
+          {editMode && (
+            <button className="su-close" onClick={onClose || skip} aria-label={t('close')} title={t('close')}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+            </button>
+          )}
+          <div className="su-eyebrow"><Icon name="sparkles" size={13} /> {t('ipEyebrow')}</div>
+          <h1 className="su-title">{t('ipTitle')}</h1>
+          <p className="su-sub">{t('ipSub')}</p>
+        </header>
 
-        <div className="ip-body">
-          <div className="ip-eyebrow">
-            <Icon name="sparkles" size={13} /> {t('ipEyebrow')}
-          </div>
-          <h2 className="ip-title">{t('ipTitle')}</h2>
-          <p className="ip-sub">{t('ipSub')}</p>
-
-          <div className="ip-chips">
+        <div className="su-body">
+          <div className="su-tiles">
             {OPTIONS.map(o => {
               const on = selected.has(o.id)
               return (
                 <button
                   key={o.id}
                   type="button"
-                  className={`ip-chip${on ? ' ip-chip-on' : ''}`}
+                  className={`su-tile${on ? ' on' : ''}${popped?.startsWith(o.id + ':') ? ' pop' : ''}`}
                   aria-pressed={on}
                   onClick={() => toggle(o.id)}
                 >
-                  {o.img
-                    ? <span className="ip-chip-ico"><img className="ip-chip-img" src={o.img} alt="" aria-hidden="true" /></span>
-                    : <span
-                        className={`ip-chip-ico ip-chip-emoji${o.color ? ' ip-chip-glyph' : ''}`}
-                        style={o.color ? { color: o.color } : undefined}
-                        aria-hidden="true"
-                      ><Icon name={o.emoji} size={17} /></span>}
-                  {t(o.labelKey)}
-                  {on && (
-                    <span className="ip-chip-check" aria-hidden="true">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                    </span>
-                  )}
+                  <span className="su-tile-ck" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5 9-10"/></svg>
+                  </span>
+                  <span className="su-tile-ic" aria-hidden="true" style={o.color ? { color: o.color } : undefined}>
+                    {o.img ? <img src={o.img} alt="" /> : <Icon name={o.emoji} size={20} />}
+                  </span>
+                  <span className="su-tile-name">{t(o.labelKey)}</span>
+                  <span className="su-tile-ex">{o.exKey ? t(o.exKey) : o.ex}</span>
                 </button>
               )
             })}
           </div>
         </div>
 
-        <div className="ip-footer">
-          <button className="ip-cta" onClick={getStarted}>
-            <span>{`${editMode ? t('ipSave') : t('ipGetStarted')}${count > 0 ? ` · ${t('ipSelected')(count)}` : ''}`}</span>
-            <Icon name="arrow-right" size={17} />
+        <div className="su-foot">
+          <button className="su-cta" onClick={getStarted}>
+            <span>{editMode ? t('ipSave') : t('ipGetStarted')}</span>
+            {count > 0 && <span className="su-count" aria-label={t('ipSelected')(count)}>{count}</span>}
+            <Icon name="arrow-right" size={17} className="su-cta-arrow" />
           </button>
           {editMode ? (
-            <button className="ip-skip" onClick={onClose}>{t('cancel')}</button>
+            <button className="su-ghost" onClick={onClose}>{t('cancel')}</button>
           ) : (
             <button
-              className="ip-skip"
+              className="su-ghost"
               onClick={askSkip}
-              style={{ opacity: canSkip ? 1 : 0, pointerEvents: canSkip ? 'auto' : 'none', transition: 'opacity .4s ease' }}
+              style={{ opacity: canSkip ? 1 : 0, pointerEvents: canSkip ? 'auto' : 'none' }}
             >{t('ipSkip')}</button>
           )}
         </div>
+      </div>
 
-        {confirmSkip && (
-          <div className="bs-confirm-overlay" onClick={() => setConfirmSkip(false)}>
-            <div className="bs-confirm-card" onClick={e => e.stopPropagation()}>
-              <h4 className="bs-confirm-title">Skip personalizing?</h4>
-              <p className="bs-confirm-text">
-                It takes about <strong>20 seconds</strong> and tailors WalletLens to what you
-                actually hold — quick-add shortcuts, the right asset types, and a dashboard that
-                feels like yours. You can still change everything later.
-              </p>
-              <div className="bs-confirm-actions">
-                <button className="bs-confirm-go" style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
-                  onClick={() => setConfirmSkip(false)}>
-                  Keep setting up
-                </button>
-                <button className="bs-confirm-switch" onClick={skip}>Skip anyway</button>
-              </div>
+      {confirmSkip && (
+        <div className="bs-confirm-overlay" onClick={() => setConfirmSkip(false)}>
+          <div className="bs-confirm-card" onClick={e => e.stopPropagation()}>
+            <h4 className="bs-confirm-title">Skip personalizing?</h4>
+            <p className="bs-confirm-text">
+              It takes about <strong>20 seconds</strong> and tailors WalletLens to what you
+              actually hold — quick-add shortcuts, the right asset types, and a dashboard that
+              feels like yours. You can still change everything later.
+            </p>
+            <div className="bs-confirm-actions">
+              <button className="bs-confirm-go" style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
+                onClick={() => setConfirmSkip(false)}>
+                Keep setting up
+              </button>
+              <button className="bs-confirm-switch" onClick={skip}>Skip anyway</button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

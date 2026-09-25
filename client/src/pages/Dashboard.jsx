@@ -10,7 +10,7 @@ import { api, getCachedCoinImage } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
 import { observe, primeEffectAudio } from '../screenEffectsRuntime'
-import { EXPLODE, ROCKET, ATH } from '../screenEffects'
+import { EXPLODE, ROCKET, ATH, pickLeader } from '../screenEffects'
 import ScreenEffect from '../components/ScreenEffect'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset, GOLD_ID, SILVER_ID } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
@@ -1867,9 +1867,70 @@ const StatCard = memo(function StatCard({ label, value, sub, color, tone, spark 
   )
 })
 
-// ── Portfolio Heatmap (dynamic treemap, fills card) ─────────────────────
+// ── Portfolio Heatmap (squarified treemap, fills its box exactly) ────────
+//
+// Tiles used to be sized one by one and wrapped in rows, which left holes
+// beside the big ones and clipped long names ("STONKBR / OKER"). A treemap
+// tiles the whole rectangle instead: area ∝ share of the portfolio, laid out
+// by the squarified algorithm so tiles stay close to square. Each tile shows
+// only what fits it (logo, symbol, move, share), measured in pixels.
+
+/** Squarified treemap: `items` = [{ weight }], sorted largest first. Returns
+ *  one { x, y, w, h } per item, in the same units as the box. */
+export function squarify(items, x, y, w, h) {
+  const out = new Array(items.length)
+  const total = items.reduce((s, it) => s + it.weight, 0)
+  if (!total || w <= 0 || h <= 0) return out.fill({ x, y, w: 0, h: 0 })
+  const scale = (w * h) / total
+  const area = items.map(it => it.weight * scale)
+  let i = 0
+  const worst = (row, side) => {
+    const sum = row.reduce((a, b) => a + b, 0)
+    const max = Math.max(...row), min = Math.min(...row)
+    return Math.max((side * side * max) / (sum * sum), (sum * sum) / (side * side * min))
+  }
+  while (i < area.length) {
+    const side = Math.min(w, h)
+    const row = [area[i]]
+    let j = i + 1
+    while (j < area.length && worst([...row, area[j]], side) <= worst(row, side)) { row.push(area[j]); j++ }
+    const sum = row.reduce((a, b) => a + b, 0)
+    if (w >= h) {
+      // Column on the left, full height.
+      const cw = sum / h
+      let cy = y
+      row.forEach((a, k) => { const ch = a / cw; out[i + k] = { x, y: cy, w: cw, h: ch }; cy += ch })
+      x += cw; w -= cw
+    } else {
+      // Row along the top, full width.
+      const rh = sum / w
+      let cx = x
+      row.forEach((a, k) => { const rw = a / rh; out[i + k] = { x: cx, y, w: rw, h: rh }; cx += rw })
+      y += rh; h -= rh
+    }
+    i = j
+  }
+  return out
+}
+
+// A holding under this share still gets a tile you can read and tap.
+const HEATMAP_MIN_SHARE = 4
+
 const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, totalValue }) {
   const { t } = useLanguage()
+  const boxRef = useRef(null)
+  const [boxW, setBoxW] = useState(320)
+  useEffect(() => {
+    const el = boxRef.current
+    if (!el) return
+    const measure = () => setBoxW(Math.max(200, Math.round(el.clientWidth)))
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   const cells = enriched
     .filter(h => h.value > 0)
     .map(h => {
@@ -1881,33 +1942,48 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
         : chg < 0
           ? intensity < 0.35 ? `rgba(248,113,113,${0.28 + intensity * 0.4})` : intensity < 0.7 ? `rgba(239,68,68,${0.42 + intensity * 0.35})` : `rgba(220,38,38,${0.6 + intensity * 0.3})`
           : 'rgba(255,255,255,0.06)'
-      return { ...h, chg, sizePct, color }
+      return { ...h, chg, sizePct, color, weight: Math.max(sizePct, HEATMAP_MIN_SHARE) }
     })
-    .sort((a, b) => b.sizePct - a.sizePct)
+    .sort((a, b) => b.weight - a.weight)
 
   if (!cells.length) return null
+
+  // Taller on a phone, where the box is narrow; never a long thin strip.
+  const boxH = Math.round(Math.min(360, Math.max(220, boxW * 0.72)))
+  const rects = squarify(cells, 0, 0, boxW, boxH)
+  const GAP = 3
 
   return (
     <div className="glass-card heatmap-card">
       <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', fontWeight: 700, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('dsPortfolioHeatmap')}</h3>
-      <div className="heatmap-grid">
+      <div ref={boxRef} className="heatmap-grid" style={{ height: boxH }}>
         {cells.map((c, i) => {
-          const minSize = 60
-          const size = Math.max(minSize, Math.min(180, (c.sizePct / 100) * 800))
+          const r = rects[i]
+          const w = Math.max(0, r.w - GAP), h = Math.max(0, r.h - GAP)
+          const short = Math.min(w, h)
+          // What fits, largest first.
+          const showLogo = w >= 58 && h >= 70
+          const showChg = w >= 40 && h >= 34
+          const showPct = w >= 96 && h >= 104
+          const showSym = w >= 28 && h >= 20
+          const symSize = Math.max(9, Math.min(16, short * 0.17))
+          const sym = String(c.coin_symbol || '').toUpperCase()
           return (
             <div
               key={c.coin_id}
               className="heatmap-cell"
-              style={{ background: c.color, width: size, height: size }}
-              title={`${c.coin_symbol?.toUpperCase()} — ${c.sizePct.toFixed(1)}% · ${c.chg >= 0 ? '+' : ''}${c.chg.toFixed(2)}%`}
+              style={{ background: c.color, left: r.x, top: r.y, width: w, height: h }}
+              title={`${sym} — ${c.sizePct.toFixed(1)}% · ${c.chg >= 0 ? '+' : ''}${c.chg.toFixed(2)}%`}
             >
-              <CoinLogo image={c.coin_image} symbol={c.coin_symbol} coinId={c.coin_id} size={Math.min(28, Math.floor(size * 0.35))} className="heatmap-img" />
-              <div className="heatmap-sym" style={{ fontSize: size < 80 ? '0.6rem' : '0.75rem' }}>{c.coin_symbol?.toUpperCase()}</div>
-              <div className={`heatmap-chg ${c.chg >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: size < 80 ? '0.55rem' : '0.7rem' }}>
-                {c.chg >= 0 ? '+' : ''}{c.chg.toFixed(1)}%
-              </div>
-              {size >= 90 && (
-                <div className="heatmap-pct" style={{ fontSize: '0.58rem', opacity: 0.7, marginTop: 2 }}>{t('dsPortfolioShare')(c.sizePct.toFixed(1))}</div>
+              {showLogo && <CoinLogo image={c.coin_image} symbol={c.coin_symbol} coinId={c.coin_id} size={Math.round(Math.min(32, short * 0.3))} className="heatmap-img" />}
+              {showSym && <div className="heatmap-sym" style={{ fontSize: symSize }}>{sym}</div>}
+              {showChg && (
+                <div className={`heatmap-chg ${c.chg >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: Math.max(9, symSize * 0.82) }}>
+                  {c.chg >= 0 ? '+' : ''}{c.chg.toFixed(1)}%
+                </div>
+              )}
+              {showPct && (
+                <div className="heatmap-pct" style={{ fontSize: Math.max(9, symSize * 0.7), opacity: 0.75 }}>{t('dsPortfolioShare')(c.sizePct.toFixed(1))}</div>
               )}
             </div>
           )
@@ -4046,9 +4122,7 @@ export default function Dashboard() {
     if (![EXPLODE, ROCKET, ATH].includes(want)) return undefined
     const once = () => {
       primeEffectAudio()
-      const leader = enriched[0]
-        ? { symbol: (enriched[0].coin_symbol || '').toUpperCase(), image: enriched[0].coin_image || '' }
-        : null
+      const leader = pickLeader(enriched)
       setEffect({ effect: want, payload: { leader, changePct: 7.4, totalValue } })
     }
     document.addEventListener('click', once, { once: true })

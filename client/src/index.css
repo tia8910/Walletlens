@@ -92,6 +92,24 @@
   src: url('/fonts/plus-jakarta-sans-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
+/* Sora (display) and Manrope (text) for the setup screens after the welcome
+   slides. Variable fonts, Latin only; other scripts fall back to the app's. */
+@font-face {
+  font-family: 'Sora';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/sora-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/manrope-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -4979,18 +4997,16 @@ tr:last-child td { border-bottom: none; }
 
 /* ═══ Portfolio Heatmap ═══ */
 .heatmap-card { padding: 1rem 1rem 0.75rem; }
-.heatmap-grid {
-  display: flex; flex-wrap: wrap; gap: 5px;
-  align-items: flex-start;
-}
+.heatmap-grid { position: relative; width: 100%; }
 .heatmap-cell {
+  position: absolute; box-sizing: border-box;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  border-radius: 10px; cursor: default;
-  transition: transform 0.15s ease, filter 0.15s ease;
-  flex-shrink: 0; overflow: hidden; padding: 5px;
-  gap: 3px;
+  border-radius: 10px; cursor: default; overflow: hidden; padding: 4px; gap: 2px; min-width: 0;
+  transition: filter 0.15s ease;
 }
-.heatmap-cell:hover { transform: scale(1.06); filter: brightness(1.2); z-index: 2; }
+.heatmap-cell:hover { filter: brightness(1.2); z-index: 2; }
+.heatmap-cell > * { max-width: 100%; }
+.heatmap-sym { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .heatmap-img { border-radius: 50%; object-fit: cover; }
 .heatmap-sym { font-size: 0.72rem; font-weight: 800; color: rgba(255,255,255,0.95); text-align: center; letter-spacing: 0.02em; }
 .heatmap-chg { font-size: 0.65rem; font-weight: 700; text-align: center; }
@@ -16905,6 +16921,32 @@ input, select, textarea, .dvx-input {
   45%       { opacity: .82; }
   52%       { opacity: .22; }
   62%, 100% { opacity: 0; }
+}
+
+/* The leader's day, under the logo. It arrives with the logo and stays
+   through the impact, so the explode says which asset and by how much. */
+.fx-champ-label {
+  position: absolute; left: 50%; translate: -50% 0;
+  bottom: max(9vh, calc(env(safe-area-inset-bottom, 0px) + 56px));
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 8px 18px; border-radius: 999px;
+  background: rgba(8, 14, 12, 0.72);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.10), 0 10px 34px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+  opacity: 0;
+  animation: fx-champ-label 2.6s ease-out forwards;
+}
+.fx-champ-sym { font-weight: 800; font-size: 1.05rem; color: #fff; letter-spacing: 0.02em; }
+.fx-champ-pct { font-weight: 900; font-size: 1.7rem; letter-spacing: -0.02em; color: #34d399; font-variant-numeric: tabular-nums; }
+.fx-champ-label.is-down .fx-champ-pct { color: #f87171; }
+@keyframes fx-champ-label {
+  0%, 8% { opacity: 0; transform: translateY(14px); }
+  20%    { opacity: 1; transform: translateY(0); }
+  44%    { opacity: 1; transform: scale(1); }
+  50%    { opacity: 1; transform: scale(1.12); }
+  60%    { opacity: 1; transform: scale(1); }
+  86%    { opacity: 1; }
+  100%   { opacity: 0; }
 }
 
 .fx-explode .fx-glow { animation: fx-soft 2.6s ease-out forwards; }
