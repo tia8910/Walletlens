@@ -1388,6 +1388,28 @@ async function fetchYahooOHLCV(ticker, days = 180) {
   return []
 }
 
+// Yahoo candles fetched by the browser: Yahoo's two hosts directly and each
+// CORS relay, raced, first usable answer wins. The fallback for when the
+// /api/candles function gets nothing (Yahoo blocks some server IPs).
+async function fetchYahooCandlesFromBrowser(ticker, tf) {
+  const { YAHOO_PLANS, parseYahooCandles, groupCandles } = await import('./chartSignals');
+  const plan = YAHOO_PLANS[tf] || YAHOO_PLANS['1d'];
+  const path = `/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${plan.interval}&range=${plan.range}`;
+  const urls = [
+    `https://query1.finance.yahoo.com${path}`,
+    `https://query2.finance.yahoo.com${path}`,
+    ...CORS_PROXIES.map(wrap => wrap(`https://query1.finance.yahoo.com${path}`)),
+  ];
+  const attempt = async (url) => {
+    const res = await fetchWithTimeout(url, 9000);
+    if (!res.ok) throw new Error(String(res.status));
+    const rows = parseYahooCandles(JSON.parse(await res.text()));
+    if (rows.length <= 10) throw new Error('empty');
+    return plan.group ? groupCandles(rows, plan.group) : rows;
+  };
+  try { return await Promise.any(urls.map(attempt)); } catch { return []; }
+}
+
 // Per-wallet holdings for QR snapshots — getPortfolio() aggregates across
 // wallets (no wallet_id on holdings), which previously collapsed multi-wallet
 // portfolios into the first wallet on restore.
@@ -2359,6 +2381,16 @@ export const api = {
           }
         }
       } catch {}
+      // Yahoo refuses some cloud servers, so the function can come back
+      // empty. The browser then asks Yahoo itself, directly and through the
+      // CORS relays all at once, and takes the first usable answer.
+      const candles = await fetchYahooCandlesFromBrowser(ticker, tf);
+      if (candles.length > 10) {
+        try { _chartCache[cacheKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
+        return { candles, visible: Math.min(plan.visible, candles.length), closeOnly: false };
+      }
+      // The close-only fallback below asks the same upstreams again, slowly.
+      return { candles: [], visible: 0, closeOnly: false };
     }
     // Fallback: the classic close-only series over the timeframe's span.
     // Those are daily closes, so an intraday timeframe has nothing to show.

@@ -101,6 +101,7 @@ describe('the /api/candles function', () => {
     const { store } = stubRuntime(async () => new Response('no', { status: 500 }))
     const body = await (await call('symbol=AAPL&interval=1h')).json()
     expect(body.candles).toEqual([])
+    expect(body.tried).toEqual(['query1.finance.yahoo.com: HTTP 500', 'query2.finance.yahoo.com: HTTP 500'])
     expect(store.size).toBe(0)
   })
 
@@ -109,6 +110,22 @@ describe('the /api/candles function', () => {
     expect((await call('symbol=AA PL&interval=1d')).status).toBe(400)
     expect((await call('symbol=AAPL&interval=3d')).status).toBe(400)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('the browser fallback', () => {
+  it('asks Yahoo itself when the function comes back empty', async () => {
+    const seen = []
+    vi.stubGlobal('fetch', vi.fn(async (u) => {
+      const url = String(u); seen.push(url)
+      if (url.startsWith('/api/candles')) return new Response(JSON.stringify({ candles: [] }))
+      if (url.startsWith('https://query1.finance.yahoo.com/v8/finance/chart/MSFT')) return new Response(JSON.stringify(yahooBody(200)))
+      return new Response('no', { status: 500 })
+    }))
+    const r = await api.getCandles('stock:msft', 'MSFT', '1d')
+    expect(r.candles).toHaveLength(200)
+    expect(r.closeOnly).toBe(false)
+    expect(seen[0]).toBe('/api/candles?symbol=MSFT&interval=1d')
   })
 })
 

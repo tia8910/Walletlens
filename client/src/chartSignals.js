@@ -183,6 +183,47 @@ export const CHART_TIMEFRAMES = {
 }
 export const DEFAULT_TIMEFRAME = '1d'
 
+// Yahoo chart requests per timeframe (Yahoo has no 4h, so 4h is grouped
+// from hourly candles). Mirrors functions/api/candles.js.
+export const YAHOO_PLANS = {
+  '15m': { interval: '15m', range: '1mo' },
+  '1h': { interval: '60m', range: '3mo' },
+  '4h': { interval: '60m', range: '1y', group: 4 },
+  '1d': { interval: '1d', range: '2y' },
+  '1w': { interval: '1wk', range: '10y' },
+}
+
+/** Yahoo chart JSON → [{ t, o, h, l, c }], dropping rows with gaps. */
+export function parseYahooCandles(data) {
+  const r = data?.chart?.result?.[0]
+  const q = r?.indicators?.quote?.[0]
+  const ts = r?.timestamp
+  if (!q || !Array.isArray(ts)) return []
+  const out = []
+  for (let i = 0; i < ts.length; i++) {
+    const o = q.open?.[i], h = q.high?.[i], l = q.low?.[i], c = q.close?.[i]
+    if ([o, h, l, c].every(v => typeof v === 'number' && isFinite(v) && v > 0) && h >= l) out.push({ t: ts[i] * 1000, o, h, l, c })
+  }
+  return out
+}
+
+/** Merge every `n` candles of the same (UTC) day into one. */
+export function groupCandles(candles, n) {
+  const out = []
+  let cur = null, day = null, count = 0
+  for (const k of candles) {
+    const d = new Date(k.t).toISOString().slice(0, 10)
+    if (!cur || d !== day || count >= n) {
+      if (cur) out.push(cur)
+      cur = { ...k }; day = d; count = 1
+    } else {
+      cur.h = Math.max(cur.h, k.h); cur.l = Math.min(cur.l, k.l); cur.c = k.c; count++
+    }
+  }
+  if (cur) out.push(cur)
+  return out
+}
+
 export function candlesFromCloses(points) {
   const out = []
   for (let i = 0; i < (points || []).length; i++) {

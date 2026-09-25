@@ -11,8 +11,10 @@
  * this asks Yahoo directly (real highs and lows, intraday too) and falls back
  * to Stooq's daily CSV for daily and weekly candles.
  *
- * Response: { symbol, interval, source, candles: [{ t, o, h, l, c }] }, where
- * t is the candle's open time in ms. An empty list means no source answered.
+ * Response: { symbol, interval, source, candles: [{ t, o, h, l, c }], tried },
+ * where t is the candle's open time in ms and `tried` lists each upstream
+ * asked and what it answered, so an empty chart can be diagnosed from the
+ * URL alone. An empty list means no source answered.
  */
 
 const CORS = {
@@ -38,6 +40,12 @@ export const PLANS = {
 }
 
 const CACHE_SECONDS = 300
+// Yahoo turns away requests that do not look like a browser.
+const YAHOO_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+  'Accept': 'application/json,text/plain,*/*',
+  'Accept-Language': 'en-US,en;q=0.9',
+}
 const YAHOO_MS = 4000
 const STOOQ_MS = 3500
 
@@ -133,22 +141,24 @@ export async function onRequestGet(context) {
 
   let candles = []
   let source = ''
+  const tried = []
 
   // 1. Yahoo, one host then the other.
   for (const host of ['query1.finance.yahoo.com', 'query2.finance.yahoo.com']) {
     try {
       const res = await fetch(
         `https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}?interval=${plan.interval}&range=${plan.range}`,
-        { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WalletLens/1.0)' }, signal: AbortSignal.timeout(YAHOO_MS) }
+        { headers: YAHOO_HEADERS, signal: AbortSignal.timeout(YAHOO_MS) }
       )
-      if (!res.ok) continue
+      if (!res.ok) { tried.push(`${host}: HTTP ${res.status}`); continue }
       const rows = parseYahoo(await res.json())
+      tried.push(`${host}: ${rows.length} candles`)
       if (rows.length > 10) {
         candles = plan.group ? groupCandles(rows, plan.group) : rows
         source = 'yahoo'
         break
       }
-    } catch {}
+    } catch (err) { tried.push(`${host}: ${err?.name || 'error'}`) }
   }
 
   // 2. Stooq's daily history, for daily and weekly candles. US tickers carry
@@ -161,12 +171,13 @@ export async function onRequestGet(context) {
       )
       if (res.ok) {
         const rows = parseStooq(await res.text(), interval === '1w')
+        tried.push(`stooq: ${rows.length} candles`)
         if (rows.length > 10) { candles = rows.slice(-800); source = 'stooq' }
-      }
-    } catch {}
+      } else tried.push(`stooq: HTTP ${res.status}`)
+    } catch (err) { tried.push(`stooq: ${err?.name || 'error'}`) }
   }
 
-  const response = new Response(JSON.stringify({ symbol, interval, source, candles }), {
+  const response = new Response(JSON.stringify({ symbol, interval, source, candles, tried }), {
     headers: { ...CORS, 'Cache-Control': `public, max-age=${CACHE_SECONDS}` },
   })
   // An outage is not cached, so the next request tries again.
