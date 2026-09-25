@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import {
   SITE_ORIGIN, DRIVE_API, PUSH_API, VOICE_HOST, DATA_HOST, DRIVE_AUTH_HOST,
 } from '../apiHosts'
+import { reviewDiagnostics, nativeReviewStatus, describeReviewState } from '../reviewPrompt'
 
 // Every backend hop, checked at once.
 //
@@ -163,6 +164,10 @@ const CHECKS = [
   ['data worker', reachable(`https://${DATA_HOST}/`)],
 
   ['service worker', swState],
+
+  // Google Play's rating card: who installed the app, what Play said last
+  // time, and which rule holds the next ask back. Local only; nothing is fetched.
+  ['rating card', async () => describeReviewState(reviewDiagnostics(), nativeReviewStatus())],
 ]
 
 const COLOR = { ok: '#10b981', warn: '#f59e0b', fail: '#ef4444', run: '#64748b' }

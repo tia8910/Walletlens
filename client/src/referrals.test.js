@@ -58,8 +58,16 @@ describe('the switches', () => {
     expect(JSON.parse(localStorage.getItem('wl_settings')).currency).toBe('EGP')
   })
 
-  it('ships the remote switch on, uncached', () => {
-    expect(JSON.parse(readFileSync(join(SRC, '..', 'public', 'offers.json'), 'utf8')).enabled).toBe(true)
+  it('is off until the site switches it on', () => {
+    // Held for now: offers.json ships disabled, and a phone that has not
+    // heard from the site yet shows nothing either.
+    expect(offersAllowed({ zone: 'Africa/Cairo', setting: true })).toBe(false)
+    localStorage.setItem('wl_offers_remote', '1')
+    expect(offersAllowed({ zone: 'Africa/Cairo', setting: true })).toBe(true)
+  })
+
+  it('ships the remote switch off, uncached', () => {
+    expect(JSON.parse(readFileSync(join(SRC, '..', 'public', 'offers.json'), 'utf8')).enabled).toBe(false)
     expect(readFileSync(join(SRC, '..', 'public', '_headers'), 'utf8')).toMatch(/\/offers\.json\n\s+Content-Type: application\/json\n\s+Cache-Control: no-cache/)
   })
 })

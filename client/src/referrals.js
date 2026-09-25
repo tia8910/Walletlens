@@ -84,8 +84,11 @@ export function setOffersSetting(on) {
   emit()
 }
 
+// Off until the site says on. Failing closed means a phone that has never
+// reached /offers.json shows nothing, and turning the offers on or off is a
+// one-line change to that file.
 function remoteOn() {
-  try { return localStorage.getItem(REMOTE_KEY) !== '0' } catch { return true }
+  try { return localStorage.getItem(REMOTE_KEY) === '1' } catch { return false }
 }
 
 /**

@@ -571,3 +571,60 @@ export function requestReviewNow(source = 'manual') {
     'walletlens://review?fallback=store&source=' + encodeURIComponent(source)
   )
 }
+
+/**
+ * The rating card's state in words, for the Diagnostics page.
+ *
+ * Three questions decide whether a card can appear, and until this readout
+ * none could be answered from the phone: who installed the app (only a Play
+ * install can show one), what Play said the last time it was asked (it never
+ * says whether it drew anything, but a very short round trip means it did
+ * not), and which of this file's rules is holding the next ask back.
+ *
+ * Pure: pass reviewDiagnostics(), nativeReviewStatus() and the time.
+ * @returns {{ state: 'ok'|'warn'|'fail', detail: string }}
+ */
+export function describeReviewState(diag, native, now = Date.now()) {
+  if (!diag?.twa) return { state: 'warn', detail: 'not the installed Android app · the card only appears there' }
+
+  const parts = []
+  let state = 'ok'
+
+  if (native) {
+    const inst = native.installer
+    if (inst === 'com.android.vending') parts.push('installed from Play')
+    else {
+      state = 'fail'
+      parts.push(inst === 'sideload' ? 'sideloaded · Play never shows the card to a sideloaded app' : `installed by ${inst} · the card needs a Play install`)
+    }
+    if (native.outcome) {
+      const days = native.at ? Math.floor((now - native.at) / DAY_MS) : null
+      const when = days == null ? '' : days === 0 ? ' today' : ` ${days}d ago`
+      const o = native.outcome
+      const said = o.startsWith('shown_') ? 'Play showed the card'
+        : o.startsWith('no_card_') ? 'Play answered without a card (quota or already rated)'
+        : o === 'request_failed' ? 'Play refused the request'
+        : o === 'no_answer_from_play' ? 'Play did not answer'
+        : o === 'launch_threw' ? 'the review flow crashed'
+        : o
+      parts.push(`last ask${when}: ${said}`)
+    } else {
+      parts.push('never asked Play yet')
+    }
+  } else {
+    parts.push('app build without the review readout')
+  }
+
+  const b = diag.blockedBy
+  const why = !b ? 'next ask: ready (needs a portfolio and a minute in the app)'
+    : b === 'onboarding' ? 'waiting: setup not finished'
+    : b === 'friction' ? 'waiting: quiet after an app error'
+    : b === 'few-opens' ? `waiting: ${diag.opensLeft} more open${diag.opensLeft === 1 ? '' : 's'}`
+    : b === 'too-new' ? `waiting: ${diag.daysLeft} more day${diag.daysLeft === 1 ? '' : 's'} of use`
+    : b === 'recent-ask' ? `waiting: asked ${diag.asked ? Math.floor((now - diag.asked) / DAY_MS) : 0}d ago, asks again after ${diag.askCount >= SETTLED_ASKS ? SETTLED_REASK_DAYS : REASK_AFTER_DAYS}d`
+    : `waiting: ${b}`
+  parts.push(why)
+  if (b && state === 'ok') state = 'warn'
+
+  return { state, detail: parts.join(' · ') }
+}

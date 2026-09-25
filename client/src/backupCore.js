@@ -111,6 +111,11 @@ export const BACKUP_KEYS = [...CORE_KEYS, ...Object.values(BACKUP_FIELDS)]
 // so it can be asserted against in tests: a new key must be classified one way
 // or the other, not forgotten.
 export const DEVICE_ONLY_KEYS = [
+  // Partner offers: the site's on/off switch as last read, and which vault
+  // gifts were opened and whether the starter pack was shown on this device.
+  'wl_offers_remote',
+  'wl_rewards_vault',
+  'wl_starter_pack_seen',
   // A WebAuthn credential is bound to the device that created it. Restoring it
   // elsewhere gives a credential that cannot authenticate, and restoring the
   // "enabled" flag without a usable credential can lock someone out of their

@@ -685,3 +685,34 @@ describe('asking for a review does not close the app', () => {
     expect(src).toContain("'walletlens://review?fallback=store&source=' + encodeURIComponent(source)")
   })
 })
+
+describe('the Diagnostics readout', async () => {
+  const { describeReviewState } = await import('./reviewPrompt')
+  const DAY = 24 * 60 * 60 * 1000
+  const now = Date.UTC(2026, 8, 25)
+  const play = { installer: 'com.android.vending', outcome: '', at: 0 }
+
+  it('says when this is not the installed app', () => {
+    expect(describeReviewState({ twa: false }, null, now).detail).toMatch(/only appears there/)
+  })
+
+  it('flags a sideloaded install, which can never show the card', () => {
+    const r = describeReviewState({ twa: true, blockedBy: '' }, { ...play, installer: 'sideload' }, now)
+    expect(r.state).toBe('fail')
+    expect(r.detail).toMatch(/sideloaded/)
+  })
+
+  it('reads what Play said last time', () => {
+    const shown = describeReviewState({ twa: true, blockedBy: '' }, { ...play, outcome: 'shown_2400ms', at: now - 3 * DAY }, now)
+    expect(shown).toEqual({ state: 'ok', detail: 'installed from Play · last ask 3d ago: Play showed the card · next ask: ready (needs a portfolio and a minute in the app)' })
+    expect(describeReviewState({ twa: true, blockedBy: '' }, { ...play, outcome: 'no_card_120ms', at: now }, now).detail).toMatch(/today: Play answered without a card/)
+  })
+
+  it('names the rule holding the next ask back', () => {
+    expect(describeReviewState({ twa: true, blockedBy: 'few-opens', opensLeft: 1 }, play, now).detail).toMatch(/waiting: 1 more open$/)
+    expect(describeReviewState({ twa: true, blockedBy: 'too-new', daysLeft: 2 }, play, now).detail).toMatch(/waiting: 2 more days of use$/)
+    const recent = describeReviewState({ twa: true, blockedBy: 'recent-ask', asked: now - 12 * DAY, askCount: 1 }, play, now)
+    expect(recent.state).toBe('warn')
+    expect(recent.detail).toMatch(/asked 12d ago, asks again after 60d$/)
+  })
+})
