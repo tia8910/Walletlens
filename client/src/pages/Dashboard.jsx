@@ -1,6 +1,6 @@
 import { lazy, Suspense, memo, useEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { isV2Active } from '../v2Preview'
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line,
@@ -3160,7 +3160,6 @@ const DASH_TABS = new Set(['overview', 'watchlist', 'tools', 'alerts', 'targets'
 const ACTIVE_TAB_KEY = 'wl_active_tab'
 
 const CARD_CONFIG = [
-  { id:'spin_learn',         labelKey:'cardSpinLearn' },
   { id:'pnl_chart',          labelKey:'cardPnlByAsset' },
   { id:'portfolio_heatmap',  labelKey:'cardHeatmap' },
   { id:'goal_tracker',       labelKey:'cardGoalTracker' },
@@ -3595,18 +3594,6 @@ export default function Dashboard() {
     { divider: true },
     { icon: '📸', label: 'Screenshot & Share', onClick: () => {} },
   ], [])
-  // Academy "Spin & Learn" snapshot (spins left today + current IQ) for the
-  // dashboard card. Read once on mount; the route remounts when returning from
-  // /academy, so it stays current.
-  const [spinLearn] = useState(() => {
-    try {
-      const s = JSON.parse(localStorage.getItem('wl_academy_v1') || '{}')
-      const today = new Date().toISOString().split('T')[0]
-      const w = s.wheel
-      const spins = (!w || w.date !== today) ? 3 : Math.max(0, w.left ?? 3)
-      return { spins, iq: s.iq || 0 }
-    } catch { return { spins: 3, iq: 0 } }
-  })
   function toggleCard(id) {
     setCardVis(v => {
       const next = { ...v, [id]: !v[id] }
@@ -5205,19 +5192,6 @@ export default function Dashboard() {
                   below the portfolio itself, so the ask only ever comes after
                   the numbers it is asking about. */}
               <SupportNudge holdingsCount={enriched.length} busy={sheetOpen || importChooser} />
-
-              {/* Spin & Learn — link to the Academy Knowledge Wheel */}
-              {cardVis.spin_learn && (
-                <Link to="/academy?tab=wheel" className="glass-card dvx-spin-card"
-                  onClick={() => track('spin_learn_card_click', { spins: spinLearn.spins })}>
-                  <span className="dvx-spin-emoji">🎡</span>
-                  <span className="dvx-spin-text">
-                    <span className="dvx-spin-title">Spin &amp; Learn</span>
-                    <span className="dvx-spin-sub">Grow your Investor IQ · {spinLearn.iq} IQ</span>
-                  </span>
-                  <span className="dvx-spin-badge">{spinLearn.spins} spin{spinLearn.spins === 1 ? '' : 's'} left</span>
-                </Link>
-              )}
 
               {/* P&L bar chart */}
               {cardVis.pnl_chart && pnlData.length > 0 && (
