@@ -129,3 +129,13 @@ describe('v2 merges Analysis into Coach', () => {
     expect(coach).toContain("if (v2) openAnalysis('risk')")
   })
 })
+
+describe('v2 Coach has no duplicate sections', () => {
+  const coach = read('pages/Coach.jsx')
+  const v2Sections = coach.slice(coach.indexOf('const SECTIONS = v2 ? ['), coach.indexOf('] : [', coach.indexOf('const SECTIONS = v2 ? [')))
+
+  it('lists Decision Engine, Wallet Score, Analysis and Alpha, and no shortcut section', () => {
+    const ids = [...v2Sections.matchAll(/id: '(\w+)'/g)].map(m => m[1])
+    expect(ids).toEqual(['engine', 'eval', 'analysis', 'alpha'])
+  })
+})

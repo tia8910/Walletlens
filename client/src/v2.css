@@ -568,6 +568,74 @@ html.wl-v2 .bs-v2 .tk-btns { width: 100%; display: grid; grid-template-columns: 
   html.wl-v2 .bs-v2 .tk-slide-knob { transition: none; }
 }
 
+/* ── Coach ──────────────────────────────────────────────────────────────
+   The page keeps its structure; v2 swaps the fixed dark-green hero and green
+   tabs for the theme's glass, and gives Wallet Evaluation the same cards as
+   the rest of the preview. */
+html.wl-v2 .coach-hero {
+  width: auto; margin: 0.75rem 1rem 0; border-radius: 24px; border: 1px solid rgba(255,255,255,0.12);
+  background:
+    radial-gradient(70% 120% at 100% 0%, rgba(var(--g-rgb),0.22), transparent 60%),
+    linear-gradient(140deg, rgba(var(--g-rgb),0.20), color-mix(in srgb, var(--v2-t2) 70%, transparent) 55%, color-mix(in srgb, var(--v2-t3) 80%, transparent));
+  box-shadow: 0 20px 40px -22px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.14);
+}
+html.wl-v2[data-wl-light] .coach-hero {
+  border-color: rgba(var(--g-rgb),0.18);
+  background: radial-gradient(70% 120% at 100% 0%, rgba(var(--g-rgb),0.16), transparent 60%), linear-gradient(140deg, rgba(var(--g-rgb),0.10), #fff 65%);
+  box-shadow: 0 18px 36px -24px rgba(var(--g-rgb),0.45);
+}
+html.wl-v2 .coach-hero-glow { background: rgba(var(--g-rgb),0.18); }
+html.wl-v2 .coach-hero-icon { color: var(--g); background: rgba(var(--g-rgb),0.12); border-color: rgba(var(--g-rgb),0.35); box-shadow: 0 0 22px rgba(var(--g-rgb),0.2); }
+html.wl-v2 .coach-hero-title { color: var(--text); }
+html.wl-v2 .coach-hero-sub { color: var(--text-muted); }
+html.wl-v2 .coach-score-pill { background: rgba(0,0,0,0.22); border-radius: 14px; }
+html.wl-v2[data-wl-light] .coach-score-pill { background: #fff; }
+
+html.wl-v2 .coach-tabs { gap: 0.4rem; padding: 0.85rem 1rem 0.5rem; }
+html.wl-v2 .coach-tab {
+  margin: 0; padding: 0.55rem 0.95rem; border-radius: 999px; font-weight: 700;
+  background: var(--v2-glass); border: 1px solid var(--v2-glass-border); color: var(--text-muted);
+}
+html.wl-v2 .coach-tab:hover { background: rgba(var(--g-rgb),0.08); color: var(--text); }
+html.wl-v2 .coach-tab-active {
+  background: rgba(var(--g-rgb),0.16) !important; color: var(--text) !important;
+  border-color: rgba(var(--g-rgb),0.5) !important; box-shadow: 0 8px 18px -10px rgba(var(--g-rgb),0.7);
+}
+html.wl-v2 .coach-tab-active svg { color: var(--g); }
+
+html.wl-v2 .coach-eval-header.glass-card {
+  /* .glass-card is width:100%; with side margins that overflowed and clipped the ring. */
+  width: auto; margin: 0.75rem 1rem; padding: 1.1rem 1.1rem 1.1rem 1.25rem; border-radius: 24px; overflow: hidden;
+  background:
+    radial-gradient(60% 120% at 100% 50%, rgba(var(--g-rgb),0.14), transparent 65%),
+    var(--v2-glass);
+}
+html.wl-v2 .coach-eval-title { color: var(--text); }
+html.wl-v2 .coach-ring-wrap svg circle:first-child { stroke: rgba(127,127,127,0.18); }
+
+html.wl-v2 .eval-grid { display: flex; flex-direction: column; gap: 0.6rem; }
+html.wl-v2 .eval-cat-card {
+  border-radius: 20px; padding: 0.9rem 1rem;
+  background: var(--v2-glass); border: 1px solid var(--v2-glass-border); box-shadow: var(--v2-glass-shadow);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+html.wl-v2 .eval-cat-card::before { display: none; }
+html.wl-v2 .eval-cat-card:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--eval-color) 40%, transparent); }
+html.wl-v2 .eval-cat-open { border-color: color-mix(in srgb, var(--eval-color) 50%, transparent); }
+html.wl-v2 .eval-cat-icon { width: 42px; height: 42px; border-radius: 14px; box-shadow: none; }
+html.wl-v2 .eval-cat-glyph { font-weight: 800; font-size: 1.05rem; line-height: 1; }
+html.wl-v2 .eval-cat-label { color: var(--text); }
+html.wl-v2 .eval-cat-bar-wrap { background: rgba(127,127,127,0.16); }
+html.wl-v2 .eval-cat-bar {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--eval-color) 55%, transparent), var(--eval-color));
+  box-shadow: none;
+}
+html.wl-v2 .eval-cat-badge { width: 26px; height: 26px; }
+html.wl-v2 .eval-cat-tip {
+  margin-top: 0.75rem; padding: 0.7rem 0.8rem; border-radius: 14px; font-size: 0.8rem; line-height: 1.5;
+  background: color-mix(in srgb, var(--eval-color) 9%, transparent); color: var(--text-muted);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html.wl-v2 body::before { transition: none; }
 }

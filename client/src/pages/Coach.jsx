@@ -254,13 +254,23 @@ export default function Coach() {
   const eval_ = useMemo(() => computeEval(enriched, totalValue), [enriched, totalValue])
   const hasPrices = enriched.some(h => h.value > 0)
 
-  const SECTIONS = [
+  // v2 drops the "actions" section: every card in it now lives elsewhere
+  // (AI analysis and Risk in Analysis here, Alpha in its own section,
+  // Targets in the bottom bar, Alerts behind the top-bar bell).
+  const SECTIONS = v2 ? [
+    { id: 'engine',   label: t('cchSecEngine'), icon: 'zap' },
+    { id: 'eval',     label: t('cchSecEval'),   icon: 'search' },
+    { id: 'analysis', label: t('analysis'),     icon: 'trend-up' },
+    { id: 'alpha',    label: t('cchSecAlpha'),  icon: 'α' },
+  ] : [
     { id: 'engine',  label: t('cchSecEngine'),  icon: 'zap' },
-    ...(v2 ? [{ id: 'analysis', label: t('analysis'), icon: 'trend-up' }] : []),
     { id: 'eval',    label: t('cchSecEval'),    icon: 'search' },
     { id: 'actions', label: t('cchSecActions'), icon: 'cpu' },
     { id: 'alpha',   label: t('cchSecAlpha'),   icon: 'α' },
   ]
+  // Theme-variable colours (--g-ink) read as white on the v2 canvas, and a
+  // hex-suffix alpha cannot be appended to a var(); v2 uses the accent.
+  const evalColor = (c) => (v2 && String(c).startsWith('var(') ? 'var(--g)' : c)
 
   return (
     <div className="dvx-page">
@@ -382,18 +392,23 @@ export default function Coach() {
                   <div key={cat.id}
                     className={`eval-cat-card ${cat.pass ? 'eval-cat-pass' : 'eval-cat-fail'} ${evalExpanded === cat.id ? 'eval-cat-open' : ''}`}
                     onClick={() => { const o = evalExpanded !== cat.id; setEvalExpanded(o ? cat.id : null); if (o) track('coach_eval_expand', { cat: cat.id }) }}
-                    style={{ '--eval-color': cat.color }}
+                    style={{ '--eval-color': evalColor(cat.color) }}
                   >
                     <div className="eval-cat-header">
-                      <span className="eval-cat-icon" style={{ background: cat.color + '22', color: cat.color }}><Icon name={cat.icon} size={16} /></span>
+                      <span className="eval-cat-icon" style={v2
+                        ? { background: `color-mix(in srgb, ${evalColor(cat.color)} 16%, transparent)`, color: evalColor(cat.color) }
+                        : { background: cat.color + '22', color: cat.color }}>
+                        {/* Some categories use a glyph (₿) rather than an icon name, which rendered blank. */}
+                        {/^[a-z][a-z-]*$/.test(cat.icon) ? <Icon name={cat.icon} size={16} /> : <span className="eval-cat-glyph">{cat.icon}</span>}
+                      </span>
                       <div className="eval-cat-info">
                         <div className="eval-cat-label">{t(cat.labelKey)}</div>
                         <div className="eval-cat-bar-wrap">
-                          <div className="eval-cat-bar" style={{ width: `${cat.score}%`, background: cat.color }} />
+                          <div className="eval-cat-bar" style={{ width: `${cat.score}%`, background: v2 ? undefined : cat.color }} />
                         </div>
                       </div>
                       <div className="eval-cat-right">
-                        <span className="eval-cat-score" style={{ color: cat.color }}>{cat.score}</span>
+                        <span className="eval-cat-score" style={{ color: evalColor(cat.color) }}>{cat.score}</span>
                         <span className={`eval-cat-badge ${cat.pass ? 'eval-badge-pass' : 'eval-badge-fail'}`}>{cat.pass ? '✓' : '✗'}</span>
                       </div>
                     </div>
