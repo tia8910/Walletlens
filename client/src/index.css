@@ -17257,6 +17257,10 @@ input, select, textarea, .dvx-input {
   animation: wl-bmc-pop 0.18s ease-out;
 }
 @keyframes wl-bmc-pop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+/* Not until onboarding is done and an asset is added (widgetReady()). */
+html:not(.wl-bmc-ready) #bmc-wbtn,
+html:not(.wl-bmc-ready) #bmc-iframe,
+html:not(.wl-bmc-ready) .wl-bmc-msg,
 .wl-bmc-hidden #bmc-wbtn,
 .wl-bmc-hidden #bmc-iframe,
 .wl-bmc-hidden .wl-bmc-msg { display: none !important; }

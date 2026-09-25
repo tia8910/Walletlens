@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { makeDraggable, clampToViewport, BMC_POS_KEY, BMC_HIDDEN_KEY, HIDE_MS, isHidden, tagMessage, panelIsOpen, syncPanel } from './bmcWidget'
+import { makeDraggable, clampToViewport, BMC_POS_KEY, BMC_HIDDEN_KEY, HIDE_MS, isHidden, tagMessage, panelIsOpen, syncPanel, widgetReady, watchReady } from './bmcWidget'
 
 // The launcher is the widget's element with the widget's click handler; the
 // drag has to move it without ever letting a drag count as a tap.
@@ -137,5 +137,32 @@ describe('the panel open state', () => {
     expect(syncPanel(f)).toBe(true)
     expect(document.documentElement.classList.contains('wl-bmc-open')).toBe(true)
     style.remove()
+  })
+})
+
+describe('when the widget appears', () => {
+  const tx = JSON.stringify([{ id: 1, coin_id: 'bitcoin', amount: 1 }])
+  it('waits for onboarding to finish and an asset to be added', () => {
+    expect(widgetReady()).toBe(false)
+    localStorage.setItem('crypto_tracker_transactions', tx)
+    expect(widgetReady()).toBe(false)                      // not onboarded yet
+    localStorage.setItem('wl_welcomed_v2', '1')
+    localStorage.setItem('wl_welcome_step_v2', '2')
+    expect(widgetReady()).toBe(false)                      // mid onboarding
+    localStorage.removeItem('wl_welcome_step_v2')
+    expect(widgetReady()).toBe(true)
+    localStorage.setItem('crypto_tracker_transactions', '[]')
+    expect(widgetReady()).toBe(false)                      // no assets
+  })
+
+  it('shows it once both are true, without a reload', () => {
+    vi.useFakeTimers()
+    document.documentElement.classList.remove('wl-bmc-ready')
+    localStorage.setItem('wl_welcomed_v2', '1')
+    watchReady(1000)
+    expect(document.documentElement.classList.contains('wl-bmc-ready')).toBe(false)
+    localStorage.setItem('crypto_tracker_transactions', tx)
+    vi.advanceTimersByTime(1000)
+    expect(document.documentElement.classList.contains('wl-bmc-ready')).toBe(true)
   })
 })

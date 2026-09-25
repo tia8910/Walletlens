@@ -209,9 +209,39 @@ function watchPanel(frame, launcher) {
   launcher?.addEventListener('click', () => { for (const ms of [0, 80, 450, 900]) setTimeout(sync, ms) })
 }
 
+/**
+ * The widget asks for support, so it waits until the app has earned it:
+ * the welcome flow is finished and at least one asset has been added. Until
+ * then html lacks .wl-bmc-ready and index.css keeps the widget hidden. An
+ * unreadable store counts as not ready.
+ */
+export function widgetReady() {
+  try {
+    if (localStorage.getItem('wl_welcome_step_v2')) return false      // mid onboarding
+    if (!localStorage.getItem('wl_welcomed_v2')) return false
+    const txs = JSON.parse(localStorage.getItem('crypto_tracker_transactions') || '[]')
+    return Array.isArray(txs) && txs.length > 0
+  } catch { return false }
+}
+
+/** Keeps html.wl-bmc-ready current; stops checking once it is ready. */
+export function watchReady(intervalMs = 3000) {
+  const check = () => {
+    const ready = widgetReady()
+    document.documentElement.classList.toggle('wl-bmc-ready', ready)
+    return ready
+  }
+  if (check()) return
+  // Onboarding and the first asset both happen in this tab, which fires no
+  // storage event, so look again every few seconds (a localStorage read).
+  const id = setInterval(() => { if (check()) clearInterval(id) }, intervalMs)
+  window.addEventListener('storage', check)
+}
+
 /** Waits for the widget to inject its launcher, then makes it draggable. */
 export function initBmcDrag() {
   if (typeof document === 'undefined') return
+  watchReady()
   if (isHidden()) document.documentElement.classList.add('wl-bmc-hidden')
   let tagged = false
   const attach = () => {

@@ -39,6 +39,11 @@ describe('the widget tag', () => {
   it('may load its script under both CSPs', () => {
     for (const policy of [html, headers]) expect(policy).toMatch(/script-src [^;]*https:\/\/cdnjs\.buymeacoffee\.com/)
   })
+  it('stays hidden until onboarding is done and an asset is added', () => {
+    const css = readFileSync(join(here, 'index.css'), 'utf8')
+    expect(css).toMatch(/html:not\(\.wl-bmc-ready\) #bmc-wbtn,/)
+    expect(readFileSync(join(here, 'bmcWidget.js'), 'utf8')).toMatch(/export function initBmcDrag\(\) \{\s+if \(typeof document === 'undefined'\) return\s+watchReady\(\)/)
+  })
   it('sits above the bottom bar and chat button inside the app', () => {
     const css = readFileSync(join(here, 'v2.css'), 'utf8')
     expect(css).toMatch(/html\.wl-v2 body:has\(\.wl-bottom-nav\) #bmc-wbtn \{ bottom: calc\(160px/)
