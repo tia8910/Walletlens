@@ -4,10 +4,10 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { onRequestGet, UPSTREAM } from '../../functions/api/bmc.js'
 
-// The Buy Me a Coffee widget: a tag in index.html whose script comes from
-// /api/bmc, a same-origin relay, so the page does not depend on the device
-// reaching cdnjs.buymeacoffee.com. Diagnostics → "support widget" checks the
-// same pieces this does.
+// The Buy Me a Coffee widget: the studio's tag, as given, in index.html.
+// /api/bmc relays the same script through the edge; Diagnostics → "support
+// widget" asks it when the launcher does not draw, to tell "the device
+// cannot reach buymeacoffee" from "nothing can".
 
 const here = dirname(fileURLToPath(import.meta.url))
 const html = readFileSync(join(here, '../index.html'), 'utf8')
@@ -30,14 +30,19 @@ afterEach(() => { vi.unstubAllGlobals() })
 
 describe('the widget tag', () => {
   const tag = html.match(/<script data-name="BMC-Widget"[^>]*>/)?.[0] || ''
-  it('is in the page, loads from the relay, and runs before DOMContentLoaded', () => {
-    expect(tag).toContain('src="/api/bmc"')
-    expect(tag).toMatch(/\sdefer\s/)
+  it('is the studio tag, unchanged', () => {
+    expect(tag).toContain('src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"')
     expect(tag).toContain('data-id="Walletlens"')
     expect(tag).toContain('data-color="#40DCA5"')
+    expect(tag).toContain('data-position="Right" data-x_margin="18" data-y_margin="18"')
   })
-  it('sits above the chat button and bottom bar', () => {
-    expect(Number(tag.match(/data-y_margin="(\d+)"/)[1])).toBeGreaterThanOrEqual(150)
+  it('may load its script under both CSPs', () => {
+    for (const policy of [html, headers]) expect(policy).toMatch(/script-src [^;]*https:\/\/cdnjs\.buymeacoffee\.com/)
+  })
+  it('sits above the bottom bar and chat button inside the app', () => {
+    const css = readFileSync(join(here, 'v2.css'), 'utf8')
+    expect(css).toMatch(/html\.wl-v2 body:has\(\.wl-bottom-nav\) #bmc-wbtn \{ bottom: calc\(160px/)
+    expect(css).toMatch(/html\.wl-v2 body:has\(\.twa-mode\) #bmc-wbtn,/)
   })
   it('lets the widget open its panel under both CSPs', () => {
     for (const policy of [html, headers]) expect(policy).toMatch(/frame-src [^;]*https:\/\/www\.buymeacoffee\.com/)

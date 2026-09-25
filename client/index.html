@@ -171,7 +171,7 @@
          a meta tag, so it is intentionally omitted here. -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
-      script-src 'self' 'unsafe-inline' https://accounts.google.com https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
+      script-src 'self' 'unsafe-inline' https://cdnjs.buymeacoffee.com https://accounts.google.com https://www.googletagmanager.com https://www.google-analytics.com https://static.ads-twitter.com;
       style-src 'self' 'unsafe-inline' https://*.buymeacoffee.com https://fonts.googleapis.com;
       font-src 'self' data: https://fonts.gstatic.com;
       img-src 'self' data: blob: https:;
@@ -579,14 +579,12 @@
       }, { once: true });
     </script>
 
-    <!-- Buy Me a Coffee widget. Served from /api/bmc (functions/api/bmc.js),
-         a same-origin relay of cdnjs.buymeacoffee.com, so networks that
-         block that host still get it. `defer` runs it before
-         DOMContentLoaded, which is when the widget draws itself. It sits
-         above the chat button and bottom bar (data-y_margin), and v2.css
-         moves or hides it where something else owns that corner. The
-         installed Play app hides it (v2.css, .twa-mode). Checked by Diagnostics → "support widget". -->
-    <script data-name="BMC-Widget" data-cfasync="false" defer src="/api/bmc" data-id="Walletlens" data-description="Support me on Buy me a coffee!" data-message="WalletLens is an independent project built to help people track, understand, and grow their net worth, from crypto and stocks to cash, precious metals, and other assets.No sign up. No wallet connection. Your financial data stays under your control.If you find WalletLens useful, you can support the project with a coffee ☕. It helps me keep improving the app and adding new features.Thank you for supporting WalletLens ❤️" data-color="#40DCA5" data-position="Right" data-x_margin="18" data-y_margin="160"></script>
+    <!-- Buy Me a Coffee widget, exactly as the Buy Me a Coffee studio gives
+         it. Inside the app v2.css lifts the launcher (#bmc-wbtn) above the
+         bottom bar and chat button, and hides it where a sheet or the
+         full-screen chart owns the screen and in the installed Play app.
+         Checked by Diagnostics → "support widget". -->
+    <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="Walletlens" data-description="Support me on Buy me a coffee!" data-message="WalletLens is an independent project built to help people track, understand, and grow their net worth, from crypto and stocks to cash, precious metals, and other assets.No sign up. No wallet connection. Your financial data stays under your control.If you find WalletLens useful, you can support the project with a coffee ☕. It helps me keep improving the app and adding new features.Thank you for supporting WalletLens ❤️" data-color="#40DCA5" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
 
   </body>
 </html>

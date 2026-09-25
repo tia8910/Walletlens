@@ -2,12 +2,12 @@
  * Serverless function — /api/bmc
  * Serves the Buy Me a Coffee widget script from the site's own origin.
  *
- * index.html loads the widget as <script data-name="BMC-Widget" src="/api/bmc">.
- * Relaying it means the page never depends on a device being able to reach
- * cdnjs.buymeacoffee.com (some networks and ad-blocking DNS resolvers drop
- * it), and the CSP's script-src stays 'self' for it. The widget reads its
- * settings from that tag's data-* attributes, so where the code came from
- * does not matter to it.
+ * index.html loads the widget straight from cdnjs.buymeacoffee.com. This
+ * fetches the same script through the edge, so the Diagnostics page can tell
+ * "this device cannot reach buymeacoffee" from "nothing can". It can also
+ * stand in as the tag's src (the widget reads its settings from the tag's
+ * data-* attributes, not from where the code came from) if some networks
+ * turn out to block the CDN.
  *
  * The Diagnostics page ("support widget" row) calls this route directly and
  * reports what it returned when the button fails to draw.
