@@ -169,29 +169,44 @@ export function makeDraggable(el) {
 }
 
 /**
- * Whether the widget has its panel open, read from the widget's own inline
- * style on #bmc-iframe. It closes the panel by shrinking or fading that
- * style, and the fit-to-screen sizing in v2.css (which has to be
- * !important to beat the inline size) would otherwise keep a closed panel
- * on screen. So the sizing only applies under html.wl-bmc-open, which
- * this keeps in step with the widget.
+ * Whether the widget has its panel open. The fit-to-screen sizing in v2.css
+ * has to be !important to beat the widget's own size, so on a closed panel it
+ * would hold the panel on screen and the close chevron would seem to do
+ * nothing. The sizing therefore applies only under html.wl-bmc-open.
+ *
+ * The widget's own code is third-party and may close the panel through its
+ * inline style or through classes from its own stylesheet, so this reads the
+ * COMPUTED style with our sizing switched off for the moment of the reading,
+ * i.e. what the widget itself wants shown.
  */
 export function panelIsOpen(frame) {
-  if (!frame) return false
-  const st = frame.style
-  if (st.display === 'none' || st.visibility === 'hidden') return false
-  if (st.opacity !== '' && Number(st.opacity) === 0) return false
-  if (/^0(px|%)?$/.test(st.height) || /^0(px|%)?$/.test(st.width)) return false
-  if (/scale\(0(\.0+)?\)/.test(st.transform)) return false
+  if (!frame || !frame.isConnected) return false
+  const cs = getComputedStyle(frame)
+  if (cs.display === 'none' || cs.visibility === 'hidden') return false
+  if (cs.opacity !== '' && Number(cs.opacity) < 0.05) return false
+  if (/^0(\.0+)?(px)?$/.test(cs.height) || /^0(\.0+)?(px)?$/.test(cs.width)) return false
+  if (/matrix\(0(\.0+)?, 0, 0, 0(\.0+)?|scale\(0(\.0+)?\)/.test(cs.transform)) return false
   return true
 }
 
-function watchPanel(frame) {
+export function syncPanel(frame) {
+  const root = document.documentElement
+  root.classList.remove('wl-bmc-open')
+  const open = panelIsOpen(frame)
+  root.classList.toggle('wl-bmc-open', open)
+  return open
+}
+
+function watchPanel(frame, launcher) {
   if (!frame || frame.dataset.wlWatch) return
   frame.dataset.wlWatch = '1'
-  const sync = () => document.documentElement.classList.toggle('wl-bmc-open', panelIsOpen(frame))
+  const sync = () => syncPanel(frame)
   sync()
   new MutationObserver(sync).observe(frame, { attributes: true, attributeFilter: ['style', 'class', 'hidden'] })
+  frame.addEventListener('transitionend', sync)
+  // After any tap on the launcher (the widget's open/close), and again once
+  // its animation has run.
+  launcher?.addEventListener('click', () => { for (const ms of [0, 80, 450, 900]) setTimeout(sync, ms) })
 }
 
 /** Waits for the widget to inject its launcher, then makes it draggable. */
@@ -202,7 +217,7 @@ export function initBmcDrag() {
   const attach = () => {
     const el = document.getElementById('bmc-wbtn')
     if (el) makeDraggable(el)
-    watchPanel(document.getElementById('bmc-iframe'))
+    watchPanel(document.getElementById('bmc-iframe'), el)
     if (!tagged) tagged = !!tagMessage()
     return !!el && tagged && !!document.getElementById('bmc-iframe')
   }
