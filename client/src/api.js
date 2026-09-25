@@ -1388,6 +1388,28 @@ async function fetchYahooOHLCV(ticker, days = 180) {
   return []
 }
 
+// Yahoo candles fetched by the browser: Yahoo's two hosts directly and each
+// CORS relay, raced, first usable answer wins. The fallback for when the
+// /api/candles function gets nothing (Yahoo blocks some server IPs).
+async function fetchYahooCandlesFromBrowser(ticker, tf) {
+  const { YAHOO_PLANS, parseYahooCandles, groupCandles } = await import('./chartSignals');
+  const plan = YAHOO_PLANS[tf] || YAHOO_PLANS['1d'];
+  const path = `/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${plan.interval}&range=${plan.range}`;
+  const urls = [
+    `https://query1.finance.yahoo.com${path}`,
+    `https://query2.finance.yahoo.com${path}`,
+    ...CORS_PROXIES.map(wrap => wrap(`https://query1.finance.yahoo.com${path}`)),
+  ];
+  const attempt = async (url) => {
+    const res = await fetchWithTimeout(url, 9000);
+    if (!res.ok) throw new Error(String(res.status));
+    const rows = parseYahooCandles(JSON.parse(await res.text()));
+    if (rows.length <= 10) throw new Error('empty');
+    return plan.group ? groupCandles(rows, plan.group) : rows;
+  };
+  try { return await Promise.any(urls.map(attempt)); } catch { return []; }
+}
+
 // Per-wallet holdings for QR snapshots — getPortfolio() aggregates across
 // wallets (no wallet_id on holdings), which previously collapsed multi-wallet
 // portfolios into the first wallet on restore.
@@ -2291,20 +2313,42 @@ export const api = {
   // first candle on screen. Anything Binance does not list — stocks, metals,
   // stablecoins, obscure tokens — falls back to the close-only series the
   // classic chart uses, turned into candles (candlesFromCloses marks them).
-  getCandles: async (id, symbol, days = 90, warmup = 200) => {
-    const { candlesFromCloses } = await import('./chartSignals');
+  // Whether an asset has real exchange candles (Binance), so intraday
+  // timeframes mean something. Everything else charts from daily closes.
+  hasLiveCandles: (id, symbol) => {
     const sym = String(symbol || '').toUpperCase();
-    const isCrypto = !!id && !/^(stock:|xstock:|fiat:|bond:|other:|metal:)/.test(id) && id !== GOLD_ID && id !== SILVER_ID;
     const STABLE = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'FDUSD', 'USDP', 'PYUSD', 'USDE'];
-    if (isCrypto && sym && !STABLE.includes(sym)) {
-      const plan = days <= 1 ? ['15m', 96] : days <= 7 ? ['1h', 168] : days <= 30 ? ['4h', 180]
-        : days <= 365 ? ['1d', Math.round(days)] : ['1w', 260];
-      const limit = Math.min(1000, plan[1] + warmup);
-      const cacheKey = `candles::${sym}::${plan[0]}::${limit}`;
+    return !!id && !!sym && !STABLE.includes(sym) && !/^(stock:|xstock:|fiat:|bond:|other:|metal:)/.test(id) && id !== GOLD_ID && id !== SILVER_ID;
+  },
+
+  // The ticker the /api/candles function asks Yahoo for: stocks and
+  // tokenized stocks by their ticker, metals by their futures contract.
+  // null for anything without a market chart (cash, bonds, custom assets).
+  candleTicker: (id) => {
+    if (!id) return null;
+    const METALS = { [GOLD_ID]: 'GC=F', [SILVER_ID]: 'SI=F', [COPPER_ID]: 'HG=F', [PLATINUM_ID]: 'PL=F' };
+    if (METALS[id]) return METALS[id];
+    if (BSTOCK_UNDERLYING[id]) return BSTOCK_UNDERLYING[id].replace(/\.us$/, '').toUpperCase();
+    for (const pre of [STOCK_PREFIX, XSTOCK_PREFIX]) {
+      if (id.startsWith(pre)) return id.slice(pre.length).toUpperCase().replace(/\./g, '-');
+    }
+    return null;
+  },
+
+  // Candles for the indicator chart, by timeframe (candle size): 15m, 1h,
+  // 4h, 1d or 1w. `warmup` extra candles load before the visible window so
+  // the long EMAs are settled by the time they are drawn.
+  getCandles: async (id, symbol, tf = '1d', warmup = 200) => {
+    const { candlesFromCloses, CHART_TIMEFRAMES } = await import('./chartSignals');
+    const plan = CHART_TIMEFRAMES[tf] || CHART_TIMEFRAMES['1d'];
+    const sym = String(symbol || '').toUpperCase();
+    if (api.hasLiveCandles(id, sym)) {
+      const limit = Math.min(1000, plan.visible + warmup);
+      const cacheKey = `candles::${sym}::${plan.interval}::${limit}`;
       const hit = _chartCache[cacheKey];
-      if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length) return { candles: hit.v, visible: plan[1], closeOnly: false };
+      if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length) return { candles: hit.v, visible: plan.visible, closeOnly: false };
       try {
-        const res = await fetchWithTimeout(`https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(sym + 'USDT')}&interval=${plan[0]}&limit=${limit}`, 8000);
+        const res = await fetchWithTimeout(`https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(sym + 'USDT')}&interval=${plan.interval}&limit=${limit}`, 8000);
         if (res.ok) {
           const rows = await res.json();
           const candles = (Array.isArray(rows) ? rows : [])
@@ -2312,17 +2356,48 @@ export const api = {
             .filter(k => k.c > 0 && k.h >= k.l);
           if (candles.length > 10) {
             try { _chartCache[cacheKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
-            return { candles, visible: plan[1], closeOnly: false };
+            return { candles, visible: plan.visible, closeOnly: false };
           }
         }
       } catch {}
     }
-    // Fallback: the classic close-only series. Longer history for warm-up
-    // when the range allows it.
-    const pts = await api.getChartData(id, Math.max(days, days >= 90 ? 365 : days));
+    // Stocks and metals: our own /api/candles function (Yahoo, then Stooq),
+    // server-side, so no CORS proxies in the way.
+    const ticker = api.candleTicker(id);
+    if (ticker) {
+      const cacheKey = `candles::${ticker}::${tf}`;
+      const hit = _chartCache[cacheKey];
+      if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length) return { candles: hit.v, visible: Math.min(plan.visible, hit.v.length), closeOnly: false };
+      try {
+        const res = await fetchWithTimeout(`/api/candles?symbol=${encodeURIComponent(ticker)}&interval=${tf}`, 9000);
+        if (res.ok) {
+          const body = await res.json();
+          const candles = (Array.isArray(body?.candles) ? body.candles : [])
+            .map(k => ({ t: +k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c }))
+            .filter(k => k.c > 0 && k.h >= k.l);
+          if (candles.length > 10) {
+            try { _chartCache[cacheKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
+            return { candles, visible: Math.min(plan.visible, candles.length), closeOnly: false };
+          }
+        }
+      } catch {}
+      // Yahoo refuses some cloud servers, so the function can come back
+      // empty. The browser then asks Yahoo itself, directly and through the
+      // CORS relays all at once, and takes the first usable answer.
+      const candles = await fetchYahooCandlesFromBrowser(ticker, tf);
+      if (candles.length > 10) {
+        try { _chartCache[cacheKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
+        return { candles, visible: Math.min(plan.visible, candles.length), closeOnly: false };
+      }
+      // The close-only fallback below asks the same upstreams again, slowly.
+      return { candles: [], visible: 0, closeOnly: false };
+    }
+    // Fallback: the classic close-only series over the timeframe's span.
+    // Those are daily closes, so an intraday timeframe has nothing to show.
+    if (['15m', '1h', '4h'].includes(tf)) return { candles: [], visible: 0, closeOnly: true };
+    const pts = await api.getChartData(id, plan.days);
     const candles = candlesFromCloses((pts || []).map(p => ({ ...p, t: p.date })));
-    const visible = days >= 90 ? Math.max(10, Math.round(candles.length * Math.min(1, days / 365))) : candles.length;
-    return { candles, visible, closeOnly: true };
+    return { candles, visible: candles.length, closeOnly: true };
   },
 
   // Holdings for a specific coin (for sell quantity picker)

@@ -2038,4 +2038,9 @@ export default {
     acSlow: "بطيء",
     acTargets: "الأهداف",
     acYouHold: "تملك",
+    acFullScreen: "ملء الشاشة",
+    acExitFullScreen: "الخروج من ملء الشاشة",
+    acTimeframe: "الإطار الزمني",
+    acPickAsset: "اختر أصلاً",
+    acOpenAsset: "فتح",
 }

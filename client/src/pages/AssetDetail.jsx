@@ -9,8 +9,7 @@ import Icon from '../components/Icon'
 import TradeSheet from '../components/TradeSheet'
 import { useLanguage } from '../LanguageContext'
 import { isV2Active } from '../v2Preview'
-import SignalChart from '../components/SignalChart'
-import { computeChartSignals, loadChartParams, saveChartParams, normalizeParams, DEFAULT_CHART_PARAMS } from '../chartSignals'
+import IndicatorChart from '../components/IndicatorChart'
 
 // assetClass() is the shared id-prefix classifier (api.js); these wrap it
 // for the page's two flavours of "is it crypto" / "what category".
@@ -84,10 +83,7 @@ export default function AssetDetail() {
   // v2 chart: real candles and the on-device indicators.
   const location = useLocation()
   const v2 = isV2Active(location.pathname)
-  const [v2Days, setV2Days] = useState(90)
-  const [candleData, setCandleData] = useState({ candles: [], visible: 0, closeOnly: false, loading: true })
-  const [chartParams, setChartParams] = useState(loadChartParams)
-  const [paramsDraft, setParamsDraft] = useState(null)
+  const [lastClose, setLastClose] = useState(0)
   const [wallets, setWallets] = useState([])
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetType, setSheetType] = useState('buy')
@@ -112,18 +108,6 @@ export default function AssetDetail() {
     loadChart(alive)
     return () => { alive.current = false }
   }, [coinId, chartDays, v2])
-  useEffect(() => {
-    if (!v2 || !coinId) return
-    let alive = true
-    setCandleData(d => ({ ...d, loading: true }))
-    api.getCandles(coinId, coin?.symbol, v2Days)
-      .then(r => { if (alive) setCandleData({ ...r, loading: false }) })
-      .catch(() => { if (alive) setCandleData({ candles: [], visible: 0, closeOnly: false, loading: false }) })
-    return () => { alive = false }
-  }, [v2, coinId, coin?.symbol, v2Days])
-  const chartCalc = useMemo(
-    () => (v2 && candleData.candles.length ? computeChartSignals(candleData.candles, chartParams) : null),
-    [v2, candleData.candles, chartParams])
   useEffect(() => {
     if (coinId) track('asset_detail_view', { coin_id: coinId, asset_category: categoryFor(coinId) })
   }, [coinId])
@@ -275,31 +259,10 @@ export default function AssetDetail() {
   const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0
   const avgBuy = amount > 0 ? invested / amount : 0
 
-  // ── v2 asset page (/v2test preview) ───────────────────────────────────
-  const rel = (then) => {
-    const ms = Date.now() - (typeof then === 'number' ? then : Date.parse(then))
-    if (!isFinite(ms) || ms < 0) return ''
-    const rtf = new Intl.RelativeTimeFormat(lang || undefined, { numeric: 'auto' })
-    const mins = ms / 60000, hrs = mins / 60, dys = hrs / 24
-    return dys >= 1 ? rtf.format(-Math.round(dys), 'day') : hrs >= 1 ? rtf.format(-Math.round(hrs), 'hour') : rtf.format(-Math.max(1, Math.round(mins)), 'minute')
-  }
+  // ── v2 asset page ───────────────────────────────────────────────────
   const v2Hero = v2 && (() => {
-    const cs = candleData.candles
-    const last = chartCalc?.last
-    const bigCross = chartCalc?.crosses.filter(k => k.kind === 'golden' || k.kind === 'death').at(-1)
-    const slowNow = chartCalc?.ema.slow.at(-1)
-    // The live quote can arrive after the candles; until then the last close stands in.
-    const pNow = price || cs.at(-1)?.c || 0
-    const P = chartCalc?.params || chartParams
-    const draft = paramsDraft
-    const setD = (grp, key, val) => setParamsDraft(d => ({ ...d, [grp]: { ...d[grp], [key]: val } }))
-    const num = (grp, key, label, step = 1) => (
-      <label className="ac-pm">
-        <small>{label}</small>
-        <input type="number" inputMode="decimal" step={step} value={draft[grp][key]}
-          onChange={e => setD(grp, key, e.target.value)} aria-label={label} />
-      </label>
-    )
+    // The live quote can arrive after the chart; until then the last close stands in.
+    const pNow = price || lastClose
     return (
       <>
         <div className="ac-head">
@@ -325,95 +288,7 @@ export default function AssetDetail() {
           )}
         </div>
 
-        <div className="ac-chart">
-          <div className="ac-tf">
-            {[{ d: 1, l: '1D' }, { d: 7, l: '1W' }, { d: 30, l: '1M' }, { d: 90, l: '3M' }, { d: 365, l: '1Y' }, { d: 1825, l: 'ALL' }].map(({ d, l }) => (
-              <button key={d} className={v2Days === d ? 'on' : ''} onClick={() => { setV2Days(d); track('asset_chart_timeframe', { coin_id: coinId, days: d, label: l, v2: true }) }}>{l}</button>
-            ))}
-          </div>
-          {candleData.loading && !cs.length
-            ? <div className="sc-empty">{t('tkFetching')}</div>
-            : cs.length
-              ? <SignalChart candles={cs} visible={candleData.visible} calc={chartCalc} closeOnly={candleData.closeOnly}
-                  ariaLabel={`${coin?.name || ''} price chart with indicators`} />
-              : <div className="sc-empty">{t('adNoChartData')}</div>}
-          <div className="ac-chips">
-            <button className={`ac-chip${P.signals.on ? ' on' : ''}`} aria-pressed={P.signals.on}
-              onClick={() => { const n = normalizeParams({ ...chartParams, signals: { ...chartParams.signals, on: !chartParams.signals.on } }); setChartParams(n); saveChartParams(n) }}>
-              <i className="ac-dot is-sig" />{t('acSignals')} {P.signals.fast}·{P.signals.slow}·{P.signals.rsi}
-            </button>
-            <button className={`ac-chip${P.cross.on ? ' on' : ''}`} aria-pressed={P.cross.on}
-              onClick={() => { const n = normalizeParams({ ...chartParams, cross: { ...chartParams.cross, on: !chartParams.cross.on } }); setChartParams(n); saveChartParams(n) }}>
-              <i className="ac-dot is-gc" />{t('acGoldenCross')} {P.cross.fast}·{P.cross.mid}·{P.cross.slow}
-            </button>
-            <button className="ac-chip" onClick={() => setParamsDraft(JSON.parse(JSON.stringify(chartParams)))}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
-              {t('acEdit')}
-            </button>
-          </div>
-          {candleData.closeOnly && cs.length > 0 && <p className="ac-note">{t('acCloseOnly')}</p>}
-        </div>
-
-        {chartCalc && (P.signals.on || P.cross.on) && (
-          <div className="ac-sig">
-            {P.signals.on && (last ? (
-              <>
-                <div className="ac-sig-top">
-                  <span className={`ac-pill ${last.side === 'buy' ? 'is-buy' : 'is-sell'}`}>{last.side === 'buy' ? 'BUY' : 'SELL'}</span>
-                  <b>{last.side === 'buy' ? t('acBuySignal') : t('acSellSignal')} · {rel(cs[last.i].t)}</b>
-                  <small>${fmtPrice(last.entry)}</small>
-                </div>
-                <div className="ac-levels">
-                  <div className="ac-lv is-sl"><small>SL</small><b>{fmtPrice(last.stop)}</b></div>
-                  {last.targets.map((v, k) => <div key={k} className="ac-lv is-tp"><small>TP{k + 1}</small><b>{fmtPrice(v)}</b></div>)}
-                </div>
-              </>
-            ) : <p className="ac-note">{t('acNoSignal')}</p>)}
-            {P.cross.on && (
-              <div className="ac-gc">
-                <span className={`ac-tag${bigCross?.kind === 'death' ? ' is-bad' : ''}`}>{bigCross ? (bigCross.kind === 'golden' ? t('acGoldenCross') : t('acDeathCross')) : `EMA ${P.cross.mid}/${P.cross.slow}`}</span>
-                <span>
-                  {bigCross ? `${rel(cs[bigCross.i].t)} · ` : ''}
-                  {slowNow != null && pNow > 0 ? `${pNow >= slowNow ? t('acPriceAbove') : t('acPriceBelow')} EMA ${P.cross.slow}` : ''}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {draft && (
-          <div className="ac-sheet-wrap" onClick={() => setParamsDraft(null)}>
-            <div className="ac-sheet" role="dialog" aria-label={t('acIndicators')} onClick={e => e.stopPropagation()}>
-              <div className="ac-sheet-h"><b>{t('acIndicators')}</b>
-                <button className="ac-ib" onClick={() => setParamsDraft(null)} aria-label={t('close')}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-              </div>
-              <div className="ac-ind">
-                <label className="ac-ind-top"><span><b>{t('acSignals')}</b><small>{t('acSignalsDesc')}</small></span>
-                  <input type="checkbox" className="ac-tog" checked={!!draft.signals.on} onChange={e => setD('signals', 'on', e.target.checked)} /></label>
-                <div className="ac-params">
-                  {num('signals', 'fast', t('acFast'))}{num('signals', 'slow', t('acSlow'))}{num('signals', 'rsi', 'RSI')}
-                  {num('signals', 'atrMult', 'ATR ×', 0.1)}{num('signals', 'targets', t('acTargets'))}
-                </div>
-              </div>
-              <div className="ac-ind">
-                <label className="ac-ind-top"><span><b>{t('acGoldenCross')}</b><small>{t('acCrossDesc')}</small></span>
-                  <input type="checkbox" className="ac-tog" checked={!!draft.cross.on} onChange={e => setD('cross', 'on', e.target.checked)} /></label>
-                <div className="ac-params ac-p3">
-                  {num('cross', 'fast', 'EMA')}{num('cross', 'mid', 'EMA')}{num('cross', 'slow', 'EMA')}
-                </div>
-              </div>
-              <div className="ac-sheet-btns">
-                <button className="ac-btn" onClick={() => setParamsDraft(JSON.parse(JSON.stringify(DEFAULT_CHART_PARAMS)))}>{t('acReset')}</button>
-                <button className="ac-btn is-main" onClick={() => {
-                  const n = normalizeParams(draft); setChartParams(n); saveChartParams(n); setParamsDraft(null)
-                  track('chart_indicators_saved', { signals: n.signals.on, cross: n.cross.on })
-                }}>{t('acSave')}</button>
-              </div>
-            </div>
-          </div>
-        )}
+        <IndicatorChart coinId={coinId} symbol={coin?.symbol} name={coin?.name} price={price} onLastClose={setLastClose} />
       </>
     )
   })()

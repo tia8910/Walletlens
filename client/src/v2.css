@@ -15,7 +15,7 @@ html.wl-v2 {
   --v2-glass: linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.03));
   --v2-glass-border: rgba(255,255,255,0.10);
   --v2-glass-shadow: 0 10px 30px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
-  --v2-bar: color-mix(in srgb, var(--v2-b2) 72%, transparent);
+  --v2-bar: var(--v2-b2);
 }
 html.wl-v2[data-wl-theme="gold"] {
   --v2-t1: #7a5a12; --v2-t2: #4a3510; --v2-t3: #6e3514;
@@ -38,10 +38,10 @@ html.wl-v2[data-wl-theme="solana"] {
   --v2-b1: #1c0f3a; --v2-b2: #150f33; --v2-b3: #291044;
 }
 html.wl-v2[data-wl-light] {
-  --v2-glass: rgba(255,255,255,0.86);
+  --v2-glass: #ffffff;
   --v2-glass-border: rgba(15,40,30,0.08);
   --v2-glass-shadow: 0 10px 26px -14px rgba(16,60,48,0.28), inset 0 1px 0 rgba(255,255,255,0.9);
-  --v2-bar: rgba(255,255,255,0.80);
+  --v2-bar: #ffffff;
 }
 
 /* ── Canvas ─────────────────────────────────────────────────────────────
@@ -73,19 +73,22 @@ html.wl-v2[data-wl-light] body::before {
 html.wl-v2 .wl-app { background: transparent; }
 /* The particle field was tuned to sit behind opaque cards. Behind glass it
    reads through every card, so it steps back to a texture. */
-html.wl-v2 .dynamic-bg { opacity: 0.35; }
+html.wl-v2 .dynamic-bg { opacity: 0.25; }
 html.wl-v2[data-wl-light] .dynamic-bg { opacity: 0.12; }
 
 /* ── Top bar ──────────────────────────────────────────────────────────── */
+/* Solid, so cards scrolling underneath never show through the bar or the
+   price strips. The theme's top glow is repeated here so the bar still
+   reads as part of the canvas. */
 html.wl-v2 .wl-topbar {
-  background: color-mix(in srgb, var(--v2-b1) 70%, transparent);
-  backdrop-filter: blur(18px) saturate(1.4);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--v2-t1) 55%, transparent), transparent 70%),
+    var(--v2-b1);
   border-bottom: 1px solid rgba(255,255,255,0.08);
   box-shadow: 0 10px 30px -18px rgba(0,0,0,0.6);
 }
 html.wl-v2[data-wl-light] .wl-topbar {
-  background: rgba(255,255,255,0.78);
+  background: #f7faf9;
   border-bottom-color: rgba(0,0,0,0.06);
   box-shadow: 0 8px 24px -18px rgba(16,60,48,0.35);
 }
@@ -106,8 +109,6 @@ html.wl-v2 .glass-card {
   background: var(--v2-glass);
   border: 1px solid var(--v2-glass-border);
   box-shadow: var(--v2-glass-shadow);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
   border-radius: 22px;
 }
 
@@ -125,9 +126,32 @@ html.wl-v2 .dvx-hero.glass-card {
 html.wl-v2[data-wl-light] .dvx-hero.glass-card {
   background:
     radial-gradient(70% 90% at 100% 0%, rgba(var(--g-rgb),0.16), transparent 60%),
-    linear-gradient(140deg, rgba(var(--g-rgb),0.10), rgba(255,255,255,0.92) 60%);
+    linear-gradient(140deg, rgba(var(--g-rgb),0.10), rgba(255,255,255,0.92) 60%),
+    #ffffff;
   border-color: rgba(var(--g-rgb),0.18);
   box-shadow: 0 20px 40px -24px rgba(var(--g-rgb),0.45), inset 0 1px 0 #fff;
+}
+
+/* ── Scrolling stays painted ─────────────────────────────────────────────
+   Phones drop the painted content of big blurred layers while scrolling,
+   and the value card made it worse by re-painting a pulsing shadow every
+   frame: the chart and cards went blank mid-scroll. The canvas behind the
+   cards is a smooth gradient, so the blur showed nothing anyway; cards and
+   bars go without it. The heartbeat keeps pulsing, but as the opacity of
+   a glow layer, which the compositor animates without re-painting. */
+html.wl-v2 .wl-content .glass-card { backdrop-filter: none; -webkit-backdrop-filter: none; }
+html.wl-v2 .dvx-hero.heartbeat { animation: none; }
+html.wl-v2 .dvx-hero.heartbeat::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0;
+  box-shadow: inset 0 0 26px rgba(var(--g-rgb),0.22);
+  opacity: 0; animation: v2-heartbeat 2.2s ease-in-out infinite;
+}
+html.wl-v2 .dvx-hero.heartbeat-v0::before { animation-duration: 3.5s; }
+html.wl-v2 .dvx-hero.heartbeat-v2::before { animation-duration: 1.4s; }
+html.wl-v2 .dvx-hero.heartbeat-v3::before { animation-duration: 0.8s; }
+@keyframes v2-heartbeat { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  html.wl-v2 .dvx-hero.heartbeat::before { animation: none; }
 }
 
 /* ── Content clearance for the bottom bar, shown in the browser in v2 ─── */
@@ -137,8 +161,6 @@ html.wl-v2 .wlc-fab { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
 /* ── Bottom bar ───────────────────────────────────────────────────────── */
 html.wl-v2 .wl-bottom-nav {
   background: var(--v2-bar);
-  backdrop-filter: blur(22px) saturate(1.5);
-  -webkit-backdrop-filter: blur(22px) saturate(1.5);
   border-top: 1px solid rgba(255,255,255,0.08);
   box-shadow: 0 -10px 30px -12px rgba(0,0,0,0.45);
   padding: 0.45rem 0.5rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
@@ -616,7 +638,6 @@ html.wl-v2 .coach-ring-wrap svg circle:first-child { stroke: rgba(127,127,127,0.
 html.wl-v2 .eval-cat-card {
   border-radius: 20px; padding: 0.9rem 1rem;
   background: var(--v2-glass); border: 1px solid var(--v2-glass-border); box-shadow: var(--v2-glass-shadow);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
 }
 html.wl-v2 .eval-cat-card::before { display: none; }
 html.wl-v2 .eval-cat-card:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--eval-color) 40%, transparent); }
@@ -639,9 +660,16 @@ html.wl-v2 .eval-cat-tip {
    New top (ac-*): header, big price, candlestick chart with the on-device
    indicators (sc-*, SignalChart.jsx), a signal card and a settings sheet.
    The sections below the chart are the classic ones, restyled as glass. */
-html.wl-v2 .ac-page {
+/* Chart colours, shared by the asset page and Technicals. */
+html.wl-v2 {
   --sc-up: #34d399; --sc-dn: #fb7185; --sc-e1: #22d3ee; --sc-e2: #f59e0b; --sc-e3: #facc15;
   --sc-grid: rgba(255,255,255,0.06); --sc-axis: rgba(255,255,255,0.5);
+}
+html.wl-v2[data-wl-light] {
+  --sc-up: #0f9d58; --sc-dn: #e11d48; --sc-e1: #0891b2; --sc-e2: #d97706; --sc-e3: #ca8a04;
+  --sc-grid: rgba(0,0,0,0.06); --sc-axis: rgba(0,0,0,0.45);
+}
+html.wl-v2 .ac-page {
   display: flex; flex-direction: column; gap: 0.75rem;
   padding-inline: 1rem; padding-bottom: 5.5rem; max-width: 760px; margin-inline: auto; box-sizing: border-box;
 }
@@ -649,10 +677,6 @@ html.wl-v2 .ac-page {
    while the indicator settings are open. */
 html.wl-v2 body:has(.ac-page) .wlc-fab { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 html.wl-v2 body:has(.ac-sheet-wrap) .wlc-fab { display: none; }
-html.wl-v2[data-wl-light] .ac-page {
-  --sc-up: #0f9d58; --sc-dn: #e11d48; --sc-e1: #0891b2; --sc-e2: #d97706; --sc-e3: #ca8a04;
-  --sc-grid: rgba(0,0,0,0.06); --sc-axis: rgba(0,0,0,0.45);
-}
 html.wl-v2 .ac-page > * { margin-bottom: 0; }
 html.wl-v2 .ac-head { display: flex; align-items: center; gap: 0.65rem; }
 html.wl-v2 .ac-ib {
@@ -674,7 +698,6 @@ html.wl-v2 .ac-hold b { font-size: 0.9rem; color: var(--text); }
 
 html.wl-v2 .ac-chart, html.wl-v2 .ac-sig {
   border-radius: 22px; background: var(--v2-glass); border: 1px solid var(--v2-glass-border); box-shadow: var(--v2-glass-shadow);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
 }
 html.wl-v2 .ac-chart { padding: 0.65rem 0.5rem 0.6rem; display: flex; flex-direction: column; gap: 0.5rem; }
 html.wl-v2 .ac-tf { display: flex; justify-content: space-between; gap: 0.2rem; padding: 0 0.2rem; }
@@ -683,6 +706,47 @@ html.wl-v2 .ac-tf button {
   padding: 0.35rem 0.6rem; border-radius: 999px; color: var(--text-sub);
 }
 html.wl-v2 .ac-tf button.on { background: rgba(var(--g-rgb),0.18); color: var(--text); }
+html.wl-v2 .ac-tf button.ac-tf-full { flex: 0 0 auto; display: grid; place-items: center; padding-inline: 0.55rem; color: var(--text-muted); }
+html.wl-v2 .ac-tf button.ac-tf-full svg { max-width: none; flex-shrink: 0; }
+
+/* The chart and its signal card, as one block (IndicatorChart.jsx). */
+html.wl-v2 .ic-root { display: flex; flex-direction: column; gap: 0.75rem; }
+html.wl-v2 .ic-full {
+  position: fixed; inset: 0; z-index: 450; display: flex; flex-direction: column; gap: 0.55rem;
+  padding: calc(0.75rem + env(safe-area-inset-top, 0px)) 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  background:
+    radial-gradient(120% 40% at 0% 0%, color-mix(in srgb, var(--v2-t1) 70%, transparent), transparent 65%),
+    var(--v2-b2);
+  overflow-y: auto;
+}
+html.wl-v2[data-wl-light] .ic-full { background: #f6f9f8; }
+html.wl-v2 .ic-full-h { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+html.wl-v2 .ic-full-name { display: flex; align-items: baseline; gap: 0.6rem; font-variant-numeric: tabular-nums; }
+html.wl-v2 .ic-full-name b { font-size: 1.1rem; color: var(--text); }
+html.wl-v2 .ic-full-name span { font-size: 0.95rem; color: var(--text-muted); font-weight: 700; }
+html.wl-v2 body:has(.ic-full) .wlc-fab,
+html.wl-v2 body:has(.ic-full) .wl-bottom-nav { display: none; }
+/* Indicator settings open above the full-screen chart too. */
+html.wl-v2 .ic-root .ac-sheet-wrap { z-index: 460; }
+
+/* Technicals: pick a holding, then the same chart as the asset page. */
+html.wl-v2 .tc-panel { display: flex; flex-direction: column; gap: 0.75rem; }
+html.wl-v2 .tc-assets { display: flex; gap: 0.4rem; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+html.wl-v2 .tc-assets::-webkit-scrollbar { display: none; }
+html.wl-v2 .tc-asset {
+  display: inline-flex; align-items: center; gap: 0.4rem; flex-shrink: 0; cursor: pointer; font: inherit; font-size: 0.78rem; font-weight: 700;
+  padding: 0.35rem 0.75rem 0.35rem 0.4rem; border-radius: 999px; color: var(--text-muted);
+  background: var(--v2-glass); border: 1px solid var(--v2-glass-border);
+}
+html.wl-v2 .tc-asset.on { color: var(--text); border-color: rgba(var(--g-rgb),0.5); background: rgba(var(--g-rgb),0.14); }
+html.wl-v2 .tc-head { display: flex; align-items: center; gap: 0.6rem; padding: 0 0.2rem; }
+html.wl-v2 .tc-name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+html.wl-v2 .tc-name b { font-size: 0.98rem; color: var(--text); }
+html.wl-v2 .tc-name small { font-size: 0.7rem; color: var(--text-sub); }
+html.wl-v2 .tc-open {
+  font: inherit; font-size: 0.75rem; font-weight: 800; cursor: pointer; padding: 0.4rem 0.8rem; border-radius: 999px;
+  color: var(--g); background: rgba(var(--g-rgb),0.12); border: 1px solid rgba(var(--g-rgb),0.3);
+}
 html.wl-v2 .ac-chips { display: flex; gap: 0.35rem; overflow-x: auto; scrollbar-width: none; padding: 0 0.2rem; }
 html.wl-v2 .ac-chips::-webkit-scrollbar { display: none; }
 html.wl-v2 .ac-chip {

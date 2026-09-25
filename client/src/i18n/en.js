@@ -2033,4 +2033,9 @@ export default {
     acSlow: "Slow",
     acTargets: "Targets",
     acYouHold: "You hold",
+    acFullScreen: "Full screen",
+    acExitFullScreen: "Exit full screen",
+    acTimeframe: "Timeframe",
+    acPickAsset: "Choose an asset",
+    acOpenAsset: "Open",
 }
