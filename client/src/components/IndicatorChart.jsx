@@ -32,9 +32,9 @@ export default function IndicatorChart({ coinId, symbol, name, price, source = '
   const [full, setFull] = useState(false)
   const [viewH, setViewH] = useState(() => (typeof window !== 'undefined' ? window.innerHeight : 800))
 
-  // Intraday candles only exist for exchange-traded crypto; the rest chart
-  // from daily closes.
-  const live = api.hasLiveCandles(coinId, symbol)
+  // Intraday candles exist for exchange-traded crypto (Binance) and for
+  // stocks and metals (/api/candles); the rest chart from daily closes.
+  const live = api.hasLiveCandles(coinId, symbol) || !!api.candleTicker(coinId)
   const frames = Object.keys(CHART_TIMEFRAMES).filter(k => live || !INTRADAY.includes(k))
   useEffect(() => { if (!frames.includes(tf)) setTf(DEFAULT_TIMEFRAME) }, [live]) // eslint-disable-line react-hooks/exhaustive-deps
 

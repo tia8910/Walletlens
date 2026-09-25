@@ -2299,6 +2299,20 @@ export const api = {
     return !!id && !!sym && !STABLE.includes(sym) && !/^(stock:|xstock:|fiat:|bond:|other:|metal:)/.test(id) && id !== GOLD_ID && id !== SILVER_ID;
   },
 
+  // The ticker the /api/candles function asks Yahoo for: stocks and
+  // tokenized stocks by their ticker, metals by their futures contract.
+  // null for anything without a market chart (cash, bonds, custom assets).
+  candleTicker: (id) => {
+    if (!id) return null;
+    const METALS = { [GOLD_ID]: 'GC=F', [SILVER_ID]: 'SI=F', [COPPER_ID]: 'HG=F', [PLATINUM_ID]: 'PL=F' };
+    if (METALS[id]) return METALS[id];
+    if (BSTOCK_UNDERLYING[id]) return BSTOCK_UNDERLYING[id].replace(/\.us$/, '').toUpperCase();
+    for (const pre of [STOCK_PREFIX, XSTOCK_PREFIX]) {
+      if (id.startsWith(pre)) return id.slice(pre.length).toUpperCase().replace(/\./g, '-');
+    }
+    return null;
+  },
+
   // Candles for the indicator chart, by timeframe (candle size): 15m, 1h,
   // 4h, 1d or 1w. `warmup` extra candles load before the visible window so
   // the long EMAs are settled by the time they are drawn.
@@ -2325,7 +2339,30 @@ export const api = {
         }
       } catch {}
     }
+    // Stocks and metals: our own /api/candles function (Yahoo, then Stooq),
+    // server-side, so no CORS proxies in the way.
+    const ticker = api.candleTicker(id);
+    if (ticker) {
+      const cacheKey = `candles::${ticker}::${tf}`;
+      const hit = _chartCache[cacheKey];
+      if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length) return { candles: hit.v, visible: Math.min(plan.visible, hit.v.length), closeOnly: false };
+      try {
+        const res = await fetchWithTimeout(`/api/candles?symbol=${encodeURIComponent(ticker)}&interval=${tf}`, 9000);
+        if (res.ok) {
+          const body = await res.json();
+          const candles = (Array.isArray(body?.candles) ? body.candles : [])
+            .map(k => ({ t: +k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c }))
+            .filter(k => k.c > 0 && k.h >= k.l);
+          if (candles.length > 10) {
+            try { _chartCache[cacheKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
+            return { candles, visible: Math.min(plan.visible, candles.length), closeOnly: false };
+          }
+        }
+      } catch {}
+    }
     // Fallback: the classic close-only series over the timeframe's span.
+    // Those are daily closes, so an intraday timeframe has nothing to show.
+    if (['15m', '1h', '4h'].includes(tf)) return { candles: [], visible: 0, closeOnly: true };
     const pts = await api.getChartData(id, plan.days);
     const candles = candlesFromCloses((pts || []).map(p => ({ ...p, t: p.date })));
     return { candles, visible: candles.length, closeOnly: true };
