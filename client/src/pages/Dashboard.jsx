@@ -51,6 +51,7 @@ import { dataUrl } from '../apiHosts.js'
 import { sevenDayMap, sparkMap, trendFor } from '../assetTrend'
 import TrendArrow, { TrendBadge } from '../components/TrendArrow'
 import { MoneyFlowBadge } from '../components/MoneyFlow'
+import { BybitStrip } from '../components/BybitOffer'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -5669,6 +5670,8 @@ export default function Dashboard() {
                               })
                             })()}
                             </ul>
+                            {/* Bybit referral, once, after the crypto list — never between rows. */}
+                            {cat === 'crypto' && !isDemo && <BybitStrip />}
                           </div>
                         )})
                       })()}

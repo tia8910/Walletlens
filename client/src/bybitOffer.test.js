@@ -1,0 +1,75 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import {
+  bybitAllowed, restrictedZone, stripHidden, hideStrip, STRIP_SNOOZE_MS, BYBIT_URL,
+} from './bybitOffer'
+import { DEVICE_ONLY_KEYS } from './backupCore'
+
+const here = dirname(fileURLToPath(import.meta.url))
+const read = (p) => readFileSync(join(here, p), 'utf8')
+
+describe('where the Bybit offer may appear', () => {
+  it('uses the referral code', () => {
+    expect(BYBIT_URL).toMatch(/ref=BM64KOV/)
+  })
+
+  it('stays hidden where Bybit does not serve or may not be promoted', () => {
+    for (const z of ['Europe/London', 'America/New_York', 'US/Pacific', 'America/Indiana/Indianapolis',
+      'America/Toronto', 'Asia/Singapore', 'Asia/Shanghai', 'Asia/Tehran']) {
+      expect(restrictedZone(z), z).toBe(true)
+      expect(bybitAllowed({ zone: z, remote: true }), z).toBe(false)
+    }
+  })
+
+  it('shows elsewhere once the site switch is on', () => {
+    for (const z of ['Africa/Cairo', 'Europe/Berlin', 'Asia/Dubai', 'Asia/Kolkata']) {
+      expect(bybitAllowed({ zone: z, remote: true }), z).toBe(true)
+    }
+  })
+
+  it('fails closed until the site switch says on', () => {
+    expect(bybitAllowed({ zone: 'Africa/Cairo', remote: false })).toBe(false)
+  })
+
+  it('ships with the switch on, and never serves it stale', () => {
+    expect(JSON.parse(read('../public/offers.json')).enabled).toBe(true)
+    expect(read('../public/_headers')).toMatch(/\/offers\.json\n\s+Content-Type: application\/json\n\s+Cache-Control: no-cache/)
+  })
+})
+
+describe('the holdings strip', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('hides for 30 days once dismissed, then returns', () => {
+    const now = 1_700_000_000_000
+    expect(stripHidden(now)).toBe(false)
+    hideStrip(now)
+    expect(stripHidden(now + STRIP_SNOOZE_MS - 1)).toBe(true)
+    expect(stripHidden(now + STRIP_SNOOZE_MS + 1)).toBe(false)
+  })
+
+  it('keeps its state on this device, out of the backup', () => {
+    expect(DEVICE_ONLY_KEYS).toContain('wl_bybit_strip_hidden_until')
+    expect(DEVICE_ONLY_KEYS).toContain('wl_offers_remote')
+  })
+})
+
+describe('placements', () => {
+  it('sits on the crypto asset page and once after the crypto holdings', () => {
+    expect(read('pages/AssetDetail.jsx').match(/\{showFlow && <BybitCard /g)).toHaveLength(2)
+    expect(read('pages/Dashboard.jsx')).toMatch(/\{cat === 'crypto' && !isDemo && <BybitStrip \/>\}/)
+  })
+
+  it('always carries the referral disclosure', () => {
+    const c = read('components/BybitOffer.jsx')
+    expect(c).toMatch(/t\('byFine'\)/)
+    expect(c).toMatch(/t\('byStripFine'\)/)
+    expect(c).toMatch(/t\('byPartner'\)/)
+  })
+
+  it('is not a popup after adding an asset', () => {
+    expect(read('components/BybitOffer.jsx')).not.toMatch(/sheet|modal/i)
+  })
+})
