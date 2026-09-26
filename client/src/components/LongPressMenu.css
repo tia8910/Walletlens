@@ -1,0 +1,100 @@
+/* Long-press menu: a glass sheet that grows out of the press point.
+   Scoped under .lpx-* so the older .lp-* rules in index.css can't fight it. */
+
+.lpx-overlay {
+  background: rgba(3, 8, 7, 0.32);
+  animation: lpx-fade .16s ease-out;
+}
+@keyframes lpx-fade { from { opacity: 0 } to { opacity: 1 } }
+
+.lpx-menu.lp-menu {
+  width: 248px;
+  max-width: calc(100vw - 20px);
+  padding: 6px;
+  border-radius: 20px;
+  background:
+    radial-gradient(120% 70% at 0% 0%, rgba(var(--g-rgb, 16, 185, 129), 0.14), transparent 60%),
+    rgba(17, 24, 22, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow:
+    0 24px 60px -18px rgba(0, 0, 0, 0.75),
+    0 2px 0 rgba(255, 255, 255, 0.04) inset;
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+  opacity: 0;
+  transform: scale(.86);
+  transition: opacity .16s ease, transform .22s cubic-bezier(.2, .9, .3, 1.25);
+}
+.lpx-menu.is-in { opacity: 1; transform: scale(1); }
+
+.lpx-head {
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 10px 12px 9px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.lpx-head b { font: 800 14.5px 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif; letter-spacing: -.01em; color: #f1f7f4; }
+.lpx-head small { font-size: 11.5px; color: #8fa39a; font-variant-numeric: tabular-nums; }
+
+.lpx-item.lp-item {
+  display: flex; align-items: center; gap: 11px;
+  width: 100% !important; min-height: 0 !important;
+  margin: 0 !important; padding: 7px 10px 7px 7px !important;
+  border: 0 !important; border-radius: 14px !important;
+  background: transparent !important; box-shadow: none !important;
+  color: #e8f1ed !important; text-align: start; cursor: pointer;
+  font: 600 14px 'Manrope', 'Plus Jakarta Sans', system-ui, sans-serif !important;
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0; transform: translateY(4px);
+  animation: lpx-item-in .22s ease forwards;
+  animation-delay: calc(var(--i, 0) * 18ms + 40ms);
+}
+@keyframes lpx-item-in { to { opacity: 1; transform: none } }
+.lpx-item.lp-item:hover,
+.lpx-item.lp-item:focus-visible { background: rgba(255, 255, 255, 0.06) !important; outline: none; }
+.lpx-item.lp-item:active { background: rgba(255, 255, 255, 0.1) !important; transform: scale(.985); }
+.lpx-item.lp-item:disabled { opacity: .4 !important; cursor: not-allowed; }
+
+.lpx-icon.lp-icon {
+  flex-shrink: 0; width: 34px; height: 34px; border-radius: 11px;
+  display: grid; place-items: center;
+  color: var(--tone); background: color-mix(in srgb, var(--tone) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 28%, transparent);
+}
+.lpx-icon svg { width: 17px; height: 17px; }
+.lpx-emoji { font-size: 16px; line-height: 1; }
+
+.lpx-text { min-width: 0; display: flex; flex-direction: column; }
+.lpx-text .lp-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lpx-text small { font-size: 11.5px; font-weight: 500; color: #8fa39a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.lpx-divider.lp-divider { height: 1px; margin: 5px 10px; background: rgba(255, 255, 255, 0.07); }
+
+.tone-green  { --tone: #22c55e; }
+.tone-blue   { --tone: #60a5fa; }
+.tone-violet { --tone: #a78bfa; }
+.tone-amber  { --tone: #f5b942; }
+.tone-rose   { --tone: #fb7185; }
+.tone-slate  { --tone: #a5b4c0; }
+
+/* Light themes */
+[data-wl-light] .lpx-overlay { background: rgba(15, 23, 42, 0.12); }
+[data-wl-light] .lpx-menu.lp-menu {
+  background:
+    radial-gradient(120% 70% at 0% 0%, rgba(var(--g-rgb, 16, 185, 129), 0.1), transparent 60%),
+    rgba(255, 255, 255, 0.97);
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 24px 60px -20px rgba(15, 23, 42, 0.35);
+}
+[data-wl-light] .lpx-head { border-bottom-color: rgba(15, 23, 42, 0.07); }
+[data-wl-light] .lpx-head b { color: #0f172a; }
+[data-wl-light] .lpx-head small,
+[data-wl-light] .lpx-text small { color: #64748b; }
+[data-wl-light] .lpx-item.lp-item { color: #0f172a !important; }
+[data-wl-light] .lpx-item.lp-item:hover { background: rgba(15, 23, 42, 0.05) !important; }
+[data-wl-light] .lpx-divider.lp-divider { background: rgba(15, 23, 42, 0.07); }
+
+@media (prefers-reduced-motion: reduce) {
+  .lpx-overlay, .lpx-item.lp-item { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .lpx-menu.lp-menu { transition: none; }
+}

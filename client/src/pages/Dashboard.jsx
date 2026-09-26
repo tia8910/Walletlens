@@ -3652,20 +3652,54 @@ export default function Dashboard() {
   const [showCardConfig, setShowCardConfig] = useState(false)
   const [lpMenu, setLpMenu] = useState(null)
   const closeLpMenu = useCallback(() => setLpMenu(null), [])
-  function showLp(cx, cy, items) {
+  function showLp(cx, cy, items, meta = {}) {
     // Clamping lives in <LongPressMenu>; just hand it the raw press point.
     if (!items || !items.length) return
-    setLpMenu({ x: cx, y: cy, items })
-    track('longpress_menu', { area: items[0]?.label || 'unknown' })
+    setLpMenu({ x: cx, y: cy, items, title: meta.title, subtitle: meta.subtitle })
+    track('longpress_menu', { area: meta.area || 'unknown' })
   }
-  const heroLpItems = useMemo(() => [
-    { icon: '📤', label: 'Export Portfolio', onClick: () => navigate('/dashboard', { state: { tab: 'manage' } }) },
-    { icon: '🔄', label: 'Refresh Prices', onClick: async () => { try { await refreshPrices() } catch {} } },
-    { icon: '📊', label: 'Allocation View', onClick: () => navigate('/dashboard', { state: { tab: 'overview' } }) },
-    { icon: '🎯', label: 'Set Portfolio Goal', onClick: () => navigate('/dashboard', { state: { tab: 'targets' } }) },
-    { divider: true },
-    { icon: '📸', label: 'Screenshot & Share', onClick: () => {} },
-  ], [])
+
+  function toggleHidden() {
+    setHidden(h => {
+      const next = !h
+      track('hide_values_toggle', { hidden: next })
+      try { const s = JSON.parse(localStorage.getItem('wl_settings') || '{}'); localStorage.setItem('wl_settings', JSON.stringify({ ...s, hideValues: next })) } catch {}
+      return next
+    })
+  }
+
+  // Tabs are switched in place rather than by navigating to '/dashboard':
+  // that route is not where the v2 dashboard lives, so the old menu threw v2
+  // users out of their own layout — and when the tab asked for was the one
+  // already open ('overview'), nothing visible happened at all.
+  function goTab(tab) {
+    setActiveTab(tab)
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }) } catch { /* old browsers */ }
+  }
+
+  function showAllocation() {
+    const scroll = () => document.getElementById('dash-allocation')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (activeTab !== 'overview') setActiveTab('overview')
+    if (!cardVis.allocation) toggleCard('allocation')
+    // One frame for the card (or the tab) to render before scrolling to it.
+    requestAnimationFrame(() => setTimeout(scroll, 60))
+  }
+
+  // Built when the menu opens, never memoised: every action reads the
+  // current state. The old list was a useMemo with no dependencies, so
+  // "Refresh prices" called the refresh function from the first render.
+  function openHeroMenu(x, y) {
+    showLp(x, y, [
+      { icon: 'plus', tone: 'green', label: t('lpAddTrade'), onClick: () => openSheet('buy', 'longpress_hero') },
+      { icon: 'share', tone: 'blue', label: t('lpShare'), onClick: () => { setShareOpen(true); track('share_portfolio_open', { source: 'longpress' }) } },
+      { icon: 'refresh', tone: 'violet', label: t('lpRefresh'), onClick: () => { refreshPricesRef.current?.() } },
+      { icon: hidden ? 'eye' : 'eyeOff', tone: 'slate', label: hidden ? t('lpShow') : t('lpHide'), onClick: toggleHidden },
+      { icon: 'pie', tone: 'amber', label: t('lpAllocation'), onClick: showAllocation },
+      { divider: true },
+      { icon: 'flag', tone: 'rose', label: t('lpGoal'), onClick: () => navigate('/vision') },
+      { icon: 'download', tone: 'slate', label: t('lpBackup'), onClick: () => goTab('manage') },
+    ], { title: t('lpPortfolio'), subtitle: hidden ? VALUE_MASK : cv(totalValue), area: 'hero' })
+  }
   function toggleCard(id) {
     setCardVis(v => {
       const next = { ...v, [id]: !v[id] }
@@ -3758,6 +3792,9 @@ export default function Dashboard() {
   // couldn't return you to the overview tab if state.tab was already 'overview'.
   useEffect(() => {
     if (location.state?.tab) setActiveTab(normalizeTab(location.state.tab))
+    // The bottom bar's long-press "Quick add trade" asks for the Buy sheet.
+    // Nothing read this flag before, so that item only switched tabs.
+    if (location.state?.quickAdd) openSheet('buy', 'longpress_nav')
   }, [location.key]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Open wallet creation panel when navigated here from landing "Create wallet"
@@ -4807,7 +4844,7 @@ export default function Dashboard() {
           )}
 
           {/* Hero + stats — only shown when portfolio has holdings */}
-          {enriched.length > 0 && <div className={`dvx-hero glass-card heartbeat heartbeat-v${volatilityLevel} mood-${mood}`} {...bindLongPress((x, y) => showLp(x, y, heroLpItems))}>
+          {enriched.length > 0 && <div className={`dvx-hero glass-card heartbeat heartbeat-v${volatilityLevel} mood-${mood}`} {...bindLongPress(openHeroMenu)}>
             {!hidden && !isDemo && (() => {
               const dayBase = totalValue - todayPnLVal
               const dayChangePct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
@@ -5501,18 +5538,22 @@ export default function Dashboard() {
                                 // flag. That is the one place it belongs.
                                 const holdingTrend = trendFor({ pct24h: h.pct24h, pct7d: sevenDay[h.coin_id] })
                                 const trendStatus = holdingTrend.dir
+                                const holdingCoin = { id: h.coin_id, symbol: (h.coin_symbol || '').toUpperCase(), name: h.coin_name || (h.coin_symbol || '').toUpperCase(), image: h.coin_image }
                                 const holdingLpItems = isDemo ? [] : [
-                                  { icon: '📊', label: 'Technical Analysis', onClick: () => navigate('/technicals') },
-                                  { icon: '🎯', label: 'Set Sell Target', onClick: () => navigate('/dashboard', { state: { tab: 'targets' } }) },
-                                  { icon: '🔔', label: 'Set Price Alert', onClick: () => navigate('/dashboard', { state: { tab: 'alerts' } }) },
-                                  { icon: '📈', label: 'Portfolio Analysis', onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'ai' } }) },
+                                  { icon: 'chart', tone: 'blue', label: t('lpViewAsset').replace('{sym}', holdingCoin.symbol), onClick: () => navigate(`/asset/${encodeURIComponent(h.coin_id)}`) },
+                                  { icon: 'plus', tone: 'green', label: t('lpBuyMore'), onClick: () => openSheet('buy', 'longpress_holding', { coin: holdingCoin }) },
+                                  ...(h.amount > 0 ? [{ icon: 'minus', tone: 'rose', label: t('lpSell'), onClick: () => openSheet('sell', 'longpress_holding', { coin: holdingCoin }) }] : []),
+                                  ...(isStable ? [] : [{ icon: 'candles', tone: 'violet', label: t('lpTechnicals'), onClick: () => navigate('/technicals', { state: { coinId: h.coin_id } }) }]),
                                   { divider: true },
-                                  { icon: '📋', label: 'Copy Details', onClick: () => { try { navigator.clipboard?.writeText(h.coin_symbol?.toUpperCase() + ' — ' + cv(h.value) + ' (' + pct(h.pnlPct) + ' P&L)'); } catch {} } },
+                                  { icon: 'target', tone: 'amber', label: t('lpTarget'), onClick: () => goTab('targets') },
+                                  { icon: 'bell', tone: 'amber', label: t('lpAlert'), onClick: () => goTab('alerts') },
+                                  { icon: 'sparkle', tone: 'violet', label: t('lpAi'), onClick: () => navigate(location.pathname, { state: { tab: 'tools', tool: 'ai' } }) },
+                                  { icon: 'copy', tone: 'slate', label: t('lpCopy'), onClick: () => { try { navigator.clipboard?.writeText(holdingCoin.symbol + ' — ' + cv(h.value) + ' (' + pct(h.pnlPct) + ' P&L)') } catch {} } },
                                 ]
                                 return (
                                   <li key={h.coin_id} className={`dvx-holding holo-card-v2${isSelected ? ' selected' : ''}`}
                                     style={{ opacity: isDimmed ? 0.3 : 1, transition: 'opacity 0.15s', '--row-col': CATEGORY_COLOR[categorizeAsset(h)] || 'var(--g)' }}
-                                    {...(holdingLpItems.length ? bindLongPress((x, y) => showLp(x, y, holdingLpItems)) : {})}
+                                    {...(holdingLpItems.length ? bindLongPress((x, y) => showLp(x, y, holdingLpItems, { title: holdingCoin.symbol, subtitle: hidden ? VALUE_MASK : cv(displayValue), area: 'holding' })) : {})}
                                     onClick={() => { if (consumeLongPress()) return; if (!isDemo) { track('asset_click'); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) } }}>
                                     <input
                                       type="checkbox"
@@ -5699,7 +5740,7 @@ export default function Dashboard() {
             <div className="dvx-col-side">
 
               {/* ── Allocation donut (by category) ── */}
-              {cardVis.allocation && <div className="glass-card">
+              {cardVis.allocation && <div className="glass-card" id="dash-allocation">
                 <h3>{pricesFailed ? t('allocationInvested') : t('dsNetWorthByCat')}</h3>
                 {catAllocData.length === 0
                   ? <p className="muted">{t('noHoldings')}</p>
@@ -6219,7 +6260,7 @@ export default function Dashboard() {
         <WelcomeStart onDone={() => { setObStep('done'); loadAll() }} />
       )}
 
-      {lpMenu && <LongPressMenu items={lpMenu.items} pos={{ x: lpMenu.x, y: lpMenu.y }} onClose={closeLpMenu} />}
+      {lpMenu && <LongPressMenu items={lpMenu.items} title={lpMenu.title} subtitle={lpMenu.subtitle} pos={{ x: lpMenu.x, y: lpMenu.y }} onClose={closeLpMenu} />}
     </div>
   )
 }
