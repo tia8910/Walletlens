@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLanguage } from '../LanguageContext'
 import {
-  useBybitAllowed, openBybit, stripHidden, hideStrip, BYBIT_BONUS,
+  useBybitAllowed, usePickedCrypto, openBybit, stripHidden, hideStrip, BYBIT_BONUS,
 } from '../bybitOffer'
 import './BybitOffer.css'
 
@@ -54,8 +54,19 @@ export function BybitCard({ symbol }) {
   )
 }
 
+/**
+ * On the dashboard for someone who picked crypto as an interest but holds no
+ * crypto yet (including an empty portfolio). Anyone holding crypto gets the
+ * strip under that list instead, so it never appears twice.
+ */
+export function BybitInterestStrip({ holdsCrypto }) {
+  const picked = usePickedCrypto()
+  if (holdsCrypto || !picked) return null
+  return <BybitStrip placement="dashboard_interest" />
+}
+
 /** After the crypto holdings list. Dismissed, it stays hidden for 30 days. */
-export function BybitStrip() {
+export function BybitStrip({ placement = 'holdings' }) {
   const { t } = useLanguage()
   const allowed = useBybitAllowed()
   const [hidden, setHidden] = useState(stripHidden)
@@ -69,7 +80,7 @@ export function BybitStrip() {
         <b>{t('byStripHead').split('{amt}')[0]}<em>{BYBIT_BONUS}</em>{t('byStripHead').split('{amt}')[1] || ''}</b>
         <small>{t('byStripFine')}</small>
       </span>
-      <button type="button" className="by-strip-go" onClick={() => openBybit('holdings')}>{t('byClaimNow')}</button>
+      <button type="button" className="by-strip-go" onClick={() => openBybit(placement)}>{t('byClaimNow')}</button>
       <button type="button" className="by-strip-x" aria-label={t('byHide')}
         onClick={() => { hideStrip(); setHidden(true) }}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>

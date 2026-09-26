@@ -17,6 +17,7 @@
 
 import { useEffect, useState } from 'react'
 import { track, trackReferral } from './analytics'
+import { INTERESTS_EVENT } from './data/interestsEvent'
 
 export const BYBIT_URL = 'https://www.bybit.com/invite?ref=BM64KOV&medium=referral&utm_campaign=evergreen'
 export const BYBIT_BONUS = '$20'
@@ -94,6 +95,37 @@ export function useBybitAllowed() {
     return () => { listeners.delete(fn) }
   }, [])
   return bybitAllowed()
+}
+
+// ── Interest ────────────────────────────────────────────────────────────────
+
+/**
+ * Whether this person chose crypto in the interest picker.
+ *
+ * An explicit choice, unlike the price ticker's default: the ticker is
+ * information and can assume, an offer is a promotion and should be earned.
+ * Someone who already holds crypto sees the strip under that list anyway.
+ */
+export function pickedCrypto() {
+  try {
+    const v = JSON.parse(localStorage.getItem('wl_interests') || 'null')
+    return Array.isArray(v) && v.includes('crypto')
+  } catch { return false }
+}
+
+/** pickedCrypto(), kept current when the picker is saved again from Settings. */
+export function usePickedCrypto() {
+  const [on, setOn] = useState(pickedCrypto)
+  useEffect(() => {
+    const sync = () => setOn(pickedCrypto())
+    window.addEventListener(INTERESTS_EVENT, sync)
+    window.addEventListener('storage', sync)
+    return () => {
+      window.removeEventListener(INTERESTS_EVENT, sync)
+      window.removeEventListener('storage', sync)
+    }
+  }, [])
+  return on
 }
 
 // ── The strip's dismissal ───────────────────────────────────────────────────

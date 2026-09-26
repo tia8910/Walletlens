@@ -51,7 +51,7 @@ import { dataUrl } from '../apiHosts.js'
 import { sevenDayMap, sparkMap, trendFor } from '../assetTrend'
 import TrendArrow, { TrendBadge } from '../components/TrendArrow'
 import { MoneyFlowBadge } from '../components/MoneyFlow'
-import { BybitStrip } from '../components/BybitOffer'
+import { BybitStrip, BybitInterestStrip } from '../components/BybitOffer'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -4795,6 +4795,9 @@ export default function Dashboard() {
                       importsSlot={importsBlock}
                     />
                   : importsBlock}
+                {/* Picked crypto as an interest, holds none yet: the offer
+                    goes here instead of under a crypto list that is not there. */}
+                {!isDemo && <BybitInterestStrip holdsCrypto={enriched.some(h => categorizeAsset(h) === 'crypto')} />}
               </>
             )
           })()}

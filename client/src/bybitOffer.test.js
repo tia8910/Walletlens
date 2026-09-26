@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  bybitAllowed, restrictedZone, stripHidden, hideStrip, STRIP_SNOOZE_MS, BYBIT_URL,
+  bybitAllowed, restrictedZone, stripHidden, hideStrip, STRIP_SNOOZE_MS, BYBIT_URL, pickedCrypto,
 } from './bybitOffer'
 import { DEVICE_ONLY_KEYS } from './backupCore'
 
@@ -53,6 +53,27 @@ describe('the holdings strip', () => {
   it('keeps its state on this device, out of the backup', () => {
     expect(DEVICE_ONLY_KEYS).toContain('wl_bybit_strip_hidden_until')
     expect(DEVICE_ONLY_KEYS).toContain('wl_offers_remote')
+  })
+})
+
+describe('the interest picker', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('counts only an explicit crypto choice', () => {
+    expect(pickedCrypto()).toBe(false)
+    localStorage.setItem('wl_interests', JSON.stringify([]))
+    expect(pickedCrypto()).toBe(false)
+    localStorage.setItem('wl_interests', JSON.stringify(['stocks', 'metals']))
+    expect(pickedCrypto()).toBe(false)
+    localStorage.setItem('wl_interests', JSON.stringify(['stocks', 'crypto']))
+    expect(pickedCrypto()).toBe(true)
+  })
+
+  it('puts the strip on the dashboard for them, once, even with no crypto held', () => {
+    const d = read('pages/Dashboard.jsx')
+    expect(d).toMatch(/<BybitInterestStrip holdsCrypto=\{enriched\.some\(h => categorizeAsset\(h\) === 'crypto'\)\} \/>/)
+    // Holding crypto moves it under that list rather than showing it twice.
+    expect(read('components/BybitOffer.jsx')).toMatch(/if \(holdsCrypto \|\| !picked\) return null/)
   })
 })
 
