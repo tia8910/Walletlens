@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { track } from '../analytics'
+import sfx from '../sfx'
 import { fireNativeIntent, isAndroidTWA as detectAndroidTWA } from '../nativeBridge'
 
 const ENABLED_KEY  = 'wl_biometric_enabled'  // also stored in native SharedPrefs
@@ -21,6 +22,11 @@ const RELOCK_GRACE_MS = 60 * 1000
  * that being stuck is a nuisance rather than a lockout.
  */
 const RECOVER_AFTER_MS = 12 * 1000
+
+/** The lock lifting: a latch-and-shimmer cue and a short buzz. Never throws. */
+function playUnlockCue() {
+  try { sfx.playUnlock(); sfx.haptic([12, 40, 18]) } catch { /* audio is a nicety */ }
+}
 
 /** Where the last unlock request is stamped; see unlock(). */
 const UNLOCK_SENT_KEY = 'wl_biometric_unlock_at'
@@ -315,6 +321,7 @@ export function useBiometricLock() {
       sessionStorage.setItem(SESSION_KEY, '1')
       setLocked(false)
       track('biometric_unlock_success')
+      playUnlockCue()
     } else {
       track('biometric_unlock_cancel')
       // User cancelled — show the lock screen so they can retry
@@ -467,6 +474,7 @@ export function useBiometricLock() {
             sessionStorage.setItem(SESSION_KEY, '1')
             setLocked(false)
             track('biometric_unlock_success')
+            playUnlockCue()
             return
           }
           track('biometric_unlock_fail')
@@ -508,6 +516,7 @@ export function useBiometricLock() {
       sessionStorage.setItem(SESSION_KEY, '1')
       setLocked(false)
       track('biometric_unlock_success')
+      playUnlockCue()
     } catch (e) {
       track('biometric_unlock_fail')
       throw e
@@ -556,6 +565,9 @@ function BiometricLockScreenInner({ onUnlock }) {
   const autoRan = useRef(false)
 
   async function attempt({ auto = false } = {}) {
+    // A tap is the one moment audio may start. Opening the context here lets
+    // the unlock cue play when the fingerprint prompt returns.
+    if (!auto) sfx.prime()
     setTrying(true)
     setError('')
     try {

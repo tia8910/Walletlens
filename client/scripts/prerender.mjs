@@ -301,7 +301,7 @@ const homeBody = `
 <li><strong>Investment performance tracker</strong> — see your P&amp;L, ROI, and cost basis in dollars and percentage, broken down by asset and category.</li>
 <li><strong>AI portfolio analysis</strong> — health score, personalised Fear &amp; Greed gauge, stress tests, entry quality, and a rebalance planner, all computed on your device.</li>
 <li><strong>Multi-target sell plans</strong> — set crypto price targets and the percentage of each holding to sell, with live progress bars.</li>
-<li><strong>Whale tracker</strong> — real-time large Bitcoin transactions and volume anomalies.</li>
+<li><strong>Smart money flow</strong> — Nansen smart-money inflow and outflow on each crypto holding.</li>
 <li><strong>Private by design</strong> — portfolio tracker with no bank account link required; no exchange API keys needed.</li>
 </ul>
 <h2>Free portfolio tracker vs paid alternatives</h2>
@@ -2369,7 +2369,8 @@ const APP_ROUTES = [
   // The v2 redesign preview, opened by typing the URL: a cold navigation.
   { path: '/v2test',       title: 'Dashboard — WalletLens',      description: 'Your private portfolio dashboard. Data stays on your device.' },
   { path: '/transactions', title: 'Trades — WalletLens',         description: 'Your transaction history. Data stays on your device.' },
-  { path: '/whales',       title: 'Whale Tracker — WalletLens',  description: 'Real-time large Bitcoin transactions and volume anomalies.' },
+  // Retired page: the route redirects to Technicals, the shell keeps old links from 404ing.
+  { path: '/whales',       title: 'Analysis — WalletLens',       description: 'Technical analysis and smart money flow for your holdings.' },
   { path: '/alpha',        title: 'Alpha — WalletLens',          description: 'Market signals and analysis tools.' },
   { path: '/academy',      title: 'Academy — WalletLens',        description: 'Learn portfolio tracking and investing concepts.' },
   { path: '/coach',        title: 'AI Coach — WalletLens',       description: 'AI-powered portfolio analysis, computed on your device.' },

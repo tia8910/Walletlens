@@ -36,15 +36,6 @@ const STEPS = [
     accent: '#60a5fa',
   },
   {
-    id: 'whales', mode: 'spotlight',
-    target: '.wl-nav-item:nth-child(4)',
-    icon: 'whale',
-    title: 'Follow Smart Money',
-    desc: 'Track the biggest crypto wallets. See what whales are buying before the crowd reacts.',
-    cta: 'Got it →',
-    accent: '#38bdf8',
-  },
-  {
     id: 'alpha', mode: 'spotlight',
     target: '.wl-nav-item:nth-child(5)',
     icon: 'zap',

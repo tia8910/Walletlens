@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CoinLogo from './CoinLogo'
 import IndicatorChart from './IndicatorChart'
-import { api } from '../api'
+import { api, assetClass } from '../api'
 import { GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID, STOCK_PREFIX, POPULAR_TICKERS } from '../data/assets'
 import { isStablecoin } from '../stablecoins'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
+import { MoneyFlowCard } from './MoneyFlow'
 
 // Technicals: the asset page's indicator chart for any holding, picked from
 // a row of chips (largest holding first), or for any other asset found with
@@ -130,6 +131,7 @@ export default function TechChartPanel({ enriched }) {
       </div>
       <IndicatorChart key={cur.coin_id} coinId={cur.coin_id} symbol={cur.coin_symbol} name={cur.coin_name}
         price={cur.price || 0} source="technicals" />
+      {assetClass(cur.coin_id) === 'crypto' && <MoneyFlowCard symbol={cur.coin_symbol} />}
     </div>
   )
 }

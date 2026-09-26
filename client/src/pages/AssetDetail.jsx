@@ -10,6 +10,8 @@ import TradeSheet from '../components/TradeSheet'
 import { useLanguage } from '../LanguageContext'
 import { isV2Active } from '../v2Preview'
 import IndicatorChart from '../components/IndicatorChart'
+import { MoneyFlowCard } from '../components/MoneyFlow'
+import { isStablecoin } from '../stablecoins'
 
 // assetClass() is the shared id-prefix classifier (api.js); these wrap it
 // for the page's two flavours of "is it crypto" / "what category".
@@ -259,6 +261,10 @@ export default function AssetDetail() {
   const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0
   const avgBuy = amount > 0 ? invested / amount : 0
 
+  // Smart money flow is an on-chain reading, so crypto only, and not for
+  // stablecoins, whose flows are payments rather than positions.
+  const showFlow = !!coin?.symbol && !isNonCryptoId(coinId) && !isStablecoin(coinId, coin.symbol)
+
   // ── v2 asset page ───────────────────────────────────────────────────
   const v2Hero = v2 && (() => {
     // The live quote can arrive after the chart; until then the last close stands in.
@@ -289,6 +295,7 @@ export default function AssetDetail() {
         </div>
 
         <IndicatorChart coinId={coinId} symbol={coin?.symbol} name={coin?.name} price={price} onLastClose={setLastClose} />
+        {showFlow && <MoneyFlowCard symbol={coin.symbol} />}
       </>
     )
   })()
@@ -404,6 +411,9 @@ export default function AssetDetail() {
           </div>
         </div>
       )}
+
+      {/* Smart money flow (Nansen) */}
+      {showFlow && <MoneyFlowCard symbol={coin.symbol} />}
 
       {/* Whale activity / smart signals */}
       {signals && <WhalePanel s={signals} symbol={coin?.symbol} />}

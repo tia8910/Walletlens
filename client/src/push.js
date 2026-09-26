@@ -324,7 +324,6 @@ export function featureSetup() {
       // these, a tip about Technicals or Whales is a guess about whether they
       // have already found it.
       technicals: usedFeature('technicals'),
-      whales: usedFeature('whales'),
       academy: usedFeature('academy'),
       coach: usedFeature('coach'),
       rebalance: usedFeature('rebalance'),

@@ -1,5 +1,5 @@
 import { lazy, Suspense, memo, useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react'
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import useScrollTop from './useScrollTop'
 const Landing       = lazy(() => import('./pages/Landing'))
 const TrackCoin     = lazy(() => import('./pages/TrackCoin'))
@@ -87,7 +87,6 @@ function useCycleIdx() {
 }
 
 const Transactions = lazy(() => import('./pages/Transactions'))
-const Whales       = lazy(() => import('./pages/Whales'))
 const Alpha        = lazy(() => import('./pages/Alpha'))
 const EconomicCalendar = lazy(() => import('./pages/EconomicCalendar'))
 const Academy      = lazy(() => import('./pages/Academy'))
@@ -125,7 +124,6 @@ function PageFallback() {
 
 function IconHome()   { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5l9-7 9 7V20a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/></svg> }
 function IconTrades() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7"/><path d="M9 7h8v8"/><circle cx="7" cy="17" r="1.2" fill="currentColor" stroke="none"/></svg> }
-function IconWhale()  { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 14c2-2 5-3 8-3 4 0 7 2 9 5 1-1 2-2 3-2-1 3-4 5-7 5-3 0-5-1-7-3-1 1-3 1-4 0z"/><circle cx="7" cy="12" r="0.8" fill="currentColor"/></svg> }
 function IconAlpha()   { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 20L12 4l6 16"/><path d="M8.5 14h7"/><circle cx="12" cy="4" r="1" fill="currentColor" stroke="none"/></svg> }
 function IconAcademy() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> }
 function IconCoach()   { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/><line x1="10" y1="17" x2="10" y2="21"/><line x1="14" y1="17" x2="14" y2="21"/></svg> }
@@ -263,7 +261,6 @@ const Drawer = memo(function Drawer({ open, onClose, onHelp }) {
             <span>{t('navGoals')}<span style={{ fontSize: '.7em', opacity: .55, fontWeight: 400, marginInlineStart: '.35em' }}>— {t('visionPlanner')}</span></span>
           </button>
           <button className={active('/transactions')} onClick={() => go('/transactions')}><IconTrades /><span>{t('trades')}</span></button>
-          <button className={active('/whales')} onClick={() => go('/whales')}><IconWhale /><span>{t('whaleTracker')}</span></button>
         </div>
 
         <div className="wl-drawer-section">
@@ -423,7 +420,6 @@ const DrawerV2 = memo(function DrawerV2({ open, onClose, onHelp }) {
         <div className="wl-v2-group">
           <Row icon={<IconTechnicals />} hue="#4f8cff" label={t('analysis')} current={onPage('/technicals')} onClick={() => go('/technicals')} />
           <Row icon={<IconAlpha />} hue="#f5c542" label={t('alpha')} current={onPage('/alpha')} onClick={() => go('/alpha')} />
-          <Row icon={<IconWhale />} hue="#22c7c7" label={t('whaleTracker')} current={onPage('/whales')} onClick={() => go('/whales')} />
           <Row icon={V2_ICONS.calendar} hue="#ff9f43" label={t('calendar')} current={onPage('/calendar')} onClick={() => go('/calendar')} />
         </div>
 
@@ -951,7 +947,9 @@ export default function App() {
               {/* The v2 redesign preview: the same Dashboard in the new shell. */}
               <Route path="/v2test" element={<Dashboard />} />
               <Route path="/transactions" element={<Transactions />} />
-              <Route path="/whales" element={<Whales />} />
+              {/* Whale Tracker was retired; smart money flow now sits on each
+                  crypto holding. Old links land on Technical Analysis. */}
+              <Route path="/whales" element={<Navigate to="/technicals" replace />} />
               <Route path="/alpha" element={<Alpha />} />
               <Route path="/calendar" element={<EconomicCalendar />} />
               <Route path="/academy" element={<Academy />} />

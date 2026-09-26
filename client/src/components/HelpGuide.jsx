@@ -29,10 +29,6 @@ const SECTIONS = [
     desc: 'Alpha score, hidden gems and smart-money signals — tuned to the coins you actually hold.',
   },
   {
-    icon: 'whale', title: 'Whales', path: '/whales',
-    desc: 'Follow the biggest wallets. See what smart money is buying before the crowd reacts.',
-  },
-  {
     icon: 'graduation', title: 'Coach & Academy', path: '/coach',
     desc: 'Personalised guidance plus bite-size lessons to sharpen your investing IQ.',
   },

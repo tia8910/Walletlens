@@ -166,17 +166,100 @@ export function normalizeFlow(row) {
   // Netflow is the signal: positive means smart money accumulated over the
   // window, negative means it distributed. Price and volume are already in the
   // app from other sources, so they are not duplicated here.
+  //
+  // `netflow` is the 24-hour figure wherever the upstream gives one, because
+  // that is the window the ticker and the holding badges describe.
   const netflow = pick(row, [
+    'net_flow_24h_usd', 'netflow_24h_usd', 'netflow24hUsd',
     'netflow_usd', 'netflowUsd', 'net_flow_usd', 'netflow', 'smart_money_netflow',
     'volume_netflow_usd', 'netFlow',
   ])
   if (netflow === null) return null
 
+  const round = (v) => (v === null ? null : Math.round(v))
   return {
     symbol,
     netflow: Math.round(netflow),
+    netflow7d: round(pick(row, ['net_flow_7d_usd', 'netflow_7d_usd', 'netflow7dUsd'])),
+    netflow30d: round(pick(row, ['net_flow_30d_usd', 'netflow_30d_usd', 'netflow30dUsd'])),
+    traders: pick(row, ['trader_count', 'traderCount', 'traders']) ?? null,
     volume: pick(row, ['volume_usd', 'volumeUsd', 'volume']) ?? null,
   }
+}
+
+/**
+ * One row per symbol.
+ *
+ * Nansen reports a token once per chain, so USDC-style duplicates are normal:
+ * the same symbol on Ethereum, Base and Arbitrum. Summing is right for flows —
+ * money that moved on any chain moved.
+ */
+export function mergeFlows(flows) {
+  const bySym = new Map()
+  const add = (a, b) => (a === null && b === null ? null : (a || 0) + (b || 0))
+  for (const f of flows) {
+    const prev = bySym.get(f.symbol)
+    if (!prev) { bySym.set(f.symbol, { ...f }); continue }
+    prev.netflow += f.netflow
+    prev.netflow7d = add(prev.netflow7d ?? null, f.netflow7d ?? null)
+    prev.netflow30d = add(prev.netflow30d ?? null, f.netflow30d ?? null)
+    prev.traders = add(prev.traders ?? null, f.traders ?? null)
+    prev.volume = add(prev.volume ?? null, f.volume ?? null)
+  }
+  return [...bySym.values()]
+}
+
+/** The chains Nansen labels smart money on. */
+export const NETFLOW_CHAINS = [
+  'ethereum', 'solana', 'base', 'arbitrum', 'bnb', 'polygon', 'optimism', 'avalanche',
+]
+
+/**
+ * Nansen's documented smart-money netflow screen, asked twice: once for the
+ * biggest inflows and once for the biggest outflows. One ordering alone would
+ * only ever show one side, and the holding badges need both.
+ *
+ * Each ordering is tried with filters first and then bare, because an unknown
+ * filter answers 422 and the bare body is the one least likely to be refused.
+ */
+export function netflowBodies(perPage = 100) {
+  const bodies = []
+  for (const direction of ['DESC', 'ASC']) {
+    const base = {
+      chains: NETFLOW_CHAINS,
+      pagination: { page: 1, per_page: perPage },
+      order_by: [{ field: 'net_flow_24h_usd', direction }],
+    }
+    bodies.push([
+      { ...base, filters: { include_stablecoins: false, include_native_tokens: true } },
+      base,
+    ])
+  }
+  return bodies
+}
+
+async function fetchNetflow(tried) {
+  const rows = []
+  for (const variants of netflowBodies()) {
+    for (const body of variants) {
+      try {
+        const res = await fetch(`${NANSEN_PROXY}/api/v1/smart-money/netflow`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(15000),
+        })
+        const text = await res.text()
+        if (!res.ok) { tried.push(`smart-money/netflow POST:${res.status}`); continue }
+        let data
+        try { data = JSON.parse(text) } catch { tried.push('smart-money/netflow POST:200-not-json'); continue }
+        const r = rowsOf(data)
+        if (r.length) { rows.push(...r); break }
+        tried.push(`smart-money/netflow POST:200[${Object.keys(data || {}).slice(0, 6).join(',')}]`)
+      } catch { tried.push('smart-money/netflow POST:threw') }
+    }
+  }
+  return rows
 }
 
 /** Rows come back under a different key depending on the endpoint. */
@@ -232,7 +315,12 @@ export async function fetchSmartMoney(now = Date.now()) {
   const tried = []
   let notFound = 0
 
-  for (const path of SMART_MONEY_PATHS) {
+  // The documented endpoint first. Only if it yields nothing does the probe
+  // below spend requests looking for another shape.
+  rows = await fetchNetflow(tried)
+  if (rows.length) hit = 'api/v1/smart-money/netflow POST'
+
+  if (!rows.length) for (const path of SMART_MONEY_PATHS) {
     for (const method of ['GET', 'POST']) {
       const init = method === 'GET'
         ? { headers: { Accept: 'application/json' } }
@@ -268,13 +356,23 @@ export async function fetchSmartMoney(now = Date.now()) {
     if (hit) break
   }
 
-  const flows = []
+  // The inflow and outflow screens can both carry a token near zero, so the
+  // same chain row may arrive twice. Deduplicate before summing across chains.
+  const seen = new Set()
+  const unique = rows.filter((row, i) => {
+    const key = `${row?.chain || ''}:${row?.token_address || row?.tokenAddress || i}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+  const parsed = []
   let unparsed = 0
-  for (const row of rows) {
+  for (const row of unique) {
     const f = normalizeFlow(row)
-    if (f) flows.push(f)
+    if (f) parsed.push(f)
     else unparsed++
   }
+  const flows = mergeFlows(parsed)
 
   // Nothing usable — publish why, not nothing. A dataset that fails silently
   // is indistinguishable from one that was never deployed, and that ambiguity
