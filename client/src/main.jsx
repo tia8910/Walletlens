@@ -1,4 +1,5 @@
 import React from 'react'
+import { handOffSplash } from './bootSplash'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
@@ -144,6 +145,8 @@ function handoffRequested() {
 }
 
 function mountApp() {
+  // Before React replaces #root: the splash's copy plays its exit over the app.
+  handOffSplash()
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
       <ErrorBoundary>
