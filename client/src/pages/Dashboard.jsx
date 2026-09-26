@@ -51,6 +51,7 @@ import { dataUrl } from '../apiHosts.js'
 import { sevenDayMap, sparkMap, trendFor } from '../assetTrend'
 import TrendArrow, { TrendBadge } from '../components/TrendArrow'
 import { MoneyFlowBadge } from '../components/MoneyFlow'
+import { BybitStrip, BybitInterestStrip } from '../components/BybitOffer'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -72,7 +73,6 @@ const ZakatCalculator = lazy(() => import('../components/ZakatCalculator'))
 const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
 const SmartAlerts    = lazy(() => import('../components/SmartAlerts'))
 const RiskScanner    = lazy(() => import('../components/RiskScanner'))
-const LiquidityRisk  = lazy(() => import('../components/LiquidityRisk'))
 const TechChartPanel = lazy(() => import('../components/TechChartPanel'))
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
 const AISellPlan     = lazy(() => import('../components/AISellPlan'))
@@ -2798,10 +2798,6 @@ export function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, p
     { id: 'ta',     label: t('dashTechnicals') },
     { id: 'risk',   label: t('riskScanner') },
   ]
-  const riskHoldings = useMemo(
-    () => (isDemo ? [] : enriched).map(h => ({ id: h.coin_id, coin_id: h.coin_id, symbol: h.coin_symbol, coin_symbol: h.coin_symbol, value: h.value })),
-    [isDemo, enriched]
-  )
   return (
     <div>
       <div style={{ display:'flex', gap:'0.5rem', marginBottom:'1rem', background:'var(--surface-1)', borderRadius:'12px', padding:'0.3rem' }}>
@@ -2816,7 +2812,7 @@ export function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, p
       </div>
       {tool === 'ai'     && <AIPanel enriched={enriched} prices={prices} transactions={transactions} totalValue={totalValue} isDemo={isDemo} pricesLoading={pricesLoading} />}
       {tool === 'ta'     && <Suspense fallback={<TabFallback />}><TechChartPanel enriched={isDemo ? [] : enriched} /></Suspense>}
-      {tool === 'risk'   && <Suspense fallback={<TabFallback />}><LiquidityRisk holdings={riskHoldings} /><RiskScanner enriched={isDemo ? [] : enriched} /></Suspense>}
+      {tool === 'risk'   && <Suspense fallback={<TabFallback />}><RiskScanner enriched={isDemo ? [] : enriched} /></Suspense>}
     </div>
   )
 }
@@ -4794,6 +4790,9 @@ export default function Dashboard() {
                       importsSlot={importsBlock}
                     />
                   : importsBlock}
+                {/* Picked crypto as an interest, holds none yet: the offer
+                    goes here instead of under a crypto list that is not there. */}
+                {!isDemo && <BybitInterestStrip holdsCrypto={enriched.some(h => categorizeAsset(h) === 'crypto')} />}
               </>
             )
           })()}
@@ -5669,6 +5668,8 @@ export default function Dashboard() {
                               })
                             })()}
                             </ul>
+                            {/* Bybit referral, once, after the crypto list — never between rows. */}
+                            {cat === 'crypto' && !isDemo && <BybitStrip />}
                           </div>
                         )})
                       })()}

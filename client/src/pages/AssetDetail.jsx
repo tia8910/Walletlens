@@ -11,6 +11,7 @@ import { useLanguage } from '../LanguageContext'
 import { isV2Active } from '../v2Preview'
 import IndicatorChart from '../components/IndicatorChart'
 import { MoneyFlowCard } from '../components/MoneyFlow'
+import { BybitCard } from '../components/BybitOffer'
 import { isStablecoin } from '../stablecoins'
 
 // assetClass() is the shared id-prefix classifier (api.js); these wrap it
@@ -296,6 +297,7 @@ export default function AssetDetail() {
 
         <IndicatorChart coinId={coinId} symbol={coin?.symbol} name={coin?.name} price={price} onLastClose={setLastClose} />
         {showFlow && <MoneyFlowCard symbol={coin.symbol} />}
+        {showFlow && <BybitCard symbol={coin.symbol} />}
       </>
     )
   })()
@@ -414,6 +416,7 @@ export default function AssetDetail() {
 
       {/* Smart money flow (Nansen) */}
       {showFlow && <MoneyFlowCard symbol={coin.symbol} />}
+        {showFlow && <BybitCard symbol={coin.symbol} />}
 
       {/* Whale activity / smart signals */}
       {signals && <WhalePanel s={signals} symbol={coin?.symbol} />}
