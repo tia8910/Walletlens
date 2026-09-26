@@ -5,8 +5,8 @@ import {
 } from '../bybitOffer'
 import './BybitOffer.css'
 
-// The Bybit sign-up bonus, in two places: a card on a crypto asset's page and
-// a slim strip after the crypto holdings. The amount comes from /offers.json. Both render nothing unless
+// The Bybit sign-up bonus: a card on a crypto asset's page and in Technical
+// Analysis, and a slim strip after the crypto holdings. The amount comes from /offers.json. Both render nothing unless
 // bybitAllowed() says so (remote switch on, region allowed).
 
 function Wordmark() {
@@ -29,8 +29,8 @@ function Gift({ className }) {
   )
 }
 
-/** On a crypto asset's page, under the smart money flow card. */
-export function BybitCard({ symbol }) {
+/** Under the smart money flow card: on a crypto asset's page and in Technical Analysis. */
+export function BybitCard({ symbol, placement = 'asset_page' }) {
   const { t } = useLanguage()
   const { allowed, bonus } = useBybitOffer()
   if (!allowed) return null
@@ -46,7 +46,7 @@ export function BybitCard({ symbol }) {
         <li><b>2</b>{t('byStep2')}</li>
         <li><b>3</b>{t('byStep3').replace('{amt}', bonus)}</li>
       </ol>
-      <button type="button" className="by-cta" onClick={() => openBybit('asset_page')}>
+      <button type="button" className="by-cta" onClick={() => openBybit(placement)}>
         {t('byCta').replace('{amt}', bonus)} <span aria-hidden="true">→</span>
       </button>
       <p className="by-fine">{t('byFine')}</p>

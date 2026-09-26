@@ -117,6 +117,9 @@ describe('placements', () => {
   it('sits on the crypto asset page and once after the crypto holdings', () => {
     expect(read('pages/AssetDetail.jsx').match(/\{showFlow && <BybitCard /g)).toHaveLength(2)
     expect(read('pages/Dashboard.jsx')).toMatch(/\{cat === 'crypto' && !isDemo && <BybitStrip \/>\}/)
+    // Technical Analysis: under the smart money card, crypto only (the panel
+    // never charts a stablecoin).
+    expect(read('components/TechChartPanel.jsx')).toMatch(/<BybitCard symbol=\{cur\.coin_symbol\} placement="technicals" \/>/)
   })
 
   it('always carries the referral disclosure', () => {
