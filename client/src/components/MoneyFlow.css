@@ -1,0 +1,75 @@
+/* Smart money flow: badge on holding rows, card on the asset page and in
+   Technical Analysis. Tones follow the app's green / red / slate. */
+
+.mf-up { --mf: #22c55e; --mf-rgb: 34, 197, 94; }
+.mf-dn { --mf: #ef4444; --mf-rgb: 239, 68, 68; }
+.mf-flat { --mf: #94a3b8; --mf-rgb: 148, 163, 184; }
+
+/* ── Badge ─────────────────────────────────────────────── */
+.mf-badge {
+  display: inline-flex; align-items: center; gap: 0.25em;
+  padding: 1px 7px; border-radius: 9999px;
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.02em; line-height: 1.4;
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+  color: var(--mf);
+  background: rgba(var(--mf-rgb), 0.1);
+  border: 1px solid rgba(var(--mf-rgb), 0.28);
+}
+.mf-badge.mf-strong {
+  background: linear-gradient(90deg, rgba(var(--mf-rgb), 0.2), rgba(var(--mf-rgb), 0.08));
+  box-shadow: 0 0 10px -3px rgba(var(--mf-rgb), 0.55);
+}
+.mf-up .mf-glyph { animation: mf-rise 1.8s ease-in-out infinite; }
+.mf-dn .mf-glyph { animation: mf-fall 1.8s ease-in-out infinite; }
+@keyframes mf-rise { 0%, 100% { transform: translateY(1px); opacity: .75 } 50% { transform: translateY(-1px); opacity: 1 } }
+@keyframes mf-fall { 0%, 100% { transform: translateY(-1px); opacity: .75 } 50% { transform: translateY(1px); opacity: 1 } }
+
+/* ── Card ──────────────────────────────────────────────── */
+.mf-card {
+  position: relative; overflow: hidden;
+  margin: 0.9rem 0; padding: 0.95rem 1rem 0.8rem;
+  border-radius: 18px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(var(--mf-rgb, 148, 163, 184), 0.14), transparent 60%),
+    var(--card-bg, rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(var(--mf-rgb, 148, 163, 184), 0.24);
+  color: var(--text, inherit);
+}
+.mf-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.mf-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-sub, var(--text2, #94a3b8)); }
+.mf-src {
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 999px;
+  color: #fde68a; background: rgba(253, 230, 138, 0.1); border: 1px solid rgba(253, 230, 138, 0.3);
+}
+
+.mf-status { display: flex; align-items: center; gap: 0.7rem; margin: 0.75rem 0 0.7rem; }
+.mf-orb {
+  flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%;
+  display: grid; place-items: center; color: var(--mf);
+  background: radial-gradient(circle at 35% 30%, rgba(var(--mf-rgb), 0.35), rgba(var(--mf-rgb), 0.08));
+  box-shadow: 0 0 0 1px rgba(var(--mf-rgb), 0.35), 0 6px 18px -8px rgba(var(--mf-rgb), 0.8);
+}
+.mf-strong .mf-orb { animation: mf-pulse 2.4s ease-in-out infinite; }
+@keyframes mf-pulse { 0%, 100% { box-shadow: 0 0 0 1px rgba(var(--mf-rgb), .35), 0 0 0 0 rgba(var(--mf-rgb), .35) } 50% { box-shadow: 0 0 0 1px rgba(var(--mf-rgb), .5), 0 0 0 7px rgba(var(--mf-rgb), 0) } }
+.mf-status-txt { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.mf-status-txt b { font-size: 1rem; font-weight: 800; color: var(--mf); letter-spacing: -0.01em; }
+.mf-status-txt small { font-size: 0.72rem; color: var(--text-sub, var(--text2, #94a3b8)); line-height: 1.35; }
+.mf-big { text-align: end; font-size: 1.05rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--mf); white-space: nowrap; }
+.mf-big small { display: block; font-size: 0.6rem; font-weight: 600; opacity: 0.7; letter-spacing: 0.06em; }
+
+.mf-rows { display: grid; gap: 0.4rem; }
+.mf-row { display: grid; grid-template-columns: 2.2rem 1fr 4.6rem; align-items: center; gap: 0.55rem; font-size: 0.74rem; }
+.mf-row-lbl { color: var(--text-sub, var(--text2, #94a3b8)); font-weight: 600; }
+.mf-row-val { text-align: end; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--mf); }
+.mf-track { position: relative; height: 6px; border-radius: 999px; background: rgba(148, 163, 184, 0.14); }
+.mf-axis { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: rgba(148, 163, 184, 0.45); }
+.mf-fill { position: absolute; top: 0; bottom: 0; border-radius: 999px; background: var(--mf); box-shadow: 0 0 8px -1px rgba(var(--mf-rgb), 0.6); transition: width .5s ease; }
+
+.mf-foot { display: flex; justify-content: space-between; gap: 0.5rem; margin-top: 0.65rem; font-size: 0.66rem; color: var(--text-muted, #64748b); }
+
+.mf-empty .mf-note { margin: 0.5rem 0 0; font-size: 0.78rem; color: var(--text-sub, var(--text2, #94a3b8)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mf-glyph, .mf-strong .mf-orb { animation: none !important; }
+}

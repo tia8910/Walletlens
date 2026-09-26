@@ -162,7 +162,6 @@ const MOCK_ROWS = [
 ]
 
 const FOOTER_NAV = [
-  { label: 'Whale Tracker',  href: '/whales' },
   { label: 'Alpha',          href: '/alpha' },
   { label: 'Academy',        href: '/academy' },
   { label: 'Advisor',     href: '/coach' },

@@ -436,7 +436,6 @@ const ASSISTANT_FEATURES = [
     "- Wallets & Backup (/dashboard?tab=manage): Manage multiple wallets and export/import your data as a WLZ backup code or QR.",
     "- Transactions (/transactions): Your full buy/sell history — edit, filter and review every trade.",
     "- Portfolio Vision (/vision): Plan goals with 'buckets' (emergency fund, savings targets, monthly cash-flow) and get AI planning advice on funding pace, diversification and withdrawal safety.",
-    "- Whale Tracker (/whales): Large on-chain transactions and smart-money / volume signals.",
     "- Alpha (/alpha): Deep-dive analytics — correlations, sector/asset-class views and concentration risk.",
     "- Coach (/coach): Portfolio evaluation across BTC anchor, diversification, stablecoin reserve and P&L health.",
     "- Technicals (/technicals): RSI, MACD, Bollinger Bands and trend signals per asset.",

@@ -462,22 +462,6 @@ export const COPY = {
     de: () => 'Die Technik-Seite liest Ihre eigenen Positionen, sodass Sie nicht anderswo jedes Kürzel einzeln nachschlagen.',
     it: () => 'La pagina Tecnica legge le tue posizioni, così non devi cercare ogni simbolo altrove.',
   },
-  featWhalesTitle: {
-    en: () => '\u{1F40B} Someone just moved a very large amount of BTC',
-    ar: () => '\u{1F40B} شخص ما حرّك للتو كمية ضخمة من البيتكوين',
-    fr: () => '\u{1F40B} Quelqu\u2019un vient de d\u00e9placer une tr\u00e8s grosse somme en BTC',
-    es: () => '\u{1F40B} Alguien acaba de mover una cantidad enorme de BTC',
-    de: () => '\u{1F40B} Jemand hat gerade sehr viel BTC bewegt',
-    it: () => '\u{1F40B} Qualcuno ha appena mosso moltissimi BTC',
-  },
-  featWhalesBody: {
-    en: () => 'WalletLens watches the Bitcoin chain for transactions over $1M. Worth a look when the market moves and nobody says why.',
-    ar: () => 'يراقب WalletLens شبكة البيتكوين بحثًا عن تحويلات تتجاوز مليون دولار. يستحق النظر عندما يتحرك السوق دون سبب معلن.',
-    fr: () => 'WalletLens surveille la cha\u00eene Bitcoin pour les transactions de plus d\u2019un million. Utile quand le march\u00e9 bouge sans raison annonc\u00e9e.',
-    es: () => 'WalletLens vigila la cadena de Bitcoin por transacciones de m\u00e1s de un mill\u00f3n. \u00datil cuando el mercado se mueve sin motivo aparente.',
-    de: () => 'WalletLens beobachtet die Bitcoin-Chain auf Transaktionen über 1 Mio. $. Ein Blick lohnt sich, wenn der Markt sich bewegt und niemand sagt warum.',
-    it: () => 'WalletLens osserva la catena Bitcoin per transazioni sopra 1 M$. Vale un’occhiata quando il mercato si muove e nessuno spiega perché.',
-  },
   featCoachTitle: {
     en: () => '\u{1F9ED} A second opinion on how your portfolio is built',
     ar: () => '\u{1F9ED} رأي ثانٍ في طريقة بناء محفظتك',
@@ -974,13 +958,6 @@ export const FEATURE_TIPS = [
     id: 'technicals',
     url: '/technicals',
     when: (st) => st.watchCount > 0 && st.setup.technicals === false,
-  },
-  {
-    // Only for someone actually holding crypto: whale flow is a BTC-chain
-    // feature, and offering it to a stocks-and-metals portfolio is noise.
-    id: 'whales',
-    url: '/whales',
-    when: (st) => st.kinds.includes('crypto') && st.setup.whales === false,
   },
   {
     id: 'coach',

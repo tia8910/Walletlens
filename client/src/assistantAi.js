@@ -76,7 +76,6 @@ export const FEATURES = [
   { route: '/dashboard?tab=tools&tool=risk', label: 'Risk Scanner',         desc: 'Scan for concentration risk, liquidity risk, and volatility exposure' },
   { route: '/technicals',                    label: 'Technicals Page',      desc: 'Full technical analysis dashboard with multi-timeframe indicators' },
   { route: '/alpha',                         label: 'Alpha Signals',        desc: 'Price signals, buy/sell indicators, and on-chain metrics' },
-  { route: '/whales',                        label: 'Whale Tracker',        desc: 'Track large transactions and whale movements' },
 
   // Alerts & Targets
   { route: '/dashboard?tab=alerts',          label: 'Price Alerts',         desc: 'Set price alerts to get notified when assets hit your target levels' },

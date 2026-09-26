@@ -50,6 +50,7 @@ import { VOICE_API, voiceProxy } from '../apiHosts.js'
 import { dataUrl } from '../apiHosts.js'
 import { sevenDayMap, sparkMap, trendFor } from '../assetTrend'
 import TrendArrow, { TrendBadge } from '../components/TrendArrow'
+import { MoneyFlowBadge } from '../components/MoneyFlow'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -2129,7 +2130,6 @@ const FEATURE_SLIDES = [
   { id:'targets', icon:'target', color:'#f87171', tagKey:'fsTargetsTag', titleKey:'fsTargetsTitle', descKey:'fsTargetsDesc' },
   { id:'sellPlan', icon:'clipboard', color:'var(--g-ink)', tagKey:'fsSellPlanTag', titleKey:'fsSellPlanTitle', descKey:'fsSellPlanDesc' },
   { id:'timing', icon:'gauge', color:'var(--g-ink)', tagKey:'fsTimingTag', titleKey:'fsTimingTitle', descKey:'fsTimingDesc' },
-  { id:'whales', icon:'flow', color:'#22d3ee', tagKey:'fsWhalesTag', titleKey:'fsWhalesTitle', descKey:'fsWhalesDesc' },
   { id:'priceAlerts', icon:'bell', color:'#fb923c', tagKey:'fsPriceAlertsTag', titleKey:'fsPriceAlertsTitle', descKey:'fsPriceAlertsDesc' },
   { id:'goals', icon:'award', color:'#fbbf24', tagKey:'fsGoalsTag', titleKey:'fsGoalsTitle', descKey:'fsGoalsDesc' },
   { id:'mood', icon:'thermometer', color:'#f87171', tagKey:'fsMoodTag', titleKey:'fsMoodTitle', descKey:'fsMoodDesc' },
@@ -5569,6 +5569,9 @@ export default function Dashboard() {
                                               {trendStatus === 'up' ? t('dsUptrend') : trendStatus === 'down' ? t('dsDowntrend') : t('dsFlat')}
                                             </span>
                                           )}
+                                          {/* Smart money flow (Nansen, hourly). Crypto only:
+                                              there is no on-chain wallet labelling for a share. */}
+                                          {isCryptoOnly && !isDemo && <MoneyFlowBadge symbol={h.coin_symbol} />}
                                         </div>
                                         <div className="dvx-holding-valblock">
                                           <div className="dvx-holding-val">{cv(displayValue)}</div>

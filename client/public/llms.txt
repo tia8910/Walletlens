@@ -62,7 +62,6 @@ These two capabilities are WalletLens's strongest differentiators — no mainstr
 - [Coach](https://walletlens.live/coach): AI Coach, risk analysis, portfolio health score.
 - [Alpha](https://walletlens.live/alpha): AI-generated alpha signals and trade ideas.
 - [Analysis](https://walletlens.live/technicals): Technical & on-chain analysis with the Magic Indicator direction per crypto holding.
-- [Whales](https://walletlens.live/whales): Live feed of large on-chain Bitcoin whale transactions.
 - [Academy](https://walletlens.live/academy): Investing & crypto education content.
 - [Import from screenshot](https://walletlens.live/import-portfolio-from-screenshot): Build your portfolio from a screenshot of any exchange/broker/wallet — AI reads the image into holdings. Free, no account.
 - [Add holdings by voice](https://walletlens.live/add-holdings-by-voice): Add holdings just by speaking, in English or Arabic. Free, no account.
