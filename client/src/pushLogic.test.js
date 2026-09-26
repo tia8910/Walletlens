@@ -1485,8 +1485,10 @@ describe('the delivery step reports why it failed', () => {
     // Asserted as an absence so it cannot come back and re-hide this line.
     expect(toggle).not.toMatch(/SHOW_CHANNEL_DETAIL/)
 
-    // The summary is no longer gated on anything.
-    expect(toggle).toMatch(/<div>\s*\n\s*Watching <strong>\{status\.watch\}<\/strong>/)
+    // The "Watching N assets · N sent today" summary itself was later removed
+    // as clutter on a healthy device. What it diagnosed is kept as a warning,
+    // so the case where nothing is watched still says so.
+    expect(toggle).not.toMatch(/\{status\.sentToday\}/)
     expect(toggle).not.toMatch(/\{detail && \(/)
 
     for (const warning of [
