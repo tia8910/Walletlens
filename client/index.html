@@ -167,6 +167,11 @@
       });
       gtag('js', new Date());
       gtag('config', 'G-69L5NCXNGB', { send_page_view: false });
+      // Google Ads (AW-18295184733). The same gtag.js already on the page
+      // serves it, so the snippet's second <script src> is not added. Skipped
+      // in the Google Play app for the same reason the X pixel is; consent
+      // mode above still governs what it may store on the website.
+      if (!inPlayApp) gtag('config', 'AW-18295184733');
     </script>
 
     <!-- X (Twitter) Pixel — async, non-critical; loads at browser-idle priority.
