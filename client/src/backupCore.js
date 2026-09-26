@@ -115,6 +115,7 @@ export const DEVICE_ONLY_KEYS = [
   // under the holdings was dismissed on this device.
   'wl_offers_remote',
   'wl_bybit_strip_hidden_until',
+  'wl_bybit_bonus',
   // A WebAuthn credential is bound to the device that created it. Restoring it
   // elsewhere gives a credential that cannot authenticate, and restoring the
   // "enabled" flag without a usable credential can lock someone out of their

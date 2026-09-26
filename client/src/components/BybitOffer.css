@@ -50,7 +50,10 @@
 }
 .by-strip-ic { flex-shrink: 0; width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: rgba(247, 166, 0, .16); }
 .by-strip-txt { min-width: 0; flex: 1; display: flex; flex-direction: column; }
-.by-strip-txt b { font: 800 13.5px 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Wraps rather than truncating: the amount comes from /offers.json and may be
+   longer than "$20", and a cut-off prize is the one word that must show. */
+.by-strip-txt b { font: 800 13.5px/1.25 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif; color: #fff; }
+.by-strip-txt b em { white-space: nowrap; }
 .by-strip-txt b em { font-style: normal; color: #f7a600; }
 .by-strip-txt small { font-size: 10.5px; color: #9aa49f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .by-strip-go {

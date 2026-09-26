@@ -20,6 +20,7 @@ import { track, trackReferral } from './analytics'
 import { INTERESTS_EVENT } from './data/interestsEvent'
 
 export const BYBIT_URL = 'https://www.bybit.com/invite?ref=BM64KOV&medium=referral&utm_campaign=evergreen'
+/** The bonus shown when the site has not said otherwise. */
 export const BYBIT_BONUS = '$20'
 
 // ── Region ──────────────────────────────────────────────────────────────────
@@ -53,6 +54,7 @@ function currentZone() {
 // ── Remote switch ───────────────────────────────────────────────────────────
 
 const REMOTE_KEY = 'wl_offers_remote'
+const BONUS_KEY = 'wl_bybit_bonus'
 
 // Off until the site says on. Failing closed means a phone that has never
 // reached /offers.json shows nothing, and turning the offer off is a
@@ -66,6 +68,45 @@ export function bybitAllowed({ zone = currentZone(), remote = remoteOn() } = {})
   return remote && !restrictedZone(zone)
 }
 
+// ── The amount ──────────────────────────────────────────────────────────────
+//
+// Bybit changes its sign-up reward from time to time. The amount lives in
+// /offers.json next to the on/off switch, so a new figure reaches every card
+// and strip (and the Play app) with a one-line edit, no release:
+//
+//   { "enabled": true, "bybit": { "bonus": "$30" } }
+//
+// Only a plain amount is accepted — "$30", "€25", "50 USDT" — so a typo in the
+// file cannot put arbitrary text into a promotion. Anything else, or no value
+// at all, falls back to BYBIT_BONUS.
+
+const AMOUNT = /^(?:[$€£]\s?\d{1,5}(?:[.,]\d{1,2})?|\d{1,5}(?:[.,]\d{1,2})?\s?(?:USD|USDT|USDC|EUR))$/
+
+/** The amount if it is a plain amount, otherwise null. */
+export function validBonus(v) {
+  if (typeof v !== 'string') return null
+  const t = v.trim()
+  return t.length <= 12 && AMOUNT.test(t) ? t : null
+}
+
+/** The amount to show: the site's, as last read, or the default. */
+export function currentBonus() {
+  try { return validBonus(localStorage.getItem(BONUS_KEY)) || BYBIT_BONUS } catch { return BYBIT_BONUS }
+}
+
+/** Stores what the switch file says. Exported for tests. */
+export function applyRemote(j) {
+  if (!j || typeof j.enabled !== 'boolean') return false
+  try {
+    localStorage.setItem(REMOTE_KEY, j.enabled ? '1' : '0')
+    const bonus = validBonus(j.bybit?.bonus)
+    if (bonus) localStorage.setItem(BONUS_KEY, bonus)
+    // Removed from the file means back to the default, not stuck on the old one.
+    else if (!j.bybit || j.bybit.bonus === undefined) localStorage.removeItem(BONUS_KEY)
+  } catch { /* private mode */ }
+  return true
+}
+
 // Read once per session and remembered, so an offline phone keeps the last
 // answer instead of guessing.
 let remoteChecked = false
@@ -74,16 +115,18 @@ function checkRemote() {
   remoteChecked = true
   fetch('/offers.json', { cache: 'no-store' })
     .then(r => (r.ok ? r.json() : null))
-    .then(j => {
-      if (!j || typeof j.enabled !== 'boolean') return
-      try { localStorage.setItem(REMOTE_KEY, j.enabled ? '1' : '0') } catch {}
-      emit()
-    })
+    .then(j => { if (applyRemote(j)) emit() })
     .catch(() => {})
 }
 
 const listeners = new Set()
 function emit() { listeners.forEach(fn => fn()) }
+
+/** Whether to show the offer, and for how much. Re-renders when either changes. */
+export function useBybitOffer() {
+  const allowed = useBybitAllowed()
+  return { allowed, bonus: currentBonus() }
+}
 
 /** Re-renders when the switch changes. */
 export function useBybitAllowed() {

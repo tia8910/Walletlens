@@ -4,6 +4,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   bybitAllowed, restrictedZone, stripHidden, hideStrip, STRIP_SNOOZE_MS, BYBIT_URL, pickedCrypto,
+  validBonus, currentBonus, applyRemote, BYBIT_BONUS,
 } from './bybitOffer'
 import { DEVICE_ONLY_KEYS } from './backupCore'
 
@@ -53,6 +54,41 @@ describe('the holdings strip', () => {
   it('keeps its state on this device, out of the backup', () => {
     expect(DEVICE_ONLY_KEYS).toContain('wl_bybit_strip_hidden_until')
     expect(DEVICE_ONLY_KEYS).toContain('wl_offers_remote')
+  })
+})
+
+describe('the bonus amount', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('comes from the switch file, so a new prize needs no release', () => {
+    expect(currentBonus()).toBe(BYBIT_BONUS)
+    applyRemote({ enabled: true, bybit: { bonus: '$30' } })
+    expect(currentBonus()).toBe('$30')
+    applyRemote({ enabled: true, bybit: { bonus: '50 USDT' } })
+    expect(currentBonus()).toBe('50 USDT')
+  })
+
+  it('goes back to the default when the file drops it', () => {
+    applyRemote({ enabled: true, bybit: { bonus: '$30' } })
+    applyRemote({ enabled: true })
+    expect(currentBonus()).toBe(BYBIT_BONUS)
+  })
+
+  it('accepts only a plain amount, and keeps the last good one otherwise', () => {
+    for (const ok of ['$20', '€25', '£10', '$12.50', '100 USDT', '30USDC']) expect(validBonus(ok), ok).toBe(ok)
+    for (const bad of ['free money', '$20 guaranteed', '<b>$20</b>', '', 20, null, '$1234567'])
+      expect(validBonus(bad), String(bad)).toBeNull()
+    applyRemote({ enabled: true, bybit: { bonus: '$30' } })
+    applyRemote({ enabled: true, bybit: { bonus: 'free money!!' } })
+    expect(currentBonus()).toBe('$30')
+  })
+
+  it('is read by every placement rather than written into it', () => {
+    const c = read('components/BybitOffer.jsx')
+    expect(c).not.toMatch(/\$20/)
+    expect(c.match(/const \{ allowed, bonus \} = useBybitOffer\(\)/g)).toHaveLength(2)
+    expect(JSON.parse(read('../public/offers.json')).bybit.bonus).toBe('$20')
+    expect(DEVICE_ONLY_KEYS).toContain('wl_bybit_bonus')
   })
 })
 

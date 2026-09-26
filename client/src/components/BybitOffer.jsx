@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useLanguage } from '../LanguageContext'
 import {
-  useBybitAllowed, usePickedCrypto, openBybit, stripHidden, hideStrip, BYBIT_BONUS,
+  useBybitOffer, usePickedCrypto, openBybit, stripHidden, hideStrip,
 } from '../bybitOffer'
 import './BybitOffer.css'
 
-// The Bybit $20 bonus, in two places: a card on a crypto asset's page and a
-// slim strip after the crypto holdings. Both render nothing unless
+// The Bybit sign-up bonus, in two places: a card on a crypto asset's page and
+// a slim strip after the crypto holdings. The amount comes from /offers.json. Both render nothing unless
 // bybitAllowed() says so (remote switch on, region allowed).
 
 function Wordmark() {
@@ -32,22 +32,22 @@ function Gift({ className }) {
 /** On a crypto asset's page, under the smart money flow card. */
 export function BybitCard({ symbol }) {
   const { t } = useLanguage()
-  const allowed = useBybitAllowed()
+  const { allowed, bonus } = useBybitOffer()
   if (!allowed) return null
   const sym = String(symbol || '').toUpperCase()
   return (
     <section className="by-card" aria-label={t('byAria')}>
       <Gift className="by-gift" />
       <div className="by-top"><Wordmark /><span className="by-tag">{t('byPartner')}</span></div>
-      <h3 className="by-h">{t('byHeadA')} <em>{BYBIT_BONUS}</em><br />{t('byHeadB')}</h3>
+      <h3 className="by-h">{t('byHeadA')} <em>{bonus}</em><br />{t('byHeadB')}</h3>
       <p className="by-sub">{t('byTradeSym').replace('{sym}', sym)}</p>
       <ol className="by-steps">
         <li><b>1</b>{t('byStep1')}</li>
         <li><b>2</b>{t('byStep2')}</li>
-        <li><b>3</b>{t('byStep3').replace('{amt}', BYBIT_BONUS)}</li>
+        <li><b>3</b>{t('byStep3').replace('{amt}', bonus)}</li>
       </ol>
       <button type="button" className="by-cta" onClick={() => openBybit('asset_page')}>
-        {t('byCta').replace('{amt}', BYBIT_BONUS)} <span aria-hidden="true">→</span>
+        {t('byCta').replace('{amt}', bonus)} <span aria-hidden="true">→</span>
       </button>
       <p className="by-fine">{t('byFine')}</p>
     </section>
@@ -68,7 +68,7 @@ export function BybitInterestStrip({ holdsCrypto }) {
 /** After the crypto holdings list. Dismissed, it stays hidden for 30 days. */
 export function BybitStrip({ placement = 'holdings' }) {
   const { t } = useLanguage()
-  const allowed = useBybitAllowed()
+  const { allowed, bonus } = useBybitOffer()
   const [hidden, setHidden] = useState(stripHidden)
   if (!allowed || hidden) return null
   return (
@@ -77,7 +77,7 @@ export function BybitStrip({ placement = 'holdings' }) {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f7a600" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="4" rx="1" /><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" /><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5" /></svg>
       </span>
       <span className="by-strip-txt">
-        <b>{t('byStripHead').split('{amt}')[0]}<em>{BYBIT_BONUS}</em>{t('byStripHead').split('{amt}')[1] || ''}</b>
+        <b>{t('byStripHead').split('{amt}')[0]}<em>{bonus}</em>{t('byStripHead').split('{amt}')[1] || ''}</b>
         <small>{t('byStripFine')}</small>
       </span>
       <button type="button" className="by-strip-go" onClick={() => openBybit(placement)}>{t('byClaimNow')}</button>
