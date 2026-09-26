@@ -4,7 +4,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   bybitAllowed, restrictedZone, stripHidden, hideStrip, STRIP_SNOOZE_MS, BYBIT_URL, pickedCrypto,
-  validBonus, currentBonus, applyRemote, BYBIT_BONUS,
+  validBonus, currentBonus, applyRemote, BYBIT_BONUS, pickedOffer,
 } from './bybitOffer'
 import { DEVICE_ONLY_KEYS } from './backupCore'
 
@@ -86,7 +86,8 @@ describe('the bonus amount', () => {
   it('is read by every placement rather than written into it', () => {
     const c = read('components/BybitOffer.jsx')
     expect(c).not.toMatch(/\$20/)
-    expect(c.match(/const \{ allowed, bonus \} = useBybitOffer\(\)/g)).toHaveLength(2)
+    // The crypto card, the stocks card and the strip.
+    expect(c.match(/const \{ allowed, bonus \} = useBybitOffer\(\)/g)).toHaveLength(3)
     expect(JSON.parse(read('../public/offers.json')).bybit.bonus).toBe('$20')
     expect(DEVICE_ONLY_KEYS).toContain('wl_bybit_bonus')
   })
@@ -107,9 +108,47 @@ describe('the interest picker', () => {
 
   it('puts the strip on the dashboard for them, once, even with no crypto held', () => {
     const d = read('pages/Dashboard.jsx')
-    expect(d).toMatch(/<BybitInterestStrip holdsCrypto=\{enriched\.some\(h => categorizeAsset\(h\) === 'crypto'\)\} \/>/)
-    // Holding crypto moves it under that list rather than showing it twice.
-    expect(read('components/BybitOffer.jsx')).toMatch(/if \(holdsCrypto \|\| !picked\) return null/)
+    expect(d).toMatch(/<BybitInterestStrip holdsCrypto=\{enriched\.some\(h => categorizeAsset\(h\) === 'crypto'\)\} holdsStocks=\{enriched\.some\(h => categorizeAsset\(h\) === 'stocks'\)\} holdsMetals=\{enriched\.some\(h => categorizeAsset\(h\) === 'metals'\)\} \/>/)
+    // Holding crypto or stocks moves it under that list rather than showing it twice.
+    expect(read('components/BybitOffer.jsx')).toMatch(/if \(holdsCrypto \|\| holdsStocks \|\| holdsMetals \|\| !picked\) return null/)
+  })
+})
+
+describe('tokenized stocks', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('are offered to people who picked stocks or ETFs, crypto first when both', () => {
+    expect(pickedOffer()).toBeNull()
+    localStorage.setItem('wl_interests', JSON.stringify(['cash']))
+    expect(pickedOffer()).toBeNull()
+    localStorage.setItem('wl_interests', JSON.stringify(['gold']))
+    expect(pickedOffer()).toBe('metals')
+    localStorage.setItem('wl_interests', JSON.stringify(['gold', 'stocks']))
+    expect(pickedOffer()).toBe('stocks')
+    localStorage.setItem('wl_interests', JSON.stringify(['etfs']))
+    expect(pickedOffer()).toBe('stocks')
+    localStorage.setItem('wl_interests', JSON.stringify(['stocks', 'crypto']))
+    expect(pickedOffer()).toBe('crypto')
+  })
+
+  it('sit on stock pages and in Technical Analysis for a stock', () => {
+    const a = read('pages/AssetDetail.jsx')
+    expect(a).toMatch(/assetClass\(coinId\) === 'stock' \? 'stocks'/)
+    expect(a).toMatch(/\['gold', 'silver', 'copper', 'platinum'\]\.includes\(assetClass\(coinId\)\) \? 'metals'/)
+    expect(a.match(/\{showStockOffer && <BybitStockCard symbol=\{coin\.symbol\} kind=\{tradFiKind\}/g)).toHaveLength(2)
+    expect(read('components/TechChartPanel.jsx')).toMatch(/kind="metals" placement="technicals_metal"/)
+    expect(read('components/TechChartPanel.jsx')).toMatch(/assetClass\(cur\.coin_id\) === 'stock' && <BybitStockCard/)
+  })
+
+  it('get one strip on the dashboard, and never beside the crypto one', () => {
+    const d = read('pages/Dashboard.jsx')
+    expect(d).toMatch(/cat === 'stocks' && !isDemo && !grouped\.crypto\?\.length && <BybitStrip variant="stocks"/)
+    expect(d).toMatch(/cat === 'metals' && !isDemo && !grouped\.crypto\?\.length && !grouped\.stocks\?\.length && <BybitStrip variant="metals"/)
+  })
+
+  it('say plainly that a token is not the share', () => {
+    const en = read('i18n/en.js')
+    expect(en).toMatch(/byStocksFine: "[^"]*you don't own the share[^"]*high risk[^"]*availability varies by region/)
   })
 })
 

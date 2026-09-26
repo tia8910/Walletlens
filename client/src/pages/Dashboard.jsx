@@ -4792,7 +4792,7 @@ export default function Dashboard() {
                   : importsBlock}
                 {/* Picked crypto as an interest, holds none yet: the offer
                     goes here instead of under a crypto list that is not there. */}
-                {!isDemo && <BybitInterestStrip holdsCrypto={enriched.some(h => categorizeAsset(h) === 'crypto')} />}
+                {!isDemo && <BybitInterestStrip holdsCrypto={enriched.some(h => categorizeAsset(h) === 'crypto')} holdsStocks={enriched.some(h => categorizeAsset(h) === 'stocks')} holdsMetals={enriched.some(h => categorizeAsset(h) === 'metals')} />}
               </>
             )
           })()}
@@ -5670,6 +5670,10 @@ export default function Dashboard() {
                             </ul>
                             {/* Bybit referral, once, after the crypto list — never between rows. */}
                             {cat === 'crypto' && !isDemo && <BybitStrip />}
+                            {/* Tokenized stocks, for a portfolio with stocks and no crypto —
+                                one Bybit strip on the dashboard, never two. */}
+                            {cat === 'stocks' && !isDemo && !grouped.crypto?.length && <BybitStrip variant="stocks" placement="holdings_stocks" />}
+                            {cat === 'metals' && !isDemo && !grouped.crypto?.length && !grouped.stocks?.length && <BybitStrip variant="metals" placement="holdings_metals" />}
                           </div>
                         )})
                       })()}

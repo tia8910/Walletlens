@@ -156,11 +156,35 @@ export function pickedCrypto() {
   } catch { return false }
 }
 
-/** pickedCrypto(), kept current when the picker is saved again from Settings. */
-export function usePickedCrypto() {
-  const [on, setOn] = useState(pickedCrypto)
+/** Whether this person chose stocks (or ETFs) in the interest picker. */
+export function pickedStocks() {
+  try {
+    const v = JSON.parse(localStorage.getItem('wl_interests') || 'null')
+    return Array.isArray(v) && (v.includes('stocks') || v.includes('etfs'))
+  } catch { return false }
+}
+
+/** Whether this person chose gold, silver or commodities in the interest picker. */
+export function pickedMetals() {
+  try {
+    const v = JSON.parse(localStorage.getItem('wl_interests') || 'null')
+    return Array.isArray(v) && ['gold', 'silver', 'commodities'].some(k => v.includes(k))
+  } catch { return false }
+}
+
+/**
+ * Which Bybit offer the interest picker earns: 'crypto', 'stocks', 'metals'
+ * or null. One offer per person, in that order.
+ */
+export function pickedOffer() {
+  return pickedCrypto() ? 'crypto' : pickedStocks() ? 'stocks' : pickedMetals() ? 'metals' : null
+}
+
+/** pickedOffer(), kept current when the picker is saved again from Settings. */
+export function usePickedOffer() {
+  const [on, setOn] = useState(pickedOffer)
   useEffect(() => {
-    const sync = () => setOn(pickedCrypto())
+    const sync = () => setOn(pickedOffer())
     window.addEventListener(INTERESTS_EVENT, sync)
     window.addEventListener('storage', sync)
     return () => {

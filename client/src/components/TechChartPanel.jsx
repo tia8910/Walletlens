@@ -8,7 +8,7 @@ import { isStablecoin } from '../stablecoins'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 import { MoneyFlowCard } from './MoneyFlow'
-import { BybitCard } from './BybitOffer'
+import { BybitCard, BybitStockCard } from './BybitOffer'
 
 // Technicals: the asset page's indicator chart for any holding, picked from
 // a row of chips (largest holding first), or for any other asset found with
@@ -136,6 +136,9 @@ export default function TechChartPanel({ enriched }) {
         <MoneyFlowCard symbol={cur.coin_symbol} />
         <BybitCard symbol={cur.coin_symbol} placement="technicals" />
       </>}
+      {assetClass(cur.coin_id) === 'stock' && <BybitStockCard symbol={cur.coin_symbol} placement="technicals_stock" />}
+      {['gold', 'silver', 'copper', 'platinum'].includes(assetClass(cur.coin_id)) &&
+        <BybitStockCard symbol={cur.coin_symbol} kind="metals" placement="technicals_metal" />}
     </div>
   )
 }

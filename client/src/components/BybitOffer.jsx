@@ -1,12 +1,17 @@
 import { useState } from 'react'
 import { useLanguage } from '../LanguageContext'
 import {
-  useBybitOffer, usePickedCrypto, openBybit, stripHidden, hideStrip,
+  useBybitOffer, usePickedOffer, openBybit, stripHidden, hideStrip,
 } from '../bybitOffer'
 import './BybitOffer.css'
 
-// The Bybit sign-up bonus: a card on a crypto asset's page and in Technical
-// Analysis, and a slim strip after the crypto holdings. The amount comes from /offers.json. Both render nothing unless
+// The Bybit referral, in two flavours:
+//   • crypto — the sign-up bonus, on a crypto asset's page, in Technical
+//     Analysis and as a strip after the crypto holdings;
+//   • TradFi — Bybit's stock, ETF, gold, silver and oil markets traded in
+//     USDT: on a stock's or metal's page, in Technical Analysis, and as a
+//     strip after the stock or metal holdings (one Bybit strip at most).
+// The bonus amount comes from /offers.json. Everything renders nothing unless
 // bybitAllowed() says so (remote switch on, region allowed).
 
 function Wordmark() {
@@ -59,18 +64,84 @@ export function BybitCard({ symbol, placement = 'asset_page' }) {
  * crypto yet (including an empty portfolio). Anyone holding crypto gets the
  * strip under that list instead, so it never appears twice.
  */
-export function BybitInterestStrip({ holdsCrypto }) {
-  const picked = usePickedCrypto()
-  if (holdsCrypto || !picked) return null
-  return <BybitStrip placement="dashboard_interest" />
+export function BybitInterestStrip({ holdsCrypto, holdsStocks, holdsMetals }) {
+  const picked = usePickedOffer()
+  // Holding any of these already puts a strip under that list.
+  if (holdsCrypto || holdsStocks || holdsMetals || !picked) return null
+  return <BybitStrip variant={picked} placement="dashboard_interest" />
+}
+
+// Illustrative tickers from Bybit's TradFi board, drawn as chips — the idea,
+// not a claim about what is listed on a given day.
+const CHIPS = { stocks: ['AAPL', 'TSLA', 'NVDA'], metals: ['XAU', 'XAG', 'CL'] }
+// The mark inside each chip: a letter for a company, the element for a metal.
+const GLYPH = { XAU: 'Au', XAG: 'Ag', CL: 'Oil' }
+
+function TradFiChips({ kind }) {
+  return (
+    <div className="by-chips" aria-hidden="true">
+      {CHIPS[kind].map((tk, i) => (
+        <span key={tk} className="by-chip" style={{ '--i': i }}>
+          <i className={GLYPH[tk] ? 'is-sm' : ''}>{GLYPH[tk] || tk[0]}</i>{tk}<small>USDT</small>
+        </span>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Bybit's TradFi markets, on a stock's or metal's page and in Technical
+ * Analysis. `kind` picks the headline: 'stocks' or 'metals'.
+ */
+export function BybitStockCard({ symbol, kind = 'stocks', placement = 'stock_page' }) {
+  const { t } = useLanguage()
+  const { allowed, bonus } = useBybitOffer()
+  if (!allowed) return null
+  const sym = String(symbol || '').toUpperCase()
+  const k = kind === 'metals' ? 'Metals' : 'Stocks'
+  return (
+    <section className="by-card by-card--stocks" aria-label={t('byStocksAria')}>
+      <TradFiChips kind={kind === 'metals' ? 'metals' : 'stocks'} />
+      <div className="by-top"><Wordmark /><span className="by-tag">{t('byPartner')}</span></div>
+      <h3 className="by-h">{t(`by${k}HeadA`)}<br /><em>{t(`by${k}HeadB`)}</em></h3>
+      <p className="by-sub">{t(`by${k}Sub`).replace('{sym}', sym)}</p>
+      <ol className="by-steps">
+        <li><b>1</b>{t('byStep1')}</li>
+        <li><b>2</b>{t('byStep2')}</li>
+        <li><b>3</b>{t('byStocksStep3').replace('{amt}', bonus)}</li>
+      </ol>
+      <button type="button" className="by-cta" onClick={() => openBybit(placement)}>
+        {t(`by${k}Cta`)} <span aria-hidden="true">→</span>
+      </button>
+      <p className="by-fine">{t('byStocksFine')}</p>
+    </section>
+  )
 }
 
 /** After the crypto holdings list. Dismissed, it stays hidden for 30 days. */
-export function BybitStrip({ placement = 'holdings' }) {
+export function BybitStrip({ variant = 'crypto', placement = 'holdings' }) {
   const { t } = useLanguage()
   const { allowed, bonus } = useBybitOffer()
   const [hidden, setHidden] = useState(stripHidden)
   if (!allowed || hidden) return null
+  if (variant === 'stocks' || variant === 'metals') {
+    return (
+      <div className="by-strip" role="complementary" aria-label={t('byStocksAria')}>
+        <span className="by-strip-ic by-strip-ic--stocks" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f7a600" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l5-5 4 4 8-8" /><path d="M14 8h6v6" /></svg>
+        </span>
+        <span className="by-strip-txt">
+          <b>{t(variant === 'metals' ? 'byMetalsStripHead' : 'byStocksStripHead')}</b>
+          <small>{t('byStocksStripFine').replace('{amt}', bonus)}</small>
+        </span>
+        <button type="button" className="by-strip-go" onClick={() => openBybit(placement)}>{t('byExplore')}</button>
+        <button type="button" className="by-strip-x" aria-label={t('byHide')}
+          onClick={() => { hideStrip(); setHidden(true) }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+    )
+  }
   return (
     <div className="by-strip" role="complementary" aria-label={t('byAria')}>
       <span className="by-strip-ic" aria-hidden="true">

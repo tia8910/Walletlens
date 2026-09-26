@@ -11,7 +11,7 @@ import { useLanguage } from '../LanguageContext'
 import { isV2Active } from '../v2Preview'
 import IndicatorChart from '../components/IndicatorChart'
 import { MoneyFlowCard } from '../components/MoneyFlow'
-import { BybitCard } from '../components/BybitOffer'
+import { BybitCard, BybitStockCard } from '../components/BybitOffer'
 import { isStablecoin } from '../stablecoins'
 
 // assetClass() is the shared id-prefix classifier (api.js); these wrap it
@@ -265,6 +265,12 @@ export default function AssetDetail() {
   // Smart money flow is an on-chain reading, so crypto only, and not for
   // stablecoins, whose flows are payments rather than positions.
   const showFlow = !!coin?.symbol && !isNonCryptoId(coinId) && !isStablecoin(coinId, coin.symbol)
+  // Stocks, ETFs and metals get Bybit's TradFi offer instead.
+  const tradFiKind = !coin?.symbol ? null
+    : assetClass(coinId) === 'stock' ? 'stocks'
+    : ['gold', 'silver', 'copper', 'platinum'].includes(assetClass(coinId)) ? 'metals'
+    : null
+  const showStockOffer = !!tradFiKind
 
   // ── v2 asset page ───────────────────────────────────────────────────
   const v2Hero = v2 && (() => {
@@ -298,6 +304,7 @@ export default function AssetDetail() {
         <IndicatorChart coinId={coinId} symbol={coin?.symbol} name={coin?.name} price={price} onLastClose={setLastClose} />
         {showFlow && <MoneyFlowCard symbol={coin.symbol} />}
         {showFlow && <BybitCard symbol={coin.symbol} />}
+        {showStockOffer && <BybitStockCard symbol={coin.symbol} kind={tradFiKind} placement={`${tradFiKind}_page`} />}
       </>
     )
   })()
@@ -417,6 +424,7 @@ export default function AssetDetail() {
       {/* Smart money flow (Nansen) */}
       {showFlow && <MoneyFlowCard symbol={coin.symbol} />}
         {showFlow && <BybitCard symbol={coin.symbol} />}
+        {showStockOffer && <BybitStockCard symbol={coin.symbol} kind={tradFiKind} placement={`${tradFiKind}_page`} />}
 
       {/* Whale activity / smart signals */}
       {signals && <WhalePanel s={signals} symbol={coin?.symbol} />}
