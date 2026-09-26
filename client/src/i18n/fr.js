@@ -2040,4 +2040,10 @@ export default {
     ipExBonds: "Obligations d'État",
     ipExCommodities: "Pétrole, cuivre",
     wsAddCustom: (n) => `Ajouter « ${n} »`,
+    // ── Lock screen ─────────────────────────────────────────────────────────
+    blWelcome: "Bon retour",
+    blLockedSub: "Touchez le capteur pour déverrouiller votre portefeuille",
+    blVerifying: "Vérification…",
+    blUnlock: "Déverrouiller",
+    blDisableContinue: "Désactiver le verrou et continuer",
 }

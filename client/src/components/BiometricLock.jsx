@@ -639,70 +639,63 @@ function BiometricLockScreenInner({ onUnlock }) {
     <div className="bl-screen">
       <BiometricLockStyles />
 
-      {/* Ambient brand glow + grid texture */}
+      {/* The same world as the loading screen: soft light, grain, dust. */}
       <div className="bl-glow" aria-hidden="true" />
-      <div className="bl-grid" aria-hidden="true" />
+      <div className="bl-rays" aria-hidden="true" />
+      <div className="bl-grain" aria-hidden="true" />
 
       <div className="bl-content">
-        {/* Brand wordmark */}
-        <div className="bl-brand">
-          <span className="bl-brand-dot" />
-          WALLETLENS
-        </div>
+        <div className="bl-word" aria-hidden="true"><span className="bl-chrome">WalletLens</span><i className="bl-dot" /><span className="bl-live">live</span></div>
 
-        {/* Animated fingerprint with concentric pulse rings */}
+        {/* The lens: gold bezel, glass, and the fingerprint under a scanning light. Tapping it unlocks. */}
         <button
-          className={`bl-fp${trying ? ' bl-fp-busy' : ''}`}
-          onClick={attempt}
+          className={`bl-lens${trying ? ' is-busy' : ''}${error && !trying ? ' is-err' : ''}`}
+          onClick={() => attempt()}
           disabled={trying}
           aria-label={t('atUnlockFingerprint')}
         >
-          <span className="bl-ring bl-ring-1" aria-hidden="true" />
-          <span className="bl-ring bl-ring-2" aria-hidden="true" />
-          <span className="bl-ring bl-ring-3" aria-hidden="true" />
-          <span className="bl-fp-core">
-            <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 11a1 1 0 0 0-1 1v1a7 7 0 0 0 .5 2.6" />
-              <path d="M12 7a5 5 0 0 1 5 5v1a13 13 0 0 0 .4 3.2" />
-              <path d="M8 6.5A5 5 0 0 0 7 12v1a8 8 0 0 1-.5 2.8" />
-              <path d="M12 3a9 9 0 0 1 9 9v1" />
-              <path d="M3 13v-1a9 9 0 0 1 4-7.5" />
-              <path d="M9.5 13.5a2.5 2.5 0 0 1 5 0v.5a17 17 0 0 0 .3 3.3" />
-              <path d="M12 19.5v.5" />
+          <svg className="bl-bezel" viewBox="0 0 230 230" fill="none" aria-hidden="true"><circle cx="115" cy="115" r="111" stroke="rgba(253,230,138,.35)" strokeWidth=".8"/><circle cx="115" cy="115" r="109" stroke="rgba(253,230,138,.25)" strokeWidth="4" strokeDasharray="1 10.414" transform="rotate(-90.3 115 115)"/><circle cx="115" cy="115" r="107.5" stroke="rgba(253,230,138,.55)" strokeWidth="7" strokeDasharray="1.1 55.187" transform="rotate(-90.3 115 115)"/><circle cx="115" cy="115" r="106" stroke="rgba(253,230,138,.9)" strokeWidth="10" strokeDasharray="1.6 164.904" transform="rotate(-90.5 115 115)"/></svg>
+          <span className="bl-spark" aria-hidden="true" />
+          <span className="bl-glass" aria-hidden="true">
+            <svg className="bl-print" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <defs>
+                <linearGradient id="blFp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#d1fae5"/><stop offset="1" stopColor="#22c55e"/></linearGradient>
+              </defs>
+              <g stroke="url(#blFp)" strokeWidth="1.5">
+                <path pathLength="1" d="M12 11a1 1 0 0 0-1 1v1a7 7 0 0 0 .5 2.6" />
+                <path pathLength="1" d="M12 7a5 5 0 0 1 5 5v1a13 13 0 0 0 .4 3.2" />
+                <path pathLength="1" d="M8 6.5A5 5 0 0 0 7 12v1a8 8 0 0 1-.5 2.8" />
+                <path pathLength="1" d="M12 3a9 9 0 0 1 9 9v1" />
+                <path pathLength="1" d="M3 13v-1a9 9 0 0 1 4-7.5" />
+                <path pathLength="1" d="M9.5 13.5a2.5 2.5 0 0 1 5 0v.5a17 17 0 0 0 .3 3.3" />
+                <path pathLength="1" d="M12 19.5v.5" />
+              </g>
             </svg>
+            <span className="bl-scan" />
           </span>
         </button>
 
-        {/* Title + subtitle */}
         <div className="bl-titles">
-          <div className="bl-title">WalletLens is locked</div>
-          <div className="bl-sub">
-            {trying ? 'Verifying your identity…' : 'Authenticate to view your portfolio'}
-          </div>
+          <h1 className="bl-title">{t('blWelcome')}</h1>
+          <p className="bl-sub">{trying ? t('blVerifying') : t('blLockedSub')}</p>
         </div>
 
-        {/* Error / recovery */}
         {error && (
           <div className="bl-error">
             <div className="bl-error-text">{error}</div>
             {recover && (
-              <button className="bl-recover" onClick={recoverEntry}>
-                Disable lock &amp; continue
-              </button>
+              <button className="bl-recover" onClick={recoverEntry}>{t('blDisableContinue')}</button>
             )}
           </div>
         )}
 
-        {/* Fallback CTA when biometric prompt doesn't auto-show (some Android TWA versions) */}
-        {!trying && !error && (
-          <button className="bl-cta" onClick={attempt}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2a5 5 0 0 0-5 5v3h10V7a5 5 0 0 0-5-5z"/>
-              <path d="M19 10v3a7 7 0 0 1-14 0v-3"/>
+        {!trying && (
+          <button className="bl-cta" onClick={() => attempt()}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 11a1 1 0 0 0-1 1v1a7 7 0 0 0 .5 2.6" /><path d="M12 7a5 5 0 0 1 5 5v1a13 13 0 0 0 .4 3.2" />
+              <path d="M8 6.5A5 5 0 0 0 7 12v1a8 8 0 0 1-.5 2.8" /><path d="M12 3a9 9 0 0 1 9 9v1" /><path d="M3 13v-1a9 9 0 0 1 4-7.5" />
             </svg>
-            Tap to authenticate
+            {t('blUnlock')}
           </button>
         )}
       </div>
@@ -784,115 +777,87 @@ function BiometricLockStyles() {
     <style>{`
       .bl-screen{
         position:fixed; inset:0; z-index:2147483000;
-        display:flex; align-items:center; justify-content:center;
-        background:#020d08; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-        -webkit-font-smoothing:antialiased;
-        overflow:hidden;
+        display:flex; align-items:center; justify-content:center; overflow:hidden;
+        background:radial-gradient(90% 70% at 50% 42%,#0b1f14 0%,#050d08 55%,#020604 100%);
+        color:#fff; font-family:'Sora','Plus Jakarta Sans',system-ui,sans-serif; -webkit-font-smoothing:antialiased;
+        padding:calc(env(safe-area-inset-top,0px) + 24px) 20px calc(env(safe-area-inset-bottom,0px) + 24px);
       }
-      .bl-glow{
-        position:absolute; inset:0; pointer-events:none;
-        background:radial-gradient(circle at 50% 50%, rgba(0,200,83,0.22), rgba(0,200,83,0) 60%);
-        filter:blur(20px); pointer-events:none;
-      }
-      .bl-grid{
-        position:absolute; inset:0; pointer-events:none; opacity:.5;
-        background-image:
-          linear-gradient(rgba(0,200,83,0.05) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(0,200,83,0.05) 1px, transparent 1px);
-        background-size:42px 42px;
-        mask-image:radial-gradient(circle at 50% 38%, #000 0%, transparent 72%);
-        -webkit-mask-image:radial-gradient(circle at 50% 38%, #000 0%, transparent 72%);
-      }
-      .bl-content{
-        position:relative; z-index:2;
-        display:flex; flex-direction:column; align-items:center;
-        gap:1.4rem; width:100%; max-width:340px; text-align:center;
-      }
-      .bl-brand{
-        display:flex; align-items:center; gap:.45rem;
-        font-size:.72rem; font-weight:800; letter-spacing:.32em;
-        color:rgba(180,220,200,0.7); margin-bottom:.2rem;
-      }
-      .bl-brand-dot{
-        width:7px; height:7px; border-radius:50%;
-        background:#00e676; box-shadow:0 0 10px #00e676;
-        animation:bl-blink 2.4s ease-in-out infinite;
-      }
-      @keyframes bl-blink{ 0%,100%{opacity:1} 50%{opacity:.35} }
+      .bl-glow{position:absolute;left:50%;top:40%;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;pointer-events:none;
+        background:radial-gradient(circle,rgba(34,227,138,.16),transparent 62%);animation:bl-breathe 5s ease-in-out infinite}
+      .bl-rays{position:absolute;width:900px;height:900px;left:50%;top:40%;margin:-450px 0 0 -450px;pointer-events:none;
+        background:conic-gradient(from 0deg,transparent 0 20deg,rgba(34,227,138,.09) 32deg,transparent 46deg,transparent 180deg,rgba(34,227,138,.07) 200deg,transparent 216deg);
+        -webkit-mask:radial-gradient(circle,#000 0,transparent 60%);mask:radial-gradient(circle,#000 0,transparent 60%);animation:bl-turn 24s linear infinite}
+      .bl-grain{position:absolute;inset:0;opacity:.07;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 
-      /* Fingerprint button + rings */
-      .bl-fp{
-        position:relative; width:150px; height:150px;
-        background:none; border:none; cursor:pointer; padding:0;
-        display:flex; align-items:center; justify-content:center;
-        -webkit-tap-highlight-color:transparent;
-      }
-      .bl-fp:disabled{ cursor:default; }
-      .bl-ring{
-        position:absolute; border-radius:50%;
-        border:1.5px solid rgba(0,230,118,0.4);
-      }
-      .bl-ring-1{ inset:0; animation:bl-pulse 2.6s ease-out infinite; }
-      .bl-ring-2{ inset:14px; animation:bl-pulse 2.6s ease-out infinite .5s; border-color:rgba(0,230,118,0.28); }
-      .bl-ring-3{ inset:28px; animation:bl-pulse 2.6s ease-out infinite 1s; border-color:rgba(0,230,118,0.18); }
-      @keyframes bl-pulse{
-        0%{ transform:scale(.85); opacity:.0 }
-        30%{ opacity:.9 }
-        100%{ transform:scale(1.18); opacity:0 }
-      }
-      .bl-fp-core{
-        position:relative; z-index:2;
-        width:96px; height:96px; border-radius:50%;
-        display:flex; align-items:center; justify-content:center;
-        color:#7dffb4;
-        background:
-          radial-gradient(circle at 50% 35%, rgba(0,230,118,0.18), rgba(0,230,118,0.04) 70%),
-          rgba(255,255,255,0.03);
-        border:1.5px solid rgba(0,230,118,0.45);
-        box-shadow:
-          0 0 0 1px rgba(0,230,118,0.12),
-          0 0 32px rgba(0,200,83,0.35),
-          inset 0 0 24px rgba(0,200,83,0.18);
-        backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
-        transition:transform .2s ease, box-shadow .2s ease;
-      }
-      .bl-fp:active .bl-fp-core{ transform:scale(.93); }
-      .bl-fp-busy .bl-fp-core{
-        animation:bl-breathe 1.1s ease-in-out infinite;
-        box-shadow:0 0 0 1px rgba(0,230,118,0.2), 0 0 46px rgba(0,200,83,0.55), inset 0 0 26px rgba(0,200,83,0.28);
-      }
-      @keyframes bl-breathe{ 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.06) } }
+      .bl-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;width:100%;max-width:360px;text-align:center;animation:bl-rise .6s cubic-bezier(.2,1,.3,1) both}
+      .bl-word{display:flex;align-items:center;font-size:17px;font-weight:700;letter-spacing:-.03em;margin-bottom:34px}
+      .bl-chrome{background:linear-gradient(100deg,#9aa9a1 0%,#fff 30%,#c9d6cf 45%,#fff 50%,#8e9d95 70%,#f4fbf7 100%);background-size:250% 100%;
+        -webkit-background-clip:text;background-clip:text;color:transparent;animation:bl-metal 5s linear infinite}
+      .bl-dot{width:5px;height:5px;border-radius:50%;background:#22e38a;margin:0 3px;box-shadow:0 0 10px #22e38a}
+      .bl-live{background:linear-gradient(180deg,#86efac,#16c47a);-webkit-background-clip:text;background-clip:text;color:transparent}
 
-      .bl-titles{ display:flex; flex-direction:column; gap:.35rem; }
-      .bl-title{ font-size:1.32rem; font-weight:800; color:#f2fff8; letter-spacing:-.01em; }
-      .bl-sub{ font-size:.9rem; color:rgba(170,205,188,0.75); }
+      /* The lens. Reset first: the app paints bare buttons as green pills. */
+      .bl-lens{position:relative;width:230px;height:230px;padding:0!important;border:0!important;border-radius:50%!important;
+        background:none!important;box-shadow:none!important;cursor:pointer;display:grid;place-items:center;-webkit-tap-highlight-color:transparent;
+        transition:transform .2s ease}
+      .bl-lens:active{transform:scale(.97)}
+      .bl-lens:disabled{cursor:default}
+      .bl-bezel{position:absolute;inset:0;width:100%!important;height:100%!important;max-width:none!important;animation:bl-turn 60s linear infinite}
+      .bl-spark{position:absolute;inset:4px;border-radius:50%;
+        background:conic-gradient(from 0deg,transparent 0 300deg,rgba(253,230,138,.9) 356deg,#fff 360deg);
+        -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 1.5px),#000 calc(100% - 1px));mask:radial-gradient(farthest-side,transparent calc(100% - 1.5px),#000 calc(100% - 1px));
+        animation:bl-turn 3.2s cubic-bezier(.45,.05,.55,.95) infinite}
+      .bl-glass{position:absolute;inset:38px;border-radius:50%;overflow:hidden;display:grid;place-items:center;
+        background:radial-gradient(circle at 50% 45%,rgba(34,227,138,.20),rgba(4,20,12,.6) 70%);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -20px 40px rgba(0,0,0,.35),0 20px 60px -10px rgba(34,227,138,.35);
+        border:1px solid rgba(255,255,255,.08)}
+      .bl-glass::after{content:'';position:absolute;inset:-30%;background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.14) 50%,transparent 58%);
+        animation:bl-spec 4.2s ease-in-out infinite}
+      .bl-print{width:82px!important;height:82px!important;max-width:none!important;filter:drop-shadow(0 0 10px rgba(34,227,138,.45))}
+      .bl-print path{stroke-dasharray:1;stroke-dashoffset:0}
+      /* a band of light passing over the print, like a reader */
+      .bl-scan{position:absolute;left:0;right:0;height:34px;top:-40px;
+        -webkit-mask-image:linear-gradient(90deg,transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(90deg,transparent,#000 30%,#000 70%,transparent);
+        background:linear-gradient(180deg,transparent,rgba(134,239,172,.28) 45%,rgba(209,250,229,.55) 50%,rgba(134,239,172,.28) 55%,transparent);
+        filter:blur(1px);animation:bl-scan 2.8s cubic-bezier(.45,.05,.55,.95) infinite}
 
-      .bl-cta{
-        margin-top:.2rem;
-        display:flex; align-items:center; justify-content:center; gap:.5rem;
-        padding:.9rem 2.6rem; border:none; border-radius:50px;
-        font-size:1rem; font-weight:800; color:#012; cursor:pointer;
-        background:linear-gradient(135deg, #00e676 0%, #00c853 50%, #00a040 100%);
-        box-shadow:0 6px 24px rgba(0,200,83,0.45), inset 0 1px 0 rgba(255,255,255,0.3);
-        transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
-      }
-      .bl-cta:hover{ transform:translateY(-1px); box-shadow:0 8px 30px rgba(0,200,83,0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
-      .bl-cta:active{ transform:translateY(0) scale(.98); }
-      .bl-cta:disabled{ opacity:.65; cursor:default; }
+      /* reading: the print traces itself, the spark and the scan speed up */
+      .bl-lens.is-busy .bl-print path{animation:bl-trace 1.2s ease-in-out infinite}
+      .bl-lens.is-busy .bl-spark{animation-duration:1.1s}
+      .bl-lens.is-busy .bl-scan{animation-duration:1.1s}
+      .bl-lens.is-busy .bl-glass{box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -20px 40px rgba(0,0,0,.35),0 20px 70px -6px rgba(34,227,138,.6)}
+      .bl-lens.is-err .bl-glass{animation:bl-shake .45s ease}
 
-      .bl-error{ display:flex; flex-direction:column; align-items:center; gap:.7rem; margin-top:.25rem; animation:bl-fade .3s ease both; }
-      .bl-error-text{ font-size:.83rem; color:rgba(200,215,208,0.8); line-height:1.5; max-width:300px; }
-      .bl-recover{
-        background:rgba(255,255,255,0.06); color:rgba(220,235,228,0.85);
-        border:1px solid rgba(255,255,255,0.14); border-radius:10px;
-        padding:.6rem 1.3rem; font-size:.85rem; font-weight:600; cursor:pointer;
-        transition:background .15s ease;
-      }
-      .bl-recover:hover{ background:rgba(255,255,255,0.12); }
+      .bl-titles{margin-top:30px}
+      .bl-title{margin:0;font-size:26px;font-weight:700;letter-spacing:-.035em;color:#f4fbf7}
+      .bl-sub{margin:8px 0 0;font-family:'Manrope','Plus Jakarta Sans',system-ui,sans-serif;font-size:14px;color:rgba(209,250,229,.6)}
 
+      .bl-cta{margin-top:26px;display:inline-flex;align-items:center;gap:8px;min-height:0!important;width:auto!important;
+        padding:12px 26px!important;border-radius:999px!important;cursor:pointer;
+        font:600 15px 'Sora','Plus Jakarta Sans',system-ui,sans-serif;letter-spacing:-.01em;color:#f4fbf7!important;
+        background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03))!important;
+        border:1px solid rgba(253,230,138,.38)!important;box-shadow:0 10px 30px -12px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.12)!important;
+        -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:transform .15s ease,border-color .2s ease}
+      .bl-cta svg{color:#fde68a;max-width:none}
+      .bl-cta:active{transform:scale(.97)}
+
+      .bl-error{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:22px;animation:bl-rise .3s ease both}
+      .bl-error-text{font-family:'Manrope','Plus Jakarta Sans',system-ui,sans-serif;font-size:13px;line-height:1.5;color:#fde68a;
+        padding:8px 14px;border-radius:12px;background:rgba(250,204,21,.07);border:1px solid rgba(250,204,21,.2);max-width:300px}
+      .bl-recover{min-height:0!important;width:auto!important;padding:6px 10px!important;border:0!important;background:none!important;box-shadow:none!important;
+        font:600 13px 'Manrope','Plus Jakarta Sans',system-ui,sans-serif;color:rgba(209,250,229,.6)!important;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+      @keyframes bl-turn{to{transform:rotate(360deg)}}
+      @keyframes bl-breathe{0%,100%{transform:scale(.94);opacity:.8}50%{transform:scale(1.06);opacity:1}}
+      @keyframes bl-metal{to{background-position:-250% 0}}
+      @keyframes bl-spec{0%{transform:translateX(-70%)}45%,100%{transform:translateX(70%)}}
+      @keyframes bl-scan{0%{top:-40px}50%{top:calc(100% + 6px)}100%{top:-40px}}
+      @keyframes bl-trace{0%{stroke-dashoffset:1}60%,100%{stroke-dashoffset:0}}
+      @keyframes bl-shake{20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+      @keyframes bl-rise{from{opacity:0;transform:translateY(10px)}}
       @media (prefers-reduced-motion:reduce){
-        .bl-ring,.bl-brand-dot,.bl-fp-busy .bl-fp-core{ animation:none !important; }
-        .bl-ring{ opacity:.4; }
+        .bl-screen *,.bl-screen *::after{animation:none!important}
+        .bl-scan{display:none}
       }
     `}</style>
   )

@@ -2061,4 +2061,10 @@ export default {
     ipExBonds: "Treasuries, T-bills",
     ipExCommodities: "Oil, copper",
     wsAddCustom: (n) => `Add “${n}”`,
+    // ── Lock screen ─────────────────────────────────────────────────────────
+    blWelcome: "Welcome back",
+    blLockedSub: "Touch the sensor to unlock your portfolio",
+    blVerifying: "Verifying…",
+    blUnlock: "Unlock",
+    blDisableContinue: "Turn off lock and continue",
 }
