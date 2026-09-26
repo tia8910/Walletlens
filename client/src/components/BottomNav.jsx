@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
 import { homePath } from '../v2Preview'
+import { LongPressMenu } from './LongPressMenu'
 
 const NAV_ITEMS = [
   {
@@ -116,29 +117,20 @@ const V2_NAV_ITEMS = [
 ]
 
 const DASHBOARD_LP_ITEMS = [
-  { icon: '⚡', labelKey: 'quickAddTrade', onClick: (nav, home) => nav(home, { state: { tab: 'overview', quickAdd: true } }) },
-  { icon: '📥', labelKey: 'importData', onClick: (nav, home) => nav(home, { state: { tab: 'manage' } }) },
-  { icon: '🔔', labelKey: 'viewAllAlerts', onClick: (nav, home) => nav(home, { state: { tab: 'alerts' } }) },
-  { icon: '🎯', labelKey: 'viewAllTargets', onClick: (nav, home) => nav(home, { state: { tab: 'targets' } }) },
+  { icon: 'zap', tone: 'green', labelKey: 'quickAddTrade', onClick: (nav, home) => nav(home, { state: { tab: 'overview', quickAdd: true } }) },
+  { icon: 'import', tone: 'blue', labelKey: 'importData', onClick: (nav, home) => nav(home, { state: { tab: 'manage' } }) },
+  { icon: 'bell', tone: 'amber', labelKey: 'viewAllAlerts', onClick: (nav, home) => nav(home, { state: { tab: 'alerts' } }) },
+  { icon: 'target', tone: 'rose', labelKey: 'viewAllTargets', onClick: (nav, home) => nav(home, { state: { tab: 'targets' } }) },
   { divider: true },
-  { icon: '⚙️', labelKey: 'settingsNav', onClick: (nav) => nav('/settings') },
+  { icon: 'settings', tone: 'slate', labelKey: 'settingsNav', onClick: (nav) => nav('/settings') },
 ]
-
-function showLpAt(x, y, items, setMenu) {
-  const vw = window.innerWidth, vh = window.innerHeight
-  const menuW = 200, menuH = items.length * 44 + 16
-  if (x + menuW > vw - 8) x = vw - menuW - 8
-  if (y + menuH > vh - 8) y = y - menuH
-  if (x < 8) x = 8
-  if (y < 8) y = 8
-  setMenu({ x, y, items })
-}
 
 const BottomNav = memo(function BottomNav({ v2 = false }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [activeTab, setActiveTab] = useState('overview')
   const [lpMenu, setLpMenu] = useState(null)
+  const closeLp = React.useCallback(() => setLpMenu(null), [])
   const { t } = useLanguage()
   const lpTimer = React.useRef(null)
 
@@ -149,9 +141,10 @@ const BottomNav = memo(function BottomNav({ v2 = false }) {
 
   function triggerDashboardLp(clientX, clientY) {
     const items = DASHBOARD_LP_ITEMS.map(it =>
-      it.divider ? it : { ...it, onClick: () => it.onClick(navigate, homePath(v2)) }
+      it.divider ? it : { ...it, label: t(it.labelKey), onClick: () => it.onClick(navigate, homePath(v2)) }
     )
-    showLpAt(clientX, clientY, items, setLpMenu)
+    // The shared menu clamps against its measured size.
+    setLpMenu({ x: clientX, y: clientY, items })
     track('longpress_menu', { area: 'bottomnav' })
   }
 
@@ -206,26 +199,11 @@ const BottomNav = memo(function BottomNav({ v2 = false }) {
           </button>
         )
       })}
-      {lpMenu && (() => {
-        const vw = window.innerWidth, vh = window.innerHeight
-        let { x, y } = lpMenu
-        if (x + 200 > vw - 8) x = vw - 208
-        if (y + 240 > vh - 8) y = y - 240
-        if (x < 8) x = 8; if (y < 8) y = 8
-        return (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 99999 }} onPointerDown={() => setLpMenu(null)}>
-            <div className="lp-menu" style={{ position: 'fixed', left: x, top: y, zIndex: 100000 }} onPointerDown={e => e.stopPropagation()}>
-              {lpMenu.items.map((it, i) => it.divider
-                ? <div key={i} className="lp-divider" />
-                : <button key={i} className="lp-item" onClick={() => { setLpMenu(null); it.onClick?.() }}>
-                    <span className="lp-icon">{it.icon}</span>
-                    <span className="lp-label">{t(it.labelKey)}</span>
-                  </button>
-              )}
-            </div>
-          </div>
-        )
-      })()}
+      {/* The same menu as the dashboard's, rather than a second copy that
+          drifted: this one closed on pointerdown, so a tap that began on an
+          item could close the menu before the item's click arrived. */}
+      <LongPressMenu items={lpMenu?.items || []} pos={lpMenu ? { x: lpMenu.x, y: lpMenu.y } : null}
+        title={t('lpQuickActions')} onClose={closeLp} />
     </nav>
   )
 })

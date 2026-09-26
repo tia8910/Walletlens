@@ -50,14 +50,16 @@ export function localMatches(query) {
   return [...metals, ...stocks]
 }
 
-export default function TechChartPanel({ enriched }) {
+export default function TechChartPanel({ enriched, initialPick = null }) {
   const { t } = useLanguage()
   const navigate = useNavigate()
   const assets = useMemo(() => {
     const own = (enriched || []).filter(chartable).slice().sort((a, b) => (b.value || 0) - (a.value || 0))
     return own.length ? own : MAJORS
   }, [enriched])
-  const [picked, setPicked] = useState(null)
+  // A holding's long-press "Technical analysis" arrives with its coin, so
+  // the page opens on that asset instead of the first one in the list.
+  const [picked, setPicked] = useState(initialPick)
   // An asset found by search, charted even though it is not held.
   const [found, setFound] = useState(null)
   const [query, setQuery] = useState('')

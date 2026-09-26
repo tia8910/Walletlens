@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { noteFeatureUse } from '../featureUse'
 import Icon from '../components/Icon'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../api'
 import { track } from '../analytics'
 import TechChartPanel from '../components/TechChartPanel'
@@ -14,6 +14,7 @@ export default function Technicals() {
 
   const { t } = useLanguage()
   const navigate = useNavigate()
+  const location = useLocation()
   const [portfolio, setPortfolio] = useState([])
   const [prices, setPrices] = useState({})
   const [loaded, setLoaded] = useState(false)
@@ -72,7 +73,7 @@ export default function Technicals() {
         <h1 className="magic-hero-title" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:'0.35rem' }}><Icon name="ruler" size={20} /> <span>{t('tnTitle')}</span></h1>
         <p className="magic-hero-sub">{t('acSignalsDesc')}</p>
       </div>
-      <TechChartPanel enriched={enriched} />
+      <TechChartPanel enriched={enriched} initialPick={location.state?.coinId || null} />
     </div>
   )
 }
