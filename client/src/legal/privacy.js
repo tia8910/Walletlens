@@ -65,7 +65,7 @@ export const privacy = {
       ] },
       { h: '6. Analytics', p: [
         'We use **Google Analytics (GA4)** to understand aggregate usage patterns such as page views, session duration, and device type. This helps us improve the app. Google Analytics uses cookies and may collect your IP address and browser information. You can opt out using the [Google Analytics Opt-out Browser Add-on](https://tools.google.com/dlpage/gaoptout).',
-        'Analytics events record which features are used, never what you own. Ad-personalisation signals are disabled, and no event carries asset symbols, amounts, valuations, profit or loss, or anything you have typed. On the web, an X (Twitter) advertising pixel also loads to measure referrals from our posts there; it is not included in the Google Play app.',
+        'Analytics events record which features are used, never what you own. Ad-personalisation signals are disabled, and no event carries asset symbols, amounts, valuations, profit or loss, or anything you have typed. On the website, Google Ads conversion measurement is enabled so we can tell which of our ads bring visitors who start a portfolio; it is not used for personalised advertising, and in the EEA, UK and Switzerland it stays off. An X (Twitter) advertising pixel also loads on the web to measure referrals from our posts there. Neither is included in the Google Play app.',
         'News headlines shown in the app are translated on request through our own server, which relays the headline text to Anthropic. Only the public headline is sent — never anything from your portfolio.',
       ] },
       { h: '7. Cookies', p: [

@@ -134,10 +134,34 @@
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-      // Block ad-conversion forwarding — we don't run paid ads, so no conversion signals needed.
+      // Google Ads conversion measurement, on the website only.
+      //
+      // WalletLens runs Google Ads, and with ad_storage / ad_user_data denied
+      // the ad click (gclid) is never kept, so a visitor who came from an ad
+      // and started a portfolio could not be credited to it. Measurement is
+      // allowed on the web. Personalisation (remarketing audiences) stays off
+      // everywhere, and no event carries holdings or amounts either way.
+      //
+      // Denied, in order of precedence:
+      //   • the Google Play app, where sharing with an ad network would need
+      //     an "Advertising or marketing" declaration — the same reason the X
+      //     pixel is skipped there;
+      //   • the EEA, UK and Switzerland, where ad storage needs prior consent
+      //     and there is no consent banner. Consent mode still sends
+      //     cookieless pings there, so Ads can model those conversions.
+      var inPlayApp = false;
+      try { inPlayApp = localStorage.getItem('wl_twa') === '1'; } catch (e) {}
+      var adsSignal = inPlayApp ? 'denied' : 'granted';
       gtag('consent', 'default', {
         ad_storage: 'denied',
         ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'granted',
+        region: ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH']
+      });
+      gtag('consent', 'default', {
+        ad_storage: adsSignal,
+        ad_user_data: adsSignal,
         ad_personalization: 'denied',
         analytics_storage: 'granted'
       });
