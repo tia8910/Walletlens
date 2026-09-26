@@ -442,54 +442,109 @@
           <p>JavaScript is required to use the dashboard. Enable JavaScript and reload.</p>
         </main>
       </noscript>
-      <div class="wlboot">
+      <div class="wlboot sg" aria-hidden="true">
         <style>
-          .wlboot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:0;
-            background:radial-gradient(120% 120% at 50% 38%,#0d2015 0%,#081209 55%,#050b06 100%);
-            color:#fff;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
-          .wlboot-in{position:relative;display:flex;flex-direction:column;align-items:center;gap:1.5rem}
-          .wlboot-mark{position:relative;width:118px;height:118px;display:flex;align-items:center;justify-content:center}
-          /* soft breathing glow behind the mark */
-          .wlboot-glow{position:absolute;width:96px;height:96px;border-radius:50%;
-            background:radial-gradient(circle,rgba(0,230,118,.4),transparent 70%);
-            filter:blur(8px);animation:wlpulse 1.9s ease-in-out infinite}
-          /* faint static track */
-          .wlboot-track{position:absolute;inset:6px;border-radius:50%;border:1.5px solid rgba(0,230,118,.14)}
-          /* rotating scanner arc — the "lens" sweeping */
-          .wlboot-ring{position:absolute;inset:6px;border-radius:50%;
-            background:conic-gradient(from 0deg,transparent 0deg,transparent 240deg,#00e676 320deg,#b9f6ca 360deg);
-            -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
-            mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
-            animation:wlspin 1.05s linear infinite}
-          /* live bar-chart inside the lens (the brand mark) */
-          .wlboot-bars{position:relative;display:flex;align-items:flex-end;gap:5px;height:40px}
-          .wlboot-bars i{width:7px;height:14px;border-radius:3px;
-            background:linear-gradient(180deg,#b9f6ca,#00c853);animation:wlbar 1s ease-in-out infinite}
-          .wlboot-bars i:nth-child(2){animation-delay:.14s}
-          .wlboot-bars i:nth-child(3){animation-delay:.28s}
-          .wlboot-bars i:nth-child(4){animation-delay:.42s}
-          .wlboot-word{font-size:.72rem;font-weight:800;letter-spacing:.34em;text-transform:uppercase;
-            background:linear-gradient(90deg,#1b5e3a 0%,#00e676 45%,#eafff2 50%,#00e676 55%,#1b5e3a 100%);
-            background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
-            animation:wlshine 2.4s linear infinite}
-          @keyframes wlspin{to{transform:rotate(360deg)}}
-          @keyframes wlpulse{0%,100%{opacity:.45;transform:scale(.9)}50%{opacity:1;transform:scale(1.06)}}
-          @keyframes wlbar{0%,100%{height:14px}50%{height:38px}}
-          @keyframes wlshine{to{background-position:-200% 0}}
+          @font-face{font-family:'Sora';font-style:normal;font-weight:400 800;font-display:swap;src:url('/fonts/sora-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+          .sg{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:0;
+            background:radial-gradient(90% 70% at 50% 42%,#0b1f14 0%,#050d08 55%,#020604 100%);color:#fff;
+            font-family:'Sora','Plus Jakarta Sans',system-ui,sans-serif}
+          /* film grain */
+          .sg-grain{position:absolute;inset:0;opacity:.07;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+          /* two soft beams turning behind the lens */
+          .sg-rays{position:absolute;width:900px;height:900px;left:50%;top:44%;margin:-450px 0 0 -450px;opacity:0;
+            background:conic-gradient(from 0deg,transparent 0 20deg,rgba(34,227,138,.10) 32deg,transparent 46deg,transparent 180deg,rgba(34,227,138,.08) 200deg,transparent 216deg);
+            -webkit-mask:radial-gradient(circle,#000 0,transparent 60%);mask:radial-gradient(circle,#000 0,transparent 60%);
+            animation:sg-in 1s ease .4s forwards,sg-turn 22s linear infinite}
+          .sg-dust i{position:absolute;width:2px;height:2px;border-radius:50%;background:#d1fae5;opacity:0;animation:sg-tw 5s ease-in-out infinite}
+          .sg-in{position:relative;display:flex;flex-direction:column;align-items:center;margin-top:-30px}
+          .sg-mark{position:relative;width:210px;height:210px;display:grid;place-items:center}
+          /* watch bezel: sixty gold ticks turning like a slow second hand */
+          .sg-bezel{position:absolute;inset:0;width:100%;height:100%;opacity:0;animation:sg-in .8s ease .6s forwards,sg-turn 60s linear infinite}
+          .sg-run{position:absolute;inset:4px;border-radius:50%;opacity:0;
+            background:conic-gradient(from 0deg,transparent 0 300deg,rgba(253,230,138,.9) 356deg,#fff 360deg);
+            -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 1.5px),#000 calc(100% - 1px));mask:radial-gradient(farthest-side,transparent calc(100% - 1.5px),#000 calc(100% - 1px));
+            animation:sg-in .6s ease .9s forwards,sg-turn 2.8s cubic-bezier(.45,.05,.55,.95) infinite}
+          /* the glass lens and its travelling highlight */
+          .sg-glass{position:absolute;inset:34px;border-radius:50%;overflow:hidden;
+            background:radial-gradient(circle at 50% 45%,rgba(34,227,138,.20),rgba(4,20,12,.6) 70%);
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -20px 40px rgba(0,0,0,.35),0 20px 60px -10px rgba(34,227,138,.35);
+            border:1px solid rgba(255,255,255,.08);transform:scale(.6);opacity:0;animation:sg-glass .8s cubic-bezier(.2,1.2,.3,1) .05s forwards}
+          .sg-glass::after{content:'';position:absolute;inset:-30%;background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.16) 50%,transparent 58%);
+            transform:translateX(-70%);animation:sg-spec 3.6s ease-in-out 1.2s infinite}
+          /* light converging onto the lens */
+          .sg-conv{position:absolute;inset:0}
+          .sg-conv i{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:#86efac;box-shadow:0 0 8px #22e38a;opacity:0;
+            animation:sg-conv .85s cubic-bezier(.5,0,.2,1) forwards}
+          .sg-logo{position:relative;width:96px;height:96px;overflow:visible;transform:translate(-3px,9px)}
+          .sg-ring{stroke-dasharray:120;stroke-dashoffset:120;animation:sg-draw .9s cubic-bezier(.6,0,.2,1) .3s forwards}
+          .sg-handle{stroke-dasharray:22;stroke-dashoffset:22;animation:sg-draw .35s ease-out .95s forwards}
+          .sg-bar{transform-box:fill-box;transform-origin:50% 100%;transform:scaleY(0);animation:sg-grow .5s cubic-bezier(.3,1.5,.5,1) forwards,sg-live 2.2s ease-in-out infinite}
+          .sg-b1{animation-delay:.75s,1.5s}.sg-b2{animation-delay:.85s,1.75s}.sg-b3{animation-delay:.95s,2s}
+          .sg-dotw{transform-origin:27px 25px;animation:sg-turn 5s linear 1.2s infinite}
+          .sg-dot{transform-box:fill-box;transform-origin:center;transform:scale(0);animation:sg-pop .4s cubic-bezier(.3,1.8,.5,1) .95s forwards}
+          /* wordmark: brushed chrome, "live" in emerald */
+          .sg-word{margin-top:30px;display:flex;align-items:center;font-size:31px;font-weight:700;letter-spacing:-.035em}
+          .sg-word span{display:inline-block;opacity:0;transform:translateY(12px);filter:blur(8px);animation:sg-letter .65s cubic-bezier(.2,1,.3,1) forwards}
+          .sg-c{background:linear-gradient(100deg,#9aa9a1 0%,#fff 30%,#c9d6cf 45%,#fff 50%,#8e9d95 70%,#f4fbf7 100%);background-size:250% 100%;
+            -webkit-background-clip:text;background-clip:text;color:transparent;animation-name:sg-letter,sg-metal!important;animation-duration:.65s,4s!important;
+            animation-timing-function:cubic-bezier(.2,1,.3,1),linear!important;animation-iteration-count:1,infinite!important;animation-fill-mode:forwards,none!important}
+          .sg-lv{background:linear-gradient(180deg,#86efac,#16c47a);-webkit-background-clip:text;background-clip:text;color:transparent}
+          .sg-word .sg-dt{width:7px;height:7px;border-radius:50%;background:#22e38a;margin:0 3px;box-shadow:0 0 14px #22e38a;filter:none}
+          .sg-tag{margin-top:12px;padding-left:.48em;font-size:10px;font-weight:600;letter-spacing:.48em;color:rgba(253,230,138,.55);opacity:0;animation:sg-in .7s ease 1.4s forwards}
+          /* the one loading signal: a gold hairline */
+          .sg-foot{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 64px);width:120px;margin-left:-60px;height:1.5px;border-radius:9px;
+            background:rgba(255,255,255,.07);overflow:hidden;opacity:0;animation:sg-in .6s ease 1.1s forwards}
+          .sg-foot::after{content:'';position:absolute;inset:0;width:40%;background:linear-gradient(90deg,transparent,#fde68a,transparent);animation:sg-run 1.8s cubic-bezier(.6,0,.3,1) infinite}
+          /* exit, played by the copy bootSplash.js lays over the app: the lens opens */
+          .sg.sg-out{opacity:0;transition:opacity .6s ease .2s}
+          .sg.sg-out .sg-in{animation:sg-iris .85s cubic-bezier(.7,0,.2,1) forwards}
+          @keyframes sg-in{to{opacity:1}}
+          @keyframes sg-turn{to{transform:rotate(360deg)}}
+          @keyframes sg-tw{0%,100%{opacity:0;transform:translateY(0)}50%{opacity:.7;transform:translateY(-14px)}}
+          @keyframes sg-glass{to{transform:none;opacity:1}}
+          @keyframes sg-spec{0%{transform:translateX(-70%)}45%,100%{transform:translateX(70%)}}
+          @keyframes sg-conv{0%{opacity:0;transform:rotate(var(--a)) translateX(var(--f))}30%{opacity:1}100%{opacity:0;transform:rotate(var(--a)) translateX(40px)}}
+          @keyframes sg-draw{to{stroke-dashoffset:0}}
+          @keyframes sg-grow{to{transform:scaleY(1)}}
+          @keyframes sg-live{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.7)}}
+          @keyframes sg-pop{to{transform:scale(1)}}
+          @keyframes sg-letter{to{opacity:1;transform:none;filter:none}}
+          @keyframes sg-metal{to{background-position:-250% 0}}
+          @keyframes sg-run{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+          @keyframes sg-iris{to{transform:scale(7);opacity:0}}
           @media (prefers-reduced-motion:reduce){
-            .wlboot-ring,.wlboot-glow,.wlboot-bars i,.wlboot-word{animation:none}
-            .wlboot-bars i:nth-child(2){height:30px}.wlboot-bars i:nth-child(3){height:38px}.wlboot-bars i:nth-child(4){height:24px}
+            .sg *,.sg *::after{animation:none!important}
+            .sg-ring,.sg-handle{stroke-dashoffset:0}.sg-bar,.sg-dot{transform:none}
+            .sg-word span,.sg-tag,.sg-bezel,.sg-glass,.sg-rays,.sg-foot{opacity:1;transform:none;filter:none}
+            .sg-conv,.sg-dust{display:none}
           }
         </style>
-        <div class="wlboot-in">
-          <div class="wlboot-mark">
-            <div class="wlboot-glow"></div>
-            <div class="wlboot-track"></div>
-            <div class="wlboot-ring"></div>
-            <div class="wlboot-bars"><i></i><i></i><i></i><i></i></div>
+        <div class="sg-grain"></div>
+        <div class="sg-rays"></div>
+        <div class="sg-dust"><i style="left:14%;top:26%;animation-delay:-2.0s;animation-duration:7.5s"></i><i style="left:10%;top:45%;animation-delay:-2.7s;animation-duration:7.5s"></i><i style="left:81%;top:85%;animation-delay:-1.4s;animation-duration:5.7s"></i><i style="left:36%;top:87%;animation-delay:-4.8s;animation-duration:4.6s"></i><i style="left:19%;top:24%;animation-delay:-1.2s;animation-duration:5.9s"></i><i style="left:59%;top:27%;animation-delay:-0.0s;animation-duration:5.7s"></i><i style="left:37%;top:56%;animation-delay:-4.8s;animation-duration:6.8s"></i><i style="left:51%;top:61%;animation-delay:-3.4s;animation-duration:4.2s"></i><i style="left:88%;top:77%;animation-delay:-4.4s;animation-duration:7.2s"></i><i style="left:40%;top:40%;animation-delay:-0.5s;animation-duration:6.5s"></i><i style="left:8%;top:8%;animation-delay:-1.0s;animation-duration:4.6s"></i><i style="left:35%;top:7%;animation-delay:-0.0s;animation-duration:4.6s"></i><i style="left:12%;top:37%;animation-delay:-0.1s;animation-duration:7.5s"></i><i style="left:61%;top:16%;animation-delay:-1.3s;animation-duration:5.4s"></i><i style="left:37%;top:14%;animation-delay:-4.2s;animation-duration:8.0s"></i><i style="left:47%;top:48%;animation-delay:-0.4s;animation-duration:4.4s"></i><i style="left:35%;top:27%;animation-delay:-4.1s;animation-duration:4.6s"></i><i style="left:4%;top:93%;animation-delay:-2.6s;animation-duration:4.6s"></i></div>
+        <div class="sg-in">
+          <div class="sg-mark">
+            <svg class="sg-bezel" viewBox="0 0 210 210" fill="none"><circle cx="105" cy="105" r="101" stroke="rgba(253,230,138,.35)" stroke-width=".8"/><circle cx="105" cy="105" r="99" stroke="rgba(253,230,138,.25)" stroke-width="4" stroke-dasharray="1 9.367" transform="rotate(-90.3 105 105)"/><circle cx="105" cy="105" r="97.5" stroke="rgba(253,230,138,.55)" stroke-width="7" stroke-dasharray="1.1 49.951" transform="rotate(-90.3 105 105)"/><circle cx="105" cy="105" r="96" stroke="rgba(253,230,138,.9)" stroke-width="10" stroke-dasharray="1.6 149.196" transform="rotate(-90.5 105 105)"/></svg>
+            <div class="sg-run"></div>
+            <div class="sg-glass"></div>
+            <div class="sg-conv"><i style="--a:3deg;--f:188px;animation-delay:0.20s"></i><i style="--a:13deg;--f:234px;animation-delay:0.11s"></i><i style="--a:26deg;--f:231px;animation-delay:0.01s"></i><i style="--a:42deg;--f:178px;animation-delay:0.03s"></i><i style="--a:55deg;--f:269px;animation-delay:0.04s"></i><i style="--a:66deg;--f:245px;animation-delay:0.28s"></i><i style="--a:82deg;--f:218px;animation-delay:0.29s"></i><i style="--a:90deg;--f:273px;animation-delay:0.09s"></i><i style="--a:104deg;--f:184px;animation-delay:0.09s"></i><i style="--a:122deg;--f:192px;animation-delay:0.17s"></i><i style="--a:134deg;--f:215px;animation-delay:0.16s"></i><i style="--a:142deg;--f:177px;animation-delay:0.06s"></i><i style="--a:160deg;--f:221px;animation-delay:0.09s"></i><i style="--a:172deg;--f:224px;animation-delay:0.09s"></i><i style="--a:186deg;--f:254px;animation-delay:0.07s"></i><i style="--a:197deg;--f:233px;animation-delay:0.26s"></i><i style="--a:212deg;--f:205px;animation-delay:0.29s"></i><i style="--a:220deg;--f:220px;animation-delay:0.23s"></i><i style="--a:233deg;--f:229px;animation-delay:0.01s"></i><i style="--a:250deg;--f:262px;animation-delay:0.17s"></i><i style="--a:264deg;--f:208px;animation-delay:0.21s"></i><i style="--a:275deg;--f:240px;animation-delay:0.14s"></i><i style="--a:290deg;--f:283px;animation-delay:0.14s"></i><i style="--a:301deg;--f:177px;animation-delay:0.21s"></i><i style="--a:314deg;--f:289px;animation-delay:0.25s"></i><i style="--a:324deg;--f:216px;animation-delay:0.20s"></i><i style="--a:334deg;--f:225px;animation-delay:0.05s"></i><i style="--a:348deg;--f:177px;animation-delay:0.23s"></i></div>
+            <svg class="sg-logo" viewBox="0 0 50 61" fill="none">
+              <defs>
+                <linearGradient id="sgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#86efac"/><stop offset=".5" stop-color="#22c55e"/><stop offset="1" stop-color="#15803d"/></linearGradient>
+                <linearGradient id="sgB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ecfdf5"/><stop offset="1" stop-color="#22c55e"/></linearGradient>
+              </defs>
+              <circle class="sg-ring" cx="27" cy="25" r="19" stroke="url(#sgA)" stroke-width="5" stroke-linecap="round" pathLength="120" transform="rotate(-90 27 25)"/>
+              <rect class="sg-bar sg-b1" x="14.5" y="26.5" width="5" height="7.5" rx="1.4" fill="url(#sgB)"/>
+              <rect class="sg-bar sg-b2" x="21.5" y="21" width="5" height="13" rx="1.4" fill="url(#sgB)"/>
+              <rect class="sg-bar sg-b3" x="28.5" y="15.5" width="5" height="18.5" rx="1.4" fill="url(#sgB)"/>
+              <g class="sg-dotw"><circle class="sg-dot" cx="40.5" cy="11.5" r="3.6" fill="#d1fae5"/></g>
+              <line class="sg-handle" x1="13.5" y1="39" x2="4" y2="55" stroke="url(#sgA)" stroke-width="5" stroke-linecap="round" pathLength="22"/>
+            </svg>
           </div>
-          <div class="wlboot-word">WalletLens</div>
+          <div class="sg-word"><span class="sg-c" style="animation-delay:0.850s,2s">W</span><span class="sg-c" style="animation-delay:0.885s,2s">a</span><span class="sg-c" style="animation-delay:0.920s,2s">l</span><span class="sg-c" style="animation-delay:0.955s,2s">l</span><span class="sg-c" style="animation-delay:0.990s,2s">e</span><span class="sg-c" style="animation-delay:1.025s,2s">t</span><span class="sg-c" style="animation-delay:1.060s,2s">L</span><span class="sg-c" style="animation-delay:1.095s,2s">e</span><span class="sg-c" style="animation-delay:1.130s,2s">n</span><span class="sg-c" style="animation-delay:1.165s,2s">s</span><span class="sg-dt" style="animation-delay:1.22s"></span><span class="sg-lv" style="animation-delay:1.260s">l</span><span class="sg-lv" style="animation-delay:1.295s">i</span><span class="sg-lv" style="animation-delay:1.330s">v</span><span class="sg-lv" style="animation-delay:1.365s">e</span></div>
+          <div class="sg-tag">TRACK · ANALYZE · GROW</div>
         </div>
+        <div class="sg-foot"></div>
       </div>
     </div>
     <script type="module" src="/src/main.jsx" fetchpriority="high"></script>
