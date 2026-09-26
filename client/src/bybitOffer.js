@@ -16,7 +16,7 @@
 // paid by Bybit, terms apply.
 
 import { useEffect, useState } from 'react'
-import { track, trackReferral } from './analytics'
+import { track } from './analytics'
 import { INTERESTS_EVENT } from './data/interestsEvent'
 
 export const BYBIT_URL = 'https://www.bybit.com/invite?ref=BM64KOV&medium=referral&utm_campaign=evergreen'
@@ -203,18 +203,72 @@ export const STRIP_SNOOZE_MS = 30 * 24 * 60 * 60 * 1000
 export function stripHidden(now = Date.now()) {
   try { return Number(localStorage.getItem(STRIP_KEY) || 0) > now } catch { return false }
 }
-export function hideStrip(now = Date.now()) {
+export function hideStrip(now = Date.now(), placement = 'holdings', offer = 'crypto') {
   try { localStorage.setItem(STRIP_KEY, String(now + STRIP_SNOOZE_MS)) } catch {}
-  track('bybit_offer_dismiss', { source: 'holdings' })
+  trackReferralEvent('referral_dismiss', placement, offer)
+}
+
+// ── Analytics ───────────────────────────────────────────────────────────────
+//
+// Three GA4 events, one set of parameters, so views, clicks and dismissals
+// line up in one report and click-through is clicks ÷ views:
+//
+//   referral_view     the offer was at least half on screen (once per
+//                     placement per session, however often it re-renders)
+//   referral_click    the button was tapped — the one to mark as a key event
+//   referral_dismiss  the strip's ✕
+//
+//   exchange   'Bybit'
+//   placement  where: asset_page, technicals, holdings, dashboard_interest, …
+//   offer      what: crypto | stocks | metals
+//   bonus      the amount shown, as read from offers.json
+//
+// Nothing about the person or their portfolio rides along.
+
+export const REFERRAL_EXCHANGE = 'Bybit'
+
+function referralParams(placement, offer) {
+  return { exchange: REFERRAL_EXCHANGE, placement, offer, bonus: currentBonus() }
+}
+
+/** Sends one referral event. Never throws: analytics must not block the link. */
+export function trackReferralEvent(name, placement, offer = 'crypto', extra = {}) {
+  try { track(name, { ...referralParams(placement, offer), ...extra }) } catch { /* ignore */ }
+}
+
+const viewed = new Set()
+// The ref callback is recreated on every render; watching each element once
+// keeps that from stacking observers on the same card.
+const watched = typeof WeakSet !== 'undefined' ? new WeakSet() : null
+
+/**
+ * Fires referral_view once per placement and offer per session, when the
+ * element is at least half visible. Returns a ref callback for the element.
+ */
+export function viewRef(placement, offer = 'crypto') {
+  return (el) => {
+    const key = `${placement}:${offer}`
+    if (!el || viewed.has(key) || watched?.has(el)) return
+    watched?.add(el)
+    if (typeof IntersectionObserver === 'undefined') {
+      viewed.add(key); trackReferralEvent('referral_view', placement, offer); return
+    }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some(e => e.isIntersecting) && !viewed.has(key)) {
+        viewed.add(key)
+        trackReferralEvent('referral_view', placement, offer)
+        io.disconnect()
+      }
+    }, { threshold: 0.5 })
+    io.observe(el)
+  }
 }
 
 // ── Clicks ──────────────────────────────────────────────────────────────────
 
-/** Opens the referral link and records which placement sent it. No personal data. */
-export function openBybit(placement) {
-  try {
-    track('exchange_referral_click', { exchange: 'Bybit', source: placement })
-    trackReferral({ exchange: 'Bybit', source: placement })
-  } catch { /* analytics never blocks the link */ }
+/** Opens the referral link and records which placement and offer sent it. */
+export function openBybit(placement, offer = 'crypto') {
+  // 'beacon' so the hit leaves even as the browser switches to Bybit.
+  trackReferralEvent('referral_click', placement, offer, { transport_type: 'beacon' })
   try { window.open(BYBIT_URL, '_blank', 'noopener,noreferrer') } catch { /* no window */ }
 }

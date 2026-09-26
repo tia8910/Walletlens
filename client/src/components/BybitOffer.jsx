@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLanguage } from '../LanguageContext'
 import {
-  useBybitOffer, usePickedOffer, openBybit, stripHidden, hideStrip,
+  useBybitOffer, usePickedOffer, openBybit, stripHidden, hideStrip, viewRef,
 } from '../bybitOffer'
 import './BybitOffer.css'
 
@@ -41,7 +41,7 @@ export function BybitCard({ symbol, placement = 'asset_page' }) {
   if (!allowed) return null
   const sym = String(symbol || '').toUpperCase()
   return (
-    <section className="by-card" aria-label={t('byAria')}>
+    <section className="by-card" aria-label={t('byAria')} ref={viewRef(placement, 'crypto')}>
       <Gift className="by-gift" />
       <div className="by-top"><Wordmark /><span className="by-tag">{t('byPartner')}</span></div>
       <h3 className="by-h">{t('byHeadA')} <em>{bonus}</em><br />{t('byHeadB')}</h3>
@@ -51,7 +51,7 @@ export function BybitCard({ symbol, placement = 'asset_page' }) {
         <li><b>2</b>{t('byStep2')}</li>
         <li><b>3</b>{t('byStep3').replace('{amt}', bonus)}</li>
       </ol>
-      <button type="button" className="by-cta" onClick={() => openBybit(placement)}>
+      <button type="button" className="by-cta" onClick={() => openBybit(placement, 'crypto')}>
         {t('byCta').replace('{amt}', bonus)} <span aria-hidden="true">→</span>
       </button>
       <p className="by-fine">{t('byFine')}</p>
@@ -99,8 +99,9 @@ export function BybitStockCard({ symbol, kind = 'stocks', placement = 'stock_pag
   if (!allowed) return null
   const sym = String(symbol || '').toUpperCase()
   const k = kind === 'metals' ? 'Metals' : 'Stocks'
+  const offer = kind === 'metals' ? 'metals' : 'stocks'
   return (
-    <section className="by-card by-card--stocks" aria-label={t('byStocksAria')}>
+    <section className="by-card by-card--stocks" aria-label={t('byStocksAria')} ref={viewRef(placement, offer)}>
       <TradFiChips kind={kind === 'metals' ? 'metals' : 'stocks'} />
       <div className="by-top"><Wordmark /><span className="by-tag">{t('byPartner')}</span></div>
       <h3 className="by-h">{t(`by${k}HeadA`)}<br /><em>{t(`by${k}HeadB`)}</em></h3>
@@ -115,7 +116,7 @@ export function BybitStockCard({ symbol, kind = 'stocks', placement = 'stock_pag
         <li><b>2</b>{t('byStep2')}</li>
         <li><b>3</b>{t('byStocksStep3').replace('{amt}', bonus)}</li>
       </ol>
-      <button type="button" className="by-cta" onClick={() => openBybit(placement)}>
+      <button type="button" className="by-cta" onClick={() => openBybit(placement, offer)}>
         {t('byCta').replace('{amt}', bonus)} <span aria-hidden="true">→</span>
       </button>
       <p className="by-fine">{t('byStocksFine')}</p>
@@ -131,7 +132,7 @@ export function BybitStrip({ variant = 'crypto', placement = 'holdings' }) {
   if (!allowed || hidden) return null
   if (variant === 'stocks' || variant === 'metals') {
     return (
-      <div className="by-strip" role="complementary" aria-label={t('byStocksAria')}>
+      <div className="by-strip" role="complementary" aria-label={t('byStocksAria')} ref={viewRef(placement, variant)}>
         <span className="by-strip-ic by-strip-ic--stocks" aria-hidden="true">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f7a600" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l5-5 4 4 8-8" /><path d="M14 8h6v6" /></svg>
         </span>
@@ -142,16 +143,16 @@ export function BybitStrip({ variant = 'crypto', placement = 'holdings' }) {
           })()}</b>
           <small>{t('byStocksStripFine').replace('{amt}', bonus)}</small>
         </span>
-        <button type="button" className="by-strip-go" onClick={() => openBybit(placement)}>{t('byClaimNow')}</button>
+        <button type="button" className="by-strip-go" onClick={() => openBybit(placement, variant)}>{t('byClaimNow')}</button>
         <button type="button" className="by-strip-x" aria-label={t('byHide')}
-          onClick={() => { hideStrip(); setHidden(true) }}>
+          onClick={() => { hideStrip(Date.now(), placement, variant); setHidden(true) }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
         </button>
       </div>
     )
   }
   return (
-    <div className="by-strip" role="complementary" aria-label={t('byAria')}>
+    <div className="by-strip" role="complementary" aria-label={t('byAria')} ref={viewRef(placement, 'crypto')}>
       <span className="by-strip-ic" aria-hidden="true">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f7a600" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="4" rx="1" /><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" /><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5" /></svg>
       </span>
@@ -159,9 +160,9 @@ export function BybitStrip({ variant = 'crypto', placement = 'holdings' }) {
         <b>{t('byStripHead').split('{amt}')[0]}<em>{bonus}</em>{t('byStripHead').split('{amt}')[1] || ''}</b>
         <small>{t('byStripFine')}</small>
       </span>
-      <button type="button" className="by-strip-go" onClick={() => openBybit(placement)}>{t('byClaimNow')}</button>
+      <button type="button" className="by-strip-go" onClick={() => openBybit(placement, variant)}>{t('byClaimNow')}</button>
       <button type="button" className="by-strip-x" aria-label={t('byHide')}
-        onClick={() => { hideStrip(); setHidden(true) }}>
+        onClick={() => { hideStrip(Date.now(), placement, variant); setHidden(true) }}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
       </button>
     </div>

@@ -180,3 +180,54 @@ describe('placements', () => {
     expect(read('components/BybitOffer.jsx')).not.toMatch(/sheet|modal/i)
   })
 })
+
+describe('Google Analytics', () => {
+  const calls = []
+  beforeEach(() => {
+    calls.length = 0
+    localStorage.clear()
+    window.gtag = (...a) => calls.push(a)
+    window.open = () => null
+  })
+
+  it('sends one referral_click per tap, with where, what and how much', async () => {
+    const { openBybit } = await import('./bybitOffer')
+    openBybit('technicals_stock', 'stocks')
+    const hits = calls.filter(c => c[0] === 'event')
+    expect(hits).toHaveLength(1)
+    expect(hits[0][1]).toBe('referral_click')
+    expect(hits[0][2]).toMatchObject({ exchange: 'Bybit', placement: 'technicals_stock', offer: 'stocks', bonus: '$20', transport_type: 'beacon' })
+  })
+
+  it('reports the dismiss with the same parameters', async () => {
+    const { hideStrip } = await import('./bybitOffer')
+    hideStrip(Date.now(), 'holdings_metals', 'metals')
+    const hit = calls.find(c => c[1] === 'referral_dismiss')
+    expect(hit[2]).toMatchObject({ exchange: 'Bybit', placement: 'holdings_metals', offer: 'metals' })
+  })
+
+  it('counts a view once per placement, however often the card re-renders', async () => {
+    const { viewRef } = await import('./bybitOffer')
+    const saved = globalThis.IntersectionObserver
+    globalThis.IntersectionObserver = undefined
+    const el = document.createElement('div')
+    viewRef('asset_page', 'crypto')(el)
+    viewRef('asset_page', 'crypto')(el)
+    viewRef('asset_page', 'crypto')(document.createElement('div'))
+    globalThis.IntersectionObserver = saved
+    expect(calls.filter(c => c[1] === 'referral_view')).toHaveLength(1)
+  })
+
+  it('carries nothing about the person or their portfolio', () => {
+    const src = read('bybitOffer.js')
+    const block = src.slice(src.indexOf('function referralParams'), src.indexOf('function referralParams') + 200)
+    expect(block).toMatch(/exchange: REFERRAL_EXCHANGE, placement, offer, bonus: currentBonus\(\)/)
+    expect(block).not.toMatch(/amount|value|holding|symbol/i)
+  })
+
+  it('tags every placement with its offer', () => {
+    const c = read('components/BybitOffer.jsx')
+    expect(c).not.toMatch(/openBybit\(placement\)/)
+    expect(c.match(/ref=\{viewRef\(/g)).toHaveLength(4)
+  })
+})
