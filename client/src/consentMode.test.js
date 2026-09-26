@@ -51,3 +51,22 @@ describe('Google Ads consent mode', () => {
     expect(privacy).toMatch(/not used for personalised advertising/)
   })
 })
+
+describe('Google Ads tag', () => {
+  it('configures AW-18295184733 on the website, through the existing gtag.js', () => {
+    expect(html).toMatch(/if \(!inPlayApp\) gtag\('config', 'AW-18295184733'\)/)
+    // One loader only: the Ads id rides the gtag.js already on the page.
+    expect(html.match(/googletagmanager\.com\/gtag\/js/g)).toHaveLength(1)
+  })
+
+  it('is allowed by the CSP', () => {
+    const headers = readFileSync(join(here, '../public/_headers'), 'utf8')
+    const csp = headers.split('\n').find(l => l.includes('Content-Security-Policy'))
+    for (const host of ['https://www.googleadservices.com', 'https://googleads.g.doubleclick.net', 'https://www.google.com']) {
+      expect(csp).toContain(host)
+    }
+    // No frame is admitted for it: the td.doubleclick.net iframe serves
+    // remarketing, which stays off (ad_personalization denied).
+    expect(csp).not.toMatch(/frame-src [^;]*doubleclick/)
+  })
+})
