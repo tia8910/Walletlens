@@ -195,7 +195,7 @@ export default {
     step3Title: 'Record trades',
     step3Desc: 'Tap Buy or Sell. Search the asset, enter amount and price. Balances update instantly.',
     step4Title: 'Scan for risks',
-    step4Desc: 'Open the Risk tab. Every crypto you hold is automatically scored for rug pull risk using GoPlus on-chain data. Use Scam Catcher to check any contract before you invest.',
+    step4Desc: 'Open the Risk tab. Every crypto you hold is automatically scored for rug pull risk using GoPlus on-chain data.',
     step5Title: 'Set your alerts',
     step5Desc: 'Enter target prices for any holding. Walk away. When price hits — your device alarms. No babysitting required.',
 

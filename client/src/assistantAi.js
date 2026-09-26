@@ -73,7 +73,7 @@ export const FEATURES = [
   // Analysis & Intelligence
   { route: '/dashboard?tab=tools&tool=ai',   label: 'Portfolio Analysis',          desc: 'Deep smart analysis of your portfolio with personalized recommendations' },
   { route: '/dashboard?tab=tools&tool=ta',   label: 'Technical Analysis',   desc: 'Technical indicators, momentum, RSI, MACD for your holdings' },
-  { route: '/dashboard?tab=tools&tool=risk', label: 'Risk Scanner',         desc: 'Scan for concentration risk, liquidity risk, and volatility exposure' },
+  { route: '/dashboard?tab=tools&tool=risk', label: 'Risk Scanner',         desc: 'Score each crypto you hold for rug-pull and contract risk' },
   { route: '/technicals',                    label: 'Technicals Page',      desc: 'Full technical analysis dashboard with multi-timeframe indicators' },
   { route: '/alpha',                         label: 'Alpha Signals',        desc: 'Price signals, buy/sell indicators, and on-chain metrics' },
 

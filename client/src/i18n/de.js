@@ -195,7 +195,7 @@ export default {
     step3Title: 'Trades erfassen',
     step3Desc: 'Tippen Sie auf Kaufen oder Verkaufen. Anlage suchen, Menge und Kurs eingeben. Die Bestände aktualisieren sich sofort.',
     step4Title: 'Risiken prüfen',
-    step4Desc: 'Öffnen Sie den Risiko-Tab. Jede Kryptowährung in Ihrem Bestand wird mit GoPlus-Onchain-Daten automatisch auf Rug-Pull-Risiko bewertet. Mit Scam Catcher prüfen Sie jeden Vertrag vor dem Investieren.',
+    step4Desc: 'Öffnen Sie den Risiko-Tab. Jede Kryptowährung in Ihrem Bestand wird mit GoPlus-Onchain-Daten automatisch auf Rug-Pull-Risiko bewertet.',
     step5Title: 'Alarme setzen',
     step5Desc: 'Geben Sie Zielkurse für Ihre Positionen ein und gehen Sie weg. Wird der Kurs erreicht, schlägt Ihr Gerät Alarm. Kein Dauerbeobachten nötig.',
 

@@ -73,7 +73,6 @@ const ZakatCalculator = lazy(() => import('../components/ZakatCalculator'))
 const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
 const SmartAlerts    = lazy(() => import('../components/SmartAlerts'))
 const RiskScanner    = lazy(() => import('../components/RiskScanner'))
-const LiquidityRisk  = lazy(() => import('../components/LiquidityRisk'))
 const TechChartPanel = lazy(() => import('../components/TechChartPanel'))
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
 const AISellPlan     = lazy(() => import('../components/AISellPlan'))
@@ -2799,10 +2798,6 @@ export function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, p
     { id: 'ta',     label: t('dashTechnicals') },
     { id: 'risk',   label: t('riskScanner') },
   ]
-  const riskHoldings = useMemo(
-    () => (isDemo ? [] : enriched).map(h => ({ id: h.coin_id, coin_id: h.coin_id, symbol: h.coin_symbol, coin_symbol: h.coin_symbol, value: h.value })),
-    [isDemo, enriched]
-  )
   return (
     <div>
       <div style={{ display:'flex', gap:'0.5rem', marginBottom:'1rem', background:'var(--surface-1)', borderRadius:'12px', padding:'0.3rem' }}>
@@ -2817,7 +2812,7 @@ export function ToolsTab({ enriched, prices, transactions, totalValue, isDemo, p
       </div>
       {tool === 'ai'     && <AIPanel enriched={enriched} prices={prices} transactions={transactions} totalValue={totalValue} isDemo={isDemo} pricesLoading={pricesLoading} />}
       {tool === 'ta'     && <Suspense fallback={<TabFallback />}><TechChartPanel enriched={isDemo ? [] : enriched} /></Suspense>}
-      {tool === 'risk'   && <Suspense fallback={<TabFallback />}><LiquidityRisk holdings={riskHoldings} /><RiskScanner enriched={isDemo ? [] : enriched} /></Suspense>}
+      {tool === 'risk'   && <Suspense fallback={<TabFallback />}><RiskScanner enriched={isDemo ? [] : enriched} /></Suspense>}
     </div>
   )
 }

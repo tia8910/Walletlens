@@ -195,7 +195,7 @@ export default {
     step3Title: 'Registra le operazioni',
     step3Desc: 'Tocca Compra o Vendi. Cerca l’asset, inserisci quantità e prezzo. I saldi si aggiornano subito.',
     step4Title: 'Cerca i rischi',
-    step4Desc: 'Apri la scheda Rischio. Ogni criptovaluta che possiedi viene valutata automaticamente per il rischio di rug pull con i dati on-chain di GoPlus. Usa Scam Catcher per controllare qualsiasi contratto prima di investire.',
+    step4Desc: 'Apri la scheda Rischio. Ogni criptovaluta che possiedi viene valutata automaticamente per il rischio di rug pull con i dati on-chain di GoPlus.',
     step5Title: 'Imposta gli avvisi',
     step5Desc: 'Inserisci i prezzi obiettivo delle tue posizioni e allontanati. Quando il prezzo li tocca, il dispositivo suona. Non serve stare a guardare.',
 

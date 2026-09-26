@@ -69,7 +69,7 @@ const PAIN = [
     before: 'The pain',
     pain: '"I held a token that rugged. I had no idea the contract was dangerous."',
     after: 'WalletLens fix',
-    fix: 'Scam Catcher scores every token — honeypot detection, holder concentration, mint authority, contract verification.',
+    fix: 'The Risk Scanner scores every token you hold — honeypot detection, holder concentration, mint authority, contract verification.',
   },
   {
     emoji: '😴',
@@ -97,7 +97,6 @@ const STATS = [
 /* All 29 features from current landing */
 const FEATURES = [
   { emoji: '🛡️', title: 'Risk Scanner',          desc: 'Every token scored 0–100. Honeypot detection, contract verification, mint authority, holder concentration, buy/sell tax — before you lose everything.', color: '#059669', bg: '#d1fae5' },
-  { emoji: '🔍', title: 'Scam Catcher',          desc: 'Paste any contract address or token name. Instantly check for honeypots, hidden sell taxes, freeze authority, mint traps, and whale concentration.', color: '#dc2626', bg: '#fee2e2' },
   { emoji: '🔔', title: 'Smart Price Alerts',    desc: 'Set a target, walk away. The moment price hits — audio alarm fires, your phone buzzes, a notification lands. No more sleeping on opportunities.', color: '#ea580c', bg: '#ffedd5' },
   { emoji: '💰', title: 'Break-Even Calculator', desc: 'Know exactly what price each holding needs to reach for you to be whole again. Your actual cost basis, per asset, right now.', color: '#0284c7', bg: '#dbeafe' },
   { emoji: '🧠', title: 'Decision Engine',    desc: '"What Should I Do Right Now?" — one click gives you a HOLD/TRIM/ADD/SELL verdict for every position, with reasoning from your real data.', color: '#7c3aed', bg: '#ede9fe' },
@@ -123,7 +122,6 @@ const FEATURES = [
   { emoji: '⏱️', title: 'Buy / Sell Timing Signal', desc: 'Checks 24h & 7d momentum, price vs 30-day average, distance from ATH, and your cost basis — verdict: Strong Entry, FOMO Risk, Great Exit, or Wait.', color: '#16a34a', bg: '#dcfce7' },
   { emoji: '🎯', title: 'Goal-Based Tracker',    desc: 'Set a target — e.g. "$50K by Dec 2026" — and track with a live SVG ring, monthly DCA calculator, days remaining, probability badge.', color: '#16a34a', bg: '#dcfce7' },
   { emoji: '🗺️', title: 'Sector Rotation Heatmap', desc: 'See which crypto sectors are hot or cold this week. L1, L2, DeFi, AI/Data, Gaming, Meme & Exchange — colour-coded by 7-day performance.', color: '#ea580c', bg: '#ffedd5' },
-  { emoji: '💧', title: 'Liquidity Risk Score',  desc: 'Know before you sell. Compares your holding size against 24h volume to flag exits that could move the market — 🟢 High / 🟡 Med / 🔴 Low.', color: '#dc2626', bg: '#fee2e2' },
   { emoji: '📡', title: 'On-Chain Wallet Import',desc: 'Paste any ETH, BTC, or SOL wallet address — WalletLens auto-detects the chain, fetches live token balances and imports them as holdings.', color: '#8b5cf6', bg: '#ede9fe' },
 ]
 
@@ -138,7 +136,7 @@ const STEPS = [
   { num: '01', title: 'Open the app',     desc: 'No sign-up. No download. Just open walletlens.live in your browser and you\'re in.' },
   { num: '02', title: 'Create a wallet',  desc: 'Add a wallet name (e.g. "Ledger", "Binance") to group your trades.' },
   { num: '03', title: 'Record trades',    desc: 'Tap Buy or Sell. Search the asset, enter amount and price. Balances update instantly.' },
-  { num: '04', title: 'Scan for risks',   desc: 'Every crypto you hold is auto-scored for rug-pull risk via GoPlus on-chain data. Use Scam Catcher to check any contract.' },
+  { num: '04', title: 'Scan for risks',   desc: 'Every crypto you hold is auto-scored for rug-pull risk via GoPlus on-chain data.' },
   { num: '05', title: 'Set your alerts',  desc: 'Enter target prices for any holding. Walk away. When price hits — your device alarms. No babysitting required.' },
 ]
 

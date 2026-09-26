@@ -187,7 +187,7 @@ export default {
     step3Title: 'Registra tus operaciones',
     step3Desc: 'Toca Comprar o Vender. Busca el activo, introduce la cantidad y el precio. Los saldos se actualizan al instante.',
     step4Title: 'Busca los riesgos',
-    step4Desc: 'Abre la pestaña Riesgo. Cada cripto que tienes se puntúa automáticamente según su riesgo de estafa con datos on-chain de GoPlus. Usa el detector de estafas para revisar cualquier contrato antes de invertir.',
+    step4Desc: 'Abre la pestaña Riesgo. Cada cripto que tienes se puntúa automáticamente según su riesgo de estafa con datos on-chain de GoPlus.',
     step5Title: 'Configura tus alertas',
     step5Desc: 'Introduce precios objetivo para cualquier posición y olvídate. Cuando se alcanza el precio, tu dispositivo te avisa. Sin vigilar la pantalla.',
     assetLabel: 'CLASES DE ACTIVOS',
