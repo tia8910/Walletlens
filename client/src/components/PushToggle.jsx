@@ -177,11 +177,11 @@ function PushStatusLine({ status, repair }) {
   // exist.
   return (
     <div className="settings-hint" style={{ marginTop: '0.5rem', lineHeight: 1.6 }}>
-      <div>
-        Watching <strong>{status.watch}</strong> {status.watch === 1 ? 'asset' : 'assets'}
-        {status.alerts > 0 && <> · <strong>{status.alerts}</strong> price {status.alerts === 1 ? 'target' : 'targets'}</>}
-        {' · '}<strong>{status.sentToday}</strong> sent today
-      </div>
+      {/* The "Watching N assets · N sent today" summary was removed at the
+          owner's request: on a healthy device it was detail nobody needed.
+          The warnings below still render unconditionally, and "nothing is
+          being watched", the one fact that summary carried as a diagnosis,
+          has its own warning. /status still returns the counts in full. */}
       {status.vapid === false && (
         <div style={{ color: BAD }}>
           Notifications are temporarily unavailable. Nothing to fix on your side.
@@ -502,7 +502,6 @@ export default function PushToggle() {
       {enabled && status && <PushStatusLine status={status} repair={repair} />}
       {SHOW_TEST_SEND && status?.found && <TestSend />}
 
-      {enabled && <div className="settings-hint" style={{ marginTop: '0.6rem' }}>{t('npPrivacy')}</div>}
 
       {error && <div className="settings-hint" style={{ color: BAD, marginTop: '0.4rem' }}>{error}</div>}
     </div>
