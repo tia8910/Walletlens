@@ -105,13 +105,18 @@ export function BybitStockCard({ symbol, kind = 'stocks', placement = 'stock_pag
       <div className="by-top"><Wordmark /><span className="by-tag">{t('byPartner')}</span></div>
       <h3 className="by-h">{t(`by${k}HeadA`)}<br /><em>{t(`by${k}HeadB`)}</em></h3>
       <p className="by-sub">{t(`by${k}Sub`).replace('{sym}', sym)}</p>
+      {/* The sign-up prize, as loud as on the crypto card: it is the reason to tap. */}
+      <div className="by-prize">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1" /><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" /><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5" /></svg>
+        <span>{t('byPrizeLabel')}</span><b>{bonus}</b>
+      </div>
       <ol className="by-steps">
         <li><b>1</b>{t('byStep1')}</li>
         <li><b>2</b>{t('byStep2')}</li>
         <li><b>3</b>{t('byStocksStep3').replace('{amt}', bonus)}</li>
       </ol>
       <button type="button" className="by-cta" onClick={() => openBybit(placement)}>
-        {t(`by${k}Cta`)} <span aria-hidden="true">→</span>
+        {t('byCta').replace('{amt}', bonus)} <span aria-hidden="true">→</span>
       </button>
       <p className="by-fine">{t('byStocksFine')}</p>
     </section>
@@ -131,10 +136,13 @@ export function BybitStrip({ variant = 'crypto', placement = 'holdings' }) {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f7a600" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l5-5 4 4 8-8" /><path d="M14 8h6v6" /></svg>
         </span>
         <span className="by-strip-txt">
-          <b>{t(variant === 'metals' ? 'byMetalsStripHead' : 'byStocksStripHead')}</b>
+          <b>{(() => {
+            const [a, b = ''] = t(variant === 'metals' ? 'byMetalsStripHead' : 'byStocksStripHead').split('{amt}')
+            return <>{a}<em>{bonus}</em>{b}</>
+          })()}</b>
           <small>{t('byStocksStripFine').replace('{amt}', bonus)}</small>
         </span>
-        <button type="button" className="by-strip-go" onClick={() => openBybit(placement)}>{t('byExplore')}</button>
+        <button type="button" className="by-strip-go" onClick={() => openBybit(placement)}>{t('byClaimNow')}</button>
         <button type="button" className="by-strip-x" aria-label={t('byHide')}
           onClick={() => { hideStrip(); setHidden(true) }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>

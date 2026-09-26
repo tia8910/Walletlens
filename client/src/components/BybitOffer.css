@@ -85,7 +85,15 @@
 .by-chip i { font-style: normal; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; color: #111; background: linear-gradient(180deg, #ffd46b, #f7a600); }
 .by-chip small { font-size: 8px; font-weight: 700; color: #f7a600; }
 .by-chip i.is-sm { font-size: 8px; letter-spacing: -.02em; }
-.by-card--stocks .by-sub { max-width: 64%; }
+.by-card--stocks .by-sub { max-width: 64%; margin-bottom: 10px; }
+.by-prize {
+  position: relative; display: inline-flex; align-items: center; gap: 7px;
+  margin: 0 0 12px; padding: 6px 12px 6px 9px; border-radius: 12px;
+  color: #ffc94d; background: linear-gradient(90deg, rgba(247, 166, 0, .22), rgba(247, 166, 0, .06));
+  border: 1px solid rgba(247, 166, 0, .45); box-shadow: 0 8px 20px -12px rgba(247, 166, 0, .9);
+}
+.by-prize span { font-size: 12px; font-weight: 700; color: #e9dcc0; }
+.by-prize b { font: 800 20px/1 'Sora', system-ui, sans-serif; letter-spacing: -.02em; background: linear-gradient(180deg, #ffd46b, #f7a600); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 @media (prefers-reduced-motion: reduce) {
   .by-gift, .by-cta::after, .by-chip { animation: none !important; }

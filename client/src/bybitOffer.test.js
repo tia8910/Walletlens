@@ -146,6 +146,14 @@ describe('tokenized stocks', () => {
     expect(d).toMatch(/cat === 'metals' && !isDemo && !grouped\.crypto\?\.length && !grouped\.stocks\?\.length && <BybitStrip variant="metals"/)
   })
 
+  it('put the sign-up prize up front, not just in step 3', () => {
+    const c = read('components/BybitOffer.jsx')
+    expect(c).toMatch(/<span>\{t\('byPrizeLabel'\)\}<\/span><b>\{bonus\}<\/b>/)
+    const en = read('i18n/en.js')
+    expect(en).toMatch(/byStocksStripHead: "[^"]*\{amt\}/)
+    expect(en).toMatch(/byMetalsStripHead: "[^"]*\{amt\}/)
+  })
+
   it('say plainly that a token is not the share', () => {
     const en = read('i18n/en.js')
     expect(en).toMatch(/byStocksFine: "[^"]*you don't own the share[^"]*high risk[^"]*availability varies by region/)
