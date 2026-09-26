@@ -2061,4 +2061,10 @@ export default {
     ipExBonds: "Staatsanleihen",
     ipExCommodities: "Öl, Kupfer",
     wsAddCustom: (n) => `„${n}“ hinzufügen`,
+    // ── Lock screen ─────────────────────────────────────────────────────────
+    blWelcome: "Willkommen zurück",
+    blLockedSub: "Berühre den Sensor, um dein Portfolio zu entsperren",
+    blVerifying: "Wird geprüft…",
+    blUnlock: "Entsperren",
+    blDisableContinue: "Sperre ausschalten und fortfahren",
 }

@@ -2040,4 +2040,10 @@ export default {
     ipExBonds: "Bonos del Tesoro",
     ipExCommodities: "Petróleo, cobre",
     wsAddCustom: (n) => `Añadir «${n}»`,
+    // ── Lock screen ─────────────────────────────────────────────────────────
+    blWelcome: "Bienvenido de nuevo",
+    blLockedSub: "Toca el sensor para desbloquear tu cartera",
+    blVerifying: "Verificando…",
+    blUnlock: "Desbloquear",
+    blDisableContinue: "Desactivar el bloqueo y continuar",
 }

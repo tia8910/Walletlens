@@ -2061,4 +2061,10 @@ export default {
     ipExBonds: "Titoli di Stato",
     ipExCommodities: "Petrolio, rame",
     wsAddCustom: (n) => `Aggiungi «${n}»`,
+    // ── Lock screen ─────────────────────────────────────────────────────────
+    blWelcome: "Bentornato",
+    blLockedSub: "Tocca il sensore per sbloccare il tuo portafoglio",
+    blVerifying: "Verifica in corso…",
+    blUnlock: "Sblocca",
+    blDisableContinue: "Disattiva il blocco e continua",
 }

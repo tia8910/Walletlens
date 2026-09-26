@@ -2066,4 +2066,10 @@ export default {
     ipExBonds: "سندات الخزانة",
     ipExCommodities: "النفط، النحاس",
     wsAddCustom: (n) => `أضف «${n}»`,
+    // ── Lock screen ─────────────────────────────────────────────────────────
+    blWelcome: "مرحبًا بعودتك",
+    blLockedSub: "المس المستشعر لفتح محفظتك",
+    blVerifying: "جارٍ التحقق…",
+    blUnlock: "فتح",
+    blDisableContinue: "إيقاف القفل والمتابعة",
 }
