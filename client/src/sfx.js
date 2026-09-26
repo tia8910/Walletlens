@@ -192,6 +192,43 @@ function playSelect(n = 0, on = true) {
   }
 }
 
+// ── Unlock: a latch clicks open, then a bright gold shimmer ──────────────
+// Plays as the lock screen lets go, so the sound lands with the portfolio
+// appearing: a short filtered tick for the latch, then a rising fifth with an
+// octave sparkle on top.
+function playUnlock() {
+  if (!enabled) return
+  const c = ensure(); if (!c) return
+  const now = c.currentTime
+
+  // Latch: 40ms of band-passed noise, closer to a click than a hiss.
+  const len = Math.floor(c.sampleRate * 0.04)
+  const buf = c.createBuffer(1, len, c.sampleRate)
+  const data = buf.getChannelData(0)
+  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len)
+  const src = c.createBufferSource(); src.buffer = buf
+  const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = 2.5
+  const cg = c.createGain(); cg.gain.value = 0.22
+  src.connect(bp); bp.connect(cg); cg.connect(master)
+  src.start(now); src.stop(now + 0.05)
+
+  const note = (freq, t, type, peak, dur) => {
+    const o = c.createOscillator(); const g = c.createGain()
+    o.type = type; o.frequency.value = freq
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.015)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+    o.connect(g); g.connect(master)
+    o.start(t); o.stop(t + dur + 0.05)
+  }
+  // E5 then B5, each with a quiet octave above it.
+  note(659.25, now + 0.06, 'sine', 0.15, 0.5)
+  note(1318.5, now + 0.07, 'sine', 0.035, 0.35)
+  note(987.77, now + 0.16, 'sine', 0.16, 0.9)
+  note(1975.5, now + 0.17, 'sine', 0.04, 0.6)
+  note(2637, now + 0.24, 'triangle', 0.02, 0.45)
+}
+
 // ── Keeping the pad going across screens ─────────────────────────────────
 // The setup screens follow one another, and each one holds the ambient pad
 // while it is up. Releasing waits a moment before fading, so the pad carries
@@ -219,7 +256,11 @@ const sfx = {
   playWhoosh,
   playTriumph,
   playSelect,
+  playUnlock,
   holdAmbient,
+  /** Opens the audio context inside a tap, so a sound that follows later
+   *  (after a native prompt returns) is allowed to play. */
+  prime() { ensure() },
   isPlaying() { return !!bg },
   haptic(pattern) { try { if (enabled && navigator.vibrate) navigator.vibrate(pattern) } catch {} },
   isEnabled() { return enabled },
