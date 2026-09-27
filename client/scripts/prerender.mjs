@@ -169,14 +169,14 @@ function buildPage({ path, canonicalOverride, title, description, bodyHtml, json
   // LinkedIn, Discord, Slack) a rich article card and lets Google read the
   // publish/modify dates from the page head as well as from JSON-LD.
   if (ogType !== 'website') {
-    html = html.replace(/(<meta property="og:type" content=")[^"]*(")/, `$1${esc(ogType)}$2`)
+    html = html.replace(/(<meta property="og:type" content=")[^"]*(")/, (_, a, b) => a + esc(ogType) + b)
   }
   if (ogType === 'article') {
     const tags = []
     if (published) tags.push(`  <meta property="article:published_time" content="${esc(published)}" />`)
     if (modified)  tags.push(`  <meta property="article:modified_time" content="${esc(modified)}" />`)
     tags.push(`  <meta property="article:publisher" content="${ORIGIN}/" />`)
-    if (tags.length) html = html.replace('</head>', `${tags.join('\n')}\n  </head>`)
+    if (tags.length) html = html.replace('</head>', () => `${tags.join('\n')}\n  </head>`)
   }
   // Templated SEO pages (track/price/calculator) are kept live for users but
   // excluded from Google's index to avoid "scaled content" / low-value flags
@@ -187,19 +187,19 @@ function buildPage({ path, canonicalOverride, title, description, bodyHtml, json
       '<meta name="robots" content="noindex, follow" />'
     )
   }
-  html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
-  html = html.replace(/(<meta name="description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
-  html = html.replace(/(<link rel="canonical" href=")[^"]*(")/,         `$1${esc(canonUrl)}$2`)
-  html = html.replace(/(<meta property="og:title" content=")[^"]*(")/,  `$1${esc(title)}$2`)
-  html = html.replace(/(<meta property="og:description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
-  html = html.replace(/(<meta property="og:url" content=")[^"]*(")/,    `$1${esc(pageUrl)}$2`)
-  html = html.replace(/(<meta name="twitter:title" content=")[^"]*(")/,  `$1${esc(title)}$2`)
-  html = html.replace(/(<meta name="twitter:description" content=")[^"]*(")/,  `$1${esc(description)}$2`)
+  html = html.replace(/<title>[\s\S]*?<\/title>/, () => `<title>${esc(title)}</title>`)
+  html = html.replace(/(<meta name="description" content=")[^"]*(")/,  (_, a, b) => a + esc(description) + b)
+  html = html.replace(/(<link rel="canonical" href=")[^"]*(")/,         (_, a, b) => a + esc(canonUrl) + b)
+  html = html.replace(/(<meta property="og:title" content=")[^"]*(")/,  (_, a, b) => a + esc(title) + b)
+  html = html.replace(/(<meta property="og:description" content=")[^"]*(")/,  (_, a, b) => a + esc(description) + b)
+  html = html.replace(/(<meta property="og:url" content=")[^"]*(")/,    (_, a, b) => a + esc(pageUrl) + b)
+  html = html.replace(/(<meta name="twitter:title" content=")[^"]*(")/,  (_, a, b) => a + esc(title) + b)
+  html = html.replace(/(<meta name="twitter:description" content=")[^"]*(")/,  (_, a, b) => a + esc(description) + b)
   if (alternates && alternates.length) {
     const links = alternates.map(a =>
       `  <link rel="alternate" hreflang="${a.hreflang}" href="${esc(ORIGIN + withSlash(a.path))}" />`
     ).join('\n')
-    html = html.replace('</head>', `${links}\n  </head>`)
+    html = html.replace('</head>', () => `${links}\n  </head>`)
   }
   // These pages render Landing.jsx, whose hero <img> (the LCP element) only
   // enters the DOM once the Landing chunk lazy-loads and React hydrates —
@@ -212,11 +212,17 @@ function buildPage({ path, canonicalOverride, title, description, bodyHtml, json
       '  <link rel="preload" as="image" href="/shots/app-phone.webp" fetchpriority="high" />\n  </head>'
     )
   }
+  // Freshness: every page states when it was last modified. Article pages
+  // already carry their own dates in their Article JSON-LD.
+  if (ogType !== 'article') {
+    const page = { '@context': 'https://schema.org', '@type': 'WebPage', url: canonUrl, name: title, inLanguage: lang, dateModified: (modified || TODAY).slice(0, 10) }
+    jsonLd = [...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : []), page]
+  }
   if (jsonLd) {
     const blocks = Array.isArray(jsonLd) ? jsonLd : [jsonLd]
     // Escape "<" so content containing "</script>" can't break out of the JSON-LD block.
     const scripts = blocks.map(b => `  <script type="application/ld+json">${JSON.stringify(b).replace(/</g, '\\u003c')}</script>`).join('\n')
-    html = html.replace('</head>', `${scripts}\n  </head>`)
+    html = html.replace('</head>', () => `${scripts}\n  </head>`)
   }
   // Hidden-but-crawlable content block, injected as first child of #root.
   // z-index:0 + first-child: the loading splash (fixed, z-index:0, later in the
@@ -225,9 +231,46 @@ function buildPage({ path, canonicalOverride, title, description, bodyHtml, json
   // Internal links get a trailing slash so crawlers never follow a 301 hop
   // (only bare paths like /track/bitcoin — anchors/queries/files untouched).
   const slashedBody = bodyHtml.replace(/href="(\/[a-z0-9\-\/]*[a-z0-9\-])"/gi, 'href="$1/"')
-  const seo = `<div id="prerender-content" dir="${dir}" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">${slashedBody}</div>`
-  html = html.replace('<div id="root">', `<div id="root">${seo}`)
+  // Semantic landmarks, so crawlers and AI readers see a page with a site
+  // nav, one article split into titled sections, and a dated footer rather
+  // than a run of loose headings in a div.
+  const updated = (modified || TODAY).slice(0, 10)
+  const ar = lang === 'ar'
+  const seoNav = `<header><nav aria-label="WalletLens"><a href="/">WalletLens</a> · <a href="/dashboard/">${ar ? 'لوحة التحكم' : 'Dashboard'}</a> · <a href="/blog/">${ar ? 'المدونة' : 'Blog'}</a> · <a href="/faq/">${ar ? 'الأسئلة الشائعة' : 'FAQ'}</a> · <a href="/about/">${ar ? 'من نحن' : 'About'}</a></nav></header>`
+  const seoFooter = `<footer><p>${ar ? 'آخر تحديث' : 'Last updated'} <time datetime="${updated}">${humanDate(updated, ar)}</time> · WalletLens</p></footer>`
+  const seo = `<div id="prerender-content" dir="${dir}" style="position:absolute;left:0;top:0;width:100%;z-index:0;padding:2rem 1.25rem;color:#e7eaf0;font-family:system-ui,-apple-system,sans-serif;line-height:1.7">${seoNav}<main>${articled(slashedBody)}</main>${seoFooter}</div>`
+  html = html.replace('<div id="root">', () => `<div id="root">${seo}`)
   return html
+}
+
+const humanDate = (iso, ar = false) => new Date(iso + 'T00:00:00Z').toLocaleDateString(ar ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+
+// Wrap each top-level <h2> and what follows it in a <section>. An <h2> nested
+// inside another element (a related-articles <nav>, say) is not a cut point,
+// and a body whose tags don't balance is returned untouched rather than risk
+// broken markup.
+const VOID = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr'])
+function sectioned(html) {
+  const cuts = []
+  let depth = 0
+  for (const m of html.matchAll(/<(\/?)([a-z][a-z0-9]*)\b[^>]*?(\/?)>/gi)) {
+    const [, close, tag, selfClose] = m
+    const t = tag.toLowerCase()
+    if (!close && t === 'h2' && depth === 0) cuts.push(m.index)
+    if (VOID.has(t) || selfClose) continue
+    depth += close ? -1 : 1
+  }
+  if (!cuts.length || depth !== 0) return html
+  const parts = [html.slice(0, cuts[0])]
+  cuts.forEach((c, i) => parts.push(`<section>${html.slice(c, cuts[i + 1] ?? html.length)}</section>`))
+  return parts.join('')
+}
+
+// Blog bodies already arrive as one <article>; section its inside rather than
+// nesting a second article around it.
+function articled(html) {
+  const m = html.match(/^(\s*<article\b[^>]*>)([\s\S]*)(<\/article>)([\s\S]*)$/)
+  return m ? m[1] + sectioned(m[2]) + m[3] + m[4] : `<article>${sectioned(html)}</article>`
 }
 
 // Convenience: hreflang set for an EN/AR pair (+ x-default → English).
