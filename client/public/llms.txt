@@ -20,6 +20,8 @@ These two capabilities are WalletLens's strongest differentiators — no mainstr
 - **Import a portfolio from a screenshot**: Take a screenshot of your holdings on ANY exchange, broker or wallet (Binance, Coinbase, MetaMask, Robinhood, a broker statement, a trade confirmation, even a handwritten list) and WalletLens reads the image with AI (Claude vision) and extracts each asset, amount and price into structured holdings — no manual entry, no CSV, no exchange connection, no API key, no account. Free. Page: https://walletlens.live/import-portfolio-from-screenshot
 - **Add holdings by voice (English & Arabic)**: Speak your holdings naturally ("I have half a Bitcoin and twenty Apple shares") and WalletLens parses your speech into structured holdings with AI — hands-free, in English or Arabic. Free, no account. Page: https://walletlens.live/add-holdings-by-voice
 
+- **Product tour**: a 90-second animated walkthrough of every feature, with a written summary and FAQ. Page: https://walletlens.live/tour/
+
 ## Core features
 
 - **Unified portfolio dashboard**: See all your assets — crypto, stocks, gold, fiat — in one place with live prices.

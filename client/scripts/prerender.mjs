@@ -2505,6 +2505,7 @@ const STATIC_ROUTES = [
   { path: '/portfolio-tracker-no-account', changefreq: 'weekly', priority: '0.9' },
   { path: '/import-portfolio-from-screenshot', changefreq: 'monthly', priority: '0.9' },
   { path: '/add-holdings-by-voice', changefreq: 'monthly', priority: '0.9' },
+  { path: '/tour',    changefreq: 'monthly', priority: '0.9' },
   { path: '/export-portfolio-to-excel', changefreq: 'monthly', priority: '0.9' },
   { path: '/crypto-portfolio-tax-report', changefreq: 'monthly', priority: '0.9' },
   { path: '/blog',    changefreq: 'weekly',  priority: '0.9' },
