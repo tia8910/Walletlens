@@ -1,129 +1,254 @@
-import { useState, useEffect } from 'react'
-import Icon from './Icon'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { track } from '../analytics'
 import sfx from '../sfx'
 import Logo from './Logo'
 import { useTheme, THEMES } from '../ThemeContext'
 import { useLanguage, LANGUAGES } from '../LanguageContext'
 import { useBiometricLock } from './BiometricLock'
+import './WelcomeFlow.css'
 
 const KEY = 'wl_welcomed_v2'
 
-// Use the real brand logo on the welcome card.
-const WalletLensLogo = () => <Logo size={48} animated />
-
+// A full-screen welcome: each step is a short motion graphic of the thing it
+// describes, drawn in the user's own theme, so the first minute in the app
+// already looks like their app. The words underneath stay short.
 const STEPS = [
-  {
-    id: 'welcome',
-    grad: 'linear-gradient(165deg, #010a04 0%, #031008 35%, #041a0b 65%, #021008 100%)',
-    accent: '#00c853',
-    glow: 'rgba(0,200,83,0.28)',
-    ring: 'rgba(0,200,83,0.55)',
-    particles: ['₿', 'Ξ', '◎', '₳', '📈', '💎'],
-    icon: <WalletLensLogo />,
-    scanLine: true,
-    eyebrowKey: 'obWelcomeEyebrow',
-    title: 'WalletLens',
-    gradTitle: true,
-    titleGrad: 'linear-gradient(135deg, #00c853 0%, #4ade80 55%, #86efac 100%)',
-    descKey: 'wmWelcomeDesc',
-    features: [
-      { icon: '🔒', labelKey: 'wmFeatPrivate' },
-      { icon: '📊', labelKey: 'obFeatLivePnl' },
-      { icon: '🤖', labelKey: 'obFeatInsights' },
-      { icon: '🆓', labelKey: 'statFree' },
-    ],
-    ctaKey: 'wmWelcomeCta',
-  },
-  {
-    id: 'theme',
-    grad: 'linear-gradient(165deg, #080b10 0%, #0f1520 55%, #080b10 100%)',
-    accent: '#00e676',
-    glow: 'rgba(0,230,118,0.22)',
-    ring: 'rgba(0,230,118,0.45)',
-    particles: ['🎨', '✨', '🌙', '☀️', '💎', '🖌️'],
-    icon: '🎨',
-    eyebrowKey: 'obThemeEyebrow',
-    titleKey: 'obThemeTitle',
-    descKey: 'wmThemeDesc',
-    ctaKey: 'wmThemeCta',
-    isThemeStep: true,
-  },
-  {
-    id: 'portfolio',
-    grad: 'linear-gradient(165deg, #041a10 0%, #073a1e 55%, #051a10 100%)',
-    accent: '#34d399',
-    glow: 'rgba(52,211,153,0.32)',
-    ring: 'rgba(52,211,153,0.5)',
-    particles: ['📈', '💰', '💎', '🚀', '📊', '💹'],
-    icon: '💼',
-    eyebrowKey: 'wmPortfolioEyebrow',
-    titleKey: 'wmPortfolioTitle',
-    descKey: 'wmPortfolioDesc',
-    ctaKey: 'wmPortfolioCta',
-  },
-  {
-    id: 'ai',
-    grad: 'linear-gradient(165deg, #04101a 0%, #081a35 55%, #0a1428 100%)',
-    accent: '#60a5fa',
-    glow: 'rgba(96,165,250,0.32)',
-    ring: 'rgba(96,165,250,0.5)',
-    particles: ['🤖', '⚡', '🎯', '📡', '🔮', '🧠'],
-    icon: '⚡',
-    eyebrowKey: 'wmSmartEyebrow',
-    titleKey: 'wmSmartTitle',
-    descKey: 'wmSmartDesc',
-    ctaKey: 'wmSmartCta',
-  },
-  {
-    id: 'security',
-    grad: 'linear-gradient(165deg, #04140d 0%, #06241a 55%, #03120c 100%)',
-    accent: '#00e676',
-    glow: 'rgba(0,230,118,0.3)',
-    ring: 'rgba(0,230,118,0.55)',
-    particles: ['🔒', '👆', '🛡️', '🔐', '✨', '💚'],
-    icon: '🔐',
-    eyebrowKey: 'wmSecEyebrow',
-    titleKey: 'wmSecTitle',
-    descKey: 'wmSecDesc',
-    ctaKey: 'wmSecCta',
-    isSecurityStep: true,
-  },
-  {
-    id: 'go',
-    grad: 'linear-gradient(165deg, #041a0c 0%, #083818 55%, #041a0c 100%)',
-    accent: '#22c55e',
-    glow: 'rgba(34,197,94,0.35)',
-    ring: 'rgba(34,197,94,0.55)',
-    particles: ['🚀', '✨', '🏆', '💚', '⭐', '🎉'],
-    icon: '🚀',
-    eyebrowKey: 'wmGoEyebrow',
-    titleKey: 'wmGoTitle',
-    descKey: 'wmGoDesc',
-    ctaKey: 'wmGoCta',
-    final: true,
-  },
+  { id: 'welcome',  eyebrowKey: 'obWelcomeEyebrow', titleKey: 'wxWelcomeTitle', descKey: 'wxWelcomeDesc', ctaKey: 'wmWelcomeCta' },
+  { id: 'theme',    eyebrowKey: 'obThemeEyebrow',   titleKey: 'obThemeTitle',   descKey: 'wmThemeDesc',   ctaKey: 'wmThemeCta', isThemeStep: true },
+  { id: 'import',   eyebrowKey: 'wxImportEyebrow',  titleKey: 'wxImportTitle',  descKey: 'wxImportDesc',  ctaKey: 'wmPortfolioCta' },
+  { id: 'ai',       eyebrowKey: 'wmSmartEyebrow',   titleKey: 'wxSmartTitle',   descKey: 'wxSmartDesc',   ctaKey: 'wmSmartCta' },
+  { id: 'security', eyebrowKey: 'wmSecEyebrow',     titleKey: 'wmSecTitle',     descKey: 'wmSecDesc',     ctaKey: 'wmSecCta', isSecurityStep: true },
+  { id: 'go',       eyebrowKey: 'wmGoEyebrow',      titleKey: 'wmGoTitle',      descKey: 'wmGoDesc',      ctaKey: 'wmGoCta', final: true },
 ]
 
-function buildParticles(stepIdx) {
-  const emojis = STEPS[stepIdx].particles
-  return Array.from({ length: 10 }, (_, i) => ({
-    emoji: emojis[(i * 3 + stepIdx) % emojis.length],
-    left: 4 + ((i * 91 + stepIdx * 23) % 88),
-    delay: ((i * 0.38 + stepIdx * 0.12) % 2.6).toFixed(2),
-    dur:   (2.6 + ((i * 0.58 + stepIdx * 0.17) % 2.0)).toFixed(2),
-  }))
+// App Lock needs the native prompt; where there is none the step is a dead end.
+const stepsFor = (canLock) => canLock ? STEPS : STEPS.filter(s => !s.isSecurityStep)
+
+const themeOf = (id) => THEMES.find(x => x.id === id) || THEMES[0]
+// Emerald's swatch is a neon meant for small dots; the stage wants the app's green.
+const accentOf = (th) => th.id === 'emerald' ? '#10d98a' : th.swatch
+
+function useCount(to, dur = 1500, delay = 0) {
+  const [v, setV] = useState(0)
+  useEffect(() => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { setV(to); return }
+    let raf, t0
+    const tm = setTimeout(() => {
+      const step = (t) => { t0 ??= t; const k = Math.min(1, (t - t0) / dur); setV(to * (1 - Math.pow(1 - k, 4))); if (k < 1) raf = requestAnimationFrame(step) }
+      raf = requestAnimationFrame(step)
+    }, delay)
+    return () => { clearTimeout(tm); cancelAnimationFrame(raf) }
+  }, [to, dur, delay])
+  return v
+}
+
+const money = (v) => '$' + Math.round(v).toLocaleString('en-US')
+
+const SPARK = (() => {
+  const pts = Array.from({ length: 28 }, (_, i) => [i * 300 / 27, 50 - i * 1.15 - 8 * Math.sin(i * .7) - 4 * Math.sin(i * 1.9)])
+  const line = 'M' + pts.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(' L')
+  return { line, area: line + ' L300 70 L0 70 Z' }
+})()
+
+function Token({ th, children, style, className = '' }) {
+  return <span className={`wx-token ${className}`} style={style}>{th?.logo ? <img src={th.logo} alt="" /> : children}</span>
+}
+
+/* ── Stage 1: everything you own, flying into one number ── */
+function StageNetWorth() {
+  const { t } = useLanguage()
+  const total = useCount(248390, 1700, 500)
+  const alloc = [
+    { k: 'catCrypto', p: 38, th: themeOf('bitcoin') }, { k: 'catStocks', p: 24, label: 'AAPL' },
+    { k: 'catRealEstate', p: 18, label: '⌂' }, { k: 'catGold', p: 14, th: themeOf('gold') }, { k: 'catCash', p: 6, label: '$' },
+  ]
+  let off = 0
+  return (
+    <div className="wx-stage wx-nw">
+      {[themeOf('bitcoin'), themeOf('ethereum'), themeOf('solana'), themeOf('gold'), null, null].map((th, i) => (
+        <Token key={i} th={th} className="wx-fly" style={{ '--i': i }}>{i === 4 ? 'AAPL' : '⌂'}</Token>
+      ))}
+      <div className="wx-card">
+        <i className="wx-motif" />
+        <div className="wx-card-h"><Logo size={20} /><span>{t('totalPortfolioValue')}</span></div>
+        <div className="wx-big">{money(total)}</div>
+        <div className="wx-up">▲ +$5,812 · 2.4%</div>
+        <svg className="wx-spark" viewBox="0 0 300 70" preserveAspectRatio="none" aria-hidden="true">
+          <path className="ar" d={SPARK.area} /><path className="ln" d={SPARK.line} pathLength="1" />
+        </svg>
+        <div className="wx-alloc">
+          <svg className="wx-donut" viewBox="0 0 42 42" aria-hidden="true">
+            <circle className="bg" cx="21" cy="21" r="15.9" />
+            {alloc.map((a, i) => { const el = <circle key={a.k} cx="21" cy="21" r="15.9" style={{ '--l': a.p, '--o': -off, '--d': `${1 + i * .15}s`, opacity: [1, .72, .5, .34, .2][i] }} />; off += a.p; return el })}
+          </svg>
+          <ul>{alloc.map((a, i) => (
+            <li key={a.k} style={{ '--k': i }}><Token th={a.th}>{a.label}</Token><span>{t(a.k)}</span><b>{a.p}%</b></li>
+          ))}</ul>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Stage 2: a live preview that repaints as you pick ── */
+function StageTheme({ th }) {
+  const { t } = useLanguage()
+  const total = useCount(248390, 900)
+  return (
+    <div className="wx-stage wx-th">
+      <div className="wx-phone" key={th.id}>
+        <div className="wx-card wx-card-sm">
+          <i className="wx-motif" />
+          <div className="wx-card-h"><Logo size={16} /><span>{t('totalPortfolioValue')}</span><b className="wx-tn">{th.name}</b></div>
+          <div className="wx-big">{money(total)}</div>
+          <svg className="wx-spark" viewBox="0 0 300 70" preserveAspectRatio="none" aria-hidden="true">
+            <path className="ar" d={SPARK.area} /><path className="ln" d={SPARK.line} pathLength="1" />
+          </svg>
+        </div>
+        <div className="wx-ripple" />
+      </div>
+    </div>
+  )
+}
+
+/* ── Stage 3: a screenshot read row by row, and a sentence heard ── */
+function StageImport() {
+  const rows = [['bitcoin', 'BTC', '0.4200'], ['ethereum', 'ETH', '3.1000'], ['solana', 'SOL', '24.00'], [null, 'AAPL', '20']]
+  return (
+    <div className="wx-stage wx-imp">
+      <div className="wx-shot">
+        <div className="wx-shot-h"><span>BINANCE</span><span>Assets</span></div>
+        {rows.map(([id, sym, amt], i) => (
+          <div key={sym} className="wx-row" style={{ '--i': i }}>
+            <Token th={id ? themeOf(id) : null}>{sym}</Token><span>{sym}</span><b>{amt}</b><em>✓</em>
+          </div>
+        ))}
+        <div className="wx-beam" />
+        <div className="wx-found">+4 ✓</div>
+      </div>
+      <div className="wx-voice">
+        <div className="wx-mic"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="2.6" width="6" height="11" rx="3" /><path d="M5.4 11.6a6.6 6.6 0 0 0 13.2 0M12 18.2v3.2" /></g></svg></div>
+        <div className="wx-wave">{Array.from({ length: 18 }, (_, i) => <i key={i} style={{ '--i': i }} />)}</div>
+        <div className="wx-said"><span>"Half a Bitcoin and 20 Apple"</span></div>
+        <div className="wx-said wx-said-ar" dir="rtl" lang="ar"><span>«عندي ٥٠ جرام ذهب»</span></div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Stage 4: a chart that draws its own signals and exits ── */
+const CANDLES = (() => {
+  let p = 58
+  return Array.from({ length: 24 }, (_, i) => {
+    const o = p, c = p + (i < 9 ? 2.2 : -1.6) + Math.sin(i * 1.3) * 5
+    p = c
+    return { i, o, c, h: Math.max(o, c) + 3 + (i % 3), l: Math.min(o, c) - 3 - (i % 2) }
+  })
+})()
+function StageSignals() {
+  const lo_ = Math.min(...CANDLES.map(c => c.l)), hi_ = Math.max(...CANDLES.map(c => c.h))
+  const y = (v) => 132 - (v - lo_) / (hi_ - lo_) * 84
+  const x = (i) => 12 + i * 12.4
+  const ema = 'M' + CANDLES.map(c => `${x(c.i).toFixed(1)} ${y((c.o + c.c) / 2 + 2).toFixed(1)}`).join(' L')
+  const lo = CANDLES.reduce((a, b) => b.c < a.c ? b : a, CANDLES[0])
+  return (
+    <div className="wx-stage wx-sig">
+      <svg viewBox="0 0 310 150" className="wx-chart" aria-hidden="true">
+        {[['TP3', 12], ['TP2', 24], ['TP1', 36]].map(([n, yy], i) => (
+          <g key={n} className="wx-lvl" style={{ '--i': i }}><line x1="0" x2="310" y1={yy} y2={yy} /><text x="304" y={yy - 4}>{n}</text></g>
+        ))}
+        <g className="wx-lvl wx-stop" style={{ '--i': 3 }}><line x1="0" x2="310" y1="143" y2="143" /><text x="304" y="139">STOP</text></g>
+        {CANDLES.map(c => (
+          <g key={c.i} className={`wx-c ${c.c >= c.o ? 'up' : 'dn'}`} style={{ '--i': c.i }}>
+            <line x1={x(c.i)} x2={x(c.i)} y1={y(c.h)} y2={y(c.l)} />
+            <rect x={x(c.i) - 3.8} width="7.6" y={y(Math.max(c.o, c.c))} height={Math.max(1.5, Math.abs(y(c.c) - y(c.o)))} rx="1" />
+          </g>
+        ))}
+        <path className="wx-ema" d={ema} pathLength="1" />
+        <g className="wx-pin wx-buy" style={{ '--x': `${x(4)}px`, '--y': `${y(CANDLES[4].l) + 16}px` }}><rect x="-17" y="-9" width="34" height="18" rx="9" /><text y="4">BUY</text></g>
+        <g className="wx-pin wx-sell" style={{ '--x': `${x(10)}px`, '--y': `${y(CANDLES[10].h) - 16}px` }}><rect x="-19" y="-9" width="38" height="18" rx="9" /><text y="4">SELL</text></g>
+        <circle className="wx-dot" cx={x(lo.i)} cy={y(lo.c)} r="4" />
+      </svg>
+      <div className="wx-sig-chips"><span>EMA 21/55/200</span><span>RSI</span><span>ATR</span></div>
+    </div>
+  )
+}
+
+/* ── Stage 5: a fingerprint drawn and scanned ── */
+function StageFingerprint({ on }) {
+  const arcs = [10, 17, 24, 31, 38, 45]
+  return (
+    <div className="wx-stage wx-fp">
+      <div className={`wx-fp-ring${on ? ' ok' : ''}`}>
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          {arcs.map((r, i) => (
+            <path key={r} style={{ '--i': i }} pathLength="1"
+              d={`M${60 - r} ${66 + i * 1.5} a${r} ${r * 1.12} 0 0 1 ${r * 2} 0${i % 2 ? ` v${6 + i * 2}` : ''}`} />
+          ))}
+          <path style={{ '--i': 6 }} pathLength="1" d="M60 58 v34" />
+        </svg>
+        {!on && <div className="wx-scan" />}
+        {on && <div className="wx-ok">✓</div>}
+      </div>
+    </div>
+  )
+}
+
+/* ── Stage 6: lift-off ── */
+function StageLaunch() {
+  return (
+    <div className="wx-stage wx-go">
+      {[0, 1, 2].map(i => <div key={i} className="wx-ring" style={{ '--i': i }} />)}
+      <div className="wx-rocket" aria-hidden="true">🚀<i className="wx-trail" /></div>
+      {Array.from({ length: 22 }, (_, i) => (
+        <i key={i} className="wx-conf" style={{ '--a': `${i * 16.4}deg`, '--r': `${90 + (i * 37) % 70}px`, '--c': ['var(--ac)', '#fff', '#e8b825', '#627eea', '#f7931a', '#9945ff'][i % 6], '--d': `${.9 + (i % 5) * .08}s` }} />
+      ))}
+    </div>
+  )
 }
 
 export default function WelcomeModal() {
   const [step, setStep]       = useState(0)
   const [visible, setVisible] = useState(false)
-  const [animKey, setAnimKey] = useState(0)
+  const [dir, setDir]         = useState(1)
   const [bioBusy, setBioBusy] = useState(false)
   const [bioError, setBioError] = useState('')
+  const [showcase, setShowcase] = useState(0)
+  const touch = useRef(null)
   const { theme, mode, setTheme, setMode } = useTheme()
   const { lang, setLang, t } = useLanguage()
   const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
+
+  const steps = useMemo(() => stepsFor(bioAvailable), [bioAvailable])
+  const s = steps[Math.min(step, steps.length - 1)]
+  const total = steps.length
+
+  // The welcome step shows off all six themes; from the theme step on, it is yours.
+  const th = s.id === 'welcome' ? THEMES[showcase % THEMES.length] : themeOf(theme)
+  const ac = accentOf(th)
+
+  useEffect(() => {
+    if (localStorage.getItem(KEY)) return
+    const tm = setTimeout(() => setVisible(true), 700)
+    return () => clearTimeout(tm)
+  }, [])
+
+  useEffect(() => {
+    if (!visible || s.id !== 'welcome' || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const iv = setInterval(() => setShowcase(n => n + 1), 2600)
+    return () => clearInterval(iv)
+  }, [visible, s.id])
+
+  // Full screen means the page behind must not scroll under a swipe.
+  useEffect(() => {
+    if (!visible) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [visible])
+
+  // Fade out the ambient pad when the welcome flow closes or unmounts.
+  useEffect(() => () => sfx.stopAmbient(), [])
 
   async function enableBiometric() {
     if (bioBusy) return
@@ -138,29 +263,27 @@ export default function WelcomeModal() {
     }
   }
 
-  useEffect(() => {
-    if (localStorage.getItem(KEY)) return
-    const t = setTimeout(() => setVisible(true), 700)
-    return () => clearTimeout(t)
-  }, [])
-
-  // Fade out the ambient pad when the welcome flow closes or unmounts.
-  useEffect(() => () => sfx.stopAmbient(), [])
-
   function finish() {
     localStorage.setItem(KEY, '1')
     setVisible(false)
-    sfx.stopAmbient(); sfx.haptic([12, 40, 18])
+    sfx.stopAmbient(); sfx.haptic([12, 40, 18]); sfx.playChime()
     track('welcome_modal_finished', { steps_seen: step + 1 })
     try { window.dispatchEvent(new Event('wl-welcome-done')) } catch {}
   }
 
   function next() {
-    if (step >= STEPS.length - 1) { finish(); return }
-    sfx.startAmbient(); sfx.haptic(9)
-    setAnimKey(k => k + 1)
-    setStep(s => s + 1)
+    if (step >= total - 1) { finish(); return }
+    sfx.startAmbient(); sfx.haptic(9); sfx.playWhoosh()
+    setDir(1)
+    setStep(n => n + 1)
     track('welcome_modal_step', { step: step + 1 })
+  }
+
+  function back() {
+    if (step === 0) return
+    sfx.haptic(6); sfx.playWhoosh()
+    setDir(-1)
+    setStep(n => n - 1)
   }
 
   function skip() {
@@ -171,224 +294,116 @@ export default function WelcomeModal() {
     try { window.dispatchEvent(new Event('wl-welcome-done')) } catch {}
   }
 
+  useEffect(() => {
+    if (!visible) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') skip()
+      else if (e.key === 'ArrowRight') (document.dir === 'rtl' ? back : next)()
+      else if (e.key === 'ArrowLeft') (document.dir === 'rtl' ? next : back)()
+    }
+    addEventListener('keydown', onKey)
+    return () => removeEventListener('keydown', onKey)
+  })
+
   if (!visible) return null
 
-  const s = STEPS[step]
-  const particles = buildParticles(step)
-  const progress = ((step + 1) / STEPS.length) * 100
+  const onTouchStart = (e) => { touch.current = [e.touches[0].clientX, e.touches[0].clientY] }
+  const onTouchEnd = (e) => {
+    if (!touch.current) return
+    const dx = e.changedTouches[0].clientX - touch.current[0], dy = e.changedTouches[0].clientY - touch.current[1]
+    touch.current = null
+    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx)) return
+    const forward = document.dir === 'rtl' ? dx > 0 : dx < 0
+    forward ? next() : back()
+  }
+
+  const Stage = { welcome: StageNetWorth, theme: StageTheme, import: StageImport, ai: StageSignals, security: StageFingerprint, go: StageLaunch }[s.id]
 
   return (
-    <div className="wm-overlay" onClick={e => e.target === e.currentTarget && skip()}>
-      <div className="wm-sheet">
+    <div
+      className={`wx wx-step-${s.id}`}
+      role="dialog" aria-modal="true" aria-labelledby="wx-title"
+      data-bar={th.id === 'gold' || th.id === 'silver' ? '' : undefined}
+      style={{ '--ac': ac, '--mark': `url("${th.mark}")` }}
+      onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
+    >
+      <div className="wx-bg" aria-hidden="true"><i /><i /><i className="wx-grid" /><i className="wx-mark" /></div>
 
-        {/* ── Header: gradient bg + particles + icon ── */}
-        <div className="wm-header" style={{ background: s.grad }}>
-          <div className="wm-handle" />
-
-          {/* Scan-line effect — welcome step only */}
-          {s.scanLine && <div className="wm-scanline" />}
-
-          {/* Subtle grid texture — welcome step only */}
-          {s.scanLine && <div className="wm-grid" aria-hidden="true" />}
-
-          {/* Ambient glow blob */}
-          <div className="wm-blob" style={{ background: s.glow }} />
-
-          {/* Floating particles */}
-          <div className="wm-particles" aria-hidden="true">
-            {particles.map((p, i) => (
-              <span key={`${step}-${i}`} className="wm-particle" style={{
-                left: `${p.left}%`,
-                animationDuration: `${p.dur}s`,
-                animationDelay: `${p.delay}s`,
-              }}>{p.emoji}</span>
-            ))}
-          </div>
-
-          {/* Glowing icon */}
-          <div
-            className={`wm-icon-ring${s.scanLine ? ' wm-icon-ring-logo' : ''}`}
-            style={{ boxShadow: `0 0 0 2px ${s.ring}, 0 0 40px ${s.glow}, 0 0 80px ${s.glow}44` }}
-          >
-            <div className="wm-icon" key={`icon-${step}`}>{s.icon}</div>
-          </div>
-
-          {/* Eyebrow + Title */}
-          <div className="wm-eyebrow" style={{ color: s.accent }}>{t(s.eyebrowKey)}</div>
-          {s.gradTitle
-            ? <div className="wm-title wm-title-grad" style={{ backgroundImage: s.titleGrad }}>{s.titleKey ? t(s.titleKey) : s.title}</div>
-            : <div className="wm-title" style={{ color: '#fff' }}>{s.titleKey ? t(s.titleKey) : s.title}</div>
-          }
+      <div className="wx-top">
+        <div className="wx-bars">
+          {steps.map((_, i) => <span key={i} className={i < step ? 'done' : i === step ? 'now' : ''} />)}
         </div>
+        <div className="wx-nav">
+          {step > 0 ? <button type="button" className="wx-back" onClick={back} aria-label={t('back')}>‹</button> : <span className="wx-brand"><Logo size={22} /> WalletLens</span>}
+          {!s.final && <button type="button" className="wx-skip" onClick={skip}>{t('wmSkip')}</button>}
+        </div>
+      </div>
 
-        {/* ── Body ── */}
-        <div className="wm-body" key={animKey}>
-          <p className="wm-desc">{t(s.descKey)}</p>
+      <div className="wx-main" key={s.id} style={{ '--dir': dir }}>
+        <Stage th={th} on={bioEnabled} />
 
-          {s.features && (
-            <div className="wm-features">
-              {s.features.map((f, i) => (
-                <div key={i} className="wm-pill" style={{ animationDelay: `${i * 0.06}s`, borderColor: `${s.accent}33` }}>
-                  <span>{f.icon}</span>{t(f.labelKey)}
-                </div>
-              ))}
+        <div className="wx-copy">
+          <div className="wx-eyebrow">{t(s.eyebrowKey)}{s.id === 'welcome' && ' WalletLens'}</div>
+          <h2 id="wx-title" className="wx-title">{t(s.titleKey)}</h2>
+          <p className="wx-desc">{t(s.descKey)}</p>
+
+          {s.id === 'welcome' && (
+            <div className="wx-chips">
+              {['wxChipScreenshot', 'wxChipVoice', 'wxChipSignals', 'statFree'].map((k, i) => <span key={k} style={{ '--i': i }}>{t(k)}</span>)}
             </div>
           )}
 
           {s.isThemeStep && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', margin: '0.2rem 0 0.5rem' }}>
-              {/* Language. Each button is labelled in its own language and
-                  carries its own dir, so the Arabic option reads correctly
-                  even while the rest of the modal is still in English. */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(74px, 1fr))', gap: '0.45rem' }}>
+            <div className="wx-pick">
+              {/* Each language is labelled in itself and carries its own dir,
+                  so Arabic reads correctly while the rest is still English. */}
+              <div className="wx-langs">
                 {LANGUAGES.map(l => (
-                  <button
-                    key={l.code}
-                    lang={l.code}
-                    dir={l.rtl ? 'rtl' : 'ltr'}
-                    aria-label={l.label}
-                    onClick={() => { sfx.haptic(6); setLang(l.code); track('language_changed', { lang: l.code, source: 'welcome' }) }}
-                    style={{
-                      padding: '0.55rem 0.3rem',
-                      fontSize: '0.75rem', fontWeight: 700,
-                      color: lang === l.code ? '#00e676' : 'rgba(255,255,255,0.7)',
-                      background: lang === l.code ? 'rgba(0,230,118,0.12)' : 'rgba(255,255,255,0.04)',
-                      border: `1.5px solid ${lang === l.code ? 'rgba(0,230,118,0.55)' : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: '12px', cursor: 'pointer', transition: 'all 0.18s ease',
-                    }}
-                  >
-                    <span aria-hidden="true" style={{ marginInlineEnd: '0.3rem' }}>{l.flag}</span>
-                    {l.native}
+                  <button key={l.code} type="button" lang={l.code} dir={l.rtl ? 'rtl' : 'ltr'} aria-label={l.label} aria-pressed={lang === l.code}
+                    className={lang === l.code ? 'on' : ''}
+                    onClick={() => { sfx.haptic(6); sfx.playSelect(); setLang(l.code); track('language_changed', { lang: l.code, source: 'welcome' }) }}>
+                    <span aria-hidden="true">{l.flag}</span>{l.native}
                   </button>
                 ))}
               </div>
-              {/* Dark / Light toggle */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                {['dark', 'light'].map(m => (
-                  <button
-                    key={m}
-                    onClick={() => { sfx.startAmbient(); sfx.haptic(6); setMode(m) }}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem',
-                      padding: '0.7rem 0.5rem',
-                      background: mode === m ? 'rgba(0,230,118,0.12)' : 'rgba(255,255,255,0.04)',
-                      border: `1.5px solid ${mode === m ? 'rgba(0,230,118,0.55)' : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: '12px', cursor: 'pointer', transition: 'all 0.18s ease',
-                    }}
-                  >
-                    <span style={{ fontSize: '1.35rem' }}>{m === 'dark' ? '🌙' : '☀️'}</span>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: mode === m ? '#00e676' : 'rgba(255,255,255,0.7)', textTransform: 'capitalize' }}>{m}</span>
-                  </button>
-                ))}
-              </div>
-              {/* Color theme cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.45rem' }}>
-                {THEMES.map(th => (
-                  <button
-                    key={th.id}
-                    onClick={() => { sfx.startAmbient(); sfx.haptic(6); setTheme(th.id) }}
-                    aria-label={th.name}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem',
-                      padding: '0.55rem 0.4rem 0.5rem',
-                      background: theme === th.id ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
-                      border: `1.5px solid ${theme === th.id ? th.swatch : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: '12px', cursor: 'pointer',
-                      transition: 'all 0.16s ease',
-                      transform: theme === th.id ? 'scale(1.04)' : 'scale(1)',
-                      boxShadow: theme === th.id ? `0 0 12px ${th.swatch}44` : 'none',
-                    }}
-                  >
-                    <span style={{
-                      width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
-                      background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '1.05rem', overflow: 'hidden',
-                      boxShadow: theme === th.id ? `0 0 8px ${th.swatch}88` : 'none',
-                    }}>
-                      {th.logo
-                        ? <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                        : (th.icon && th.icon.length <= 2 ? th.icon : <Icon name={th.icon} size={16} style={{ color: '#064e3b' }} />)}
-                    </span>
-                    <span style={{ fontSize: '0.67rem', fontWeight: 700, color: theme === th.id ? th.swatch : 'rgba(255,255,255,0.65)', lineHeight: 1 }}>{th.name}</span>
-                  </button>
-                ))}
+              <div className="wx-row2">
+                <div className="wx-modes">
+                  {['dark', 'light'].map(m => (
+                    <button key={m} type="button" aria-pressed={mode === m} className={mode === m ? 'on' : ''}
+                      onClick={() => { sfx.startAmbient(); sfx.haptic(6); setMode(m) }}>
+                      <span aria-hidden="true">{m === 'dark' ? '🌙' : '☀️'}</span>{t(m === 'dark' ? 'modeDark' : 'modeLight')}
+                    </button>
+                  ))}
+                </div>
+                <div className="wx-swatches">
+                  {THEMES.map(x => (
+                    <button key={x.id} type="button" aria-label={x.name} aria-pressed={theme === x.id}
+                      className={theme === x.id ? 'on' : ''} style={{ '--c': accentOf(x) }}
+                      onClick={() => { sfx.startAmbient(); sfx.haptic(6); sfx.playSelect(); setTheme(x.id) }}>
+                      {x.logo ? <img src={x.logo} alt="" /> : <span>✦</span>}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
           {s.isSecurityStep && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', margin: '0.1rem 0 0.3rem' }}>
-              {!bioAvailable ? (
-                <div style={{
-                  fontSize: '0.8rem', color: 'rgba(255,255,255,0.55)', textAlign: 'center',
-                  padding: '0.7rem', background: 'rgba(255,255,255,0.04)', borderRadius: '12px',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                }}>
-                  Fingerprint lock isn’t available on this device — you can still continue.
-                </div>
-              ) : bioEnabled ? (
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                  fontSize: '0.92rem', fontWeight: 700, color: '#00e676',
-                  padding: '0.85rem', background: 'rgba(0,230,118,0.1)', borderRadius: '14px',
-                  border: '1.5px solid rgba(0,230,118,0.45)',
-                }}>
-                  ✓ Fingerprint lock enabled
-                </div>
-              ) : (
-                <button
-                  onClick={enableBiometric}
-                  disabled={bioBusy}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.55rem',
-                    width: '100%', padding: '0.95rem', borderRadius: '14px', border: 'none',
-                    background: 'linear-gradient(135deg, #00e676 0%, #00c853 50%, #00a040 100%)',
-                    color: '#012', fontWeight: 800, fontSize: '0.98rem', cursor: bioBusy ? 'default' : 'pointer',
-                    boxShadow: '0 5px 20px rgba(0,200,83,0.4), inset 0 1px 0 rgba(255,255,255,0.3)',
-                    opacity: bioBusy ? 0.7 : 1, transition: 'all 0.15s ease',
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
+            bioEnabled
+              ? <div className="wx-bio-on">✓ {t('wmBioOn')}</div>
+              : <button type="button" className="wx-bio" onClick={enableBiometric} disabled={bioBusy}>
                   {bioBusy ? t('obSettingUp') : t('wmEnableBio')}
                 </button>
-              )}
-              {bioError && (
-                <div style={{
-                  fontSize: '0.78rem', color: 'rgba(255,180,180,0.9)', textAlign: 'center',
-                  lineHeight: 1.5, padding: '0.1rem 0.3rem',
-                }}>
-                  {bioError}
-                </div>
-              )}
-            </div>
           )}
-
-          <div className="wm-progress-track">
-            <div className="wm-progress-fill" style={{ width: `${progress}%`, background: s.accent }} />
-          </div>
-          <div className="wm-dots">
-            {STEPS.map((_, i) => (
-              <div key={i} className={`wm-dot${i === step ? ' wm-dot-active' : i < step ? ' wm-dot-done' : ''}`}
-                style={i <= step ? { background: s.accent } : {}} />
-            ))}
-          </div>
-
-          <button
-            className="wm-cta"
-            style={{
-              background: s.id === 'welcome'
-                ? 'linear-gradient(135deg, #00c853 0%, #00a040 100%)'
-                : s.accent,
-              boxShadow: s.id === 'welcome' ? `0 4px 20px rgba(0,200,83,0.45)` : undefined,
-            }}
-            onClick={next}
-          >
-            {s.isSecurityStep && bioEnabled ? t('wsNext') : t(s.ctaKey)}
-          </button>
+          {s.isSecurityStep && bioError && <div className="wx-err">{bioError}</div>}
         </div>
+      </div>
+
+      <div className="wx-foot">
+        <button type="button" className="wx-cta" onClick={next}>
+          {s.isSecurityStep && bioEnabled ? t('wsNext') : t(s.ctaKey)}
+          <span aria-hidden="true" className="wx-arrow">→</span>
+        </button>
       </div>
     </div>
   )
