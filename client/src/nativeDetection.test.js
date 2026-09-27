@@ -72,3 +72,18 @@ describe('the readout that explains the others', () => {
     expect(decl).toMatch(/isAndroidTWA\(\)/)
   })
 })
+
+describe('settings panels that were only diagnostics', () => {
+  const settings = readFileSync(join(here, 'pages', 'Settings.jsx'), 'utf8')
+
+  it('no longer shows the home screen widgets readout', () => {
+    expect(settings).not.toMatch(/t\('setWidgets'\)/)
+    expect(settings).not.toMatch(/forceSyncWidgets/)
+  })
+
+  it('shows the on-device copy only when it is the way back', () => {
+    // The copy is still taken in the background; the panel appears when this
+    // device has lost everything, so the restore offer stays reachable.
+    expect(settings).toMatch(/\{isAndroid && looksEmpty\(\) && <DeviceVault \/>\}/)
+  })
+})
