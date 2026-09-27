@@ -24,7 +24,7 @@ describe('the tour page', () => {
 
   it('answers "what is WalletLens" in plain HTML, with a dated footer', () => {
     expect(markup).toMatch(/<h2 id="h-what">What is WalletLens\?<\/h2>/)
-    expect(markup).toMatch(/<p id="answer"><b>WalletLens is a free net worth tracker<\/b>/)
+    expect(markup).toMatch(/<p id="answer">WalletLens is the free app that turns everything you own into one live number/)
     expect(markup).toMatch(/<time datetime="\d{4}-\d{2}-\d{2}">/)
     expect(node('WebPage').dateModified).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
@@ -54,7 +54,7 @@ describe('the tour page', () => {
     const codes = [...src.slice(src.indexOf('export const LANGUAGES'), src.indexOf(']', src.indexOf('export const LANGUAGES'))).matchAll(/code: '(\w+)'/g)].map(m => m[1])
     expect(node('SoftwareApplication').inLanguage).toEqual(codes)
     const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
-    expect(markup).toContain(`<b>${words[codes.length]} languages</b>`)
+    expect(markup).toMatch(new RegExp(`<p id="answer">[^<]*in ${words[codes.length]} languages\\.</p>`))
     expect(markup).toMatch(new RegExp(`<dt>Languages</dt><dd>.*data-count="${codes.length}"`))
   })
 
