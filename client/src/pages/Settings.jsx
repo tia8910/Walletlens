@@ -15,33 +15,15 @@ import DriveBackup from '../components/DriveBackup'
 import DeviceVault from '../components/DeviceVault'
 import { isAndroidTWA } from '../nativeBridge'
 import { effectSettings, setEffectSettings, primeEffectAudio } from '../screenEffectsRuntime'
-import { widgetSyncDiagnostics, forceSyncWidgets } from '../nativeWidgets'
+import { looksEmpty } from '../nativeVault'
 
-// Android by user-agent, OR the app told us so. The widgets panel is the one
-// readout that explains a stuck widget, and gating it on the UA alone meant it
-// disappeared in exactly the case it exists to diagnose — a UA with no Android
-// token, which is also what makes isAndroidTWA() give up.
+// Android by user-agent, OR the app told us so. Gating Android-only panels on
+// the UA alone hid them on a UA with no Android token, which is also what
+// makes isAndroidTWA() give up.
 const isAndroid = (typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || ''))
   || isAndroidTWA()
 
-/** Plain-English version of the last sync attempt, for the Settings row. */
-function widgetStatusText({ diag, hasPayload, lastSync }, t) {
-  if (lastSync) {
-    const mins = Math.round((Date.now() - lastSync) / 60000)
-    return mins < 1 ? t('wgJustNow') : t('wgMinsAgo')(mins)
-  }
-  if (!diag) return t(hasPayload ? 'wgReady' : 'wgOpenDash')
-  switch (diag.result) {
-    case 'no-holdings': return t('wgNoHoldings')
-    case 'not-twa':     return t('wgNotApp')
-    case 'no-payload':  return t('wgOpenDash')
-    case 'throttled':   return t('wgWaiting')
-    case 'threw':       return t('wgFailed')
-    default:            return t('wgNotSent')
-  }
-}
-
-// Same job as widgetStatusText: the automatic rating card is invisible when it
+// The automatic rating card is invisible when it
 // doesn't fire, and Play deliberately never says whether it showed one. This
 // line is the only place a user — or we — can see which rule is still open.
 
@@ -80,7 +62,6 @@ export default function Settings() {
   const fontSize = settings.fontSize || 'md'
   const hideValues  = settings.hideValues  ?? false
   const [editInterests, setEditInterests] = useState(false)
-  const [wdiag, setWdiag] = useState(() => widgetSyncDiagnostics())
   const [fx, setFx] = useState(() => effectSettings())
 
   return (
@@ -336,46 +317,10 @@ export default function Settings() {
       <DriveBackup />
 
       {/* ── The app's own copy of the portfolio ──
-           Android only. Same reasoning as the widgets panel below: NOT gated
-           on isAndroidTWA(), because if detection is what is broken this is
-           the readout that says so. */}
-      {isAndroid && <DeviceVault />}
-
-      {/* ── Home screen widgets ── Android only, and deliberately NOT gated on
-           isAndroidTWA(): if detection is what's broken, hiding the panel
-           behind it would hide the one readout that says so. There is no
-           logcat on a user's phone and the sync intent fails silently by
-           design, so this is how a stuck widget gets explained. */}
-      {isAndroid && (
-        <div className="settings-section glass-card">
-          <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="grid" size={16} />{t('setWidgets')}</h3>
-
-          <div className="settings-row">
-            <div className="settings-label">
-              <span>{t('setStatus')}</span>
-              <span className="settings-hint">{widgetStatusText(wdiag, t)}</span>
-            </div>
-            <button className="settings-chip"
-              onClick={() => {
-                track('widget_sync_manual', { source: 'settings' })
-                forceSyncWidgets()
-                setWdiag(widgetSyncDiagnostics())
-              }}
-              style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
-              <Icon name="refresh" size={14} /> {t('setSyncNow')}
-            </button>
-          </div>
-
-          <div className="settings-row">
-            <div className="settings-label">
-              <span>{t('setRunningAsApp')}</span>
-              <span className="settings-hint">
-                {wdiag.twa ? t('setYes') : t('setNotApp')}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
+           Hidden: it keeps copying in the background (storage.js schedules
+           every save), so the panel only earns its place when this device
+           has lost everything and the copy is the way back. */}
+      {isAndroid && looksEmpty() && <DeviceVault />}
 
       {editInterests && (
         <InterestPicker
