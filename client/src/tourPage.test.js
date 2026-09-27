@@ -59,6 +59,7 @@ describe('the tour page', () => {
   })
 
   it('has no placeholder links and no mockup labels', () => {
+    expect(html.toLowerCase()).not.toMatch(/wallet address/)
     expect(html).not.toMatch(/href="#"/)
     expect(html.toLowerCase()).not.toMatch(/mockup/)
   })
