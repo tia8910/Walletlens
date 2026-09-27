@@ -10,7 +10,7 @@
 - **Data privacy**: All portfolio data is stored locally in the browser's localStorage. Your holdings never leave your device.
 - **Supported assets**: Cryptocurrencies (Bitcoin, Ethereum, Solana, BNB, XRP, Cardano, and 10,000+ more), US stocks and ETFs, precious metals (gold, silver, platinum), fiat currencies, cash, bonds, and FX pairs.
 - **Platform**: Progressive Web App (PWA) — works on iOS, Android, and desktop. Installable like a native app.
-- **Languages**: English and Arabic (full RTL support).
+- **Languages**: The app is available in 6 languages: English, Arabic (full RTL support), French, Spanish, German and Italian. Voice import understands English and Arabic.
 
 ## Unique features
 

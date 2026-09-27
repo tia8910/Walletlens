@@ -49,6 +49,15 @@ describe('the tour page', () => {
     expect(html).toMatch(/url\('\/fonts\/sora-latin\.woff2'\)/)
   })
 
+  it('states the six app languages the app actually ships', () => {
+    const src = readFileSync(join(here, 'LanguageContext.jsx'), 'utf8')
+    const codes = [...src.slice(src.indexOf('export const LANGUAGES'), src.indexOf(']', src.indexOf('export const LANGUAGES'))).matchAll(/code: '(\w+)'/g)].map(m => m[1])
+    expect(node('SoftwareApplication').inLanguage).toEqual(codes)
+    const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
+    expect(markup).toContain(`<b>${words[codes.length]} languages</b>`)
+    expect(markup).toMatch(new RegExp(`<dt>Languages</dt><dd>.*data-count="${codes.length}"`))
+  })
+
   it('has no placeholder links and no mockup labels', () => {
     expect(html).not.toMatch(/href="#"/)
     expect(html.toLowerCase()).not.toMatch(/mockup/)
