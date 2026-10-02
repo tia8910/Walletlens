@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
-  autoBackup, autoBackupEnabled, canAutoBackup, decideAction, disconnectDrive,
+  autoBackup, autoBackupEnabled, backupWithStoredKey, canAutoBackup, decideAction, disconnectDrive,
   forgetAutoBackup, hasLocalPortfolio,
 } from './driveSync'
-import { getAccessToken, storedAccessToken } from './googleDrive'
+import { getAccessToken, storedAccessToken, findBackup, uploadBackup } from './googleDrive'
 import { encryptBackup, decryptBackup, isEncryptedBackup } from './backupEncryption'
 
 // Drive I/O is mocked away; what matters here is the one decision that can
@@ -361,5 +361,37 @@ describe('disconnectDrive', () => {
     localStorage.setItem('crypto_tracker_transactions', JSON.stringify([{ coin_id: 'bitcoin' }]))
     disconnectDrive()
     expect(hasLocalPortfolio()).toBe(true)
+  })
+})
+
+describe('Back up now with the key on this device', () => {
+  // "Backup doesn't work instantly": every tap asked for the passphrase again,
+  // even on a device that already held the key automatic backups use.
+  const key = 'paWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaU='
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    localStorage.setItem('wl_drive_file_id', 'f1')
+    localStorage.setItem('crypto_tracker_transactions', JSON.stringify([
+      { coin_id: 'bitcoin', coin_symbol: 'BTC', type: 'buy', amount: 1 },
+    ]))
+  })
+
+  it('uploads at once, with no passphrase, even when nothing changed', async () => {
+    localStorage.setItem('wl_drive_data_key', key)
+    localStorage.setItem('wl_drive_wrap', 'salt.iv.wrapped')
+    findBackup.mockResolvedValue({ id: 'f1', modifiedTime: '2000-01-01T00:00:00Z' })
+    uploadBackup.mockResolvedValue('f1')
+    await backupWithStoredKey()
+    await backupWithStoredKey()
+    expect(uploadBackup).toHaveBeenCalledTimes(2)
+    expect(uploadBackup.mock.calls[0][1]).toBe('f1')
+    expect(Number(localStorage.getItem('wl_drive_backup_at'))).toBeGreaterThan(0)
+  })
+
+  it('needs the passphrase on a device without the key', async () => {
+    await expect(backupWithStoredKey()).rejects.toThrow(/passphrase/)
+    expect(uploadBackup).not.toHaveBeenCalled()
   })
 })

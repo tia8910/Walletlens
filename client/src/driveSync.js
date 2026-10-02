@@ -240,6 +240,37 @@ export async function backupNow(passphrase, { automatic = true } = {}) {
 }
 
 /**
+ * "Back up now" on a device that already holds the data key: no passphrase.
+ *
+ * The same upload autoBackup() makes, but run because someone tapped, so it
+ * goes even when nothing changed and it throws instead of returning a reason:
+ * there is a person waiting for the result. A newer copy from another device
+ * is folded in first, exactly as autoBackup does, so a tap here cannot
+ * overwrite a trade made on the phone.
+ */
+export async function backupWithStoredKey() {
+  const key = storedDataKey()
+  const wrap = readKey(WRAP)
+  if (!key || !wrap) throw new Error('A passphrase is required')
+
+  const remote = await findBackup()
+  const remoteAt = remote?.modifiedTime ? Date.parse(remote.modifiedTime) : 0
+  if (remote && remoteAt > (Number(readKey(LAST_BACKUP_AT)) || 0)) {
+    if (await mergeFrom(remote.id, key)) {
+      try { window.dispatchEvent(new Event('wl:portfolio-updated')) } catch { /* no window */ }
+    }
+  }
+  const { code, txCount } = await generateBackupCode()
+  const payload = await encryptBackupWithWrap(code, key, wrap)
+  const id = await uploadBackup(payload, driveState().fileId || remote?.id || null)
+  writeKey(LAST_HASH, await fingerprint(await snapshotSignature()))
+  writeKey(FILE_ID, id)
+  writeKey(LAST_BACKUP_AT, String(Date.now()))
+  writeKey(REMOTE_AT, String(Date.now()))
+  return { txCount, fileId: id }
+}
+
+/**
  * Back up without asking the user anything.
  *
  * Returns a reason rather than throwing, because every caller is a timer and
