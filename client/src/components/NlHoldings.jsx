@@ -20,7 +20,6 @@ import { AssetLogo, Spark, useSparks } from './HomeTop'
 //                                 technicals, magic score, risk scan, buy,
 //                                 sell), and long-press for the full menu
 //   sub-filters (Stable, L1…)     chips under a chosen category
-const PREVIEW = 5
 
 export default function NlHoldings({
   rows, total, cats, cat, setCat, search, setSearch, sort, setSort, dir, setDir,
@@ -36,7 +35,9 @@ export default function NlHoldings({
   const selOn = onlySel && selected.size > 0
   const filtered = !!search.trim() || cat !== 'all' || badge !== 'all' || selOn
   const base = selOn ? rows.filter(h => selected.has(h.coin_id)) : rows
-  const shown = showAll || filtered ? base : base.slice(0, PREVIEW)
+  // Every holding, always. A five-row preview under an "All (9)" chip that
+  // was already selected read as assets gone missing.
+  const shown = base
   // The week's line: market.json's when the coin is in it, otherwise the
   // app's cached chart data, fetched only for rows without one.
   const fetched = useSparks(shown.filter(h => !(marketSparks[h.coin_id]?.length > 3)).map(h => h.coin_id))
@@ -52,9 +53,6 @@ export default function NlHoldings({
     <>
       <div className="nl-sec">
         <h3>{t('nlHoldings')}</h3>
-        {rows.length > PREVIEW && !filtered && (
-          <button type="button" onClick={() => setShowAll(v => !v)}>{showAll ? t('showLess') : t('nlAllCount')(total)}</button>
-        )}
       </div>
 
       <div className="nl-card nl-hold">

@@ -123,17 +123,24 @@ html.wl-v3 .wlc-fab { bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !im
 .nl-hero {
   position: relative; overflow: hidden; display: flex; gap: 0.6rem; padding: 1.15rem 0.9rem 1.05rem 1.2rem;
   border-radius: 26px; color: #fff;
-  background: linear-gradient(150deg, var(--nl-navy2), var(--nl-navy));
-  box-shadow: 0 18px 32px -18px rgba(13, 43, 62, 0.75);
+  /* The selected theme's own colour, deepened so white text stays readable:
+     purple on Solana, orange on Bitcoin, green on Emerald. */
+  background: linear-gradient(150deg, color-mix(in srgb, var(--g) 36%, #0b1220), color-mix(in srgb, var(--gd, var(--g)) 16%, #070b14));
+  box-shadow: 0 18px 32px -18px rgba(var(--g-rgb), 0.55);
   transition: background 0.8s ease, box-shadow 0.8s ease;
 }
 .nl-hero::after {
   content: ""; position: absolute; left: -40px; bottom: -70px; width: 240px; height: 150px; pointer-events: none;
   background: radial-gradient(closest-side, rgba(var(--g-rgb), 0.45), transparent);
 }
-.nl-mood-big .nl-hero { background: linear-gradient(150deg, #0e4d3a, #0b3a2e); box-shadow: 0 18px 40px -16px rgba(22, 199, 132, 0.6); }
-.nl-mood-down .nl-hero { background: linear-gradient(150deg, #2b3644, #1f2833); }
-.nl-mood-down .nl-hero::after { background: radial-gradient(closest-side, rgba(148, 163, 184, 0.3), transparent); }
+.nl-mood-big .nl-hero { background: linear-gradient(150deg, color-mix(in srgb, var(--g) 46%, #0b1220), color-mix(in srgb, var(--gd, var(--g)) 22%, #070b14)); box-shadow: 0 18px 40px -16px rgba(var(--g-rgb), 0.7); }
+.nl-mood-down .nl-hero { background: linear-gradient(150deg, color-mix(in srgb, var(--g) 26%, #111827), color-mix(in srgb, var(--gd, var(--g)) 12%, #0a0f18)); }
+.nl-mood-down .nl-hero::after { background: radial-gradient(closest-side, rgba(var(--g-rgb), 0.28), transparent); }
+.nl-hero-cats { list-style: none; margin: 0.7rem 0 0; padding: 0.55rem 0 0; display: grid; gap: 0.3rem; border-top: 1px solid rgba(255, 255, 255, 0.12); max-width: 300px; }
+.nl-hero-cats li { display: grid; grid-template-columns: 1fr auto 2.6rem; align-items: baseline; gap: 0.6rem; font-size: 0.8rem; }
+.nl-hero-cats span { opacity: 0.78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nl-hero-cats b { font-weight: 800; font-variant-numeric: tabular-nums; }
+.nl-hero-cats em { font-style: normal; text-align: right; opacity: 0.6; font-variant-numeric: tabular-nums; }
 .nl-hero-mark {
   position: absolute; right: 64px; top: -8px; width: 90px; height: 90px; background: #fff; opacity: 0.05; pointer-events: none;
   -webkit-mask: var(--wl-motif) center / contain no-repeat; mask: var(--wl-motif) center / contain no-repeat;
