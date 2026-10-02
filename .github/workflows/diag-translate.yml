@@ -1,0 +1,25 @@
+name: diag-translate
+on:
+  push:
+    branches: [claude/app-design-nav-update-77mskt]
+    paths: ['.github/workflows/diag-translate.yml']
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: What walletlens.live serves
+        run: |
+          UA='Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36'
+          for host in walletlens.live walletlenslive1.pages.dev; do
+            echo "===== $host /dashboard headers"
+            curl -sS -A "$UA" -D - -o /tmp/page.html "https://$host/dashboard" | grep -iE '^HTTP|content-security|cf-mitigated|server:' || true
+            echo "-- CSP meta mentions google translate:"; grep -o 'translate.googleapis.com' /tmp/page.html | head -1 || echo none
+            JS=$(grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' /tmp/page.html | head -1); echo "main bundle: $JS"
+            if [ -n "$JS" ]; then curl -sS -A "$UA" "https://$host$JS" -o /tmp/main.js; echo "bundle has fallback: $(grep -c 'translate.googleapis.com' /tmp/main.js)"; fi
+            echo "-- NewsTicker chunk with fallback:"
+            for c in $(grep -oE '/assets/[A-Za-z0-9_-]+\.js' /tmp/page.html | sort -u | head -40); do curl -sS -A "$UA" "https://$host$c" | grep -q 'translate.googleapis.com' && echo "  $c"; done
+            echo "===== $host /api/translate (browser UA)"
+            curl -sS -A "$UA" -m 40 -o /tmp/tr.txt -w 'HTTP %{http_code}\n' -X POST "https://$host/api/translate" -H 'Content-Type: application/json' -d '{"lang":"ar","texts":["Bitcoin climbs"]}'; head -c 200 /tmp/tr.txt; echo
+          done
+          echo "===== google endpoint"
+          curl -sS -m 20 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=Bitcoin%20climbs' | head -c 200; echo
