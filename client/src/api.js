@@ -38,7 +38,7 @@ import {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
   GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID, STOCK_PREFIX, XSTOCK_PREFIX, FIAT_PREFIX,
   PRESET_ASSETS, POPULAR_FIAT, POPULAR_TICKERS, POPULAR_XSTOCKS, xstockBinanceSymbol,
-  assetClass, isCrypto,
+  assetClass, isCrypto, reclassifyAsset,
 } from './data/assets';
 import {
   loadData as _loadData, saveData as _saveData, bumpId as _bumpId,
@@ -277,6 +277,14 @@ const COIN_ID_ALIASES = {
   'link':              'chainlink',
   'ltc':               'litecoin',
   'trx':               'tron',
+  // Stablecoins by ticker: the trade sheet's Pay-with chips use the
+  // CoinGecko ids, so an import that wrote "usdt" made a second Tether.
+  'usdt':              'tether',
+  'usdc':              'usd-coin',
+  'fdusd':             'first-digital-usd',
+  'busd':              'binance-usd',
+  'tusd':              'true-usd',
+  'pyusd':             'paypal-usd',
   'eth':               'ethereum',
   'btc':               'bitcoin',
   'sol':               'solana',
@@ -337,6 +345,9 @@ const COIN_ID_ALIASES = {
 // Symbol-level fallback (uppercase symbol → CoinGecko ID) for cases where coin_id
 // doesn't match anything in COIN_ID_ALIASES.
 const SYMBOL_TO_ID = {
+  'BTC':'bitcoin','ETH':'ethereum','SOL':'solana','USDT':'tether','USDC':'usd-coin',
+  'TON':'the-open-network','SUI':'sui','NEAR':'near','BCH':'bitcoin-cash','PEPE':'pepe',
+  'PAXG':'pax-gold','XAUT':'tether-gold',
   'AVAX':'avalanche-2','MATIC':'matic-network','POL':'matic-network',
   'SHIB':'shiba-inu','BNB':'binancecoin','XRP':'ripple','DOGE':'dogecoin',
   'XLM':'stellar','ADA':'cardano','DOT':'polkadot','ATOM':'cosmos',
@@ -1470,7 +1481,11 @@ export const api = {
     });
 
     const holdings = {};
-    for (const tx of txs) {
+    for (let tx of txs) {
+      // Gold, silver or cash an import filed as crypto ("xau", "usd") joins
+      // the real holding instead of standing beside it as a second one.
+      const moved = reclassifyAsset(tx.coin_id, tx.coin_symbol, tx.category);
+      if (moved) tx = { ...tx, ...moved };
       // Normalize crypto IDs so legacy/mis-IDed transactions (e.g. "avalanche")
       // fold into the same holding as the canonical ID ("avalanche-2"). Non-crypto
       // assets use prefixed IDs (stock:, fiat:, metal:) and are left untouched.
@@ -1515,6 +1530,9 @@ export const api = {
   addTransaction: async (data) => {
     const txs = loadData('transactions');
     const totalCost = data.amount * data.price_per_unit;
+    // Saved under the asset's own id and class, so nothing new is a duplicate.
+    const moved = reclassifyAsset(data.coin_id, data.coin_symbol, data.category);
+    if (moved) data = { ...data, ...moved };
     const category = data.category || 'crypto';
     const coin_id = category === 'crypto'
       ? normalizeCoinId(data.coin_id, data.coin_symbol)

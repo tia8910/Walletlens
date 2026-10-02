@@ -114,7 +114,7 @@ async function fetchFeed(feed) {
   return Promise.any([viaRss2json(feed), viaCorsproxy(feed), viaAllorigins(feed)])
 }
 
-export default function NewsTicker() {
+export default function NewsTicker({ variant } = {}) {
   const { t, lang } = useLanguage()
   const [items, setItems]     = useState([])
   const [paused, setPaused]   = useState(false)
@@ -211,21 +211,7 @@ export default function NewsTicker() {
   // layout jumped when it arrived. Once loading finishes with nothing to show,
   // null is still right: an empty bar for a feed that has no articles is
   // furniture.
-  if (!items.length && !modalOpen) {
-    if (!loading) return null
-    return (
-      <div className="news-ticker-wrap" aria-busy="true">
-        <span className="news-ticker-label">
-          <span className="news-ticker-dot">●</span> {catLabel}
-        </span>
-        <div className="news-ticker-mask">
-          <div className="news-ticker-skeleton" />
-        </div>
-      </div>
-    )
-  }
-
-  return (
+  const modal = (
     <>
     {modalOpen && (
       <div className="news-modal-overlay" onClick={() => setModalOpen(false)}>
@@ -290,6 +276,51 @@ export default function NewsTicker() {
         </div>
       </div>
     )}
+    </>
+  )
+
+  // The new look's News card: the latest headlines, translated like the
+  // ticker's, with the same full list one tap away.
+  if (variant === 'card') {
+    if (!items.length && !loading && !modalOpen) return null
+    return (
+      <>
+        {modal}
+        <div className="nl-sec"><h3>{t('nlNews')}</h3>
+          <button type="button" onClick={() => { setModalOpen(true); track('news_show_all', { source: 'home_card' }) }}>{t('nlAllNews')}</button>
+        </div>
+        <div className="nl-card nl-news" aria-busy={!items.length}>
+          {!items.length && <><div className="nl-skel" /><div className="nl-skel" /></>}
+          {items.slice(0, 2).map((item, i) => (
+            <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" className="nl-news-row"
+              onClick={() => track('news_click', { source: item.source, where: 'home_card' })}>
+              <i className="nl-news-src" style={{ '--c': item.sourceColor || '#16a874' }}>{item.source}</i>
+              <b>{item.title}</b>
+              <small>{timeAgo(item.pubDate)}</small>
+            </a>
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  if (!items.length && !modalOpen) {
+    if (!loading) return null
+    return (
+      <div className="news-ticker-wrap" aria-busy="true">
+        <span className="news-ticker-label">
+          <span className="news-ticker-dot">●</span> {catLabel}
+        </span>
+        <div className="news-ticker-mask">
+          <div className="news-ticker-skeleton" />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+    {modal}
     <div
       className="news-ticker-wrap"
       onMouseEnter={() => setPaused(true)}

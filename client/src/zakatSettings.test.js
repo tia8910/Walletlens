@@ -17,17 +17,21 @@ import { LANGUAGES } from './LanguageContext'
 const SRC = dirname(fileURLToPath(import.meta.url))
 const settings = readFileSync(join(SRC, 'pages', 'Settings.jsx'), 'utf8')
 const toggle = readFileSync(join(SRC, 'components', 'ZakatNotifyToggle.jsx'), 'utf8')
+// Settings renders the zakat master switch, which wraps the reminder toggle.
+const zakatSwitch = readFileSync(join(SRC, 'components', 'ZakatSwitch.jsx'), 'utf8')
 const pushToggle = readFileSync(join(SRC, 'components', 'PushToggle.jsx'), 'utf8')
 const icon = readFileSync(join(SRC, 'components', 'Icon.jsx'), 'utf8')
 
 describe('the toggle is somewhere a person can reach it', () => {
   it('renders in Settings', () => {
-    expect(settings).toMatch(/<ZakatNotifyToggle \/>/)
-    expect(settings).toMatch(/import ZakatNotifyToggle from '\.\.\/components\/ZakatNotifyToggle'/)
+    expect(settings).toMatch(/<ZakatSettings \/>/)
+    expect(settings).toMatch(/import \{ ZakatSettings \} from '\.\.\/components\/ZakatSwitch'/)
+    // The reminder lives under the master switch, shown while zakat is on.
+    expect(zakatSwitch).toMatch(/\{on && <ZakatNotifyToggle \/>\}/)
   })
 
   it('has its own section with the crescent icon', () => {
-    const section = settings.match(/<h3 className="settings-section-title"[^>]*>.*?setZakat.*?<\/h3>\s*<ZakatNotifyToggle \/>/s)
+    const section = settings.match(/<h3 className="settings-section-title"[^>]*>.*?setZakat.*?<\/h3>\s*<ZakatSettings \/>/s)
     expect(section, 'a Zakat section wrapping the toggle').not.toBeNull()
     expect(section[0]).toMatch(/name="crescent"/)
   })

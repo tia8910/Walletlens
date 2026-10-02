@@ -8,6 +8,8 @@
 // Dashboard's own _loadQrBackup() lazy-load, which exist specifically to keep
 // it out of the common path.
 
+import { txKey } from './data/storage'
+
 // Everything that makes up someone's profile, as a single alias -> key table.
 //
 // This is the ONE list. It used to be three: BACKUP_KEYS (used only by the
@@ -31,6 +33,8 @@ export const BACKUP_FIELDS = {
   // Migrations key off this. Restoring data without it can leave a newer
   // snapshot being re-migrated by an older device.
   sv: 'crypto_tracker_schema_version',
+  // Transactions deleted on any device, so a sync merge does not bring them back.
+  td: 'crypto_tracker_tx_deleted',
   // ── Zakat ────────────────────────────────────────────────────────────────
   // The hawl start date is the one piece of state in the whole feature that
   // cannot be recomputed: it records the day this person's wealth first
@@ -41,6 +45,9 @@ export const BACKUP_FIELDS = {
   zh: 'wl_zakat_hawl',
   zs: 'wl_zakat_settings',
   zi: 'wl_zakat_intents',
+  // Whether zakat is shown at all. A restored device should not resurface a
+  // feature this person turned off, nor hide one they turned on.
+  zo: 'wl_zakat_on',
 
   // ── Goals and planning ───────────────────────────────────────────────────
   gl: 'wl_goals',
@@ -300,6 +307,93 @@ export async function generateBackupCode() {
 export async function snapshotSignature() {
   const { payload } = await buildSnapshot()
   return JSON.stringify(payload)
+}
+
+/** Decode a v3 backup code to its payload, or null for any other format. */
+async function decodeV3(raw) {
+  const code = (raw || '').trim().replace(/\s+/g, '')
+  if (!code.startsWith('WL3-') && !code.startsWith('WL2-')) return null
+  let parsed
+  try { parsed = JSON.parse(await gunzipB64(code.slice(4))) } catch { return null }
+  return parsed?.v === 3 && Array.isArray(parsed.txs) ? parsed : null
+}
+
+const readJson = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v ?? fb } catch { return fb } }
+
+/**
+ * Fold another device's backup into this one, keeping both sides' trades.
+ *
+ * Used when two devices both changed something since they last synced. The
+ * old choices were to skip (the devices stopped syncing for good) or to let
+ * the next upload win (the other device's trades were overwritten). Instead:
+ *   - transactions are matched by when they were created, not by id, since
+ *     ids are each device's own counter; a trade either side deleted stays
+ *     deleted (crypto_tracker_tx_deleted); one known to both keeps this
+ *     device's version;
+ *   - wallets are matched by name, and the other device's wallet ids are
+ *     mapped onto this device's;
+ *   - settings and other data stay this device's, except anything this
+ *     device has never had, which comes across.
+ *
+ * Returns how many transactions came in, or null when the code is not one it
+ * can merge (an older format), so the caller can fall back.
+ */
+export async function mergeBackupCode(raw) {
+  const remote = await decodeV3(raw)
+  if (!remote) return null
+  const DELETED = BACKUP_FIELDS.td
+  const deleted = new Set([...readJson(DELETED, []), ...(Array.isArray(remote.td) ? remote.td : [])])
+
+  const localWs = readJson('crypto_tracker_wallets', [])
+  const ws = [...localWs]
+  let maxW = ws.reduce((m, w) => Math.max(m, Number(w.id) || 0), 0)
+  const walletMap = {}
+  for (const rw of remote.ws || []) {
+    const same = ws.find(w => String(w.id) === String(rw.id) && w.name === rw.name) || ws.find(w => w.name === rw.name)
+    if (same) { walletMap[rw.id] = same.id; continue }
+    const id = ws.some(w => String(w.id) === String(rw.id)) ? ++maxW : rw.id
+    maxW = Math.max(maxW, Number(id) || 0)
+    ws.push({ ...rw, id })
+    walletMap[rw.id] = id
+  }
+
+  const localTxs = readJson('crypto_tracker_transactions', [])
+  const seen = new Set(localTxs.map(txKey))
+  const ids = new Set(localTxs.map(t => t.id))
+  let maxT = localTxs.reduce((m, t) => Math.max(m, Number(t.id) || 0), 0)
+  for (const t of remote.txs) maxT = Math.max(maxT, Number(t.id) || 0)
+  const txs = [...localTxs]
+  let added = 0
+  for (const rt of remote.txs) {
+    const tx = { coin_image: '', category: 'crypto', ...rt }
+    const k = txKey(tx)
+    if (seen.has(k) || deleted.has(k)) continue
+    seen.add(k)
+    if (walletMap[tx.wallet_id] != null) tx.wallet_id = walletMap[tx.wallet_id]
+    if (ids.has(tx.id)) tx.id = ++maxT
+    ids.add(tx.id)
+    txs.push(tx)
+    added++
+  }
+  const kept = txs.filter(t => !deleted.has(txKey(t)))
+  // Newest first, as the app stores them.
+  kept.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (Number(b.id) || 0) - (Number(a.id) || 0))
+
+  localStorage.setItem('crypto_tracker_transactions', JSON.stringify(kept))
+  localStorage.setItem('crypto_tracker_wallets', JSON.stringify(ws))
+  localStorage.setItem(DELETED, JSON.stringify([...deleted].slice(-2000)))
+  const bump = (key, min) => {
+    const cur = parseInt(localStorage.getItem(key) || '1', 10) || 1
+    if (cur < min) localStorage.setItem(key, String(min))
+  }
+  bump('crypto_tracker_next_tx_id', Math.max(maxT + 1, parseInt(remote.ids?.t, 10) || 1))
+  bump('crypto_tracker_next_wallet_id', Math.max(maxW + 1, parseInt(remote.ids?.w, 10) || 1))
+  for (const [alias, key] of Object.entries(BACKUP_FIELDS)) {
+    if (alias === 'td' || remote[alias] == null || localStorage.getItem(key) != null) continue
+    const v = remote[alias]
+    localStorage.setItem(key, typeof v === 'string' ? v : JSON.stringify(v))
+  }
+  return { added, removed: txs.length - kept.length }
 }
 
 export async function applyBackupCode(raw) {

@@ -162,7 +162,7 @@ describe('who sees it', () => {
     // reads as broken — the same reason PriceTicker listens for this.
     expect(ticker).toMatch(/INTERESTS_EVENT/)
     expect(ticker).toMatch(/window\.addEventListener\(INTERESTS_EVENT, sync\)/)
-    expect(ticker).toMatch(/\}, \[show\]\)/)
+    expect(ticker).toMatch(/\}, \[show, max\]\)/)
   })
 })
 

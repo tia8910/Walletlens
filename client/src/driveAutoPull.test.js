@@ -87,7 +87,8 @@ describe('when it runs', () => {
 
   it('polls on an interval and on open as well', () => {
     expect(sched).toContain("pullTimer = setInterval(() => pull('poll'), PULL_MS)")
-    expect(sched).toContain("run('open'); pull('open')")
+    expect(sched).toContain("pullOpenTimer = setTimeout(() => pull('open'), PULL_AFTER_OPEN_MS)")
+    expect(sched).toContain('const PULL_AFTER_OPEN_MS = 3 * 1000')
   })
 
   it('does not let a slow upload swallow the poll', () => {
@@ -177,12 +178,13 @@ describe('change detection compares content, not the moment it was asked', () =>
 })
 
 describe('the one-minute budget', () => {
-  it('uploads within five seconds of a trade', () => {
-    expect(sched).toContain('const AFTER_CHANGE_MS = 5 * 1000')
+  it('uploads within two seconds of a trade, from any screen', () => {
+    expect(sched).toContain('const AFTER_CHANGE_MS = 1500')
+    expect(sched).toContain("window.addEventListener('wl:data-saved', onPortfolioUpdated)")
   })
 
-  it('the other device notices within thirty', () => {
-    expect(sched).toContain('const PULL_MS = 30 * 1000')
+  it('the other device notices within fifteen', () => {
+    expect(sched).toContain('const PULL_MS = 15 * 1000')
   })
 
   it('leaves a hidden tab alone', () => {

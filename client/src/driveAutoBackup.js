@@ -28,7 +28,7 @@ import { autoBackup, autoRestore, canAutoBackup } from './driveSync'
 
 // Long enough that a burst of edits settles into one upload, short enough to
 // fit inside the end-to-end budget below.
-const AFTER_CHANGE_MS = 5 * 1000
+const AFTER_CHANGE_MS = 1500
 
 // The catch-all. Deliberately slow: it exists for changes nothing told us
 // about, not as the main path.
@@ -37,6 +37,11 @@ const SWEEP_MS = 10 * 60 * 1000
 // Let the app finish opening first. A backup competing with the dashboard's
 // first paint costs the user something visible to save something invisible.
 const AFTER_OPEN_MS = 45 * 1000
+
+// But look for another device's changes almost at once: it is one metadata
+// call, and opening the app to a portfolio missing the trade made on the
+// other device is the thing this exists to prevent.
+const PULL_AFTER_OPEN_MS = 3 * 1000
 
 // How often to ask Drive whether another device has written something newer.
 //
@@ -51,19 +56,24 @@ const AFTER_OPEN_MS = 45 * 1000
 // Only while the tab is visible, though. A backgrounded phone polling every
 // 30 seconds all night would spend battery to learn something it will be told
 // the instant it comes back to the foreground anyway.
-const PULL_MS = 30 * 1000
+const PULL_MS = 15 * 1000
 
 let started = false
 let changeTimer = null
 let sweepTimer = null
 let openTimer = null
+let pullOpenTimer = null
 let pullTimer = null
 let running = false
+// A change that lands while an upload is in flight is not dropped; it runs
+// again as soon as that upload is done.
+let again = false
 let pulling = false
 
 /** One at a time, and never louder than a console warning. */
 async function run(why) {
-  if (running || !canAutoBackup()) return
+  if (!canAutoBackup()) return
+  if (running) { again = true; return }
   running = true
   try {
     const res = await autoBackup()
@@ -75,6 +85,7 @@ async function run(why) {
     console.warn('[drive] auto-backup failed:', e?.message || e)
   } finally {
     running = false
+    if (again) { again = false; setTimeout(() => run('queued'), 0) }
   }
 }
 
@@ -107,6 +118,15 @@ function onPortfolioUpdated() {
   changeTimer = setTimeout(() => run('change'), AFTER_CHANGE_MS)
 }
 
+function onOnline() { run('online'); pull('online') }
+let lastFocusPull = 0
+function onFocus() {
+  // focus and visibilitychange often fire together; one check is enough.
+  if (Date.now() - lastFocusPull < 5000) return
+  lastFocusPull = Date.now()
+  pull('focus')
+}
+
 function onVisible() {
   // Coming back to a tab is a cheap moment to check, and it is when a phone
   // that has been asleep for days first gets the chance.
@@ -128,17 +148,27 @@ export function startAutoBackup() {
   started = true
 
   window.addEventListener('wl:portfolio-updated', onPortfolioUpdated)
+  // Every save of the portfolio, from any screen (data/storage.js).
+  window.addEventListener('wl:data-saved', onPortfolioUpdated)
   document.addEventListener('visibilitychange', onVisible)
-  openTimer = setTimeout(() => { run('open'); pull('open') }, AFTER_OPEN_MS)
+  // Back online, or back to the window: check both ways at once.
+  window.addEventListener('online', onOnline)
+  window.addEventListener('focus', onFocus)
+  openTimer = setTimeout(() => run('open'), AFTER_OPEN_MS)
+  pullOpenTimer = setTimeout(() => pull('open'), PULL_AFTER_OPEN_MS)
   sweepTimer = setInterval(() => run('sweep'), SWEEP_MS)
   pullTimer = setInterval(() => pull('poll'), PULL_MS)
 
   return () => {
     started = false
     window.removeEventListener('wl:portfolio-updated', onPortfolioUpdated)
+    window.removeEventListener('wl:data-saved', onPortfolioUpdated)
     document.removeEventListener('visibilitychange', onVisible)
+    window.removeEventListener('online', onOnline)
+    window.removeEventListener('focus', onFocus)
     clearTimeout(changeTimer)
     clearTimeout(openTimer)
+    clearTimeout(pullOpenTimer)
     clearInterval(sweepTimer)
     clearInterval(pullTimer)
   }

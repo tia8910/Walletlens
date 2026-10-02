@@ -1176,15 +1176,18 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       </label>
                       <div className="tk-conv tk-num">
                         <span>{amtMode === 'usd'
-                          ? (parseFloat(amount) > 0 ? `≈ ${fmtQty(amount)} ${sym}` : sym)
+                          ? (parseFloat(amount) > 0 ? `≈ ${fmtQty(amount)} ${isMetal ? metalUnit : sym}` : (isMetal ? metalUnit : sym))
                           : (total > 0 ? `≈ ${fmtUsd(total)}` : 'USD')}</span>
-                        {isMetal ? (
+                        {/* Metals get both: the oz / g unit, and the same switch
+                            between a quantity and a dollar amount every other
+                            asset has. The unit used to replace the switch, so
+                            gold could only be bought by the dollar. */}
+                        {isMetal && (
                           <span className="tk-seg">{['oz', 'g'].map(u => <button key={u} type="button" className={metalUnit === u ? 'on' : ''} onClick={() => switchMetalUnit(u)}>{u}</button>)}</span>
-                        ) : (
-                          <button type="button" className="tk-swap" aria-label="USD / quantity" onClick={() => switchAmtMode(amtMode === 'usd' ? 'qty' : 'usd')}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg>
-                          </button>
                         )}
+                        <button type="button" className="tk-swap" aria-label="USD / quantity" onClick={() => switchAmtMode(amtMode === 'usd' ? 'qty' : 'usd')}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg>
+                        </button>
                       </div>
                     </div>
 
@@ -1478,24 +1481,24 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
               <div className="bs-field">
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.25rem' }}>
                   <label className="bs-label" style={{ margin:0 }}>
-                    {(category === 'gold' || category === 'silver')
-                      ? `QTY (${metalUnit})`
-                      : amtMode === 'usd' ? 'USD Value'
+                    {amtMode === 'usd' ? 'USD Value'
+                      : (category === 'gold' || category === 'silver') ? `QTY (${metalUnit})`
                       : category === 'stock' ? 'Shares'
                       : 'QTY'}
                   </label>
-                  {(category === 'gold' || category === 'silver') ? (
-                    <div className="bs-seg">
-                      {['oz', 'g'].map(u => (
-                        <button key={u} type="button" className={`bs-seg-btn${metalUnit === u ? ' active' : ''}`} onClick={() => switchMetalUnit(u)}>{u}</button>
-                      ))}
-                    </div>
-                  ) : (
+                  <div style={{ display: 'flex', gap: '0.35rem' }}>
+                    {(category === 'gold' || category === 'silver') && (
+                      <div className="bs-seg">
+                        {['oz', 'g'].map(u => (
+                          <button key={u} type="button" className={`bs-seg-btn${metalUnit === u ? ' active' : ''}`} onClick={() => switchMetalUnit(u)}>{u}</button>
+                        ))}
+                      </div>
+                    )}
                     <div className="bs-seg">
                       <button type="button" className={`bs-seg-btn${amtMode === 'qty' ? ' active' : ''}`} onClick={() => switchAmtMode('qty')}>{t('tsQty')}</button>
                       <button type="button" className={`bs-seg-btn${amtMode === 'usd' ? ' active' : ''}`} onClick={() => switchAmtMode('usd')}>$</button>
                     </div>
-                  )}
+                  </div>
                 </div>
                 {amtMode === 'usd' ? (
                   <div style={{ position:'relative' }}>

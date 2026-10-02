@@ -27,6 +27,7 @@ import { SubStore, endpointKey, tokenKey } from './store.js'
 import { createJobs } from './jobs.js'
 import { SITE_ORIGIN } from './site.js'
 import { encryptPayload, vapidHeader } from './webpush.js'
+import { handleReports } from './reports.js'
 
 // ── CORS ────────────────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = new Set([
@@ -575,6 +576,9 @@ async function handle(req, env, store) {
     else if (body.endpoint) await store.delete(await endpointKey(body.endpoint))
     return json({ ok: true }, headers)
   }
+
+  const report = await handleReports(req, path, env, json, headers)
+  if (report) return report
 
   return json({ error: 'not_found' }, headers, 404)
 }

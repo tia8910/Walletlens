@@ -432,3 +432,34 @@ export function getCryptoCategory(coinId) {
   if (!coinId) return null
   return CRYPTO_CATEGORIES[coinId.toLowerCase()] || null
 }
+
+// ── One asset, one id ────────────────────────────────────────────────────────
+// Screenshot and spreadsheet imports read a ticker and nothing else, and filed
+// every row as crypto under its lowercased ticker. Gold arrived as a crypto
+// called "xau" beside the real gold holding, and dollars as a crypto called
+// "usd" beside the cash the Pay-with chips use. These are the tickers a reader
+// can see that belong to another asset class, mapped to that class's own id.
+const METAL_BY_TICKER = {
+  XAU: [GOLD_ID, 'gold', 'XAU', 'Gold (1 oz)'], GOLD: [GOLD_ID, 'gold', 'XAU', 'Gold (1 oz)'],
+  XAG: [SILVER_ID, 'silver', 'XAG', 'Silver (1 oz)'], SILVER: [SILVER_ID, 'silver', 'XAG', 'Silver (1 oz)'],
+  XPT: [PLATINUM_ID, 'platinum', 'XPT', 'Platinum (1 oz)'], PLATINUM: [PLATINUM_ID, 'platinum', 'XPT', 'Platinum (1 oz)'],
+  XCU: [COPPER_ID, 'copper', 'XCU', 'Copper (1 lb)'], COPPER: [COPPER_ID, 'copper', 'XCU', 'Copper (1 lb)'],
+}
+
+/**
+ * Where a row filed as crypto really belongs, or null when it is crypto.
+ * Only rows with no class of their own (crypto, or none) are moved; an asset
+ * someone filed as a stock or a metal is left exactly as they filed it.
+ */
+export function reclassifyAsset(coinId, symbol, category) {
+  if (category && category !== 'crypto') return null
+  const id = String(coinId || '').toLowerCase()
+  // Already in another class's id space, whatever the category says.
+  if (/^(metal|fiat|stock|xstock|bond|real|other):/.test(id)) return null
+  const tick = String(symbol || id).toUpperCase()
+  const metal = METAL_BY_TICKER[tick] || METAL_BY_TICKER[id.toUpperCase()]
+  if (metal) return { coin_id: metal[0], category: metal[1], coin_symbol: metal[2], coin_name: metal[3] }
+  const fiat = POPULAR_FIAT.find(f => f.code === tick && (id === tick.toLowerCase() || !id))
+  if (fiat) return { coin_id: FIAT_PREFIX + fiat.code.toLowerCase(), category: 'fiat', coin_symbol: fiat.code, coin_name: fiat.name }
+  return null
+}

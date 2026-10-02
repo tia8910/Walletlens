@@ -39,6 +39,8 @@ Extract EVERY asset position or trade you can read. Return STRICT JSON ONLY — 
 
 Rules:
 - "amount" is the QUANTITY of units (coins/shares/oz), never the fiat value. If only a fiat value and a price are shown, divide to get units.
+- "price" is the price of ONE unit (often labelled Price, Last, Avg or Mark). Never put a row's total value or balance in "price": a row showing 500 AR worth $2,177 has price ≈ 4.35, not 2177. If only the total value is shown, price = value / amount.
+- A screenshot may overlap another the user also sent; still list every row you can see here, once.
 - If a row shows a holding/balance with no explicit buy/sell, use "buy".
 - Use the ticker for "symbol" (BTC, ETH, SOL, AAPL, TSLA, XAU, …) in uppercase.
 - INCLUDE stablecoins (USDT, USDC, BUSD, DAI, TUSD, FDUSD, PYUSD, etc.) — they are real crypto assets, not fiat cash.

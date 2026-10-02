@@ -2408,6 +2408,7 @@ const APP_ROUTES = [
   { path: '/diag',         title: 'Diagnostics — WalletLens',    description: 'Connection diagnostics for this device.' },
   // Not user-facing, and it 404'd on a cold navigation exactly like the rest.
   { path: '/admin/mail',   title: 'Mail — WalletLens',           description: 'Internal mail tools.' },
+  { path: '/admin/reports', title: 'AI reports — WalletLens',    description: 'Internal review of reported AI answers.' },
   { path: '/dashboard',    title: 'Dashboard — WalletLens',      description: 'Your private portfolio dashboard. Data stays on your device.' },
   // The v2 redesign preview, opened by typing the URL: a cold navigation.
   { path: '/v2test',       title: 'Dashboard — WalletLens',      description: 'Your private portfolio dashboard. Data stays on your device.' },
@@ -2419,6 +2420,7 @@ const APP_ROUTES = [
   { path: '/coach',        title: 'AI Coach — WalletLens',       description: 'AI-powered portfolio analysis, computed on your device.' },
   { path: '/technicals',   title: 'Analysis — WalletLens',       description: 'Technical analysis for your holdings.' },
   { path: '/settings',     title: 'Settings — WalletLens',       description: 'App preferences. Data stays on your device.' },
+  { path: '/more',         title: 'More — WalletLens',           description: 'Every WalletLens feature in one place.' },
   // /guardian belongs here because the Android notifications link straight to
   // it. Tapping a notification is a cold navigation to the host, not a
   // client-side route change, so a path with no prerendered shell 404s no

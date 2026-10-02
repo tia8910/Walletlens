@@ -1,0 +1,628 @@
+/* ════════════════════════════════════════════════════════════════════════
+   The light card redesign ("new look"), layered on v2.
+
+   Every rule is scoped under html.wl-v3, which is on only while the new look
+   is switched on (Settings → Appearance, or ?look=new). Turning it off puts
+   the app back exactly as v2 draws it. Nothing here hides a feature: the
+   shell is restyled, Home gains its new sections (components/HomeTop.jsx),
+   and the bottom bar gets a centre button and a More page.
+
+   The accent is the user's theme (--g / --g-rgb, set by ThemeContext), so
+   the six themes still decide the colour of everything that is "brand".
+   ════════════════════════════════════════════════════════════════════════ */
+
+html.wl-v3 {
+  --nl-bg: #eef2f5;
+  --nl-card: #ffffff;
+  --nl-ink: #0f1d2b;
+  --nl-sub: #7b8794;
+  --nl-line: #edf0f3;
+  --nl-navy: #0d2b3e;
+  --nl-navy2: #123a52;
+  --nl-up: #16a874;
+  --nl-down: #e5484d;
+  --nl-shadow: 0 2px 12px rgba(15, 29, 43, 0.06);
+  --nl-radius: 22px;
+}
+html.wl-v3:not([data-wl-light]) {
+  --nl-bg: #0b1016;
+  --nl-card: #121a22;
+  --nl-ink: #eef2f5;
+  --nl-sub: #8b97a5;
+  --nl-line: rgba(255, 255, 255, 0.07);
+  --nl-navy: #0e2233;
+  --nl-navy2: #16324a;
+  --nl-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Shell ─────────────────────────────────────────────────────────────── */
+html.wl-v3 body { background: var(--nl-bg) !important; }
+html.wl-v3 body::before {
+  background: radial-gradient(70% 40% at 50% -5%, rgba(var(--g-rgb), 0.16), transparent 70%) !important;
+}
+html.wl-v3 .wl-topbar {
+  background: color-mix(in srgb, var(--nl-bg) 82%, transparent) !important;
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--nl-line) !important;
+  box-shadow: none !important;
+}
+html.wl-v3 .wl-topbar::before { display: none; }
+
+/* Price and smart-money strips: one white band of quiet chips. */
+html.wl-v3 .ticker-strip { gap: 0.45rem; }
+html.wl-v3 .ticker-strip .tick {
+  background: var(--nl-card) !important;
+  border: 1px solid var(--nl-line) !important;
+  box-shadow: none !important;
+  border-radius: 12px !important;
+  color: var(--nl-ink);
+}
+html.wl-v3 .news-ticker-label { color: var(--nl-sub); }
+
+/* Cards: white, rounded, a soft shadow instead of glass. */
+html.wl-v3 .glass-card {
+  background: var(--nl-card) !important;
+  border: 1px solid var(--nl-line) !important;
+  border-radius: var(--nl-radius) !important;
+  box-shadow: var(--nl-shadow) !important;
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+}
+
+/* ── Bottom bar: floating, with a centre button that adds a trade ─────── */
+html.wl-v3 .wl-bottom-nav {
+  left: 12px !important; right: 12px !important;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+  width: auto !important;
+  border-radius: 26px !important;
+  border: 1px solid var(--nl-line) !important;
+  background: var(--nl-card) !important;
+  box-shadow: 0 10px 30px -10px rgba(15, 29, 43, 0.28) !important;
+  padding: 0.4rem 0.4rem !important;
+  align-items: center;
+}
+@media (min-width: 900px) {
+  html.wl-v3 .wl-bottom-nav { left: 50% !important; right: auto !important; width: 560px !important; transform: translateX(-50%); }
+}
+html.wl-v3 .wl-nav-item { color: var(--nl-sub) !important; }
+html.wl-v3 .wl-nav-item.active,
+html.wl-v3 .wl-nav-item.active .wl-nav-label { color: var(--nl-ink) !important; }
+html.wl-v3 .wl-nav-item.active .wl-nav-icon { background: rgba(var(--g-rgb), 0.14) !important; box-shadow: none !important; color: var(--g-ink, var(--g)); }
+html.wl-v3 .wl-nav-fab {
+  flex: none; width: 58px; height: 58px; margin: -30px 0.2rem 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; color: #fff;
+  background: var(--g);
+  box-shadow: 0 10px 24px -6px rgba(var(--g-rgb), 0.7), 0 0 0 6px var(--nl-bg);
+  transition: transform 0.15s;
+}
+html.wl-v3 .wl-nav-fab:active { transform: scale(0.94); }
+/* Content and the assistant bubble clear the floating bar. */
+html.wl-v3 .wl-content { padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)) !important; }
+html.wl-v3 .wlc-fab { bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; }
+
+/* ── Home ─────────────────────────────────────────────────────────────── */
+.nl-home { display: flex; flex-direction: column; gap: 0.75rem; margin: 0.4rem 0 0.9rem; color: var(--nl-ink); }
+
+.nl-banner {
+  position: relative; overflow: hidden; display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.7rem 0.95rem; border-radius: 18px; background: var(--nl-card); box-shadow: var(--nl-shadow);
+}
+.nl-banner b { display: block; font-size: 0.9rem; }
+.nl-banner small { display: block; margin-top: 1px; font-size: 0.74rem; font-weight: 700; color: var(--nl-sub); }
+.nl-banner-ic { font-size: 1.4rem; line-height: 1; }
+.nl-banner-big, .nl-banner-up { background: linear-gradient(90deg, rgba(var(--g-rgb), 0.18), rgba(var(--g-rgb), 0.05)); }
+.nl-banner-big b, .nl-banner-up b { color: var(--g-ink, var(--nl-up)); }
+.nl-banner-down { background: color-mix(in srgb, #64748b 12%, var(--nl-card)); }
+.nl-confetti {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.55;
+  background-image: radial-gradient(circle, #f7931a 1.5px, transparent 2px), radial-gradient(circle, var(--g) 1.5px, transparent 2px), radial-gradient(circle, #627eea 1.5px, transparent 2px);
+  background-size: 38px 30px, 52px 36px, 44px 26px; background-position: 5px 4px, 20px 12px, 30px 2px;
+  animation: nl-drift 6s linear infinite;
+}
+@keyframes nl-drift { to { background-position: 5px 34px, 20px 48px, 30px 28px; } }
+
+.nl-hero {
+  position: relative; overflow: hidden; display: flex; gap: 0.6rem; padding: 1.15rem 0.9rem 1.05rem 1.2rem;
+  border-radius: 26px; color: #fff;
+  background: linear-gradient(150deg, var(--nl-navy2), var(--nl-navy));
+  box-shadow: 0 18px 32px -18px rgba(13, 43, 62, 0.75);
+  transition: background 0.8s ease, box-shadow 0.8s ease;
+}
+.nl-hero::after {
+  content: ""; position: absolute; left: -40px; bottom: -70px; width: 240px; height: 150px; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(var(--g-rgb), 0.45), transparent);
+}
+.nl-mood-big .nl-hero { background: linear-gradient(150deg, #0e4d3a, #0b3a2e); box-shadow: 0 18px 40px -16px rgba(22, 199, 132, 0.6); }
+.nl-mood-down .nl-hero { background: linear-gradient(150deg, #2b3644, #1f2833); }
+.nl-mood-down .nl-hero::after { background: radial-gradient(closest-side, rgba(148, 163, 184, 0.3), transparent); }
+.nl-hero-mark {
+  position: absolute; right: 64px; top: -8px; width: 90px; height: 90px; background: #fff; opacity: 0.05; pointer-events: none;
+  -webkit-mask: var(--wl-motif) center / contain no-repeat; mask: var(--wl-motif) center / contain no-repeat;
+}
+.nl-hero-main { position: relative; z-index: 1; flex: 1; min-width: 0; }
+.nl-hero-main small { font-size: 0.75rem; opacity: 0.72; }
+.nl-hero-value { margin: 0.25rem 0 0.1rem; font-size: clamp(2rem, 8.8vw, 2.5rem); line-height: 1.05; font-weight: 800; letter-spacing: -0.045em; font-variant-numeric: tabular-nums; }
+.nl-hero-value span { font-size: 0.62em; opacity: 0.55; letter-spacing: -0.02em; }
+.nl-mood-big .nl-hero-value { text-shadow: 0 0 24px rgba(94, 230, 177, 0.45); }
+.nl-hero-day { font-size: 0.8rem; opacity: 0.9; }
+.nl-hero-day.up b { color: #5ee6b1; }
+.nl-hero-day.down b { color: #fca5a5; }
+.nl-hero-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.95rem; }
+.nl-hero-actions button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; height: 40px; padding: 0 1rem; border: 0; border-radius: 13px;
+  font: inherit; font-size: 0.86rem; font-weight: 800; letter-spacing: -0.01em; cursor: pointer; transition: transform 0.12s, filter 0.15s;
+}
+.nl-hero-actions button:active { transform: scale(0.96); }
+.nl-hero-actions svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.nl-btn-buy { color: #fff; background: linear-gradient(180deg, #1fd193, #12a874); box-shadow: 0 8px 18px -8px rgba(22, 199, 132, 0.85), inset 0 1px 0 rgba(255,255,255,0.25); }
+.nl-btn-sell { color: #fff; background: linear-gradient(180deg, #f2616a, #d93b44); box-shadow: 0 8px 18px -8px rgba(229, 72, 77, 0.85), inset 0 1px 0 rgba(255,255,255,0.22); }
+.nl-btn-icon { width: 40px; padding: 0 !important; color: #fff; background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.22); }
+.nl-btn-icon svg { stroke-width: 2 !important; }
+.nl-stack {
+  position: relative; z-index: 1; align-self: center; display: flex; flex-direction: column; align-items: center; gap: 0.45rem;
+  padding: 0.55rem 0.4rem; border-radius: 22px; background: #fff;
+}
+.nl-stack em { font-style: normal; font-size: 0.66rem; font-weight: 800; color: #7b8794; }
+
+.nl-quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+.nl-quick button {
+  display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 0.75rem 0.4rem; border: 0; border-radius: 18px; cursor: pointer;
+  background: var(--nl-card); box-shadow: var(--nl-shadow); color: var(--nl-ink); font: inherit;
+}
+.nl-quick svg { width: 22px; height: 22px; fill: none; stroke: #16a874; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.nl-quick b { font-size: 0.76rem; }
+
+.nl-sec { display: flex; align-items: baseline; justify-content: space-between; margin: 0.4rem 0.15rem -0.2rem; }
+.nl-sec h3 { margin: 0; font-size: 1.02rem; letter-spacing: -0.02em; color: var(--nl-ink); }
+.nl-sec button { border: 0; background: none; padding: 0; font: inherit; font-size: 0.82rem; font-weight: 800; color: #16a874; cursor: pointer; }
+
+.nl-watch { display: flex; gap: 0.6rem; overflow-x: auto; scrollbar-width: none; margin-right: -1rem; padding-right: 1rem; }
+.nl-watch::-webkit-scrollbar { display: none; }
+.nl-wc { flex: none; width: 152px; padding: 0.75rem 0.75rem 0.4rem; border: 0; border-radius: 20px; text-align: start; cursor: pointer; font: inherit; color: #0f1d2b; }
+.nl-cream { background: #fdf6df; } .nl-rose { background: #f6e7e2; } .nl-lav { background: #e4e9fb; } .nl-mint { background: #dff5ec; }
+html.wl-v3:not([data-wl-light]) .nl-wc { filter: saturate(0.9) brightness(0.96); }
+.nl-wc-h { display: flex; align-items: center; gap: 0.4rem; }
+.nl-wc-h b { font-size: 0.8rem; }
+.nl-wc-h small { margin-inline-start: auto; font-size: 0.68rem; font-weight: 800; }
+.nl-wc-v { margin: 0.6rem 0 0.1rem; font-size: 1.18rem; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.nl-wc-spark { display: block; width: 100%; height: 34px; }
+.nl-spark-empty { display: block; }
+.nl-wc-spark.nl-spark-empty { height: 34px; }
+
+/* Holdings, as rows in one white card. */
+.nl-list { padding: 0.15rem 0.95rem; }
+.nl-row { width: 100%; display: flex; align-items: center; gap: 0.65rem; padding: 0.7rem 0; border: 0; border-bottom: 1px solid var(--nl-line); background: none; font: inherit; color: var(--nl-ink); text-align: start; cursor: pointer; }
+.nl-row:last-child { border-bottom: 0; }
+.nl-row-n { flex: 1; min-width: 0; }
+.nl-row-n b, .nl-row-v b { display: block; font-size: 0.9rem; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nl-row-n small, .nl-row-v small { font-size: 0.75rem; font-weight: 700; color: var(--nl-sub); }
+.nl-row-v { text-align: end; font-variant-numeric: tabular-nums; }
+.nl-row-spark { flex: none; width: 64px; height: 26px; }
+.nl-skel { height: 58px; margin: 0.6rem 0; border-radius: 12px; background: linear-gradient(90deg, var(--nl-line), color-mix(in srgb, var(--nl-line) 40%, transparent), var(--nl-line)); background-size: 200% 100%; animation: nl-shimmer 1.4s linear infinite; }
+@keyframes nl-shimmer { to { background-position: -200% 0; } }
+.nl-home .up { color: #16a874; } .nl-home .down { color: #e5484d; }
+.nl-hero .up b, .nl-hero .down b { color: inherit; }
+
+.nl-card { background: var(--nl-card); border-radius: var(--nl-radius); box-shadow: var(--nl-shadow); }
+.nl-news { padding: 0.2rem 0.95rem; }
+.nl-news-row { display: block; padding: 0.7rem 0; border-bottom: 1px solid var(--nl-line); color: var(--nl-ink); text-decoration: none; }
+.nl-news-row:last-child { border-bottom: 0; }
+.nl-news-src { font-style: normal; font-size: 0.64rem; font-weight: 900; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); padding: 2px 7px; border-radius: 6px; }
+.nl-news-row b { display: block; margin: 0.3rem 0 0.15rem; font-size: 0.86rem; line-height: 1.3; }
+.nl-news-row small { font-size: 0.7rem; font-weight: 700; color: var(--nl-sub); }
+
+@media (prefers-reduced-motion: reduce) { .nl-confetti, .nl-skel { animation: none; } .nl-hero { transition: none; } }
+
+/* ── More ─────────────────────────────────────────────────────────────── */
+.nl-more { max-width: 720px; margin: 0 auto; padding: 0.6rem 16px 1rem; color: var(--nl-ink, inherit); }
+.nl-more-h { display: flex; align-items: center; gap: 0.7rem; margin: 0.2rem 0.1rem 1rem; }
+.nl-more-h small { display: block; font-size: 0.75rem; color: var(--nl-sub, #7b8794); font-weight: 600; }
+.nl-more-h h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.03em; }
+.nl-more-g { margin-bottom: 1.1rem; }
+.nl-more-g h2 { margin: 0 0.15rem 0.55rem; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--nl-sub, #7b8794); }
+.nl-more-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.55rem; }
+@media (max-width: 380px) { .nl-more-grid { grid-template-columns: repeat(3, 1fr); } }
+.nl-more-tile {
+  display: flex; flex-direction: column; align-items: center; gap: 0.4rem; padding: 0.8rem 0.3rem 0.7rem; border: 0; border-radius: 18px; cursor: pointer;
+  background: var(--nl-card, var(--card-bg)); box-shadow: var(--nl-shadow, none); color: inherit; font: inherit; text-align: center;
+}
+.nl-more-tile span { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; color: var(--g-ink, var(--g)); background: rgba(var(--g-rgb), 0.12); }
+.nl-more-tile b { font-size: 0.72rem; line-height: 1.2; }
+.nl-more-row {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; margin-top: 0.55rem; padding: 0.9rem 1rem; border: 0; border-radius: 18px;
+  background: var(--nl-card, var(--card-bg)); box-shadow: var(--nl-shadow, none); color: inherit; font: inherit; font-weight: 800; font-size: 0.88rem; cursor: pointer;
+}
+.nl-more-themes { display: flex; gap: 0.45rem; }
+.nl-more-themes button { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: var(--c); cursor: pointer; }
+.nl-more-themes button.on { box-shadow: 0 0 0 2px var(--nl-card, #fff), 0 0 0 4px var(--c); }
+
+/* ── Header, as the mockup: logo tile, greeting, two round buttons ─────── */
+html.wl-v3 .wl-hamburger,
+html.wl-v3 .wl-topbar-brand-text,
+html.wl-v3 .wl-topbar-gear,
+html.wl-v3 .wl-topbar-stats { display: none !important; }
+html.wl-v3 .wl-topbar-inner { padding-inline: 16px !important; min-height: 64px; }
+html.wl-v3 .wl-logo-btn {
+  width: 42px; height: 42px; border-radius: 14px !important; display: grid; place-items: center;
+  background: var(--nl-card) !important; box-shadow: 0 2px 10px rgba(15, 29, 43, 0.08) !important;
+}
+html.wl-v3 .wl-logo-btn svg { width: 26px !important; height: 26px !important; }
+html.wl-v3 .wl-logo-scan-ring { display: none; }
+html.wl-v3 .wl-topbar-brand { gap: 0.7rem; }
+.nl-topbar-greet { display: flex; flex-direction: column; line-height: 1.15; }
+.nl-topbar-greet small { font-size: 0.74rem; font-weight: 600; color: var(--nl-sub, #7b8794); }
+.nl-topbar-greet b { font-size: 1.06rem; font-weight: 800; letter-spacing: -0.02em; color: var(--nl-ink, inherit); }
+html.wl-v3 .wl-topbar-x {
+  width: 42px !important; height: 42px !important; border-radius: 50% !important; border: 0 !important;
+  background: var(--nl-card) !important; color: var(--nl-ink) !important;
+  box-shadow: 0 2px 10px rgba(15, 29, 43, 0.08) !important;
+}
+html.wl-v3 .wl-topbar-right { gap: 0.5rem !important; }
+
+/* Ticker: one quiet white band, chips without boxes. */
+html.wl-v3 .ticker-strip { background: var(--nl-card); border-block: 1px solid var(--nl-line); padding-block: 0.35rem; }
+html.wl-v3 .ticker-strip .tick {
+  background: transparent !important; border: 0 !important; border-radius: 0 !important; padding-inline: 0.5rem !important;
+  font-family: inherit !important; font-weight: 700 !important; font-size: 0.8rem !important; letter-spacing: 0 !important;
+}
+html.wl-v3 .ticker-strip .tick-name { color: var(--nl-ink) !important; font-weight: 800 !important; }
+html.wl-v3 .news-ticker-label { background: transparent !important; font-size: 0.72rem !important; letter-spacing: 0.02em !important; }
+
+/* Bottom bar: the active tab is a filled icon, as in the mockup. */
+html.wl-v3 .wl-nav-item.active .wl-nav-icon { background: transparent !important; }
+html.wl-v3 .wl-nav-item.active svg { fill: currentColor; fill-opacity: 0.12; }
+html.wl-v3 .wl-nav-item .wl-nav-label { font-size: 0.66rem !important; font-weight: 700; }
+
+/* Round header buttons: an older narrow-screen rule collapses their icons. */
+html.wl-v3 .wl-topbar-x svg { width: 18px !important; height: 18px !important; flex: none; }
+
+/* The detailed portfolio card under Home. Its greeting and total are the new
+   hero's now, so they stand down while the hero is on the page; its refresh,
+   settings and privacy buttons, currency, time range, chart and categories
+   all stay. Scoped with :has() so a demo or empty dashboard, which has no new
+   hero, keeps the card whole. */
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-soul,
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-value { display: none !important; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-label { font-size: 0 !important; letter-spacing: 0 !important; justify-content: flex-end; min-height: 0; margin-bottom: 0.2rem; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-change { font-size: 1.05rem !important; }
+
+/* Metals carry the app's own bar artwork. */
+.nl-metal { width: var(--s, 30px); height: var(--s, 30px); border-radius: 50%; flex: none; object-fit: cover; background: #1b1e24; box-shadow: 0 0 0 1px rgba(15, 29, 43, 0.08); }
+html.wl-v3 .wl-topbar-right .wl-topbar-x {
+  width: 42px !important; min-width: 42px !important; height: 42px !important; padding: 0 !important;
+  display: grid !important; place-items: center;
+}
+.nl-hero-day { margin-top: 0.4rem; }
+/* The old card's theme watermark sat under its buttons; the hero carries it now. */
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero::before,
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero::after { display: none !important; }
+html.wl-v3 .wl-topbar-right .wl-topbar-x.wl-topbar-gear { display: none !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   Home below the hero. The rest of the dashboard in the same cards, each
+   figure shown once: the summary sentence lives in the mood banner, the
+   category cards in the breakdown, and the holdings in one list.
+   ════════════════════════════════════════════════════════════════════════ */
+html.wl-v3 {
+  --nl-chart-up: #16a874;
+  --nl-chart-down: #e5484d;
+  --nl-seg: #f1f3f6;
+}
+html.wl-v3:not([data-wl-light]) { --nl-seg: rgba(255, 255, 255, 0.06); }
+
+/* Figures in the app's own typeface, with even digits, not a code font. */
+html.wl-v3 .dvx-holding-val,
+html.wl-v3 .dvx-stat-value,
+html.wl-v3 .dvx-hstat b,
+html.wl-v3 .dvx-cat-value,
+html.wl-v3 .dvx-cat-asset-val,
+html.wl-v3 .dvx-legend-val,
+html.wl-v3 .dvx-hero-change { font-family: inherit !important; font-variant-numeric: tabular-nums; letter-spacing: -0.01em !important; }
+
+/* Section cards share one title style. */
+html.wl-v3 .dvx .glass-card h3 { font-size: 1rem !important; font-weight: 800 !important; letter-spacing: -0.02em; color: var(--nl-ink); }
+
+/* Discovery chips and the market tips line. */
+html.wl-v3 .fn-strip { background: transparent !important; border: 0 !important; padding: 0.1rem 0 !important; gap: 0.4rem !important; overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap !important; }
+html.wl-v3 .fn-strip::-webkit-scrollbar { display: none; }
+html.wl-v3 .fn-strip-label { color: var(--nl-sub) !important; }
+html.wl-v3 .fn-strip-btn {
+  flex: none; height: 34px; padding: 0 0.8rem !important; border-radius: 999px !important; border: 0 !important;
+  background: var(--nl-card) !important; box-shadow: var(--nl-shadow) !important; color: var(--nl-ink) !important;
+  font-size: 0.78rem !important; font-weight: 700 !important; white-space: nowrap;
+}
+html.wl-v3 .wl-sentiment { border-radius: 16px !important; border: 0 !important; background: var(--nl-card) !important; box-shadow: var(--nl-shadow); min-height: 40px !important; }
+html.wl-v3 .wl-sentiment-badge { height: 40px !important; margin: 4px; border-radius: 12px; height: 32px !important; font-size: 0.66rem !important; }
+html.wl-v3 .wl-sentiment-tip { color: var(--nl-ink) !important; font-weight: 600; }
+
+/* ── Performance card ─────────────────────────────────────────────────── */
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero { padding: 1rem 1rem 0.9rem !important; text-align: start; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-label { display: flex !important; align-items: center; gap: 0.35rem; margin: 0 0 0.6rem !important; }
+.nl-perf-title { margin-inline-end: auto; font-size: 1rem; font-weight: 800; letter-spacing: -0.02em; color: var(--nl-ink); }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-label button {
+  width: 34px !important; height: 34px !important; padding: 0 !important; display: grid !important; place-items: center;
+  border-radius: 50% !important; border: 0 !important; background: var(--nl-seg) !important; color: var(--nl-ink) !important; box-shadow: none !important;
+}
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-change { margin: 0.1rem 0 0.7rem !important; font-size: 1.15rem !important; font-weight: 800; color: var(--nl-ink) !important; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-change.up { color: var(--nl-up) !important; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-change.dn { color: var(--nl-down) !important; }
+
+/* Every chooser on the card is one grey track with a white pill. */
+html.wl-v3 .dvx-currency-switcher {
+  display: inline-flex !important; flex-wrap: nowrap; gap: 2px !important; padding: 3px; margin: 0 0 0.7rem !important;
+  border-radius: 12px; background: var(--nl-seg); justify-content: flex-start !important;
+}
+html.wl-v3 .dvx-currency-pill,
+html.wl-v3 .dvx-tf-chip,
+html.wl-v3 .dvx-ct-chip {
+  min-width: 0 !important; height: 30px !important; padding: 0 0.7rem !important; border: 0 !important; border-radius: 9px !important;
+  background: transparent !important; color: var(--nl-sub) !important; box-shadow: none !important;
+  font-size: 0.74rem !important; font-weight: 800 !important; line-height: 30px !important;
+}
+html.wl-v3 .dvx-currency-pill.active,
+html.wl-v3 .dvx-tf-chip.active,
+html.wl-v3 .dvx-ct-chip.active {
+  background: var(--nl-card) !important; color: var(--nl-ink) !important;
+  box-shadow: 0 1px 3px rgba(15, 29, 43, 0.12), 0 0 0 0.5px rgba(15, 29, 43, 0.04) !important;
+}
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero > div:has(> .dvx-tf-chip) {
+  flex-wrap: nowrap !important; gap: 2px !important; padding: 3px; margin: 0 0 0.55rem !important; border-radius: 12px; background: var(--nl-seg); overflow-x: auto; scrollbar-width: none;
+}
+html.wl-v3 .dvx-tf-chip { flex: 1 0 auto; }
+html.wl-v3 .dvx-live-ind, html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero > div:has(> .dvx-tf-chip) > span { display: none; }
+html.wl-v3 .dvx-catfilter { display: flex; gap: 0.4rem !important; overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap !important; margin-bottom: 0.55rem !important; }
+html.wl-v3 .dvx-catfilter::-webkit-scrollbar { display: none; }
+html.wl-v3 .dvx-catchip {
+  flex: none; padding: 0.4rem 0.75rem !important; border-radius: 14px !important; border: 1px solid var(--nl-line) !important;
+  background: var(--nl-card) !important; color: var(--nl-ink) !important; box-shadow: none !important; text-align: start;
+}
+html.wl-v3 .dvx-catchip-label { font-size: 0.7rem !important; font-weight: 700 !important; color: var(--nl-sub); }
+html.wl-v3 .dvx-catchip-val { font-size: 0.82rem !important; font-weight: 800 !important; opacity: 1 !important; }
+html.wl-v3 .dvx-catchip.active { background: var(--nl-ink) !important; border-color: var(--nl-ink) !important; color: var(--nl-card) !important; }
+html.wl-v3 .dvx-catchip.active .dvx-catchip-label { color: inherit; opacity: 0.7; }
+html.wl-v3 .dvx-charttype-seg { display: inline-flex !important; gap: 2px !important; padding: 3px !important; margin: 0 0 0.4rem !important; border: 0 !important; border-radius: 12px !important; background: var(--nl-seg) !important; box-shadow: none !important; }
+html.wl-v3 .dvx-ct-chip { display: inline-flex !important; align-items: center; gap: 0.3rem; }
+html.wl-v3 .dvx-share-btn {
+  display: inline-flex !important; align-items: center; gap: 0.4rem; height: 36px; padding: 0 0.95rem !important; margin-top: 0.5rem !important;
+  border: 0 !important; border-radius: 999px !important; background: var(--nl-seg) !important; color: var(--nl-ink) !important; box-shadow: none !important;
+  font-size: 0.8rem !important; font-weight: 800 !important;
+}
+
+/* Invested and P&L: two quiet tiles; a gain is green, a loss red. */
+html.wl-v3 .dvx-stats-row { gap: 0.6rem !important; }
+html.wl-v3 .dvx-stat-card { padding: 0.85rem 0.95rem !important; overflow: hidden; }
+html.wl-v3 .dvx-stat-label { font-size: 0.7rem !important; font-weight: 700 !important; letter-spacing: 0.04em !important; color: var(--nl-sub) !important; }
+html.wl-v3 .dvx-stat-value { font-size: 1.2rem !important; font-weight: 800 !important; color: var(--nl-ink) !important; }
+html.wl-v3 .dvx-stat-card--pos .dvx-stat-value { color: var(--nl-up) !important; }
+html.wl-v3 .dvx-stat-card--neg .dvx-stat-value { color: var(--nl-down) !important; }
+html.wl-v3 .dvx-stat-sub { font-size: 0.74rem !important; font-weight: 700; color: var(--nl-sub) !important; }
+
+/* ── Breakdown ────────────────────────────────────────────────────────── */
+html.wl-v3 .dvx-cat-breakdown { padding: 1rem 1rem 0.6rem !important; }
+html.wl-v3 .dvx-cat-row { margin: 0 !important; padding: 0.7rem 0 !important; border-radius: 0 !important; border-bottom: 1px solid var(--nl-line); }
+html.wl-v3 .dvx-cat-row:last-child { border-bottom: 0; }
+html.wl-v3 .dvx-cat-label { font-weight: 800 !important; color: var(--nl-ink) !important; }
+html.wl-v3 .dvx-cat-pct { font-weight: 800 !important; color: var(--nl-sub) !important; }
+html.wl-v3 .dvx-cat-value { font-weight: 800 !important; color: var(--nl-ink) !important; white-space: nowrap; }
+html.wl-v3 .dvx-cat-pnl.pos { color: var(--nl-up) !important; }
+html.wl-v3 .dvx-cat-pnl.neg { color: var(--nl-down) !important; }
+html.wl-v3 .dvx-cat-invested { color: var(--nl-sub) !important; }
+html.wl-v3 .dvx-cat-bar-track, html.wl-v3 .dvx-cat-asset-bar { height: 6px !important; border-radius: 99px !important; background: var(--nl-seg) !important; }
+html.wl-v3 .dvx-cat-bar-fill, html.wl-v3 .dvx-cat-asset-fill { border-radius: 99px !important; box-shadow: none !important; background: var(--bar-col, var(--g)) !important; }
+html.wl-v3 .dvx-cat-asset-row { gap: 0.5rem !important; }
+html.wl-v3 .dvx-cat-asset-sym { font-weight: 700 !important; color: var(--nl-ink) !important; letter-spacing: 0 !important; }
+html.wl-v3 .dvx-cat-asset-val, html.wl-v3 .dvx-cat-asset-pct { white-space: nowrap; font-weight: 700 !important; color: var(--nl-sub) !important; }
+
+/* ── Holdings: rows in one card, as Home's list ───────────────────────── */
+html.wl-v3 .dvx-hfilter input,
+html.wl-v3 .dvx-hfilter select,
+html.wl-v3 .dvx-hfilter button {
+  height: 38px; border: 0 !important; border-radius: 12px !important; background: var(--nl-seg) !important; color: var(--nl-ink) !important; font-size: 0.8rem !important;
+}
+html.wl-v3 .dvx-hfilter input { min-width: 0; padding-inline: 0.8rem 1.8rem !important; }
+html.wl-v3 .dvx-hfilter select { flex: 0 1 auto !important; max-width: 40%; padding-inline: 0.6rem !important; font-weight: 700; }
+html.wl-v3 .dvx-hfilter > button { width: 38px; padding: 0 !important; }
+html.wl-v3 .dvx-hchip {
+  height: 32px; padding: 0 0.8rem !important; border: 0 !important; border-radius: 999px !important; box-shadow: none !important;
+  background: var(--nl-seg) !important; color: var(--nl-sub) !important; font-size: 0.74rem !important; font-weight: 800 !important;
+}
+html.wl-v3 .dvx-hchip.on { background: var(--nl-ink) !important; color: var(--nl-card) !important; }
+html.wl-v3 .dvx-cat-group-hdr { flex-wrap: wrap; align-items: baseline; padding: 0.95rem 0 0.35rem !important; border-top: 0 !important; }
+html.wl-v3 .dvx-cat-group-name { font-size: 0.72rem !important; letter-spacing: 0.08em !important; color: var(--nl-sub) !important; }
+html.wl-v3 .dvx-cat-group-stats { font-size: 0.72rem !important; font-weight: 700; color: var(--nl-sub) !important; }
+
+html.wl-v3 .dvx-holdings { gap: 0 !important; }
+html.wl-v3 .dvx-holding {
+  align-items: flex-start; gap: 0.65rem !important; padding: 0.8rem 2.4rem 0.8rem 0 !important; margin: 0 !important;
+  background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--nl-line) !important; border-radius: 0 !important; box-shadow: none !important;
+  transform: none !important;
+}
+html.wl-v3 .dvx-holding:last-child { border-bottom: 0 !important; }
+html.wl-v3 .dvx-holding::before { display: none !important; }
+html.wl-v3 .dvx-holding.selected { background: rgba(var(--g-rgb), 0.06) !important; border-radius: 14px !important; }
+html.wl-v3 .dvx-holding > input[type="checkbox"] { width: 15px !important; height: 15px !important; margin: 0.75rem 0 0 !important; opacity: 0.55; }
+html.wl-v3 .dvx-holding > input[type="checkbox"]:checked { opacity: 1; }
+html.wl-v3 .dvx-holding .dvx-holding-icon { width: 40px !important; height: 40px !important; margin-top: 0 !important; box-shadow: none !important; }
+html.wl-v3 .dvx-holding-line1 { flex-wrap: nowrap !important; align-items: flex-start !important; }
+html.wl-v3 .dvx-holding-meta { flex-wrap: wrap !important; row-gap: 0.25rem !important; gap: 0.3rem !important; }
+html.wl-v3 .dvx-holding-meta strong { font-size: 0.95rem !important; font-weight: 800 !important; color: var(--nl-ink) !important; }
+html.wl-v3 .dvx-holding-meta .dvx-cat-badge,
+html.wl-v3 .dvx-holding-meta .dvx-stable-badge,
+html.wl-v3 .dvx-holding-meta > span:not(.dvx-trend-badge) { font-size: 0.58rem !important; padding: 1px 6px !important; border-radius: 6px !important; }
+/* The trend is the row underneath, spelled out; the pill beside the ticker
+   said the same word twice. It stays when that row does not (break-even). */
+html.wl-v3 .dvx-holding:has(.wl-trend-badge) .dvx-trend-badge { display: none !important; }
+html.wl-v3 .dvx-holding-val { font-size: 0.98rem !important; font-weight: 800 !important; color: var(--nl-ink) !important; }
+html.wl-v3 .dvx-holding-pnl-pill { padding: 0 !important; margin: 0 !important; background: none !important; font-size: 0.74rem !important; }
+html.wl-v3 .dvx-holding-pnl-pill.pos { color: var(--nl-up) !important; }
+html.wl-v3 .dvx-holding-pnl-pill.neg { color: var(--nl-down) !important; }
+/* Price, average and quantity as a quiet three-column line; the trend above. */
+html.wl-v3 .dvx-holding-stats { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 0.15rem 0.6rem !important; margin-top: 0.35rem !important; }
+html.wl-v3 .dvx-hstat { flex-direction: column; align-items: flex-start !important; gap: 1px !important; padding: 0 !important; background: none !important; border: 0 !important; }
+html.wl-v3 .dvx-hstat em { font-size: 0.6rem !important; color: var(--nl-sub) !important; }
+html.wl-v3 .dvx-hstat b { max-width: 100%; text-align: start !important; font-size: 0.78rem !important; color: var(--nl-ink) !important; }
+html.wl-v3 .wl-trend-badge {
+  grid-column: 1 / -1; flex-direction: row !important; align-items: center !important; gap: 0.4rem !important;
+  padding: 0.3rem 0.55rem !important; border-radius: 10px !important; background: var(--nl-seg) !important;
+}
+html.wl-v3 .wl-trend-badge b { font-size: 0.76rem !important; }
+html.wl-v3 .wl-trend-badge--up b { color: var(--nl-up) !important; }
+html.wl-v3 .wl-trend-badge--down b { color: var(--nl-down) !important; }
+html.wl-v3 .dvx-ha-toggle {
+  position: absolute; top: 0.7rem; right: 0; width: 30px !important; height: 30px !important; margin: 0 !important;
+  border: 0 !important; background: var(--nl-seg) !important; color: var(--nl-ink) !important;
+}
+html.wl-v3 .dvx-holding-actions { border-top-color: var(--nl-line) !important; flex-wrap: wrap; }
+html.wl-v3 .dvx-ha-btn { border-radius: 999px !important; border: 0 !important; background: var(--nl-seg) !important; color: var(--nl-ink) !important; font-weight: 700 !important; }
+html.wl-v3 .dvx-show-more { border: 0 !important; border-radius: 14px !important; background: var(--nl-seg) !important; color: var(--nl-ink) !important; font-weight: 800 !important; }
+html.wl-v3 .dvx-breakeven-toggle,
+html.wl-v3 .dvx-export-btn {
+  height: 32px; padding: 0 0.7rem !important; border: 0 !important; border-radius: 999px !important;
+  background: var(--nl-seg) !important; color: var(--nl-ink) !important; font-size: 0.72rem !important; font-weight: 800 !important; box-shadow: none !important;
+}
+html.wl-v3 .dvx-breakeven-toggle.active { background: var(--nl-ink) !important; color: var(--nl-card) !important; }
+
+/* ── Lower cards ──────────────────────────────────────────────────────── */
+html.wl-v3 .wl-sector-hm { background: var(--nl-card) !important; border: 1px solid var(--nl-line) !important; border-radius: var(--nl-radius) !important; box-shadow: var(--nl-shadow); }
+html.wl-v3 .wl-sector-hm > button span:first-child { font-size: 1rem !important; font-weight: 800 !important; letter-spacing: -0.02em; color: var(--nl-ink); }
+html.wl-v3 .wl-sector-tile { border: 0 !important; border-radius: 14px !important; }
+html.wl-v3 .wl-nav-fab svg { stroke: #fff; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18)); }
+
+/* Holdings header on one line: the title, then the tools as small round chips. */
+html.wl-v3 .glass-card:has(> div > .dvx-breakeven-toggle) > div:first-child,
+html.wl-v3 .glass-card:has(.dvx-breakeven-toggle) > div:first-child { flex-wrap: nowrap !important; gap: 0.5rem; }
+html.wl-v3 .glass-card:has(.dvx-breakeven-toggle) > div:first-child h3 { white-space: nowrap; }
+html.wl-v3 .glass-card:has(.dvx-breakeven-toggle) > div:first-child > div { flex-wrap: nowrap !important; gap: 0.3rem !important; }
+html.wl-v3 .dvx-breakeven-toggle, html.wl-v3 .dvx-export-btn { padding: 0 0.55rem !important; font-size: 0.68rem !important; white-space: nowrap; }
+/* Ticker on its own line, its tags together underneath. */
+html.wl-v3 .dvx-holding-meta strong { flex-basis: 100% !important; }
+html.wl-v3 .dvx-hstat b { font-size: 0.74rem !important; }
+/* The arrow beside the ticker is the trend row again; it stands down with the pill. */
+html.wl-v3 .dvx-holding:has(.wl-trend-badge) .dvx-holding-meta .wl-trend { display: none !important; }
+html.wl-v3 .dvx-holding-stats { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 0.85fr) !important; gap: 0.15rem 0.4rem !important; }
+
+/* ── Holdings on Home (components/NlHoldings.jsx) ─────────────────────── */
+.nl-hold { padding: 0.75rem 0.95rem 0.2rem; }
+.nl-hold-tools { display: flex; align-items: center; gap: 0.35rem; }
+.nl-tools-gap { flex: 1; }
+.nl-tool {
+  width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  background: var(--nl-seg, #f1f3f6); color: var(--nl-ink);
+}
+.nl-tool svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.nl-tool.on { background: var(--nl-ink); color: var(--nl-card); }
+.nl-sort select {
+  height: 34px; padding: 0 1.9rem 0 0.8rem; border: 0; border-radius: 999px; cursor: pointer; appearance: none; -webkit-appearance: none;
+  font: inherit; font-size: 0.76rem; font-weight: 800; color: var(--nl-ink);
+  background: var(--nl-seg, #f1f3f6) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b8794' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.6rem center / 13px;
+}
+.nl-search {
+  width: 100%; box-sizing: border-box; height: 40px; margin-top: 0.6rem; padding: 0 0.9rem; border: 0; border-radius: 12px; outline: none;
+  background: var(--nl-seg, #f1f3f6); color: var(--nl-ink); font: inherit; font-size: 0.85rem;
+}
+.nl-chips { display: flex; gap: 0.35rem; margin-top: 0.6rem; overflow-x: auto; scrollbar-width: none; }
+.nl-chips::-webkit-scrollbar { display: none; }
+.nl-chips button {
+  flex: none; height: 30px; padding: 0 0.75rem; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--nl-seg, #f1f3f6); color: var(--nl-sub); font: inherit; font-size: 0.72rem; font-weight: 800;
+}
+.nl-chips button.on { background: var(--nl-ink); color: var(--nl-card); }
+.nl-sum {
+  display: flex; align-items: center; gap: 0.5rem; margin-top: 0.6rem; padding: 0.5rem 0.75rem; border-radius: 12px;
+  background: var(--nl-seg, #f1f3f6); font-size: 0.76rem; font-weight: 700; color: var(--nl-sub);
+}
+.nl-sum.sel { background: rgba(22, 168, 116, 0.1); }
+.nl-sum b { margin-inline-start: auto; color: var(--nl-ink); font-variant-numeric: tabular-nums; }
+.nl-sum em { font-style: normal; font-weight: 800; }
+.nl-sum button { border: 0; background: none; padding: 0 0.1rem; color: var(--nl-sub); font-size: 0.85rem; cursor: pointer; }
+.nl-hold .nl-list { padding: 0.2rem 0 0; }
+.nl-hold .up { color: var(--nl-up); } .nl-hold .down { color: var(--nl-down); }
+.nl-row-logo { position: relative; flex: none; display: grid; }
+.nl-row-logo i {
+  position: absolute; right: -3px; bottom: -3px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--nl-up); color: #fff; font-style: normal; font-size: 0.62rem; font-weight: 900; box-shadow: 0 0 0 2px var(--nl-card);
+}
+.nl-row.sel { background: rgba(22, 168, 116, 0.06); margin: 0 -0.95rem; padding-inline: 0.95rem; width: calc(100% + 1.9rem); }
+.nl-row-n small .up, .nl-row-n small .down { font-weight: 800; }
+.nl-empty { margin: 0.8rem 0; color: var(--nl-sub); font-size: 0.85rem; }
+
+/* Into Portfolio insights. */
+.nl-insights {
+  width: 100%; display: flex; align-items: center; gap: 0.8rem; margin: 0.75rem 0; padding: 0.9rem 1rem; border: 0; cursor: pointer;
+  font: inherit; color: var(--nl-ink); text-align: start;
+}
+.nl-insights > span:nth-child(2) { flex: 1; min-width: 0; }
+.nl-insights b { display: block; font-size: 0.95rem; letter-spacing: -0.01em; }
+.nl-insights small { display: block; margin-top: 1px; font-size: 0.75rem; font-weight: 600; color: var(--nl-sub); }
+.nl-insights-ic { width: 42px; height: 42px; border-radius: 14px; flex: none; display: grid; place-items: center; background: linear-gradient(150deg, var(--nl-navy2), var(--nl-navy)); }
+.nl-insights-ic svg { width: 21px; height: 21px; fill: none; stroke: #5ee6b1; stroke-width: 2.2; stroke-linecap: round; }
+.nl-chev { width: 18px; height: 18px; flex: none; fill: none; stroke: var(--nl-sub); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Portfolio insights page title. */
+.nl-page-h { display: flex; align-items: center; gap: 0.75rem; margin: 0.6rem 0 0.9rem; color: var(--nl-ink); }
+.nl-page-h small { display: block; font-size: 0.74rem; font-weight: 600; color: var(--nl-sub); }
+.nl-page-h h1 { margin: 0; font-size: 1.45rem; font-weight: 800; letter-spacing: -0.03em; }
+.nl-back { width: 42px; height: 42px; flex: none; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer; background: var(--nl-card); box-shadow: var(--nl-shadow); color: var(--nl-ink); }
+.nl-back svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+html.wl-v3 .nl-sort select { height: 34px !important; min-height: 0 !important; font-size: 0.76rem !important; line-height: 34px !important; border: 0 !important; box-shadow: none !important; }
+html.wl-v3 .nl-hold .nl-row { border-radius: 0 !important; box-shadow: none !important; background: none; }
+html.wl-v3 .nl-hold .nl-row.sel { background: rgba(22, 168, 116, 0.06); }
+html.wl-v3 .nl-back svg { width: 20px !important; height: 20px !important; }
+html.wl-v3 .nl-back { padding: 0 !important; }
+
+/* ── Price strip: drifting row with "All" ─────────────────────────────── */
+.nl-ticker { position: relative; display: flex; align-items: center; background: var(--nl-card); border-block: 1px solid var(--nl-line); }
+html.wl-v3 .nl-ticker .nl-ticker-strip { flex: 1; min-width: 0; border: 0 !important; background: transparent !important; overflow-x: auto; scrollbar-width: none; scroll-behavior: auto; }
+html.wl-v3 .nl-ticker .nl-ticker-strip::-webkit-scrollbar { display: none; }
+.nl-ticker-all {
+  position: relative; flex: none; height: 30px; margin: 0 10px 0 4px; padding: 0 0.85rem; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--nl-ink); color: var(--nl-card); font: inherit; font-size: 0.74rem; font-weight: 800;
+}
+
+/* Prices sheet. */
+.nl-sheet-bg { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: flex-end; justify-content: center; background: rgba(8, 15, 24, 0.45); animation: nl-fade 0.18s ease both; }
+.nl-sheet {
+  width: min(560px, 100%); max-height: 86vh; display: flex; flex-direction: column; padding: 0.4rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  border-radius: 26px 26px 0 0; background: var(--nl-card, #fff); color: var(--nl-ink, #0f1d2b); box-shadow: 0 -10px 40px rgba(8, 15, 24, 0.25);
+  animation: nl-rise 0.26s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+@media (min-width: 700px) { .nl-sheet-bg { align-items: center; } .nl-sheet { border-radius: 26px; } }
+@keyframes nl-fade { from { opacity: 0; } }
+@keyframes nl-rise { from { transform: translateY(40px); opacity: 0; } }
+.nl-sheet-grip { display: block; width: 40px; height: 4px; margin: 0.35rem auto 0.6rem; border-radius: 4px; background: var(--nl-line, #e5e7eb); }
+.nl-sheet-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
+.nl-sheet-h h2 { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; }
+.nl-seg2 { display: flex; gap: 2px; padding: 3px; border-radius: 12px; background: var(--nl-seg, #f1f3f6); }
+.nl-seg2 button { flex: 1; height: 32px; border: 0; border-radius: 9px; cursor: pointer; background: transparent; color: var(--nl-sub); font: inherit; font-size: 0.8rem; font-weight: 800; }
+.nl-seg2 button.on { background: var(--nl-card, #fff); color: var(--nl-ink); box-shadow: 0 1px 3px rgba(15, 29, 43, 0.12); }
+.nl-sheet-list { flex: 1; min-height: 0; overflow-y: auto; margin-top: 0.4rem; overscroll-behavior: contain; }
+.nl-sheet-list .nl-row:disabled { cursor: default; opacity: 1; }
+.nl-sheet .up { color: var(--nl-up, #16a874); } .nl-sheet .down { color: var(--nl-down, #e5484d); }
+.nl-sheet-note { margin: 0.6rem 0.1rem 0; font-size: 0.76rem; font-weight: 600; color: var(--nl-sub); }
+@media (prefers-reduced-motion: reduce) { .nl-sheet-bg, .nl-sheet { animation: none; } }
+
+/* Theme picker on More: each theme's own mark. */
+.nl-more-themes button { flex: none; width: 30px !important; height: 30px !important; min-width: 0 !important; padding: 0 !important; display: grid; place-items: center; overflow: hidden; color: #fff; }
+.nl-more-themes button img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.nl-more-themes button svg { color: #064e3b; }
+.nl-more-themes { gap: 0.55rem !important; }
+html.wl-v3 .nl-more-themes button { min-height: 0 !important; max-height: 30px !important; aspect-ratio: 1; }
+html.wl-v3 .nl-ticker-all { min-height: 0 !important; min-width: 0 !important; height: 30px !important; width: auto !important; border-radius: 999px !important; }
+html.wl-v3 .nl-search, .nl-sheet .nl-search { min-height: 0 !important; height: 40px !important; flex: none; }
+.nl-sheet .nl-row { border-radius: 0 !important; box-shadow: none !important; background: none; }
+.nl-sheet .nl-tool { min-height: 0 !important; min-width: 0 !important; }
+/* Report sheet: solid, in the card language. */
+html.wl-v3 .air-sheet { background: var(--nl-card) !important; color: var(--nl-ink) !important; }
+/* ‹ › either side of the strip; its edges fade under them. */
+.nl-ticker-arrow {
+  flex: none; width: 26px; height: 26px; margin: 0 2px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  background: var(--nl-seg, #f1f3f6); color: var(--nl-ink);
+}
+.nl-ticker-arrow:first-child { margin-inline-start: 8px; }
+.nl-ticker-arrow svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+html.wl-v3 .nl-ticker-arrow { min-height: 0 !important; min-width: 0 !important; }
+html.wl-v3 .nl-ticker .nl-ticker-strip { touch-action: pan-x; -webkit-mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent); }
+html.wl-v3 .nl-ticker-all { margin-inline-start: 6px !important; }
+html.wl-v3 .nl-ticker-arrow, html.wl-v3 .nl-ticker-arrow:hover, html.wl-v3 .nl-ticker-arrow:focus, html.wl-v3 .nl-ticker-arrow:active { background: var(--nl-seg) !important; color: var(--nl-ink) !important; box-shadow: none !important; border: 0 !important; }
+.nl-sheet .nl-chips, .nl-sheet .nl-seg2, .nl-sheet .nl-sheet-h { flex: none; }
+.nl-sheet .nl-chips { padding-bottom: 2px; }
+html.wl-v3 .nl-sheet .nl-chips button { min-height: 0 !important; height: 32px !important; }

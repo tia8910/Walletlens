@@ -116,6 +116,36 @@ const V2_NAV_ITEMS = [
   },
 ]
 
+// The new look: Home, Signals, a centre button that adds a trade, Coach, and
+// More, which lists every feature (Goals, Targets, Alerts, Backup and the
+// rest), so nothing that left the bar is more than one tap away.
+const V3_NAV_ITEMS = [
+  { ...byId('dashboard'), labelKey: 'nlHome' },
+  {
+    id: 'signals',
+    labelKey: 'nlSignals',
+    route: '/technicals',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7 3v4m0 10v4M17 3v6m0 8v4"/><rect x="4.5" y="7" width="5" height="10" rx="1"/><rect x="14.5" y="9" width="5" height="8" rx="1"/>
+      </svg>
+    ),
+  },
+  { id: 'add', fab: true, labelKey: 'quickAddTrade' },
+  V2_NAV_ITEMS.find(i => i.id === 'coach'),
+  {
+    id: 'more',
+    labelKey: 'nlMore',
+    route: '/more',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/>
+        <rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>
+      </svg>
+    ),
+  },
+]
+
 const DASHBOARD_LP_ITEMS = [
   { icon: 'zap', tone: 'green', labelKey: 'quickAddTrade', onClick: (nav, home) => nav(home, { state: { tab: 'overview', quickAdd: true } }) },
   { icon: 'import', tone: 'blue', labelKey: 'importData', onClick: (nav, home) => nav(home, { state: { tab: 'manage' } }) },
@@ -125,7 +155,7 @@ const DASHBOARD_LP_ITEMS = [
   { icon: 'settings', tone: 'slate', labelKey: 'settingsNav', onClick: (nav) => nav('/settings') },
 ]
 
-const BottomNav = memo(function BottomNav({ v2 = false }) {
+const BottomNav = memo(function BottomNav({ v2 = false, v3 = false }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [activeTab, setActiveTab] = useState('overview')
@@ -153,7 +183,13 @@ const BottomNav = memo(function BottomNav({ v2 = false }) {
 
   return (
     <nav className={`wl-bottom-nav${v2 ? ' wl-bottom-nav-v2' : ''}`} role="navigation" aria-label={t('atMainNav')}>
-      {(v2 ? V2_NAV_ITEMS : NAV_ITEMS).map(item => {
+      {(v3 ? V3_NAV_ITEMS : v2 ? V2_NAV_ITEMS : NAV_ITEMS).map(item => {
+        if (item.fab) return (
+          <button key={item.id} type="button" className="wl-nav-fab" aria-label={t(item.labelKey)}
+            onClick={() => { track('bottomnav_click', { tab: 'add', v3: true }); navigate(home, { state: { tab: 'overview', quickAdd: true } }) }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        )
         // Classic lights a tab wherever you are. v2 also has a page tab
         // (Coach), so a dashboard tab only lights while on the dashboard.
         const isActive = item.route

@@ -11,6 +11,7 @@ import {
   GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID,
   STOCK_PREFIX, FIAT_PREFIX,
 } from '../data/assets'
+import AiReport from './AiReport'
 
 // ── Arabic letter normalization — strips diacritics + unifies letter forms ─
 // Critical for voice recognition where ا/أ/إ/آ, ي/ى, ة/ه, ث/س, ذ/ز
@@ -2360,6 +2361,9 @@ export default function VoiceImport({ hideTrigger = false, onImported, onClose }
               </div>
             )
           })}
+          {parsed?.transactions?.length > 0 && (
+            <AiReport surface="voice_import" compact output={() => `${transcript}\n${JSON.stringify(parsed.transactions.map(tx => ({ coin: tx.coin?.symbol || tx.coin, type: tx.type, amount: tx.amount, price: tx.price })))}`} />
+          )}
 
           {/* Add another order manually */}
           {(parsed || transcript) && !confirmed && (

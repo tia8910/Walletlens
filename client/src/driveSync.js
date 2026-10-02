@@ -5,7 +5,7 @@
 // improvised inside a click handler. Auto-restore fires in exactly one case:
 // the device has no portfolio at all. Anything else asks first.
 
-import { generateBackupCode, snapshotSignature, applyBackupCode } from './backupCore'
+import { generateBackupCode, snapshotSignature, applyBackupCode, mergeBackupCode } from './backupCore'
 import {
   decryptBackup, isEncryptedBackup, newDataKey, dataKeyToString, dataKeyFromString,
   encryptBackupEnvelope, encryptBackupWithWrap, wrapBlockOf,
@@ -293,17 +293,43 @@ export async function autoBackup() {
   })()
   if (!token) return { ok: false, reason: 'signed-out' }
 
+  // Has another device written since this one last did? Then uploading now
+  // would overwrite its trades. Fold its copy in first and upload the union.
+  let remote = null
+  try { remote = await findBackup() } catch { /* offline: the upload below fails too */ }
+  const remoteAt = remote?.modifiedTime ? Date.parse(remote.modifiedTime) : 0
+  if (remote && remoteAt > (Number(readKey(LAST_BACKUP_AT)) || 0)) {
+    const merged = await mergeFrom(remote.id, key)
+    if (merged) {
+      try { ({ code } = await generateBackupCode()) } catch { return { ok: false, reason: 'failed' } }
+      try { window.dispatchEvent(new Event('wl:portfolio-updated')) } catch { /* no window */ }
+    }
+  }
+  const hashNow = await fingerprint(await snapshotSignature())
+
   try {
     const payload = await encryptBackupWithWrap(code, key, readKey(WRAP))
-    const existing = driveState().fileId || (await findBackup())?.id || null
+    const existing = driveState().fileId || remote?.id || (await findBackup())?.id || null
     const id = await uploadBackup(payload, existing)
-    writeKey(LAST_HASH, hash)
+    writeKey(LAST_HASH, hashNow || hash)
     writeKey(FILE_ID, id)
     writeKey(LAST_BACKUP_AT, String(Date.now()))
     writeKey(REMOTE_AT, String(Date.now()))
     return { ok: true, reason: 'backed-up' }
   } catch {
     return { ok: false, reason: 'failed' }
+  }
+}
+
+/** Download another device's backup and fold it into this one. */
+async function mergeFrom(fileId, key) {
+  try {
+    const payload = await downloadBackup(fileId)
+    if (!isEncryptedBackup(payload)) return null
+    const code = await decryptBackupWithKey(payload, key)
+    return await mergeBackupCode(code)
+  } catch {
+    return null
   }
 }
 
@@ -383,6 +409,13 @@ export async function autoRestore() {
   const action = decideAutoPull({
     localDirty: await localChangedSinceBackup(), remoteAt, lastBackupAt,
   })
+  // Both devices changed something. Rather than stop syncing (as this used
+  // to) or let one overwrite the other, back up: autoBackup merges the other
+  // device's copy in first, so both sides' trades end up on both.
+  if (action === 'conflict') {
+    const res = await autoBackup()
+    return res.ok ? { ok: true, reason: 'merged' } : { ok: false, reason: 'conflict' }
+  }
   if (action !== 'pull') return { ok: false, reason: action }
 
   try {

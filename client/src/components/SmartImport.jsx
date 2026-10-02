@@ -2,10 +2,12 @@ import { useState, useRef, useCallback } from 'react'
 import { noteMoment, noteFriction } from '../reviewPrompt'
 import { noteSupportFriction } from '../supportNudge'
 import { api } from '../api'
+import { reclassifyAsset } from '../data/assets'
 import { parseScreenshotWithClaude } from '../visionAi'
 import { track, trackImport, importCompleted, trackProfileCreated } from '../analytics'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
+import AiReport from './AiReport'
 
 // Column header aliases → canonical field names
 const COL_MAP = {
@@ -58,6 +60,83 @@ function filterImageFiles(files) {
     const ext = (f.name.split('.').pop() || '').toLowerCase()
     return ['png','jpg','jpeg','webp','gif'].includes(ext)
   })
+}
+
+// ── Which asset a row is ──────────────────────────────────────────────────────
+// A screenshot or sheet gives a ticker. The row used to be saved as a crypto
+// under that ticker lowercased, so USDT became "usdt" beside the "tether" the
+// Pay-with chips use, and gold a crypto "xau" beside the real gold: the same
+// asset twice. Now, in order:
+//   1. an asset already held under that ticker is that asset — whatever its
+//      class, so a stock or a metal is not re-filed as crypto;
+//   2. otherwise the market ranking's coin with that ticker (highest first);
+//   3. otherwise the ticker, which addTransaction still files as gold, silver
+//      or cash when that is what it is.
+export function makeAssetPicker(holdings = [], market = []) {
+  const held = {}
+  for (const h of [...holdings].sort((a, b) => (b.value || b.total_invested || 0) - (a.value || a.total_invested || 0))) {
+    const k = String(h.coin_symbol || '').toUpperCase()
+    if (k && !held[k]) held[k] = h
+  }
+  const listed = {}
+  for (const c of market) {
+    const k = String(c.symbol || '').toUpperCase()
+    if (k && !listed[k]) listed[k] = c
+  }
+  return (symbol, name) => {
+    const k = String(symbol || '').toUpperCase().trim()
+    const h = held[k]
+    if (h) return { category: h.category || 'crypto', coin_id: h.coin_id, coin_symbol: h.coin_symbol || k, coin_name: h.coin_name || name || k, coin_image: h.coin_image || '' }
+    const m = listed[k]
+    if (m) return { category: 'crypto', coin_id: m.id, coin_symbol: k, coin_name: m.name || name || k, coin_image: m.image || '' }
+    return { category: 'crypto', coin_id: k.toLowerCase(), coin_symbol: k, coin_name: name || k, coin_image: '' }
+  }
+}
+
+// ── Tidy what the reader found ────────────────────────────────────────────────
+// Several screenshots of one portfolio overlap, and a reader sometimes puts a
+// row's total value where the unit price goes. Before anyone reviews them:
+//   1. the same holding seen twice — same ticker, or same name, and the same
+//      amount — is one row ("ST" and "STONKBROKER", both StonkBroker 26,339);
+//   2. a price that is really the row's value is divided back to a unit price,
+//      when the market price says so (500 AR "at" 2,177 is 500 AR at 4.35);
+//   3. a missing price takes the market's.
+// `marketPrice(row)` gives the live USD price for a row, or 0 when unknown.
+export function tidyImportRows(rows, marketPrice = () => 0) {
+  const sig = (n) => Number(n || 0).toPrecision(6)
+  const name = (r) => String(r.name || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const out = []
+  for (const r of rows) {
+    const dup = out.find(o => sig(o.amount) === sig(r.amount) && o.type === r.type &&
+      (o.symbol === r.symbol || (name(o) && name(o) === name(r))))
+    if (dup) {
+      // Keep the fuller reading of the two.
+      if (String(r.symbol).length > String(dup.symbol).length) dup.symbol = r.symbol
+      if (!(dup.price > 0) && r.price > 0) dup.price = r.price
+      continue
+    }
+    out.push({ ...r })
+  }
+  for (const r of out) {
+    const m = marketPrice(r)
+    if (!(m > 0)) continue
+    const amt = Number(r.amount) || 0
+    const px = Number(r.price) || 0
+    if (!(px > 0)) { r.price = m; continue }
+    const off = (v) => Math.max(v / m, m / v)
+    // Only when the unit price is far from the market and the price read as a
+    // value lands close to it: a real fill at a different price is left alone.
+    if (amt > 0 && off(px) > 3 && off(px / amt) < 1.6) r.price = px / amt
+  }
+  return out
+}
+
+async function importAssetPicker() {
+  const [holdings, market] = await Promise.all([
+    Promise.resolve(api.getPortfolio()).catch(() => []),
+    Promise.resolve(api.getMarketData()).catch(() => []),
+  ])
+  return makeAssetPicker(Array.isArray(holdings) ? holdings : [], Array.isArray(market) ? market : [])
 }
 
 // ── Multi-image drop zone ─────────────────────────────────────────────────────
@@ -142,7 +221,9 @@ function ThumbStrip({ previews }) {
     <div className="si-thumb-strip">
       {previews.map((p, i) => (
         <div key={i} className={`si-thumb si-thumb-${p.status}`}>
-          <img src={p.src} alt={`screenshot ${i + 1}`} />
+          {/* A format the browser can read but not draw (HEIC) still imports;
+              show a plain tile rather than a broken image and its alt text. */}
+          <img src={p.src} alt="" onError={e => { e.currentTarget.style.visibility = 'hidden' }} />
           <span className="si-thumb-badge">
             {p.status === 'reading'  && <span className="si-thumb-spin" />}
             {p.status === 'queued'   && <Icon name="hourglass" size={13} />}
@@ -210,6 +291,8 @@ function isUnreachable(e) {
 export default function SmartImport({ wallets, onImported, defaultMode = 'excel' }) {
   const { t } = useLanguage()
   const [rows, setRows]         = useState([])
+  const rowsRef = useRef(rows)
+  rowsRef.current = rows
   const [busy, setBusy]         = useState(false)
   const [msg, setMsg]           = useState('')
   const [msgType, setMsgType]   = useState('')
@@ -248,6 +331,9 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     setPreviews(prev => [...prev, ...newPreviews])
 
     let totalAdded = 0
+    // What was on the table before this batch, plus what this batch reads.
+    const before = rowsRef.current
+    const batch = []
     let errors = 0
     let unreachable = false
 
@@ -278,6 +364,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
           date:   r.date || today,
         }))
 
+        batch.push(...newRows)
         setRows(prev => [...prev, ...newRows])
         setPreviews(prev => prev.map((p, idx) => idx === thumbIdx ? { ...p, status: 'done', count: extracted.length } : p))
         totalAdded += extracted.length
@@ -298,6 +385,21 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
         unreachable = unreachable || isUnreachable(e)
         errors++
       }
+    }
+
+    // One pass over everything read so far, this batch and earlier ones.
+    if (totalAdded > 0) {
+      try {
+        const pick = await importAssetPicker()
+        const current = [...before, ...batch]
+        // Gold or cash read as a ticker is priced under its own id.
+        const idOf = (r) => { const a = pick(r.symbol, r.name); return reclassifyAsset(a.coin_id, a.coin_symbol, a.category)?.coin_id || a.coin_id }
+        const ids = [...new Set(current.map(idOf))]
+        const px = ids.length ? await Promise.resolve(api.getPrices(ids.join(','))).catch(() => ({})) : {}
+        const tidy = tidyImportRows(current, r => Number(px?.[idOf(r)]?.usd) || 0)
+        setRows(tidy)
+        totalAdded = tidy.length
+      } catch { /* the rows stay as read; the review table is still editable */ }
     }
 
     setBusy(false)
@@ -394,16 +496,13 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     setBusy(true)
     clearMsg()
     try {
+      const pick = await importAssetPicker()
       for (const r of valid) {
-        const sym = r.symbol.toLowerCase()
+        const asset = pick(r.symbol, r.name)
         await api.addTransaction({
           wallet_id:      walletId,
           type:           r.type,
-          category:       'crypto',
-          coin_id:        sym,
-          coin_symbol:    r.symbol,
-          coin_name:      r.name || r.symbol,
-          coin_image:     '',
+          ...asset,
           amount:         parseFloat(r.amount),
           price_per_unit: parseFloat(r.price) || 0,
           exchange:       mode === 'screenshot' ? 'Screenshot Import' : 'Spreadsheet Import',
@@ -502,6 +601,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       {rows.length > 0 && (
         <>
           <ReviewTable rows={rows} onChange={changeRow} onRemove={removeRow} />
+          {mode === 'screenshot' && <AiReport surface="screenshot_import" compact output={() => JSON.stringify(rows.slice(0, 40))} />}
 
           {/* Add more screenshots while reviewing */}
           {mode === 'screenshot' && (

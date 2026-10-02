@@ -42,6 +42,10 @@ import { applySettings } from './settingsUtils'
 import { initMood } from './moodEngine'
 import { pendingVaultPayload, consumeVaultPayload } from './nativeVault'
 import { inAppShell, seedFromVault } from './nativeShell'
+import { useZakatOn } from './zakatSwitch'
+import { useNewLook, useNewLookClass, applyLookParam } from './newLook'
+import AiReport from './components/AiReport'
+import './v3.css'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -128,6 +132,8 @@ const Guardian     = lazy(() => import('./pages/Guardian'))
 // Google navigates here from outside the app.
 const DriveCallback = lazy(() => import('./pages/DriveCallback'))
 const AdminMail    = lazy(() => import('./pages/AdminMail'))
+const AdminReports = lazy(() => import('./pages/AdminReports'))
+const More         = lazy(() => import('./pages/More'))
 const Vision       = lazy(() => import('./pages/Vision'))
 const Diagnostics  = lazy(() => import('./pages/Diagnostics'))
 const GrowNetWorth = lazy(() => import('./pages/GrowNetWorth'))
@@ -237,6 +243,7 @@ const Drawer = memo(function Drawer({ open, onClose, onHelp }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useLanguage()
+  const zakatOn = useZakatOn()
   const { theme, mode, setTheme, setMode } = useTheme()
   const go = (path, state) => { track('drawer_nav', { to: path, tab: state?.tab }); navigate(path, state ? { state } : undefined); onClose() }
   const active = (p) => location.pathname === p ? 'wl-drawer-item wl-drawer-active' : 'wl-drawer-item'
@@ -300,10 +307,12 @@ const Drawer = memo(function Drawer({ open, onClose, onHelp }) {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             <span>{t('riskScanner')}</span>
           </button>
-          <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'zakat' })}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/><path d="M17 5l1 3M15.5 4.5v3M18.5 4.5v3"/></svg>
-            <span>{t('zkTitle')}</span>
-          </button>
+          {zakatOn && (
+            <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'zakat' })}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/><path d="M17 5l1 3M15.5 4.5v3M18.5 4.5v3"/></svg>
+              <span>{t('zkTitle')}</span>
+            </button>
+          )}
         </div>
 
         <div className="wl-drawer-section">
@@ -393,6 +402,7 @@ const DrawerV2 = memo(function DrawerV2({ open, onClose, onHelp }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useLanguage()
+  const zakatOn = useZakatOn()
   const { theme, mode, setTheme, setMode } = useTheme()
   const home = homePath(true)
   const canInstallApp = useCanInstall()
@@ -455,7 +465,7 @@ const DrawerV2 = memo(function DrawerV2({ open, onClose, onHelp }) {
           <Row icon={V2_ICONS.target} hue="var(--g)" label={t('priceTargets')} onClick={() => go(home, { tab: 'targets' })} />
           <Row icon={V2_ICONS.risk} hue="#ff5c7a" label={t('riskScanner')} onClick={() => go('/coach', { section: 'analysis', tool: 'risk' })} />
           <Row icon={V2_ICONS.shield} hue="#4f8cff" label={t('portfolioGuardian')} current={onPage('/guardian')} onClick={() => go('/guardian')} />
-          <Row icon={V2_ICONS.zakat} hue="#22c7c7" label={t('zkTitle')} onClick={() => go(home, { tab: 'zakat' })} />
+          {zakatOn && <Row icon={V2_ICONS.zakat} hue="#22c7c7" label={t('zkTitle')} onClick={() => go(home, { tab: 'zakat' })} />}
         </div>
 
         <div className="wl-v2-label">{t('v2GroupData')}</div>
@@ -564,6 +574,11 @@ export default function App() {
   // The v2 design, live everywhere in the app. Landing pages keep their own look.
   const v2 = !isLanding && isV2Active(location.pathname)
   useV2Class(v2)
+  // The light card redesign, on top of v2, while it is being previewed.
+  // Read during render, so the first paint of a ?look= link already has it.
+  useMemo(() => applyLookParam(location.search), [location.search])
+  const newLook = useNewLook()
+  useNewLookClass(v2 && newLook)
   // /v2test was the preview URL; old links land on the dashboard, tab intact.
   useEffect(() => {
     if (isV2Path(location.pathname)) {
@@ -735,11 +750,15 @@ export default function App() {
   useEffect(() => {
     const openHelp = () => setHelpOpen(true)
     const openAdd = () => setAddGuideOpen(true)
+    // The new look's More page opens Stats the same way.
+    const openStats = () => setQuickStatsOpen(true)
     window.addEventListener('wl:open-help', openHelp)
     window.addEventListener('wl:add-asset-guide', openAdd)
+    window.addEventListener('wl:open-stats', openStats)
     return () => {
       window.removeEventListener('wl:open-help', openHelp)
       window.removeEventListener('wl:add-asset-guide', openAdd)
+      window.removeEventListener('wl:open-stats', openStats)
     }
   }, [])
 
@@ -861,6 +880,7 @@ export default function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/admin/mail" element={<AdminMail />} />
+          <Route path="/admin/reports" element={<AdminReports />} />
         </Routes></Suspense></ErrorBoundary>
       </div>
     )
@@ -899,6 +919,13 @@ export default function App() {
               <strong className="wl-topbar-brand-name"><span className="wl-brand-wl">WalletLens</span><span className="wl-live-tld"><span className="wl-live-dot">.</span>live</span></strong>
               <TopbarCyclingActions />
             </div>
+            {/* New look: the greeting takes the wordmark's place, as in the mockup. */}
+            {v2 && newLook && (
+              <div className="nl-topbar-greet">
+                <small>{t(new Date().getHours() < 12 ? 'ntMorning' : new Date().getHours() < 18 ? 'ntAfternoon' : 'ntEvening')}</small>
+                <b>{t('nlYourNetWorth')}</b>
+              </div>
+            )}
           </div>
           <div className="wl-topbar-right">
             {/* v2 gives this slot to notifications; the coffee link moves to its menu. */}
@@ -911,6 +938,27 @@ export default function App() {
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
+            {v2 && newLook && (
+              <button
+                className="wl-topbar-x wl-topbar-statsbtn"
+                onClick={() => { setQuickStatsOpen(true); track('quick_stats_open', { source: 'topbar_v3' }) }}
+                title={t('stats')}
+                aria-label={t('stats')}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              </button>
+            )}
+            {/* Report an issue, from any screen: the Store asks for it to be
+                easy to find, not only under each AI answer. The report
+                carries the page it was sent from. */}
+            {v2 && (
+              <AiReport surface="topbar" general output={() => `Reported from ${location.pathname}`}
+                trigger={(openReport) => (
+                  <button className="wl-topbar-x wl-topbar-report" onClick={openReport} title={t('airReport')} aria-label={t('airReport')}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M5 21V4m0 0h11l-2 4 2 4H5" /></svg>
+                  </button>
+                )} />
+            )}
             {v2 && (
               <button
                 className="wl-topbar-x wl-topbar-bell"
@@ -944,10 +992,12 @@ export default function App() {
             straight over it and the first price was permanently unreadable.
             One sticky element has no race to lose. */}
         <Suspense fallback={<div className="ticker-strip" style={{ minHeight: '38px' }} aria-hidden="true" />}>
-          <PriceTicker />
+          <PriceTicker v3={v2 && newLook} />
           {/* Renders nothing until the cron has published flows, so a
-              missing or reshaped upstream costs a row of screen, not an error. */}
-          <SmartMoneyTicker />
+              missing or reshaped upstream costs a row of screen, not an error.
+              The new look keeps one strip; its flows are a tab of the prices
+              popup the strip's "All" opens. */}
+          {!(v2 && newLook) && <SmartMoneyTicker />}
         </Suspense>
       </header>
 
@@ -991,7 +1041,8 @@ export default function App() {
               <Route path="/faq" element={<FAQ />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
-              <Route path="/settings" element={<Settings />} />
+          <Route path="/more" element={<More />} />
+          <Route path="/settings" element={<Settings />} />
               <Route path="/guardian" element={<Guardian />} />
               <Route path="/drive-callback" element={<DriveCallback />} />
               <Route path="/vision" element={<Vision />} />
@@ -1008,7 +1059,7 @@ export default function App() {
 
       {/* The classic bar is app-only. The v2 preview shows its bar in the
           browser too, since that is where it is being tested. */}
-      {!isLanding && shellReady && (isStandalone || v2) && <BottomNav v2={v2} />}
+      {!isLanding && shellReady && (isStandalone || v2) && <BottomNav v2={v2} v3={v2 && newLook} />}
 
       {shellReady && isStandalone && isAndroid && !onboardDone && <Suspense fallback={null}><NativeOnboarding onDone={() => setOnboardDone(true)} /></Suspense>}
       {shellReady && (!isStandalone || !isAndroid) && <Suspense fallback={null}><WelcomeModal /></Suspense>}

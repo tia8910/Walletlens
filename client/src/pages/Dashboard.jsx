@@ -52,6 +52,11 @@ import { sevenDayMap, sparkMap, trendFor } from '../assetTrend'
 import TrendArrow, { TrendBadge } from '../components/TrendArrow'
 import { MoneyFlowBadge } from '../components/MoneyFlow'
 import { BybitStrip, BybitInterestStrip } from '../components/BybitOffer'
+import { ZakatGate } from '../components/ZakatSwitch'
+import HomeTop from '../components/HomeTop'
+import NlHoldings from '../components/NlHoldings'
+import { briefParts } from '../portfolioBrief'
+import { useNewLook } from '../newLook'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -1847,7 +1852,7 @@ const Sparkline = memo(function Sparkline({ data, up, width = 120, height = 40 }
   const coords = pts.map((v, i) => [i * stepX, height - ((v - min) / span) * height])
   const line = coords.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ')
   const area = `${line} L${width} ${height} L0 ${height} Z`
-  const col = up ? 'var(--g)' : '#f87171'
+  const col = up ? 'var(--nl-chart-up, var(--g))' : 'var(--nl-chart-down, #f87171)'
   return (
     <svg className="dvx-stat-spark" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
       <path d={area} fill={col} fillOpacity="0.10" stroke="none" />
@@ -3277,52 +3282,9 @@ function AlertsSection({ enriched, prices, isDemo }) {
 // ── Portfolio Brief Statement — natural language holding status ──────────
 const PortfolioBrief = memo(function PortfolioBrief({ enriched, totalValue, totalPnL, totalPnLPct }) {
   const { t } = useLanguage()
-  const statement = useMemo(() => {
-    if (!enriched.length || totalValue <= 0) return null
-
-    const parts = []
-    const isUp = totalPnLPct >= 0
-
-    // Opening: total status
-    const pctStr = (totalPnLPct >= 0 ? '+' : '') + totalPnLPct.toFixed(1) + '%'
-    parts.push(t('dsSummaryStatus')(pctStr, isUp))
-
-    // Winners / losers count
-    let winners = 0, losers = 0, flat = 0
-    let topSym = '', topChg = -Infinity
-    let worstSym = '', worstChg = Infinity
-    for (const h of enriched) {
-      const chg = h.pct24h ?? 0
-      if (chg > 0.01) winners++
-      else if (chg < -0.01) losers++
-      else flat++
-      if (chg > topChg) { topChg = chg; topSym = h.coin_symbol?.toUpperCase() }
-      if (chg < worstChg) { worstChg = chg; worstSym = h.coin_symbol?.toUpperCase() }
-    }
-
-    const countParts = []
-    if (winners) countParts.push(t('dsSummaryWinners')(winners))
-    if (losers) countParts.push(t('dsSummaryLosers')(losers))
-    if (countParts.length) parts.push(countParts.join(t('dsSummaryAnd')()))
-
-    // Top performer
-    if (topChg > 0.01) {
-      parts.push(t('dsSummaryLeads')(topSym, topChg.toFixed(1)))
-    }
-
-    // Worst performer
-    if (worstChg < -0.01 && worstSym !== topSym) {
-      parts.push(t('dsSummaryTrails')(worstSym, worstChg.toFixed(1)))
-    }
-
-    // Returned split rather than joined. The opening clause is the one that
-    // carries the verdict, and it is the only part that should take the
-    // status colour: a whole paragraph in red is harder to read than a grey
-    // one and says nothing the first six words did not.
-    return { head: parts[0] + '.', rest: parts.slice(1).join('. ') + (parts.length > 1 ? '.' : '') }
-    // `t` is a dependency: without it the sentence would keep the language it
-    // was first built in until the numbers happened to change.
-  }, [enriched, totalValue, totalPnLPct, t])
+  // `t` is a dependency: without it the sentence would keep the language it
+  // was first built in until the numbers happened to change.
+  const statement = useMemo(() => briefParts(enriched, totalValue, totalPnLPct, t), [enriched, totalValue, totalPnLPct, t])
 
   if (!statement) return null
 
@@ -3356,6 +3318,7 @@ const PortfolioBrief = memo(function PortfolioBrief({ enriched, totalValue, tota
 })
 
 export default function Dashboard() {
+  const newLook = useNewLook()
   const navigate = useNavigate()
   const location = useLocation()
   // ?tool= is the URL-form deep link a push notification can carry (router
@@ -4680,6 +4643,40 @@ export default function Dashboard() {
     </div>
   )
 
+  // Home in the new look: the hero up top carries the total, the day and
+  // the summary sentence, so the cards below show each figure once.
+  const nlHome = newLook && enriched.length > 0 && !isDemo
+  // Home is the mockup's screen and nothing else; the performance chart,
+  // breakdown, heatmaps and every other analysis card live one tap away in
+  // Portfolio insights (Home's card at the bottom, or More).
+  const nlInsights = nlHome && !!location.state?.insights
+  const nlHomeView = nlHome && !nlInsights
+  const openInsights = () => { track('nl_insights_open'); navigate(location.pathname, { state: { tab: 'overview', insights: true } }); try { window.scrollTo({ top: 0 }) } catch {} }
+  // Long-press on a holding: the actions the old row's menu and its ⋮ panel
+  // held, plus selecting it into the sum.
+  const holdingMenu = (h) => {
+    const sym = (h.coin_symbol || '').toUpperCase()
+    const coin = { id: h.coin_id, symbol: sym, name: h.coin_name || sym, image: h.coin_image }
+    const stable = categorizeAsset(h) === 'cash' || isStablecoin(h.coin_id, h.coin_symbol)
+    const crypto = !stable && categorizeAsset(h) === 'crypto'
+    const sel = selectedAssets.has(h.coin_id)
+    return [
+      { icon: 'chart', tone: 'blue', label: t('lpViewAsset').replace('{sym}', sym), onClick: () => navigate(`/asset/${encodeURIComponent(h.coin_id)}`) },
+      { icon: 'plus', tone: 'green', label: t('lpBuyMore'), onClick: () => openSheet('buy', 'longpress_holding', { coin }) },
+      ...(h.amount > 0 ? [{ icon: 'minus', tone: 'rose', label: t('lpSell'), onClick: () => openSheet('sell', 'longpress_holding', { coin }) }] : []),
+      ...(stable ? [] : [{ icon: 'candles', tone: 'violet', label: t('lpTechnicals'), onClick: () => navigate('/technicals', { state: { coinId: h.coin_id } }) }]),
+      { divider: true },
+      { icon: '✓', tone: 'green', label: sel ? t('nlUnselect') : t('nlSelect'), onClick: () => setSelectedAssets(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n }) },
+      ...(stable ? [] : [{ icon: 'target', tone: 'amber', label: t('dsSetTarget'), onClick: () => goTab('targets') }]),
+      { icon: 'bell', tone: 'amber', label: t('lpAlert'), onClick: () => goTab('alerts') },
+      { icon: 'flag', tone: 'blue', label: t('dsSetVision'), onClick: () => navigate('/vision', { state: { linkAsset: h.coin_id } }) },
+      ...(crypto ? [{ icon: 'sparkle', tone: 'violet', label: t('dsMagicScore'), onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'ta' } }) }] : []),
+      ...(stable ? [] : [{ icon: 'zap', tone: 'rose', label: t('dsRiskScan'), onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'risk' } }) }]),
+      { icon: 'sparkle', tone: 'violet', label: t('lpAi'), onClick: () => navigate(location.pathname, { state: { tab: 'tools', tool: 'ai' } }) },
+      { icon: 'copy', tone: 'slate', label: t('lpCopy'), onClick: () => { try { navigator.clipboard?.writeText(sym + ' — ' + cv(h.value) + ' (' + pct(h.pnlPct) + ' P&L)') } catch {} } },
+    ]
+  }
+
   return (
     <div className="dvx">
       {/* Screen effects — outside the tab blocks on purpose.
@@ -4696,6 +4693,23 @@ export default function Dashboard() {
           grid is redundant with the native bottom nav, so we replace it with the
           quick import options (for populated dashboards; the empty profile shows
           its own import boxes). */}
+      {/* New look: net-worth card, imports, mood and watch cards, first on Home.
+          Its Buy / Sell / History are the quick strip's own actions, so
+          the strip below stands down while it shows. */}
+      {nlHomeView && activeTab === 'overview' && (
+        <HomeTop
+          enriched={enriched} totalValue={totalValue} todayPnL={todayPnLVal} totalPnLPct={totalPnLPct}
+          onBuy={() => openSheet('buy', 'home_hero')} onSell={() => openSheet('sell', 'home_hero')}
+          onHistory={() => navigate('/transactions')}
+          onImport={(kind) => {
+            setShowScreenshot(kind === 'screenshot'); setShowVoiceImport(kind === 'voice'); setShowExcelImport(kind === 'excel'); setShowBackupCode(false)
+            setTimeout(() => document.querySelector('.dvx-excel-import-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120)
+          }}
+          onWatchAll={() => setActiveTab('watchlist')}
+          newsSlot={<NewsTicker variant="card" />}
+          onAsset={(h) => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}
+        />
+      )}
       {showTabGrid ? (
       <div className="dvx-tabgrid">
         {tabs.map(tab => (
@@ -4707,7 +4721,7 @@ export default function Dashboard() {
           </button>
         ))}
       </div>
-      ) : (activeTab === 'overview' && enriched.length > 0 && importOptions)}
+      ) : (activeTab === 'overview' && enriched.length > 0 && !(newLook && !isDemo) && importOptions)}
 
       {/* Live news ticker, demoted but not buried.
           It was the second thing on the page, under the price strip, so a
@@ -4718,7 +4732,8 @@ export default function Dashboard() {
           and above the tab content, so the numbers still come first and the
           headlines are still on screen. Outside the tab blocks, as before, so
           it stays reachable from every tab. */}
-      <NewsTicker />
+      {/* The new look shows the same feed as a card inside Home. */}
+      {!(nlHome && activeTab === 'overview') && <NewsTicker />}
 
       {/* Tab content — opacity fades slightly during lazy-load transitions */}
       <div style={isTabPending ? { opacity: 0.7, transition: 'opacity 0.15s' } : undefined}>
@@ -4727,7 +4742,7 @@ export default function Dashboard() {
       {activeTab === 'overview' && (
         <>
           {/* Quick Trade strip — always at top when portfolio exists */}
-          {enriched.length > 0 && (
+          {enriched.length > 0 && !(newLook && !isDemo) && (
             <div ref={quickStripRef} style={{
               display: 'flex', gap: '0.6rem', margin: '0.5rem 0',
             }}>
@@ -4762,7 +4777,10 @@ export default function Dashboard() {
           
           
           {/* Portfolio brief statement */}
-          {enriched.length > 0 && <PortfolioBrief enriched={enriched} totalValue={totalValue} totalPnL={totalPnL} totalPnLPct={totalPnLPct} />}
+          {/* The sentence says "today", so it is fed today's move, not the
+              all-time return it used to show ("up +31% today"). The new
+              look's mood banner says the same sentence, so it stands down. */}
+          {enriched.length > 0 && !nlHome && <PortfolioBrief enriched={enriched} totalValue={totalValue} totalPnL={todayPnLVal} totalPnLPct={totalValue - todayPnLVal > 0 ? (todayPnLVal / (totalValue - todayPnLVal)) * 100 : 0} />}
 
           {/* Import options under Buy/Sell — only when the desktop tile grid is
               shown up top. On mobile web and in the native app the import
@@ -4770,8 +4788,18 @@ export default function Dashboard() {
               them here. Populated dashboards only. */}
           {showTabGrid && enriched.length > 0 && importOptions}
 
+          {/* Portfolio insights: a page title and a way back to Home. */}
+          {nlInsights && (
+            <header className="nl-page-h">
+              <button type="button" className="nl-back" onClick={() => navigate(location.pathname, { state: { tab: 'overview' } })} aria-label={t('nlHome')}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7" /></svg>
+              </button>
+              <div><small>{t('nlInsightsSub')}</small><h1>{t('nlInsights')}</h1></div>
+            </header>
+          )}
+
           {/* Feature discovery nudge — only shown once, until dismissed */}
-          {!isDemo && enriched.length > 0 && (
+          {!isDemo && enriched.length > 0 && !nlHomeView && (
             <FeatureNudgeStrip
               onGoToTargets={() => { setActiveTab('targets'); track('feature_nudge_click', { feature: 'targets' }) }}
               onGoToVision={() => { navigate('/vision'); track('feature_nudge_click', { feature: 'vision' }) }}
@@ -4834,8 +4862,39 @@ export default function Dashboard() {
             )
           })()}
 
+          {/* Home in the new look: its holdings list, then the way into
+              Portfolio insights, and the support card. */}
+          {nlHomeView && (
+            <>
+              <NlHoldings
+                rows={displayHoldings} total={enriched.length} cats={catBreakdown}
+                cat={holdingsCat} setCat={c => { setHoldingsCat(c); setHoldingsBadge('all') }}
+                search={holdingsSearch} setSearch={setHoldingsSearch}
+                sort={holdingsSort} setSort={setHoldingsSort} dir={holdingsSortDir} setDir={setHoldingsSortDir}
+                breakEven={showBreakEven} setBreakEven={setShowBreakEven}
+                onExcel={() => exportToExcel(filteredHoldings, totalValue, displayCurrency)}
+                onPdf={() => exportToPDF(filteredHoldings, totalValue, totalPnL, totalPnLPct, displayCurrency)}
+                selected={selectedAssets} onClearSelected={() => setSelectedAssets(new Set())}
+                selectedStats={selectedStats} filteredStats={filteredStats}
+                hidden={hidden} cv={cv} marketSparks={sparks} pricesFailed={pricesFailed}
+                showAll={showAllHoldings} setShowAll={setShowAllHoldings}
+                onAsset={(h) => { if (consumeLongPress()) return; track('asset_click'); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) }}
+                bindRow={(h) => bindLongPress((x, y) => showLp(x, y, holdingMenu(h), { title: (h.coin_symbol || '').toUpperCase(), subtitle: hidden ? VALUE_MASK : cv(h.value), area: 'holding' }))}
+              />
+              {enriched.some(h => categorizeAsset(h) === 'crypto') && <BybitStrip />}
+              <button type="button" className="nl-card nl-insights" onClick={openInsights}>
+                <span className="nl-insights-ic" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2" /></svg>
+                </span>
+                <span><b>{t('nlInsights')}</b><small>{t('nlInsightsSub')}</small></span>
+                <svg className="nl-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+              </button>
+              <SupportNudge busy={sheetOpen || importChooser} holdingsCount={enriched.length} />
+            </>
+          )}
+
           {/* Sentiment + portfolio tips ticker */}
-          {enriched.length > 0 && (
+          {enriched.length > 0 && !nlHomeView && (
             <SentimentTicker
               holdings={enriched}
               totalValue={totalValue}
@@ -4844,7 +4903,7 @@ export default function Dashboard() {
           )}
 
           {/* Hero + stats — only shown when portfolio has holdings */}
-          {enriched.length > 0 && <div className={`dvx-hero glass-card heartbeat heartbeat-v${volatilityLevel} mood-${mood}`} {...bindLongPress(openHeroMenu)}>
+          {enriched.length > 0 && !nlHomeView && <div className={`dvx-hero glass-card heartbeat heartbeat-v${volatilityLevel} mood-${mood}`} {...bindLongPress(openHeroMenu)}>
             {!hidden && !isDemo && (() => {
               const dayBase = totalValue - todayPnLVal
               const dayChangePct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
@@ -4857,6 +4916,7 @@ export default function Dashboard() {
               )
             })()}
             <p className="dvx-hero-label">
+              {nlHome && <span className="nl-perf-title">{t('nlPerformance')}</span>}
               {pricesFailed ? t('investedValue') : pricesLoading ? t('loadingPrices') : t('totalPortfolioValue')}
               {isDemo && <span className="dvx-badge-demo">DEMO</span>}
               {pricesFailed && <span className="dvx-badge-warn">{t('dsPricesOffline')}</span>}
@@ -5071,7 +5131,8 @@ export default function Dashboard() {
             </div>
             {(() => {
               const up = perfChange.pct >= 0
-              const strokeColor = up ? 'var(--g)' : '#f87171'
+              // The new look draws gains green and losses red whatever the theme.
+              const strokeColor = up ? 'var(--nl-chart-up, var(--g))' : 'var(--nl-chart-down, #f87171)'
               const gradId = up ? 'pg-up' : 'pg-dn'
               // Invested baseline: a dashed cost-basis line with the area tinted
               // green above it (profit zone) and red below it (loss zone). The
@@ -5211,7 +5272,7 @@ export default function Dashboard() {
           </div>}
 
           {/* Stats row */}
-          {enriched.length > 0 && (
+          {enriched.length > 0 && !nlHomeView && (
             <div className="dvx-stats-row">
               <StatCard label={t('invested')}    value={hidden ? '••••' : <AnimatedMoney value={totalInvested} format={cv} />} />
               <StatCard label={t('pnl')}         value={hidden ? '••••' : <AnimatedMoney value={totalPnL} format={cv} signed />}
@@ -5222,8 +5283,9 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Category summary cards row */}
-          {catBreakdown.length > 0 && (
+          {/* Category summary cards row. The breakdown card below shows the
+              same figures, so the new look keeps only that one. */}
+          {catBreakdown.length > 0 && !nlHome && (
             <div className="dvx-cat-summary-row">
               {catBreakdown.map(({ cat, label, value, pct, pnl, pnlPct }) => (
                 <div key={cat} className="dvx-cat-summary-card glass-card" style={{ '--bar-col': CATEGORY_COLOR[cat] || 'var(--g)' }}>
@@ -5245,7 +5307,7 @@ export default function Dashboard() {
           )}
 
           {/* Portfolio breakdown by asset category */}
-          {catBreakdown.length > 0 && (
+          {catBreakdown.length > 0 && !nlHomeView && (
             <div className="glass-card dvx-cat-breakdown">
               <h3 style={{ margin:'0 0 0.75rem', fontSize:'0.9rem', fontWeight:700 }}>{t('portfolioBreakdown')}</h3>
               <div className="dvx-cat-list">
@@ -5294,6 +5356,8 @@ export default function Dashboard() {
           )}
 
           {/* Main grid */}
+          {/* Everything from here down is Portfolio insights in the new look. */}
+          {!nlHomeView && <>
           <div className="dvx-grid">
             {/* Left column */}
             <div className="dvx-col-main">
@@ -5301,7 +5365,7 @@ export default function Dashboard() {
               {/* "Loved the app?" support card. Placed above Spin & Learn and
                   below the portfolio itself, so the ask only ever comes after
                   the numbers it is asking about. */}
-              <SupportNudge holdingsCount={enriched.length} busy={sheetOpen || importChooser} />
+              {!nlHome && <SupportNudge holdingsCount={enriched.length} busy={sheetOpen || importChooser} />}
 
               {/* P&L bar chart */}
               {cardVis.pnl_chart && pnlData.length > 0 && (
@@ -5336,8 +5400,8 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* ── Holdings (primary column) ── */}
-              <div className="glass-card">
+              {/* ── Holdings (primary column). The new look has them on Home. ── */}
+              {!nlHome && <div className="glass-card">
                 <div style={CHART_HDR_STYLE}>
                   <h3 style={{ margin:0 }}>
                     Holdings ({isHoldingsFiltered ? `${filteredHoldings.length} of ${enriched.length}` : enriched.length})
@@ -5374,7 +5438,7 @@ export default function Dashboard() {
                 {enriched.length > 1 && (
                   <div style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                     {/* Search + sort row */}
-                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                    <div className="dvx-hfilter" style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                       <div style={{ flex: 1, position: 'relative' }}>
                         <input
                           type="text"
@@ -5411,7 +5475,7 @@ export default function Dashboard() {
                     {catBreakdown.length > 1 && (
                       <div style={{ display:'flex', gap:'0.35rem', flexWrap:'wrap' }}>
                         {[{ cat:'all', label:`All (${enriched.length})` }, ...catBreakdown.map(c => ({ cat: c.cat, label: `${c.label} (${c.assets.length})` }))].map(({ cat, label }) => (
-                          <button key={cat} onClick={() => { setHoldingsCat(cat); setHoldingsBadge('all') }} style={{ background: holdingsCat === cat ? 'linear-gradient(135deg, #047857, #10b981)' : 'var(--surface-2)', color: holdingsCat === cat ? '#fff' : 'var(--text-muted)', border: `1px solid ${holdingsCat === cat ? 'transparent' : 'var(--border)'}`, boxShadow: holdingsCat === cat ? '0 2px 8px rgba(5,150,105,0.35)' : 'none', borderRadius:'20px', padding:'0.2rem 0.7rem', fontSize:'0.69rem', fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>
+                          <button key={cat} className={`dvx-hchip${holdingsCat === cat ? ' on' : ''}`} onClick={() => { setHoldingsCat(cat); setHoldingsBadge('all') }} style={{ background: holdingsCat === cat ? 'linear-gradient(135deg, #047857, #10b981)' : 'var(--surface-2)', color: holdingsCat === cat ? '#fff' : 'var(--text-muted)', border: `1px solid ${holdingsCat === cat ? 'transparent' : 'var(--border)'}`, boxShadow: holdingsCat === cat ? '0 2px 8px rgba(5,150,105,0.35)' : 'none', borderRadius:'20px', padding:'0.2rem 0.7rem', fontSize:'0.69rem', fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>
                             {label}
                           </button>
                         ))}
@@ -5492,7 +5556,7 @@ export default function Dashboard() {
                                   const isActive = holdingsBadge === badge
                                   const badgeColor = badge !== 'all' ? (CRYPTO_CATEGORY_COLORS[badge] || STOCK_SECTOR_COLORS[badge] || '#6366f1') : null
                                   return (
-                                    <button key={badge} onClick={() => setHoldingsBadge(badge)} style={{ background: isActive ? (badgeColor || 'var(--g)') : 'var(--surface-2)', color: isActive ? '#fff' : 'var(--text-muted)', border: `1px solid ${isActive ? (badgeColor || 'var(--g)') : 'var(--border)'}`, borderRadius:'20px', padding:'0.15rem 0.5rem', fontSize:'0.68rem', fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
+                                    <button key={badge} className={`dvx-hchip${isActive ? ' on' : ''}`} onClick={() => setHoldingsBadge(badge)} style={{ background: isActive ? (badgeColor || 'var(--g)') : 'var(--surface-2)', color: isActive ? '#fff' : 'var(--text-muted)', border: `1px solid ${isActive ? (badgeColor || 'var(--g)') : 'var(--border)'}`, borderRadius:'20px', padding:'0.15rem 0.5rem', fontSize:'0.68rem', fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
                                       {badge === 'all' ? 'All' : badge}
                                     </button>
                                   )
@@ -5726,7 +5790,7 @@ export default function Dashboard() {
                     )}
                   </>
                 }
-              </div>
+              </div>}
 
               {/* Portfolio Heatmap */}
               {cardVis.portfolio_heatmap && !isDemo && enriched.length >= 2 && !pricesFailed && (
@@ -5913,6 +5977,7 @@ export default function Dashboard() {
             {cardVis.correlation && enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
             {cardVis.sector_heatmap && hasCryptoExposure(enriched) && <SectorHeatmap />}
           </Suspense>
+          </>}
         </>
       )}
 
@@ -6074,7 +6139,7 @@ export default function Dashboard() {
       {activeTab === 'zakat' && (
         <div className="dvx-form-page">
           <Suspense fallback={<TabFallback />}>
-            <ZakatCalculator holdings={enriched} prices={prices} />
+            <ZakatGate><ZakatCalculator holdings={enriched} prices={prices} /></ZakatGate>
           </Suspense>
         </div>
       )}

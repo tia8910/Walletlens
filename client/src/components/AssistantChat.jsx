@@ -7,6 +7,7 @@ import {
   createConversation, clearChatHistory,
 } from '../assistantAi'
 import { track } from '../analytics'
+import AiReport from './AiReport'
 
 // Floating in-app assistant. A bottom-right launcher opens a chat panel where
 // the user describes what they want to do, and the AI points them to the right
@@ -408,6 +409,7 @@ export default function AssistantChat() {
                     ))}
                   </div>
                 )}
+                {m.role === 'assistant' && m.text && <AiReport surface="assistant" output={m.text} compact />}
               </div>
             ))}
 

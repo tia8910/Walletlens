@@ -38,6 +38,7 @@ const ALLOW = [
   /\/analytics\.js$/,          // event names, never rendered
   /\/data\/blogPosts\.js$/,    // English-authoritative content
   /\/legal\//,                 // ditto, with its own parity test
+  /\/pages\/AdminReports\.jsx$/, // operator-only review queue, English by design
 ]
 
 // The public marketing and SEO pages are still English on purpose.

@@ -50,8 +50,8 @@ export function fmtFlow(n) {
   return `$${Math.round(a)}`
 }
 
-export default function SmartMoneyTicker() {
-  const { t } = useLanguage()
+/** The published flows, refreshed every 15 minutes; empty when not a crypto user. */
+export function useSmartFlows(max = MAX_ROWS) {
   const [flows, setFlows] = useState([])
   const [show, setShow] = useState(hasCrypto)
 
@@ -75,13 +75,21 @@ export default function SmartMoneyTicker() {
         const res = await fetch(dataUrl('smartmoney.json'), { signal: AbortSignal.timeout(8000) })
         if (!res.ok) return
         const data = await res.json()
-        if (alive && Array.isArray(data?.flows)) setFlows(data.flows.slice(0, MAX_ROWS))
+        if (alive && Array.isArray(data?.flows)) setFlows(data.flows.slice(0, max))
       } catch { /* the strip stays hidden rather than showing an error */ }
     }
     load()
     const id = setInterval(load, REFRESH_MS)
     return () => { alive = false; clearInterval(id) }
-  }, [show])
+  }, [show, max])
+
+  return show ? flows : []
+}
+
+export default function SmartMoneyTicker() {
+  const { t } = useLanguage()
+  const flows = useSmartFlows()
+  const show = flows.length > 0
 
   // Nothing to say is better than an empty bar taking up a row of a phone
   // screen. This covers both "not a crypto user" and the upstream changing
