@@ -350,8 +350,13 @@ html.wl-v2 .bs-v2 .tk-mode.is-sell::before {
   background: linear-gradient(135deg, var(--tk-sell), var(--tk-sell2));
   box-shadow: 0 8px 18px -8px var(--tk-sell);
 }
+/* Arabic: the buttons are mirrored (Buy on the right), so the highlight has to
+   start on the right and slide left. It started on the left and slid right, so
+   it sat under Sell while Buy was chosen, and Buy's white label vanished. */
+html.wl-v2[dir="rtl"] .bs-v2 .tk-mode::before { left: auto; right: 4px; }
+html.wl-v2[dir="rtl"] .bs-v2 .tk-mode.is-sell::before { transform: translateX(-100%); }
 html.wl-v2 .bs-v2 .tk-mode button {
-  position: relative; z-index: 1; border: 0; background: none; cursor: pointer; padding: 0.55rem 0;
+  position: relative; z-index: 1; border: 0; background: none; cursor: pointer; padding: 0.55rem 0; text-align: center;
   font: inherit; font-size: 0.86rem; font-weight: 800; color: var(--text-sub); transition: color 0.2s;
 }
 html.wl-v2 .bs-v2 .tk-mode button.on { color: #fff; }
