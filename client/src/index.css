@@ -4669,6 +4669,39 @@ tr:last-child td { border-bottom: none; }
 .gp-answer-sub { margin: 0; font-size: 0.78rem; line-height: 1.5; color: var(--text-sub); }
 .gp-answer-sub b { color: var(--text-muted); }
 
+/* Grow v2: today's-money toggle, money split, "built on you", odds bar. */
+.gp-answer--v2 { position: relative; padding: 1.1rem 1.1rem 1rem; }
+.gp-answer--v2 .gp-answer-big { font-size: clamp(2.3rem, 10vw, 2.9rem); }
+.gp-money-toggle { display: inline-flex; gap: 2px; padding: 3px; margin: 0 auto 0.75rem; border-radius: 999px; background: rgba(var(--g-rgb), 0.1); }
+.gp-money-toggle button, .gp-money-toggle button:hover {
+  min-height: 0 !important; width: auto !important; padding: 0.3rem 0.75rem !important; border: 0; border-radius: 999px;
+  background: transparent; color: var(--text-muted); font: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer;
+}
+.gp-money-toggle button.on, .gp-money-toggle button.on:hover { background: var(--g); color: #fff; box-shadow: 0 2px 8px rgba(var(--g-rgb), 0.35); }
+.gp-split { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.35rem 0.9rem; margin-top: 0.8rem; padding-top: 0.75rem; border-top: 1px solid rgba(var(--g-rgb), 0.15); font-size: 0.74rem; color: var(--text-sub); }
+.gp-split span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.gp-split i { width: 8px; height: 8px; border-radius: 50%; }
+.gp-split b { color: var(--text); font-variant-numeric: tabular-nums; }
+.gp-basis { margin-bottom: 0.85rem; padding: 0.85rem 0.95rem; border-radius: 16px; background: var(--card-bg, var(--bg2)); border: 1px solid var(--border); }
+.gp-basis-h { margin: 0 0 0.55rem; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.gp-basis-mix { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.gp-chip { display: inline-flex; align-items: baseline; gap: 0.3rem; padding: 0.3rem 0.6rem; border-radius: 999px; background: rgba(var(--g-rgb), 0.1); font-size: 0.74rem; color: var(--text); }
+.gp-chip b { font-weight: 800; }
+.gp-chip em { font-style: normal; font-size: 0.66rem; color: var(--text-sub); }
+.gp-basis-note { margin: 0.6rem 0 0; font-size: 0.76rem; line-height: 1.5; color: var(--text-sub); }
+.gp-basis-note b { color: var(--text); }
+.gp-controls--v2 { padding: 0.9rem 0.95rem; border-radius: 16px; background: var(--card-bg, var(--bg2)); border: 1px solid var(--border); gap: 0.85rem; }
+.gp-controls--v2 .gp-slider { font-size: 0.86rem; }
+.gp-odds { display: flex; align-items: center; gap: 0.6rem; margin: 0.7rem 0 0.1rem; font-size: 0.76rem; }
+.gp-odds-bar { flex: 1; height: 7px; border-radius: 999px; background: rgba(128, 128, 128, 0.18); overflow: hidden; }
+.gp-odds-bar i { display: block; height: 100%; border-radius: inherit; transition: width 0.4s ease; }
+.gp-odds span { white-space: nowrap; }
+.gp-chart--v2 { height: 230px; color: var(--text); background: linear-gradient(180deg, rgba(var(--g-rgb), 0.05), transparent); }
+.gp-how-list--v2 { counter-reset: gp; }
+.gp-how-list--v2 > li { counter-increment: gp; align-items: center; padding: 0.7rem 0.75rem; border-radius: 14px; background: rgba(var(--g-rgb), 0.06); }
+.gp-how-list--v2 > li::before { content: counter(gp); flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: rgba(var(--g-rgb), 0.18); color: var(--g-ink); font-size: 0.72rem; font-weight: 800; }
+.gp-preset small { display: block; font-size: 0.62rem; font-weight: 700; opacity: 0.75; text-transform: none; }
+
 /* Goal card — editable target + a verdict in words, not percentages alone. */
 .gp-goalcard {
   background: var(--surface-1); border: 1px solid var(--border);

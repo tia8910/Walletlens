@@ -919,6 +919,8 @@ export default {
     gpMarketsWell: 'If markets do well',
     gpMarketsPoorly: 'If markets do poorly',
     gpLikely: 'Likely',
+    gpChartLabel: 'Projected growth of your net worth',
+    gpMoneyShownIn: 'Show amounts in',
     gpMilestones: 'Next milestones (median path)',
     gpTryDifferentMix: 'Try a different mix',
     gpTryIt: 'Try it',
