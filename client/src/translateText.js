@@ -42,7 +42,7 @@ const keyFor = (lang, text) => `${lang}:${text}`
  * disappeared, so every failure path here is "return what you were given".
  *
  * @param {string[]} texts
- * @param {string}   lang  'ar' | 'fr' | 'es'  (anything else is a no-op)
+ * @param {string}   lang  'ar' | 'fr' | 'es' | 'de' | 'it'  (anything else is a no-op)
  */
 export async function translateBatch(texts, lang) {
   if (!Array.isArray(texts) || !texts.length) return texts || []

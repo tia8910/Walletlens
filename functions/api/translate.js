@@ -22,7 +22,10 @@
 
 const MAX_ITEMS = 24
 const MAX_LEN = 300
-const LANGS = { ar: 'Arabic', fr: 'French', es: 'Spanish' }
+// Every language the app ships besides English. German and Italian were
+// missing, so their readers got English headlines in an otherwise German or
+// Italian app.
+const LANGS = { ar: 'Arabic', fr: 'French', es: 'Spanish', de: 'German', it: 'Italian' }
 const CACHE_SECONDS = 86400
 
 const CORS = {
