@@ -15,7 +15,10 @@ import './AiReport.css'
 
 export const REPORT_ENDPOINT = '/api/push/report'
 export const REPORT_EMAIL = 'contact@walletlens.live'
-export const REASONS = ['inaccurate', 'harmful', 'risky', 'other']
+export const REASONS = ['feedback', 'inaccurate', 'harmful', 'risky', 'other']
+// Under an AI answer the question is what is wrong with it; from the top bar
+// it is anything at all, and an idea is as welcome as a fault.
+const AI_REASONS = ['inaccurate', 'harmful', 'risky', 'other']
 const MAX_OUTPUT = 4000
 
 export function buildReport({ surface, reason, note, output, lang }) {
@@ -38,7 +41,7 @@ export function mailtoFor(report) {
 export default function AiReport({ surface, output, compact = false, trigger, general = false }) {
   const { t, lang } = useLanguage()
   const [open, setOpen] = useState(false)
-  const [reason, setReason] = useState('inaccurate')
+  const [reason, setReason] = useState(general ? 'feedback' : 'inaccurate')
   const [note, setNote] = useState('')
   const [state, setState] = useState('idle') // idle | sending | sent | failed
 
@@ -63,7 +66,7 @@ export default function AiReport({ surface, output, compact = false, trigger, ge
     }
   }
 
-  function close() { setOpen(false); setState('idle'); setNote(''); setReason('inaccurate') }
+  function close() { setOpen(false); setState('idle'); setNote(''); setReason(general ? 'feedback' : 'inaccurate') }
 
   const openSheet = () => { setOpen(true); track('ai_report_open', { surface }) }
 
@@ -92,7 +95,7 @@ export default function AiReport({ surface, output, compact = false, trigger, ge
                 <b id="air-title" className="air-title">{t(general ? 'airTitleApp' : 'airTitle')}</b>
                 <p className="air-sub">{t(general ? 'airSubApp' : 'airSub')}</p>
                 <div className="air-opts" role="radiogroup">
-                  {REASONS.map(r => (
+                  {(general ? REASONS : AI_REASONS).map(r => (
                     <button key={r} type="button" role="radio" aria-checked={reason === r}
                       className={reason === r ? 'on' : ''} onClick={() => setReason(r)}>{t(`airR_${r}`)}</button>
                   ))}

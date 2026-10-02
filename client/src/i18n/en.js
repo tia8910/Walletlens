@@ -596,6 +596,7 @@ export default {
     airReport: "Report an issue",
     airTitle: "Report an issue",
     airSub: "Tell us what is wrong. Every report is reviewed by a person.",
+    airR_feedback: "Feedback or an idea",
     airR_inaccurate: "Inaccurate or misleading",
     airR_harmful: "Harmful or offensive",
     airR_risky: "Risky financial advice",

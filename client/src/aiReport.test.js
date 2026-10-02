@@ -120,3 +120,12 @@ describe('zakat is opt-in', () => {
     expect(read('pages/Settings.jsx')).toMatch(/<ZakatSettings \/>/)
   })
 })
+
+describe('feedback from the top bar', () => {
+  it('offers feedback first there, and the server keeps it as feedback', async () => {
+    const src = readFileSync(join(here, 'components/AiReport.jsx'), 'utf8')
+    expect(src).toMatch(/\(general \? REASONS : AI_REASONS\)\.map/)
+    expect(src).toMatch(/useState\(general \? 'feedback' : 'inaccurate'\)/)
+    expect(parseReport({ output: 'Reported from /dashboard', reason: 'feedback' }).reason).toBe('feedback')
+  })
+})

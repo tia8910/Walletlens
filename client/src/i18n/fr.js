@@ -575,6 +575,7 @@ export default {
     airReport: "Signaler un problème",
     airTitle: "Signaler un problème",
     airSub: "Dites-nous ce qui ne va pas. Chaque signalement est examiné par une personne.",
+    airR_feedback: "Un avis ou une idée",
     airR_inaccurate: "Inexacte ou trompeuse",
     airR_harmful: "Blessante ou offensante",
     airR_risky: "Conseil financier risqué",

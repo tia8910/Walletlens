@@ -601,6 +601,7 @@ export default {
     airReport: "الإبلاغ عن مشكلة",
     airTitle: "الإبلاغ عن مشكلة",
     airSub: "أخبرنا بما هو خاطئ. يراجع شخصٌ كل بلاغ.",
+    airR_feedback: "ملاحظة أو فكرة",
     airR_inaccurate: "غير دقيقة أو مضلِّلة",
     airR_harmful: "مسيئة أو ضارّة",
     airR_risky: "نصيحة مالية خطِرة",

@@ -8,7 +8,7 @@
 // No portfolio, no identity. The address a report came from is kept only as a
 // salted hash, and only to stop one source flooding the table.
 
-export const REASONS = new Set(['inaccurate', 'harmful', 'risky', 'other'])
+export const REASONS = new Set(['feedback', 'inaccurate', 'harmful', 'risky', 'other'])
 const MAX_BODY = 8192
 const PER_HOUR = 20
 
