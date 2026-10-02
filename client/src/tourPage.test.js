@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// /tour/ is a static page (public/tour/index.html), served as a file ahead of
-// the SPA catch-all. It carries its own SEO, so these pin what a crawler or
+// The home page is a static file (public/tour/index.html) that the Pages
+// worker serves at /, ahead of the SPA catch-all. It carries its own SEO, so these pin what a crawler or
 // an AI assistant reads before any script runs.
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -14,9 +14,10 @@ const ld = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?
 const node = (type) => ld['@graph'].find(n => n['@type'] === type)
 
 describe('the tour page', () => {
-  it('has one h1, a canonical URL and a description', () => {
+  it('has one h1, the home page as its canonical URL and a description', () => {
     expect(markup.match(/<h1[\s>]/g)).toHaveLength(1)
-    expect(html).toMatch(/<link rel="canonical" href="https:\/\/walletlens\.live\/tour\/">/)
+    expect(html).toMatch(/<link rel="canonical" href="https:\/\/walletlens\.live\/">/)
+    expect(html).toMatch(/<meta property="og:url" content="https:\/\/walletlens\.live\/">/)
     const desc = html.match(/<meta name="description" content="([^"]+)"/)[1]
     expect(desc.length).toBeGreaterThan(80)
     expect(desc.length).toBeLessThanOrEqual(260)
@@ -64,8 +65,17 @@ describe('the tour page', () => {
     expect(html.toLowerCase()).not.toMatch(/mockup/)
   })
 
-  it('is listed in the sitemap and in llms.txt', () => {
-    expect(readFileSync(join(here, '../scripts/prerender.mjs'), 'utf8')).toMatch(/\{ path: '\/tour',/)
-    expect(readFileSync(join(here, '../public/llms.txt'), 'utf8')).toMatch(/https:\/\/walletlens\.live\/tour\//)
+  it('is the home page: served at /, and /tour/ is not listed as a page of its own', () => {
+    // /tour/ canonicalises to /, so the sitemap must not offer it separately.
+    expect(readFileSync(join(here, '../scripts/prerender.mjs'), 'utf8')).not.toMatch(/\{ path: '\/tour',/)
+    expect(readFileSync(join(here, '../public/llms.txt'), 'utf8')).not.toMatch(/walletlens\.live\/tour/)
+    expect(readFileSync(join(here, '../vite.config.js'), 'utf8')).toMatch(/include: \[\n\s+'\/api\/\*',[\s\S]*?\n\s+'\/',\n/)
+  })
+
+  it('clears the hop flag the app sets when it sends its own "/" links here', () => {
+    expect(html).toMatch(/sessionStorage\.removeItem\('wl_home_hop'\)/)
+    const app = readFileSync(join(here, 'App.jsx'), 'utf8')
+    expect(app).toMatch(/<Route path="\/" element=\{<StaticHome \/>\} \/>/)
+    expect(app).toMatch(/const HOME_HOP = 'wl_home_hop'/)
   })
 })

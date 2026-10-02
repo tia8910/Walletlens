@@ -114,6 +114,8 @@ function pagesWorkerPlugin() {
           // rather than the live worker.
           include: [
             '/api/*',
+            // The home page: the worker serves the static tour at /.
+            '/',
             '/news.json', '/market.json', '/stocks.json',
             '/economy.json', '/economic-calendar.json', '/stock-prices.json',
             '/coins.json', '/smartmoney.json',
