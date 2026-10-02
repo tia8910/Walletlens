@@ -41,6 +41,9 @@ export const BACKUP_FIELDS = {
   zh: 'wl_zakat_hawl',
   zs: 'wl_zakat_settings',
   zi: 'wl_zakat_intents',
+  // Whether zakat is shown at all. A restored device should not resurface a
+  // feature this person turned off, nor hide one they turned on.
+  zo: 'wl_zakat_on',
 
   // ── Goals and planning ───────────────────────────────────────────────────
   gl: 'wl_goals',

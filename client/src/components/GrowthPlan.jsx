@@ -5,6 +5,8 @@ import { track } from '../analytics'
 import { isStablecoin } from '../stablecoins'
 import { loadBuckets } from '../data/visionStorage'
 import { useLanguage } from '../LanguageContext'
+import AiReport from './AiReport'
+
 
 /**
  * Grow My Net Worth — a personalized growth engine.
@@ -659,6 +661,9 @@ export default function GrowthPlan({ enriched = [], prices = {}, transactions = 
                   {(ai.plan.actions || []).map((a, i) => (
                     <div key={i} className="gp-action"><span className="gp-action-n">{i + 1}</span><span>{a}</span></div>
                   ))}
+                  {ai.plan.source === 'ai' && (
+                    <AiReport surface="growth_plan" output={() => [ai.plan.headline, ai.plan.narrative, ...(ai.plan.actions || [])].filter(Boolean).join('\n')} />
+                  )}
                 </>
               )}
             </div>

@@ -6,6 +6,7 @@ import { parseScreenshotWithClaude } from '../visionAi'
 import { track, trackImport, importCompleted, trackProfileCreated } from '../analytics'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
+import AiReport from './AiReport'
 
 // Column header aliases → canonical field names
 const COL_MAP = {
@@ -502,6 +503,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       {rows.length > 0 && (
         <>
           <ReviewTable rows={rows} onChange={changeRow} onRemove={removeRow} />
+          {mode === 'screenshot' && <AiReport surface="screenshot_import" compact output={() => JSON.stringify(rows.slice(0, 40))} />}
 
           {/* Add more screenshots while reviewing */}
           {mode === 'screenshot' && (

@@ -42,6 +42,7 @@ import { applySettings } from './settingsUtils'
 import { initMood } from './moodEngine'
 import { pendingVaultPayload, consumeVaultPayload } from './nativeVault'
 import { inAppShell, seedFromVault } from './nativeShell'
+import { useZakatOn } from './zakatSwitch'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -128,6 +129,7 @@ const Guardian     = lazy(() => import('./pages/Guardian'))
 // Google navigates here from outside the app.
 const DriveCallback = lazy(() => import('./pages/DriveCallback'))
 const AdminMail    = lazy(() => import('./pages/AdminMail'))
+const AdminReports = lazy(() => import('./pages/AdminReports'))
 const Vision       = lazy(() => import('./pages/Vision'))
 const Diagnostics  = lazy(() => import('./pages/Diagnostics'))
 const GrowNetWorth = lazy(() => import('./pages/GrowNetWorth'))
@@ -237,6 +239,7 @@ const Drawer = memo(function Drawer({ open, onClose, onHelp }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useLanguage()
+  const zakatOn = useZakatOn()
   const { theme, mode, setTheme, setMode } = useTheme()
   const go = (path, state) => { track('drawer_nav', { to: path, tab: state?.tab }); navigate(path, state ? { state } : undefined); onClose() }
   const active = (p) => location.pathname === p ? 'wl-drawer-item wl-drawer-active' : 'wl-drawer-item'
@@ -300,10 +303,12 @@ const Drawer = memo(function Drawer({ open, onClose, onHelp }) {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             <span>{t('riskScanner')}</span>
           </button>
-          <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'zakat' })}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/><path d="M17 5l1 3M15.5 4.5v3M18.5 4.5v3"/></svg>
-            <span>{t('zkTitle')}</span>
-          </button>
+          {zakatOn && (
+            <button className="wl-drawer-item" onClick={() => go('/dashboard', { tab: 'zakat' })}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/><path d="M17 5l1 3M15.5 4.5v3M18.5 4.5v3"/></svg>
+              <span>{t('zkTitle')}</span>
+            </button>
+          )}
         </div>
 
         <div className="wl-drawer-section">
@@ -393,6 +398,7 @@ const DrawerV2 = memo(function DrawerV2({ open, onClose, onHelp }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useLanguage()
+  const zakatOn = useZakatOn()
   const { theme, mode, setTheme, setMode } = useTheme()
   const home = homePath(true)
   const canInstallApp = useCanInstall()
@@ -455,7 +461,7 @@ const DrawerV2 = memo(function DrawerV2({ open, onClose, onHelp }) {
           <Row icon={V2_ICONS.target} hue="var(--g)" label={t('priceTargets')} onClick={() => go(home, { tab: 'targets' })} />
           <Row icon={V2_ICONS.risk} hue="#ff5c7a" label={t('riskScanner')} onClick={() => go('/coach', { section: 'analysis', tool: 'risk' })} />
           <Row icon={V2_ICONS.shield} hue="#4f8cff" label={t('portfolioGuardian')} current={onPage('/guardian')} onClick={() => go('/guardian')} />
-          <Row icon={V2_ICONS.zakat} hue="#22c7c7" label={t('zkTitle')} onClick={() => go(home, { tab: 'zakat' })} />
+          {zakatOn && <Row icon={V2_ICONS.zakat} hue="#22c7c7" label={t('zkTitle')} onClick={() => go(home, { tab: 'zakat' })} />}
         </div>
 
         <div className="wl-v2-label">{t('v2GroupData')}</div>
@@ -861,6 +867,7 @@ export default function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/admin/mail" element={<AdminMail />} />
+          <Route path="/admin/reports" element={<AdminReports />} />
         </Routes></Suspense></ErrorBoundary>
       </div>
     )

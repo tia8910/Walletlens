@@ -2408,6 +2408,7 @@ const APP_ROUTES = [
   { path: '/diag',         title: 'Diagnostics — WalletLens',    description: 'Connection diagnostics for this device.' },
   // Not user-facing, and it 404'd on a cold navigation exactly like the rest.
   { path: '/admin/mail',   title: 'Mail — WalletLens',           description: 'Internal mail tools.' },
+  { path: '/admin/reports', title: 'AI reports — WalletLens',    description: 'Internal review of reported AI answers.' },
   { path: '/dashboard',    title: 'Dashboard — WalletLens',      description: 'Your private portfolio dashboard. Data stays on your device.' },
   // The v2 redesign preview, opened by typing the URL: a cold navigation.
   { path: '/v2test',       title: 'Dashboard — WalletLens',      description: 'Your private portfolio dashboard. Data stays on your device.' },

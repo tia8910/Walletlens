@@ -5,6 +5,13 @@ import { track } from '../analytics'
 import { isStablecoin } from '../stablecoins'
 import CoinLogo from './CoinLogo'
 import { renderMaybe } from '../data/walletEvalTips'
+import AiReport from './AiReport'
+
+// The AI answer as plain text, for a report. Only the strings a model wrote;
+// the local engine's translation keys never reach here.
+const reportText = (r) => [r.headline, r.summary, r.tip,
+  ...(r.assetActions || []).map(a => `${a.sym}: ${a.action}. ${(a.reasons || []).filter(x => typeof x === 'string').join(' ')}`)]
+  .filter(x => typeof x === 'string' && x).join('\n')
 
 // The action code drives the filtering below and the badge colour, so it stays
 // a stable English token. Only its label is translated.
@@ -299,6 +306,7 @@ export default function AIDecisionEngine({ enriched, prices, transactions, total
                     ? t('deDisclaimerAi')
                     : t('deDisclaimerLocal')}
                 </div>
+                {result.source === 'ai' && <AiReport surface="decision" output={() => reportText(result)} />}
               </div>
             )}
 

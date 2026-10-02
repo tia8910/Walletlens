@@ -9,7 +9,7 @@ import { useLanguage, LANGUAGES } from '../LanguageContext'
 import InstallExtension from '../components/InstallExtension'
 import InterestPicker from '../components/InterestPicker'
 import PushToggle from '../components/PushToggle'
-import ZakatNotifyToggle from '../components/ZakatNotifyToggle'
+import { ZakatSettings } from '../components/ZakatSwitch'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import DriveBackup from '../components/DriveBackup'
 import DeviceVault from '../components/DeviceVault'
@@ -216,7 +216,7 @@ export default function Settings() {
            and be unreachable. ── */}
       <div className="settings-section glass-card">
         <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="crescent" size={16} />{t('setZakat')}</h3>
-        <ZakatNotifyToggle />
+        <ZakatSettings />
       </div>
 
       {/* ── Weekly Report ── */}

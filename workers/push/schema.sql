@@ -18,3 +18,20 @@ CREATE TABLE IF NOT EXISTS subs (
 -- matters. Reading a covering index rather than the table keeps the scan off
 -- the JSON blob when only the key is needed.
 CREATE INDEX IF NOT EXISTS idx_subs_updated ON subs (updated_at);
+
+-- AI answers reported from the app ("Report an issue"). Reviewed by a person
+-- at /admin/reports. src is a salted per-day hash of the sender's address,
+-- kept only for rate limiting; no portfolio and no identity is stored.
+CREATE TABLE IF NOT EXISTS ai_reports (
+  id      INTEGER PRIMARY KEY AUTOINCREMENT,
+  at      INTEGER NOT NULL,
+  surface TEXT NOT NULL,
+  reason  TEXT NOT NULL,
+  note    TEXT,
+  output  TEXT NOT NULL,
+  lang    TEXT,
+  src     TEXT,
+  status  TEXT NOT NULL DEFAULT 'new'
+);
+CREATE INDEX IF NOT EXISTS idx_ai_reports_at ON ai_reports (at);
+CREATE INDEX IF NOT EXISTS idx_ai_reports_src ON ai_reports (src, at);

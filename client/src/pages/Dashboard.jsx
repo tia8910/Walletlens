@@ -52,6 +52,7 @@ import { sevenDayMap, sparkMap, trendFor } from '../assetTrend'
 import TrendArrow, { TrendBadge } from '../components/TrendArrow'
 import { MoneyFlowBadge } from '../components/MoneyFlow'
 import { BybitStrip, BybitInterestStrip } from '../components/BybitOffer'
+import { ZakatGate } from '../components/ZakatSwitch'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -6074,7 +6075,7 @@ export default function Dashboard() {
       {activeTab === 'zakat' && (
         <div className="dvx-form-page">
           <Suspense fallback={<TabFallback />}>
-            <ZakatCalculator holdings={enriched} prices={prices} />
+            <ZakatGate><ZakatCalculator holdings={enriched} prices={prices} /></ZakatGate>
           </Suspense>
         </div>
       )}
