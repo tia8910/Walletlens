@@ -34,6 +34,28 @@ export default function PricesSheet({ items = [], onClose }) {
   const [quotes, setQuotes] = useState({})
   const flows = useSmartFlows(50)
 
+  // Typing searches every coin, the way the trade sheet's crypto search
+  // does (the same call), not just the ranking already loaded; the matches
+  // are then priced in one batch.
+  const [found, setFound] = useState([])
+  const [searching, setSearching] = useState(false)
+  useEffect(() => {
+    const term = q.trim()
+    if (term.length < 2 || !(cls === 'all' || cls === 'crypto')) { setFound([]); setSearching(false); return }
+    let alive = true
+    setSearching(true)
+    const timer = setTimeout(async () => {
+      const res = await Promise.resolve(api.searchCoins(term)).catch(() => [])
+      if (!alive) return
+      setSearching(false)
+      if (!Array.isArray(res)) return
+      setFound(res)
+      const ids = res.map(c => c.id).filter(Boolean)
+      if (ids.length) Promise.resolve(api.getPrices(ids.join(','))).then(px => { if (alive && px) setQuotes(qq => ({ ...qq, ...px })) }).catch(() => {})
+    }, 250)
+    return () => { alive = false; clearTimeout(timer) }
+  }, [q, cls])
+
   // Stocks, tokenized stocks, metals and currencies: last-known prices at
   // once from the cache, then fresh ones in one batched request per class.
   useEffect(() => {
@@ -75,8 +97,15 @@ export default function PricesSheet({ items = [], onClose }) {
       for (const r of c.list()) push({ ...r, price: quotes[r.id]?.usd ?? null, change: quotes[r.id]?.usd_24h_change ?? null }, c.key)
     }
     const f = q.trim().toLowerCase()
-    return f ? out.filter(r => r.name.toLowerCase().includes(f) || r.full?.toLowerCase().includes(f) || r.id?.includes(f)) : out
-  }, [items, market, quotes, cls, q])
+    if (!f) return out
+    const hits = out.filter(r => r.name.toLowerCase().includes(f) || r.full?.toLowerCase().includes(f) || r.id?.includes(f))
+    for (const c of found) {
+      if (seen.has(c.id)) continue
+      seen.add(c.id)
+      hits.push({ id: c.id, image: c.large || c.thumb, name: (c.symbol || '').toUpperCase(), full: c.name, price: quotes[c.id]?.usd ?? null, change: quotes[c.id]?.usd_24h_change ?? null, cls: 'crypto' })
+    }
+    return hits
+  }, [items, market, quotes, cls, q, found])
 
   const open = (id) => { if (!id) return; onClose(); navigate(`/asset/${encodeURIComponent(id)}`) }
 
@@ -90,10 +119,10 @@ export default function PricesSheet({ items = [], onClose }) {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
           </button>
         </div>
-        <div className="nl-seg2" role="tablist">
+        {flows.length > 0 && <div className="nl-seg2" role="tablist">
           <button type="button" role="tab" aria-selected={tab === 'prices'} className={tab === 'prices' ? 'on' : ''} onClick={() => setTab('prices')}>{t('nlTabPrices')}</button>
-          {flows.length > 0 && <button type="button" role="tab" aria-selected={tab === 'smart'} className={tab === 'smart' ? 'on' : ''} onClick={() => setTab('smart')}>{t('tickerSmartMoney')}</button>}
-        </div>
+          <button type="button" role="tab" aria-selected={tab === 'smart'} className={tab === 'smart' ? 'on' : ''} onClick={() => setTab('smart')}>{t('tickerSmartMoney')}</button>
+        </div>}
 
         {tab === 'prices' ? (
           <>
@@ -111,6 +140,7 @@ export default function PricesSheet({ items = [], onClose }) {
                   <div className="nl-row-v"><b>{fmt(r.price)}</b><small className={r.change == null ? '' : r.change >= 0 ? 'up' : 'down'}>{pct(r.change)}</small></div>
                 </button>
               ))}
+              {rows.length === 0 && <p className="nl-sheet-note">{searching ? t('nlSearching') : t('nlNoMatches')}</p>}
             </div>
           </>
         ) : (

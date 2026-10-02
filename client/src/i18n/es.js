@@ -538,6 +538,8 @@ export default {
     nlPerformance: "Rendimiento",
     nlAllPrices: "Todo",
     nlMetals: "Metales",
+    nlSearching: "Buscando…",
+    nlNoMatches: "Sin resultados",
     nlTabPrices: "Precios",
     nlSmartHint: "Flujo neto de las carteras que Nansen etiqueta como smart money, últimas 24 horas.",
     nlAccumulated: "El smart money compra",

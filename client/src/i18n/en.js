@@ -559,6 +559,8 @@ export default {
     nlPerformance: "Performance",
     nlAllPrices: "All",
     nlMetals: "Metals",
+    nlSearching: "Searching…",
+    nlNoMatches: "No matches",
     nlTabPrices: "Prices",
     nlSmartHint: "Net flow of the wallets Nansen labels as smart money, last 24 hours.",
     nlAccumulated: "Smart money buying",

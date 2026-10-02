@@ -564,6 +564,8 @@ export default {
     nlPerformance: "الأداء",
     nlAllPrices: "الكل",
     nlMetals: "المعادن",
+    nlSearching: "جارٍ البحث…",
+    nlNoMatches: "لا نتائج",
     nlTabPrices: "الأسعار",
     nlSmartHint: "صافي تدفق المحافظ التي تصنفها Nansen كأموال ذكية، آخر 24 ساعة.",
     nlAccumulated: "الأموال الذكية تشتري",

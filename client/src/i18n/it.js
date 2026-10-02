@@ -498,6 +498,8 @@ export default {
     nlPerformance: "Andamento",
     nlAllPrices: "Tutti",
     nlMetals: "Metalli",
+    nlSearching: "Ricerca…",
+    nlNoMatches: "Nessun risultato",
     nlTabPrices: "Prezzi",
     nlSmartHint: "Flusso netto dei wallet che Nansen etichetta come smart money, ultime 24 ore.",
     nlAccumulated: "Lo smart money compra",
