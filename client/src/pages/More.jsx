@@ -15,7 +15,7 @@ import { SUPPORT_URL } from '../components/CoffeeButton'
 export default function More() {
   const navigate = useNavigate()
   const { t } = useLanguage()
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, mode, setMode } = useTheme()
   const zakatOn = useZakatOn()
   const canInstall = useCanInstall()
   const home = homePath(true)
@@ -95,6 +95,17 @@ export default function More() {
                 className={theme === th.id ? 'on' : ''} style={{ '--c': th.swatch }} onClick={() => setTheme(th.id)}>
                 {/* Each theme's own mark: the bars, the coins, the emerald's sparkle. */}
                 {th.logo ? <img src={th.logo} alt="" /> : <Icon name={th.icon} size={15} />}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="nl-more-row">
+          <span>{t('setMode')}</span>
+          <div className="nl-more-mode" role="group" aria-label={t('setMode')}>
+            {[{ id: 'light', labelKey: 'modeLight', icon: 'sun' }, { id: 'dark', labelKey: 'modeDark', icon: 'moon' }].map(m => (
+              <button key={m.id} type="button" aria-pressed={mode === m.id} className={mode === m.id ? 'on' : ''}
+                onClick={() => { setMode(m.id); track('mode_changed', { mode: m.id, source: 'more' }) }}>
+                <Icon name={m.icon} size={14} />{t(m.labelKey)}
               </button>
             ))}
           </div>

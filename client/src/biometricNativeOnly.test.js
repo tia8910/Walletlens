@@ -20,22 +20,22 @@ const src = readFileSync(
   'utf8',
 )
 
-describe('App Lock always has a way out', () => {
-  it('arms the escape hatch on a timer, not only on failed attempts', () => {
-    // Reported from a device, with Android's own toast on screen: "screen
-    // touches may be delayed or not recognised". The unlock needs a tap, the
-    // tap never lands, so no attempt ever fails — and an escape hatch keyed on
-    // failures is unreachable. The data is local, so there is no other device
-    // to log in from. Being stuck here means losing the portfolio.
-    expect(src).toContain('RECOVER_AFTER_MS')
-    expect(src).toMatch(/setTimeout\(\(\) => setRecover\(true\), RECOVER_AFTER_MS\)/)
+describe('App Lock cannot be walked past', () => {
+  // The lock offered "Turn off lock and continue" after two cancelled
+  // prompts or on a 12-second timer, so anyone holding the phone could get
+  // in. The owner does not need it: on Android 11+ the app's prompt accepts
+  // the phone's own PIN, pattern or password (BiometricActivity,
+  // credentialFallback), so a fingerprint that will not read is not a
+  // lockout.
+  it('offers no way round after cancelled prompts or after waiting', () => {
+    expect(src).not.toContain('RECOVER_AFTER_MS')
+    expect(src).not.toMatch(/attemptCount\.current >= 2\) setRecover\(true\)/)
   })
 
-  it('keeps the hatch reachable after repeated cancels too', () => {
-    expect(src).toMatch(/attemptCount\.current >= 2\) setRecover\(true\)/)
-  })
-
-  it('leaves a way to disable the lock and get back in', () => {
+  it('keeps turning the lock off only for a device that cannot check a fingerprint at all', () => {
+    // No credential stored for the app, or the authenticator itself errors:
+    // the data lives only here, and would otherwise be lost for good.
+    expect(src).toMatch(/if \(noPasskeys \|\| \(e\?\.name && e\.name !== 'NotAllowedError'\)\) \{\s*\/\/[^\n]*\n\s*setRecover\(true\)/)
     expect(src).toMatch(/function recoverEntry[\s\S]{0,200}?removeItem\('wl_biometric_enabled'\)/)
   })
 })

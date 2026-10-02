@@ -231,6 +231,9 @@ html.wl-v3:not([data-wl-light]) .nl-wc { filter: saturate(0.9) brightness(0.96);
   width: 100%; display: flex; align-items: center; justify-content: space-between; margin-top: 0.55rem; padding: 0.9rem 1rem; border: 0; border-radius: 18px;
   background: var(--nl-card, var(--card-bg)); box-shadow: var(--nl-shadow, none); color: inherit; font: inherit; font-weight: 800; font-size: 0.88rem; cursor: pointer;
 }
+.nl-more-mode { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(var(--g-rgb), 0.1); }
+.nl-more-mode button { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 0 !important; padding: 0.38rem 0.75rem !important; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: 0.76rem; font-weight: 800; opacity: 0.65; cursor: pointer; }
+.nl-more-mode button.on { background: var(--g); color: #fff; opacity: 1; box-shadow: 0 2px 8px rgba(var(--g-rgb), 0.35); }
 .nl-more-themes { display: flex; gap: 0.45rem; }
 .nl-more-themes button { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: var(--c); cursor: pointer; }
 .nl-more-themes button.on { box-shadow: 0 0 0 2px var(--nl-card, #fff), 0 0 0 4px var(--c); }
@@ -626,3 +629,42 @@ html.wl-v3 .nl-ticker-arrow, html.wl-v3 .nl-ticker-arrow:hover, html.wl-v3 .nl-t
 .nl-sheet .nl-chips, .nl-sheet .nl-seg2, .nl-sheet .nl-sheet-h { flex: none; }
 .nl-sheet .nl-chips { padding-bottom: 2px; }
 html.wl-v3 .nl-sheet .nl-chips button { min-height: 0 !important; height: 32px !important; }
+
+/* Holdings rows: the ⋮ and its action chips, as the old list had them. */
+.nl-hrow { border-bottom: 1px solid var(--nl-line); }
+.nl-hrow:last-child { border-bottom: 0; }
+.nl-hold .nl-hrow .nl-row { border-bottom: 0; cursor: pointer; }
+.nl-row-more {
+  flex: none; width: 30px; height: 30px; margin-inline-start: -0.2rem; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  background: transparent; color: var(--nl-sub);
+}
+.nl-row-more svg { width: 16px; height: 16px; fill: currentColor; }
+.nl-row-more.on { background: var(--nl-seg, #f1f3f6); color: var(--nl-ink); }
+html.wl-v3 .nl-row-more { min-height: 0 !important; min-width: 0 !important; box-shadow: none !important; }
+.nl-row-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0 0 0.75rem 3.1rem; animation: nl-fade 0.15s ease both; }
+.nl-row-actions button {
+  display: inline-flex; align-items: center; gap: 0.35rem; height: 32px; padding: 0 0.75rem; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--nl-seg, #f1f3f6); color: var(--nl-ink); font: inherit; font-size: 0.74rem; font-weight: 800;
+}
+.nl-row-actions .nl-act-buy { background: rgba(22, 168, 116, 0.14); color: var(--nl-up); }
+.nl-row-actions .nl-act-sell { background: rgba(229, 72, 77, 0.12); color: var(--nl-down); }
+html.wl-v3 .nl-row-actions button { min-height: 0 !important; box-shadow: none !important; }
+.nl-subchips { margin-top: 0.4rem; }
+.nl-subchips button { height: 26px; font-size: 0.68rem; }
+/* A theme's own button colours must not paint the insights card. */
+html.wl-v3 .nl-insights, html.wl-v3 .nl-insights:hover, html.wl-v3 .nl-insights:focus { background: var(--nl-card) !important; color: var(--nl-ink) !important; border: 0 !important; box-shadow: var(--nl-shadow) !important; }
+/* Import panels scrolled to from Home stop below the sticky header. */
+html.wl-v3 .dvx-voice-import-panel, html.wl-v3 .dvx-excel-import-panel { scroll-margin-top: 150px; }
+/* Checking rows, and the Selected chip that filters to them. */
+.nl-check {
+  flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  border: 2px solid var(--nl-line); color: #fff; font-size: 0.72rem; font-weight: 900;
+}
+html.wl-v3:not([data-wl-light]) .nl-check { border-color: rgba(255, 255, 255, 0.25); }
+.nl-check.on { background: var(--nl-up); border-color: var(--nl-up); }
+.nl-chips .nl-chip-sel { background: rgba(22, 168, 116, 0.14); color: var(--nl-up); }
+.nl-chips .nl-chip-sel.on { background: var(--nl-up); color: #fff; }
+/* While ticking, the week's line gives its room to the name. */
+.nl-row.picking .nl-row-spark { display: none; }
+/* A checked row's tint stays inside the card's corners. */
+.nl-hold .nl-row.sel { margin: 0 !important; width: 100% !important; padding-inline: 0.35rem !important; border-radius: 14px !important; }

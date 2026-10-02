@@ -463,7 +463,7 @@ export default function WelcomeStart({ onDone }) {
                   </span>
                   {r.added && (
                     <button className="su-remove" onClick={() => removeRow(i)} aria-label={t('wsRemoveRow')} title={t('wsRemoveRow')}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
                     </button>
                   )}
                 </div>

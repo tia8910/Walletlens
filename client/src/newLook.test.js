@@ -6,7 +6,7 @@ import { isNewLook, setNewLook, applyLookParam } from './newLook'
 import { moodOf } from './components/HomeTop.jsx'
 
 // The light card redesign is previewed behind a switch. These pin what makes
-// it safe to preview: it is off by default, it scopes itself, and it moves
+// it safe: it is on by default, can be switched back, it scopes itself, and it moves
 // features rather than removing them.
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -15,8 +15,9 @@ const read = (p) => readFileSync(join(here, p), 'utf8')
 describe('the new-look switch', () => {
   beforeEach(() => localStorage.clear())
 
-  it('is off by default and follows Settings or a ?look= link', () => {
-    expect(isNewLook()).toBe(false)
+  it('is on by default and follows Settings or a ?look= link', () => {
+    expect(isNewLook()).toBe(true)
+    setNewLook(false); expect(isNewLook()).toBe(false)
     applyLookParam('?look=new'); expect(isNewLook()).toBe(true)
     applyLookParam('?utm=x'); expect(isNewLook()).toBe(true)
     applyLookParam('?look=classic'); expect(isNewLook()).toBe(false)
@@ -70,7 +71,14 @@ describe('Home shows each figure once', () => {
     expect(dash).toMatch(/\{nlHomeView && \(\s*<>\s*<NlHoldings/)
     expect(dash).toMatch(/\{!nlHome && <div className="glass-card">/)
     // The old row's ⋮ panel actions moved into the long-press menu.
-    for (const k of ['dsSetTarget', 'dsSetVision', 'dsMagicScore', 'dsRiskScan', 'nlSelect']) expect(dash).toMatch(new RegExp(`holdingMenu[\\s\\S]*t\\('${k}'\\)`))
+    for (const k of ['dsSetTarget', 'dsSetVision', 'dsRiskScan', 'nlSelect']) expect(dash).toMatch(new RegExp(`holdingMenu[\\s\\S]*t\\('${k}'\\)`))
+    // Magic Score opened the same chart as Technicals; it is gone.
+    expect(dash).not.toContain("t('dsMagicScore')")
+  })
+  it('opens the voice panel and scrolls down to it once it has loaded', () => {
+    const dash = read('pages/Dashboard.jsx')
+    expect(dash).toContain('<div className="dvx-voice-import-panel">')
+    expect(dash).toMatch(/kind === 'voice' \? '\.dvx-voice-import-panel'/)
   })
   it('moves the analysis cards to Portfolio insights, reachable from Home and More', () => {
     expect(dash).toMatch(/const nlHomeView = nlHome && !nlInsights/)
@@ -108,5 +116,14 @@ describe('the top of the new look', () => {
   })
   it('draws each theme by its own mark on More', () => {
     expect(read('pages/More.jsx')).toMatch(/th\.logo \? <img src=\{th\.logo\}/)
+  })
+})
+
+describe('checking holdings and filtering to them', () => {
+  it('a tick tool checks rows, and a Selected chip shows only those', () => {
+    const hold = read('components/NlHoldings.jsx')
+    expect(hold).toMatch(/onClick=\{\(\) => \(picking \? onToggleSelect\(h\) : onAsset\(h\)\)\}/)
+    expect(hold).toMatch(/const base = selOn \? rows\.filter\(h => selected\.has\(h\.coin_id\)\) : rows/)
+    expect(read('pages/Dashboard.jsx')).toMatch(/onToggleSelect=\{\(h\) => setSelectedAssets/)
   })
 })

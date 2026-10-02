@@ -208,11 +208,17 @@ html[dir='rtl'] .su-nw-val { text-align: end; }
 .su-amt input::placeholder { color: rgba(255, 255, 255, 0.22); }
 .su-amt input:disabled { opacity: .5; }
 .su-usd { font-size: 11px; color: var(--su-faint); font-variant-numeric: tabular-nums; direction: ltr; }
+/* The × that removes a row the user added. A small badge on the card's
+   corner: the app-wide 44px minimum for buttons blew it up into a blank
+   circle sitting on the amount, with the × too thin to see inside it. */
 .su-remove {
-  position: absolute; top: -7px; inset-inline-end: -7px;
-  width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--su-line); cursor: pointer;
-  display: grid; place-items: center; background: #1a2420; color: var(--su-dim);
+  position: absolute; top: -8px; inset-inline-end: -8px; z-index: 2;
+  width: 24px !important; height: 24px !important; min-width: 0 !important; min-height: 0 !important; padding: 0 !important;
+  border-radius: 50%; border: 1px solid var(--su-line); cursor: pointer;
+  display: grid; place-items: center; background: #26302c; color: #e7eeea;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
+.su-remove svg { width: 11px; height: 11px; }
 .su-more {
   width: 100%; margin-top: 8px; padding: 12px; border-radius: 16px; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 8px;
