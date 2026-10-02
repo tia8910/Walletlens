@@ -23,6 +23,7 @@
 <meta name="google-play-app" content="app-id=live.walletlens.twa">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="alternate" type="text/plain" title="LLM summary" href="https://walletlens.live/llms.txt">
 <link rel="preload" href="/fonts/sora-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -972,6 +973,9 @@ try { const sv = localStorage.getItem('wl_landing_theme'); if (sv) { userTheme =
 
 /* ══ quiet by default for people who asked for less motion ══ */
 if (matchMedia('(prefers-reduced-motion: reduce)').matches) setPlaying(false)
+
+/* ══ installable from the home page too: the same worker the app registers ══ */
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}))
 
 /* ══ the app hops here once for its own "/" links; landing clears the hop ══ */
 try { sessionStorage.removeItem('wl_home_hop') } catch {}
