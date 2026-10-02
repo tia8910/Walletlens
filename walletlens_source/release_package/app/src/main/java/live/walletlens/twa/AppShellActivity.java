@@ -24,6 +24,7 @@ import android.webkit.CookieManager;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -643,6 +644,26 @@ public class AppShellActivity extends ComponentActivity {
      * and no access.
      */
     private class ShellClient extends WebViewClient {
+        /**
+         * The page itself failed to load: no network, a dropped connection, a
+         * server that did not answer. Without this the user got WebView's own
+         * "Web page not available ... net::ERR_FAILED" page with a broken
+         * Android robot, which reads as the app being broken. Show our own
+         * screen instead, and come back on our own as soon as the site answers.
+         * Sub-resources (an icon, an API call) failing is the page's business,
+         * so only the main frame is handled here.
+         */
+        @Override
+        public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+            super.onReceivedError(view, request, error);
+            if (request == null || !request.isForMainFrame()) return;
+            Uri u = request.getUrl();
+            String failed = u != null && ORIGIN.equals(u.getScheme() + "://" + u.getHost())
+                    ? u.toString() : START_URL;
+            Log.w(TAG, "main frame failed: " + (error != null ? error.getErrorCode() + " " + error.getDescription() : "?"));
+            showOffline(view, failed);
+        }
+
         @Override
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
@@ -700,6 +721,66 @@ public class AppShellActivity extends ComponentActivity {
             }
             return true;
         }
+    }
+
+    /**
+     * Our own "can't connect" screen, in the app's colours and language.
+     *
+     * It retries by itself: every few seconds, and the moment Android reports
+     * the connection is back, it pings the site and, if it answers, reloads the
+     * page that failed. A Retry button does the same on demand. No bridge, no
+     * user data: it is a static page with one URL in it, our own.
+     */
+    private void showOffline(WebView view, String failedUrl) {
+        String lang = LangPrefs.get(this);
+        if (lang == null) lang = "en";
+        boolean ar = "ar".equals(lang);
+        String title, body, retry;
+        switch (lang) {
+            case "ar":
+                title = "تعذّر الاتصال";
+                body = "تحقّق من الإنترنت. بياناتك محفوظة على هذا الجهاز، وسنعيد المحاولة تلقائياً.";
+                retry = "إعادة المحاولة"; break;
+            case "fr":
+                title = "Connexion impossible pour le moment";
+                body = "Vérifiez votre connexion internet. Vos données sont en sécurité sur cet appareil et nous nous reconnecterons automatiquement.";
+                retry = "Réessayer"; break;
+            case "es":
+                title = "No se puede conectar ahora";
+                body = "Comprueba tu conexión a internet. Tus datos están seguros en este dispositivo y volveremos a conectar automáticamente.";
+                retry = "Reintentar"; break;
+            case "de":
+                title = "Gerade keine Verbindung";
+                body = "Prüfe deine Internetverbindung. Deine Daten sind auf diesem Gerät sicher, und wir verbinden uns automatisch neu.";
+                retry = "Erneut versuchen"; break;
+            case "it":
+                title = "Impossibile connettersi ora";
+                body = "Controlla la connessione a internet. I tuoi dati sono al sicuro su questo dispositivo e ci riconnetteremo automaticamente.";
+                retry = "Riprova"; break;
+            default:
+                title = "Can’t connect right now";
+                body = "Check your internet connection. Your data is safe on this device, and we’ll reconnect automatically.";
+                retry = "Try again";
+        }
+        String safeUrl = failedUrl.replace("\\", "").replace("'", "%27").replace("<", "%3C");
+        String html = "<!doctype html><html lang='" + lang + "' dir='" + (ar ? "rtl" : "ltr") + "'><head>"
+                + "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+                + "<style>html,body{margin:0;height:100%;background:#0b1220;color:#e6edf6;font-family:system-ui,sans-serif}"
+                + "main{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;box-sizing:border-box;text-align:center}"
+                + ".i{width:76px;height:76px;border-radius:24px;display:grid;place-items:center;background:rgba(22,199,132,.14);margin-bottom:22px}"
+                + "h1{font-size:22px;margin:0 0 10px}p{margin:0 0 26px;line-height:1.55;color:#9fb0c3;max-width:320px}"
+                + "button{border:0;border-radius:999px;padding:14px 28px;font:inherit;font-weight:800;background:#16c784;color:#04130c}"
+                + "small{margin-top:16px;color:#6b7c90;font-size:12px}</style></head><body><main>"
+                + "<div class='i'><svg width='38' height='38' viewBox='0 0 24 24' fill='none' stroke='#16c784' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>"
+                + "<path d='M2 8.8a15 15 0 0 1 20 0'/><path d='M5 12.6a10 10 0 0 1 14 0'/><path d='M8.5 16.4a5 5 0 0 1 7 0'/><circle cx='12' cy='20' r='1'/></svg></div>"
+                + "<h1>" + title + "</h1><p>" + body + "</p>"
+                + "<button id='r'>" + retry + "</button><small id='s'></small></main><script>"
+                + "var u='" + safeUrl + "',busy=false;"
+                + "function go(){if(busy)return;busy=true;fetch(u,{mode:'no-cors',cache:'no-store'})"
+                + ".then(function(){location.replace(u)}).catch(function(){busy=false})}"
+                + "document.getElementById('r').onclick=go;window.addEventListener('online',go);setInterval(go,5000);"
+                + "</script></body></html>";
+        view.loadDataWithBaseURL("about:blank", html, "text/html", "utf-8", failedUrl);
     }
 
     /**
