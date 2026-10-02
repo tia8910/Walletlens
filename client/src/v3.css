@@ -652,3 +652,16 @@ html.wl-v3 .nl-row-actions button { min-height: 0 !important; box-shadow: none !
 html.wl-v3 .nl-insights, html.wl-v3 .nl-insights:hover, html.wl-v3 .nl-insights:focus { background: var(--nl-card) !important; color: var(--nl-ink) !important; border: 0 !important; box-shadow: var(--nl-shadow) !important; }
 /* Import panels scrolled to from Home stop below the sticky header. */
 html.wl-v3 .dvx-voice-import-panel, html.wl-v3 .dvx-excel-import-panel { scroll-margin-top: 150px; }
+/* Checking rows, and the Selected chip that filters to them. */
+.nl-check {
+  flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  border: 2px solid var(--nl-line); color: #fff; font-size: 0.72rem; font-weight: 900;
+}
+html.wl-v3:not([data-wl-light]) .nl-check { border-color: rgba(255, 255, 255, 0.25); }
+.nl-check.on { background: var(--nl-up); border-color: var(--nl-up); }
+.nl-chips .nl-chip-sel { background: rgba(22, 168, 116, 0.14); color: var(--nl-up); }
+.nl-chips .nl-chip-sel.on { background: var(--nl-up); color: #fff; }
+/* While ticking, the week's line gives its room to the name. */
+.nl-row.picking .nl-row-spark { display: none; }
+/* A checked row's tint stays inside the card's corners. */
+.nl-hold .nl-row.sel { margin: 0 !important; width: 100% !important; padding-inline: 0.35rem !important; border-radius: 14px !important; }

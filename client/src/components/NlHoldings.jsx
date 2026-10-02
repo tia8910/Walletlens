@@ -13,7 +13,9 @@ import { AssetLogo, Spark, useSparks } from './HomeTop'
 //   break-even view               the scale tool; rows then show the price
 //                                 to break even and how far away it is
 //   Excel / PDF export            the tools
-//   select and sum several        long-press → Select; a bar shows the sum
+//   select, sum and filter        the tick tool turns tapping into checking;
+//                                 "Selected" shows only the checked ones and
+//                                 the bar sums them (long-press → Select too)
 //   per-asset actions             the ⋮ on each row (target, vision,
 //                                 technicals, magic score, risk scan, buy,
 //                                 sell), and long-press for the full menu
@@ -24,13 +26,17 @@ export default function NlHoldings({
   rows, total, cats, cat, setCat, search, setSearch, sort, setSort, dir, setDir,
   breakEven, setBreakEven, onExcel, onPdf, selected, onClearSelected, selectedStats, filteredStats,
   hidden, cv, marketSparks = {}, onAsset, bindRow, showAll, setShowAll, pricesFailed,
-  badges = null, badge = 'all', setBadge = () => {}, actionsFor = () => [],
+  badges = null, badge = 'all', setBadge = () => {}, actionsFor = () => [], onToggleSelect = () => {},
 }) {
   const { t } = useLanguage()
   const [searching, setSearching] = useState(!!search)
   const [openRow, setOpenRow] = useState(null)
-  const filtered = !!search.trim() || cat !== 'all' || badge !== 'all'
-  const shown = showAll || filtered ? rows : rows.slice(0, PREVIEW)
+  const [picking, setPicking] = useState(false)
+  const [onlySel, setOnlySel] = useState(false)
+  const selOn = onlySel && selected.size > 0
+  const filtered = !!search.trim() || cat !== 'all' || badge !== 'all' || selOn
+  const base = selOn ? rows.filter(h => selected.has(h.coin_id)) : rows
+  const shown = showAll || filtered ? base : base.slice(0, PREVIEW)
   // The week's line: market.json's when the coin is in it, otherwise the
   // app's cached chart data, fetched only for rows without one.
   const fetched = useSparks(shown.filter(h => !(marketSparks[h.coin_id]?.length > 3)).map(h => h.coin_id))
@@ -66,6 +72,7 @@ export default function NlHoldings({
           {tool(() => setDir(d => d === 'desc' ? 'asc' : 'desc'), dir === 'desc' ? 'Descending' : 'Ascending',
             dir === 'desc' ? <path d="M12 5v14m-6-6 6 6 6-6" /> : <path d="M12 19V5m-6 6 6-6 6 6" />)}
           <span className="nl-tools-gap" />
+          {tool(() => setPicking(v => !v), t('nlSelect'), <><circle cx="12" cy="12" r="9" /><path d="m8 12 3 3 5-6" /></>, picking)}
           {tool(() => setBreakEven(v => !v), t('dsBreakEven'), <><path d="M12 4v16M5 20h14" /><path d="M5 8h14M7 8l-3 6h6zM17 8l-3 6h6z" /></>, breakEven)}
           {tool(() => { track('holdings_export', { format: 'excel' }); onExcel() }, 'Excel', <><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M4 9h16M4 15h16M10 3v18" /></>)}
           {tool(() => { track('holdings_export', { format: 'pdf' }); onPdf() }, 'PDF', <><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></>)}
@@ -75,10 +82,13 @@ export default function NlHoldings({
           <input className="nl-search" autoFocus type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t('phSearchAssets')} />
         )}
 
-        {cats.length > 1 && (
+        {(cats.length > 1 || selected.size > 0) && (
           <div className="nl-chips">
-            {[{ cat: 'all', label: t('nlAllCount')(total) }, ...cats.map(c => ({ cat: c.cat, label: `${c.label} · ${c.assets.length}` }))].map(c => (
-              <button key={c.cat} type="button" className={cat === c.cat ? 'on' : ''} onClick={() => setCat(c.cat)}>{c.label}</button>
+            {selected.size > 0 && (
+              <button type="button" className={`nl-chip-sel${selOn ? ' on' : ''}`} onClick={() => setOnlySel(v => !v)}>✓ {t('nlSelected')(selected.size)}</button>
+            )}
+            {cats.length > 1 && [{ cat: 'all', label: t('nlAllCount')(total) }, ...cats.map(c => ({ cat: c.cat, label: `${c.label} · ${c.assets.length}` }))].map(c => (
+              <button key={c.cat} type="button" className={cat === c.cat && !selOn ? 'on' : ''} onClick={() => { setOnlySel(false); setCat(c.cat) }}>{c.label}</button>
             ))}
           </div>
         )}
@@ -93,7 +103,7 @@ export default function NlHoldings({
 
         {(selectedStats || filteredStats) && (
           <div className={`nl-sum${selectedStats ? ' sel' : ''}`}>
-            <span>{selectedStats ? t('nlSelected')(selected.size) : t('nlShowing')(rows.length)}</span>
+            <span>{selectedStats ? t('nlSelected')(selected.size) : t('nlShowing')(base.length)}</span>
             <b>{mask(cv((selectedStats || filteredStats).value))}</b>
             {!pricesFailed && (selectedStats || filteredStats).pnl !== 0 && (
               <em className={(selectedStats || filteredStats).pnl >= 0 ? 'up' : 'down'}>{pctTxt((selectedStats || filteredStats).pnlPct)}</em>
@@ -112,11 +122,13 @@ export default function NlHoldings({
             const sym = h.coin_symbol?.toUpperCase() || ''
             return (
               <div key={h.coin_id} className="nl-hrow">
-              <div role="button" tabIndex={0} className={`nl-row${isSel ? ' sel' : ''}`} onClick={() => onAsset(h)}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAsset(h) } }} {...bindRow(h)}>
+              <div role="button" tabIndex={0} aria-pressed={picking ? isSel : undefined} className={`nl-row${isSel ? ' sel' : ''}${picking ? ' picking' : ''}`}
+                onClick={() => (picking ? onToggleSelect(h) : onAsset(h))}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); picking ? onToggleSelect(h) : onAsset(h) } }} {...bindRow(h)}>
+                {picking && <span className={`nl-check${isSel ? ' on' : ''}`} aria-hidden="true">{isSel ? '✓' : ''}</span>}
                 <span className="nl-row-logo">
                   <AssetLogo h={h} size={40} />
-                  {isSel && <i aria-hidden="true">✓</i>}
+                  {isSel && !picking && <i aria-hidden="true">✓</i>}
                 </span>
                 <div className="nl-row-n">
                   <b>{h.coin_name || sym}</b>

@@ -4900,6 +4900,7 @@ export default function Dashboard() {
                 onExcel={() => exportToExcel(filteredHoldings, totalValue, displayCurrency)}
                 onPdf={() => exportToPDF(filteredHoldings, totalValue, totalPnL, totalPnLPct, displayCurrency)}
                 selected={selectedAssets} onClearSelected={() => setSelectedAssets(new Set())}
+                onToggleSelect={(h) => setSelectedAssets(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n })}
                 selectedStats={selectedStats} filteredStats={filteredStats}
                 hidden={hidden} cv={cv} marketSparks={sparks} pricesFailed={pricesFailed}
                 showAll={showAllHoldings} setShowAll={setShowAllHoldings}

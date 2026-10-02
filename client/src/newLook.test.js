@@ -117,3 +117,12 @@ describe('the top of the new look', () => {
     expect(read('pages/More.jsx')).toMatch(/th\.logo \? <img src=\{th\.logo\}/)
   })
 })
+
+describe('checking holdings and filtering to them', () => {
+  it('a tick tool checks rows, and a Selected chip shows only those', () => {
+    const hold = read('components/NlHoldings.jsx')
+    expect(hold).toMatch(/onClick=\{\(\) => \(picking \? onToggleSelect\(h\) : onAsset\(h\)\)\}/)
+    expect(hold).toMatch(/const base = selOn \? rows\.filter\(h => selected\.has\(h\.coin_id\)\) : rows/)
+    expect(read('pages/Dashboard.jsx')).toMatch(/onToggleSelect=\{\(h\) => setSelectedAssets/)
+  })
+})
