@@ -71,6 +71,13 @@ describe('nothing is removed', () => {
     expect(more).toMatch(/zakatOn \? \[\{ icon: 'crescent'/)
   })
 
+  it('leaves the marketing pages (market index, fear & greed, rebalancing calculator) out of More', () => {
+    const more = read('pages/More.jsx')
+    for (const path of ['/market-index', '/fear-and-greed-index', '/rebalancing-calculator']) {
+      expect(more).not.toContain(`go('${path}')`)
+    }
+  })
+
   it('Home keeps Buy, Sell and History when it replaces the quick strip', () => {
     const dash = read('pages/Dashboard.jsx')
     expect(dash).toMatch(/onBuy=\{\(\) => openSheet\('buy', 'home_hero'\)\} onSell=\{\(\) => openSheet\('sell', 'home_hero'\)\}/)

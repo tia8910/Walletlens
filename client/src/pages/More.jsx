@@ -35,8 +35,6 @@ export default function More() {
       { icon: 'trend-up', label: t('analysis'), on: () => go('/technicals') },
       { icon: 'zap', label: t('alpha'), on: () => go('/alpha') },
       { icon: 'calendar', label: t('calendar'), on: () => go('/calendar') },
-      { icon: 'globe', label: t('nlMarketIndex'), on: () => go('/market-index') },
-      { icon: 'gauge', label: t('nlFearGreed'), on: () => go('/fear-and-greed-index') },
     ] },
     { label: t('v2GroupAi'), items: [
       { icon: 'sparkles', label: t('coach'), on: () => go('/coach') },
@@ -53,7 +51,6 @@ export default function More() {
     { label: t('v2GroupData'), items: [
       { icon: 'download', label: t('backupRestore'), on: () => go(home, { tab: 'manage' }) },
       { icon: 'upload', label: t('importExport'), on: () => go(home, { tab: 'data' }) },
-      { icon: 'scale', label: t('rebalancePlanner'), on: () => go('/rebalancing-calculator') },
       { icon: 'grid', label: t('tools'), on: () => go(home, { tab: 'tools' }) },
     ] },
     // What the menu and the top bar held beyond pages: help, stats, install
