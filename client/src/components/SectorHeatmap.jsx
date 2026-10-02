@@ -190,7 +190,7 @@ export default function SectorHeatmap() {
   const cold = tiles ? tiles.filter(t => t.avg <= -3).length : 0
 
   return (
-    <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '1rem', overflow: 'hidden', marginTop: '1rem' }}>
+    <div className="wl-sector-hm" style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: '1rem', overflow: 'hidden', marginTop: '1rem' }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.85rem 1.1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}
@@ -223,7 +223,7 @@ export default function SectorHeatmap() {
                   const color = tileColor(avg)
                   const sign = avg >= 0 ? '+' : ''
                   return (
-                    <div key={sector} style={{ background: color + '1a', border: `1px solid ${color}44`, borderRadius: '0.6rem', padding: '0.6rem 0.7rem' }}>
+                    <div key={sector} className="wl-sector-tile" style={{ background: color + '1a', border: `1px solid ${color}44`, borderRadius: '0.6rem', padding: '0.6rem 0.7rem' }}>
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>{sector}</div>
                       <div style={{ fontWeight: 700, fontSize: '1rem', color, lineHeight: 1 }}>{sign}{avg.toFixed(1)}%</div>
                       {top && <div style={{ fontSize: '0.68rem', color: 'var(--text-sub)', marginTop: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>↑ {top.symbol}</div>}

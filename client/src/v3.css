@@ -89,7 +89,7 @@ html.wl-v3 .wl-nav-item.active .wl-nav-label { color: var(--nl-ink) !important; 
 html.wl-v3 .wl-nav-item.active .wl-nav-icon { background: rgba(var(--g-rgb), 0.14) !important; box-shadow: none !important; color: var(--g-ink, var(--g)); }
 html.wl-v3 .wl-nav-fab {
   flex: none; width: 58px; height: 58px; margin: -30px 0.2rem 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
-  display: grid; place-items: center; color: #05261a;
+  display: grid; place-items: center; color: #fff;
   background: var(--g);
   box-shadow: 0 10px 24px -6px rgba(var(--g-rgb), 0.7), 0 0 0 6px var(--nl-bg);
   transition: transform 0.15s;
@@ -296,3 +296,206 @@ html.wl-v3 .wl-topbar-right .wl-topbar-x {
 html.wl-v3 body:has(.nl-home) .dvx-hero::before,
 html.wl-v3 body:has(.nl-home) .dvx-hero::after { display: none !important; }
 html.wl-v3 .wl-topbar-right .wl-topbar-x.wl-topbar-gear { display: none !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   Home below the hero. The rest of the dashboard in the same cards, each
+   figure shown once: the summary sentence lives in the mood banner, the
+   category cards in the breakdown, and the holdings in one list.
+   ════════════════════════════════════════════════════════════════════════ */
+html.wl-v3 {
+  --nl-chart-up: #16a874;
+  --nl-chart-down: #e5484d;
+  --nl-seg: #f1f3f6;
+}
+html.wl-v3:not([data-wl-light]) { --nl-seg: rgba(255, 255, 255, 0.06); }
+
+/* Figures in the app's own typeface, with even digits, not a code font. */
+html.wl-v3 .dvx-holding-val,
+html.wl-v3 .dvx-stat-value,
+html.wl-v3 .dvx-hstat b,
+html.wl-v3 .dvx-cat-value,
+html.wl-v3 .dvx-cat-asset-val,
+html.wl-v3 .dvx-legend-val,
+html.wl-v3 .dvx-hero-change { font-family: inherit !important; font-variant-numeric: tabular-nums; letter-spacing: -0.01em !important; }
+
+/* Section cards share one title style. */
+html.wl-v3 .dvx .glass-card h3 { font-size: 1rem !important; font-weight: 800 !important; letter-spacing: -0.02em; color: var(--nl-ink); }
+
+/* Discovery chips and the market tips line. */
+html.wl-v3 .fn-strip { background: transparent !important; border: 0 !important; padding: 0.1rem 0 !important; gap: 0.4rem !important; overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap !important; }
+html.wl-v3 .fn-strip::-webkit-scrollbar { display: none; }
+html.wl-v3 .fn-strip-label { color: var(--nl-sub) !important; }
+html.wl-v3 .fn-strip-btn {
+  flex: none; height: 34px; padding: 0 0.8rem !important; border-radius: 999px !important; border: 0 !important;
+  background: var(--nl-card) !important; box-shadow: var(--nl-shadow) !important; color: var(--nl-ink) !important;
+  font-size: 0.78rem !important; font-weight: 700 !important; white-space: nowrap;
+}
+html.wl-v3 .wl-sentiment { border-radius: 16px !important; border: 0 !important; background: var(--nl-card) !important; box-shadow: var(--nl-shadow); min-height: 40px !important; }
+html.wl-v3 .wl-sentiment-badge { height: 40px !important; margin: 4px; border-radius: 12px; height: 32px !important; font-size: 0.66rem !important; }
+html.wl-v3 .wl-sentiment-tip { color: var(--nl-ink) !important; font-weight: 600; }
+
+/* ── Performance card ─────────────────────────────────────────────────── */
+html.wl-v3 body:has(.nl-home) .dvx-hero { padding: 1rem 1rem 0.9rem !important; text-align: start; }
+html.wl-v3 body:has(.nl-home) .dvx-hero .dvx-hero-label { display: flex !important; align-items: center; gap: 0.35rem; margin: 0 0 0.6rem !important; }
+.nl-perf-title { margin-inline-end: auto; font-size: 1rem; font-weight: 800; letter-spacing: -0.02em; color: var(--nl-ink); }
+html.wl-v3 body:has(.nl-home) .dvx-hero .dvx-hero-label button {
+  width: 34px !important; height: 34px !important; padding: 0 !important; display: grid !important; place-items: center;
+  border-radius: 50% !important; border: 0 !important; background: var(--nl-seg) !important; color: var(--nl-ink) !important; box-shadow: none !important;
+}
+html.wl-v3 body:has(.nl-home) .dvx-hero .dvx-hero-change { margin: 0.1rem 0 0.7rem !important; font-size: 1.15rem !important; font-weight: 800; color: var(--nl-ink) !important; }
+html.wl-v3 body:has(.nl-home) .dvx-hero .dvx-hero-change.up { color: var(--nl-up) !important; }
+html.wl-v3 body:has(.nl-home) .dvx-hero .dvx-hero-change.dn { color: var(--nl-down) !important; }
+
+/* Every chooser on the card is one grey track with a white pill. */
+html.wl-v3 .dvx-currency-switcher {
+  display: inline-flex !important; flex-wrap: nowrap; gap: 2px !important; padding: 3px; margin: 0 0 0.7rem !important;
+  border-radius: 12px; background: var(--nl-seg); justify-content: flex-start !important;
+}
+html.wl-v3 .dvx-currency-pill,
+html.wl-v3 .dvx-tf-chip,
+html.wl-v3 .dvx-ct-chip {
+  min-width: 0 !important; height: 30px !important; padding: 0 0.7rem !important; border: 0 !important; border-radius: 9px !important;
+  background: transparent !important; color: var(--nl-sub) !important; box-shadow: none !important;
+  font-size: 0.74rem !important; font-weight: 800 !important; line-height: 30px !important;
+}
+html.wl-v3 .dvx-currency-pill.active,
+html.wl-v3 .dvx-tf-chip.active,
+html.wl-v3 .dvx-ct-chip.active {
+  background: var(--nl-card) !important; color: var(--nl-ink) !important;
+  box-shadow: 0 1px 3px rgba(15, 29, 43, 0.12), 0 0 0 0.5px rgba(15, 29, 43, 0.04) !important;
+}
+html.wl-v3 body:has(.nl-home) .dvx-hero > div:has(> .dvx-tf-chip) {
+  flex-wrap: nowrap !important; gap: 2px !important; padding: 3px; margin: 0 0 0.55rem !important; border-radius: 12px; background: var(--nl-seg); overflow-x: auto; scrollbar-width: none;
+}
+html.wl-v3 .dvx-tf-chip { flex: 1 0 auto; }
+html.wl-v3 .dvx-live-ind, html.wl-v3 body:has(.nl-home) .dvx-hero > div:has(> .dvx-tf-chip) > span { display: none; }
+html.wl-v3 .dvx-catfilter { display: flex; gap: 0.4rem !important; overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap !important; margin-bottom: 0.55rem !important; }
+html.wl-v3 .dvx-catfilter::-webkit-scrollbar { display: none; }
+html.wl-v3 .dvx-catchip {
+  flex: none; padding: 0.4rem 0.75rem !important; border-radius: 14px !important; border: 1px solid var(--nl-line) !important;
+  background: var(--nl-card) !important; color: var(--nl-ink) !important; box-shadow: none !important; text-align: start;
+}
+html.wl-v3 .dvx-catchip-label { font-size: 0.7rem !important; font-weight: 700 !important; color: var(--nl-sub); }
+html.wl-v3 .dvx-catchip-val { font-size: 0.82rem !important; font-weight: 800 !important; opacity: 1 !important; }
+html.wl-v3 .dvx-catchip.active { background: var(--nl-ink) !important; border-color: var(--nl-ink) !important; color: var(--nl-card) !important; }
+html.wl-v3 .dvx-catchip.active .dvx-catchip-label { color: inherit; opacity: 0.7; }
+html.wl-v3 .dvx-charttype-seg { display: inline-flex !important; gap: 2px !important; padding: 3px !important; margin: 0 0 0.4rem !important; border: 0 !important; border-radius: 12px !important; background: var(--nl-seg) !important; box-shadow: none !important; }
+html.wl-v3 .dvx-ct-chip { display: inline-flex !important; align-items: center; gap: 0.3rem; }
+html.wl-v3 .dvx-share-btn {
+  display: inline-flex !important; align-items: center; gap: 0.4rem; height: 36px; padding: 0 0.95rem !important; margin-top: 0.5rem !important;
+  border: 0 !important; border-radius: 999px !important; background: var(--nl-seg) !important; color: var(--nl-ink) !important; box-shadow: none !important;
+  font-size: 0.8rem !important; font-weight: 800 !important;
+}
+
+/* Invested and P&L: two quiet tiles; a gain is green, a loss red. */
+html.wl-v3 .dvx-stats-row { gap: 0.6rem !important; }
+html.wl-v3 .dvx-stat-card { padding: 0.85rem 0.95rem !important; overflow: hidden; }
+html.wl-v3 .dvx-stat-label { font-size: 0.7rem !important; font-weight: 700 !important; letter-spacing: 0.04em !important; color: var(--nl-sub) !important; }
+html.wl-v3 .dvx-stat-value { font-size: 1.2rem !important; font-weight: 800 !important; color: var(--nl-ink) !important; }
+html.wl-v3 .dvx-stat-card--pos .dvx-stat-value { color: var(--nl-up) !important; }
+html.wl-v3 .dvx-stat-card--neg .dvx-stat-value { color: var(--nl-down) !important; }
+html.wl-v3 .dvx-stat-sub { font-size: 0.74rem !important; font-weight: 700; color: var(--nl-sub) !important; }
+
+/* ── Breakdown ────────────────────────────────────────────────────────── */
+html.wl-v3 .dvx-cat-breakdown { padding: 1rem 1rem 0.6rem !important; }
+html.wl-v3 .dvx-cat-row { margin: 0 !important; padding: 0.7rem 0 !important; border-radius: 0 !important; border-bottom: 1px solid var(--nl-line); }
+html.wl-v3 .dvx-cat-row:last-child { border-bottom: 0; }
+html.wl-v3 .dvx-cat-label { font-weight: 800 !important; color: var(--nl-ink) !important; }
+html.wl-v3 .dvx-cat-pct { font-weight: 800 !important; color: var(--nl-sub) !important; }
+html.wl-v3 .dvx-cat-value { font-weight: 800 !important; color: var(--nl-ink) !important; white-space: nowrap; }
+html.wl-v3 .dvx-cat-pnl.pos { color: var(--nl-up) !important; }
+html.wl-v3 .dvx-cat-pnl.neg { color: var(--nl-down) !important; }
+html.wl-v3 .dvx-cat-invested { color: var(--nl-sub) !important; }
+html.wl-v3 .dvx-cat-bar-track, html.wl-v3 .dvx-cat-asset-bar { height: 6px !important; border-radius: 99px !important; background: var(--nl-seg) !important; }
+html.wl-v3 .dvx-cat-bar-fill, html.wl-v3 .dvx-cat-asset-fill { border-radius: 99px !important; box-shadow: none !important; background: var(--bar-col, var(--g)) !important; }
+html.wl-v3 .dvx-cat-asset-row { gap: 0.5rem !important; }
+html.wl-v3 .dvx-cat-asset-sym { font-weight: 700 !important; color: var(--nl-ink) !important; letter-spacing: 0 !important; }
+html.wl-v3 .dvx-cat-asset-val, html.wl-v3 .dvx-cat-asset-pct { white-space: nowrap; font-weight: 700 !important; color: var(--nl-sub) !important; }
+
+/* ── Holdings: rows in one card, as Home's list ───────────────────────── */
+html.wl-v3 .dvx-hfilter input,
+html.wl-v3 .dvx-hfilter select,
+html.wl-v3 .dvx-hfilter button {
+  height: 38px; border: 0 !important; border-radius: 12px !important; background: var(--nl-seg) !important; color: var(--nl-ink) !important; font-size: 0.8rem !important;
+}
+html.wl-v3 .dvx-hfilter input { min-width: 0; padding-inline: 0.8rem 1.8rem !important; }
+html.wl-v3 .dvx-hfilter select { flex: 0 1 auto !important; max-width: 40%; padding-inline: 0.6rem !important; font-weight: 700; }
+html.wl-v3 .dvx-hfilter > button { width: 38px; padding: 0 !important; }
+html.wl-v3 .dvx-hchip {
+  height: 32px; padding: 0 0.8rem !important; border: 0 !important; border-radius: 999px !important; box-shadow: none !important;
+  background: var(--nl-seg) !important; color: var(--nl-sub) !important; font-size: 0.74rem !important; font-weight: 800 !important;
+}
+html.wl-v3 .dvx-hchip.on { background: var(--nl-ink) !important; color: var(--nl-card) !important; }
+html.wl-v3 .dvx-cat-group-hdr { flex-wrap: wrap; align-items: baseline; padding: 0.95rem 0 0.35rem !important; border-top: 0 !important; }
+html.wl-v3 .dvx-cat-group-name { font-size: 0.72rem !important; letter-spacing: 0.08em !important; color: var(--nl-sub) !important; }
+html.wl-v3 .dvx-cat-group-stats { font-size: 0.72rem !important; font-weight: 700; color: var(--nl-sub) !important; }
+
+html.wl-v3 .dvx-holdings { gap: 0 !important; }
+html.wl-v3 .dvx-holding {
+  align-items: flex-start; gap: 0.65rem !important; padding: 0.8rem 2.4rem 0.8rem 0 !important; margin: 0 !important;
+  background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--nl-line) !important; border-radius: 0 !important; box-shadow: none !important;
+  transform: none !important;
+}
+html.wl-v3 .dvx-holding:last-child { border-bottom: 0 !important; }
+html.wl-v3 .dvx-holding::before { display: none !important; }
+html.wl-v3 .dvx-holding.selected { background: rgba(var(--g-rgb), 0.06) !important; border-radius: 14px !important; }
+html.wl-v3 .dvx-holding > input[type="checkbox"] { width: 15px !important; height: 15px !important; margin: 0.75rem 0 0 !important; opacity: 0.55; }
+html.wl-v3 .dvx-holding > input[type="checkbox"]:checked { opacity: 1; }
+html.wl-v3 .dvx-holding .dvx-holding-icon { width: 40px !important; height: 40px !important; margin-top: 0 !important; box-shadow: none !important; }
+html.wl-v3 .dvx-holding-line1 { flex-wrap: nowrap !important; align-items: flex-start !important; }
+html.wl-v3 .dvx-holding-meta { flex-wrap: wrap !important; row-gap: 0.25rem !important; gap: 0.3rem !important; }
+html.wl-v3 .dvx-holding-meta strong { font-size: 0.95rem !important; font-weight: 800 !important; color: var(--nl-ink) !important; }
+html.wl-v3 .dvx-holding-meta .dvx-cat-badge,
+html.wl-v3 .dvx-holding-meta .dvx-stable-badge,
+html.wl-v3 .dvx-holding-meta > span:not(.dvx-trend-badge) { font-size: 0.58rem !important; padding: 1px 6px !important; border-radius: 6px !important; }
+/* The trend is the row underneath, spelled out; the pill beside the ticker
+   said the same word twice. It stays when that row does not (break-even). */
+html.wl-v3 .dvx-holding:has(.wl-trend-badge) .dvx-trend-badge { display: none !important; }
+html.wl-v3 .dvx-holding-val { font-size: 0.98rem !important; font-weight: 800 !important; color: var(--nl-ink) !important; }
+html.wl-v3 .dvx-holding-pnl-pill { padding: 0 !important; margin: 0 !important; background: none !important; font-size: 0.74rem !important; }
+html.wl-v3 .dvx-holding-pnl-pill.pos { color: var(--nl-up) !important; }
+html.wl-v3 .dvx-holding-pnl-pill.neg { color: var(--nl-down) !important; }
+/* Price, average and quantity as a quiet three-column line; the trend above. */
+html.wl-v3 .dvx-holding-stats { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 0.15rem 0.6rem !important; margin-top: 0.35rem !important; }
+html.wl-v3 .dvx-hstat { flex-direction: column; align-items: flex-start !important; gap: 1px !important; padding: 0 !important; background: none !important; border: 0 !important; }
+html.wl-v3 .dvx-hstat em { font-size: 0.6rem !important; color: var(--nl-sub) !important; }
+html.wl-v3 .dvx-hstat b { max-width: 100%; text-align: start !important; font-size: 0.78rem !important; color: var(--nl-ink) !important; }
+html.wl-v3 .wl-trend-badge {
+  grid-column: 1 / -1; flex-direction: row !important; align-items: center !important; gap: 0.4rem !important;
+  padding: 0.3rem 0.55rem !important; border-radius: 10px !important; background: var(--nl-seg) !important;
+}
+html.wl-v3 .wl-trend-badge b { font-size: 0.76rem !important; }
+html.wl-v3 .wl-trend-badge--up b { color: var(--nl-up) !important; }
+html.wl-v3 .wl-trend-badge--down b { color: var(--nl-down) !important; }
+html.wl-v3 .dvx-ha-toggle {
+  position: absolute; top: 0.7rem; right: 0; width: 30px !important; height: 30px !important; margin: 0 !important;
+  border: 0 !important; background: var(--nl-seg) !important; color: var(--nl-ink) !important;
+}
+html.wl-v3 .dvx-holding-actions { border-top-color: var(--nl-line) !important; flex-wrap: wrap; }
+html.wl-v3 .dvx-ha-btn { border-radius: 999px !important; border: 0 !important; background: var(--nl-seg) !important; color: var(--nl-ink) !important; font-weight: 700 !important; }
+html.wl-v3 .dvx-show-more { border: 0 !important; border-radius: 14px !important; background: var(--nl-seg) !important; color: var(--nl-ink) !important; font-weight: 800 !important; }
+html.wl-v3 .dvx-breakeven-toggle,
+html.wl-v3 .dvx-export-btn {
+  height: 32px; padding: 0 0.7rem !important; border: 0 !important; border-radius: 999px !important;
+  background: var(--nl-seg) !important; color: var(--nl-ink) !important; font-size: 0.72rem !important; font-weight: 800 !important; box-shadow: none !important;
+}
+html.wl-v3 .dvx-breakeven-toggle.active { background: var(--nl-ink) !important; color: var(--nl-card) !important; }
+
+/* ── Lower cards ──────────────────────────────────────────────────────── */
+html.wl-v3 .wl-sector-hm { background: var(--nl-card) !important; border: 1px solid var(--nl-line) !important; border-radius: var(--nl-radius) !important; box-shadow: var(--nl-shadow); }
+html.wl-v3 .wl-sector-hm > button span:first-child { font-size: 1rem !important; font-weight: 800 !important; letter-spacing: -0.02em; color: var(--nl-ink); }
+html.wl-v3 .wl-sector-tile { border: 0 !important; border-radius: 14px !important; }
+html.wl-v3 .wl-nav-fab svg { stroke: #fff; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18)); }
+
+/* Holdings header on one line: the title, then the tools as small round chips. */
+html.wl-v3 .glass-card:has(> div > .dvx-breakeven-toggle) > div:first-child,
+html.wl-v3 .glass-card:has(.dvx-breakeven-toggle) > div:first-child { flex-wrap: nowrap !important; gap: 0.5rem; }
+html.wl-v3 .glass-card:has(.dvx-breakeven-toggle) > div:first-child h3 { white-space: nowrap; }
+html.wl-v3 .glass-card:has(.dvx-breakeven-toggle) > div:first-child > div { flex-wrap: nowrap !important; gap: 0.3rem !important; }
+html.wl-v3 .dvx-breakeven-toggle, html.wl-v3 .dvx-export-btn { padding: 0 0.55rem !important; font-size: 0.68rem !important; white-space: nowrap; }
+/* Ticker on its own line, its tags together underneath. */
+html.wl-v3 .dvx-holding-meta strong { flex-basis: 100% !important; }
+html.wl-v3 .dvx-hstat b { font-size: 0.74rem !important; }
+/* The arrow beside the ticker is the trend row again; it stands down with the pill. */
+html.wl-v3 .dvx-holding:has(.wl-trend-badge) .dvx-holding-meta .wl-trend { display: none !important; }
+html.wl-v3 .dvx-holding-stats { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 0.85fr) !important; gap: 0.15rem 0.4rem !important; }

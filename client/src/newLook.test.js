@@ -60,6 +60,21 @@ describe('nothing is removed', () => {
   })
 })
 
+describe('Home shows each figure once', () => {
+  const dash = read('pages/Dashboard.jsx')
+  const top = read('components/HomeTop.jsx')
+  it('keeps one holdings list, the full one with its filters and actions', () => {
+    expect(top).not.toContain('nl-row')
+    expect(dash).toContain('className="dvx-holdings"')
+  })
+  it('folds the summary sentence into the mood banner and the category cards into the breakdown', () => {
+    expect(top).toMatch(/briefParts\(enriched, totalValue, dayPct, t\)\?\.rest/)
+    expect(dash).toMatch(/enriched\.length > 0 && !nlHome && <PortfolioBrief/)
+    expect(dash).toMatch(/catBreakdown\.length > 0 && !nlHome && \(\s*<div className="dvx-cat-summary-row">/)
+    expect(dash).toContain('className="glass-card dvx-cat-breakdown"')
+  })
+})
+
 describe('the mood of Home', () => {
   it('celebrates big days and stays calm on red ones', () => {
     expect(moodOf(5.1)).toBe('big')

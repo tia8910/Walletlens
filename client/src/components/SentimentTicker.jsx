@@ -154,7 +154,7 @@ export default function SentimentTicker({ holdings = [], totalValue = 0, totalPn
   const doubled = [...tips, ...tips]
 
   return (
-    <div style={{
+    <div className="wl-sentiment" style={{
       display: 'flex', alignItems: 'center', gap: 0,
       background: bgColor, border: `1px solid ${borderColor}`,
       borderRadius: '10px', overflow: 'hidden',
@@ -162,7 +162,7 @@ export default function SentimentTicker({ holdings = [], totalValue = 0, totalPn
       transition: 'background 0.4s, border-color 0.4s',
     }}>
       {/* Sentiment badge — fixed left */}
-      <div style={{
+      <div className="wl-sentiment-badge" style={{
         flexShrink: 0, display: 'flex', alignItems: 'center', gap: '0.35rem',
         padding: '0 0.75rem', height: '36px', background: accent,
         color: '#fff', fontWeight: 800, fontSize: '0.7rem', letterSpacing: '0.06em',

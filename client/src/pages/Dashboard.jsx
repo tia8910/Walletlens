@@ -54,6 +54,7 @@ import { MoneyFlowBadge } from '../components/MoneyFlow'
 import { BybitStrip, BybitInterestStrip } from '../components/BybitOffer'
 import { ZakatGate } from '../components/ZakatSwitch'
 import HomeTop from '../components/HomeTop'
+import { briefParts } from '../portfolioBrief'
 import { useNewLook } from '../newLook'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
@@ -1850,7 +1851,7 @@ const Sparkline = memo(function Sparkline({ data, up, width = 120, height = 40 }
   const coords = pts.map((v, i) => [i * stepX, height - ((v - min) / span) * height])
   const line = coords.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ')
   const area = `${line} L${width} ${height} L0 ${height} Z`
-  const col = up ? 'var(--g)' : '#f87171'
+  const col = up ? 'var(--nl-chart-up, var(--g))' : 'var(--nl-chart-down, #f87171)'
   return (
     <svg className="dvx-stat-spark" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
       <path d={area} fill={col} fillOpacity="0.10" stroke="none" />
@@ -3280,52 +3281,9 @@ function AlertsSection({ enriched, prices, isDemo }) {
 // ── Portfolio Brief Statement — natural language holding status ──────────
 const PortfolioBrief = memo(function PortfolioBrief({ enriched, totalValue, totalPnL, totalPnLPct }) {
   const { t } = useLanguage()
-  const statement = useMemo(() => {
-    if (!enriched.length || totalValue <= 0) return null
-
-    const parts = []
-    const isUp = totalPnLPct >= 0
-
-    // Opening: total status
-    const pctStr = (totalPnLPct >= 0 ? '+' : '') + totalPnLPct.toFixed(1) + '%'
-    parts.push(t('dsSummaryStatus')(pctStr, isUp))
-
-    // Winners / losers count
-    let winners = 0, losers = 0, flat = 0
-    let topSym = '', topChg = -Infinity
-    let worstSym = '', worstChg = Infinity
-    for (const h of enriched) {
-      const chg = h.pct24h ?? 0
-      if (chg > 0.01) winners++
-      else if (chg < -0.01) losers++
-      else flat++
-      if (chg > topChg) { topChg = chg; topSym = h.coin_symbol?.toUpperCase() }
-      if (chg < worstChg) { worstChg = chg; worstSym = h.coin_symbol?.toUpperCase() }
-    }
-
-    const countParts = []
-    if (winners) countParts.push(t('dsSummaryWinners')(winners))
-    if (losers) countParts.push(t('dsSummaryLosers')(losers))
-    if (countParts.length) parts.push(countParts.join(t('dsSummaryAnd')()))
-
-    // Top performer
-    if (topChg > 0.01) {
-      parts.push(t('dsSummaryLeads')(topSym, topChg.toFixed(1)))
-    }
-
-    // Worst performer
-    if (worstChg < -0.01 && worstSym !== topSym) {
-      parts.push(t('dsSummaryTrails')(worstSym, worstChg.toFixed(1)))
-    }
-
-    // Returned split rather than joined. The opening clause is the one that
-    // carries the verdict, and it is the only part that should take the
-    // status colour: a whole paragraph in red is harder to read than a grey
-    // one and says nothing the first six words did not.
-    return { head: parts[0] + '.', rest: parts.slice(1).join('. ') + (parts.length > 1 ? '.' : '') }
-    // `t` is a dependency: without it the sentence would keep the language it
-    // was first built in until the numbers happened to change.
-  }, [enriched, totalValue, totalPnLPct, t])
+  // `t` is a dependency: without it the sentence would keep the language it
+  // was first built in until the numbers happened to change.
+  const statement = useMemo(() => briefParts(enriched, totalValue, totalPnLPct, t), [enriched, totalValue, totalPnLPct, t])
 
   if (!statement) return null
 
@@ -4684,6 +4642,10 @@ export default function Dashboard() {
     </div>
   )
 
+  // Home in the new look: the hero up top carries the total, the day and
+  // the summary sentence, so the cards below show each figure once.
+  const nlHome = newLook && enriched.length > 0 && !isDemo
+
   return (
     <div className="dvx">
       {/* Screen effects — outside the tab blocks on purpose.
@@ -4703,7 +4665,7 @@ export default function Dashboard() {
       {/* New look: net-worth card, imports, mood and watch cards, first on Home.
           Its Buy / Sell / History are the quick strip's own actions, so
           the strip below stands down while it shows. */}
-      {newLook && activeTab === 'overview' && enriched.length > 0 && !isDemo && (
+      {nlHome && activeTab === 'overview' && (
         <HomeTop
           enriched={enriched} totalValue={totalValue} todayPnL={todayPnLVal} totalPnLPct={totalPnLPct}
           onBuy={() => openSheet('buy', 'home_hero')} onSell={() => openSheet('sell', 'home_hero')}
@@ -4714,7 +4676,6 @@ export default function Dashboard() {
           }}
           onWatchAll={() => setActiveTab('watchlist')}
           newsSlot={<NewsTicker variant="card" />}
-          onHoldingsAll={() => document.querySelector('.dvx-holdings')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
           onAsset={(h) => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}
         />
       )}
@@ -4741,7 +4702,7 @@ export default function Dashboard() {
           headlines are still on screen. Outside the tab blocks, as before, so
           it stays reachable from every tab. */}
       {/* The new look shows the same feed as a card inside Home. */}
-      {!(newLook && activeTab === 'overview' && enriched.length > 0 && !isDemo) && <NewsTicker />}
+      {!(nlHome && activeTab === 'overview') && <NewsTicker />}
 
       {/* Tab content — opacity fades slightly during lazy-load transitions */}
       <div style={isTabPending ? { opacity: 0.7, transition: 'opacity 0.15s' } : undefined}>
@@ -4786,8 +4747,9 @@ export default function Dashboard() {
           
           {/* Portfolio brief statement */}
           {/* The sentence says "today", so it is fed today's move, not the
-              all-time return it used to show ("up +31% today"). */}
-          {enriched.length > 0 && <PortfolioBrief enriched={enriched} totalValue={totalValue} totalPnL={todayPnLVal} totalPnLPct={totalValue - todayPnLVal > 0 ? (todayPnLVal / (totalValue - todayPnLVal)) * 100 : 0} />}
+              all-time return it used to show ("up +31% today"). The new
+              look's mood banner says the same sentence, so it stands down. */}
+          {enriched.length > 0 && !nlHome && <PortfolioBrief enriched={enriched} totalValue={totalValue} totalPnL={todayPnLVal} totalPnLPct={totalValue - todayPnLVal > 0 ? (todayPnLVal / (totalValue - todayPnLVal)) * 100 : 0} />}
 
           {/* Import options under Buy/Sell — only when the desktop tile grid is
               shown up top. On mobile web and in the native app the import
@@ -4882,6 +4844,7 @@ export default function Dashboard() {
               )
             })()}
             <p className="dvx-hero-label">
+              {nlHome && <span className="nl-perf-title">{t('nlPerformance')}</span>}
               {pricesFailed ? t('investedValue') : pricesLoading ? t('loadingPrices') : t('totalPortfolioValue')}
               {isDemo && <span className="dvx-badge-demo">DEMO</span>}
               {pricesFailed && <span className="dvx-badge-warn">{t('dsPricesOffline')}</span>}
@@ -5096,7 +5059,8 @@ export default function Dashboard() {
             </div>
             {(() => {
               const up = perfChange.pct >= 0
-              const strokeColor = up ? 'var(--g)' : '#f87171'
+              // The new look draws gains green and losses red whatever the theme.
+              const strokeColor = up ? 'var(--nl-chart-up, var(--g))' : 'var(--nl-chart-down, #f87171)'
               const gradId = up ? 'pg-up' : 'pg-dn'
               // Invested baseline: a dashed cost-basis line with the area tinted
               // green above it (profit zone) and red below it (loss zone). The
@@ -5247,8 +5211,9 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Category summary cards row */}
-          {catBreakdown.length > 0 && (
+          {/* Category summary cards row. The breakdown card below shows the
+              same figures, so the new look keeps only that one. */}
+          {catBreakdown.length > 0 && !nlHome && (
             <div className="dvx-cat-summary-row">
               {catBreakdown.map(({ cat, label, value, pct, pnl, pnlPct }) => (
                 <div key={cat} className="dvx-cat-summary-card glass-card" style={{ '--bar-col': CATEGORY_COLOR[cat] || 'var(--g)' }}>
@@ -5399,7 +5364,7 @@ export default function Dashboard() {
                 {enriched.length > 1 && (
                   <div style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                     {/* Search + sort row */}
-                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                    <div className="dvx-hfilter" style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                       <div style={{ flex: 1, position: 'relative' }}>
                         <input
                           type="text"
@@ -5436,7 +5401,7 @@ export default function Dashboard() {
                     {catBreakdown.length > 1 && (
                       <div style={{ display:'flex', gap:'0.35rem', flexWrap:'wrap' }}>
                         {[{ cat:'all', label:`All (${enriched.length})` }, ...catBreakdown.map(c => ({ cat: c.cat, label: `${c.label} (${c.assets.length})` }))].map(({ cat, label }) => (
-                          <button key={cat} onClick={() => { setHoldingsCat(cat); setHoldingsBadge('all') }} style={{ background: holdingsCat === cat ? 'linear-gradient(135deg, #047857, #10b981)' : 'var(--surface-2)', color: holdingsCat === cat ? '#fff' : 'var(--text-muted)', border: `1px solid ${holdingsCat === cat ? 'transparent' : 'var(--border)'}`, boxShadow: holdingsCat === cat ? '0 2px 8px rgba(5,150,105,0.35)' : 'none', borderRadius:'20px', padding:'0.2rem 0.7rem', fontSize:'0.69rem', fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>
+                          <button key={cat} className={`dvx-hchip${holdingsCat === cat ? ' on' : ''}`} onClick={() => { setHoldingsCat(cat); setHoldingsBadge('all') }} style={{ background: holdingsCat === cat ? 'linear-gradient(135deg, #047857, #10b981)' : 'var(--surface-2)', color: holdingsCat === cat ? '#fff' : 'var(--text-muted)', border: `1px solid ${holdingsCat === cat ? 'transparent' : 'var(--border)'}`, boxShadow: holdingsCat === cat ? '0 2px 8px rgba(5,150,105,0.35)' : 'none', borderRadius:'20px', padding:'0.2rem 0.7rem', fontSize:'0.69rem', fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>
                             {label}
                           </button>
                         ))}
@@ -5517,7 +5482,7 @@ export default function Dashboard() {
                                   const isActive = holdingsBadge === badge
                                   const badgeColor = badge !== 'all' ? (CRYPTO_CATEGORY_COLORS[badge] || STOCK_SECTOR_COLORS[badge] || '#6366f1') : null
                                   return (
-                                    <button key={badge} onClick={() => setHoldingsBadge(badge)} style={{ background: isActive ? (badgeColor || 'var(--g)') : 'var(--surface-2)', color: isActive ? '#fff' : 'var(--text-muted)', border: `1px solid ${isActive ? (badgeColor || 'var(--g)') : 'var(--border)'}`, borderRadius:'20px', padding:'0.15rem 0.5rem', fontSize:'0.68rem', fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
+                                    <button key={badge} className={`dvx-hchip${isActive ? ' on' : ''}`} onClick={() => setHoldingsBadge(badge)} style={{ background: isActive ? (badgeColor || 'var(--g)') : 'var(--surface-2)', color: isActive ? '#fff' : 'var(--text-muted)', border: `1px solid ${isActive ? (badgeColor || 'var(--g)') : 'var(--border)'}`, borderRadius:'20px', padding:'0.15rem 0.5rem', fontSize:'0.68rem', fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
                                       {badge === 'all' ? 'All' : badge}
                                     </button>
                                   )

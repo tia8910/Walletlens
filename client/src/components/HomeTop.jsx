@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
-import { marketMood } from '../sentiment'
-import { dataUrl } from '../apiHosts.js'
+import { briefParts } from '../portfolioBrief'
 import { api } from '../api'
 import usePrivateFmt from '../hooks/usePrivateFmt'
 import CoinLogo from './CoinLogo'
@@ -17,13 +16,15 @@ function AssetLogo({ h, size }) {
 }
 
 // Home in the new look, laid out as the approved mockup: a line that reacts
-// to the day and the market, the net-worth card, one-tap imports, the
-// watchlist, the news card (passed in as `newsSlot`) and the holdings.
+// to the day, the net-worth card, one-tap imports, the watchlist and the news
+// card (passed in as `newsSlot`). The holdings, chart and breakdown follow on
+// the dashboard below it, each shown once.
 //
 // Everything shown is real. The day's change is the same figure the mood
-// engine uses, the market read is the sentiment ticker's, and every sparkline
-// is the asset's own last seven days from the app's cached chart data; a card
-// with no history draws no line rather than an invented one.
+// engine uses, the banner's second line is the dashboard's own summary
+// sentence, and every sparkline is the asset's own last seven days from the
+// app's cached chart data; a card with no history draws no line rather than
+// an invented one.
 
 const PASTELS = ['nl-cream', 'nl-rose', 'nl-lav', 'nl-mint']
 
@@ -45,20 +46,6 @@ export function moodOf(dayPct) {
   if (dayPct >= 0.25) return 'up'
   if (dayPct <= -0.25) return 'down'
   return 'flat'
-}
-
-function useMarket() {
-  const [mood, setMood] = useState(null)
-  useEffect(() => {
-    let alive = true
-    const bust = Math.floor(Date.now() / 3600000)
-    Promise.all([
-      fetch(`${dataUrl('news.json')}?t=${bust}`).then(r => r.ok ? r.json() : null).then(j => j?.articles || []).catch(() => []),
-      fetch(`${dataUrl('market.json')}?t=${bust}`).then(r => r.ok ? r.json() : null).then(j => j?.coins || []).catch(() => []),
-    ]).then(([articles, coins]) => { if (alive) setMood(marketMood({ articles, coins })) })
-    return () => { alive = false }
-  }, [])
-  return mood
 }
 
 /** Seven days of closes per id, from the app's cached chart data. */
@@ -104,27 +91,26 @@ function Spark({ values, w = 120, h = 34, className }) {
 }
 
 export default function HomeTop({ enriched = [], watch = [], totalValue = 0, todayPnL = 0, totalPnLPct = 0, newsSlot,
-  onBuy, onSell, onHistory, onImport, onWatchAll, onHoldingsAll, onAsset }) {
+  onBuy, onSell, onHistory, onImport, onWatchAll, onAsset }) {
   const { t } = useLanguage()
   const { priv } = usePrivateFmt()
-  const market = useMarket()
 
   const base = totalValue - todayPnL
   const dayPct = base > 0 ? (todayPnL / base) * 100 : 0
   const mood = moodOf(dayPct)
   const stack = enriched.slice(0, 3)
-  const holdings = enriched.slice(0, 5)
   // The user's own watchlist when they keep one, otherwise their biggest
   // holdings, which is what they would put on it.
   const watchItems = (watch.length ? watch : enriched).filter(h => h.price > 0).slice(0, 4)
-  const sparks = useSparks([...new Set([...watchItems, ...holdings].map(h => h.coin_id))].slice(0, 8))
+  const sparks = useSparks(watchItems.map(h => h.coin_id))
 
-  const marketLine = market === 'bullish' ? t('nlMarketBull') : market === 'bearish' ? t('nlMarketBear') : market ? t('nlMarketSteady') : ''
+  // Who moved: "2 winners and 1 loser. BTC leads at +3.7%."
+  const movers = useMemo(() => briefParts(enriched, totalValue, dayPct, t)?.rest || '', [enriched, totalValue, dayPct, t])
   const banner = {
-    big:  { icon: '🚀', title: t('nlMoodBig')(signed(dayPct)), sub: marketLine },
-    up:   { icon: '✨', title: t('nlMoodUp')(signed(dayPct)), sub: marketLine },
-    down: { icon: '🌙', title: t('nlMoodDown'), sub: t('nlMoodDownSub')(signed(dayPct), signed(totalPnLPct)) },
-    flat: { icon: '☁️', title: t('nlMoodFlat'), sub: marketLine },
+    big:  { icon: '🚀', title: t('nlMoodBig')(signed(dayPct)), sub: movers },
+    up:   { icon: '✨', title: t('nlMoodUp')(signed(dayPct)), sub: movers },
+    down: { icon: '🌙', title: t('nlMoodDown'), sub: [t('nlMoodDownSub')(signed(dayPct), signed(totalPnLPct)), movers].filter(Boolean).join(' ') },
+    flat: { icon: '☁️', title: t('nlMoodFlat'), sub: movers },
   }[mood]
 
   const [whole, cents] = splitMoney(totalValue)
@@ -201,23 +187,6 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
       )}
 
       {newsSlot}
-
-      {holdings.length > 0 && (
-        <>
-          <div className="nl-sec"><h3>{t('nlHoldings')}</h3>{onHoldingsAll && <button type="button" onClick={onHoldingsAll}>{t('nlAllCount')(enriched.length)}</button>}</div>
-          <div className="nl-card nl-list">
-            {holdings.map(h => (
-              <button type="button" key={h.coin_id} className="nl-row" onClick={() => onAsset?.(h)}>
-                <AssetLogo h={h} size={38} />
-                <div className="nl-row-n"><b>{h.coin_name || h.coin_symbol?.toUpperCase()}</b>
-                  <small>{priv(`${Number(h.amount || 0).toLocaleString('en-US', { maximumFractionDigits: 6 })} ${h.coin_symbol?.toUpperCase() || ''}`)}</small></div>
-                <Spark values={sparks[h.coin_id]} w={64} h={26} className="nl-row-spark" />
-                <div className="nl-row-v"><b>{priv(price(h.value))}</b><small className={h.pct24h >= 0 ? 'up' : 'down'}>{signed(h.pct24h)}</small></div>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
     </div>
   )
 }
