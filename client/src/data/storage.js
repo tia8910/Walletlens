@@ -33,12 +33,53 @@ export function loadData(key, fallback = []) {
 // firing an intent per settings toggle would be noise.
 const MIRRORED = new Set(['transactions', 'wallets'])
 
+/** A transaction's identity across devices: ids are per-device counters. */
+export function txKey(tx) {
+  return tx?.created_at ? `c:${tx.created_at}` : `j:${tx?.wallet_id}|${tx?.coin_id}|${tx?.type}|${tx?.amount}|${tx?.date}`
+}
+export const TX_DELETED_KEY = 'crypto_tracker_tx_deleted'
+const MAX_TOMBSTONES = 2000
+
+/**
+ * Remember which transactions a save removed.
+ *
+ * Syncing merges this device's list with another's, and a merge cannot tell
+ * "deleted here" from "never seen here" without being told — the deleted
+ * trade would come straight back from the other device. The list rides in
+ * the backup, so a delete on the phone deletes on the laptop too.
+ */
+function recordDeletes(before, after) {
+  if (!Array.isArray(before) || !Array.isArray(after)) return
+  const kept = new Set(after.map(txKey))
+  const gone = before.map(txKey).filter(k => !kept.has(k))
+  if (!gone.length) return
+  try {
+    const prev = JSON.parse(localStorage.getItem(TX_DELETED_KEY) || '[]')
+    const next = [...new Set([...(Array.isArray(prev) ? prev : []), ...gone])].slice(-MAX_TOMBSTONES)
+    localStorage.setItem(TX_DELETED_KEY, JSON.stringify(next))
+  } catch { /* storage full: the delete still happened locally */ }
+}
+
 export function saveData(key, data) {
   try {
+    if (key === 'transactions') {
+      let before = parseCache.get(key)?.value
+      if (!before) { try { before = JSON.parse(localStorage.getItem(`${PREFIX}${key}`) || '[]') } catch { before = null } }
+      recordDeletes(before, data)
+    }
     const raw = JSON.stringify(data)
     localStorage.setItem(`${PREFIX}${key}`, raw)
     parseCache.set(key, { raw, value: data })
   } catch {}
+
+  // Every write to the portfolio, whichever screen made it, tells the Drive
+  // sync to back up now. Only TradeSheet and a few others announced their
+  // changes, so an import, an edit or a delete waited for the 10-minute
+  // sweep. A separate event from wl:portfolio-updated, which the dashboard
+  // reloads on: this one fires on the dashboard's own writes too.
+  if (MIRRORED.has(key)) {
+    try { window.dispatchEvent(new Event('wl:data-saved')) } catch { /* no window */ }
+  }
 
   // Mirror to the app, on Android only, and never at the cost of the write
   // above.
