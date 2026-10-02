@@ -35,7 +35,7 @@ import CoffeeButton, { SUPPORT_URL } from './components/CoffeeButton'
 import { useTheme, THEMES } from './ThemeContext'
 import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
-import { setAppInteractive } from './reviewPrompt'
+import { setAppInteractive, startReviewScheduler } from './reviewPrompt'
 import { isInstalledApp, isAndroidApp } from './nativeBridge'
 import { useCanInstall, promptInstall } from './pwaInstall'
 import { applySettings } from './settingsUtils'
@@ -653,6 +653,9 @@ export default function App() {
   // itself. Telling it when the app is actually in front of the user both
   // blocks the ask while locked and restarts the dwell on the way in.
   useEffect(() => { setAppInteractive(!locked) }, [locked])
+  // Rating card: count time on screen and look for a good moment from every
+  // page, not only the dashboard. No-op outside the installed Android app.
+  useEffect(() => startReviewScheduler(), [])
 
   // Automatic Portfolio Guardian check-in on sign-in. "Signing in" to WalletLens
   // means opening the app and, if App Lock is on, passing the fingerprint/face

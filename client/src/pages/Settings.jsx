@@ -304,8 +304,9 @@ export default function Settings() {
       {/* The Rate section that stood here is gone, by product decision.
            Play's card now arrives on its own or not at all.
 
-           maybeAskForReview still runs from the dashboard — 18s after load and
-           every 90s after — so the automatic path is untouched; only the manual
+           maybeAskForReview still runs app-wide (startReviewScheduler) — 20s
+           after launch and every minute after — so the automatic path is
+           untouched; only the manual
            entry point is. Someone who wants to rate without being asked uses
            the Play listing, which is where a rating is left anyway.
 

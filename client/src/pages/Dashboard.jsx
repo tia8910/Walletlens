@@ -43,7 +43,7 @@ import InterestPicker, { interestsDone } from '../components/InterestPicker'
 import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
 import Tip from '../components/Tip'
 import { syncWidgets } from '../nativeWidgets'
-import { noteAppOpen, maybeAskForReview, noteMoment } from '../reviewPrompt'
+import { noteAppOpen, setReviewSnapshot, noteMoment } from '../reviewPrompt'
 import { noteSupportOpen } from '../supportNudge'
 import SupportNudge from '../components/SupportNudge'
 import { VOICE_API, voiceProxy } from '../apiHosts.js'
@@ -4007,17 +4007,13 @@ export default function Dashboard() {
     // wherever the site runs, so its own open count cannot ride on the review
     // prompt's, which no-ops outside the installed app.
     noteSupportOpen()
-    // Pass the ref's getter, not its current value: a timer that finds every
-    // rule satisfied still has no user gesture to send the intent on, so the
-    // ask is armed and fires on the next tap. By then this snapshot has moved
-    // on, and `busy` in particular has to be read fresh at that later moment.
-    const snap = () => reviewSnapshot.current
-    const t = setTimeout(() => maybeAskForReview(snap), 18000)
-    // A moment can land long after that one timer has fired, so re-check on a
-    // slow interval too. Every gate still applies; this only means a target hit
-    // in minute nine is not silently wasted because minute one had nothing.
-    const iv = setInterval(() => maybeAskForReview(snap), 90000)
-    return () => { clearTimeout(t); clearInterval(iv) }
+    // The checking itself runs app-wide (App.jsx → startReviewScheduler), so
+    // time spent on other pages counts too. While the dashboard is open it
+    // hands over its own snapshot, which knows when a sheet is open. A getter,
+    // not a value: an armed ask fires on a later tap, and `busy` has to be
+    // read fresh at that moment.
+    setReviewSnapshot(() => reviewSnapshot.current)
+    return () => setReviewSnapshot(null)
   }, [loaded])
 
   // Count-up animation — starts from current displayed value to avoid $0 flash
