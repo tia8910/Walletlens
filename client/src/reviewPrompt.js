@@ -71,6 +71,17 @@ const SESSION_FLAG = 'wl_review_session_counted'
 //                possible version of this whole mistake.
 const MIN_OPENS = 3
 const MIN_DAYS = 2
+
+// The other way in: time actually spent. Launch counting alone missed the
+// people who use WalletLens most. The installed app resumes one long-lived
+// session for days, so a daily user could sit at "1 launch" indefinitely, and
+// an hour of real use counted for nothing. Ten minutes of the app on screen,
+// across at least two visits, is someone who has formed an opinion.
+const ENGAGED_MS = 10 * 60 * 1000
+const ENGAGED_OPENS = 2
+// Coming back after this long away counts as a new launch, even though the
+// app never restarted.
+const NEW_VISIT_AFTER_MS = 30 * 60 * 1000
 const MIN_HOLDINGS = 1
 const MIN_DWELL_MS = 60 * 1000
 
@@ -91,9 +102,10 @@ const FRICTION_QUIET_MS = 36 * 60 * 60 * 1000
 
 // Play applies its own undisclosed per-user quota and simply shows nothing once
 // it is spent, so repeated attempts over a short window achieve nothing. This
-// is our own cooldown on top of that: two months before the same person is
-// considered again.
-const REASK_AFTER_DAYS = 60
+// is our own cooldown on top of that: a month before the same person is
+// considered again. It was two, which with the other gates meant most people
+// were offered the card once a season at best.
+const REASK_AFTER_DAYS = 30
 
 // After this many asks the cadence slows down. It does NOT stop.
 //
@@ -115,7 +127,7 @@ const REASK_AFTER_DAYS = 60
 // often a card may appear. Our job is to keep offering on a cadence that is
 // not rude — which is what the longer gap below is for.
 const SETTLED_ASKS = 4
-const SETTLED_REASK_DAYS = 180
+const SETTLED_REASK_DAYS = 90
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -207,7 +219,7 @@ export function nativeReviewStatus() {
 function readState() {
   try {
     const raw = localStorage.getItem(STATE_KEY)
-    if (!raw) return { first: 0, opens: 0, asked: 0, askCount: 0, moment: 0, momentKind: '', friction: 0 }
+    if (!raw) return { first: 0, opens: 0, asked: 0, askCount: 0, moment: 0, momentKind: '', friction: 0, activeMs: 0 }
     const s = JSON.parse(raw)
     return {
       first: Number(s.first) || 0,
@@ -217,9 +229,10 @@ function readState() {
       moment: Number(s.moment) || 0,
       momentKind: String(s.momentKind || ''),
       friction: Number(s.friction) || 0,
+      activeMs: Number(s.activeMs) || 0,
     }
   } catch {
-    return { first: 0, opens: 0, asked: 0, askCount: 0, moment: 0, momentKind: '', friction: 0 }
+    return { first: 0, opens: 0, asked: 0, askCount: 0, moment: 0, momentKind: '', friction: 0, activeMs: 0 }
   }
 }
 
@@ -304,6 +317,8 @@ export function reviewDiagnostics() {
     inQuietPeriod: !!s.friction && now - s.friction < FRICTION_QUIET_MS,
     daysSinceFirst: s.first ? Math.floor((now - s.first) / DAY_MS) : 0,
     opensLeft: Math.max(0, MIN_OPENS - s.opens),
+    activeMinutes: Math.round(s.activeMs / 60000),
+    engaged: s.activeMs >= ENGAGED_MS && s.opens >= ENGAGED_OPENS,
     daysLeft: s.first
       ? Math.max(0, MIN_DAYS - Math.floor((now - s.first) / DAY_MS))
       : MIN_DAYS,
@@ -337,8 +352,13 @@ function onboardingFinished() {
 function storedGates(s, now) {
   if (!onboardingFinished()) return 'onboarding'
   if (s.friction && now - s.friction < FRICTION_QUIET_MS) return 'friction'
-  if (s.opens < MIN_OPENS) return 'few-opens'
-  if (!s.first || now - s.first < MIN_DAYS * DAY_MS) return 'too-new'
+  // Either real time spent across more than one visit, or the original
+  // launches-over-days rule. Whichever comes first.
+  const engaged = s.activeMs >= ENGAGED_MS && s.opens >= ENGAGED_OPENS
+  if (!engaged) {
+    if (s.opens < MIN_OPENS) return 'few-opens'
+    if (!s.first || now - s.first < MIN_DAYS * DAY_MS) return 'too-new'
+  }
   // Slows after SETTLED_ASKS; never stops. See the constant for why a count of
   // attempts cannot be treated as a count of cards seen.
   const gapDays = s.askCount >= SETTLED_ASKS ? SETTLED_REASK_DAYS : REASK_AFTER_DAYS
@@ -570,4 +590,96 @@ export function requestReviewNow(source = 'manual') {
   return fireNativeIntent(
     'walletlens://review?fallback=store&source=' + encodeURIComponent(source)
   )
+}
+
+// ── Time on screen, and checking from every page ───────────────────────────
+
+let clockStop = null
+
+/**
+ * Count the minutes the app is actually in front of the user, and treat a
+ * return after a long absence as a new visit. Idempotent; no-op outside the
+ * installed app. Started once from App.jsx.
+ */
+export function startEngagementClock() {
+  if (clockStop || typeof document === 'undefined' || !isAndroidTWA()) return clockStop || (() => {})
+  let last = Date.now()
+  let hiddenAt = 0
+  const tick = () => {
+    const now = Date.now()
+    if (document.visibilityState === 'visible' && interactive) {
+      const st = readState()
+      // Capped per tick, so a device that slept with the app open is not
+      // credited with the hours it spent asleep.
+      st.activeMs += Math.max(0, Math.min(now - last, 60 * 1000))
+      writeState(st)
+    }
+    last = now
+  }
+  const iv = setInterval(tick, 15 * 1000)
+  const onVis = () => {
+    if (document.visibilityState === 'hidden') { tick(); hiddenAt = Date.now(); return }
+    last = Date.now()
+    if (hiddenAt && Date.now() - hiddenAt >= NEW_VISIT_AFTER_MS) {
+      const st = readState()
+      if (!st.first) st.first = Date.now()
+      st.opens += 1
+      writeState(st)
+      // A new visit gets its own settling-in minute.
+      startedAt = Date.now()
+    }
+    hiddenAt = 0
+  }
+  document.addEventListener('visibilitychange', onVis)
+  clockStop = () => {
+    clearInterval(iv)
+    document.removeEventListener('visibilitychange', onVis)
+    clockStop = null
+  }
+  return clockStop
+}
+
+let snapshotProvider = null
+
+/**
+ * The page that knows the portfolio best (the dashboard) supplies the
+ * snapshot while it is mounted. Pass null to withdraw it.
+ */
+export function setReviewSnapshot(fn) {
+  snapshotProvider = typeof fn === 'function' ? fn : null
+}
+
+/** Off the dashboard: the portfolio from storage, and "busy" from open dialogs. */
+function storedSnapshot() {
+  let holdingsCount = 0
+  try {
+    const txs = JSON.parse(localStorage.getItem('crypto_tracker_transactions') || '[]')
+    holdingsCount = Array.isArray(txs) ? new Set(txs.map(t => t && t.coin_id)).size : 0
+  } catch { /* unreadable: treat as none */ }
+  let busy = false
+  try {
+    busy = !!document.querySelector('[role="dialog"], [aria-modal="true"], .lpx-overlay, .news-modal-overlay')
+  } catch { /* no DOM */ }
+  return { holdingsCount, totalValue: holdingsCount ? 1 : 0, busy }
+}
+
+let schedulerStop = null
+
+/**
+ * Check for a good moment from wherever the user is, not only the dashboard:
+ * someone spending their time in Coach or Signals was never considered.
+ * Every gate still applies. Idempotent; no-op outside the installed app.
+ */
+export function startReviewScheduler() {
+  if (schedulerStop || !isAndroidTWA()) return schedulerStop || (() => {})
+  noteAppOpen()
+  const stopClock = startEngagementClock()
+  const snap = () => (snapshotProvider ? snapshotProvider() : storedSnapshot())
+  const first = setTimeout(() => maybeAskForReview(snap), 20 * 1000)
+  const iv = setInterval(() => maybeAskForReview(snap), 60 * 1000)
+  schedulerStop = () => {
+    clearTimeout(first); clearInterval(iv); stopClock()
+    schedulerStop = null
+  }
+  return schedulerStop
 }

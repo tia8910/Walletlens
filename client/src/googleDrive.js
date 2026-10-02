@@ -499,7 +499,13 @@ export async function findBackup() {
   return data.files?.[0] || null
 }
 
-/** Create or overwrite the backup. Returns the file id. */
+/**
+ * Create or overwrite the backup.
+ *
+ * Returns the id and Drive's own modifiedTime for the version just written,
+ * which is what every device compares against to tell whether another one has
+ * written since: Google's clock, never a phone's.
+ */
 export async function uploadBackup(content, existingFileId = null) {
   const boundary = 'wl' + Math.random().toString(36).slice(2)
   const metadata = existingFileId
@@ -513,15 +519,16 @@ export async function uploadBackup(content, existingFileId = null) {
     `${content}\r\n--${boundary}--`
 
   const url = existingFileId
-    ? `${UPLOAD}/${existingFileId}?uploadType=multipart&fields=id`
-    : `${UPLOAD}?uploadType=multipart&fields=id`
+    ? `${UPLOAD}/${existingFileId}?uploadType=multipart&fields=id,modifiedTime`
+    : `${UPLOAD}?uploadType=multipart&fields=id,modifiedTime`
 
   const res = await driveFetch(url, {
     method: existingFileId ? 'PATCH' : 'POST',
     headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
     body,
   })
-  return (await res.json()).id
+  const data = await res.json()
+  return { id: data.id, modifiedTime: data.modifiedTime || null }
 }
 
 export async function downloadBackup(fileId) {

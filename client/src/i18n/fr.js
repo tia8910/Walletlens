@@ -898,6 +898,8 @@ export default {
     gpMarketsWell: 'Si les marchés se portent bien',
     gpMarketsPoorly: 'Si les marchés se portent mal',
     gpLikely: 'Probable',
+    gpChartLabel: 'Croissance projetée de votre patrimoine',
+    gpMoneyShownIn: 'Afficher les montants en',
     gpMilestones: 'Prochains jalons (trajectoire médiane)',
     gpTryDifferentMix: 'Essayer une autre répartition',
     gpTryIt: 'Essayer',

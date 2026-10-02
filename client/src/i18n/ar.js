@@ -924,6 +924,8 @@ export default {
     gpMarketsWell: 'إذا كان أداء الأسواق جيداً',
     gpMarketsPoorly: 'إذا كان أداء الأسواق ضعيفاً',
     gpLikely: 'الأرجح',
+    gpChartLabel: 'نمو صافي ثروتك المتوقع',
+    gpMoneyShownIn: 'اعرض المبالغ بـ',
     gpMilestones: 'المحطات التالية (المسار الوسيط)',
     gpTryDifferentMix: 'جرّب مزيجاً مختلفاً',
     gpTryIt: 'جرّبه',

@@ -79,7 +79,7 @@ export function forgetAutoBackup() {
  */
 export function disconnectDrive() {
   signOut()
-  for (const k of [DATA_KEY, WRAP, FILE_ID, LAST_HASH, LAST_BACKUP_AT, REMOTE_AT]) {
+  for (const k of [DATA_KEY, WRAP, FILE_ID, LAST_HASH, LAST_BACKUP_AT, REMOTE_AT, SYNC_VER, NEEDS_PASS]) {
     try { localStorage.removeItem(k) } catch { /* private mode */ }
   }
 }
@@ -198,21 +198,87 @@ export async function connect() {
   return { remote, action }
 }
 
+// The version of the Drive file this device last wrote or applied, exactly as
+// Drive stamped it (modifiedTime). "Is Drive ahead of me?" used to compare
+// Drive's clock with this device's own Date.now(). A phone whose clock ran a
+// few minutes fast then read the other device's newer upload as older and
+// never pulled it: the trade made on the laptop simply never arrived. Both
+// sides of the comparison are now Google's clock.
+const SYNC_VER = 'wl_drive_ver'
+// Set when the file in Drive was written with a data key this device does not
+// hold (another device made its own first backup). Until the passphrase is
+// entered again this device can neither read nor safely overwrite that file.
+const NEEDS_PASS = 'wl_drive_needs_pass'
+
+/** The Drive file was encrypted with a key this device does not hold. */
+export const KEY_MISMATCH = 'KEY_MISMATCH'
+/** The passphrase typed does not open the backup already in Drive. */
+export const PASS_MISMATCH = 'PASS_MISMATCH'
+
+/** Is syncing on hold until the passphrase is entered again? */
+export function syncPaused() { return readKey(NEEDS_PASS) === '1' }
+function pauseSync() { writeKey(NEEDS_PASS, '1') }
+function resumeSync() { try { localStorage.removeItem(NEEDS_PASS) } catch { /* private mode */ } }
+
+/** When the copy this device is in step with was written, by Drive's clock. */
+function syncedAt() {
+  const v = Date.parse(readKey(SYNC_VER) || '')
+  // Devices from before SYNC_VER existed fall back to their own clock until
+  // their next write or restore stamps the real version.
+  return Number.isFinite(v) ? v : (Number(readKey(LAST_BACKUP_AT)) || 0)
+}
+
+/** Has another device written something newer than what this one has? */
+function remoteAhead(remote) {
+  const at = Date.parse(remote?.modifiedTime || '')
+  return Boolean(remote) && Number.isFinite(at) && at > syncedAt()
+}
+
+/** Record that this device now holds exactly the copy Drive has. */
+function stampSynced({ id, modifiedTime } = {}) {
+  if (id) writeKey(FILE_ID, id)
+  if (modifiedTime) writeKey(SYNC_VER, modifiedTime)
+  else { try { localStorage.removeItem(SYNC_VER) } catch { /* private mode */ } }
+  writeKey(LAST_BACKUP_AT, String(Date.now()))
+  writeKey(REMOTE_AT, String(Date.parse(modifiedTime || '') || Date.now()))
+}
+
+/** uploadBackup returns { id, modifiedTime }; older callers and mocks a bare id. */
+const asUpload = (r) => (typeof r === 'string' ? { id: r, modifiedTime: null } : (r || {}))
+
+const announce = () => { try { window.dispatchEvent(new Event('wl:portfolio-updated')) } catch { /* no window */ } }
+
 /**
  * Encrypt the current profile and push it to Drive.
  *
  * Writes the envelope format and keeps the data key, which is what turns
- * automatic backups on for this device from here onwards. Reuses the existing
- * key when there is one, so every device that has restored from this backup
- * stays able to read it.
+ * automatic backups on for this device from here onwards.
+ *
+ * When Drive already holds a backup, its data key is recovered with this
+ * passphrase and reused, and its trades are folded in first. This used to
+ * generate a fresh key on any device that had none, so a second phone's first
+ * backup silently re-keyed the file: from then on each device could open only
+ * its own uploads, failed to merge the other's without a word, and the two
+ * took turns overwriting each other. `replace` is the deliberate escape for
+ * someone who no longer knows the old passphrase.
  */
-export async function backupNow(passphrase, { automatic = true } = {}) {
+export async function backupNow(passphrase, { automatic = true, replace = false } = {}) {
   if (!passphrase) throw new Error('A passphrase is required')
+  const remote = await findBackup()
+  let key = null
+  if (remote && !replace) {
+    const existing = await downloadBackup(remote.id)
+    if (isEncryptedBackup(existing) && wrapBlockOf(existing)) {
+      try { key = await unwrapDataKey(existing, passphrase) } catch { throw new Error(PASS_MISMATCH) }
+      // Never write over another device's trades: bring them in first.
+      try { if (await mergeBackupCode(await decryptBackupWithKey(existing, key))) announce() } catch { /* unreadable body: keep local */ }
+    }
+  }
+  if (!key) key = replace ? newDataKey() : (storedDataKey() || newDataKey())
+
   const { code, txCount } = await generateBackupCode()
-  const key = storedDataKey() || newDataKey()
   const payload = await encryptBackupEnvelope(code, key, passphrase)
-  const existing = driveState().fileId || (await findBackup())?.id || null
-  const id = await uploadBackup(payload, existing)
+  const up = asUpload(await uploadBackup(payload, remote?.id || null))
 
   // Only after the upload succeeded. Storing the key for a backup that never
   // landed would leave the device claiming it can auto-back-up to a file that
@@ -230,13 +296,59 @@ export async function backupNow(passphrase, { automatic = true } = {}) {
   } else {
     forgetAutoBackup()
   }
+  resumeSync()
   // The content, not the code: code carries ts: Date.now(), so stamping its
   // hash left the device reading as changed the instant after a manual backup.
   writeKey(LAST_HASH, await fingerprint(await snapshotSignature()))
-  writeKey(FILE_ID, id)
-  writeKey(LAST_BACKUP_AT, String(Date.now()))
-  writeKey(REMOTE_AT, String(Date.now()))
-  return { txCount, fileId: id }
+  stampSynced(up)
+  return { txCount, fileId: up.id }
+}
+
+/**
+ * Bring the Drive backup into this device by MERGING, never replacing.
+ *
+ * Used on connect when this device already holds a portfolio: both sides'
+ * trades end up here, then the union is uploaded so Drive has them too. Uses
+ * the key this device holds, or learns it from the passphrase. A backup from
+ * before data keys existed (WLE1) is opened with the passphrase directly.
+ */
+export async function mergeFromDrive(passphrase) {
+  const remote = await findBackup()
+  if (!remote) throw new Error('No backup found in your Drive')
+  const payload = await downloadBackup(remote.id)
+  if (!isEncryptedBackup(payload)) throw new Error('That backup file is not in the expected format')
+  let code
+  if (passphrase && !wrapBlockOf(payload)) {
+    code = await decryptBackup(payload, passphrase)
+  } else {
+    let key = storedDataKey()
+    if (passphrase) {
+      key = await unwrapDataKey(payload, passphrase)
+      writeKey(DATA_KEY, dataKeyToString(key))
+      writeKey(WRAP, wrapBlockOf(payload) || '')
+    }
+    if (!key) throw new Error('A passphrase is required')
+    try {
+      code = await decryptBackupWithKey(payload, key)
+    } catch {
+      pauseSync()
+      throw new Error(KEY_MISMATCH)
+    }
+  }
+  const res = await mergeBackupCode(code)
+  announce()
+  resumeSync()
+  // In step with that version now; the upload below adds this device's side.
+  writeKey(SYNC_VER, remote.modifiedTime || '')
+  writeKey(FILE_ID, remote.id)
+  let txCount = res?.added || 0
+  if (storedDataKey() && readKey(WRAP)) ({ txCount } = await backupWithStoredKey())
+  return { added: res?.added || 0, txCount }
+}
+
+/** Sync again after another device re-keyed the backup: learn its key, merge both sides. */
+export async function rejoinSync(passphrase) {
+  return mergeFromDrive(passphrase)
 }
 
 /**
@@ -252,22 +364,16 @@ export async function backupWithStoredKey() {
   const key = storedDataKey()
   const wrap = readKey(WRAP)
   if (!key || !wrap) throw new Error('A passphrase is required')
+  if (syncPaused()) throw new Error(KEY_MISMATCH)
 
   const remote = await findBackup()
-  const remoteAt = remote?.modifiedTime ? Date.parse(remote.modifiedTime) : 0
-  if (remote && remoteAt > (Number(readKey(LAST_BACKUP_AT)) || 0)) {
-    if (await mergeFrom(remote.id, key)) {
-      try { window.dispatchEvent(new Event('wl:portfolio-updated')) } catch { /* no window */ }
-    }
-  }
+  if (remoteAhead(remote) && await mergeFrom(remote.id, key)) announce()
   const { code, txCount } = await generateBackupCode()
   const payload = await encryptBackupWithWrap(code, key, wrap)
-  const id = await uploadBackup(payload, driveState().fileId || remote?.id || null)
+  const up = asUpload(await uploadBackup(payload, remote?.id || null))
   writeKey(LAST_HASH, await fingerprint(await snapshotSignature()))
-  writeKey(FILE_ID, id)
-  writeKey(LAST_BACKUP_AT, String(Date.now()))
-  writeKey(REMOTE_AT, String(Date.now()))
-  return { txCount, fileId: id }
+  stampSynced(up)
+  return { txCount, fileId: up.id }
 }
 
 /**
@@ -277,10 +383,13 @@ export async function backupWithStoredKey() {
  * none of them has a user to show an error to.
  *
  * @returns {Promise<{ok: boolean, reason: string}>}
- *   reason: 'no-key' | 'unchanged' | 'signed-out' | 'failed' | 'backed-up'
+ *   reason: 'no-key' | 'key-mismatch' | 'unchanged' | 'signed-out' | 'failed' | 'backed-up'
  */
 export async function autoBackup() {
   if (!canAutoBackup()) return { ok: false, reason: 'no-key' }
+  // Another device re-keyed the file. Uploading now would replace its trades
+  // with a copy it cannot even read, so wait for the passphrase instead.
+  if (syncPaused()) return { ok: false, reason: 'key-mismatch' }
   const key = storedDataKey()
 
   let code
@@ -298,23 +407,10 @@ export async function autoBackup() {
   const hash = await fingerprint(await snapshotSignature())
   if (hash === readKey(LAST_HASH)) return { ok: false, reason: 'unchanged' }
 
-  // The token, refreshed if needed.
-  //
-  // Historically this called getAccessToken({interactive:false}) and, before
-  // that, read a memory-only token. The implicit grant flow handed back only a
-  // one-hour access token, and inside the TWA there was no way to silently
-  // renew it, so auto-backup quietly stopped an hour after the last manual
-  // sign-in — the "Drive session expired" reports.
-  //
-  // Now that the auth code + refresh-token flow is in place, getAccessToken
-  // with interactive:false silently obtains a fresh token through the
-  // Cloudflare Worker whenever the stored one is near expiry. No popup, no
-  // Custom Tab, no user gesture. This is what keeps automatic backups
-  // sustainable indefinitely.
-  //
-  // An automatic backup is still never allowed to raise a sign-in UI. If the
-  // refresh genuinely fails (revoked token, offline), it gives up quietly and
-  // waits for the user to reconnect.
+  // The token, refreshed silently through the worker when it is near expiry.
+  // An automatic backup is never allowed to raise a sign-in UI: if the refresh
+  // genuinely fails (revoked token, offline) it gives up quietly and waits for
+  // the user to reconnect.
   const token = await (async () => {
     try {
       return await getAccessToken({ interactive: false })
@@ -326,42 +422,50 @@ export async function autoBackup() {
 
   // Has another device written since this one last did? Then uploading now
   // would overwrite its trades. Fold its copy in first and upload the union.
+  // If that copy cannot be read, stop: an upload would destroy it.
   let remote = null
-  try { remote = await findBackup() } catch { /* offline: the upload below fails too */ }
-  const remoteAt = remote?.modifiedTime ? Date.parse(remote.modifiedTime) : 0
-  if (remote && remoteAt > (Number(readKey(LAST_BACKUP_AT)) || 0)) {
-    const merged = await mergeFrom(remote.id, key)
-    if (merged) {
-      try { ({ code } = await generateBackupCode()) } catch { return { ok: false, reason: 'failed' } }
-      try { window.dispatchEvent(new Event('wl:portfolio-updated')) } catch { /* no window */ }
+  try { remote = await findBackup() } catch { return { ok: false, reason: 'failed' } }
+  if (remoteAhead(remote)) {
+    try {
+      if (await mergeFrom(remote.id, key)) announce()
+      ;({ code } = await generateBackupCode())
+    } catch (e) {
+      return { ok: false, reason: e?.message === KEY_MISMATCH ? 'key-mismatch' : 'failed' }
     }
   }
   const hashNow = await fingerprint(await snapshotSignature())
 
   try {
     const payload = await encryptBackupWithWrap(code, key, readKey(WRAP))
-    const existing = driveState().fileId || remote?.id || (await findBackup())?.id || null
-    const id = await uploadBackup(payload, existing)
+    // The newest file Drive has, not this device's remembered id: if two
+    // devices ever each created a file, every device must converge on one.
+    const up = asUpload(await uploadBackup(payload, remote?.id || null))
     writeKey(LAST_HASH, hashNow || hash)
-    writeKey(FILE_ID, id)
-    writeKey(LAST_BACKUP_AT, String(Date.now()))
-    writeKey(REMOTE_AT, String(Date.now()))
+    stampSynced(up)
     return { ok: true, reason: 'backed-up' }
   } catch {
     return { ok: false, reason: 'failed' }
   }
 }
 
-/** Download another device's backup and fold it into this one. */
+/**
+ * Download another device's backup and fold it into this one.
+ *
+ * Throws KEY_MISMATCH (and pauses syncing) when this device's key cannot open
+ * it. This used to return null for that, and the caller went on to upload —
+ * replacing the other device's trades with a file it could not read.
+ */
 async function mergeFrom(fileId, key) {
+  const payload = await downloadBackup(fileId)
+  if (!isEncryptedBackup(payload)) return null
+  let code
   try {
-    const payload = await downloadBackup(fileId)
-    if (!isEncryptedBackup(payload)) return null
-    const code = await decryptBackupWithKey(payload, key)
-    return await mergeBackupCode(code)
+    code = await decryptBackupWithKey(payload, key)
   } catch {
-    return null
+    pauseSync()
+    throw new Error(KEY_MISMATCH)
   }
+  return mergeBackupCode(code)
 }
 
 /**
@@ -416,6 +520,7 @@ export async function localChangedSinceBackup() {
  */
 export async function autoRestore() {
   if (!canAutoBackup()) return { ok: false, reason: 'no-key' }
+  if (syncPaused()) return { ok: false, reason: 'key-mismatch' }
 
   // Never raises a sign-in. Same rule as autoBackup: a background task that
   // pops a Google prompt is worse than one that waits.
@@ -429,7 +534,8 @@ export async function autoRestore() {
   if (!remote) return { ok: false, reason: 'no-backup' }
 
   const remoteAt = remote.modifiedTime ? Date.parse(remote.modifiedTime) : 0
-  const lastBackupAt = Number(readKey(LAST_BACKUP_AT)) || 0
+  // Drive's clock against Drive's clock: see SYNC_VER.
+  const lastBackupAt = syncedAt()
   writeKey(REMOTE_AT, String(remoteAt || Date.now()))
 
   // Timestamps first: this settles most polls without reading the portfolio.
@@ -450,9 +556,11 @@ export async function autoRestore() {
   if (action !== 'pull') return { ok: false, reason: action }
 
   try {
-    await restoreNow()
-  } catch {
-    return { ok: false, reason: 'failed' }
+    // The file just looked at, not this device's remembered id, which can be
+    // a stale duplicate another device never writes to.
+    await restoreNow(undefined, remote)
+  } catch (e) {
+    return { ok: false, reason: e?.message === KEY_MISMATCH ? 'key-mismatch' : 'failed' }
   }
 
   // The dashboard re-reads on this. driveAutoBackup hears it too and schedules
@@ -466,8 +574,10 @@ export async function autoRestore() {
  * Pull the backup down and apply it. Replaces local data — callers must have
  * confirmed that with the user unless decideAction said 'auto-restore'.
  */
-export async function restoreNow(passphrase) {
-  const remote = (driveState().fileId && { id: driveState().fileId }) || await findBackup()
+export async function restoreNow(passphrase, found = null) {
+  // The newest backup in Drive. Reading this device's remembered file id first
+  // restored a stale duplicate whenever two devices had each created a file.
+  const remote = found || await findBackup()
   if (!remote) throw new Error('No backup found in your Drive')
   const payload = await downloadBackup(remote.id)
   if (!isEncryptedBackup(payload)) {
@@ -480,7 +590,12 @@ export async function restoreNow(passphrase) {
   const key = storedDataKey()
   let code
   if (key && !passphrase) {
-    code = await decryptBackupWithKey(payload, key)
+    try {
+      code = await decryptBackupWithKey(payload, key)
+    } catch {
+      pauseSync()
+      throw new Error(KEY_MISMATCH)
+    }
   } else {
     code = await decryptBackup(payload, passphrase)
     // Restoring on a new device teaches it the data key, so automatic backups
@@ -502,9 +617,9 @@ export async function restoreNow(passphrase) {
   // the truth.
   try {
     writeKey(LAST_HASH, await fingerprint(await snapshotSignature()))
-    writeKey(LAST_BACKUP_AT, String(Date.now()))
-    writeKey(REMOTE_AT, String(Date.now()))
+    stampSynced(remote)
   } catch { /* private mode */ }
+  resumeSync()
   return result
 }
 

@@ -36,8 +36,8 @@ const KEY = 'wl_review_state_v3'
 // Default: a user well past every base gate, so each test below is isolating
 // the one field it names. Tests that care about moments pass `moment`
 // explicitly — moments only label the ask, they no longer decide it.
-function seed({ first = T0 - 30 * DAY, opens = 12, asked = 0, askCount = 0, moment = 0, momentKind = '', friction = 0 } = {}) {
-  localStorage.setItem(KEY, JSON.stringify({ first, opens, asked, askCount, moment, momentKind, friction }))
+function seed({ first = T0 - 30 * DAY, opens = 12, asked = 0, askCount = 0, moment = 0, momentKind = '', friction = 0, activeMs = 0 } = {}) {
+  localStorage.setItem(KEY, JSON.stringify({ first, opens, asked, askCount, moment, momentKind, friction, activeMs }))
 }
 
 function readState() {
@@ -201,20 +201,20 @@ describe('maybeAskForReview', () => {
     expect(maybeAskForReview(READY)).toBe(true)
     expect(maybeAskForReview(READY)).toBe(false)
 
-    // Inside the 60-day re-ask window — Play's own quota would swallow an ask
+    // Inside the 30-day re-ask window — Play's own quota would swallow an ask
     // here anyway, so firing one only burns an intent.
-    vi.setSystemTime(T0 + 30 * DAY)
+    vi.setSystemTime(T0 + 15 * DAY)
     expect(maybeAskForReview(READY)).toBe(false)
-    vi.setSystemTime(T0 + 59 * DAY)
+    vi.setSystemTime(T0 + 29 * DAY)
     expect(maybeAskForReview(READY)).toBe(false)
 
-    vi.setSystemTime(T0 + 70 * DAY)
+    vi.setSystemTime(T0 + 31 * DAY)
     expect(maybeAskForReview(READY)).toBe(true)
     expect(readState().askCount).toBe(2)
 
-    vi.setSystemTime(T0 + 200 * DAY)
+    vi.setSystemTime(T0 + 70 * DAY)
     expect(maybeAskForReview(READY)).toBe(true)
-    vi.setSystemTime(T0 + 400 * DAY)
+    vi.setSystemTime(T0 + 110 * DAY)
     expect(maybeAskForReview(READY)).toBe(true)
     expect(firedIntents()).toHaveLength(4)
   })
@@ -234,18 +234,18 @@ describe('maybeAskForReview', () => {
     vi.setSystemTime(T0 + 60 * 1000)
 
     // Still inside the slower window: quiet, but not retired.
-    vi.setSystemTime(T0 + 100 * DAY)
+    vi.setSystemTime(T0 + 45 * DAY)
     expect(maybeAskForReview(READY)).toBe(false)
-    vi.setSystemTime(T0 + 179 * DAY)
+    vi.setSystemTime(T0 + 89 * DAY)
     expect(maybeAskForReview(READY)).toBe(false)
 
     // The fifth ask, which the old cap made impossible.
-    vi.setSystemTime(T0 + 181 * DAY)
+    vi.setSystemTime(T0 + 91 * DAY)
     expect(maybeAskForReview(READY)).toBe(true)
     expect(readState().askCount).toBe(5)
 
-    // And it keeps going. A great update a year later deserves its chance.
-    vi.setSystemTime(T0 + 181 * DAY + 181 * DAY)
+    // And it keeps going. A great update months later deserves its chance.
+    vi.setSystemTime(T0 + 91 * DAY + 91 * DAY)
     expect(maybeAskForReview(READY)).toBe(true)
     expect(readState().askCount).toBe(6)
   })
@@ -255,7 +255,7 @@ describe('maybeAskForReview', () => {
     // likely to land inside a fresh quota window — get spread over a year.
     const { maybeAskForReview } = await loadModule()
     seed({ askCount: 3, asked: T0 })
-    vi.setSystemTime(T0 + 61 * DAY)
+    vi.setSystemTime(T0 + 31 * DAY)
     expect(maybeAskForReview(READY)).toBe(true)
   })
 
@@ -683,5 +683,56 @@ describe('asking for a review does not close the app', () => {
       join(dirname(fileURLToPath(import.meta.url)), 'reviewPrompt.js'), 'utf8',
     )
     expect(src).toContain("'walletlens://review?fallback=store&source=' + encodeURIComponent(source)")
+  })
+})
+
+describe('time actually spent counts', () => {
+  const MIN = 60 * 1000
+
+  it('qualifies a user with ten minutes of real use over two visits, without waiting days', async () => {
+    const { maybeAskForReview } = await loadModule()
+    // Second visit, same day: the launches-over-days rule alone says no.
+    seed({ first: T0 - 2 * 60 * MIN, opens: 2, activeMs: 9 * MIN })
+    vi.setSystemTime(T0 + 61 * 1000)
+    expect(maybeAskForReview(READY), 'nine minutes').toBe(false)
+
+    seed({ first: T0 - 2 * 60 * MIN, opens: 2, activeMs: 10 * MIN })
+    expect(maybeAskForReview(READY), 'ten minutes').toBe(true)
+  })
+
+  it('still needs a second visit: one long first session is a first impression', async () => {
+    const { maybeAskForReview } = await loadModule()
+    seed({ first: T0 - 60 * MIN, opens: 1, activeMs: 45 * MIN })
+    vi.setSystemTime(T0 + 61 * 1000)
+    expect(maybeAskForReview(READY)).toBe(false)
+  })
+
+  it('adds up minutes on screen, and counts a return after a long absence as a visit', async () => {
+    const { startEngagementClock } = await loadModule()
+    seed({ opens: 1, activeMs: 0 })
+    const stop = startEngagementClock()
+    vi.advanceTimersByTime(2 * MIN)
+    expect(readState().activeMs).toBeGreaterThanOrEqual(2 * MIN - 15 * 1000)
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' })
+    document.dispatchEvent(new Event('visibilitychange'))
+    vi.advanceTimersByTime(40 * MIN)
+    const away = readState().activeMs
+    expect(away).toBeLessThan(3 * MIN)
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' })
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(readState().opens).toBe(2)
+    stop()
+  })
+
+  it('checks from every page, not only the dashboard', async () => {
+    const { startReviewScheduler } = await loadModule()
+    seed()
+    localStorage.setItem('crypto_tracker_transactions', JSON.stringify([{ coin_id: 'bitcoin' }]))
+    const stop = startReviewScheduler()
+    vi.advanceTimersByTime(65 * 1000)
+    expect(readState().askCount).toBe(1)
+    stop()
   })
 })

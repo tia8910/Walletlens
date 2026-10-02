@@ -109,6 +109,34 @@ function isStaticCdn(url) {
   return STATIC_CDN_PATTERNS.some(p => url.href.includes(p))
 }
 
+// A response that came out of a redirect cannot answer a page navigation:
+// Chrome and Android's WebView reject it with net::ERR_FAILED. /dashboard
+// redirects to /dashboard/ on the host, so the precached shell WAS such a
+// response, and every time the network was slow or briefly gone the fallback
+// below served it and the app showed WebView's "Web page not available"
+// instead of the cached app. Rebuilding the response drops the flag.
+async function clean(res) {
+  if (!res || !res.redirected) return res
+  const body = await res.blob()
+  return new Response(body, { status: res.status, statusText: res.statusText, headers: res.headers })
+}
+
+// Shown only when there is no network AND nothing cached to fall back on.
+// It reloads by itself: when the browser says it is back online, and every
+// few seconds after a successful ping, so the app returns without a tap.
+const OFFLINE_HTML = `<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>WalletLens</title>
+<style>html,body{margin:0;height:100%;background:#0b1220;color:#e6edf6;font-family:system-ui,sans-serif}
+main{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;box-sizing:border-box;text-align:center}
+h1{font-size:21px;margin:0 0 10px}p{margin:0 0 24px;line-height:1.55;color:#9fb0c3;max-width:320px}
+button{border:0;border-radius:999px;padding:14px 28px;font:inherit;font-weight:800;background:#16c784;color:#04130c}</style></head>
+<body><main><h1>Can’t connect right now</h1>
+<p>Your data is safe on this device. WalletLens will reload as soon as the connection is back.</p>
+<button onclick="location.reload()">Reload</button></main><script>
+var busy=false;function ping(){if(busy)return;busy=true;fetch('/manifest.webmanifest',{cache:'no-store'})
+.then(function(r){if(r.ok)location.reload();else busy=false}).catch(function(){busy=false})}
+addEventListener('online',ping);setInterval(ping,4000);</script></body></html>`
+
 self.addEventListener('install', e => {
   // Auto-apply updates: activate a freshly installed worker immediately instead
   // of leaving it "waiting" behind the old one. Paired with clients.claim() in
@@ -119,7 +147,13 @@ self.addEventListener('install', e => {
   self.skipWaiting()
   e.waitUntil(
     caches.open(STATIC)
-      .then(cache => Promise.all(PRECACHE_URLS.map(url => cache.add(url).catch(() => {}))))
+      // fetch + put rather than cache.add, so a redirected page is stored
+      // clean (see clean()) and can actually be served later.
+      .then(cache => Promise.all(PRECACHE_URLS.map(url =>
+        fetch(url, { cache: 'reload' })
+          .then(res => (res && res.ok ? clean(res).then(c => cache.put(url, c)) : null))
+          .catch(() => {})
+      )))
   )
 })
 
@@ -181,13 +215,17 @@ self.addEventListener('fetch', e => {
       // below is meant to allow. Cap it so a stalled network falls through
       // to the cache almost as fast as an outright network error would.
       fetch(req, { signal: AbortSignal.timeout(10000) })
-        .then(res => { if (res?.ok) caches.open(STATIC).then(c => c.put(req, res.clone())); return res })
+        .then(res => { if (res?.ok && !res.redirected) caches.open(STATIC).then(c => c.put(req, res.clone())); return res })
         .catch(() =>
           caches.match(req)
             // /dashboard is the app shell; / is the static home page now.
             .then(r => r || caches.match('/dashboard'))
+            .then(r => r || caches.match('/dashboard/'))
             .then(r => r || caches.match('/'))
-            .then(r => r || new Response('Offline', { status: 503 }))
+            .then(clean)
+            .then(r => r || new Response(OFFLINE_HTML, {
+              status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+            }))
         )
     )
     return

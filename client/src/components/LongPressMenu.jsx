@@ -100,22 +100,34 @@ function renderIcon(icon) {
 // title / subtitle — an optional header naming what was pressed.
 export function LongPressMenu({ items = [], pos, onClose, title, subtitle }) {
   const openedAtRef = useRef(0)
+  // Set by a press that STARTS on the overlay. Only such a press may close it.
+  const downOnOverlay = useRef(false)
   const menuRef = useRef(null)
   const [place, setPlace] = useState(null)
-  useEffect(() => { if (pos) openedAtRef.current = Date.now() }, [pos])
+  useEffect(() => { if (pos) { openedAtRef.current = Date.now(); downOnOverlay.current = false } }, [pos])
 
   useEffect(() => {
     if (!pos) return
     let cleanup = null
     // Defer one frame so the opening gesture's trailing events don't close it.
     const raf = requestAnimationFrame(() => {
-      const onScroll = () => onClose()
+      const onWheel = () => onClose()
+      // Close when the PAGE scrolls, not when anything scrolls. The new
+      // look's price ticker scrolls itself about twenty times a second, and
+      // closing on every scroll event shut the menu the instant it opened, so
+      // a long press on a holding appeared to do nothing at all.
+      const onScroll = (e) => {
+        const t = e.target
+        const page = t === document || t === document.documentElement || t === document.body || t === document.scrollingElement
+        const pageLike = t instanceof Element && t.clientHeight > window.innerHeight * 0.5 && t.scrollHeight > t.clientHeight + 1
+        if (page || pageLike) onClose()
+      }
       const onKey = (e) => { if (e.key === 'Escape') onClose() }
-      window.addEventListener('wheel', onScroll, { passive: true })
+      window.addEventListener('wheel', onWheel, { passive: true })
       window.addEventListener('scroll', onScroll, true)
       window.addEventListener('keydown', onKey)
       cleanup = () => {
-        window.removeEventListener('wheel', onScroll)
+        window.removeEventListener('wheel', onWheel)
         window.removeEventListener('scroll', onScroll, true)
         window.removeEventListener('keydown', onKey)
       }
@@ -148,12 +160,20 @@ export function LongPressMenu({ items = [], pos, onClose, title, subtitle }) {
   // Close on the overlay's OWN click, not on a global pointerdown. This keeps
   // the overlay mounted through the whole tap so an outside tap is absorbed
   // here instead of falling through to (and navigating) the content behind.
-  // Releasing the long-press finger over the overlay fires no click (its
-  // pointerdown happened on the content, before the overlay existed), so the
-  // menu stays open until the user actually taps.
+  // Releasing the long-press finger DOES fire a click here on Android (the
+  // overlay mounted under it mid-press), so a close also needs the press to
+  // have started on the overlay: see downOnOverlay.
   return createPortal(
     <div className="lp-overlay lpx-overlay" style={{ position: 'fixed', inset: 0, zIndex: 99999 }}
-      onClick={onClose}
+      // Lifting the long-press finger lands a click on this overlay, which
+      // mounted under it mid-press: on Android that click closed the menu
+      // the moment it opened. A tap that closes must begin here.
+      onPointerDown={() => { downOnOverlay.current = true }}
+      // The same stray release can land on an ITEM, which ran it: a long
+      // press on a holding jumped to Set Target. Swallow any click whose
+      // press did not start inside the open menu.
+      onClickCapture={(e) => { if (!downOnOverlay.current) { e.stopPropagation(); e.preventDefault() } }}
+      onClick={() => { if (downOnOverlay.current) onClose() }}
       onContextMenu={(e) => {
         // Always swallow the native menu. Only CLOSE on a deliberate right-click
         // well after opening — never on the native long-press contextmenu that

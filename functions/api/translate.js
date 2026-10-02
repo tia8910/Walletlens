@@ -22,7 +22,10 @@
 
 const MAX_ITEMS = 24
 const MAX_LEN = 300
-const LANGS = { ar: 'Arabic', fr: 'French', es: 'Spanish' }
+// Every language the app ships besides English. German and Italian were
+// missing, so their readers got English headlines in an otherwise German or
+// Italian app.
+const LANGS = { ar: 'Arabic', fr: 'French', es: 'Spanish', de: 'German', it: 'Italian' }
 const CACHE_SECONDS = 86400
 
 const CORS = {
@@ -87,10 +90,12 @@ export async function onRequestPost(context) {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(25000),
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        // Room for every item: Arabic headlines take several times the
+        // tokens of the English, and a truncated reply fails the whole batch.
+        max_tokens: Math.min(4096, 400 + texts.length * 220),
         system:
           `Translate each item into ${LANGS[lang]}. These are financial news headlines.\n` +
           'Rules:\n' +

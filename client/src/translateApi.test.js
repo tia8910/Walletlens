@@ -48,7 +48,7 @@ describe('/api/translate', () => {
   })
 
   it('rejects a language it does not support', async () => {
-    const r = await onRequestPost(ctx({ lang: 'de', texts: ['x'] }))
+    const r = await onRequestPost(ctx({ lang: 'ja', texts: ['x'] }))
     expect(r.status).toBe(400)
     expect((await r.json()).error).toBe('unsupported_language')
   })

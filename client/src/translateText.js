@@ -13,7 +13,12 @@
 
 const CACHE_KEY = 'wl_tr_cache'
 const MAX_ENTRIES = 400   // ~40 headlines x a few languages, with room to spare
-const MAX_BATCH = 24      // must not exceed the endpoint's own cap
+// Small batches. 24 headlines in one request ran past the model's output cap
+// or the timeout (Arabic in particular takes many tokens), and then the whole
+// batch failed and every headline stayed English. Six fit easily, the first
+// batch is the headlines on screen, and a failure costs six, not all.
+const MAX_BATCH = 6
+const PARALLEL = 3
 
 function loadCache() {
   try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}') } catch { return {} }
@@ -42,9 +47,10 @@ const keyFor = (lang, text) => `${lang}:${text}`
  * disappeared, so every failure path here is "return what you were given".
  *
  * @param {string[]} texts
- * @param {string}   lang  'ar' | 'fr' | 'es'  (anything else is a no-op)
+ * @param {string}   lang  'ar' | 'fr' | 'es' | 'de' | 'it'  (anything else is a no-op)
+ * @param {(partial: string[]) => void} [onPartial]  called as early batches land
  */
-export async function translateBatch(texts, lang) {
+export async function translateBatch(texts, lang, onPartial) {
   if (!Array.isArray(texts) || !texts.length) return texts || []
   if (!lang || lang === 'en') return texts
 
@@ -60,9 +66,11 @@ export async function translateBatch(texts, lang) {
 
   if (!missingIdx.length) return out
 
-  // One request per chunk, so a long feed does not blow the endpoint's cap.
-  for (let start = 0; start < missingIdx.length; start += MAX_BATCH) {
-    const idxs = missingIdx.slice(start, start + MAX_BATCH)
+  // One request per chunk, a few at a time, in feed order so the headlines
+  // on screen come back first.
+  const chunks = []
+  for (let start = 0; start < missingIdx.length; start += MAX_BATCH) chunks.push(missingIdx.slice(start, start + MAX_BATCH))
+  const runChunk = async (idxs) => {
     const payload = idxs.map(i => texts[i])
     try {
       const resp = await fetch('/api/translate', {
@@ -70,10 +78,15 @@ export async function translateBatch(texts, lang) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ texts: payload, lang }),
       })
-      if (!resp.ok) continue
+      if (!resp.ok) {
+        // Visible in the console, so "news is still English" can be told
+        // apart: not_configured (no API key) vs an upstream failure.
+        try { console.warn('[news] translate', resp.status, (await resp.json())?.error) } catch { /* no body */ }
+        return
+      }
       const data = await resp.json()
       const list = data?.translations
-      if (!Array.isArray(list) || list.length !== payload.length) continue
+      if (!Array.isArray(list) || list.length !== payload.length) return
       idxs.forEach((srcIdx, n) => {
         const translated = list[n]
         if (typeof translated === 'string' && translated.trim()) {
@@ -82,6 +95,14 @@ export async function translateBatch(texts, lang) {
         }
       })
     } catch { /* offline or blocked: leave this chunk in English */ }
+  }
+  for (let c = 0; c < chunks.length; c += PARALLEL) {
+    await Promise.all(chunks.slice(c, c + PARALLEL).map(runChunk))
+    // The headlines on screen are in the first round; show them now rather
+    // than after the whole feed.
+    if (typeof onPartial === 'function' && c + PARALLEL < chunks.length) {
+      try { onPartial(out.slice()) } catch { /* caller's problem */ }
+    }
   }
 
   saveCache(cache)

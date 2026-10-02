@@ -41,6 +41,13 @@ describe('home card and holdings', () => {
     expect(src).toMatch(/const shown = base\n/)
   })
 
+  it('names the wallet on the card and lets several wallets be switched', () => {
+    const top = read('components/HomeTop.jsx')
+    expect(top).toMatch(/className=\{`nl-wallet/)
+    expect(top).toMatch(/wallets\.length > 1 && \([\s\S]*?<select value=\{walletId\}/)
+    expect(read('pages/Dashboard.jsx')).toMatch(/<HomeTop[\s\S]{0,400}walletId=\{selectedWalletId\} onWallet=/)
+  })
+
   it('breaks the total down by category and takes the theme colour', () => {
     expect(read('components/HomeTop.jsx')).toMatch(/className="nl-hero-cats"/)
     expect(read('pages/Dashboard.jsx')).toMatch(/<HomeTop[\s\S]{0,200}cats=\{catBreakdown\}/)
@@ -62,6 +69,35 @@ describe('nothing is removed', () => {
     const missing = [...dests(v2Menu)].filter(d => !dests(more).has(d) && d !== '/settings' || d === '/settings' && !more.includes("go('/settings')"))
     expect(missing).toEqual([])
     expect(more).toMatch(/zakatOn \? \[\{ icon: 'crescent'/)
+  })
+
+  it('leaves the marketing pages (market index, fear & greed, rebalancing calculator) out of More', () => {
+    const more = read('pages/More.jsx')
+    for (const path of ['/market-index', '/fear-and-greed-index', '/rebalancing-calculator']) {
+      expect(more).not.toContain(`go('${path}')`)
+    }
+  })
+
+  it('shows the portfolio sentiment ticker on Home, under the portfolio card', () => {
+    expect(read('pages/Dashboard.jsx')).toMatch(/sentimentSlot=\{<SentimentTicker /)
+    const top = read('components/HomeTop.jsx')
+    expect(top.indexOf('nl-sentiment')).toBeGreaterThan(top.indexOf('className="nl-hero"'))
+    expect(top.indexOf('nl-sentiment')).toBeLessThan(top.indexOf('className="nl-quick"'))
+  })
+
+  it('shows the news only on the dashboard tab', () => {
+    const dash = read('pages/Dashboard.jsx')
+    expect(dash).toMatch(/\{activeTab === 'overview' && !nlHome && <NewsTicker \/>\}/)
+    expect(dash.match(/<NewsTicker\b/g)).toHaveLength(2)
+  })
+
+  it('keeps a long-press menu open when the finger lifts, and runs nothing by accident', () => {
+    const lp = read('components/LongPressMenu.jsx')
+    // A self-scrolling ticker must not close it; only the page scrolling does.
+    expect(lp).toMatch(/const onScroll = \(e\) => \{[\s\S]*?if \(page \|\| pageLike\) onClose\(\)/)
+    // The lifting finger's click neither closes the menu nor triggers an item.
+    expect(lp).toMatch(/onClickCapture=\{\(e\) => \{ if \(!downOnOverlay\.current\)/)
+    expect(lp).toMatch(/onClick=\{\(\) => \{ if \(downOnOverlay\.current\) onClose\(\) \}\}/)
   })
 
   it('Home keeps Buy, Sell and History when it replaces the quick strip', () => {

@@ -134,8 +134,10 @@ describe('the ask waits for the app to be in front of the user', () => {
   })
 
   it('is told about the lock state from App', () => {
-    expect(app).toMatch(/import \{ setAppInteractive \} from '\.\/reviewPrompt'/)
+    expect(app).toMatch(/import \{[^}]*\bsetAppInteractive\b[^}]*\} from '\.\/reviewPrompt'/)
     expect(app).toMatch(/setAppInteractive\(!locked\)/)
+    // And the check runs app-wide, so time on any page counts.
+    expect(app).toMatch(/useEffect\(\(\) => startReviewScheduler\(\), \[\]\)/)
   })
 })
 
