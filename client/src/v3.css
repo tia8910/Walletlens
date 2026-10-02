@@ -280,10 +280,10 @@ html.wl-v3 .wl-topbar-x svg { width: 18px !important; height: 18px !important; f
    settings and privacy buttons, currency, time range, chart and categories
    all stay. Scoped with :has() so a demo or empty dashboard, which has no new
    hero, keeps the card whole. */
-html.wl-v3 body:has(.nl-home) .dvx-hero .dvx-soul,
-html.wl-v3 body:has(.nl-home) .dvx-hero .dvx-hero-value { display: none !important; }
-html.wl-v3 body:has(.nl-home) .dvx-hero .dvx-hero-label { font-size: 0 !important; letter-spacing: 0 !important; justify-content: flex-end; min-height: 0; margin-bottom: 0.2rem; }
-html.wl-v3 body:has(.nl-home) .dvx-hero .dvx-hero-change { font-size: 1.05rem !important; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-soul,
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-value { display: none !important; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-label { font-size: 0 !important; letter-spacing: 0 !important; justify-content: flex-end; min-height: 0; margin-bottom: 0.2rem; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-change { font-size: 1.05rem !important; }
 
 /* Metals carry the app's own bar artwork. */
 .nl-metal { width: var(--s, 30px); height: var(--s, 30px); border-radius: 50%; flex: none; object-fit: cover; background: #1b1e24; box-shadow: 0 0 0 1px rgba(15, 29, 43, 0.08); }
@@ -293,8 +293,8 @@ html.wl-v3 .wl-topbar-right .wl-topbar-x {
 }
 .nl-hero-day { margin-top: 0.4rem; }
 /* The old card's theme watermark sat under its buttons; the hero carries it now. */
-html.wl-v3 body:has(.nl-home) .dvx-hero::before,
-html.wl-v3 body:has(.nl-home) .dvx-hero::after { display: none !important; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero::before,
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero::after { display: none !important; }
 html.wl-v3 .wl-topbar-right .wl-topbar-x.wl-topbar-gear { display: none !important; }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -335,16 +335,16 @@ html.wl-v3 .wl-sentiment-badge { height: 40px !important; margin: 4px; border-ra
 html.wl-v3 .wl-sentiment-tip { color: var(--nl-ink) !important; font-weight: 600; }
 
 /* ── Performance card ─────────────────────────────────────────────────── */
-html.wl-v3 body:has(.nl-home) .dvx-hero { padding: 1rem 1rem 0.9rem !important; text-align: start; }
-html.wl-v3 body:has(.nl-home) .dvx-hero .dvx-hero-label { display: flex !important; align-items: center; gap: 0.35rem; margin: 0 0 0.6rem !important; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero { padding: 1rem 1rem 0.9rem !important; text-align: start; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-label { display: flex !important; align-items: center; gap: 0.35rem; margin: 0 0 0.6rem !important; }
 .nl-perf-title { margin-inline-end: auto; font-size: 1rem; font-weight: 800; letter-spacing: -0.02em; color: var(--nl-ink); }
-html.wl-v3 body:has(.nl-home) .dvx-hero .dvx-hero-label button {
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-label button {
   width: 34px !important; height: 34px !important; padding: 0 !important; display: grid !important; place-items: center;
   border-radius: 50% !important; border: 0 !important; background: var(--nl-seg) !important; color: var(--nl-ink) !important; box-shadow: none !important;
 }
-html.wl-v3 body:has(.nl-home) .dvx-hero .dvx-hero-change { margin: 0.1rem 0 0.7rem !important; font-size: 1.15rem !important; font-weight: 800; color: var(--nl-ink) !important; }
-html.wl-v3 body:has(.nl-home) .dvx-hero .dvx-hero-change.up { color: var(--nl-up) !important; }
-html.wl-v3 body:has(.nl-home) .dvx-hero .dvx-hero-change.dn { color: var(--nl-down) !important; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-change { margin: 0.1rem 0 0.7rem !important; font-size: 1.15rem !important; font-weight: 800; color: var(--nl-ink) !important; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-change.up { color: var(--nl-up) !important; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-change.dn { color: var(--nl-down) !important; }
 
 /* Every chooser on the card is one grey track with a white pill. */
 html.wl-v3 .dvx-currency-switcher {
@@ -364,11 +364,11 @@ html.wl-v3 .dvx-ct-chip.active {
   background: var(--nl-card) !important; color: var(--nl-ink) !important;
   box-shadow: 0 1px 3px rgba(15, 29, 43, 0.12), 0 0 0 0.5px rgba(15, 29, 43, 0.04) !important;
 }
-html.wl-v3 body:has(.nl-home) .dvx-hero > div:has(> .dvx-tf-chip) {
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero > div:has(> .dvx-tf-chip) {
   flex-wrap: nowrap !important; gap: 2px !important; padding: 3px; margin: 0 0 0.55rem !important; border-radius: 12px; background: var(--nl-seg); overflow-x: auto; scrollbar-width: none;
 }
 html.wl-v3 .dvx-tf-chip { flex: 1 0 auto; }
-html.wl-v3 .dvx-live-ind, html.wl-v3 body:has(.nl-home) .dvx-hero > div:has(> .dvx-tf-chip) > span { display: none; }
+html.wl-v3 .dvx-live-ind, html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero > div:has(> .dvx-tf-chip) > span { display: none; }
 html.wl-v3 .dvx-catfilter { display: flex; gap: 0.4rem !important; overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap !important; margin-bottom: 0.55rem !important; }
 html.wl-v3 .dvx-catfilter::-webkit-scrollbar { display: none; }
 html.wl-v3 .dvx-catchip {
@@ -499,3 +499,72 @@ html.wl-v3 .dvx-hstat b { font-size: 0.74rem !important; }
 /* The arrow beside the ticker is the trend row again; it stands down with the pill. */
 html.wl-v3 .dvx-holding:has(.wl-trend-badge) .dvx-holding-meta .wl-trend { display: none !important; }
 html.wl-v3 .dvx-holding-stats { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 0.85fr) !important; gap: 0.15rem 0.4rem !important; }
+
+/* ── Holdings on Home (components/NlHoldings.jsx) ─────────────────────── */
+.nl-hold { padding: 0.75rem 0.95rem 0.2rem; }
+.nl-hold-tools { display: flex; align-items: center; gap: 0.35rem; }
+.nl-tools-gap { flex: 1; }
+.nl-tool {
+  width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  background: var(--nl-seg, #f1f3f6); color: var(--nl-ink);
+}
+.nl-tool svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.nl-tool.on { background: var(--nl-ink); color: var(--nl-card); }
+.nl-sort select {
+  height: 34px; padding: 0 1.9rem 0 0.8rem; border: 0; border-radius: 999px; cursor: pointer; appearance: none; -webkit-appearance: none;
+  font: inherit; font-size: 0.76rem; font-weight: 800; color: var(--nl-ink);
+  background: var(--nl-seg, #f1f3f6) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b8794' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.6rem center / 13px;
+}
+.nl-search {
+  width: 100%; box-sizing: border-box; height: 40px; margin-top: 0.6rem; padding: 0 0.9rem; border: 0; border-radius: 12px; outline: none;
+  background: var(--nl-seg, #f1f3f6); color: var(--nl-ink); font: inherit; font-size: 0.85rem;
+}
+.nl-chips { display: flex; gap: 0.35rem; margin-top: 0.6rem; overflow-x: auto; scrollbar-width: none; }
+.nl-chips::-webkit-scrollbar { display: none; }
+.nl-chips button {
+  flex: none; height: 30px; padding: 0 0.75rem; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--nl-seg, #f1f3f6); color: var(--nl-sub); font: inherit; font-size: 0.72rem; font-weight: 800;
+}
+.nl-chips button.on { background: var(--nl-ink); color: var(--nl-card); }
+.nl-sum {
+  display: flex; align-items: center; gap: 0.5rem; margin-top: 0.6rem; padding: 0.5rem 0.75rem; border-radius: 12px;
+  background: var(--nl-seg, #f1f3f6); font-size: 0.76rem; font-weight: 700; color: var(--nl-sub);
+}
+.nl-sum.sel { background: rgba(22, 168, 116, 0.1); }
+.nl-sum b { margin-inline-start: auto; color: var(--nl-ink); font-variant-numeric: tabular-nums; }
+.nl-sum em { font-style: normal; font-weight: 800; }
+.nl-sum button { border: 0; background: none; padding: 0 0.1rem; color: var(--nl-sub); font-size: 0.85rem; cursor: pointer; }
+.nl-hold .nl-list { padding: 0.2rem 0 0; }
+.nl-hold .up { color: var(--nl-up); } .nl-hold .down { color: var(--nl-down); }
+.nl-row-logo { position: relative; flex: none; display: grid; }
+.nl-row-logo i {
+  position: absolute; right: -3px; bottom: -3px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--nl-up); color: #fff; font-style: normal; font-size: 0.62rem; font-weight: 900; box-shadow: 0 0 0 2px var(--nl-card);
+}
+.nl-row.sel { background: rgba(22, 168, 116, 0.06); margin: 0 -0.95rem; padding-inline: 0.95rem; width: calc(100% + 1.9rem); }
+.nl-row-n small .up, .nl-row-n small .down { font-weight: 800; }
+.nl-empty { margin: 0.8rem 0; color: var(--nl-sub); font-size: 0.85rem; }
+
+/* Into Portfolio insights. */
+.nl-insights {
+  width: 100%; display: flex; align-items: center; gap: 0.8rem; margin: 0.75rem 0; padding: 0.9rem 1rem; border: 0; cursor: pointer;
+  font: inherit; color: var(--nl-ink); text-align: start;
+}
+.nl-insights > span:nth-child(2) { flex: 1; min-width: 0; }
+.nl-insights b { display: block; font-size: 0.95rem; letter-spacing: -0.01em; }
+.nl-insights small { display: block; margin-top: 1px; font-size: 0.75rem; font-weight: 600; color: var(--nl-sub); }
+.nl-insights-ic { width: 42px; height: 42px; border-radius: 14px; flex: none; display: grid; place-items: center; background: linear-gradient(150deg, var(--nl-navy2), var(--nl-navy)); }
+.nl-insights-ic svg { width: 21px; height: 21px; fill: none; stroke: #5ee6b1; stroke-width: 2.2; stroke-linecap: round; }
+.nl-chev { width: 18px; height: 18px; flex: none; fill: none; stroke: var(--nl-sub); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Portfolio insights page title. */
+.nl-page-h { display: flex; align-items: center; gap: 0.75rem; margin: 0.6rem 0 0.9rem; color: var(--nl-ink); }
+.nl-page-h small { display: block; font-size: 0.74rem; font-weight: 600; color: var(--nl-sub); }
+.nl-page-h h1 { margin: 0; font-size: 1.45rem; font-weight: 800; letter-spacing: -0.03em; }
+.nl-back { width: 42px; height: 42px; flex: none; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer; background: var(--nl-card); box-shadow: var(--nl-shadow); color: var(--nl-ink); }
+.nl-back svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+html.wl-v3 .nl-sort select { height: 34px !important; min-height: 0 !important; font-size: 0.76rem !important; line-height: 34px !important; border: 0 !important; box-shadow: none !important; }
+html.wl-v3 .nl-hold .nl-row { border-radius: 0 !important; box-shadow: none !important; background: none; }
+html.wl-v3 .nl-hold .nl-row.sel { background: rgba(22, 168, 116, 0.06); }
+html.wl-v3 .nl-back svg { width: 20px !important; height: 20px !important; }
+html.wl-v3 .nl-back { padding: 0 !important; }

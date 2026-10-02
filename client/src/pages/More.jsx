@@ -24,6 +24,7 @@ export default function More() {
   const groups = [
     { label: t('v2GroupPortfolio'), items: [
       { icon: 'home', label: t('dashboard'), on: () => go(home, { tab: 'overview' }) },
+      { icon: 'bar-chart', label: t('nlInsights'), on: () => go(home, { tab: 'overview', insights: true }) },
       { icon: 'eye', label: t('watchlist'), on: () => go(home, { tab: 'watchlist' }) },
       { icon: 'wallet', label: t('wallets'), on: () => go(home, { tab: 'wallets' }) },
       { icon: 'exchange', label: t('trades'), on: () => go('/transactions') },

@@ -54,6 +54,7 @@ import { MoneyFlowBadge } from '../components/MoneyFlow'
 import { BybitStrip, BybitInterestStrip } from '../components/BybitOffer'
 import { ZakatGate } from '../components/ZakatSwitch'
 import HomeTop from '../components/HomeTop'
+import NlHoldings from '../components/NlHoldings'
 import { briefParts } from '../portfolioBrief'
 import { useNewLook } from '../newLook'
 
@@ -4645,6 +4646,36 @@ export default function Dashboard() {
   // Home in the new look: the hero up top carries the total, the day and
   // the summary sentence, so the cards below show each figure once.
   const nlHome = newLook && enriched.length > 0 && !isDemo
+  // Home is the mockup's screen and nothing else; the performance chart,
+  // breakdown, heatmaps and every other analysis card live one tap away in
+  // Portfolio insights (Home's card at the bottom, or More).
+  const nlInsights = nlHome && !!location.state?.insights
+  const nlHomeView = nlHome && !nlInsights
+  const openInsights = () => { track('nl_insights_open'); navigate(location.pathname, { state: { tab: 'overview', insights: true } }); try { window.scrollTo({ top: 0 }) } catch {} }
+  // Long-press on a holding: the actions the old row's menu and its ⋮ panel
+  // held, plus selecting it into the sum.
+  const holdingMenu = (h) => {
+    const sym = (h.coin_symbol || '').toUpperCase()
+    const coin = { id: h.coin_id, symbol: sym, name: h.coin_name || sym, image: h.coin_image }
+    const stable = categorizeAsset(h) === 'cash' || isStablecoin(h.coin_id, h.coin_symbol)
+    const crypto = !stable && categorizeAsset(h) === 'crypto'
+    const sel = selectedAssets.has(h.coin_id)
+    return [
+      { icon: 'chart', tone: 'blue', label: t('lpViewAsset').replace('{sym}', sym), onClick: () => navigate(`/asset/${encodeURIComponent(h.coin_id)}`) },
+      { icon: 'plus', tone: 'green', label: t('lpBuyMore'), onClick: () => openSheet('buy', 'longpress_holding', { coin }) },
+      ...(h.amount > 0 ? [{ icon: 'minus', tone: 'rose', label: t('lpSell'), onClick: () => openSheet('sell', 'longpress_holding', { coin }) }] : []),
+      ...(stable ? [] : [{ icon: 'candles', tone: 'violet', label: t('lpTechnicals'), onClick: () => navigate('/technicals', { state: { coinId: h.coin_id } }) }]),
+      { divider: true },
+      { icon: '✓', tone: 'green', label: sel ? t('nlUnselect') : t('nlSelect'), onClick: () => setSelectedAssets(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n }) },
+      ...(stable ? [] : [{ icon: 'target', tone: 'amber', label: t('dsSetTarget'), onClick: () => goTab('targets') }]),
+      { icon: 'bell', tone: 'amber', label: t('lpAlert'), onClick: () => goTab('alerts') },
+      { icon: 'flag', tone: 'blue', label: t('dsSetVision'), onClick: () => navigate('/vision', { state: { linkAsset: h.coin_id } }) },
+      ...(crypto ? [{ icon: 'sparkle', tone: 'violet', label: t('dsMagicScore'), onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'ta' } }) }] : []),
+      ...(stable ? [] : [{ icon: 'zap', tone: 'rose', label: t('dsRiskScan'), onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'risk' } }) }]),
+      { icon: 'sparkle', tone: 'violet', label: t('lpAi'), onClick: () => navigate(location.pathname, { state: { tab: 'tools', tool: 'ai' } }) },
+      { icon: 'copy', tone: 'slate', label: t('lpCopy'), onClick: () => { try { navigator.clipboard?.writeText(sym + ' — ' + cv(h.value) + ' (' + pct(h.pnlPct) + ' P&L)') } catch {} } },
+    ]
+  }
 
   return (
     <div className="dvx">
@@ -4665,7 +4696,7 @@ export default function Dashboard() {
       {/* New look: net-worth card, imports, mood and watch cards, first on Home.
           Its Buy / Sell / History are the quick strip's own actions, so
           the strip below stands down while it shows. */}
-      {nlHome && activeTab === 'overview' && (
+      {nlHomeView && activeTab === 'overview' && (
         <HomeTop
           enriched={enriched} totalValue={totalValue} todayPnL={todayPnLVal} totalPnLPct={totalPnLPct}
           onBuy={() => openSheet('buy', 'home_hero')} onSell={() => openSheet('sell', 'home_hero')}
@@ -4757,8 +4788,18 @@ export default function Dashboard() {
               them here. Populated dashboards only. */}
           {showTabGrid && enriched.length > 0 && importOptions}
 
+          {/* Portfolio insights: a page title and a way back to Home. */}
+          {nlInsights && (
+            <header className="nl-page-h">
+              <button type="button" className="nl-back" onClick={() => navigate(location.pathname, { state: { tab: 'overview' } })} aria-label={t('nlHome')}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7" /></svg>
+              </button>
+              <div><small>{t('nlInsightsSub')}</small><h1>{t('nlInsights')}</h1></div>
+            </header>
+          )}
+
           {/* Feature discovery nudge — only shown once, until dismissed */}
-          {!isDemo && enriched.length > 0 && (
+          {!isDemo && enriched.length > 0 && !nlHomeView && (
             <FeatureNudgeStrip
               onGoToTargets={() => { setActiveTab('targets'); track('feature_nudge_click', { feature: 'targets' }) }}
               onGoToVision={() => { navigate('/vision'); track('feature_nudge_click', { feature: 'vision' }) }}
@@ -4821,8 +4862,39 @@ export default function Dashboard() {
             )
           })()}
 
+          {/* Home in the new look: its holdings list, then the way into
+              Portfolio insights, and the support card. */}
+          {nlHomeView && (
+            <>
+              <NlHoldings
+                rows={displayHoldings} total={enriched.length} cats={catBreakdown}
+                cat={holdingsCat} setCat={c => { setHoldingsCat(c); setHoldingsBadge('all') }}
+                search={holdingsSearch} setSearch={setHoldingsSearch}
+                sort={holdingsSort} setSort={setHoldingsSort} dir={holdingsSortDir} setDir={setHoldingsSortDir}
+                breakEven={showBreakEven} setBreakEven={setShowBreakEven}
+                onExcel={() => exportToExcel(filteredHoldings, totalValue, displayCurrency)}
+                onPdf={() => exportToPDF(filteredHoldings, totalValue, totalPnL, totalPnLPct, displayCurrency)}
+                selected={selectedAssets} onClearSelected={() => setSelectedAssets(new Set())}
+                selectedStats={selectedStats} filteredStats={filteredStats}
+                hidden={hidden} cv={cv} marketSparks={sparks} pricesFailed={pricesFailed}
+                showAll={showAllHoldings} setShowAll={setShowAllHoldings}
+                onAsset={(h) => { if (consumeLongPress()) return; track('asset_click'); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) }}
+                bindRow={(h) => bindLongPress((x, y) => showLp(x, y, holdingMenu(h), { title: (h.coin_symbol || '').toUpperCase(), subtitle: hidden ? VALUE_MASK : cv(h.value), area: 'holding' }))}
+              />
+              {enriched.some(h => categorizeAsset(h) === 'crypto') && <BybitStrip />}
+              <button type="button" className="nl-card nl-insights" onClick={openInsights}>
+                <span className="nl-insights-ic" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2" /></svg>
+                </span>
+                <span><b>{t('nlInsights')}</b><small>{t('nlInsightsSub')}</small></span>
+                <svg className="nl-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+              </button>
+              <SupportNudge busy={sheetOpen || importChooser} holdingsCount={enriched.length} />
+            </>
+          )}
+
           {/* Sentiment + portfolio tips ticker */}
-          {enriched.length > 0 && (
+          {enriched.length > 0 && !nlHomeView && (
             <SentimentTicker
               holdings={enriched}
               totalValue={totalValue}
@@ -4831,7 +4903,7 @@ export default function Dashboard() {
           )}
 
           {/* Hero + stats — only shown when portfolio has holdings */}
-          {enriched.length > 0 && <div className={`dvx-hero glass-card heartbeat heartbeat-v${volatilityLevel} mood-${mood}`} {...bindLongPress(openHeroMenu)}>
+          {enriched.length > 0 && !nlHomeView && <div className={`dvx-hero glass-card heartbeat heartbeat-v${volatilityLevel} mood-${mood}`} {...bindLongPress(openHeroMenu)}>
             {!hidden && !isDemo && (() => {
               const dayBase = totalValue - todayPnLVal
               const dayChangePct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
@@ -5200,7 +5272,7 @@ export default function Dashboard() {
           </div>}
 
           {/* Stats row */}
-          {enriched.length > 0 && (
+          {enriched.length > 0 && !nlHomeView && (
             <div className="dvx-stats-row">
               <StatCard label={t('invested')}    value={hidden ? '••••' : <AnimatedMoney value={totalInvested} format={cv} />} />
               <StatCard label={t('pnl')}         value={hidden ? '••••' : <AnimatedMoney value={totalPnL} format={cv} signed />}
@@ -5235,7 +5307,7 @@ export default function Dashboard() {
           )}
 
           {/* Portfolio breakdown by asset category */}
-          {catBreakdown.length > 0 && (
+          {catBreakdown.length > 0 && !nlHomeView && (
             <div className="glass-card dvx-cat-breakdown">
               <h3 style={{ margin:'0 0 0.75rem', fontSize:'0.9rem', fontWeight:700 }}>{t('portfolioBreakdown')}</h3>
               <div className="dvx-cat-list">
@@ -5284,6 +5356,8 @@ export default function Dashboard() {
           )}
 
           {/* Main grid */}
+          {/* Everything from here down is Portfolio insights in the new look. */}
+          {!nlHomeView && <>
           <div className="dvx-grid">
             {/* Left column */}
             <div className="dvx-col-main">
@@ -5291,7 +5365,7 @@ export default function Dashboard() {
               {/* "Loved the app?" support card. Placed above Spin & Learn and
                   below the portfolio itself, so the ask only ever comes after
                   the numbers it is asking about. */}
-              <SupportNudge holdingsCount={enriched.length} busy={sheetOpen || importChooser} />
+              {!nlHome && <SupportNudge holdingsCount={enriched.length} busy={sheetOpen || importChooser} />}
 
               {/* P&L bar chart */}
               {cardVis.pnl_chart && pnlData.length > 0 && (
@@ -5326,8 +5400,8 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* ── Holdings (primary column) ── */}
-              <div className="glass-card">
+              {/* ── Holdings (primary column). The new look has them on Home. ── */}
+              {!nlHome && <div className="glass-card">
                 <div style={CHART_HDR_STYLE}>
                   <h3 style={{ margin:0 }}>
                     Holdings ({isHoldingsFiltered ? `${filteredHoldings.length} of ${enriched.length}` : enriched.length})
@@ -5716,7 +5790,7 @@ export default function Dashboard() {
                     )}
                   </>
                 }
-              </div>
+              </div>}
 
               {/* Portfolio Heatmap */}
               {cardVis.portfolio_heatmap && !isDemo && enriched.length >= 2 && !pricesFailed && (
@@ -5903,6 +5977,7 @@ export default function Dashboard() {
             {cardVis.correlation && enriched.length >= 2 && <CorrelationMatrix enriched={enriched} />}
             {cardVis.sector_heatmap && hasCryptoExposure(enriched) && <SectorHeatmap />}
           </Suspense>
+          </>}
         </>
       )}
 

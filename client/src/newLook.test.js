@@ -63,9 +63,19 @@ describe('nothing is removed', () => {
 describe('Home shows each figure once', () => {
   const dash = read('pages/Dashboard.jsx')
   const top = read('components/HomeTop.jsx')
-  it('keeps one holdings list, the full one with its filters and actions', () => {
+  it('keeps one holdings list, in the mockup rows, with every tool the old list had', () => {
     expect(top).not.toContain('nl-row')
-    expect(dash).toContain('className="dvx-holdings"')
+    const hold = read('components/NlHoldings.jsx')
+    for (const piece of ['setSearch', 'setSort', 'setDir', 'setBreakEven', 'onExcel', 'onPdf', 'setCat', 'selectedStats', 'bindRow(h)']) expect(hold, piece).toContain(piece)
+    expect(dash).toMatch(/\{nlHomeView && \(\s*<>\s*<NlHoldings/)
+    expect(dash).toMatch(/\{!nlHome && <div className="glass-card">/)
+    // The old row's ⋮ panel actions moved into the long-press menu.
+    for (const k of ['dsSetTarget', 'dsSetVision', 'dsMagicScore', 'dsRiskScan', 'nlSelect']) expect(dash).toMatch(new RegExp(`holdingMenu[\\s\\S]*t\\('${k}'\\)`))
+  })
+  it('moves the analysis cards to Portfolio insights, reachable from Home and More', () => {
+    expect(dash).toMatch(/const nlHomeView = nlHome && !nlInsights/)
+    expect(dash).toMatch(/onClick=\{openInsights\}/)
+    expect(read('pages/More.jsx')).toMatch(/go\(home, \{ tab: 'overview', insights: true \}\)/)
   })
   it('folds the summary sentence into the mood banner and the category cards into the breakdown', () => {
     expect(top).toMatch(/briefParts\(enriched, totalValue, dayPct, t\)\?\.rest/)

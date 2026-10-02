@@ -9,7 +9,7 @@ import { THEMES } from '../ThemeContext'
 
 // Gold and silver as the bars the themes use, rather than a letter tile.
 const METAL = { gold: THEMES.find(t => t.id === 'gold')?.logo, silver: THEMES.find(t => t.id === 'silver')?.logo }
-function AssetLogo({ h, size }) {
+export function AssetLogo({ h, size }) {
   const src = METAL[h.coin_id]
   if (src) return <img className="nl-metal" src={src} alt="" style={{ '--s': `${size}px` }} />
   return <CoinLogo coinId={h.coin_id} symbol={h.coin_symbol} image={h.coin_image} size={size} />
@@ -49,7 +49,7 @@ export function moodOf(dayPct) {
 }
 
 /** Seven days of closes per id, from the app's cached chart data. */
-function useSparks(ids) {
+export function useSparks(ids) {
   const key = ids.join(',')
   const [map, setMap] = useState({})
   useEffect(() => {
@@ -75,7 +75,7 @@ export function sparkPath(values, w, h, pad = 3) {
   return { line, area: `${line} L${w} ${h} L0 ${h} Z` }
 }
 
-function Spark({ values, w = 120, h = 34, className }) {
+export function Spark({ values, w = 120, h = 34, className }) {
   const p = sparkPath(values, w, h)
   const gid = useMemo(() => `nls${Math.random().toString(36).slice(2, 8)}`, [])
   if (!p) return <span className={`${className} nl-spark-empty`} aria-hidden="true" />
