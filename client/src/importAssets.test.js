@@ -63,3 +63,26 @@ describe('the Android app hands every picked photo to the page', () => {
     expect(java).toMatch(/EXTRA_ALLOW_MULTIPLE/)
   })
 })
+
+describe('several overlapping screenshots', () => {
+  it('one row per holding, unit prices, and the market price where none was read', async () => {
+    const { tidyImportRows } = await import('./components/SmartImport.jsx')
+    const rows = [
+      { symbol: 'AR', name: 'Arweave', amount: 500.79, price: 2177.4, type: 'buy' },
+      { symbol: 'PYTH', name: 'Pyth Network', amount: 10000, price: 0.073, type: 'buy' },
+      { symbol: 'STONKBROKER', name: 'StonkBroker', amount: 26339, price: 0.0109, type: 'buy' },
+      { symbol: 'XAU', name: 'Gold', amount: 1.4472, price: 4286.2, type: 'buy' },
+      { symbol: 'PYTH', name: 'Pyth Network', amount: 10000, price: 0.0735, type: 'buy' },
+      { symbol: 'ST', name: 'StonkBroker', amount: 26339, price: 0.0107, type: 'buy' },
+      { symbol: 'XAU', name: 'Gold', amount: 1.4472, price: 4286.2, type: 'buy' },
+      { symbol: 'APT', name: 'Aptos', amount: 399.6, price: 0, type: 'buy' },
+    ]
+    const market = { AR: 4.4, PYTH: 0.074, STONKBROKER: 0.011, XAU: 4290, APT: 1.9 }
+    const out = tidyImportRows(rows, r => market[r.symbol] || 0)
+    expect(out.map(r => r.symbol)).toEqual(['AR', 'PYTH', 'STONKBROKER', 'XAU', 'APT'])
+    expect(out[0].price).toBeCloseTo(2177.4 / 500.79, 4)   // value read as price, put back
+    expect(out[1].price).toBe(0.073)                        // a real fill is left alone
+    expect(out[3].price).toBe(4286.2)
+    expect(out[4].price).toBe(1.9)                          // none read: the market's
+  })
+})
