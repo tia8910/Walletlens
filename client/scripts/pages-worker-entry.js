@@ -178,6 +178,14 @@ export default {
     const url = new URL(request.url)
     if (DATASETS.has(url.pathname)) return serveDataset(url, request, env)
 
+    // The home page is the animated tour, a static file at /tour/. Serving it
+    // here, rather than rewriting / in _redirects, leaves index.html as the
+    // app shell the SPA fallback and the offline cache depend on. It still
+    // goes through the asset server, so _headers (the CSP) applies.
+    if (url.pathname === '/' && (request.method === 'GET' || request.method === 'HEAD')) {
+      return env.ASSETS.fetch(new Request(new URL('/tour/' + url.search, url), request))
+    }
+
     const isPush = url.pathname === '/api/push' || url.pathname.startsWith('/api/push/')
     const isDrive = url.pathname === '/api/drive' || url.pathname.startsWith('/api/drive/')
     const isGDrive = url.pathname === '/api/gdrive' || url.pathname.startsWith('/api/gdrive/')

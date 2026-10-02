@@ -184,6 +184,8 @@ self.addEventListener('fetch', e => {
         .then(res => { if (res?.ok) caches.open(STATIC).then(c => c.put(req, res.clone())); return res })
         .catch(() =>
           caches.match(req)
+            // /dashboard is the app shell; / is the static home page now.
+            .then(r => r || caches.match('/dashboard'))
             .then(r => r || caches.match('/'))
             .then(r => r || new Response('Offline', { status: 503 }))
         )

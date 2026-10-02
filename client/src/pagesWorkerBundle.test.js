@@ -49,6 +49,18 @@ describe('the bundled Pages worker', () => {
     expect(assets.fetch, 'never fell through to the asset server').not.toHaveBeenCalled()
   })
 
+  it('serves the static tour as the home page, query string and all', async () => {
+    const res = await call('/?utm_source=x')
+    expect(assets.fetch).toHaveBeenCalledOnce()
+    expect(assets.fetch.mock.calls[0][0].url).toBe(`${SITE_ORIGIN}/tour/?utm_source=x`)
+    expect(res.status).toBe(200)
+  })
+
+  it('leaves every other path, including the app shell, to the asset server untouched', async () => {
+    await call('/dashboard/')
+    expect(assets.fetch.mock.calls[0][0].url).toBe(`${SITE_ORIGIN}/dashboard/`)
+  })
+
   it('hands every other path to the asset server', async () => {
     // Which is what keeps _headers and _redirects applying — the CSP and the
     // SPA fallback — even if _routes.json is ever ignored.
