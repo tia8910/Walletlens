@@ -310,31 +310,50 @@ function PriceTicker({ v3 = false }) {
   // items are drawn twice so the drift loops without a jump.
   const stripRef = useRef(null)
   const [sheet, setSheet] = useState(false)
+  const pausedUntil = useRef(0)
+  const pause = (ms = 4000) => { pausedUntil.current = Date.now() + ms }
+  // ‹ and ›: a page either way, smoothly, with the drift held off meanwhile.
+  const nudge = (dir) => {
+    const el = stripRef.current
+    if (!el) return
+    pause(5000)
+    el.scrollBy({ left: dir * Math.max(160, el.clientWidth * 0.7), behavior: 'smooth' })
+  }
   useEffect(() => {
     const el = stripRef.current
     if (!v3 || !el) return
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
-    let raf = 0, pausedUntil = 0, pos = el.scrollLeft
-    const pause = () => { pausedUntil = Date.now() + 3500 }
+    // The row is drawn twice, so either edge can wrap to the same place in
+    // the other copy: a swipe or ‹ › goes on in both directions forever.
+    const wrap = () => {
+      const half = el.scrollWidth / 2
+      if (half <= el.clientWidth) return
+      if (el.scrollLeft < 2) el.scrollLeft += half
+      else if (el.scrollLeft >= half * 2 - el.clientWidth - 2) el.scrollLeft -= half
+    }
+    if (el.scrollLeft < 2) el.scrollLeft = el.scrollWidth / 2
+    const opts = { passive: true }
+    const hold = () => pause()
+    el.addEventListener('scroll', wrap, opts)
+    for (const ev of ['pointerdown', 'touchstart', 'touchmove', 'wheel']) el.addEventListener(ev, hold, opts)
+    // The drift: slow, and never while a hand is on the row or just left it.
+    let raf = 0, pos = el.scrollLeft
+    const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     const step = () => {
-      if (Date.now() > pausedUntil && !document.hidden) {
-        const half = el.scrollWidth / 2
+      if (Date.now() > pausedUntil.current && !document.hidden) {
         // Sub-pixel steps accumulate in `pos`; scrollLeft rounds them away.
         if (Math.abs(pos - el.scrollLeft) > 2) pos = el.scrollLeft
         pos += 0.45
-        if (half > el.clientWidth && pos >= half) pos -= half
         el.scrollLeft = pos
       } else pos = el.scrollLeft
       raf = requestAnimationFrame(step)
     }
-    raf = requestAnimationFrame(step)
-    const opts = { passive: true }
-    el.addEventListener('pointerdown', pause, opts); el.addEventListener('touchstart', pause, opts); el.addEventListener('wheel', pause, opts)
+    if (!still) raf = requestAnimationFrame(step)
     return () => {
       cancelAnimationFrame(raf)
-      el.removeEventListener('pointerdown', pause); el.removeEventListener('touchstart', pause); el.removeEventListener('wheel', pause)
+      el.removeEventListener('scroll', wrap)
+      for (const ev of ['pointerdown', 'touchstart', 'touchmove', 'wheel']) el.removeEventListener(ev, hold)
     }
-  }, [v3])
+  }, [v3, displayItems.length])
 
   const chips = (list, copy) => list.map((t, i) => {
         if (t.type === 'event') {
@@ -374,10 +393,16 @@ function PriceTicker({ v3 = false }) {
   if (v3) {
     return (
       <div className="nl-ticker">
+        <button type="button" className="nl-ticker-arrow" onClick={() => nudge(-1)} aria-label="‹" tabIndex={-1}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7" /></svg>
+        </button>
         <div className="ticker-strip nl-ticker-strip" ref={stripRef} role="list" aria-label={t('tickerPrices')}>
           {chips(displayItems, 0)}
           {chips(displayItems, 1)}
         </div>
+        <button type="button" className="nl-ticker-arrow" onClick={() => nudge(1)} aria-label="›" tabIndex={-1}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+        </button>
         <button type="button" className="nl-ticker-all" onClick={() => setSheet(true)}>{t('nlAllPrices')}</button>
         {sheet && <Suspense fallback={null}><PricesSheet items={items} onClose={() => setSheet(false)} /></Suspense>}
       </div>

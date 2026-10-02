@@ -577,7 +577,6 @@ html.wl-v3 .nl-ticker .nl-ticker-strip::-webkit-scrollbar { display: none; }
   position: relative; flex: none; height: 30px; margin: 0 10px 0 4px; padding: 0 0.85rem; border: 0; border-radius: 999px; cursor: pointer;
   background: var(--nl-ink); color: var(--nl-card); font: inherit; font-size: 0.74rem; font-weight: 800;
 }
-.nl-ticker-all::before { content: ""; position: absolute; right: 100%; top: -6px; bottom: -6px; width: 28px; pointer-events: none; background: linear-gradient(90deg, transparent, var(--nl-card)); }
 
 /* Prices sheet. */
 .nl-sheet-bg { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: flex-end; justify-content: center; background: rgba(8, 15, 24, 0.45); animation: nl-fade 0.18s ease both; }
@@ -613,3 +612,14 @@ html.wl-v3 .nl-search, .nl-sheet .nl-search { min-height: 0 !important; height: 
 .nl-sheet .nl-tool { min-height: 0 !important; min-width: 0 !important; }
 /* Report sheet: solid, in the card language. */
 html.wl-v3 .air-sheet { background: var(--nl-card) !important; color: var(--nl-ink) !important; }
+/* ‹ › either side of the strip; its edges fade under them. */
+.nl-ticker-arrow {
+  flex: none; width: 26px; height: 26px; margin: 0 2px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  background: var(--nl-seg, #f1f3f6); color: var(--nl-ink);
+}
+.nl-ticker-arrow:first-child { margin-inline-start: 8px; }
+.nl-ticker-arrow svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+html.wl-v3 .nl-ticker-arrow { min-height: 0 !important; min-width: 0 !important; }
+html.wl-v3 .nl-ticker .nl-ticker-strip { touch-action: pan-x; -webkit-mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent); }
+html.wl-v3 .nl-ticker-all { margin-inline-start: 6px !important; }
+html.wl-v3 .nl-ticker-arrow, html.wl-v3 .nl-ticker-arrow:hover, html.wl-v3 .nl-ticker-arrow:focus, html.wl-v3 .nl-ticker-arrow:active { background: var(--nl-seg) !important; color: var(--nl-ink) !important; box-shadow: none !important; border: 0 !important; }
