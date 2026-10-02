@@ -15,14 +15,6 @@ const HIDDEN_AT    = 'wl_biometric_hidden_at'  // timestamp the app was last bac
 // still locks. Matches how banking apps behave.
 const RELOCK_GRACE_MS = 60 * 1000
 
-/**
- * How long the lock screen may sit there before it offers a way out.
- *
- * Long enough that it is not the first thing a user reaches for, short enough
- * that being stuck is a nuisance rather than a lockout.
- */
-const RECOVER_AFTER_MS = 12 * 1000
-
 /** The lock lifting: a latch-and-shimmer cue and a short buzz. Never throws. */
 function playUnlockCue() {
   try { sfx.playUnlock(); sfx.haptic([12, 40, 18]) } catch { /* audio is a nicety */ }
@@ -596,27 +588,21 @@ function BiometricLockScreenInner({ onUnlock }) {
         setRecover(true)
         setError(t('blNoPasskey'))
       } else {
-        // NotAllowedError = user cancelled/timed out
+        // NotAllowedError = user cancelled/timed out. No way round the lock
+        // here: cancelling is something anyone holding the phone can do.
         setError(t('blCancelled'))
-        // Show escape hatch after 2 failed attempts so user is never truly stuck
-        if (attemptCount.current >= 2) setRecover(true)
       }
     } finally {
       setTrying(false)
     }
   }
 
-  // Nobody stays locked out of their own portfolio.
-  //
-  // Every other route to the escape hatch depends on something happening: two
-  // failed attempts, or an authenticator error. A device that is not
-  // registering taps produces neither, and the data is local — there is no
-  // "log in on another device" to fall back on. So the hatch also appears on a
-  // timer, whatever else has or has not happened.
-  useEffect(() => {
-    const timer = setTimeout(() => setRecover(true), RECOVER_AFTER_MS)
-    return () => clearTimeout(timer)
-  }, [])
+  // Turning the lock off from here is offered only when this device cannot
+  // check a fingerprint at all: no credential stored for the app, or the
+  // authenticator itself errors. Then the data, which lives only here, would
+  // otherwise be lost for good. It used to appear after two cancelled prompts
+  // or on a 12-second timer, which let anyone holding the phone walk past
+  // the lock; those are gone.
 
   // Auto-trigger the biometric prompt once when the lock screen appears.
   useEffect(() => {
