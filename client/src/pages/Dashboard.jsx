@@ -4713,6 +4713,7 @@ export default function Dashboard() {
       {nlHomeView && activeTab === 'overview' && (
         <HomeTop
           enriched={enriched} totalValue={totalValue} todayPnL={todayPnLVal} totalPnLPct={totalPnLPct} cats={catBreakdown}
+          wallets={wallets} walletId={selectedWalletId} onWallet={(id) => { setSelectedWalletId(id); track('wallet_switch', { source: 'home_hero' }) }}
           onBuy={() => openSheet('buy', 'home_hero')} onSell={() => openSheet('sell', 'home_hero')}
           onHistory={() => navigate('/transactions')}
           onImport={(kind) => {

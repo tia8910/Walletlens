@@ -41,6 +41,13 @@ describe('home card and holdings', () => {
     expect(src).toMatch(/const shown = base\n/)
   })
 
+  it('names the wallet on the card and lets several wallets be switched', () => {
+    const top = read('components/HomeTop.jsx')
+    expect(top).toMatch(/className=\{`nl-wallet/)
+    expect(top).toMatch(/wallets\.length > 1 && \([\s\S]*?<select value=\{walletId\}/)
+    expect(read('pages/Dashboard.jsx')).toMatch(/<HomeTop[\s\S]{0,400}walletId=\{selectedWalletId\} onWallet=/)
+  })
+
   it('breaks the total down by category and takes the theme colour', () => {
     expect(read('components/HomeTop.jsx')).toMatch(/className="nl-hero-cats"/)
     expect(read('pages/Dashboard.jsx')).toMatch(/<HomeTop[\s\S]{0,200}cats=\{catBreakdown\}/)

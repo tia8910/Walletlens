@@ -90,7 +90,7 @@ export function Spark({ values, w = 120, h = 34, className }) {
   )
 }
 
-export default function HomeTop({ enriched = [], watch = [], totalValue = 0, todayPnL = 0, totalPnLPct = 0, cats = [], newsSlot,
+export default function HomeTop({ enriched = [], watch = [], totalValue = 0, todayPnL = 0, totalPnLPct = 0, cats = [], wallets = [], walletId = 'all', onWallet, newsSlot,
   onBuy, onSell, onHistory, onImport, onWatchAll, onAsset }) {
   const { t } = useLanguage()
   const { priv } = usePrivateFmt()
@@ -114,6 +114,11 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
   }[mood]
 
   const [whole, cents] = splitMoney(totalValue)
+  // Which wallet the card is showing. One wallet: its name. Several: the one
+  // picked, or "All wallets".
+  const walletName = walletId === 'all'
+    ? (wallets.length > 1 ? t('dsAllWallets') : wallets[0]?.name)
+    : wallets.find(w => String(w.id) === String(walletId))?.name || t('dsAllWallets')
   const imp = (kind) => { track('home_import', { kind }); onImport?.(kind) }
 
   return (
@@ -127,6 +132,21 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
       <section className="nl-hero">
         <i className="nl-hero-mark" aria-hidden="true" />
         <div className="nl-hero-main">
+          {walletName && (
+            <label className={`nl-wallet${wallets.length > 1 ? ' pick' : ''}`}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4z" /></svg>
+              <span>{walletName}</span>
+              {wallets.length > 1 && (
+                <>
+                  <svg className="nl-wallet-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  <select value={walletId} onChange={e => onWallet?.(e.target.value)} aria-label={t('dsAllWallets')}>
+                    <option value="all">{t('dsAllWallets')}</option>
+                    {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                  </select>
+                </>
+              )}
+            </label>
+          )}
           <small>{t('nlTotal')}</small>
           <div className="nl-hero-value">{priv(whole)}<span>{priv(cents)}</span></div>
           <div className={`nl-hero-day ${todayPnL >= 0 ? 'up' : 'down'}`}>
