@@ -72,6 +72,12 @@ describe('the tour page', () => {
     expect(readFileSync(join(here, '../vite.config.js'), 'utf8')).toMatch(/include: \[\n\s+'\/api\/\*',[\s\S]*?\n\s+'\/',\n/)
   })
 
+  it('is installable: links the manifest and registers the service worker', () => {
+    // / serves this page, so PWABuilder and browsers read the manifest from here.
+    expect(html).toMatch(/<link rel="manifest" href="\/manifest\.webmanifest">/)
+    expect(html).toMatch(/navigator\.serviceWorker\.register\('\/sw\.js'\)/)
+  })
+
   it('clears the hop flag the app sets when it sends its own "/" links here', () => {
     expect(html).toMatch(/sessionStorage\.removeItem\('wl_home_hop'\)/)
     const app = readFileSync(join(here, 'App.jsx'), 'utf8')
