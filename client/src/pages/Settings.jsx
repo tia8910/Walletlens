@@ -10,6 +10,7 @@ import InstallExtension from '../components/InstallExtension'
 import InterestPicker from '../components/InterestPicker'
 import PushToggle from '../components/PushToggle'
 import { ZakatSettings } from '../components/ZakatSwitch'
+import NewLookToggle from '../components/NewLookToggle'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import DriveBackup from '../components/DriveBackup'
 import DeviceVault from '../components/DeviceVault'
@@ -83,6 +84,7 @@ export default function Settings() {
       {/* ── Appearance ── */}
       <div className="settings-section glass-card">
         <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="sliders" size={16} />{t('setAppearance')}</h3>
+        <NewLookToggle />
 
         {/* Color Theme */}
         <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.6rem' }}>

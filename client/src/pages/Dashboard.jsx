@@ -53,6 +53,8 @@ import TrendArrow, { TrendBadge } from '../components/TrendArrow'
 import { MoneyFlowBadge } from '../components/MoneyFlow'
 import { BybitStrip, BybitInterestStrip } from '../components/BybitOffer'
 import { ZakatGate } from '../components/ZakatSwitch'
+import HomeTop from '../components/HomeTop'
+import { useNewLook } from '../newLook'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -3357,6 +3359,7 @@ const PortfolioBrief = memo(function PortfolioBrief({ enriched, totalValue, tota
 })
 
 export default function Dashboard() {
+  const newLook = useNewLook()
   const navigate = useNavigate()
   const location = useLocation()
   // ?tool= is the URL-form deep link a push notification can carry (router
@@ -4697,6 +4700,22 @@ export default function Dashboard() {
           grid is redundant with the native bottom nav, so we replace it with the
           quick import options (for populated dashboards; the empty profile shows
           its own import boxes). */}
+      {/* New look: net-worth card, imports, mood and watch cards, first on Home.
+          Its Buy / Sell / History are the quick strip's own actions, so
+          the strip below stands down while it shows. */}
+      {newLook && activeTab === 'overview' && enriched.length > 0 && !isDemo && (
+        <HomeTop
+          enriched={enriched} totalValue={totalValue} todayPnL={todayPnLVal} totalPnLPct={totalPnLPct}
+          onBuy={() => openSheet('buy', 'home_hero')} onSell={() => openSheet('sell', 'home_hero')}
+          onHistory={() => navigate('/transactions')}
+          onImport={(kind) => {
+            setShowScreenshot(kind === 'screenshot'); setShowVoiceImport(kind === 'voice'); setShowExcelImport(kind === 'excel'); setShowBackupCode(false)
+            setTimeout(() => document.querySelector('.dvx-excel-import-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120)
+          }}
+          onWatchAll={() => setActiveTab('watchlist')}
+          onAsset={(h) => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}
+        />
+      )}
       {showTabGrid ? (
       <div className="dvx-tabgrid">
         {tabs.map(tab => (
@@ -4708,7 +4727,7 @@ export default function Dashboard() {
           </button>
         ))}
       </div>
-      ) : (activeTab === 'overview' && enriched.length > 0 && importOptions)}
+      ) : (activeTab === 'overview' && enriched.length > 0 && !(newLook && !isDemo) && importOptions)}
 
       {/* Live news ticker, demoted but not buried.
           It was the second thing on the page, under the price strip, so a
@@ -4728,7 +4747,7 @@ export default function Dashboard() {
       {activeTab === 'overview' && (
         <>
           {/* Quick Trade strip — always at top when portfolio exists */}
-          {enriched.length > 0 && (
+          {enriched.length > 0 && !(newLook && !isDemo) && (
             <div ref={quickStripRef} style={{
               display: 'flex', gap: '0.6rem', margin: '0.5rem 0',
             }}>
@@ -4763,7 +4782,9 @@ export default function Dashboard() {
           
           
           {/* Portfolio brief statement */}
-          {enriched.length > 0 && <PortfolioBrief enriched={enriched} totalValue={totalValue} totalPnL={totalPnL} totalPnLPct={totalPnLPct} />}
+          {/* The sentence says "today", so it is fed today's move, not the
+              all-time return it used to show ("up +31% today"). */}
+          {enriched.length > 0 && <PortfolioBrief enriched={enriched} totalValue={totalValue} totalPnL={todayPnLVal} totalPnLPct={totalValue - todayPnLVal > 0 ? (todayPnLVal / (totalValue - todayPnLVal)) * 100 : 0} />}
 
           {/* Import options under Buy/Sell — only when the desktop tile grid is
               shown up top. On mobile web and in the native app the import

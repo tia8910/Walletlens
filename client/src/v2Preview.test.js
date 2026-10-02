@@ -30,7 +30,8 @@ describe('v2 is live on /dashboard', () => {
 describe('v2 navigation keeps every destination', () => {
   const nav = read('components/BottomNav.jsx')
   const app = read('App.jsx')
-  const v2Bar = nav.slice(nav.indexOf('const V2_NAV_ITEMS'), nav.indexOf('const DASHBOARD_LP_ITEMS'))
+  // Up to the new-look bar, which is defined right after and tested in newLook.test.js.
+  const v2Bar = nav.slice(nav.indexOf('const V2_NAV_ITEMS'), nav.indexOf('const V3_NAV_ITEMS'))
   const v2Menu = app.slice(app.indexOf('const DrawerV2'), app.indexOf('// ── Memoized app footer'))
 
   it('has four tabs: Dashboard, Goals, Targets, Coach', () => {

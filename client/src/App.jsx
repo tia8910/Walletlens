@@ -43,6 +43,8 @@ import { initMood } from './moodEngine'
 import { pendingVaultPayload, consumeVaultPayload } from './nativeVault'
 import { inAppShell, seedFromVault } from './nativeShell'
 import { useZakatOn } from './zakatSwitch'
+import { useNewLook, useNewLookClass, applyLookParam } from './newLook'
+import './v3.css'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -130,6 +132,7 @@ const Guardian     = lazy(() => import('./pages/Guardian'))
 const DriveCallback = lazy(() => import('./pages/DriveCallback'))
 const AdminMail    = lazy(() => import('./pages/AdminMail'))
 const AdminReports = lazy(() => import('./pages/AdminReports'))
+const More         = lazy(() => import('./pages/More'))
 const Vision       = lazy(() => import('./pages/Vision'))
 const Diagnostics  = lazy(() => import('./pages/Diagnostics'))
 const GrowNetWorth = lazy(() => import('./pages/GrowNetWorth'))
@@ -570,6 +573,11 @@ export default function App() {
   // The v2 design, live everywhere in the app. Landing pages keep their own look.
   const v2 = !isLanding && isV2Active(location.pathname)
   useV2Class(v2)
+  // The light card redesign, on top of v2, while it is being previewed.
+  // Read during render, so the first paint of a ?look= link already has it.
+  useMemo(() => applyLookParam(location.search), [location.search])
+  const newLook = useNewLook()
+  useNewLookClass(v2 && newLook)
   // /v2test was the preview URL; old links land on the dashboard, tab intact.
   useEffect(() => {
     if (isV2Path(location.pathname)) {
@@ -998,7 +1006,8 @@ export default function App() {
               <Route path="/faq" element={<FAQ />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
-              <Route path="/settings" element={<Settings />} />
+          <Route path="/more" element={<More />} />
+          <Route path="/settings" element={<Settings />} />
               <Route path="/guardian" element={<Guardian />} />
               <Route path="/drive-callback" element={<DriveCallback />} />
               <Route path="/vision" element={<Vision />} />
@@ -1015,7 +1024,7 @@ export default function App() {
 
       {/* The classic bar is app-only. The v2 preview shows its bar in the
           browser too, since that is where it is being tested. */}
-      {!isLanding && shellReady && (isStandalone || v2) && <BottomNav v2={v2} />}
+      {!isLanding && shellReady && (isStandalone || v2) && <BottomNav v2={v2} v3={v2 && newLook} />}
 
       {shellReady && isStandalone && isAndroid && !onboardDone && <Suspense fallback={null}><NativeOnboarding onDone={() => setOnboardDone(true)} /></Suspense>}
       {shellReady && (!isStandalone || !isAndroid) && <Suspense fallback={null}><WelcomeModal /></Suspense>}

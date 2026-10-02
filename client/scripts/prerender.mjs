@@ -2420,6 +2420,7 @@ const APP_ROUTES = [
   { path: '/coach',        title: 'AI Coach — WalletLens',       description: 'AI-powered portfolio analysis, computed on your device.' },
   { path: '/technicals',   title: 'Analysis — WalletLens',       description: 'Technical analysis for your holdings.' },
   { path: '/settings',     title: 'Settings — WalletLens',       description: 'App preferences. Data stays on your device.' },
+  { path: '/more',         title: 'More — WalletLens',           description: 'Every WalletLens feature in one place.' },
   // /guardian belongs here because the Android notifications link straight to
   // it. Tapping a notification is a cold navigation to the host, not a
   // client-side route change, so a path with no prerendered shell 404s no
