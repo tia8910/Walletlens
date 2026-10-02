@@ -93,14 +93,40 @@ describe('translateBatch', () => {
     const texts = Array.from({ length: 30 }, (_, i) => `headline ${i}`)
     const spy = vi.fn(async (_url, opts) => {
       const { texts: sent } = JSON.parse(opts.body)
-      expect(sent.length).toBeLessThanOrEqual(24)
+      // Small batches: 24 Arabic headlines in one request ran past the
+      // model's output cap or the timeout, and the whole batch stayed English.
+      expect(sent.length).toBeLessThanOrEqual(6)
       return okResponse(sent.map(s => 'ar:' + s))
     })
     globalThis.fetch = spy
     const out = await translateBatch(texts, 'ar')
-    expect(spy).toHaveBeenCalledTimes(2)
+    expect(spy).toHaveBeenCalledTimes(5)
     expect(out[0]).toBe('ar:headline 0')
     expect(out[29]).toBe('ar:headline 29')
+  })
+
+  it('hands back the first headlines before the whole feed is done', async () => {
+    const texts = Array.from({ length: 30 }, (_, i) => `story ${i}`)
+    globalThis.fetch = vi.fn(async (_url, opts) => okResponse(JSON.parse(opts.body).texts.map(s => 'fr:' + s)))
+    const partials = []
+    await translateBatch(texts, 'fr', (p) => partials.push(p))
+    expect(partials.length).toBeGreaterThan(0)
+    expect(partials[0][0]).toBe('fr:story 0')
+    expect(partials[0][29]).toBe('story 29')
+  })
+
+  it('one failed batch leaves only its own headlines in English', async () => {
+    const texts = Array.from({ length: 12 }, (_, i) => `item ${i}`)
+    let call = 0
+    globalThis.fetch = vi.fn(async (_url, opts) => {
+      call++
+      const sent = JSON.parse(opts.body).texts
+      if (sent[0] === 'item 0') return { ok: false, status: 502, json: async () => ({ error: 'upstream_error' }) }
+      return okResponse(sent.map(s => 'es:' + s))
+    })
+    const out = await translateBatch(texts, 'es')
+    expect(out[0]).toBe('item 0')
+    expect(out[6]).toBe('es:item 6')
   })
 
   it('survives localStorage being unavailable', async () => {

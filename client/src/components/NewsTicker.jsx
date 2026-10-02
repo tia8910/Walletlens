@@ -4,15 +4,20 @@ import { useLanguage } from '../LanguageContext'
 import { translateBatch } from '../translateText'
 import { dataUrl } from '../apiHosts.js'
 
-function timeAgo(pubDate) {
+// "52m ago" in the reader's language: the browser's own formatter knows every
+// one the app ships, so no strings are needed.
+function timeAgo(pubDate, lang = 'en') {
   if (!pubDate) return ''
   const diff = Date.now() - new Date(pubDate).getTime()
   const m = Math.floor(diff / 60000)
-  if (m < 1)  return 'just now'
-  if (m < 60) return `${m}m ago`
+  let rtf = null
+  try { rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto', style: 'short' }) } catch { /* old engine */ }
+  if (m < 1)  return rtf ? rtf.format(0, 'minute') : 'just now'
+  if (m < 60) return rtf ? rtf.format(-m, 'minute') : `${m}m ago`
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
-  return `${Math.floor(h / 24)}d ago`
+  if (h < 24) return rtf ? rtf.format(-h, 'hour') : `${h}h ago`
+  const d = Math.floor(h / 24)
+  return rtf ? rtf.format(-d, 'day') : `${d}d ago`
 }
 
 // News is grouped by category. Crypto additionally has a cached /news.json
@@ -132,7 +137,7 @@ export default function NewsTicker({ variant } = {}) {
     if (!items.length || lang === 'en') return
     let cancelled = false
     const titles = items.map(it => it.title)
-    translateBatch(titles, lang).then(translated => {
+    const apply = (translated) => {
       if (cancelled) return
       // Only touch state if something actually changed, or an unchanged
       // result would re-render the ticker on every language check.
@@ -141,7 +146,9 @@ export default function NewsTicker({ variant } = {}) {
           translated[n] && translated[n] !== it.title ? { ...it, title: translated[n] } : it
         )))
       }
-    }).catch(() => { /* translation is best-effort; English stands */ })
+    }
+    translateBatch(titles, lang, apply).then(apply)
+      .catch(() => { /* translation is best-effort; English stands */ })
     return () => { cancelled = true }
     // items.length rather than items: the map above replaces the array, and
     // depending on the array itself would loop.
@@ -249,7 +256,7 @@ export default function NewsTicker({ variant } = {}) {
               <div key={i} className="news-modal-card">
                 <div className="news-modal-card-meta">
                   <span className="news-source-tag" style={{ color: item.sourceColor }}>{item.source}</span>
-                  <span className="news-card-time">{timeAgo(item.pubDate)}</span>
+                  <span className="news-card-time">{timeAgo(item.pubDate, lang)}</span>
                 </div>
                 <a
                   href={item.link}
@@ -296,7 +303,7 @@ export default function NewsTicker({ variant } = {}) {
               onClick={() => track('news_click', { source: item.source, where: 'home_card' })}>
               <i className="nl-news-src" style={{ '--c': item.sourceColor || '#16a874' }}>{item.source}</i>
               <b>{item.title}</b>
-              <small>{timeAgo(item.pubDate)}</small>
+              <small>{timeAgo(item.pubDate, lang)}</small>
             </a>
           ))}
         </div>
