@@ -558,6 +558,7 @@ export default {
     nlSeeAll: "See all",
     nlPerformance: "Performance",
     nlAllPrices: "All",
+    nlMetals: "Metals",
     nlTabPrices: "Prices",
     nlSmartHint: "Net flow of the wallets Nansen labels as smart money, last 24 hours.",
     nlAccumulated: "Smart money buying",

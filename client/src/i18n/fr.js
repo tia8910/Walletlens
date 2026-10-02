@@ -537,6 +537,7 @@ export default {
     nlSeeAll: "Tout voir",
     nlPerformance: "Performance",
     nlAllPrices: "Tout",
+    nlMetals: "Métaux",
     nlTabPrices: "Prix",
     nlSmartHint: "Flux net des portefeuilles que Nansen classe comme smart money, sur 24 heures.",
     nlAccumulated: "La smart money achète",

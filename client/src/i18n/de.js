@@ -497,6 +497,7 @@ export default {
     nlSeeAll: "Alle ansehen",
     nlPerformance: "Wertentwicklung",
     nlAllPrices: "Alle",
+    nlMetals: "Metalle",
     nlTabPrices: "Kurse",
     nlSmartHint: "Nettofluss der Wallets, die Nansen als Smart Money einstuft, letzte 24 Stunden.",
     nlAccumulated: "Smart Money kauft",

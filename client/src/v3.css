@@ -623,3 +623,6 @@ html.wl-v3 .nl-ticker-arrow { min-height: 0 !important; min-width: 0 !important;
 html.wl-v3 .nl-ticker .nl-ticker-strip { touch-action: pan-x; -webkit-mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent); }
 html.wl-v3 .nl-ticker-all { margin-inline-start: 6px !important; }
 html.wl-v3 .nl-ticker-arrow, html.wl-v3 .nl-ticker-arrow:hover, html.wl-v3 .nl-ticker-arrow:focus, html.wl-v3 .nl-ticker-arrow:active { background: var(--nl-seg) !important; color: var(--nl-ink) !important; box-shadow: none !important; border: 0 !important; }
+.nl-sheet .nl-chips, .nl-sheet .nl-seg2, .nl-sheet .nl-sheet-h { flex: none; }
+.nl-sheet .nl-chips { padding-bottom: 2px; }
+html.wl-v3 .nl-sheet .nl-chips button { min-height: 0 !important; height: 32px !important; }
