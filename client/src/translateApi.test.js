@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { onRequestPost } from '../../functions/api/translate.js'
+import { VOICE_HOST } from './apiHosts'
 
 // The handler runs on Cloudflare, which this sandbox cannot reach, so it would
 // otherwise ship having never executed. Importing it directly and standing in
@@ -41,10 +42,29 @@ beforeEach(() => {
 })
 
 describe('/api/translate', () => {
-  it('refuses when the key is not configured', async () => {
-    const r = await onRequestPost(ctx({ lang: 'ar', texts: ['x'] }, {}))
-    expect(r.status).toBe(503)
+  it('without a key here, asks the voice worker, which holds one', async () => {
+    // Production has no key on the Pages project, so this is the path every
+    // reader in the app takes.
+    const spy = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ translations: ['واحد'] }) }))
+    globalThis.fetch = spy
+    const r = await onRequestPost(ctx({ lang: 'ar', texts: ['one'] }, {}))
+    expect(r.status).toBe(200)
+    expect((await r.json()).translations).toEqual(['واحد'])
+    expect(spy.mock.calls[0][0]).toBe(`https://${VOICE_HOST}/`)
+    expect(JSON.parse(spy.mock.calls[0][1].body)).toEqual({ mode: 'translate', lang: 'ar', texts: ['one'] })
+  })
+
+  it('without a key, passes the voice worker\'s failure on instead of inventing text', async () => {
+    globalThis.fetch = vi.fn(async () => ({ ok: false, status: 503, json: async () => ({ error: 'not_configured' }) }))
+    const r = await onRequestPost(ctx({ lang: 'ar', texts: ['one'] }, {}))
+    expect(r.status).toBe(502)
     expect((await r.json()).error).toBe('not_configured')
+  })
+
+  it('without a key, refuses a voice reply of the wrong length', async () => {
+    globalThis.fetch = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ translations: ['a'] }) }))
+    const r = await onRequestPost(ctx({ lang: 'ar', texts: ['one', 'two'] }, {}))
+    expect(r.status).toBe(502)
   })
 
   it('rejects a language it does not support', async () => {

@@ -27,6 +27,8 @@ const MAX_LEN = 300
 // Italian app.
 const LANGS = { ar: 'Arabic', fr: 'French', es: 'Spanish', de: 'German', it: 'Italian' }
 const CACHE_SECONDS = 86400
+// Must match VOICE in functions/api/voice/[[path]].js and VOICE_HOST in client/src/apiHosts.js.
+const VOICE = 'https://walletlens-voice.tarek-abdelhameed.workers.dev/'
 
 const CORS = {
   'Content-Type': 'application/json',
@@ -50,8 +52,9 @@ export async function onRequestOptions() {
 export async function onRequestPost(context) {
   const { env, request } = context
 
+  // No key on this Pages project is the normal case in production: the key
+  // lives on the voice worker, which translates the same way (see below).
   const apiKey = env.ANTHROPIC_API_KEY
-  if (!apiKey) return json({ error: 'not_configured' }, 503)
 
   let body
   try {
@@ -80,6 +83,32 @@ export async function onRequestPost(context) {
 
   const hit = await cache.match(cacheKey)
   if (hit) return hit
+
+  // Without a key here, hand the batch to the voice worker, which holds one.
+  // Server to server, so Cloudflare's bot challenge in front of the site never
+  // sees it, and the answer is cached below exactly like a direct one.
+  if (!apiKey) {
+    let vr
+    try {
+      vr = await fetch(VOICE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(28000),
+        body: JSON.stringify({ mode: 'translate', lang, texts }),
+      })
+    } catch {
+      return json({ error: 'upstream_unreachable' }, 502)
+    }
+    let vd = null
+    try { vd = await vr.json() } catch { /* not JSON */ }
+    const list = vd?.translations
+    if (!vr.ok || !Array.isArray(list) || list.length !== texts.length || list.some(t => typeof t !== 'string')) {
+      return json({ error: vd?.error || 'upstream_error', status: vr.status }, 502)
+    }
+    const out = json({ translations: list }, 200, { 'Cache-Control': `public, max-age=${CACHE_SECONDS}` })
+    context.waitUntil(cache.put(cacheKey, out.clone()))
+    return out
+  }
 
   let resp
   try {

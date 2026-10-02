@@ -1263,7 +1263,15 @@ Deno.serve(async (req) => {
     }
     // Throttle the expensive / abusable modes before any work happens.
     const mode = typeof body?.mode === "string" ? body.mode : "voice";
-    if (AI_MODES.has(mode) || mode === "voice") {
+    if (mode === "translate") {
+        // Arrives from the site's /api/translate, so every reader shares the
+        // site's egress address; that endpoint caches each batch at the edge,
+        // so the volume here is a handful of batches per language, not per user.
+        if (rateLimited(ip, "translate", 300)) {
+            return new Response(JSON.stringify({ error: "rate_limited" }), { status: 429, headers });
+        }
+    }
+    else if (AI_MODES.has(mode) || mode === "voice") {
         if (rateLimited(ip, "ai", 20)) {
             return new Response(JSON.stringify({ error: "rate_limited" }), { status: 429, headers });
         }
@@ -1801,6 +1809,48 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) {
         return new Response(JSON.stringify({ error: "not_configured" }), { status: 503, headers });
+    }
+    // ── News headline translation (mode: "translate") ─────────────────────────
+    // For the site's /api/translate when the Pages project has no key of its
+    // own. Same contract and the same rules: short PUBLIC strings only (news
+    // headlines), never anything from a portfolio.
+    if (body?.mode === "translate") {
+        const LANGS = { ar: "Arabic", fr: "French", es: "Spanish", de: "German", it: "Italian" };
+        const lang = String(body?.lang || "");
+        const texts = Array.isArray(body?.texts) ? body.texts : null;
+        if (!LANGS[lang]) return new Response(JSON.stringify({ error: "unsupported_language" }), { status: 400, headers });
+        if (!texts || !texts.length || texts.length > 24 || texts.some((t) => typeof t !== "string" || t.length > 300)) {
+            return new Response(JSON.stringify({ error: "bad_request" }), { status: 400, headers });
+        }
+        try {
+            const resp = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+                signal: AbortSignal.timeout(25000),
+                body: JSON.stringify({
+                    model: "claude-haiku-4-5-20251001",
+                    max_tokens: Math.min(4096, 400 + texts.length * 220),
+                    system: `Translate each item into ${LANGS[lang]}. These are financial news headlines.\n` +
+                        "Rules:\n" +
+                        "- Keep ticker symbols, company names, product names and numbers exactly as they are (BTC, ETH, SEC, Coinbase, $65,120).\n" +
+                        "- Keep the register of a news headline: concise, no added commentary.\n" +
+                        "- Translate every item, even if it looks like a fragment.\n" +
+                        "Reply with a JSON array of strings only — same length, same order, no prose, no markdown fence.",
+                    messages: [{ role: "user", content: JSON.stringify(texts) }],
+                }),
+            });
+            if (!resp.ok) return new Response(JSON.stringify({ error: "upstream_error", status: resp.status }), { status: 502, headers });
+            const data = await resp.json();
+            const raw = (data?.content?.[0]?.text || "").trim().replace(/^```(?:json)?|```$/g, "").trim();
+            const translations = JSON.parse(raw);
+            if (!Array.isArray(translations) || translations.length !== texts.length || translations.some((t) => typeof t !== "string")) {
+                return new Response(JSON.stringify({ error: "bad_upstream_shape" }), { status: 502, headers });
+            }
+            return new Response(JSON.stringify({ translations }), { headers });
+        }
+        catch {
+            return new Response(JSON.stringify({ error: "upstream_unreachable" }), { status: 502, headers });
+        }
     }
     // ── Screenshot import (mode: "vision") ────────────────────────────────────
     // Accepts a base64 image of a portfolio / trade history / order confirmation
