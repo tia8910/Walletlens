@@ -6,7 +6,7 @@ import { track } from '../analytics'
 import { noteFriction } from '../reviewPrompt'
 import { noteSupportFriction } from '../supportNudge'
 import {
-  connect, backupNow, restoreNow, driveState, previouslyConnected,
+  connect, backupNow, backupWithStoredKey, restoreNow, driveState, previouslyConnected,
   disconnectDrive, autoBackupEnabled, forgetAutoBackup,
   latestBackupAt, knownBackup, hasLocalPortfolio,
 } from '../driveSync'
@@ -80,6 +80,8 @@ export default function DriveBackup({ embedded = false }) {
   // starts off.
   const [auto, setAuto] = useState(true)
   const [autoOn, setAutoOn] = useState(() => autoBackupEnabled())
+  // Restore with the key this device holds: a confirm, no passphrase.
+  const [keyRestore, setKeyRestore] = useState(false)
 
   const resumed = useRef(false)
   useEffect(() => {
@@ -132,6 +134,7 @@ export default function DriveBackup({ embedded = false }) {
   }
 
   function ask(which) {
+    setKeyRestore(which === 'restore' && autoBackupEnabled())
     setPrompt(which)
     setPass('')
     setMsg(null)
@@ -199,6 +202,22 @@ export default function DriveBackup({ embedded = false }) {
     } finally { setBusy(false) }
   }
 
+  // With the key on this device, Back up now needs nothing typed: one tap,
+  // straight to Drive. The passphrase is only for a device without the key.
+  async function onQuickBackup() {
+    if (busy) return
+    setBusy(true); setMsg(null)
+    try {
+      const { txCount } = await backupWithStoredKey()
+      track('drive_backup', { txCount, automatic: true, quick: true })
+      refresh(); setFound(f => f || { id: driveState().fileId })
+      say('ok', `Backed up ${txCount} transactions.`)
+    } catch (e) {
+      noteFriction('sync_failed'); noteSupportFriction('sync_failed')
+      say('err', explain(e, 'Backup failed. Nothing on this device was changed.'))
+    } finally { setBusy(false) }
+  }
+
   async function onSubmit() {
     setBusy(true); setMsg(null)
     const which = prompt
@@ -213,10 +232,20 @@ export default function DriveBackup({ embedded = false }) {
           : `Backed up ${txCount} transactions. You'll be asked for your passphrase each time.`)
         cancel()
       } else {
-        const { restored } = await restoreNow(pass)
-        track('drive_restore')
-        say('ok', `Restored ${restored} items. Redirecting…`)
-        setTimeout(() => { window.location.href = "/dashboard" }, 1200)
+        let restored
+        try {
+          ({ restored } = await restoreNow(keyRestore ? undefined : pass))
+        } catch (e) {
+          // The key on this device no longer opens the file (another device
+          // re-keyed it). Ask for the passphrase rather than failing.
+          if (!keyRestore) throw e
+          setKeyRestore(false)
+          say('err', 'Enter your passphrase to restore this backup.')
+          return
+        }
+        track('drive_restore', { quick: keyRestore })
+        say('ok', `Restored ${restored} items. Opening your portfolio…`)
+        setTimeout(() => { window.location.href = "/dashboard" }, 400)
       }
     } catch (e) {
       // Both frictions were declared in reviewPrompt and reported by nobody,
@@ -242,7 +271,7 @@ export default function DriveBackup({ embedded = false }) {
     : found
       ? (backupAge ? `Connected · backup from ${backupAge}` : 'Connected · backup found')
       : 'Connected · no backup yet'
-  const replaces = prompt === 'restore' && action === 'ask'
+  const replaces = prompt === 'restore' && (action === 'ask' || (keyRestore && !empty))
   // A device with nothing on it and a backup waiting is the case this feature
   // exists for. Say so plainly rather than leaving Restore to be guessed at.
   const waiting = connected && found && empty
@@ -289,8 +318,8 @@ export default function DriveBackup({ embedded = false }) {
       {/* Actions, only once there is a connection to act on. */}
       {connected && !prompt && !waiting && (
         <div className="settings-row" style={{ gap:'0.5rem', justifyContent:'flex-start' }}>
-          <button className="settings-chip" onClick={() => ask('backup')} disabled={busy}>
-            Back up now
+          <button className="settings-chip" onClick={() => (autoOn ? onQuickBackup() : ask('backup'))} disabled={busy}>
+            {busy && autoOn ? 'Backing up…' : 'Back up now'}
           </button>
           {found && (
             <button className="settings-chip" onClick={() => ask('restore')} disabled={busy}>
@@ -320,6 +349,11 @@ export default function DriveBackup({ embedded = false }) {
 
       {prompt && (
         <div className="settings-row" style={{ display:'block' }}>
+          {keyRestore ? (
+            <p style={{ margin:'0 0 0.2rem', fontSize:'0.9rem' }}>
+              Load the backup from your Drive onto this device? No passphrase needed here.
+            </p>
+          ) : (<>
           <div className="settings-label" style={{ marginBottom:'0.5rem' }}>
             <span>{prompt === 'backup' ? 'Passphrase to encrypt this backup' : 'Passphrase for this backup'}</span>
             <span className="settings-hint">
@@ -339,6 +373,7 @@ export default function DriveBackup({ embedded = false }) {
             autoFocus
             style={{ width:'100%' }}
           />
+          </>)}
 
           {prompt === 'backup' && (
             <label style={{ display:'flex', gap:'0.6rem', alignItems:'flex-start', marginTop:'0.7rem', cursor:'pointer' }}>
@@ -367,7 +402,7 @@ export default function DriveBackup({ embedded = false }) {
           )}
 
           <div style={{ display:'flex', gap:'0.5rem', marginTop:'0.6rem' }}>
-            <button className="settings-chip" onClick={onSubmit} disabled={pass.length < 8 || busy}>
+            <button className="settings-chip" onClick={onSubmit} disabled={(!keyRestore && pass.length < 8) || busy}>
               {busy ? 'Working…' : prompt === 'backup' ? 'Back up' : replaces ? 'Replace this device' : 'Restore'}
             </button>
             <button className="settings-chip" onClick={cancel} disabled={busy}>Cancel</button>

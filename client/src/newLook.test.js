@@ -34,6 +34,21 @@ describe('the new-look switch', () => {
   })
 })
 
+describe('home card and holdings', () => {
+  it('lists every holding, not a five-row preview under "All"', () => {
+    const src = read('components/NlHoldings.jsx')
+    expect(src).not.toMatch(/slice\(0, PREVIEW\)/)
+    expect(src).toMatch(/const shown = base\n/)
+  })
+
+  it('breaks the total down by category and takes the theme colour', () => {
+    expect(read('components/HomeTop.jsx')).toMatch(/className="nl-hero-cats"/)
+    expect(read('pages/Dashboard.jsx')).toMatch(/<HomeTop[\s\S]{0,200}cats=\{catBreakdown\}/)
+    const hero = read('v3.css').match(/\.nl-hero \{[\s\S]*?\n\}/)[0]
+    expect(hero).toMatch(/var\(--g\)/)
+  })
+})
+
 describe('nothing is removed', () => {
   it('the bottom bar moves Targets into More, and More lists every menu destination', () => {
     const nav = read('components/BottomNav.jsx')

@@ -4712,7 +4712,7 @@ export default function Dashboard() {
           the strip below stands down while it shows. */}
       {nlHomeView && activeTab === 'overview' && (
         <HomeTop
-          enriched={enriched} totalValue={totalValue} todayPnL={todayPnLVal} totalPnLPct={totalPnLPct}
+          enriched={enriched} totalValue={totalValue} todayPnL={todayPnLVal} totalPnLPct={totalPnLPct} cats={catBreakdown}
           onBuy={() => openSheet('buy', 'home_hero')} onSell={() => openSheet('sell', 'home_hero')}
           onHistory={() => navigate('/transactions')}
           onImport={(kind) => {

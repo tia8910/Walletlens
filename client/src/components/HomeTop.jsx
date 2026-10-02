@@ -90,7 +90,7 @@ export function Spark({ values, w = 120, h = 34, className }) {
   )
 }
 
-export default function HomeTop({ enriched = [], watch = [], totalValue = 0, todayPnL = 0, totalPnLPct = 0, newsSlot,
+export default function HomeTop({ enriched = [], watch = [], totalValue = 0, todayPnL = 0, totalPnLPct = 0, cats = [], newsSlot,
   onBuy, onSell, onHistory, onImport, onWatchAll, onAsset }) {
   const { t } = useLanguage()
   const { priv } = usePrivateFmt()
@@ -132,6 +132,19 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
           <div className={`nl-hero-day ${todayPnL >= 0 ? 'up' : 'down'}`}>
             <b>{todayPnL >= 0 ? '▲' : '▼'} {priv(money(Math.abs(todayPnL)))}</b> {t('nlToday')(`${Math.abs(dayPct).toFixed(2)}%`)}
           </div>
+          {/* What the total is made of: one line per category, so "how much is
+              in crypto" is answered on the card instead of three taps away. */}
+          {cats.length > 1 && (
+            <ul className="nl-hero-cats">
+              {cats.map(c => (
+                <li key={c.cat}>
+                  <span>{c.label}</span>
+                  <b>{priv(money(c.value))}</b>
+                  <em>{Math.round(c.pct)}%</em>
+                </li>
+              ))}
+            </ul>
+          )}
           <div className="nl-hero-actions">
             <button type="button" className="nl-btn-buy" onClick={onBuy}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{t('buy')}
