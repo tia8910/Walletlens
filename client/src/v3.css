@@ -568,3 +568,48 @@ html.wl-v3 .nl-hold .nl-row { border-radius: 0 !important; box-shadow: none !imp
 html.wl-v3 .nl-hold .nl-row.sel { background: rgba(22, 168, 116, 0.06); }
 html.wl-v3 .nl-back svg { width: 20px !important; height: 20px !important; }
 html.wl-v3 .nl-back { padding: 0 !important; }
+
+/* ── Price strip: drifting row with "All" ─────────────────────────────── */
+.nl-ticker { position: relative; display: flex; align-items: center; background: var(--nl-card); border-block: 1px solid var(--nl-line); }
+html.wl-v3 .nl-ticker .nl-ticker-strip { flex: 1; min-width: 0; border: 0 !important; background: transparent !important; overflow-x: auto; scrollbar-width: none; scroll-behavior: auto; }
+html.wl-v3 .nl-ticker .nl-ticker-strip::-webkit-scrollbar { display: none; }
+.nl-ticker-all {
+  position: relative; flex: none; height: 30px; margin: 0 10px 0 4px; padding: 0 0.85rem; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--nl-ink); color: var(--nl-card); font: inherit; font-size: 0.74rem; font-weight: 800;
+}
+.nl-ticker-all::before { content: ""; position: absolute; right: 100%; top: -6px; bottom: -6px; width: 28px; pointer-events: none; background: linear-gradient(90deg, transparent, var(--nl-card)); }
+
+/* Prices sheet. */
+.nl-sheet-bg { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: flex-end; justify-content: center; background: rgba(8, 15, 24, 0.45); animation: nl-fade 0.18s ease both; }
+.nl-sheet {
+  width: min(560px, 100%); max-height: 86vh; display: flex; flex-direction: column; padding: 0.4rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  border-radius: 26px 26px 0 0; background: var(--nl-card, #fff); color: var(--nl-ink, #0f1d2b); box-shadow: 0 -10px 40px rgba(8, 15, 24, 0.25);
+  animation: nl-rise 0.26s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+@media (min-width: 700px) { .nl-sheet-bg { align-items: center; } .nl-sheet { border-radius: 26px; } }
+@keyframes nl-fade { from { opacity: 0; } }
+@keyframes nl-rise { from { transform: translateY(40px); opacity: 0; } }
+.nl-sheet-grip { display: block; width: 40px; height: 4px; margin: 0.35rem auto 0.6rem; border-radius: 4px; background: var(--nl-line, #e5e7eb); }
+.nl-sheet-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
+.nl-sheet-h h2 { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; }
+.nl-seg2 { display: flex; gap: 2px; padding: 3px; border-radius: 12px; background: var(--nl-seg, #f1f3f6); }
+.nl-seg2 button { flex: 1; height: 32px; border: 0; border-radius: 9px; cursor: pointer; background: transparent; color: var(--nl-sub); font: inherit; font-size: 0.8rem; font-weight: 800; }
+.nl-seg2 button.on { background: var(--nl-card, #fff); color: var(--nl-ink); box-shadow: 0 1px 3px rgba(15, 29, 43, 0.12); }
+.nl-sheet-list { flex: 1; min-height: 0; overflow-y: auto; margin-top: 0.4rem; overscroll-behavior: contain; }
+.nl-sheet-list .nl-row:disabled { cursor: default; opacity: 1; }
+.nl-sheet .up { color: var(--nl-up, #16a874); } .nl-sheet .down { color: var(--nl-down, #e5484d); }
+.nl-sheet-note { margin: 0.6rem 0.1rem 0; font-size: 0.76rem; font-weight: 600; color: var(--nl-sub); }
+@media (prefers-reduced-motion: reduce) { .nl-sheet-bg, .nl-sheet { animation: none; } }
+
+/* Theme picker on More: each theme's own mark. */
+.nl-more-themes button { flex: none; width: 30px !important; height: 30px !important; min-width: 0 !important; padding: 0 !important; display: grid; place-items: center; overflow: hidden; color: #fff; }
+.nl-more-themes button img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.nl-more-themes button svg { color: #064e3b; }
+.nl-more-themes { gap: 0.55rem !important; }
+html.wl-v3 .nl-more-themes button { min-height: 0 !important; max-height: 30px !important; aspect-ratio: 1; }
+html.wl-v3 .nl-ticker-all { min-height: 0 !important; min-width: 0 !important; height: 30px !important; width: auto !important; border-radius: 999px !important; }
+html.wl-v3 .nl-search, .nl-sheet .nl-search { min-height: 0 !important; height: 40px !important; flex: none; }
+.nl-sheet .nl-row { border-radius: 0 !important; box-shadow: none !important; background: none; }
+.nl-sheet .nl-tool { min-height: 0 !important; min-width: 0 !important; }
+/* Report sheet: solid, in the card language. */
+html.wl-v3 .air-sheet { background: var(--nl-card) !important; color: var(--nl-ink) !important; }

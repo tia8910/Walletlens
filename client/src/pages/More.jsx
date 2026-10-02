@@ -91,8 +91,11 @@ export default function More() {
           <span>{t('nlTheme')}</span>
           <div className="nl-more-themes">
             {THEMES.map(th => (
-              <button key={th.id} type="button" aria-label={th.name} aria-pressed={theme === th.id}
-                className={theme === th.id ? 'on' : ''} style={{ '--c': th.swatch }} onClick={() => setTheme(th.id)} />
+              <button key={th.id} type="button" aria-label={th.name} title={th.name} aria-pressed={theme === th.id}
+                className={theme === th.id ? 'on' : ''} style={{ '--c': th.swatch }} onClick={() => setTheme(th.id)}>
+                {/* Each theme's own mark: the bars, the coins, the emerald's sparkle. */}
+                {th.logo ? <img src={th.logo} alt="" /> : <Icon name={th.icon} size={15} />}
+              </button>
             ))}
           </div>
         </div>

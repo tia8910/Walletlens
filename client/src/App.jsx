@@ -44,6 +44,7 @@ import { pendingVaultPayload, consumeVaultPayload } from './nativeVault'
 import { inAppShell, seedFromVault } from './nativeShell'
 import { useZakatOn } from './zakatSwitch'
 import { useNewLook, useNewLookClass, applyLookParam } from './newLook'
+import AiReport from './components/AiReport'
 import './v3.css'
 
 const CURRENT_YEAR = new Date().getFullYear()
@@ -947,6 +948,17 @@ export default function App() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
               </button>
             )}
+            {/* Report an issue, from any screen: the Store asks for it to be
+                easy to find, not only under each AI answer. The report
+                carries the page it was sent from. */}
+            {v2 && (
+              <AiReport surface="topbar" general output={() => `Reported from ${location.pathname}`}
+                trigger={(openReport) => (
+                  <button className="wl-topbar-x wl-topbar-report" onClick={openReport} title={t('airReport')} aria-label={t('airReport')}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M5 21V4m0 0h11l-2 4 2 4H5" /></svg>
+                  </button>
+                )} />
+            )}
             {v2 && (
               <button
                 className="wl-topbar-x wl-topbar-bell"
@@ -980,10 +992,12 @@ export default function App() {
             straight over it and the first price was permanently unreadable.
             One sticky element has no race to lose. */}
         <Suspense fallback={<div className="ticker-strip" style={{ minHeight: '38px' }} aria-hidden="true" />}>
-          <PriceTicker />
+          <PriceTicker v3={v2 && newLook} />
           {/* Renders nothing until the cron has published flows, so a
-              missing or reshaped upstream costs a row of screen, not an error. */}
-          <SmartMoneyTicker />
+              missing or reshaped upstream costs a row of screen, not an error.
+              The new look keeps one strip; its flows are a tab of the prices
+              popup the strip's "All" opens. */}
+          {!(v2 && newLook) && <SmartMoneyTicker />}
         </Suspense>
       </header>
 

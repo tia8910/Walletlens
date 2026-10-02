@@ -93,3 +93,20 @@ describe('the mood of Home', () => {
     expect(moodOf(-3.2)).toBe('down')
   })
 })
+
+describe('the top of the new look', () => {
+  const app = read('App.jsx')
+  it('keeps one price strip; smart money moves into its popup', () => {
+    expect(app).toMatch(/<PriceTicker v3=\{v2 && newLook\} \/>/)
+    expect(app).toMatch(/\{!\(v2 && newLook\) && <SmartMoneyTicker \/>\}/)
+    const sheet = read('components/PricesSheet.jsx')
+    expect(sheet).toContain('useSmartFlows(')
+    expect(read('components/PriceTicker.jsx')).toMatch(/className="nl-ticker-all" onClick=\{\(\) => setSheet\(true\)\}/)
+  })
+  it('puts Report an issue in the top bar, sending the page instead of an answer', () => {
+    expect(app).toMatch(/<AiReport surface="topbar" general output=\{\(\) => `Reported from \$\{location\.pathname\}`\}/)
+  })
+  it('draws each theme by its own mark on More', () => {
+    expect(read('pages/More.jsx')).toMatch(/th\.logo \? <img src=\{th\.logo\}/)
+  })
+})

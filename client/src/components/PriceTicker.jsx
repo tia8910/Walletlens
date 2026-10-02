@@ -1,10 +1,12 @@
-import { useEffect, useState, useMemo, useRef, memo } from 'react'
+import { useEffect, useState, useMemo, useRef, memo, lazy, Suspense } from 'react'
 import { api } from '../api'
 import { useLanguage } from '../LanguageContext'
 import {
   tickerIdsFor, tickerLabel, tickerPlaceholders, MAX_TICKER_IDS, MAX_LIVE_CRYPTO,
 } from '../data/tickerPicks'
 import { INTERESTS_EVENT } from '../data/interestsEvent'
+
+const PricesSheet = lazy(() => import('./PricesSheet'))
 
 const TICKER_REFRESH_MS = 60_000
 const CAL_REFRESH_MS = 30 * 60_000
@@ -39,7 +41,7 @@ function chosenInterests() {
   } catch { return [] }
 }
 
-function PriceTicker() {
+function PriceTicker({ v3 = false }) {
   const { t } = useLanguage()
   // Seeded, not empty. The names someone picked are known offline and cost
   // nothing to draw, so the strip opens on their own assets in the first frame
@@ -69,6 +71,8 @@ function PriceTicker() {
         .slice(0, MAX_LIVE_CRYPTO)
         .map(c => ({
           type: 'price',
+          id: c.id,
+          image: c.image,
           name: (c.symbol || c.id || '').toUpperCase(),
           price: c.current_price,
           change: c.price_change_percentage_24h,
@@ -128,6 +132,7 @@ function PriceTicker() {
                 .filter(([, q]) => q && q.usd != null)
                 .map(([id, q]) => ({
                   type: 'price',
+                  id,
                   name: tickerLabel(id, q),
                   price: q.usd,
                   change: q.usd_24h_change,
@@ -152,6 +157,8 @@ function PriceTicker() {
         .slice(0, 12)
         .map(c => ({
           type: 'price',
+          id: c.id,
+          image: c.image,
           name: (c.symbol || c.id || '').toUpperCase(),
           price: c.current_price,
           change: c.price_change_percentage_24h,
@@ -298,12 +305,41 @@ function PriceTicker() {
   // No longer aria-hidden for the same reason: the content is now static and
   // readable, so hiding it from a screen reader would be hiding real data
   // rather than sparing someone an animation.
-  return (
-    <div className="ticker-strip" role="list" aria-label={t('tickerPrices')}>
-      {displayItems.map((t, i) => {
+  // The new look: the row drifts on its own, stops under a finger and picks
+  // up again a moment after, and "All" opens every price in a sheet. The
+  // items are drawn twice so the drift loops without a jump.
+  const stripRef = useRef(null)
+  const [sheet, setSheet] = useState(false)
+  useEffect(() => {
+    const el = stripRef.current
+    if (!v3 || !el) return
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    let raf = 0, pausedUntil = 0, pos = el.scrollLeft
+    const pause = () => { pausedUntil = Date.now() + 3500 }
+    const step = () => {
+      if (Date.now() > pausedUntil && !document.hidden) {
+        const half = el.scrollWidth / 2
+        // Sub-pixel steps accumulate in `pos`; scrollLeft rounds them away.
+        if (Math.abs(pos - el.scrollLeft) > 2) pos = el.scrollLeft
+        pos += 0.45
+        if (half > el.clientWidth && pos >= half) pos -= half
+        el.scrollLeft = pos
+      } else pos = el.scrollLeft
+      raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    const opts = { passive: true }
+    el.addEventListener('pointerdown', pause, opts); el.addEventListener('touchstart', pause, opts); el.addEventListener('wheel', pause, opts)
+    return () => {
+      cancelAnimationFrame(raf)
+      el.removeEventListener('pointerdown', pause); el.removeEventListener('touchstart', pause); el.removeEventListener('wheel', pause)
+    }
+  }, [v3])
+
+  const chips = (list, copy) => list.map((t, i) => {
         if (t.type === 'event') {
           return (
-            <div key={`ev-${t.title}-${i}`} className="tick tick-cal" role="listitem">
+            <div key={`ev-${t.title}-${i}-${copy}`} className="tick tick-cal" role="listitem" aria-hidden={copy ? true : undefined}>
               <span className="tick-cal-dot" style={{ background: IMPACT_COLOR[t.impact] || '#eab308' }} />
               <span className="tick-name">{t.title}</span>
               <span className="tick-cal-day">{t.day}</span>
@@ -321,7 +357,8 @@ function PriceTicker() {
         const flash = flashes[t.name]
         return (
           <div
-            key={`${t.name}-${i}`}
+            key={`${t.name}-${i}-${copy}`}
+            aria-hidden={copy ? true : undefined}
             className={`tick tick--${dir} tick--${tier}${flash ? ` tick--flash-${flash}` : ''}`}
             role="listitem"
           >
@@ -332,7 +369,24 @@ function PriceTicker() {
             </span>
           </div>
         )
-      })}
+      })
+
+  if (v3) {
+    return (
+      <div className="nl-ticker">
+        <div className="ticker-strip nl-ticker-strip" ref={stripRef} role="list" aria-label={t('tickerPrices')}>
+          {chips(displayItems, 0)}
+          {chips(displayItems, 1)}
+        </div>
+        <button type="button" className="nl-ticker-all" onClick={() => setSheet(true)}>{t('nlAllPrices')}</button>
+        {sheet && <Suspense fallback={null}><PricesSheet items={items} onClose={() => setSheet(false)} /></Suspense>}
+      </div>
+    )
+  }
+
+  return (
+    <div className="ticker-strip" role="list" aria-label={t('tickerPrices')}>
+      {chips(displayItems, 0)}
     </div>
   )
 }
