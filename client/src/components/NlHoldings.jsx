@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 import { AssetLogo, Spark, useSparks } from './HomeTop'
@@ -13,17 +14,22 @@ import { AssetLogo, Spark, useSparks } from './HomeTop'
 //                                 to break even and how far away it is
 //   Excel / PDF export            the tools
 //   select and sum several        long-press → Select; a bar shows the sum
-//   per-asset actions             long-press, as everywhere else in the app
+//   per-asset actions             the ⋮ on each row (target, vision,
+//                                 technicals, magic score, risk scan, buy,
+//                                 sell), and long-press for the full menu
+//   sub-filters (Stable, L1…)     chips under a chosen category
 const PREVIEW = 5
 
 export default function NlHoldings({
   rows, total, cats, cat, setCat, search, setSearch, sort, setSort, dir, setDir,
   breakEven, setBreakEven, onExcel, onPdf, selected, onClearSelected, selectedStats, filteredStats,
   hidden, cv, marketSparks = {}, onAsset, bindRow, showAll, setShowAll, pricesFailed,
+  badges = null, badge = 'all', setBadge = () => {}, actionsFor = () => [],
 }) {
   const { t } = useLanguage()
   const [searching, setSearching] = useState(!!search)
-  const filtered = !!search.trim() || cat !== 'all'
+  const [openRow, setOpenRow] = useState(null)
+  const filtered = !!search.trim() || cat !== 'all' || badge !== 'all'
   const shown = showAll || filtered ? rows : rows.slice(0, PREVIEW)
   // The week's line: market.json's when the coin is in it, otherwise the
   // app's cached chart data, fetched only for rows without one.
@@ -77,6 +83,14 @@ export default function NlHoldings({
           </div>
         )}
 
+        {badges && (
+          <div className="nl-chips nl-subchips">
+            {['all', ...badges].map(b => (
+              <button key={b} type="button" className={badge === b ? 'on' : ''} onClick={() => setBadge(b)}>{b === 'all' ? t('nlAllPrices') : b}</button>
+            ))}
+          </div>
+        )}
+
         {(selectedStats || filteredStats) && (
           <div className={`nl-sum${selectedStats ? ' sel' : ''}`}>
             <span>{selectedStats ? t('nlSelected')(selected.size) : t('nlShowing')(rows.length)}</span>
@@ -97,7 +111,9 @@ export default function NlHoldings({
             const ch = Number(h.pct24h) || 0
             const sym = h.coin_symbol?.toUpperCase() || ''
             return (
-              <button type="button" key={h.coin_id} className={`nl-row${isSel ? ' sel' : ''}`} onClick={() => onAsset(h)} {...bindRow(h)}>
+              <div key={h.coin_id} className="nl-hrow">
+              <div role="button" tabIndex={0} className={`nl-row${isSel ? ' sel' : ''}`} onClick={() => onAsset(h)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAsset(h) } }} {...bindRow(h)}>
                 <span className="nl-row-logo">
                   <AssetLogo h={h} size={40} />
                   {isSel && <i aria-hidden="true">✓</i>}
@@ -115,7 +131,21 @@ export default function NlHoldings({
                     ? <small className={h.pnl >= 0 ? 'up' : 'down'}>{pctTxt(h.pnlPct)}</small>
                     : <small className={ch >= 0 ? 'up' : 'down'}>{pctTxt(ch)}</small>}
                 </div>
-              </button>
+                <button type="button" className={`nl-row-more${openRow === h.coin_id ? ' on' : ''}`} aria-label={t('atAssetActions')} aria-expanded={openRow === h.coin_id}
+                  onClick={e => { e.stopPropagation(); setOpenRow(r => r === h.coin_id ? null : h.coin_id) }}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" /></svg>
+                </button>
+              </div>
+              {openRow === h.coin_id && (
+                <div className="nl-row-actions">
+                  {actionsFor(h).map(a => (
+                    <button key={a.label} type="button" className={a.tone ? `nl-act-${a.tone}` : ''} onClick={() => { setOpenRow(null); a.onClick() }}>
+                      <Icon name={a.icon} size={14} />{a.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              </div>
             )
           })}
           {shown.length === 0 && <p className="nl-empty">{t('dsNothingYet')}</p>}

@@ -626,3 +626,27 @@ html.wl-v3 .nl-ticker-arrow, html.wl-v3 .nl-ticker-arrow:hover, html.wl-v3 .nl-t
 .nl-sheet .nl-chips, .nl-sheet .nl-seg2, .nl-sheet .nl-sheet-h { flex: none; }
 .nl-sheet .nl-chips { padding-bottom: 2px; }
 html.wl-v3 .nl-sheet .nl-chips button { min-height: 0 !important; height: 32px !important; }
+
+/* Holdings rows: the ⋮ and its action chips, as the old list had them. */
+.nl-hrow { border-bottom: 1px solid var(--nl-line); }
+.nl-hrow:last-child { border-bottom: 0; }
+.nl-hold .nl-hrow .nl-row { border-bottom: 0; cursor: pointer; }
+.nl-row-more {
+  flex: none; width: 30px; height: 30px; margin-inline-start: -0.2rem; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  background: transparent; color: var(--nl-sub);
+}
+.nl-row-more svg { width: 16px; height: 16px; fill: currentColor; }
+.nl-row-more.on { background: var(--nl-seg, #f1f3f6); color: var(--nl-ink); }
+html.wl-v3 .nl-row-more { min-height: 0 !important; min-width: 0 !important; box-shadow: none !important; }
+.nl-row-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0 0 0.75rem 3.1rem; animation: nl-fade 0.15s ease both; }
+.nl-row-actions button {
+  display: inline-flex; align-items: center; gap: 0.35rem; height: 32px; padding: 0 0.75rem; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--nl-seg, #f1f3f6); color: var(--nl-ink); font: inherit; font-size: 0.74rem; font-weight: 800;
+}
+.nl-row-actions .nl-act-buy { background: rgba(22, 168, 116, 0.14); color: var(--nl-up); }
+.nl-row-actions .nl-act-sell { background: rgba(229, 72, 77, 0.12); color: var(--nl-down); }
+html.wl-v3 .nl-row-actions button { min-height: 0 !important; box-shadow: none !important; }
+.nl-subchips { margin-top: 0.4rem; }
+.nl-subchips button { height: 26px; font-size: 0.68rem; }
+/* A theme's own button colours must not paint the insights card. */
+html.wl-v3 .nl-insights, html.wl-v3 .nl-insights:hover, html.wl-v3 .nl-insights:focus { background: var(--nl-card) !important; color: var(--nl-ink) !important; border: 0 !important; box-shadow: var(--nl-shadow) !important; }

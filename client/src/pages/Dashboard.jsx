@@ -4652,6 +4652,22 @@ export default function Dashboard() {
   const nlInsights = nlHome && !!location.state?.insights
   const nlHomeView = nlHome && !nlInsights
   const openInsights = () => { track('nl_insights_open'); navigate(location.pathname, { state: { tab: 'overview', insights: true } }); try { window.scrollTo({ top: 0 }) } catch {} }
+  // The ⋮ panel under a holding, as the old list had it.
+  const holdingActions = (h) => {
+    const sym = (h.coin_symbol || '').toUpperCase()
+    const coin = { id: h.coin_id, symbol: sym, name: h.coin_name || sym, image: h.coin_image }
+    const stable = categorizeAsset(h) === 'cash' || isStablecoin(h.coin_id, h.coin_symbol)
+    const crypto = !stable && categorizeAsset(h) === 'crypto'
+    return [
+      { icon: 'plus', tone: 'buy', label: t('lpBuyMore'), onClick: () => openSheet('buy', 'holding_actions', { coin }) },
+      ...(h.amount > 0 ? [{ icon: 'minus', tone: 'sell', label: t('lpSell'), onClick: () => openSheet('sell', 'holding_actions', { coin }) }] : []),
+      ...(stable ? [] : [{ icon: 'target', label: t('dsSetTarget'), onClick: () => goTab('targets') }]),
+      { icon: 'map', label: t('dsSetVision'), onClick: () => navigate('/vision', { state: { linkAsset: h.coin_id } }) },
+      ...(crypto ? [{ icon: 'ruler', label: t('dashTechnicals'), onClick: () => navigate('/technicals', { state: { coinId: h.coin_id } }) }] : []),
+      ...(crypto ? [{ icon: 'sparkles', label: t('dsMagicScore'), onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'ta' } }) }] : []),
+      ...(stable ? [] : [{ icon: 'search', label: t('dsRiskScan'), onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'risk' } }) }]),
+    ]
+  }
   // Long-press on a holding: the actions the old row's menu and its ⋮ panel
   // held, plus selecting it into the sum.
   const holdingMenu = (h) => {
@@ -4878,6 +4894,9 @@ export default function Dashboard() {
                 selectedStats={selectedStats} filteredStats={filteredStats}
                 hidden={hidden} cv={cv} marketSparks={sparks} pricesFailed={pricesFailed}
                 showAll={showAllHoldings} setShowAll={setShowAllHoldings}
+                badges={holdingsCat !== 'all' && badgesByCategory[holdingsCat]?.length > 1 ? badgesByCategory[holdingsCat] : null}
+                badge={holdingsBadge} setBadge={setHoldingsBadge}
+                actionsFor={holdingActions}
                 onAsset={(h) => { if (consumeLongPress()) return; track('asset_click'); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) }}
                 bindRow={(h) => bindLongPress((x, y) => showLp(x, y, holdingMenu(h), { title: (h.coin_symbol || '').toUpperCase(), subtitle: hidden ? VALUE_MASK : cv(h.value), area: 'holding' }))}
               />
