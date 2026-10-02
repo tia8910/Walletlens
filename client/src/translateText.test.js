@@ -143,4 +143,28 @@ describe('translateBatch', () => {
     expect(await translateBatch([], 'ar')).toEqual([])
     expect(spy).not.toHaveBeenCalled()
   })
+
+  it('falls back to Google Translate when our endpoint is blocked or not configured', async () => {
+    // What production did: Cloudflare's challenge page (403, HTML) in front
+    // of /api/translate, so every headline stayed English.
+    const calls = []
+    globalThis.fetch = vi.fn(async (url) => {
+      calls.push(String(url))
+      if (String(url).startsWith('/api/translate')) return { ok: false, status: 403, json: async () => { throw new Error('html') } }
+      const q = decodeURIComponent(String(url).match(/[?&]q=([^&]*)/)[1])
+      return { ok: true, json: async () => [[['ar:' + q, q]]] }
+    })
+    const out = await translateBatch(['Bitcoin climbs', 'Banks sue regulator'], 'ar')
+    expect(out).toEqual(['ar:Bitcoin climbs', 'ar:Banks sue regulator'])
+    expect(calls.filter(u => u.includes('translate.googleapis.com')).length).toBe(2)
+    expect(calls.every(u => !u.includes('translate.googleapis.com') || /tl=ar/.test(u))).toBe(true)
+  })
+
+  it('does not call Google when our own endpoint answers', async () => {
+    const calls = []
+    globalThis.fetch = vi.fn(async (url, opts) => { calls.push(String(url)); return okResponse(JSON.parse(opts.body).texts.map(t => 'fr:' + t)) })
+    const out = await translateBatch(['One headline'], 'fr')
+    expect(out).toEqual(['fr:One headline'])
+    expect(calls.some(u => u.includes('googleapis'))).toBe(false)
+  })
 })

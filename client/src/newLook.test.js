@@ -85,6 +85,12 @@ describe('nothing is removed', () => {
     expect(top.indexOf('nl-sentiment')).toBeLessThan(top.indexOf('className="nl-quick"'))
   })
 
+  it('slides the Buy/Sell highlight the right way in Arabic', () => {
+    const css = read('v2.css')
+    expect(css).toMatch(/html\.wl-v2\[dir="rtl"\] \.bs-v2 \.tk-mode::before \{ left: auto; right: 4px; \}/)
+    expect(css).toMatch(/html\.wl-v2\[dir="rtl"\] \.bs-v2 \.tk-mode\.is-sell::before \{ transform: translateX\(-100%\); \}/)
+  })
+
   it('shows the news only on the dashboard tab', () => {
     const dash = read('pages/Dashboard.jsx')
     expect(dash).toMatch(/\{activeTab === 'overview' && !nlHome && <NewsTicker \/>\}/)
