@@ -70,7 +70,14 @@ describe('Home shows each figure once', () => {
     expect(dash).toMatch(/\{nlHomeView && \(\s*<>\s*<NlHoldings/)
     expect(dash).toMatch(/\{!nlHome && <div className="glass-card">/)
     // The old row's ⋮ panel actions moved into the long-press menu.
-    for (const k of ['dsSetTarget', 'dsSetVision', 'dsMagicScore', 'dsRiskScan', 'nlSelect']) expect(dash).toMatch(new RegExp(`holdingMenu[\\s\\S]*t\\('${k}'\\)`))
+    for (const k of ['dsSetTarget', 'dsSetVision', 'dsRiskScan', 'nlSelect']) expect(dash).toMatch(new RegExp(`holdingMenu[\\s\\S]*t\\('${k}'\\)`))
+    // Magic Score opened the same chart as Technicals; it is gone.
+    expect(dash).not.toContain("t('dsMagicScore')")
+  })
+  it('opens the voice panel and scrolls down to it once it has loaded', () => {
+    const dash = read('pages/Dashboard.jsx')
+    expect(dash).toContain('<div className="dvx-voice-import-panel">')
+    expect(dash).toMatch(/kind === 'voice' \? '\.dvx-voice-import-panel'/)
   })
   it('moves the analysis cards to Portfolio insights, reachable from Home and More', () => {
     expect(dash).toMatch(/const nlHomeView = nlHome && !nlInsights/)

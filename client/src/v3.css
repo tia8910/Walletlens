@@ -650,3 +650,5 @@ html.wl-v3 .nl-row-actions button { min-height: 0 !important; box-shadow: none !
 .nl-subchips button { height: 26px; font-size: 0.68rem; }
 /* A theme's own button colours must not paint the insights card. */
 html.wl-v3 .nl-insights, html.wl-v3 .nl-insights:hover, html.wl-v3 .nl-insights:focus { background: var(--nl-card) !important; color: var(--nl-ink) !important; border: 0 !important; box-shadow: var(--nl-shadow) !important; }
+/* Import panels scrolled to from Home stop below the sticky header. */
+html.wl-v3 .dvx-voice-import-panel, html.wl-v3 .dvx-excel-import-panel { scroll-margin-top: 150px; }

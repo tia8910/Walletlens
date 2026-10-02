@@ -4664,7 +4664,6 @@ export default function Dashboard() {
       ...(stable ? [] : [{ icon: 'target', label: t('dsSetTarget'), onClick: () => goTab('targets') }]),
       { icon: 'map', label: t('dsSetVision'), onClick: () => navigate('/vision', { state: { linkAsset: h.coin_id } }) },
       ...(crypto ? [{ icon: 'ruler', label: t('dashTechnicals'), onClick: () => navigate('/technicals', { state: { coinId: h.coin_id } }) }] : []),
-      ...(crypto ? [{ icon: 'sparkles', label: t('dsMagicScore'), onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'ta' } }) }] : []),
       ...(stable ? [] : [{ icon: 'search', label: t('dsRiskScan'), onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'risk' } }) }]),
     ]
   }
@@ -4686,7 +4685,6 @@ export default function Dashboard() {
       ...(stable ? [] : [{ icon: 'target', tone: 'amber', label: t('dsSetTarget'), onClick: () => goTab('targets') }]),
       { icon: 'bell', tone: 'amber', label: t('lpAlert'), onClick: () => goTab('alerts') },
       { icon: 'flag', tone: 'blue', label: t('dsSetVision'), onClick: () => navigate('/vision', { state: { linkAsset: h.coin_id } }) },
-      ...(crypto ? [{ icon: 'sparkle', tone: 'violet', label: t('dsMagicScore'), onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'ta' } }) }] : []),
       ...(stable ? [] : [{ icon: 'zap', tone: 'rose', label: t('dsRiskScan'), onClick: () => navigate('/dashboard', { state: { tab: 'tools', tool: 'risk' } }) }]),
       { icon: 'sparkle', tone: 'violet', label: t('lpAi'), onClick: () => navigate(location.pathname, { state: { tab: 'tools', tool: 'ai' } }) },
       { icon: 'copy', tone: 'slate', label: t('lpCopy'), onClick: () => { try { navigator.clipboard?.writeText(sym + ' — ' + cv(h.value) + ' (' + pct(h.pnlPct) + ' P&L)') } catch {} } },
@@ -4719,7 +4717,16 @@ export default function Dashboard() {
           onHistory={() => navigate('/transactions')}
           onImport={(kind) => {
             setShowScreenshot(kind === 'screenshot'); setShowVoiceImport(kind === 'voice'); setShowExcelImport(kind === 'excel'); setShowBackupCode(false)
-            setTimeout(() => document.querySelector('.dvx-excel-import-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120)
+            // Down to the panel that just opened. The voice one loads lazily,
+            // so look for it for a moment rather than once.
+            const sel = kind === 'voice' ? '.dvx-voice-import-panel' : '.dvx-excel-import-panel'
+            let tries = 0
+            const go = () => {
+              const el = document.querySelector(sel)
+              if (el && el.offsetHeight > 40) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              else if (++tries < 20) setTimeout(go, 100)
+            }
+            setTimeout(go, 80)
           }}
           onWatchAll={() => setActiveTab('watchlist')}
           newsSlot={<NewsTicker variant="card" />}
@@ -4832,7 +4839,9 @@ export default function Dashboard() {
                   </div>
                 )}
                 {showVoiceImport && (
-                  <Suspense fallback={<TabFallback />}><VoiceImport hideTrigger onImported={loadAll} onClose={() => setShowVoiceImport(false)} /></Suspense>
+                  <div className="dvx-voice-import-panel">
+                    <Suspense fallback={<TabFallback />}><VoiceImport hideTrigger onImported={loadAll} onClose={() => setShowVoiceImport(false)} /></Suspense>
+                  </div>
                 )}
                 {showScreenshot && (
                   <div className="dvx-excel-import-panel glass-card">
@@ -5770,12 +5779,6 @@ export default function Dashboard() {
                                           <button className="dvx-ha-btn"
                                             onClick={() => navigate('/technicals')}>
                                             <Icon name="ruler" size={13} style={{ verticalAlign:'-2px', marginInlineEnd:'0.4em' }} />{t('dashTechnicals')}
-                                          </button>
-                                        )}
-                                        {isCryptoOnly && (
-                                          <button className="dvx-ha-btn"
-                                            onClick={() => navigate('/dashboard', { state: { tab: 'tools', tool: 'ta' } })}>
-                                            <Icon name="sparkles" size={13} style={{ verticalAlign:'-2px', marginRight:'0.4em' }} />{t('dsMagicScore')}
                                           </button>
                                         )}
                                         {!isStable && (
