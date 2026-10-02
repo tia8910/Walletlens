@@ -6,6 +6,8 @@ import { useTheme, THEMES } from '../ThemeContext'
 import { useZakatOn } from '../zakatSwitch'
 import { homePath } from '../v2Preview'
 import { track } from '../analytics'
+import { useCanInstall, promptInstall } from '../pwaInstall'
+import { SUPPORT_URL } from '../components/CoffeeButton'
 
 // "More": every feature in the app on one screen, so the shorter bottom bar of
 // the new look never hides one. The destinations are the menu's, one for one;
@@ -15,6 +17,7 @@ export default function More() {
   const { t } = useLanguage()
   const { theme, setTheme } = useTheme()
   const zakatOn = useZakatOn()
+  const canInstall = useCanInstall()
   const home = homePath(true)
 
   const go = (path, state) => { track('more_nav', { to: path, tab: state?.tab }); navigate(path, state ? { state } : undefined) }
@@ -51,6 +54,14 @@ export default function More() {
       { icon: 'upload', label: t('importExport'), on: () => go(home, { tab: 'data' }) },
       { icon: 'scale', label: t('rebalancePlanner'), on: () => go('/rebalancing-calculator') },
       { icon: 'grid', label: t('tools'), on: () => go(home, { tab: 'tools' }) },
+    ] },
+    // What the menu and the top bar held beyond pages: help, stats, install
+    // and the support link, so hiding them in the new look loses nothing.
+    { label: t('account'), items: [
+      { icon: 'bar-chart', label: t('stats'), on: () => { track('quick_stats_open', { source: 'more' }); window.dispatchEvent(new Event('wl:open-stats')) } },
+      { icon: 'info', label: t('howItWorks'), on: () => { track('help_guide_open', { source: 'more' }); window.dispatchEvent(new Event('wl:open-help')) } },
+      ...(canInstall ? [{ icon: 'download', label: t('installApp'), on: () => { track('pwa_menu_install_click', { source: 'more' }); promptInstall('more') } }] : []),
+      { icon: 'gift', label: t('coffeeSupport'), on: () => { track('coffee_support_click', { source: 'more' }); window.open(SUPPORT_URL, '_blank', 'noopener') } },
     ] },
   ]
 

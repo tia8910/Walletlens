@@ -4713,6 +4713,8 @@ export default function Dashboard() {
             setTimeout(() => document.querySelector('.dvx-excel-import-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120)
           }}
           onWatchAll={() => setActiveTab('watchlist')}
+          newsSlot={<NewsTicker variant="card" />}
+          onHoldingsAll={() => document.querySelector('.dvx-holdings')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
           onAsset={(h) => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}
         />
       )}
@@ -4738,7 +4740,8 @@ export default function Dashboard() {
           and above the tab content, so the numbers still come first and the
           headlines are still on screen. Outside the tab blocks, as before, so
           it stays reachable from every tab. */}
-      <NewsTicker />
+      {/* The new look shows the same feed as a card inside Home. */}
+      {!(newLook && activeTab === 'overview' && enriched.length > 0 && !isDemo) && <NewsTicker />}
 
       {/* Tab content — opacity fades slightly during lazy-load transitions */}
       <div style={isTabPending ? { opacity: 0.7, transition: 'opacity 0.15s' } : undefined}>

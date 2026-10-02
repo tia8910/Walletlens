@@ -116,12 +116,21 @@ const V2_NAV_ITEMS = [
   },
 ]
 
-// The new look: Home, Goals, a centre button that adds a trade, Coach, and
-// More, which lists every feature (Targets, Alerts, Backup and the rest), so
-// nothing that left the bar is more than one tap away.
+// The new look: Home, Signals, a centre button that adds a trade, Coach, and
+// More, which lists every feature (Goals, Targets, Alerts, Backup and the
+// rest), so nothing that left the bar is more than one tap away.
 const V3_NAV_ITEMS = [
-  byId('dashboard'),
-  V2_NAV_ITEMS.find(i => i.id === 'goals'),
+  { ...byId('dashboard'), labelKey: 'nlHome' },
+  {
+    id: 'signals',
+    labelKey: 'nlSignals',
+    route: '/technicals',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7 3v4m0 10v4M17 3v6m0 8v4"/><rect x="4.5" y="7" width="5" height="10" rx="1"/><rect x="14.5" y="9" width="5" height="8" rx="1"/>
+      </svg>
+    ),
+  },
   { id: 'add', fab: true, labelKey: 'quickAddTrade' },
   V2_NAV_ITEMS.find(i => i.id === 'coach'),
   {

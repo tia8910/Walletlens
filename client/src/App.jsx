@@ -749,11 +749,15 @@ export default function App() {
   useEffect(() => {
     const openHelp = () => setHelpOpen(true)
     const openAdd = () => setAddGuideOpen(true)
+    // The new look's More page opens Stats the same way.
+    const openStats = () => setQuickStatsOpen(true)
     window.addEventListener('wl:open-help', openHelp)
     window.addEventListener('wl:add-asset-guide', openAdd)
+    window.addEventListener('wl:open-stats', openStats)
     return () => {
       window.removeEventListener('wl:open-help', openHelp)
       window.removeEventListener('wl:add-asset-guide', openAdd)
+      window.removeEventListener('wl:open-stats', openStats)
     }
   }, [])
 
@@ -914,6 +918,13 @@ export default function App() {
               <strong className="wl-topbar-brand-name"><span className="wl-brand-wl">WalletLens</span><span className="wl-live-tld"><span className="wl-live-dot">.</span>live</span></strong>
               <TopbarCyclingActions />
             </div>
+            {/* New look: the greeting takes the wordmark's place, as in the mockup. */}
+            {v2 && newLook && (
+              <div className="nl-topbar-greet">
+                <small>{t(new Date().getHours() < 12 ? 'ntMorning' : new Date().getHours() < 18 ? 'ntAfternoon' : 'ntEvening')}</small>
+                <b>{t('nlYourNetWorth')}</b>
+              </div>
+            )}
           </div>
           <div className="wl-topbar-right">
             {/* v2 gives this slot to notifications; the coffee link moves to its menu. */}
@@ -926,6 +937,16 @@ export default function App() {
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
+            {v2 && newLook && (
+              <button
+                className="wl-topbar-x wl-topbar-statsbtn"
+                onClick={() => { setQuickStatsOpen(true); track('quick_stats_open', { source: 'topbar_v3' }) }}
+                title={t('stats')}
+                aria-label={t('stats')}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              </button>
+            )}
             {v2 && (
               <button
                 className="wl-topbar-x wl-topbar-bell"
