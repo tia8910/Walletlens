@@ -78,6 +78,13 @@ describe('nothing is removed', () => {
     }
   })
 
+  it('shows the portfolio sentiment ticker on Home, under the portfolio card', () => {
+    expect(read('pages/Dashboard.jsx')).toMatch(/sentimentSlot=\{<SentimentTicker /)
+    const top = read('components/HomeTop.jsx')
+    expect(top.indexOf('nl-sentiment')).toBeGreaterThan(top.indexOf('className="nl-hero"'))
+    expect(top.indexOf('nl-sentiment')).toBeLessThan(top.indexOf('className="nl-quick"'))
+  })
+
   it('shows the news only on the dashboard tab', () => {
     const dash = read('pages/Dashboard.jsx')
     expect(dash).toMatch(/\{activeTab === 'overview' && !nlHome && <NewsTicker \/>\}/)

@@ -90,7 +90,7 @@ export function Spark({ values, w = 120, h = 34, className }) {
   )
 }
 
-export default function HomeTop({ enriched = [], watch = [], totalValue = 0, todayPnL = 0, totalPnLPct = 0, cats = [], wallets = [], walletId = 'all', onWallet, newsSlot,
+export default function HomeTop({ enriched = [], watch = [], totalValue = 0, todayPnL = 0, totalPnLPct = 0, cats = [], wallets = [], walletId = 'all', onWallet, newsSlot, sentimentSlot,
   onBuy, onSell, onHistory, onImport, onWatchAll, onAsset }) {
   const { t } = useLanguage()
   const { priv } = usePrivateFmt()
@@ -184,6 +184,8 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
           </div>
         )}
       </section>
+
+      {sentimentSlot && <div className="nl-sentiment">{sentimentSlot}</div>}
 
       <div className="nl-quick">
         <button type="button" onClick={() => imp('screenshot')}>

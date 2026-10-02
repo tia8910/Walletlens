@@ -4593,6 +4593,7 @@ export default function Dashboard() {
           }}
           onWatchAll={() => setActiveTab('watchlist')}
           newsSlot={<NewsTicker variant="card" />}
+          sentimentSlot={<SentimentTicker holdings={enriched} totalValue={totalValue} totalPnLPct={totalPnLPct} />}
           onAsset={(h) => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}
         />
       )}
@@ -4786,8 +4787,9 @@ export default function Dashboard() {
             </>
           )}
 
-          {/* Sentiment + portfolio tips ticker */}
-          {enriched.length > 0 && !nlHomeView && (
+          {/* Sentiment + portfolio tips ticker. In the new look it lives on
+              Home, under the portfolio card (HomeTop's sentimentSlot). */}
+          {enriched.length > 0 && !nlHome && (
             <SentimentTicker
               holdings={enriched}
               totalValue={totalValue}
