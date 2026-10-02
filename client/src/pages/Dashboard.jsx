@@ -4620,10 +4620,11 @@ export default function Dashboard() {
           populated dashboard that is thousands of pixels down, past every tab
           block, which is not lower but gone. Here it sits under the tab grid
           and above the tab content, so the numbers still come first and the
-          headlines are still on screen. Outside the tab blocks, as before, so
-          it stays reachable from every tab. */}
-      {/* The new look shows the same feed as a card inside Home. */}
-      {!(nlHome && activeTab === 'overview') && <NewsTicker />}
+          headlines are still on screen. Only on the dashboard tab itself:
+          headlines above Backup, Alerts or Wallets were noise on pages
+          someone opened to do one job. The new look shows the same feed as a
+          card inside Home instead. */}
+      {activeTab === 'overview' && !nlHome && <NewsTicker />}
 
       {/* Tab content — opacity fades slightly during lazy-load transitions */}
       <div style={isTabPending ? { opacity: 0.7, transition: 'opacity 0.15s' } : undefined}>

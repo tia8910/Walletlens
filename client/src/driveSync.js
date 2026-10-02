@@ -305,25 +305,50 @@ export async function backupNow(passphrase, { automatic = true, replace = false 
 }
 
 /**
- * Sync again after another device re-keyed the backup.
+ * Bring the Drive backup into this device by MERGING, never replacing.
  *
- * Learns the file's data key from the passphrase, folds the other device's
- * trades into this one, then uploads the union so both end up with everything.
+ * Used on connect when this device already holds a portfolio: both sides'
+ * trades end up here, then the union is uploaded so Drive has them too. Uses
+ * the key this device holds, or learns it from the passphrase. A backup from
+ * before data keys existed (WLE1) is opened with the passphrase directly.
  */
-export async function rejoinSync(passphrase) {
+export async function mergeFromDrive(passphrase) {
   const remote = await findBackup()
   if (!remote) throw new Error('No backup found in your Drive')
   const payload = await downloadBackup(remote.id)
-  const raw = await unwrapDataKey(payload, passphrase)
-  const code = await decryptBackupWithKey(payload, raw)
-  writeKey(DATA_KEY, dataKeyToString(raw))
-  writeKey(WRAP, wrapBlockOf(payload) || '')
-  if (await mergeBackupCode(code)) announce()
+  if (!isEncryptedBackup(payload)) throw new Error('That backup file is not in the expected format')
+  let code
+  if (passphrase && !wrapBlockOf(payload)) {
+    code = await decryptBackup(payload, passphrase)
+  } else {
+    let key = storedDataKey()
+    if (passphrase) {
+      key = await unwrapDataKey(payload, passphrase)
+      writeKey(DATA_KEY, dataKeyToString(key))
+      writeKey(WRAP, wrapBlockOf(payload) || '')
+    }
+    if (!key) throw new Error('A passphrase is required')
+    try {
+      code = await decryptBackupWithKey(payload, key)
+    } catch {
+      pauseSync()
+      throw new Error(KEY_MISMATCH)
+    }
+  }
+  const res = await mergeBackupCode(code)
+  announce()
   resumeSync()
   // In step with that version now; the upload below adds this device's side.
   writeKey(SYNC_VER, remote.modifiedTime || '')
   writeKey(FILE_ID, remote.id)
-  return backupWithStoredKey()
+  let txCount = res?.added || 0
+  if (storedDataKey() && readKey(WRAP)) ({ txCount } = await backupWithStoredKey())
+  return { added: res?.added || 0, txCount }
+}
+
+/** Sync again after another device re-keyed the backup: learn its key, merge both sides. */
+export async function rejoinSync(passphrase) {
+  return mergeFromDrive(passphrase)
 }
 
 /**

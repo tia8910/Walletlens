@@ -78,6 +78,21 @@ describe('nothing is removed', () => {
     }
   })
 
+  it('shows the news only on the dashboard tab', () => {
+    const dash = read('pages/Dashboard.jsx')
+    expect(dash).toMatch(/\{activeTab === 'overview' && !nlHome && <NewsTicker \/>\}/)
+    expect(dash.match(/<NewsTicker\b/g)).toHaveLength(2)
+  })
+
+  it('keeps a long-press menu open when the finger lifts, and runs nothing by accident', () => {
+    const lp = read('components/LongPressMenu.jsx')
+    // A self-scrolling ticker must not close it; only the page scrolling does.
+    expect(lp).toMatch(/const onScroll = \(e\) => \{[\s\S]*?if \(page \|\| pageLike\) onClose\(\)/)
+    // The lifting finger's click neither closes the menu nor triggers an item.
+    expect(lp).toMatch(/onClickCapture=\{\(e\) => \{ if \(!downOnOverlay\.current\)/)
+    expect(lp).toMatch(/onClick=\{\(\) => \{ if \(downOnOverlay\.current\) onClose\(\) \}\}/)
+  })
+
   it('Home keeps Buy, Sell and History when it replaces the quick strip', () => {
     const dash = read('pages/Dashboard.jsx')
     expect(dash).toMatch(/onBuy=\{\(\) => openSheet\('buy', 'home_hero'\)\} onSell=\{\(\) => openSheet\('sell', 'home_hero'\)\}/)

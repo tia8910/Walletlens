@@ -28,7 +28,7 @@ vi.mock('./googleDrive', () => ({
 }))
 
 const {
-  backupNow, autoBackup, autoRestore, restoreNow, rejoinSync, syncPaused, PASS_MISMATCH,
+  backupNow, autoBackup, autoRestore, restoreNow, rejoinSync, mergeFromDrive, syncPaused, PASS_MISMATCH,
 } = await import('./driveSync')
 
 const tx = (id, created_at, coin_id) => ({
@@ -139,6 +139,36 @@ describe('a trade on one device reaches the other', () => {
 
     use('phone')
     expect((await autoRestore()).reason).toBe('pulled')
+    expect(coins()).toEqual(['bitcoin', 'ethereum', 'solana'])
+  })
+
+  it('connecting a device that already has a portfolio merges Drive in, replacing nothing', async () => {
+    holdings('laptop', [tx(1, 'a', 'bitcoin')])
+    await backupNow('correct horse battery')
+
+    holdings('phone', [tx(1, 'p', 'solana')])
+    const { added } = await mergeFromDrive('correct horse battery')
+    expect(added).toBe(1)
+    expect(coins()).toEqual(['bitcoin', 'solana'])
+
+    // The union went back up, so the laptop gets the phone's trade too.
+    use('laptop')
+    expect((await autoRestore()).reason).toBe('pulled')
+    expect(coins()).toEqual(['bitcoin', 'solana'])
+  })
+
+  it('a device that synced before merges on reconnect with no passphrase', async () => {
+    holdings('laptop', [tx(1, 'a', 'bitcoin')])
+    await backupNow('correct horse battery')
+    use('phone')
+    await restoreNow('correct horse battery')
+    addTrade(tx(2, 'p', 'solana'))
+    use('laptop')
+    addTrade(tx(2, 'b', 'ethereum'))
+    await autoBackup()
+
+    use('phone')
+    await mergeFromDrive()
     expect(coins()).toEqual(['bitcoin', 'ethereum', 'solana'])
   })
 
