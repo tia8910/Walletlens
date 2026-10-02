@@ -21,7 +21,7 @@ name: Deploy Cloudflare Workers
 # secret exists (see the "Upload secrets" steps):
 #   voice: ANTHROPIC_API_KEY, RESEND_API_KEY, SIGNUP_EXPORT_TOKEN
 #   push:  VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT,
-#          FCM_SERVICE_ACCOUNT
+#          FCM_SERVICE_ACCOUNT, REPORTS_TOKEN
 #
 # The VAPID pair MUST be the one the Deno push service used. A rotated pair is
 # rejected by subscriptionMatchesKey(), which silently invalidates every
@@ -144,6 +144,7 @@ jobs:
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
           FCM_SERVICE_ACCOUNT: ${{ secrets.FCM_SERVICE_ACCOUNT }}
+          REPORTS_TOKEN: ${{ secrets.REPORTS_TOKEN }}
         run: |
           # Unlike the voice keys, these are not optional: a push worker with
           # no VAPID pair accepts subscriptions and then fails to send to any
@@ -184,6 +185,16 @@ jobs:
             echo "set FCM_SERVICE_ACCOUNT"
           else
             echo "::warning::FCM_SERVICE_ACCOUNT is not set; Android app installs will not receive notifications. Web Push is unaffected."
+          fi
+
+          # The password for reading "Report an issue" submissions at
+          # /admin/reports (GET /reports, POST /reports/review). Sending a
+          # report does not need it; without it nobody can read them back.
+          if [ -n "$REPORTS_TOKEN" ]; then
+            printf '%s' "$REPORTS_TOKEN" | npx --yes wrangler@4 secret put REPORTS_TOKEN
+            echo "set REPORTS_TOKEN"
+          else
+            echo "::warning::REPORTS_TOKEN is not set; reports are stored but /admin/reports cannot read them."
           fi
 
       - name: Deploy
