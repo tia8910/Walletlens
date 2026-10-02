@@ -70,6 +70,27 @@ export async function translateBatch(texts, lang, onPartial) {
   // on screen come back first.
   const chunks = []
   for (let start = 0; start < missingIdx.length; start += MAX_BATCH) chunks.push(missingIdx.slice(start, start + MAX_BATCH))
+  // Fallback when our own endpoint cannot answer: Cloudflare's bot challenge
+  // in front of the site, or no API key on the deployment, both left every
+  // headline in English with nothing on screen to say why. Google's public
+  // translate endpoint needs neither, and answers the browser directly. Same
+  // privacy rule as above: only public headline text is ever sent.
+  const viaGoogle = async (idxs) => {
+    await Promise.all(idxs.map(async (srcIdx) => {
+      try {
+        const q = encodeURIComponent(texts[srcIdx])
+        const resp = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${encodeURIComponent(lang)}&dt=t&q=${q}`)
+        if (!resp.ok) return
+        const data = await resp.json()
+        const translated = Array.isArray(data?.[0]) ? data[0].map(seg => (Array.isArray(seg) ? seg[0] : '')).join('') : ''
+        if (translated && translated.trim()) {
+          out[srcIdx] = translated
+          cache[keyFor(lang, texts[srcIdx])] = translated
+        }
+      } catch { /* leave this one in English */ }
+    }))
+  }
+
   const runChunk = async (idxs) => {
     const payload = idxs.map(i => texts[i])
     try {
@@ -82,11 +103,11 @@ export async function translateBatch(texts, lang, onPartial) {
         // Visible in the console, so "news is still English" can be told
         // apart: not_configured (no API key) vs an upstream failure.
         try { console.warn('[news] translate', resp.status, (await resp.json())?.error) } catch { /* no body */ }
-        return
+        return viaGoogle(idxs)
       }
       const data = await resp.json()
       const list = data?.translations
-      if (!Array.isArray(list) || list.length !== payload.length) return
+      if (!Array.isArray(list) || list.length !== payload.length) return viaGoogle(idxs)
       idxs.forEach((srcIdx, n) => {
         const translated = list[n]
         if (typeof translated === 'string' && translated.trim()) {
@@ -94,7 +115,10 @@ export async function translateBatch(texts, lang, onPartial) {
           cache[keyFor(lang, texts[srcIdx])] = translated
         }
       })
-    } catch { /* offline or blocked: leave this chunk in English */ }
+    } catch {
+      // Blocked or unreachable: a challenge page is not JSON and lands here.
+      return viaGoogle(idxs)
+    }
   }
   for (let c = 0; c < chunks.length; c += PARALLEL) {
     await Promise.all(chunks.slice(c, c + PARALLEL).map(runChunk))
