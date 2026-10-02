@@ -1,23 +1,22 @@
 import { useState, useEffect } from 'react'
 
-// The light card redesign ("new look"), previewed before it becomes the
-// default. It is a layer on top of v2: html.wl-v3 scopes every rule in
+// The light card redesign ("new look"), now the default. It is a layer on top of v2: html.wl-v3 scopes every rule in
 // v3.css and switches on the new Home sections, so turning it off returns
 // the app exactly as it was. Nothing is removed by it, only restyled and
 // rearranged.
 //
-// Two ways in: Settings → "Try the new design", or a link with ?look=new
-// (?look=classic turns it off), so a preview build can be shared as one URL.
+// It is on unless someone chose the classic look: Settings → "New design", or
+// a link with ?look=classic (?look=new turns it back on).
 
 const KEY = 'wl_look'
 const EVENT = 'wl-look-change'
 
 export function isNewLook() {
-  try { return localStorage.getItem(KEY) === 'new' } catch { return false }
+  try { return localStorage.getItem(KEY) !== 'classic' } catch { return true }
 }
 
 export function setNewLook(on) {
-  try { on ? localStorage.setItem(KEY, 'new') : localStorage.removeItem(KEY) } catch { /* private mode */ }
+  try { localStorage.setItem(KEY, on ? 'new' : 'classic') } catch { /* private mode */ }
   try { window.dispatchEvent(new Event(EVENT)) } catch { /* no window */ }
 }
 

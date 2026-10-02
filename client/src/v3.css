@@ -231,6 +231,9 @@ html.wl-v3:not([data-wl-light]) .nl-wc { filter: saturate(0.9) brightness(0.96);
   width: 100%; display: flex; align-items: center; justify-content: space-between; margin-top: 0.55rem; padding: 0.9rem 1rem; border: 0; border-radius: 18px;
   background: var(--nl-card, var(--card-bg)); box-shadow: var(--nl-shadow, none); color: inherit; font: inherit; font-weight: 800; font-size: 0.88rem; cursor: pointer;
 }
+.nl-more-mode { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(var(--g-rgb), 0.1); }
+.nl-more-mode button { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 0 !important; padding: 0.38rem 0.75rem !important; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: 0.76rem; font-weight: 800; opacity: 0.65; cursor: pointer; }
+.nl-more-mode button.on { background: var(--g); color: #fff; opacity: 1; box-shadow: 0 2px 8px rgba(var(--g-rgb), 0.35); }
 .nl-more-themes { display: flex; gap: 0.45rem; }
 .nl-more-themes button { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: var(--c); cursor: pointer; }
 .nl-more-themes button.on { box-shadow: 0 0 0 2px var(--nl-card, #fff), 0 0 0 4px var(--c); }
