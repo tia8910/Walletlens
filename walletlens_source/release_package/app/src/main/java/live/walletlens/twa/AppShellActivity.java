@@ -2,6 +2,7 @@ package live.walletlens.twa;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.SharedPreferences;
@@ -961,10 +962,32 @@ public class AppShellActivity extends ComponentActivity {
         ValueCallback<Uri[]> cb = pendingFiles;
         pendingFiles = null;
         if (cb == null) return;
-        cb.onReceiveValue(
-                resultCode == RESULT_OK
-                        ? WebChromeClient.FileChooserParams.parseResult(resultCode, data)
-                        : null);
+        cb.onReceiveValue(resultCode == RESULT_OK ? pickedUris(resultCode, data) : null);
+    }
+
+    /**
+     * Every file the picker returned, not just the first.
+     *
+     * FileChooserParams.parseResult reads only data.getData(). A picker that
+     * allowed several files (EXTRA_ALLOW_MULTIPLE, set above for inputs with
+     * `multiple`) puts them in getClipData() instead, often with getData()
+     * empty or holding just the first — so picking four screenshots handed
+     * the page one.
+     */
+    @Nullable
+    private static Uri[] pickedUris(int resultCode, @Nullable Intent data) {
+        if (data != null) {
+            ClipData clip = data.getClipData();
+            if (clip != null && clip.getItemCount() > 0) {
+                List<Uri> uris = new ArrayList<>();
+                for (int i = 0; i < clip.getItemCount(); i++) {
+                    Uri u = clip.getItemAt(i).getUri();
+                    if (u != null) uris.add(u);
+                }
+                if (!uris.isEmpty()) return uris.toArray(new Uri[0]);
+            }
+        }
+        return WebChromeClient.FileChooserParams.parseResult(resultCode, data);
     }
 
     @Override

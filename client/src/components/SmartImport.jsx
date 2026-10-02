@@ -61,6 +61,45 @@ function filterImageFiles(files) {
   })
 }
 
+// ── Which asset a row is ──────────────────────────────────────────────────────
+// A screenshot or sheet gives a ticker. The row used to be saved as a crypto
+// under that ticker lowercased, so USDT became "usdt" beside the "tether" the
+// Pay-with chips use, and gold a crypto "xau" beside the real gold: the same
+// asset twice. Now, in order:
+//   1. an asset already held under that ticker is that asset — whatever its
+//      class, so a stock or a metal is not re-filed as crypto;
+//   2. otherwise the market ranking's coin with that ticker (highest first);
+//   3. otherwise the ticker, which addTransaction still files as gold, silver
+//      or cash when that is what it is.
+export function makeAssetPicker(holdings = [], market = []) {
+  const held = {}
+  for (const h of [...holdings].sort((a, b) => (b.value || b.total_invested || 0) - (a.value || a.total_invested || 0))) {
+    const k = String(h.coin_symbol || '').toUpperCase()
+    if (k && !held[k]) held[k] = h
+  }
+  const listed = {}
+  for (const c of market) {
+    const k = String(c.symbol || '').toUpperCase()
+    if (k && !listed[k]) listed[k] = c
+  }
+  return (symbol, name) => {
+    const k = String(symbol || '').toUpperCase().trim()
+    const h = held[k]
+    if (h) return { category: h.category || 'crypto', coin_id: h.coin_id, coin_symbol: h.coin_symbol || k, coin_name: h.coin_name || name || k, coin_image: h.coin_image || '' }
+    const m = listed[k]
+    if (m) return { category: 'crypto', coin_id: m.id, coin_symbol: k, coin_name: m.name || name || k, coin_image: m.image || '' }
+    return { category: 'crypto', coin_id: k.toLowerCase(), coin_symbol: k, coin_name: name || k, coin_image: '' }
+  }
+}
+
+async function importAssetPicker() {
+  const [holdings, market] = await Promise.all([
+    Promise.resolve(api.getPortfolio()).catch(() => []),
+    Promise.resolve(api.getMarketData()).catch(() => []),
+  ])
+  return makeAssetPicker(Array.isArray(holdings) ? holdings : [], Array.isArray(market) ? market : [])
+}
+
 // ── Multi-image drop zone ─────────────────────────────────────────────────────
 // Accepts multiple files at once — via drag-drop, file picker (Ctrl/Cmd+click),
 // or the camera roll on mobile.
@@ -395,16 +434,13 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     setBusy(true)
     clearMsg()
     try {
+      const pick = await importAssetPicker()
       for (const r of valid) {
-        const sym = r.symbol.toLowerCase()
+        const asset = pick(r.symbol, r.name)
         await api.addTransaction({
           wallet_id:      walletId,
           type:           r.type,
-          category:       'crypto',
-          coin_id:        sym,
-          coin_symbol:    r.symbol,
-          coin_name:      r.name || r.symbol,
-          coin_image:     '',
+          ...asset,
           amount:         parseFloat(r.amount),
           price_per_unit: parseFloat(r.price) || 0,
           exchange:       mode === 'screenshot' ? 'Screenshot Import' : 'Spreadsheet Import',
