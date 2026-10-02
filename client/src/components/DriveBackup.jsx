@@ -9,6 +9,7 @@ import {
   connect, backupNow, backupWithStoredKey, restoreNow, driveState, previouslyConnected,
   disconnectDrive, autoBackupEnabled, forgetAutoBackup,
   latestBackupAt, knownBackup, hasLocalPortfolio,
+  syncPaused, rejoinSync, KEY_MISMATCH, PASS_MISMATCH,
 } from '../driveSync'
 import { NEEDS_SIGNIN, NET_DRIVE, NET_DRIVE_REFUSED, NET_AUTH } from '../googleDrive'
 
@@ -82,6 +83,10 @@ export default function DriveBackup({ embedded = false }) {
   const [autoOn, setAutoOn] = useState(() => autoBackupEnabled())
   // Restore with the key this device holds: a confirm, no passphrase.
   const [keyRestore, setKeyRestore] = useState(false)
+  // Another device re-keyed the backup; nothing syncs until the passphrase.
+  const [paused, setPaused] = useState(() => syncPaused())
+  // The passphrase typed does not open the backup already in Drive.
+  const [mismatch, setMismatch] = useState(false)
 
   const resumed = useRef(false)
   useEffect(() => {
@@ -102,6 +107,14 @@ export default function DriveBackup({ embedded = false }) {
   // tell whether their portfolio is safe, and it is not even a sentence.
   const explain = (e, fallback) => {
     const m = e?.message || ''
+    if (m === KEY_MISMATCH) {
+      setPaused(true)
+      return 'Your backup was re-encrypted on another device. Enter your passphrase to keep this device in sync.'
+    }
+    if (m === PASS_MISMATCH) {
+      setMismatch(true)
+      return 'That passphrase does not open the backup already in your Drive. Use the one you set on your other device, so both stay in sync.'
+    }
     if (m === NEEDS_SIGNIN) return 'Your Google session expired. Tap Reconnect to sign in again.'
     // Two hops, two problems. Drive unreachable is usually the connection;
     // the token service unreachable has been a blocked hostname, and saying
@@ -134,6 +147,7 @@ export default function DriveBackup({ embedded = false }) {
   }
 
   function ask(which) {
+    setMismatch(false)
     setKeyRestore(which === 'restore' && autoBackupEnabled())
     setPrompt(which)
     setPass('')
@@ -218,14 +232,20 @@ export default function DriveBackup({ embedded = false }) {
     } finally { setBusy(false) }
   }
 
-  async function onSubmit() {
+  async function onSubmit({ replace = false } = {}) {
     setBusy(true); setMsg(null)
     const which = prompt
     try {
-      if (which === 'backup') {
-        const { txCount } = await backupNow(pass, { automatic: auto })
+      if (which === 'rejoin') {
+        const { txCount } = await rejoinSync(pass)
+        track('drive_rejoin', { txCount })
+        setPaused(false); setAutoOn(autoBackupEnabled()); refresh()
+        say('ok', `Back in sync. ${txCount} transactions from all your devices are here and in Drive.`)
+        cancel()
+      } else if (which === 'backup') {
+        const { txCount } = await backupNow(pass, { automatic: auto, replace })
         track('drive_backup', { txCount, automatic: auto })
-        refresh(); setConnected(true); setAutoOn(autoBackupEnabled())
+        refresh(); setConnected(true); setAutoOn(autoBackupEnabled()); setPaused(false); setMismatch(false)
         setFound(f => f || { id: driveState().fileId })
         say('ok', auto
           ? `Backed up ${txCount} transactions. This now updates itself automatically.`
@@ -315,8 +335,22 @@ export default function DriveBackup({ embedded = false }) {
         </div>
       )}
 
+      {/* Sync stopped rather than overwrite a copy this device cannot read. */}
+      {connected && paused && !prompt && (
+        <div className="settings-row" style={{ display:'block' }}>
+          <p style={{ margin:'0 0 0.6rem', fontSize:'0.9rem', color:'var(--r, #ef4444)', fontWeight: 600 }}>
+            Sync paused on this device. Your backup was re-encrypted on another
+            device, so this one can't read it yet.
+          </p>
+          <button className="settings-chip" onClick={() => ask('rejoin')} disabled={busy}
+            style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
+            <Icon name="link" size={14} /> Resume sync
+          </button>
+        </div>
+      )}
+
       {/* Actions, only once there is a connection to act on. */}
-      {connected && !prompt && !waiting && (
+      {connected && !prompt && !waiting && !paused && (
         <div className="settings-row" style={{ gap:'0.5rem', justifyContent:'flex-start' }}>
           <button className="settings-chip" onClick={() => (autoOn ? onQuickBackup() : ask('backup'))} disabled={busy}>
             {busy && autoOn ? 'Backing up…' : 'Back up now'}
@@ -357,7 +391,9 @@ export default function DriveBackup({ embedded = false }) {
           <div className="settings-label" style={{ marginBottom:'0.5rem' }}>
             <span>{prompt === 'backup' ? 'Passphrase to encrypt this backup' : 'Passphrase for this backup'}</span>
             <span className="settings-hint">
-              {prompt === 'backup'
+              {prompt === 'rejoin'
+                ? 'The passphrase now protecting your Drive backup. This device learns its key and merges both sides.'
+                : prompt === 'backup'
                 ? 'At least 8 characters. Never stored or sent anywhere, so if you lose it nobody can recover the backup, including us.'
                 : 'The passphrase you chose when you made this backup.'}
             </span>
@@ -402,9 +438,16 @@ export default function DriveBackup({ embedded = false }) {
           )}
 
           <div style={{ display:'flex', gap:'0.5rem', marginTop:'0.6rem' }}>
-            <button className="settings-chip" onClick={onSubmit} disabled={(!keyRestore && pass.length < 8) || busy}>
-              {busy ? 'Working…' : prompt === 'backup' ? 'Back up' : replaces ? 'Replace this device' : 'Restore'}
+            <button className="settings-chip" onClick={() => onSubmit()} disabled={(!keyRestore && pass.length < 8) || busy}>
+              {busy ? 'Working…' : prompt === 'rejoin' ? 'Resume sync' : prompt === 'backup' ? 'Back up' : replaces ? 'Replace this device' : 'Restore'}
             </button>
+            {prompt === 'backup' && mismatch && (
+              // The deliberate way out for someone who no longer knows the old
+              // passphrase. Other devices will then ask for the new one.
+              <button className="settings-chip" onClick={() => onSubmit({ replace: true })} disabled={pass.length < 8 || busy}>
+                Replace Drive backup
+              </button>
+            )}
             <button className="settings-chip" onClick={cancel} disabled={busy}>Cancel</button>
           </div>
         </div>
