@@ -129,6 +129,19 @@ const REASK_AFTER_DAYS = 30
 const SETTLED_ASKS = 4
 const SETTLED_REASK_DAYS = 90
 
+// Right after the user did something that worked (a buy or sell, a backup,
+// time in a feature), the launch-count and days gates give way to a lighter
+// bar: a couple of minutes of real use. Those gates exist to prove the person
+// has used the app enough to have an opinion, and a completed action is that
+// proof. It was the reason the card reached so few people: someone who
+// installed, added their portfolio and backed it up in one sitting did not
+// qualify for days.
+const MOMENT_MIN_ACTIVE_MS = 2 * 60 * 1000
+// Someone who has not rated yet is offered again sooner after a fresh action
+// than on the passive path. Play still caps what is actually shown.
+const MOMENT_REASK_DAYS = 14
+const MOMENT_SETTLED_REASK_DAYS = 45
+
 const DAY_MS = 24 * 60 * 60 * 1000
 
 // When the app last became usable, for the dwell check.
@@ -175,6 +188,8 @@ export const MOMENTS = new Set([
   'streak',            // a multi-day usage streak milestone
   'guardian_active',   // finished setting up Portfolio Guardian
   'first_holding',     // added their very first asset
+  'trade_saved',       // a buy or a sell went in
+  'feature_used',      // spent real time in a feature (Coach, Signals, Grow…)
 ])
 
 /** App failures. Not market losses — see the header. */
@@ -276,7 +291,32 @@ export function noteMoment(kind) {
     s.moment = Date.now()
     s.momentKind = kind
     writeState(s)
+    // Look again shortly, once the sheet or screen that produced the moment
+    // has closed, instead of waiting up to a minute for the next tick.
+    if (schedulerStop) setTimeout(() => maybeAskForReview(currentSnapshot), MOMENT_CHECK_DELAY_MS)
   } catch { /* storage blocked */ }
+}
+
+const MOMENT_CHECK_DELAY_MS = 2500
+
+// ── Features ───────────────────────────────────────────────────────────────
+//
+// Screens where the user is using a feature rather than passing through.
+// Leaving one after real time there counts as a moment, so the card can come
+// on the next screen, never in the middle of the feature itself.
+const FEATURE_PATHS = /^\/(coach|technicals|alpha|calendar|academy|grow|guardian|vision|asset|transactions|market-index|fear-and-greed-index|rebalancing-calculator|zakat-calculator)(\/|$)/
+const FEATURE_MIN_MS = 30 * 1000
+
+/** Whether a path is a feature screen. */
+export const isFeaturePath = (path) => FEATURE_PATHS.test(String(path || ''))
+
+/**
+ * Whether leaving `from` (entered at `enteredAt`) for `to` ends a real use of
+ * a feature. App.jsx calls this on every navigation and records a
+ * 'feature_used' moment when it is true.
+ */
+export function featureVisitEnded(from, enteredAt, to, now = Date.now()) {
+  return !!from && from !== to && isFeaturePath(from) && now - enteredAt >= FEATURE_MIN_MS
 }
 
 /**
@@ -352,16 +392,23 @@ function onboardingFinished() {
 function storedGates(s, now) {
   if (!onboardingFinished()) return 'onboarding'
   if (s.friction && now - s.friction < FRICTION_QUIET_MS) return 'friction'
+  const momentFresh = !!s.moment && now - s.moment < MOMENT_TTL_MS
+  // Just did something that worked: a couple of minutes of use is enough,
+  // on top of the usual ways in.
+  const actedNow = momentFresh && s.activeMs >= MOMENT_MIN_ACTIVE_MS
   // Either real time spent across more than one visit, or the original
   // launches-over-days rule. Whichever comes first.
   const engaged = s.activeMs >= ENGAGED_MS && s.opens >= ENGAGED_OPENS
-  if (!engaged) {
+  if (!engaged && !actedNow) {
     if (s.opens < MIN_OPENS) return 'few-opens'
     if (!s.first || now - s.first < MIN_DAYS * DAY_MS) return 'too-new'
   }
   // Slows after SETTLED_ASKS; never stops. See the constant for why a count of
   // attempts cannot be treated as a count of cards seen.
-  const gapDays = s.askCount >= SETTLED_ASKS ? SETTLED_REASK_DAYS : REASK_AFTER_DAYS
+  const settled = s.askCount >= SETTLED_ASKS
+  const gapDays = momentFresh
+    ? (settled ? MOMENT_SETTLED_REASK_DAYS : MOMENT_REASK_DAYS)
+    : (settled ? SETTLED_REASK_DAYS : REASK_AFTER_DAYS)
   if (s.asked && now - s.asked < gapDays * DAY_MS) return 'recent-ask'
   return ''
 }
@@ -665,6 +712,11 @@ function storedSnapshot() {
 
 let schedulerStop = null
 
+/** The dashboard's snapshot while it is mounted, otherwise one from storage. */
+function currentSnapshot() {
+  return snapshotProvider ? snapshotProvider() : storedSnapshot()
+}
+
 /**
  * Check for a good moment from wherever the user is, not only the dashboard:
  * someone spending their time in Coach or Signals was never considered.
@@ -674,7 +726,7 @@ export function startReviewScheduler() {
   if (schedulerStop || !isAndroidTWA()) return schedulerStop || (() => {})
   noteAppOpen()
   const stopClock = startEngagementClock()
-  const snap = () => (snapshotProvider ? snapshotProvider() : storedSnapshot())
+  const snap = currentSnapshot
   const first = setTimeout(() => maybeAskForReview(snap), 20 * 1000)
   const iv = setInterval(() => maybeAskForReview(snap), 60 * 1000)
   schedulerStop = () => {

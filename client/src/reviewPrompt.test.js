@@ -736,3 +736,54 @@ describe('time actually spent counts', () => {
     stop()
   })
 })
+
+describe('asking right after the user did something', () => {
+  const MIN = 60 * 1000
+
+  it('asks a brand-new user right after a buy, sell or backup, once they have used the app a little', async () => {
+    const { noteMoment, maybeAskForReview } = await loadModule()
+    // First launch, today: the launch and days gates alone would say no.
+    seed({ first: T0, opens: 1, activeMs: 3 * MIN })
+    vi.setSystemTime(T0 + 60 * 1000)
+    noteMoment('trade_saved')
+    expect(maybeAskForReview(READY)).toBe(true)
+    expect(firedIntents()).toEqual(['walletlens://review?source=trade_saved'])
+  })
+
+  it('still waits for a couple of minutes of real use', async () => {
+    const { noteMoment, maybeAskForReview } = await loadModule()
+    seed({ first: T0, opens: 1, activeMs: 30 * 1000 })
+    vi.setSystemTime(T0 + 60 * 1000)
+    noteMoment('backup_saved')
+    expect(maybeAskForReview(READY)).toBe(false)
+  })
+
+  it('offers again sooner after a fresh action, but never within two weeks', async () => {
+    const { noteMoment, maybeAskForReview } = await loadModule()
+    seed({ first: T0 - 60 * DAY, opens: 20, activeMs: 60 * MIN, asked: T0 - 10 * DAY, askCount: 1 })
+    vi.setSystemTime(T0 + 60 * 1000)
+    noteMoment('feature_used')
+    expect(maybeAskForReview(READY)).toBe(false)
+
+    seed({ first: T0 - 60 * DAY, opens: 20, activeMs: 60 * MIN, asked: T0 - 15 * DAY, askCount: 1 })
+    noteMoment('feature_used')
+    expect(maybeAskForReview(READY)).toBe(true)
+  })
+
+  it('still never asks right after the app failed them', async () => {
+    const { noteMoment, maybeAskForReview } = await loadModule()
+    seed({ first: T0, opens: 1, activeMs: 5 * MIN, friction: T0 })
+    vi.setSystemTime(T0 + 60 * 1000)
+    noteMoment('trade_saved')
+    expect(maybeAskForReview(READY)).toBe(false)
+  })
+
+  it('counts leaving a feature after real use, not passing through it', async () => {
+    const { featureVisitEnded } = await loadModule()
+    expect(featureVisitEnded('/coach', T0, '/dashboard', T0 + 45 * 1000)).toBe(true)
+    expect(featureVisitEnded('/asset/bitcoin', T0, '/dashboard', T0 + 31 * 1000)).toBe(true)
+    expect(featureVisitEnded('/coach', T0, '/dashboard', T0 + 10 * 1000)).toBe(false)
+    expect(featureVisitEnded('/settings', T0, '/dashboard', T0 + 5 * 60 * 1000)).toBe(false)
+    expect(featureVisitEnded('/coach', T0, '/coach', T0 + 5 * 60 * 1000)).toBe(false)
+  })
+})

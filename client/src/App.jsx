@@ -35,7 +35,7 @@ import CoffeeButton, { SUPPORT_URL } from './components/CoffeeButton'
 import { useTheme, THEMES } from './ThemeContext'
 import { track } from './analytics'
 import { useBiometricLock, BiometricLockScreen } from './components/BiometricLock'
-import { setAppInteractive, startReviewScheduler } from './reviewPrompt'
+import { setAppInteractive, startReviewScheduler, featureVisitEnded, noteMoment } from './reviewPrompt'
 import { isInstalledApp, isAndroidApp } from './nativeBridge'
 import { useCanInstall, promptInstall } from './pwaInstall'
 import { applySettings } from './settingsUtils'
@@ -656,6 +656,13 @@ export default function App() {
   // Rating card: count time on screen and look for a good moment from every
   // page, not only the dashboard. No-op outside the installed Android app.
   useEffect(() => startReviewScheduler(), [])
+  // Leaving a feature after real use is a moment worth asking after.
+  const featureVisit = useRef({ path: '', at: 0 })
+  useEffect(() => {
+    const prev = featureVisit.current
+    if (featureVisitEnded(prev.path, prev.at, location.pathname)) noteMoment('feature_used')
+    featureVisit.current = { path: location.pathname, at: Date.now() }
+  }, [location.pathname])
 
   // Automatic Portfolio Guardian check-in on sign-in. "Signing in" to WalletLens
   // means opening the app and, if App Lock is on, passing the fingerprint/face
