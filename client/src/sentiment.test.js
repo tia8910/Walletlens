@@ -163,8 +163,14 @@ describe('a more accurate reading', () => {
     expect(marketMood({ coins })).toBe('neutral')
   })
 
+  it('calls a normal 2-3% red day on a flat week neutral', () => {
+    // The day this was tuned on: market −2.3%, week +0.2%, most coins red.
+    const coins = Array.from({ length: 83 }, (_, i) => coin(`c${i}`, i < 17 ? 0.5 : i < 27 ? -0.5 : -2.8, 0.2))
+    expect(marketMood({ coins })).toBe('neutral')
+  })
+
   it('says how strong the move is', () => {
-    const mild = Array.from({ length: 50 }, (_, i) => coin(`c${i}`, -2.3, 0.2))
+    const mild = Array.from({ length: 50 }, (_, i) => coin(`c${i}`, -3.5, -2))
     const rout = Array.from({ length: 50 }, (_, i) => coin(`c${i}`, -8, -15))
     expect(moodReading({ coins: mild })).toMatchObject({ mood: 'bearish', strength: 'slight' })
     expect(moodReading({ coins: rout })).toMatchObject({ mood: 'bearish', strength: 'strong' })

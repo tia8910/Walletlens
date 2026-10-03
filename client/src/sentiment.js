@@ -91,8 +91,9 @@ function isStable(c) {
 }
 
 // How big a move has to be to count as decisive. Crypto's ordinary daily
-// swing is about 3%, so a 1% dip is noise, not a bear market.
-const DAY_FULL = 5
+// swing is about 3%, so a 2-3% dip on a flat week is noise, not a bear
+// market; it takes a move well past that to fill the scale.
+const DAY_FULL = 8
 const WEEK_FULL = 12
 /** A coin only counts as up or down for breadth when it moved this much. */
 const BREADTH_MIN = 1
@@ -147,7 +148,7 @@ export function marketDirection(coins, top = 100) {
 // ── The label ───────────────────────────────────────────────────────────────
 
 /** Below this in either direction the market is not saying anything worth a badge. */
-export const MOOD_THRESHOLD = 0.15
+export const MOOD_THRESHOLD = 0.25
 
 /**
  * The full reading: the label, how strong it is, and the numbers behind it.
@@ -164,7 +165,7 @@ export function moodReading({ articles, coins } = {}) {
   const score = direction === null ? tone : direction * 0.75 + tone * 0.25
   const mood = score > MOOD_THRESHOLD ? 'bullish' : score < -MOOD_THRESHOLD ? 'bearish' : 'neutral'
   const a = Math.abs(score)
-  const strength = mood === 'neutral' ? null : a < 0.35 ? 'slight' : a < 0.65 ? 'normal' : 'strong'
+  const strength = mood === 'neutral' ? null : a < 0.4 ? 'slight' : a < 0.65 ? 'normal' : 'strong'
   return { mood, strength, score, stats: marketStats(coins) }
 }
 
