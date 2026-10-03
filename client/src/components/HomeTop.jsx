@@ -6,6 +6,7 @@ import { api } from '../api'
 import usePrivateFmt from '../hooks/usePrivateFmt'
 import CoinLogo from './CoinLogo'
 import { THEMES } from '../ThemeContext'
+import { isStablecoin } from '../stablecoins'
 
 // Gold and silver as the bars the themes use, rather than a letter tile.
 const METAL = { gold: THEMES.find(t => t.id === 'gold')?.logo, silver: THEMES.find(t => t.id === 'silver')?.logo }
@@ -100,6 +101,9 @@ export function Spark({ values, w = 120, h = 34, className, up: upAs }) {
   )
 }
 
+/** Worth a watchlist card: a priced asset that moves, not cash or a stablecoin. */
+export const isWatchable = (h) => h?.price > 0 && h.category !== 'fiat' && !/^fiat:/.test(h.coin_id || '') && !isStablecoin(h.coin_id, h.coin_symbol)
+
 export default function HomeTop({ enriched = [], watch = [], totalValue = 0, todayPnL = 0, totalPnLPct = 0, cats = [], wallets = [], walletId = 'all', onWallet, newsSlot, sentimentSlot,
   onBuy, onSell, onHistory, onImport, onWatchAll, onAsset }) {
   const { t } = useLanguage()
@@ -111,7 +115,9 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
   const stack = enriched.slice(0, 3)
   // The user's own watchlist when they keep one, otherwise their biggest
   // holdings, which is what they would put on it.
-  const watchItems = (watch.length ? watch : enriched).filter(h => h.price > 0).slice(0, 4)
+  // Stablecoins and cash are left out: a $1.00 card with a flat line says
+  // nothing worth watching and takes a slot from an asset that moves.
+  const watchItems = (watch.length ? watch : enriched).filter(isWatchable).slice(0, 4)
   const sparks = useSparks(watchItems.map(h => h.coin_id))
 
   // Who moved: "2 winners and 1 loser. BTC leads at +3.7%."
