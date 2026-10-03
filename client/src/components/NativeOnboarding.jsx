@@ -1,11 +1,25 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import Icon from './Icon'
+import './NativeOnboarding.css'
+import OnboardFx from './OnboardFx'
 import { track } from '../analytics'
 import { useTheme, THEMES } from '../ThemeContext'
 import { useLanguage, LANGUAGES } from '../LanguageContext'
 import { useBiometricLock } from './BiometricLock'
 import sfx from '../sfx'
 import { primeEffectAudio } from '../screenEffectsRuntime'
+
+// First-run onboarding in the Android app, told as a short cinematic story
+// rather than a set of forms: one living particle field runs behind every
+// scene and changes behaviour with it, each scene has one thing to touch, and
+// you move through it the way you move through stories (swipe up, or tap on).
+//
+//   intro     light streams into the lens; your assets orbit it
+//   language  a 3D drum of greetings; spin it, the centre one is chosen
+//   look      the screen splits into dark and light; colour orbs circle the
+//             preview and tapping one floods the screen with it
+//   security  a fingerprint draws itself under a scanning beam (app only)
+//   launch    hold the ring until it fills; the field goes to warp speed
 
 const ONBOARD_KEY = 'wl_welcomed_v2'
 
@@ -20,44 +34,18 @@ const ONBOARD_KEY = 'wl_welcomed_v2'
 const ONBOARD_STEP_KEY = 'wl_welcome_step_v2'
 
 const SLIDES = [
-  {
-    id: 'welcome',
-    gradient: 'linear-gradient(165deg, #010a04 0%, #031008 35%, #041a0b 65%, #021008 100%)',
-    accent: '#00c853', glow: 'rgba(0,200,83,0.28)',
-    eyebrowKey: 'obWelcomeEyebrow', title: 'WalletLens',
-    titleGrad: 'linear-gradient(135deg, #00c853 0%, #4ade80 55%, #86efac 100%)',
-    descKey: 'obWelcomeDesc',
-    featureKeys: ['obFeatPrivate', 'obFeatLivePnl', 'obFeatInsights', 'obFeatFree'],
-  },
-  {
-    id: 'theme',
-    gradient: 'linear-gradient(165deg, #080b10 0%, #0f1520 55%, #080b10 100%)',
-    accent: '#00e676', glow: 'rgba(0,230,118,0.22)',
-    eyebrowKey: 'obThemeEyebrow', titleKey: 'obThemeTitle',
-    descKey: 'obThemeDesc', isTheme: true,
-  },
-  {
-    id: 'security',
-    gradient: 'linear-gradient(165deg, #04140d 0%, #06241a 55%, #03120c 100%)',
-    accent: '#00e676', glow: 'rgba(0,230,118,0.3)',
-    eyebrowKey: 'obSecurityEyebrow', titleKey: 'obSecurityTitle',
-    descKey: 'obSecurityDesc', isSecurity: true,
-  },
-  {
-    id: 'go',
-    gradient: 'linear-gradient(165deg, #041a0c 0%, #083818 55%, #041a0c 100%)',
-    accent: '#22c55e', glow: 'rgba(34,197,94,0.35)',
-    eyebrowKey: 'obGoEyebrow', titleKey: 'obGoTitle',
-    descKey: 'obGoDesc', final: true,
-  },
+  { id: 'welcome', fx: 'gather', accent: '#22c55e', glow: 'rgba(34,197,94,0.35)', bg: 'radial-gradient(120% 80% at 50% 25%, #06301a 0%, #020c06 60%, #000 100%)' },
+  { id: 'language', fx: 'drift', accent: '#38bdf8', glow: 'rgba(56,189,248,0.3)', bg: 'radial-gradient(120% 80% at 50% 40%, #0a2238 0%, #030a14 60%, #000 100%)', isLanguage: true },
+  { id: 'theme', fx: 'swirl', accent: '#a78bfa', glow: 'rgba(167,139,250,0.3)', bg: 'radial-gradient(120% 80% at 50% 35%, #1a1033 0%, #07040f 60%, #000 100%)', isTheme: true },
+  { id: 'security', fx: 'scan', accent: '#2dd4bf', glow: 'rgba(45,212,191,0.32)', bg: 'radial-gradient(120% 80% at 50% 35%, #06302b 0%, #020d0b 60%, #000 100%)', isSecurity: true },
+  { id: 'go', fx: 'rise', accent: '#22c55e', glow: 'rgba(34,197,94,0.4)', bg: 'radial-gradient(120% 90% at 50% 70%, #0b3d1d 0%, #031208 55%, #000 100%)', final: true },
 ]
 
-const LOGO_SVGS = {
-  gold: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='10' width='16' height='12' rx='1' fill='%23e8b825' opacity='0.3'/%3E%3Crect x='7' y='6' width='10' height='8' rx='1' fill='%23e8b825'/%3E%3C/svg%3E",
-  silver: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='10' width='16' height='12' rx='1' fill='%23c0c8d8' opacity='0.3'/%3E%3Crect x='7' y='6' width='10' height='8' rx='1' fill='%23c0c8d8'/%3E%3C/svg%3E",
-  ethereum: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2L12 9.5L18 12L12 2Z' fill='%23627eea'/%3E%3Cpath d='M12 9.5L12 17L18 12L12 9.5Z' fill='%23627eea' opacity='0.6'/%3E%3C/svg%3E",
-  solana: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 9L10 5H17L13 9H6Z' fill='%239945ff'/%3E%3Cpath d='M6 15L10 11H17L13 15H6Z' fill='%239945ff'/%3E%3C/svg%3E",
-}
+// "Hello" in each language's own words, for the language drum.
+const HELLO = { en: 'Hello', ar: 'مرحبا', fr: 'Bonjour', es: 'Hola', de: 'Hallo', it: 'Ciao' }
+const FEATURE_KEYS = ['obFeatPrivate', 'obFeatLivePnl', 'obFeatInsights', 'obFeatFree']
+const FEATURE_ICONS = { obFeatPrivate: 'lock', obFeatLivePnl: 'pulse', obFeatInsights: 'sparkles', obFeatFree: 'gift' }
+const HOLD_MS = 1100
 
 /**
  * The slides this context can actually deliver.
@@ -82,6 +70,39 @@ function slidesFor(canLock) {
   return canLock ? SLIDES : SLIDES.filter(sl => !sl.isSecurity)
 }
 
+/** One odometer digit: starts at 0 and rolls to its value, and on to each new one. */
+function OdoDigit({ d, delay }) {
+  const [v, setV] = useState(0)
+  useEffect(() => { const r = requestAnimationFrame(() => setV(d)); return () => cancelAnimationFrame(r) }, [d])
+  return (
+    <span className="ocx-odo-col" aria-hidden="true">
+      <span className="ocx-odo-strip" style={{ transform: `translateY(-${v * 10}%)`, transitionDelay: `${delay}ms` }}>
+        {'0123456789'.split('').map(x => <span key={x}>{x}</span>)}
+      </span>
+    </span>
+  )
+}
+
+/**
+ * A number whose digits roll like an odometer, flashing green or red with
+ * the way it moved.
+ */
+function Odometer({ value, move }) {
+  const str = '$' + Math.max(0, Math.round(value)).toLocaleString('en-US')
+  const chars = str.split('')
+  return (
+    <b className={`ocx-odo is-${move}`} aria-label={str}>
+      {chars.map((ch, i) => {
+        const pos = chars.length - i
+        return /\d/.test(ch)
+          ? <OdoDigit key={`d${pos}`} d={Number(ch)} delay={pos * 45} />
+          : <span key={`s${pos}`} className="ocx-odo-sep" aria-hidden="true">{ch}</span>
+      })}
+      <span key={Math.round(value)} className="ocx-odo-flash" aria-hidden="true" />
+    </b>
+  )
+}
+
 export default function NativeOnboarding({ onDone }) {
   const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
   const slides = useMemo(() => slidesFor(bioAvailable), [bioAvailable])
@@ -96,101 +117,131 @@ export default function NativeOnboarding({ onDone }) {
       return Number.isFinite(saved) ? Math.min(Math.max(saved, 0), max) : 0
     } catch { return 0 }
   })
+  const [dir, setDir] = useState(1)
   const [bioBusy, setBioBusy] = useState(false)
   const [bioError, setBioError] = useState('')
+  const [burst, setBurst] = useState(0)
+  const [warp, setWarp] = useState(false)
+  const [paint, setPaint] = useState(null)
+  const [hold, setHold] = useState(0)
+  const [featIdx, setFeatIdx] = useState(0)
+  const [count, setCount] = useState(0)
+  const [move, setMove] = useState('up')
+  const [shutter, setShutter] = useState(false)
   const { theme, setTheme, mode, setMode } = useTheme()
   const { lang, setLang, t } = useLanguage()
-  const touchStartX = useRef(0)
-  const touchStartY = useRef(0)
-  const [swiping, setSwiping] = useState(false)
-  const [swipeOffset, setSwipeOffset] = useState(0)
+  const touch = useRef({ x: 0, y: 0, on: false })
+  const [drag, setDrag] = useState(0)
+  const holdRef = useRef(null)
 
   const s = slides[Math.min(step, slides.length - 1)]
   const total = slides.length
+  const th = THEMES.find(x => x.id === theme) || THEMES[0]
+  const light = mode === 'light'
 
   useEffect(() => {
     try { localStorage.setItem(ONBOARD_STEP_KEY, String(step)) } catch {}
   }, [step])
 
+  // Intro: the figure rolls in like an odometer, then keeps ticking like a
+  // live price, and the feature words take turns.
+  useEffect(() => {
+    if (s.id !== 'welcome') return
+    const t0 = setTimeout(() => setCount(128450), 450)
+    const live = setInterval(() => {
+      const d = Math.round((Math.random() - 0.38) * 900)
+      setCount(v => v + d)
+      setMove(d >= 0 ? 'up' : 'down')
+    }, 2300)
+    const iv = setInterval(() => setFeatIdx(i => (i + 1) % FEATURE_KEYS.length), 1400)
+    return () => { clearTimeout(t0); clearInterval(live); clearInterval(iv) }
+  }, [s.id])
+
   const goNext = useCallback(() => {
-    if (step < total - 1) { setStep(x => x + 1); try { sfx.playWhoosh() } catch {} }
+    if (step < total - 1) { setDir(1); setStep(x => x + 1); try { sfx.playRise(true); sfx.haptic(8) } catch {} }
   }, [step, total])
 
   const goPrev = useCallback(() => {
-    if (step > 0) { setStep(x => x - 1); try { sfx.playWhoosh() } catch {} }
+    if (step > 0) { setDir(-1); setStep(x => x - 1); try { sfx.playRise(false) } catch {} }
   }, [step])
 
   const goTo = useCallback((i) => {
     if (i >= 0 && i < total && i !== step) {
+      setDir(i > step ? 1 : -1)
       setStep(i)
-      try { sfx.playWhoosh() } catch {}
+      try { sfx.playRise(i > step) } catch {}
     }
   }, [step, total])
 
-  const onTouchStart = useCallback((e) => {
-    touchStartX.current = e.touches[0].clientX
-    touchStartY.current = e.touches[0].clientY
-    setSwiping(true)
-    setSwipeOffset(0)
-  }, [])
+  // Tapping the lens snaps the shutter closed and open again.
+  function snap() {
+    if (shutter) return
+    setShutter(true)
+    try { sfx.playTick(5); sfx.haptic(12) } catch {}
+    setTimeout(() => setShutter(false), 420)
+  }
 
-  const onTouchMove = useCallback((e) => {
-    if (!swiping) return
-    const dx = e.touches[0].clientX - touchStartX.current
-    const dy = e.touches[0].clientY - touchStartY.current
-    if (Math.abs(dy) > Math.abs(dx) * 1.2) { setSwiping(false); return }
-    setSwipeOffset(dx * 0.4)
-  }, [swiping])
+  // ── language drum ─────────────────────────────────────────────────────
+  const langIdx = Math.max(0, LANGUAGES.findIndex(l => l.code === lang))
+  function pickLang(code) {
+    if (code === lang) return
+    try { setLang(code) } catch {}
+    try { track('language_changed', { lang: code, source: 'onboarding' }) } catch {}
+    try { sfx.playTick(LANGUAGES.findIndex(l => l.code === code)); sfx.haptic(6) } catch {}
+  }
+  function spinLang(d) {
+    const n = LANGUAGES.length
+    pickLang(LANGUAGES[(langIdx + d + n) % n].code)
+  }
 
-  const onTouchEnd = useCallback((e) => {
-    const dx = e.changedTouches[0].clientX - touchStartX.current
-    setSwiping(false)
-    setSwipeOffset(0)
-    if (Math.abs(dx) > 60) {
-      if (dx < 0) goNext()
-      else goPrev()
+  // Swipe up (or left) for the next scene, down (or right) for the last one.
+  // The language drum takes vertical swipes for itself.
+  const onStart = (x, y) => { touch.current = { x, y, on: true } }
+  const onMove = (x, y) => {
+    if (!touch.current.on || s.isLanguage) return
+    setDrag(Math.max(-90, Math.min(90, (y - touch.current.y) * 0.35)))
+  }
+  const onEnd = (x, y) => {
+    if (!touch.current.on) return
+    touch.current.on = false
+    const dx = x - touch.current.x, dy = y - touch.current.y
+    setDrag(0)
+    if (s.isLanguage && Math.abs(dy) > Math.abs(dx)) {
+      if (Math.abs(dy) > 30) spinLang(dy < 0 ? 1 : -1)
+      return
     }
-  }, [goNext, goPrev])
-
-  // Mouse-drag mirrors the touch-swipe above. Desktop and Windows-packaged
-  // users have no touchscreen: without this (and the buttons below) the
-  // first slides offered nothing clickable and the app read as frozen.
-  const onMouseDown = useCallback((e) => {
-    if (e.button !== 0) return
-    touchStartX.current = e.clientX
-    setSwiping(true)
-    setSwipeOffset(0)
-  }, [])
-
-  const onMouseMove = useCallback((e) => {
-    if (!swiping || e.buttons !== 1) return
-    setSwipeOffset((e.clientX - touchStartX.current) * 0.4)
-  }, [swiping])
-
-  const onMouseUp = useCallback((e) => {
-    if (!swiping) return
-    const dx = e.clientX - touchStartX.current
-    setSwiping(false)
-    setSwipeOffset(0)
-    if (Math.abs(dx) > 60) {
-      if (dx < 0) goNext()
-      else goPrev()
-    }
-  }, [swiping, goNext, goPrev])
+    const big = Math.abs(dy) > Math.abs(dx) ? dy : dx
+    if (Math.abs(big) > 60) { if (big < 0) goNext(); else goPrev() }
+  }
 
   useEffect(() => {
     const h = (e) => {
-      if (e.key === 'ArrowRight' || e.key === 'Enter') goNext()
-      else if (e.key === 'ArrowLeft') goPrev()
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'Enter') goNext()
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') goPrev()
     }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
   }, [goNext, goPrev])
 
   useEffect(() => {
-    try { sfx.startAmbient() } catch {}
-    return () => { try { sfx.stopAmbient() } catch {} }
+    try { sfx.startDrone() } catch {}
+    return () => { try { sfx.stopDrone(); sfx.stopCharge() } catch {} }
   }, [])
+
+  // ── look ──────────────────────────────────────────────────────────────
+  function pickMode(m) {
+    try { setMode(m) } catch {}
+    try { sfx.playTick(m === 'light' ? 4 : 0); sfx.haptic(6) } catch {}
+    try { track('mode_changed', { mode: m, source: 'onboarding' }) } catch {}
+  }
+  function pickTheme(x, e) {
+    // The chosen colour floods the screen from the orb that was tapped.
+    const r = e.currentTarget.getBoundingClientRect()
+    setPaint({ x: r.left + r.width / 2, y: r.top + r.height / 2, c: x.swatch, k: Date.now() })
+    try { setTheme(x.id) } catch {}
+    try { sfx.playBloom(THEMES.findIndex(y => y.id === x.id)); sfx.haptic(10) } catch {}
+    try { track('theme_changed', { theme: x.id }) } catch {}
+  }
 
   async function enableBiometric() {
     if (bioBusy) return
@@ -203,15 +254,37 @@ export default function NativeOnboarding({ onDone }) {
     finally { setBioBusy(false) }
   }
 
-  function skip() {
-    try { track('onboarding_skipped', { at_step: step }) } catch {}
-    finish()
+  // ── launch: hold to fill the ring, then warp ──────────────────────────
+  function holdStart() {
+    if (warp) return
+    try { sfx.startCharge(HOLD_MS); sfx.haptic(15) } catch {}
+    const t0 = performance.now()
+    const tick = (now) => {
+      const k = Math.min(1, (now - t0) / HOLD_MS)
+      setHold(k)
+      if (k >= 1) { launch(); return }
+      holdRef.current = requestAnimationFrame(tick)
+    }
+    holdRef.current = requestAnimationFrame(tick)
+  }
+  function holdEnd() {
+    cancelAnimationFrame(holdRef.current)
+    try { sfx.stopCharge() } catch {}
+    if (!warp) setHold(0)
+  }
+  useEffect(() => () => cancelAnimationFrame(holdRef.current), [])
+
+  function launch() {
+    if (warp) return
+    try { sfx.stopCharge(); sfx.stopDrone(); sfx.playWarp(); sfx.haptic([20, 40, 60]) } catch {}
+    setWarp(true); setBurst(b => b + 1); setHold(1)
+    setTimeout(finish, 1100)
   }
 
   function finish() {
     // Unlock the screen-effects AudioContext while we are still inside the tap.
     //
-    // sfx.playTriumph() above unlocks a DIFFERENT context — sfx.js has its
+    // sfx.playWarp() above unlocks a DIFFERENT context — sfx.js has its
     // own — so without this the one guaranteed gesture of the whole first-run
     // flow leaves the effects context asleep, and the first-open burst the
     // dashboard is about to fire arrives silent on a phone at full volume.
@@ -225,175 +298,226 @@ export default function NativeOnboarding({ onDone }) {
     try { onDone?.() } catch {}
   }
 
-  function getThemeIcon(th) {
-    // Logo SVG for themes that have one (gold/silver bars, coin logos)…
-    if (th.logo) return <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-    // …a short currency glyph (₿, Ξ, ◎) rendered as-is…
-    if (th.icon && th.icon.length <= 2) return th.icon
-    // …otherwise a premium line icon (e.g. emerald → sparkles), dark on the light swatch.
-    return <Icon name={th.icon} size={18} style={{ color: '#064e3b' }} />
+  function getThemeIcon(x) {
+    if (x.logo) return <img src={x.logo} alt="" loading="lazy" decoding="async" />
+    if (x.icon && x.icon.length <= 2) return x.icon
+    return <Icon name={x.icon} size={18} style={{ color: '#064e3b' }} />
   }
 
-  return (
-    <div className="no-container" style={{ background: s.gradient }}
-      onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-      onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp}>
+  const words = (text, base = 0.15) => String(text).split(' ').map((w, i) => (
+    <span key={`${text}-${i}`} className="ocx-word" style={{ animationDelay: `${base + i * 0.08}s` }}>{w}{' '}</span>
+  ))
 
-      <div className="no-slide" key={step}
-        style={swiping ? { transform: `translateX(${swipeOffset}px)`, transition: 'none' } : {}}>
-
-        <div className="no-eyebrow" style={{ color: s.accent }}>{s.eyebrowKey ? t(s.eyebrowKey) : s.eyebrow}</div>
-
-        {s.titleGrad ? (
-          <h1 className="no-title" style={{ backgroundImage: s.titleGrad, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{s.titleKey ? t(s.titleKey) : s.title}</h1>
-        ) : (
-          <h1 className="no-title">{s.titleKey ? t(s.titleKey) : s.title}</h1>
-        )}
-
-        <p className="no-desc">{t(s.descKey)}</p>
-
-        {s.featureKeys && (
-          <div className="no-features">
-            {s.featureKeys.map(k => <div key={k} className="no-feature">{t(k)}</div>)}
-          </div>
-        )}
-
-        {s.isTheme && (
-          <div className="no-lang-grid">
-            {LANGUAGES.map(l => (
-              <button
-                key={l.code}
-                className={`no-lang-btn${lang === l.code ? ' active' : ''}`}
-                onClick={() => { try { setLang(l.code) } catch {}; try { track('language_changed', { lang: l.code, source: 'onboarding' }) } catch {} }}
-                lang={l.code}
-                dir={l.rtl ? 'rtl' : 'ltr'}
-              >
-                <span className="no-lang-flag" aria-hidden="true">{l.flag}</span>
-                <span className="no-lang-native">{l.native}</span>
-                <span className="no-lang-en">{l.label}</span>
-              </button>
+  // ── scenes ────────────────────────────────────────────────────────────
+  let scene = null
+  if (s.id === 'welcome') {
+    scene = (
+      <>
+        <button className={`ocx-aperture${shutter ? ' is-snap' : ''}`} onClick={snap} aria-label="WalletLens">
+          <span className="ocx-ap-halo" />
+          <span className="ocx-ap-rim" />
+          <span className="ocx-ap-glass">
+            <small>{t('obPreviewLabel')}</small>
+            <Odometer value={count} move={move} />
+            <svg className="ocx-ap-chart" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true">
+              <g className="ocx-ap-scroll">
+                <path d="M0 30 C10 28 16 33 26 26 S42 20 52 23 S68 14 78 17 S94 8 104 11 S116 6 120 8 C130 10 136 5 146 9 S162 14 172 6 S190 10 200 4 S216 12 226 7 S236 9 240 8" />
+              </g>
+            </svg>
+            <em className={`ocx-chg is-${move}`}>{move === 'up' ? '▲' : '▼'} {((count - 125440) / 1254.4).toFixed(2)}%</em>
+          </span>
+          <svg className="ocx-ap-iris" viewBox="0 0 200 200" aria-hidden="true">
+            <defs>
+              <linearGradient id="ocxBlade" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#3a4a42" /><stop offset="0.5" stopColor="#141c18" /><stop offset="1" stopColor="#060a08" />
+              </linearGradient>
+              <clipPath id="ocxClip"><circle cx="100" cy="100" r="78" /></clipPath>
+            </defs>
+            <g clipPath="url(#ocxClip)">
+              {Array.from({ length: 8 }, (_, i) => (
+                <g key={i} transform={`rotate(${i * 45} 100 100)`}>
+                  <path className="ocx-blade" d="M100 14 L176 62 L112 112 L86 100 Z" />
+                </g>
+              ))}
+            </g>
+          </svg>
+          <span className="ocx-ap-flare" />
+        </button>
+        <div className="ocx-copy">
+          <div className="ocx-eyebrow">{t('obWelcomeEyebrow')}</div>
+          <h1 className="ocx-title ocx-brand">{words('WalletLens')}</h1>
+          <div className="ocx-chips">
+            {FEATURE_KEYS.map((k, i) => (
+              <span key={k} className={`ocx-chip${i === featIdx ? ' on' : ''}`} style={{ animationDelay: `${0.5 + i * 0.1}s` }}>
+                <Icon name={FEATURE_ICONS[k]} size={13} />{t(k)}
+              </span>
             ))}
           </div>
-        )}
-
-        {s.isTheme && (
-          <div className="no-mode-row">
-            {[
-              { id: 'dark',  labelKey: 'modeDark',  icon: 'moon' },
-              { id: 'light', labelKey: 'modeLight', icon: 'sun' },
-            ].map(m => (
-              <button
-                key={m.id}
-                className={`no-mode-btn${mode === m.id ? ' active' : ''}`}
-                onClick={() => { try { setMode(m.id) } catch {}; try { track('mode_changed', { mode: m.id, source: 'onboarding' }) } catch {} }}
-              >
-                <Icon name={m.icon} size={16} />
-                <span>{t(m.labelKey)}</span>
+          <p className="ocx-desc">{t('obWelcomeDesc')}</p>
+        </div>
+      </>
+    )
+  } else if (s.isLanguage) {
+    const n = LANGUAGES.length
+    scene = (
+      <>
+        <div className="ocx-copy ocx-top">
+          <div className="ocx-eyebrow">{t('obSecLanguage')}</div>
+        </div>
+        <div className="ocx-drum" role="listbox" aria-label={t('obSecLanguage')}>
+          <span className="ocx-drum-lens" />
+          {LANGUAGES.map((l, i) => {
+            let off = i - langIdx
+            if (off > n / 2) off -= n
+            if (off < -n / 2) off += n
+            const on = off === 0
+            return (
+              <button key={l.code} role="option" aria-selected={on} lang={l.code} dir={l.rtl ? 'rtl' : 'ltr'}
+                className={`ocx-drum-item${on ? ' on' : ''}`}
+                style={{ transform: `translateY(${off * 74}px) rotateX(${-off * 28}deg) scale(${on ? 1 : 0.78})`, opacity: Math.max(0, 1 - Math.abs(off) * 0.36) }}
+                onClick={() => pickLang(l.code)}>
+                <span className="ocx-hello">{HELLO[l.code] || l.native}</span>
+                <small>{l.flag} {l.native}</small>
               </button>
-            ))}
+            )
+          })}
+        </div>
+        <div className="ocx-drum-arrows">
+          <button onClick={() => spinLang(-1)} aria-label={t('obLangPrev')}><Icon name="arrow-up" size={18} /></button>
+          <button onClick={() => spinLang(1)} aria-label={t('obLangNext')}><Icon name="arrow-down" size={18} /></button>
+        </div>
+      </>
+    )
+  } else if (s.isTheme) {
+    scene = (
+      <>
+        <div className="ocx-split">
+          <button className={`ocx-half is-dark${!light ? ' on' : ''}`} onClick={() => pickMode('dark')}>
+            <Icon name="moon" size={18} /><span>{t('modeDark')}</span>
+          </button>
+          <button className={`ocx-half is-light${light ? ' on' : ''}`} onClick={() => pickMode('light')}>
+            <Icon name="sun" size={18} /><span>{t('modeLight')}</span>
+          </button>
+        </div>
+        <div className="ocx-look" style={{ '--th': th.swatch }}>
+          <div className={`ocx-preview${light ? ' is-light' : ''}`} key={`${theme}-${mode}`}>
+            <small>{t('obPreviewLabel')}</small>
+            <b>$128,450</b>
+            <div className="ocx-preview-btns"><span className="is-buy">+ {t('buy')}</span><span className="is-sell">− {t('sell')}</span></div>
           </div>
-        )}
-
-        {s.isTheme && (
-          <div className="no-theme-grid">
-            {THEMES.map(th => {
-              const isLight = mode === 'light'
-              const isActive = theme === th.id
+          {/* A dial of colours on an arc; it turns so the chosen one sits in the middle. */}
+          <div className="ocx-dial" role="radiogroup" aria-label={t('obThemeTitle')}>
+            <span className="ocx-dial-track" />
+            {THEMES.map((x, i) => {
+              const sel = Math.max(0, THEMES.findIndex(y => y.id === theme))
+              const a = (i - sel) * 26
+              const on = theme === x.id
               return (
-              <button key={th.id} className={`no-theme-btn${isActive ? ' active' : ''}`}
-                style={isActive ? {
-                  borderColor: isLight ? '#fff' : th.swatch,
-                  boxShadow: isLight ? '0 0 16px rgba(255,255,255,0.35)' : `0 0 16px ${th.swatch}55`,
-                } : undefined}
-                onClick={() => { try { setTheme(th.id) } catch {}; try { track('theme_changed', { theme: th.id }) } catch {} }}>
-                <span className="no-theme-swatch" style={{
-                  background: `radial-gradient(circle at 35% 35%, ${th.light}, ${th.swatch})`,
-                  boxShadow: isActive ? (isLight ? '0 0 10px rgba(255,255,255,0.5)' : `0 0 10px ${th.swatch}88`) : 'none',
-                  border: isActive ? `2px solid ${isLight ? '#fff' : th.swatch}` : '2px solid transparent',
-                }}>{getThemeIcon(th)}</span>
-                <span className="no-theme-label" style={isActive ? { color: isLight ? '#fff' : th.swatch } : undefined}>{th.name}</span>
-              </button>
+                <button key={x.id} role="radio" aria-checked={on} aria-label={x.name}
+                  className={`ocx-dot${on ? ' on' : ''}`}
+                  style={{ transform: `rotate(${a}deg) translateY(150px) rotate(${-a}deg) scale(${on ? 1.25 : 0.9})`, opacity: Math.abs(a) > 80 ? 0 : 1 - Math.abs(a) / 160,
+                    '--sw': x.swatch, background: `radial-gradient(circle at 35% 30%, ${x.light}, ${x.swatch})` }}
+                  onClick={(e) => pickTheme(x, e)}>
+                  {getThemeIcon(x)}
+                </button>
               )
             })}
           </div>
-        )}
+        </div>
+        <div className="ocx-copy">
+          <h1 className="ocx-title">{words(t('obThemeTitle'))}</h1>
+          <p className="ocx-desc">{th.name} · {light ? t('modeLight') : t('modeDark')}</p>
+        </div>
+      </>
+    )
+  } else if (s.isSecurity) {
+    scene = (
+      <>
+        <div className={`ocx-print${bioEnabled ? ' is-on' : ''}`}>
+          <svg viewBox="0 0 120 140" aria-hidden="true">
+            {['M60 18c-22 0-40 17-40 39v18', 'M100 75V57c0-22-18-39-40-39', 'M32 98V58c0-15 13-28 28-28s28 13 28 28v12', 'M44 112V58c0-9 7-16 16-16s16 7 16 16v30', 'M60 58v58', 'M88 86v20', 'M20 88c2 10 6 19 12 27', 'M76 100c-1 10-4 19-9 27'].map((d, i) => (
+              <path key={i} d={d} style={{ animationDelay: `${i * 0.12}s` }} />
+            ))}
+          </svg>
+          <span className="ocx-beam" />
+          {bioEnabled && <span className="ocx-ok"><Icon name="check" size={22} /></span>}
+        </div>
+        <div className="ocx-copy">
+          <div className="ocx-eyebrow">{t('obSecurityEyebrow')}</div>
+          <h1 className="ocx-title">{words(t('obSecurityTitle'))}</h1>
+          <p className="ocx-desc">{t('obSecurityDesc')}</p>
+          {/* No "unavailable" branch: slidesFor() drops this slide entirely
+              when App Lock cannot work here, so reaching this point already
+              means it can. */}
+          {bioEnabled
+            ? <div className="ocx-pill is-on"><Icon name="check" size={16} />{t('obBioEnabled')}</div>
+            : <button className="ocx-pill" onClick={enableBiometric} disabled={bioBusy}><Icon name="lock" size={16} />{bioBusy ? t('obSettingUp') : t('obBioEnable')}</button>}
+          {bioError && <div className="ocx-err">{bioError}</div>}
+        </div>
+      </>
+    )
+  } else {
+    const R = 62, C = 2 * Math.PI * R
+    scene = (
+      <>
+        <div className="ocx-copy ocx-top">
+          <div className="ocx-eyebrow">{t('obGoEyebrow')}</div>
+          <h1 className="ocx-title">{words(t('obGoTitle'))}</h1>
+          <p className="ocx-desc">{t('obGoDesc')}</p>
+        </div>
+        <button className={`no-nav-next ocx-hold${warp ? ' is-go' : ''}`} aria-label={t('obStart')}
+          onPointerDown={holdStart} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd}
+          onClick={(e) => { if (e.detail === 0) launch() }}>
+          <svg viewBox="0 0 150 150" aria-hidden="true">
+            <circle cx="75" cy="75" r={R} className="ocx-hold-track" />
+            <circle cx="75" cy="75" r={R} className="ocx-hold-fill" style={{ strokeDasharray: C, strokeDashoffset: C * (1 - hold) }} />
+          </svg>
+          <span className="ocx-hold-core"><Icon name="trend-up" size={40} /></span>
+        </button>
+        <div className="ocx-hint">{t('obHoldLaunch')}</div>
+      </>
+    )
+  }
 
-        {s.isSecurity && (
-          <div className="no-security">
-            {/* No "unavailable" branch: slidesFor() drops this slide entirely
-                when App Lock cannot work here, so reaching this point already
-                means it can. */}
-            {bioEnabled ? (
-              <div className="no-bio-enabled">{t('obBioEnabled')}</div>
-            ) : (
-              <button className="no-bio-btn" onClick={enableBiometric} disabled={bioBusy}>
-                {bioBusy ? t('obSettingUp') : t('obBioEnable')}
-              </button>
-            )}
-            {bioError && <div className="no-bio-error">{bioError}</div>}
-          </div>
-        )}
-      </div>
+  return (
+    <div className={`no-container ocx${warp ? ' is-warp' : ''}`}
+      style={{ background: s.bg, '--accent': s.accent, '--glow': s.glow }}
+      onTouchStart={e => onStart(e.touches[0].clientX, e.touches[0].clientY)}
+      onTouchMove={e => onMove(e.touches[0].clientX, e.touches[0].clientY)}
+      onTouchEnd={e => onEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY)}
+      onMouseDown={e => { if (e.button === 0) onStart(e.clientX, e.clientY) }}
+      onMouseMove={e => { if (e.buttons === 1) onMove(e.clientX, e.clientY) }}
+      onMouseUp={e => onEnd(e.clientX, e.clientY)}>
 
-      {/* Progress track */}
-      <div className="no-progress-track">
-        <div className="no-progress-fill" style={{ width: `${((step + 1) / total) * 100}%`, background: s.accent }} />
-      </div>
+      <OnboardFx mode={warp ? 'warp' : s.fx} color={s.isTheme ? th.swatch : s.accent} color2={s.isTheme ? th.light : '#e2e8f0'} burst={burst} shift={drag} />
+      {paint && <span key={paint.k} className="ocx-paint" style={{ left: paint.x, top: paint.y, background: paint.c }} />}
 
-      {/* Single dynamic trend line */}
-      <div className="no-trend-wrap">
-        <svg className="no-trend-svg" viewBox="0 0 320 40" fill="none">
-          <defs>
-            <linearGradient id="tg" x1="0" y1="0" x2="320" y2="0">
-              <stop offset="0%" stopColor={s.accent} stopOpacity="0.2" />
-              <stop offset="100%" stopColor={s.accent} stopOpacity="1" />
-            </linearGradient>
-          </defs>
-          <path
-            d={`M 0 30 Q 40 30 60 ${28 - step * 6} Q 80 ${26 - step * 6} 110 ${24 - step * 4} Q 140 ${22 - step * 4} 160 ${18 - step * 2} Q 190 ${16 - step * 2} 210 ${14 - step * 2} Q 240 ${12 - step * 2} 260 ${10 - step} Q 290 ${8 - step} 310 ${6}`}
-            stroke="url(#tg)"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <circle cx={60 + step * 65} cy={28 - step * 7} r="4" fill={s.accent} />
-        </svg>
-        <div className="no-trend-segs">
+      {/* Story bars: one per scene, the current one fills */}
+      <div className="ocx-top-bar">
+        <div className="ocx-bars" role="tablist" aria-label={t('obStepOf')(step + 1, total)}>
           {slides.map((_, i) => (
-            <button key={i} className="no-trend-seg" onClick={() => goTo(i)}
-              aria-label={t('obSlide')(i + 1)} />
+            <button key={i} role="tab" aria-selected={i === step} aria-label={t('obSlide')(i + 1)} onClick={() => goTo(i)}
+              className={`ocx-bar${i < step ? ' done' : i === step ? ' now' : ''}`}><i /></button>
           ))}
+        </div>
+        <div className="ocx-top-row">
+          {step > 0 ? <button className="ocx-ghost" onClick={goPrev} aria-label={t('obBack')}><Icon name="arrow-down" size={18} /></button> : <span className="ocx-ghost-ph" />}
+          <span className="ocx-count">{t('obStepOf')(step + 1, total)}</span>
+          <span className="ocx-ghost-ph" />
         </div>
       </div>
 
-      {/* Explicit mouse/keyboard navigation. The slides used to advance
-          only on touch-swipe, arrow keys/Enter or the invisible trend dots,
-          so a desktop mouse user had nothing to click and the app was
-          reported as frozen on the welcome slide. */}
-      <div className="no-nav">
-        {step > 0
-          ? <button className="no-nav-btn" onClick={goPrev}>{t('obBack')}</button>
-          : <span />}
-        {!s.final ? (
-          <div className="no-nav-right">
-            <button className="no-nav-skip" onClick={skip}>{t('obSkip')}</button>
-            <button className="no-nav-next" style={{ background: s.accent }} onClick={goNext}>{t('obNext')}</button>
-          </div>
-        ) : (
-          <button className="no-nav-next" style={{ background: s.accent }}
-            onClick={() => { try { sfx.playTriumph() } catch {}; finish() }}>{t('obStart')}</button>
-        )}
+      <div className={`no-slide ocx-scene${dir < 0 ? ' from-top' : ''}`} key={step}
+        style={drag ? { transform: `translateY(${drag}px)`, transition: 'none' } : undefined}>
+        {scene}
       </div>
 
-      {/* Final slide: pulsing circle */}
-      {s.final && (
-        <div className="no-launch-area">
-          <button className="no-launch-circle" onClick={() => { try { sfx.playTriumph() } catch {}; finish() }}
-            style={{ '--accent': s.accent, '--glow': s.glow }}>
-            <div className="no-launch-ring" style={{ borderColor: s.accent }} />
-            <div className="no-launch-core" style={{ background: `linear-gradient(135deg, ${s.accent}, #4ade80)` }} />
+      {!s.final && (
+        <div className="ocx-next-wrap">
+          <button className="no-nav-next ocx-next" onClick={goNext} aria-label={t('obNext')}>
+            <Icon name="arrow-up" size={22} />
           </button>
-          <div className="no-launch-hint" style={{ color: s.accent }}>{t('obTapToStart')}</div>
+          <span className="ocx-swipe">{t('obSwipeHint')}</span>
         </div>
       )}
     </div>
