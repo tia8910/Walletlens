@@ -143,7 +143,7 @@ export default function IndicatorChart({ coinId, symbol, name, price, source = '
     <div className="ic-root">
       <div className="ac-chart">
         {timeframes}
-        {chart(260)}
+        {chart(300)}
         {chips}
         {candleData.closeOnly && cs.length > 0 && <p className="ac-note">{t('acCloseOnly')}</p>}
       </div>
@@ -157,12 +157,33 @@ export default function IndicatorChart({ coinId, symbol, name, price, source = '
                 <b>{last.side === 'buy' ? t('acBuySignal') : t('acSellSignal')} · {rel(cs[last.i].t)}</b>
                 <small>${fmtPrice(last.entry)}</small>
               </div>
+              <p className={`ac-status is-${last.forming ? 'forming' : last.outcome?.status || 'open'}`}>
+                {last.forming ? t('acSigForming')
+                  : last.outcome?.status === 'stopped' ? t('acSigStopped')
+                  : last.outcome?.status === 'tp' ? (last.outcome.hit === last.targets.length ? t('acSigAllTp') : t('acSigTp')(last.outcome.hit))
+                  : t('acSigOpen')}
+              </p>
               <div className="ac-levels">
-                <div className="ac-lv is-sl"><small>SL</small><b>{fmtPrice(last.stop)}</b></div>
-                {last.targets.map((v, k) => <div key={k} className="ac-lv is-tp"><small>TP{k + 1}</small><b>{fmtPrice(v)}</b></div>)}
+                <div className={`ac-lv is-sl${last.outcome?.status === 'stopped' ? ' is-hit' : ''}`}><small>SL{last.outcome?.status === 'stopped' ? ' ✕' : ''}</small><b>{fmtPrice(last.stop)}</b></div>
+                {last.targets.map((v, k) => {
+                  const reached = (last.outcome?.hit || 0) > k
+                  return <div key={k} className={`ac-lv is-tp${reached ? ' is-hit' : ''}`}><small>TP{k + 1}{reached ? ' ✓' : ''}</small><b>{fmtPrice(v)}</b></div>
+                })}
               </div>
+              {calc.stats?.n >= 3 && (
+                <p className="ac-note ac-record">{t('acTrackRecord')(calc.stats.n, Math.round(calc.stats.rate * 100), calc.stats.stopped)}</p>
+              )}
             </>
           ) : <p className="ac-note">{t('acNoSignal')}</p>)}
+          {calc.trend && (
+            <div className="ac-trend">
+              <span className={`ac-tag is-${calc.trend.dir}`}>{t('acTrend')}</span>
+              <span>{(calc.trend.dir === 'up' ? t('acTrendUp') : calc.trend.dir === 'down' ? t('acTrendDown') : t('acTrendMixed')).replace('{slow}', P.cross.slow)}</span>
+              {calc.trend.rsi != null && (
+                <span className={`ac-rsi is-${calc.trend.rsiZone}`}>RSI {Math.round(calc.trend.rsi)} · {t(calc.trend.rsiZone === 'overbought' ? 'acRsiOverbought' : calc.trend.rsiZone === 'oversold' ? 'acRsiOversold' : calc.trend.rsiZone === 'firm' ? 'acRsiFirm' : 'acRsiSoft')}</span>
+              )}
+            </div>
+          )}
           {P.cross.on && (
             <div className="ac-gc">
               <span className={`ac-tag${bigCross?.kind === 'death' ? ' is-bad' : ''}`}>{bigCross ? (bigCross.kind === 'golden' ? t('acGoldenCross') : t('acDeathCross')) : `EMA ${P.cross.mid}/${P.cross.slow}`}</span>
@@ -184,7 +205,7 @@ export default function IndicatorChart({ coinId, symbol, name, price, source = '
             </button>
           </div>
           {timeframes}
-          {chart(Math.max(260, viewH - 230))}
+          {chart(Math.max(260, viewH - 300))}
           {chips}
         </div>
       )}
