@@ -1546,6 +1546,9 @@ export default {
     stW10: 'Définissez votre stratégie de sortie avant d\'entrer — connaître votre objectif empêche l\'avidité d\'effacer vos gains',
     // ── Sentiment ticker: market mood ───────────────────────────
     stBullish: 'Le sentiment de marché est HAUSSIER — le momentum est de votre côté, guettez les cassures',
+    stLblBull: 'HAUSSIER',
+    stLblBear: 'BAISSIER',
+    stLblNeutral: 'NEUTRE',
     stBearish: 'Le sentiment de marché est BAISSIER — restez calme, tous les marchés baissiers de l\'histoire ont fini par se terminer',
     stBearish2: 'Vous sentez la pression ? Vous n\'êtes pas seul — même les investisseurs chevronnés ressentent l\'angoisse en marché baissier. Respirez et tenez votre plan',
     stBearish3: 'C\'est en marché baissier que se construisent les grandes fortunes — chaque creux est une occasion d\'accumuler pour qui sait patienter',

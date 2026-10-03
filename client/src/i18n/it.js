@@ -1506,6 +1506,9 @@ export default {
     stW10: 'Definisci la strategia di uscita prima di entrare in un’operazione — conoscere il tuo obiettivo evita che l’avidità cancelli i guadagni',
     // ── Sentiment ticker: market mood ───────────────────────────
     stBullish: 'Il sentiment di mercato è RIALZISTA — il momentum è dalla tua parte, cerca ingressi sulle rotture',
+    stLblBull: 'RIALZISTA',
+    stLblBear: 'RIBASSISTA',
+    stLblNeutral: 'NEUTRALE',
     stBearish: 'Il sentiment di mercato è RIBASSISTA — mantieni la calma, ogni mercato orso della storia è prima o poi finito',
     stBearish2: 'Senti la pressione? Non sei solo — anche gli investitori esperti provano ansia nei mercati in calo. Respira e resta fedele al tuo piano',
     stBearish3: 'Nei mercati orso si costruisce la ricchezza di una generazione — ogni ribasso è una possibile occasione di accumulo per chi ha pazienza',

@@ -102,7 +102,7 @@ function buildTips(holdings, totalValue, totalPnLPct, mood, t) {
 
 // ── Component ─────────────────────────────────────────────────────────────
 export default function SentimentTicker({ holdings = [], totalValue = 0, totalPnLPct = null }) {
-  const { t } = useLanguage()
+  const { t, isRtl } = useLanguage()
   const [mood, setMood] = useState(null)   // 'bullish' | 'bearish' | 'neutral'
   const [tips, setTips] = useState([])
   const trackRef = useRef(null)
@@ -128,10 +128,14 @@ export default function SentimentTicker({ holdings = [], totalValue = 0, totalPn
     if (!el || tips.length === 0) return
     posRef.current = 0
     el.style.transform = 'translateX(0px)'
+    // Right to left, the row starts at the right edge and runs off to the
+    // left, so it has to travel rightwards. Moving it left, as in English,
+    // carried every tip out of view and left Arabic readers an empty bar.
+    const dir = isRtl ? 1 : -1
 
     function step() {
       if (!pauseRef.current) {
-        posRef.current -= 0.6
+        posRef.current += 0.6 * dir
         const half = el.scrollWidth / 2
         if (Math.abs(posRef.current) >= half) posRef.current = 0
         el.style.transform = `translateX(${posRef.current}px)`
@@ -140,13 +144,13 @@ export default function SentimentTicker({ holdings = [], totalValue = 0, totalPn
     }
     animRef.current = requestAnimationFrame(step)
     return () => cancelAnimationFrame(animRef.current)
-  }, [tips])
+  }, [tips, isRtl])
 
   if (mood === null || tips.length === 0) return null
 
   const isBullish = mood === 'bullish'
   const isBearish = mood === 'bearish'
-  const label     = isBullish ? 'BULLISH' : isBearish ? 'BEARISH' : 'NEUTRAL'
+  const label     = t(isBullish ? 'stLblBull' : isBearish ? 'stLblBear' : 'stLblNeutral')
   const accent    = isBullish ? '#10b981' : isBearish ? '#ef4444' : '#94a3b8'
   const bgColor   = isBullish ? 'rgba(16,185,129,0.08)' : isBearish ? 'rgba(239,68,68,0.08)' : 'rgba(148,163,184,0.06)'
   const borderColor = isBullish ? 'rgba(16,185,129,0.25)' : isBearish ? 'rgba(239,68,68,0.25)' : 'rgba(148,163,184,0.18)'
@@ -168,7 +172,7 @@ export default function SentimentTicker({ holdings = [], totalValue = 0, totalPn
         color: '#fff', fontWeight: 800, fontSize: '0.7rem', letterSpacing: '0.06em',
         whiteSpace: 'nowrap',
       }}>
-        <Icon name={isBullish ? 'trend-up' : isBearish ? 'trend-down' : 'meh'} size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{label}
+        <Icon name={isBullish ? 'trend-up' : isBearish ? 'trend-down' : 'meh'} size={14} style={{ verticalAlign:'-2px', marginInlineEnd:'0.35em' }} />{label}
       </div>
 
       {/* Scrolling tips track */}
@@ -188,7 +192,7 @@ export default function SentimentTicker({ holdings = [], totalValue = 0, totalPn
               fontSize: '0.75rem', fontWeight: 600, lineHeight: 1,
             }}>
               {tip}
-              <span style={{ marginLeft: '1.5rem', color: accent, opacity: 0.6 }}>●</span>
+              <span style={{ marginInlineStart: '1.5rem', color: accent, opacity: 0.6 }}>●</span>
             </span>
           ))}
         </div>

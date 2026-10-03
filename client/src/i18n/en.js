@@ -1567,6 +1567,9 @@ export default {
     stW10: 'Define your exit strategy before you enter a trade — knowing your target prevents greed from erasing gains',
     // ── Sentiment ticker: market mood ───────────────────────────
     stBullish: 'Market sentiment is BULLISH — momentum is on your side, watch for breakout entries',
+    stLblBull: 'BULLISH',
+    stLblBear: 'BEARISH',
+    stLblNeutral: 'NEUTRAL',
     stBearish: 'Market sentiment is BEARISH — stay calm, every bear market in history has eventually ended',
     stBearish2: 'Feeling the pressure? You\'re not alone — even seasoned investors feel anxiety in down markets. Breathe and stick to your plan',
     stBearish3: 'Bear markets are where generational wealth is built — every dip is a potential accumulation opportunity for the patient',

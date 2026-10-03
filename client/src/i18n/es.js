@@ -1546,6 +1546,9 @@ export default {
     stW10: 'Define tu estrategia de salida antes de entrar: conocer tu objetivo evita que la codicia borre tus ganancias',
     // ── Sentiment ticker: market mood ───────────────────────────
     stBullish: 'El sentimiento del mercado es ALCISTA: el impulso te acompaña, vigila las rupturas',
+    stLblBull: 'ALCISTA',
+    stLblBear: 'BAJISTA',
+    stLblNeutral: 'NEUTRAL',
     stBearish: 'El sentimiento del mercado es BAJISTA: mantén la calma, todos los mercados bajistas de la historia acabaron terminando',
     stBearish2: '¿Notas la presión? No estás solo: hasta los inversores veteranos sienten ansiedad en mercados a la baja. Respira y cíñete a tu plan',
     stBearish3: 'En los mercados bajistas se construyen las grandes fortunas: cada caída es una oportunidad de acumular para quien tiene paciencia',

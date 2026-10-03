@@ -1506,6 +1506,9 @@ export default {
     stW10: 'Legen Sie Ihre Ausstiegsstrategie fest, bevor Sie einsteigen — ein klares Ziel verhindert, dass Gier Ihre Gewinne auffrisst',
     // ── Sentiment ticker: market mood ───────────────────────────
     stBullish: 'Die Marktstimmung ist BULLISCH — das Momentum spricht für Sie, achten Sie auf Ausbruchseinstiege',
+    stLblBull: 'BULLISCH',
+    stLblBear: 'BÄRISCH',
+    stLblNeutral: 'NEUTRAL',
     stBearish: 'Die Marktstimmung ist BÄRISCH — bleiben Sie ruhig, jeder Bärenmarkt der Geschichte ging irgendwann zu Ende',
     stBearish2: 'Spüren Sie den Druck? Damit sind Sie nicht allein — auch erfahrene Anleger sind in fallenden Märkten nervös. Durchatmen und beim Plan bleiben',
     stBearish3: 'In Bärenmärkten entsteht Vermögen für Generationen — jeder Rücksetzer ist für Geduldige eine mögliche Gelegenheit zum Aufbau',
