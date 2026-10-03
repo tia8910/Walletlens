@@ -67,19 +67,29 @@ export function useSparks(ids) {
   return map
 }
 
+// The smallest move, as a share of price, that may fill the line's height.
+// Stretching any range to fit made a stablecoin's 0.05% wobble look like a
+// crash; under this a quiet asset draws as the near-flat line it is.
+const MIN_SPAN = 0.01
+
 export function sparkPath(values, w, h, pad = 3) {
   if (!values || values.length < 2) return null
-  const lo = Math.min(...values), hi = Math.max(...values), span = hi - lo || 1
+  let lo = Math.min(...values), hi = Math.max(...values)
+  const floor = Math.abs((lo + hi) / 2) * MIN_SPAN
+  if (hi - lo < floor) { const mid = (lo + hi) / 2; lo = mid - floor / 2; hi = mid + floor / 2 }
+  const span = hi - lo || 1
   const pts = values.map((v, i) => [i * w / (values.length - 1), pad + (1 - (v - lo) / span) * (h - pad * 2)])
   const line = 'M' + pts.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(' L')
   return { line, area: `${line} L${w} ${h} L0 ${h} Z` }
 }
 
-export function Spark({ values, w = 120, h = 34, className }) {
+export function Spark({ values, w = 120, h = 34, className, up: upAs }) {
   const p = sparkPath(values, w, h)
   const gid = useMemo(() => `nls${Math.random().toString(36).slice(2, 8)}`, [])
   if (!p) return <span className={`${className} nl-spark-empty`} aria-hidden="true" />
-  const up = values[values.length - 1] >= values[0]
+  // `up` lets the row colour the line by the change printed beside it, so
+  // the two can never disagree.
+  const up = typeof upAs === 'boolean' ? upAs : values[values.length - 1] >= values[0]
   const c = up ? '#16c784' : '#f04461'
   return (
     <svg className={className} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">

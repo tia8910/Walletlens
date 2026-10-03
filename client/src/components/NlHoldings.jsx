@@ -1,8 +1,36 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
-import { AssetLogo, Spark, useSparks } from './HomeTop'
+import { AssetLogo, Spark } from './HomeTop'
+import { api } from '../api'
+import { daySeries, hasDayLine } from '../daySpark'
+
+/**
+ * The last 24 hours per holding, a few at a time so a long list does not
+ * hit the price sources all at once. Rows keep their previous line while a
+ * refresh is in flight.
+ */
+function useDaySparks(rows) {
+  const key = rows.map(h => h.coin_id).join(',')
+  const [map, setMap] = useState({})
+  useEffect(() => {
+    let alive = true
+    const queue = rows.filter(hasDayLine)
+    const work = async () => {
+      while (alive && queue.length) {
+        const h = queue.shift()
+        try {
+          const v = await api.getDaySpark(h.coin_id, h.coin_symbol, h.price)
+          if (alive && v?.length > 3) setMap(m => ({ ...m, [h.coin_id]: v }))
+        } catch { /* no line beats a wrong one */ }
+      }
+    }
+    for (let i = 0; i < 3; i++) work()
+    return () => { alive = false }
+  }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
+  return map
+}
 
 // Holdings in the new look, as the approved mockup draws them: one white card
 // of rows (logo, name and amount, the week's line, value and the day's move).
@@ -24,7 +52,7 @@ import { AssetLogo, Spark, useSparks } from './HomeTop'
 export default function NlHoldings({
   rows, total, cats, cat, setCat, search, setSearch, sort, setSort, dir, setDir,
   breakEven, setBreakEven, onExcel, onPdf, selected, onClearSelected, selectedStats, filteredStats,
-  hidden, cv, marketSparks = {}, onAsset, bindRow, showAll, setShowAll, pricesFailed,
+  hidden, cv, px = cv, marketSparks = {}, onAsset, bindRow, showAll, setShowAll, pricesFailed,
   badges = null, badge = 'all', setBadge = () => {}, actionsFor = () => [], onToggleSelect = () => {},
 }) {
   const { t } = useLanguage()
@@ -38,9 +66,8 @@ export default function NlHoldings({
   // Every holding, always. A five-row preview under an "All (9)" chip that
   // was already selected read as assets gone missing.
   const shown = base
-  // The week's line: market.json's when the coin is in it, otherwise the
-  // app's cached chart data, fetched only for rows without one.
-  const fetched = useSparks(shown.filter(h => !(marketSparks[h.coin_id]?.length > 3)).map(h => h.coin_id))
+  // The day's line, matching the day's change printed beside it.
+  const daySparks = useDaySparks(shown)
   const mask = (s) => hidden ? '••••' : s
   const pctTxt = (v) => `${v >= 0 ? '+' : ''}${Number(v || 0).toFixed(2)}%`
   const tool = (on, label, icon, active) => (
@@ -118,6 +145,7 @@ export default function NlHoldings({
             const beGap = h.price > 0 && be > 0 ? ((h.price - be) / be) * 100 : null
             const ch = Number(h.pct24h) || 0
             const sym = h.coin_symbol?.toUpperCase() || ''
+            const showsDay = !(sort === 'pnl_pct' || sort === 'invested')
             return (
               <div key={h.coin_id} className="nl-hrow">
               <div role="button" tabIndex={0} aria-pressed={picking ? isSel : undefined} className={`nl-row${isSel ? ' sel' : ''}${picking ? ' picking' : ''}`}
@@ -134,10 +162,14 @@ export default function NlHoldings({
                     ? <small>{t('dsBreakEvenAt')} {mask(cv(be))} <span className={beGap >= 0 ? 'up' : 'down'}>{beGap >= 0 ? '↑' : '↓'}{Math.abs(beGap).toFixed(1)}%</span></small>
                     : <small>{mask(`${Number(h.amount || 0).toLocaleString('en-US', { maximumFractionDigits: 6 })} ${sym}`)}</small>}
                 </div>
-                <Spark values={marketSparks[h.coin_id]?.length > 3 ? marketSparks[h.coin_id] : fetched[h.coin_id]} w={64} h={26} className="nl-row-spark" />
+                <div className="nl-row-mid">
+                  <Spark values={hasDayLine(h) ? daySeries(daySparks[h.coin_id], h.price, marketSparks[h.coin_id]) : null} w={64} h={26} className="nl-row-spark"
+                    up={showsDay ? ch >= 0 : undefined} />
+                  {h.price > 0 && <small className="nl-row-px">{px(h.price)}</small>}
+                </div>
                 <div className="nl-row-v">
                   <b>{mask(cv(value))}</b>
-                  {sort === 'pnl_pct' || sort === 'invested'
+                  {!showsDay
                     ? <small className={h.pnl >= 0 ? 'up' : 'down'}>{pctTxt(h.pnlPct)}</small>
                     : <small className={ch >= 0 ? 'up' : 'down'}>{pctTxt(ch)}</small>}
                 </div>
