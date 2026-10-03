@@ -1572,6 +1572,11 @@ export default {
     stW10: 'حدّد استراتيجية خروجك قبل دخول الصفقة — معرفة هدفك تمنع الطمع من محو مكاسبك',
     // ── Sentiment ticker: market mood ───────────────────────────
     stBullish: 'مزاج السوق صاعد — الزخم في صالحك، راقب نقاط الدخول عند الاختراقات',
+    stLblBullSlight: 'صاعد قليلاً',
+    stLblBullStrong: 'صاعد بقوة',
+    stLblBearSlight: 'هابط قليلاً',
+    stLblBearStrong: 'هابط بقوة',
+    stMarketFact: (d, w, up, n) => `سوق العملات الرقمية ${d} اليوم${w ? ` و${w} هذا الأسبوع` : ''} · ${up} من أصل ${n} عملة في ارتفاع`,
     stLblBull: 'صاعد',
     stLblBear: 'هابط',
     stLblNeutral: 'محايد',

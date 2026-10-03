@@ -1506,6 +1506,11 @@ export default {
     stW10: 'Legen Sie Ihre Ausstiegsstrategie fest, bevor Sie einsteigen — ein klares Ziel verhindert, dass Gier Ihre Gewinne auffrisst',
     // ── Sentiment ticker: market mood ───────────────────────────
     stBullish: 'Die Marktstimmung ist BULLISCH — das Momentum spricht für Sie, achten Sie auf Ausbruchseinstiege',
+    stLblBullSlight: 'LEICHT BULLISCH',
+    stLblBullStrong: 'STARK BULLISCH',
+    stLblBearSlight: 'LEICHT BÄRISCH',
+    stLblBearStrong: 'STARK BÄRISCH',
+    stMarketFact: (d, w, up, n) => `Kryptomarkt ${d} heute${w ? `, ${w} diese Woche` : ''} · ${up} von ${n} Top-Coins im Plus`,
     stLblBull: 'BULLISCH',
     stLblBear: 'BÄRISCH',
     stLblNeutral: 'NEUTRAL',

@@ -74,28 +74,74 @@ export function headlineTone(articles, limit = 30) {
 
 function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)) }
 
+// Stablecoins are a fifth of the top 100 by value and never move, so they
+// diluted every reading towards neutral and, at +0.01%, counted as "up".
+const STABLE_IDS = new Set([
+  'tether', 'usd-coin', 'dai', 'first-digital-usd', 'ethena-usde', 'usds', 'paypal-usd',
+  'true-usd', 'frax', 'binance-usd', 'usdd', 'gemini-dollar', 'paxos-standard', 'liquity-usd',
+  'euro-coin', 'stasis-eurs', 'ripple-usd', 'global-dollar', 'usual-usd', 'falcon-finance',
+])
+function isStable(c) {
+  if (STABLE_IDS.has(c?.id)) return true
+  const p = Number(c?.current_price)
+  const d = Math.abs(Number(c?.price_change_percentage_24h))
+  const w = Math.abs(Number(c?.price_change_percentage_7d_in_currency))
+  // Pegged by behaviour: a dollar price that barely moved all week.
+  return p > 0.97 && p < 1.03 && d < 0.5 && (!Number.isFinite(w) || w < 1)
+}
+
+// How big a move has to be to count as decisive. Crypto's ordinary daily
+// swing is about 3%, so a 1% dip is noise, not a bear market.
+const DAY_FULL = 5
+const WEEK_FULL = 12
+/** A coin only counts as up or down for breadth when it moved this much. */
+const BREADTH_MIN = 1
+
 /**
- * Market direction from the top coins' own 24h numbers, −1..1.
- *
- * Breadth (how many are up) and Bitcoin (how far it moved) are blended so
- * neither alone decides: a day where Bitcoin jumps while everything else
- * bleeds is not a bull market, and a day where most coins tick up while
- * Bitcoin drops 8% is not either.
+ * What the market did, as plain numbers: the whole market's move weighted by
+ * size (so a $1 trillion coin outweighs a $1 billion one), over the day and
+ * the week, and how many coins rose.
  */
-export function marketDirection(coins, top = 100) {
+export function marketStats(coins, top = 100) {
   const list = (Array.isArray(coins) ? coins : [])
     .slice(0, top)
-    .filter(c => Number.isFinite(c?.price_change_percentage_24h))
+    .filter(c => Number.isFinite(c?.price_change_percentage_24h) && !isStable(c))
   if (!list.length) return null
+  const weight = (c) => (Number(c.market_cap) > 0 ? Number(c.market_cap) : 1)
+  const avg = (key) => {
+    let sum = 0, wsum = 0
+    for (const c of list) {
+      const v = Number(c[key])
+      if (!Number.isFinite(v)) continue
+      sum += v * weight(c); wsum += weight(c)
+    }
+    return wsum > 0 ? sum / wsum : null
+  }
+  return {
+    day: avg('price_change_percentage_24h'),
+    week: avg('price_change_percentage_7d_in_currency'),
+    up: list.filter(c => c.price_change_percentage_24h > 0).length,
+    rising: list.filter(c => c.price_change_percentage_24h >= BREADTH_MIN).length,
+    falling: list.filter(c => c.price_change_percentage_24h <= -BREADTH_MIN).length,
+    n: list.length,
+  }
+}
 
-  const up = list.filter(c => c.price_change_percentage_24h > 0).length
-  const breadth = (up / list.length - 0.5) * 2      // all down −1 … all up +1
-
-  const btc = list.find(c => c?.id === 'bitcoin')
-  // A 5% day is decisive either way; beyond that the label does not get truer.
-  const lead = btc ? clamp(btc.price_change_percentage_24h / 5, -1, 1) : breadth
-
-  return clamp(breadth * 0.5 + lead * 0.5, -1, 1)
+/**
+ * Market direction, −1..1.
+ *
+ * Today's size-weighted move leads, the week's trend steadies it so one red
+ * afternoon in a strong week does not flip the badge, and breadth (coins that
+ * really moved, up minus down) keeps one giant from deciding alone.
+ */
+export function marketDirection(coins, top = 100) {
+  const st = marketStats(coins, top)
+  if (!st || st.day === null) return null
+  const day = clamp(st.day / DAY_FULL, -1, 1)
+  const breadth = (st.rising - st.falling) / st.n
+  if (st.week === null) return clamp(day * 0.7 + breadth * 0.3, -1, 1)
+  const week = clamp(st.week / WEEK_FULL, -1, 1)
+  return clamp(day * 0.5 + week * 0.3 + breadth * 0.2, -1, 1)
 }
 
 // ── The label ───────────────────────────────────────────────────────────────
@@ -104,19 +150,25 @@ export function marketDirection(coins, top = 100) {
 export const MOOD_THRESHOLD = 0.15
 
 /**
- * Combine what prices did with what the news said.
+ * The full reading: the label, how strong it is, and the numbers behind it.
  *
- * Weighted 70/30 towards prices, which is what makes the badge agree with the
- * chart next to it. With no market data the tone carries it alone, so the
- * ticker still works if market.json fails to load.
+ * Weighted 75/25 towards prices, which is what makes the badge agree with
+ * the chart next to it. With no market data the tone carries it alone, so
+ * the ticker still works if market.json fails to load.
  *
- * @returns {'bullish'|'bearish'|'neutral'}
+ * @returns {{ mood: 'bullish'|'bearish'|'neutral', strength: 'slight'|'normal'|'strong'|null, score: number, stats: object|null }}
  */
-export function marketMood({ articles, coins } = {}) {
+export function moodReading({ articles, coins } = {}) {
   const tone = headlineTone(articles)
   const direction = marketDirection(coins)
-  const score = direction === null ? tone : direction * 0.7 + tone * 0.3
-  if (score > MOOD_THRESHOLD) return 'bullish'
-  if (score < -MOOD_THRESHOLD) return 'bearish'
-  return 'neutral'
+  const score = direction === null ? tone : direction * 0.75 + tone * 0.25
+  const mood = score > MOOD_THRESHOLD ? 'bullish' : score < -MOOD_THRESHOLD ? 'bearish' : 'neutral'
+  const a = Math.abs(score)
+  const strength = mood === 'neutral' ? null : a < 0.35 ? 'slight' : a < 0.65 ? 'normal' : 'strong'
+  return { mood, strength, score, stats: marketStats(coins) }
+}
+
+/** @returns {'bullish'|'bearish'|'neutral'} */
+export function marketMood(input = {}) {
+  return moodReading(input).mood
 }

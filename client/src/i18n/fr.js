@@ -1546,6 +1546,11 @@ export default {
     stW10: 'Définissez votre stratégie de sortie avant d\'entrer — connaître votre objectif empêche l\'avidité d\'effacer vos gains',
     // ── Sentiment ticker: market mood ───────────────────────────
     stBullish: 'Le sentiment de marché est HAUSSIER — le momentum est de votre côté, guettez les cassures',
+    stLblBullSlight: 'LÉGÈREMENT HAUSSIER',
+    stLblBullStrong: 'FORTEMENT HAUSSIER',
+    stLblBearSlight: 'LÉGÈREMENT BAISSIER',
+    stLblBearStrong: 'FORTEMENT BAISSIER',
+    stMarketFact: (d, w, up, n) => `Marché crypto ${d} aujourd’hui${w ? `, ${w} cette semaine` : ''} · ${up} sur ${n} grandes cryptos en hausse`,
     stLblBull: 'HAUSSIER',
     stLblBear: 'BAISSIER',
     stLblNeutral: 'NEUTRE',

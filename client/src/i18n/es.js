@@ -1546,6 +1546,11 @@ export default {
     stW10: 'Define tu estrategia de salida antes de entrar: conocer tu objetivo evita que la codicia borre tus ganancias',
     // ── Sentiment ticker: market mood ───────────────────────────
     stBullish: 'El sentimiento del mercado es ALCISTA: el impulso te acompaña, vigila las rupturas',
+    stLblBullSlight: 'LIGERAMENTE ALCISTA',
+    stLblBullStrong: 'MUY ALCISTA',
+    stLblBearSlight: 'LIGERAMENTE BAJISTA',
+    stLblBearStrong: 'MUY BAJISTA',
+    stMarketFact: (d, w, up, n) => `Mercado cripto ${d} hoy${w ? `, ${w} esta semana` : ''} · ${up} de ${n} principales monedas al alza`,
     stLblBull: 'ALCISTA',
     stLblBear: 'BAJISTA',
     stLblNeutral: 'NEUTRAL',

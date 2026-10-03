@@ -1567,6 +1567,11 @@ export default {
     stW10: 'Define your exit strategy before you enter a trade — knowing your target prevents greed from erasing gains',
     // ── Sentiment ticker: market mood ───────────────────────────
     stBullish: 'Market sentiment is BULLISH — momentum is on your side, watch for breakout entries',
+    stLblBullSlight: 'SLIGHTLY BULLISH',
+    stLblBullStrong: 'STRONGLY BULLISH',
+    stLblBearSlight: 'SLIGHTLY BEARISH',
+    stLblBearStrong: 'STRONGLY BEARISH',
+    stMarketFact: (d, w, up, n) => `Crypto market ${d} today${w ? `, ${w} this week` : ''} · ${up} of ${n} top coins up`,
     stLblBull: 'BULLISH',
     stLblBear: 'BEARISH',
     stLblNeutral: 'NEUTRAL',
