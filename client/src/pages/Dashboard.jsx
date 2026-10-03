@@ -4767,7 +4767,7 @@ export default function Dashboard() {
                 selected={selectedAssets} onClearSelected={() => setSelectedAssets(new Set())}
                 onToggleSelect={(h) => setSelectedAssets(prev => { const n = new Set(prev); if (n.has(h.coin_id)) n.delete(h.coin_id); else n.add(h.coin_id); return n })}
                 selectedStats={selectedStats} filteredStats={filteredStats}
-                hidden={hidden} cv={cv} marketSparks={sparks} pricesFailed={pricesFailed}
+                hidden={hidden} cv={cv} px={cvPub} marketSparks={sparks} pricesFailed={pricesFailed}
                 showAll={showAllHoldings} setShowAll={setShowAllHoldings}
                 badges={holdingsCat !== 'all' && badgesByCategory[holdingsCat]?.length > 1 ? badgesByCategory[holdingsCat] : null}
                 badge={holdingsBadge} setBadge={setHoldingsBadge}

@@ -2323,6 +2323,41 @@ export const api = {
     return [];
   },
 
+  // The last 24 hours of prices for a holdings row, oldest first, so its
+  // line covers the same window as the 24 h change printed beside it.
+  //
+  // Binance hourly closes first: one cheap request, no CoinGecko rate limit.
+  // A ticker can name a different token on Binance (a rebrand, a clash), so
+  // the series is only trusted when its last close is within 3% of the
+  // price the app shows; otherwise CoinGecko's own day chart is used.
+  getDaySpark: async (id, symbol, livePrice) => {
+    const sym = String(symbol || '').toUpperCase();
+    const cacheKey = `day::${id}`;
+    const hit = _chartCache[cacheKey];
+    if (hit && Date.now() - hit.t < 10 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length > 3) return hit.v;
+    const keep = (v) => {
+      try { _chartCache[cacheKey] = { t: Date.now(), v }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
+      return v;
+    };
+    if (api.hasLiveCandles(id, sym)) {
+      try {
+        const res = await fetchWithTimeout(`https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(sym + 'USDT')}&interval=1h&limit=25`, 8000);
+        if (res.ok) {
+          const rows = await res.json();
+          const v = (Array.isArray(rows) ? rows : []).map(k => +k[4]).filter(n => n > 0);
+          const last = v[v.length - 1];
+          if (v.length > 12 && (!(livePrice > 0) || Math.abs(last / livePrice - 1) < 0.03)) return keep(v);
+        }
+      } catch {}
+    }
+    try {
+      const pts = await api.getChartData(id, 1);
+      const v = (pts || []).map(p => Number(p.price)).filter(n => Number.isFinite(n) && n > 0);
+      if (v.length > 3) return keep(v);
+    } catch {}
+    return [];
+  },
+
   // Candles for the v2 asset chart: [{ t, o, h, l, c }], oldest first.
   //
   // Crypto comes from Binance (SYMBOL/USDT), which has real open/high/low/close
