@@ -1,0 +1,186 @@
+/* Native onboarding: the cinematic story (ocx). The base .no-container rule
+   in index.css still provides the fixed full-screen frame. */
+
+.no-container.ocx {
+  justify-content: flex-start; align-items: stretch;
+  padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+  transition: background 0.8s ease;
+}
+.obx-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+/* ── Top: story bars, back, count, skip ─────────────────────────────── */
+.ocx-top-bar { position: relative; z-index: 3; padding: 0.7rem 1rem 0; }
+.ocx-bars { display: flex; gap: 5px; }
+.ocx-bar {
+  flex: 1 1 0; min-width: 0; height: 3px !important; min-height: 0 !important; padding: 0; margin: 0; border: 0;
+  border-radius: 3px; background: rgba(255,255,255,0.18); overflow: hidden; cursor: pointer; appearance: none;
+}
+.ocx-bar i { display: block; height: 100%; width: 0; background: #fff; border-radius: 3px; }
+.ocx-bar.done i { width: 100%; }
+.ocx-bar.now i { animation: ocx-fill 0.9s cubic-bezier(0.22,1,0.36,1) forwards; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+@keyframes ocx-fill { to { width: 100%; } }
+.ocx-top-row { display: flex; align-items: center; justify-content: space-between; margin-top: 0.55rem; }
+.ocx-ghost { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; padding: 0;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: #fff; cursor: pointer; }
+.ocx-ghost-ph { width: 36px; }
+.ocx-count { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+.ocx-skip { background: none; border: 0; color: rgba(255,255,255,0.7); font: inherit; font-size: 0.85rem; font-weight: 700; padding: 0.4rem 0.2rem; cursor: pointer; }
+
+/* ── Scene frame ─────────────────────────────────────────────────────── */
+.no-slide.ocx-scene {
+  position: relative; z-index: 2; flex: 1; min-height: 0; width: 100%; max-width: 460px; margin: 0 auto;
+  box-sizing: border-box; padding: 0.5rem 1.4rem 0; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 1.2rem; text-align: center;
+  animation: ocx-in 0.75s cubic-bezier(0.22,1,0.36,1);
+}
+.ocx-scene.from-top { animation-name: ocx-in-top; }
+@keyframes ocx-in { from { opacity: 0; transform: translateY(70px) scale(0.94); filter: blur(10px); } }
+@keyframes ocx-in-top { from { opacity: 0; transform: translateY(-70px) scale(0.94); filter: blur(10px); } }
+.ocx.is-warp .ocx-scene, .ocx.is-warp .ocx-top-bar { transition: opacity 0.7s ease, transform 0.9s cubic-bezier(0.55,0,1,0.45), filter 0.7s; opacity: 0; transform: scale(1.6); filter: blur(8px); }
+
+.ocx-copy { display: flex; flex-direction: column; align-items: center; }
+.ocx-top { margin-bottom: auto; padding-top: 0.6rem; }
+.ocx-eyebrow { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.26em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.45rem; }
+.ocx-title { margin: 0 0 0.45rem; font-size: 2.3rem; line-height: 1.05; font-weight: 800; letter-spacing: -0.04em; color: #fff; }
+.ocx-brand .ocx-word { background: linear-gradient(120deg, #fff 0%, var(--accent) 60%, #bbf7d0 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.ocx-desc { margin: 0; max-width: 320px; font-size: 0.92rem; line-height: 1.5; color: rgba(255,255,255,0.62); }
+.ocx-word { display: inline-block; white-space: pre; opacity: 0; transform: translateY(0.7em) rotate(6deg); filter: blur(8px);
+  animation: ocx-word 0.8s cubic-bezier(0.22,1,0.36,1) forwards; }
+@keyframes ocx-word { to { opacity: 1; transform: none; filter: none; } }
+
+/* Feature words flipping in one after another */
+.ocx-flip { height: 1.8rem; perspective: 400px; margin-bottom: 0.4rem; }
+.ocx-flip-word { display: inline-block; font-size: 1.15rem; font-weight: 800; color: var(--accent); text-shadow: 0 0 18px var(--glow);
+  animation: ocx-flip 1.7s cubic-bezier(0.22,1,0.36,1) both; transform-origin: 50% 50% -20px; }
+@keyframes ocx-flip {
+  0% { opacity: 0; transform: rotateX(-90deg); }
+  18%, 82% { opacity: 1; transform: rotateX(0); }
+  100% { opacity: 0; transform: rotateX(90deg); }
+}
+
+/* ── Intro: the lens ─────────────────────────────────────────────────── */
+.ocx-lens { position: relative; width: 260px; height: 260px; flex: none; }
+.ocx-ring { position: absolute; inset: 0; border-radius: 50%; border: 1.5px dashed color-mix(in srgb, var(--accent) 45%, transparent); animation: ocx-spin 28s linear infinite; }
+.ocx-ring.r2 { inset: 34px; border-style: solid; border-color: color-mix(in srgb, var(--accent) 20%, transparent); animation-duration: 18s; animation-direction: reverse; }
+.ocx-ring.r3 { inset: 66px; border: 2.5px solid transparent; border-top-color: var(--accent); border-right-color: color-mix(in srgb, var(--accent) 35%, transparent); animation-duration: 2.8s; filter: drop-shadow(0 0 10px var(--accent)); }
+@keyframes ocx-spin { to { transform: rotate(360deg); } }
+.ocx-orbit { position: absolute; inset: 0; animation: ocx-spin 14s linear infinite; }
+.ocx-orbit.o1 { inset: 34px; animation-duration: 9s; animation-direction: reverse; }
+.ocx-orbit.o2 { animation-delay: -7s; }
+.ocx-orbit.o3 { inset: 34px; animation-duration: 9s; animation-direction: reverse; animation-delay: -4.5s; }
+.ocx-coin { position: absolute; top: -18px; left: 50%; min-width: 36px; height: 36px; margin-left: -18px; padding: 0 6px; box-sizing: border-box;
+  border-radius: 999px; display: grid; place-items: center; font-size: 0.68rem; font-weight: 800; color: #fff;
+  border: 2px solid rgba(255,255,255,0.28); box-shadow: 0 8px 20px rgba(0,0,0,0.5), 0 0 16px rgba(255,255,255,0.15);
+  animation: ocx-spin 14s linear infinite reverse; }
+.ocx-orbit.o1 .ocx-coin, .ocx-orbit.o3 .ocx-coin { animation-duration: 9s; animation-direction: normal; }
+.ocx-orbit.o2 .ocx-coin { animation-delay: -7s; } .ocx-orbit.o3 .ocx-coin { animation-delay: -4.5s; }
+.ocx-core { position: absolute; inset: 82px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 38%, #0b1a10), #020a05 75%);
+  box-shadow: 0 0 50px var(--glow), inset 0 0 22px rgba(0,0,0,0.7); animation: ocx-pulse 3s ease-in-out infinite; }
+.ocx-core small { font-size: 0.48rem; font-weight: 800; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.1em; color: #fff; }
+.ocx-core b { font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; color: #fff; }
+@keyframes ocx-pulse { 50% { box-shadow: 0 0 90px var(--glow), inset 0 0 22px rgba(0,0,0,0.7); } }
+
+/* ── Language: a 3D drum of greetings ───────────────────────────────── */
+.ocx-drum { position: relative; width: 100%; height: 300px; perspective: 700px; display: grid; place-items: center; flex: none; }
+.ocx-drum-lens { position: absolute; left: 6%; right: 6%; top: 50%; height: 84px; margin-top: -42px; border-radius: 26px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 16%, transparent), color-mix(in srgb, var(--accent) 6%, transparent));
+  box-shadow: 0 0 40px var(--glow), inset 0 0 20px color-mix(in srgb, var(--accent) 15%, transparent); }
+.ocx-drum-item { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: 0; color: #fff; cursor: pointer;
+  transition: transform 0.55s cubic-bezier(0.22,1,0.36,1), opacity 0.55s; font: inherit; padding: 0.3rem 1rem; }
+.ocx-hello { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; }
+.ocx-drum-item small { font-size: 0.72rem; font-weight: 700; color: rgba(255,255,255,0.55); }
+.ocx-drum-item.on .ocx-hello { text-shadow: 0 0 24px var(--accent); }
+.ocx-drum-item.on small { color: var(--accent); }
+.ocx-drum-arrows { display: flex; gap: 0.6rem; margin-bottom: auto; }
+.ocx-drum-arrows button { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; padding: 0; cursor: pointer;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.14); color: #fff; }
+
+/* ── Look: dark/light split and the colour orbit ─────────────────────── */
+.ocx-split { display: flex; width: 100%; height: 54px; border-radius: 18px; overflow: hidden; border: 1px solid rgba(255,255,255,0.14); flex: none; }
+.ocx-half { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; border: 0; cursor: pointer; font: inherit; font-weight: 800; font-size: 0.9rem;
+  transition: flex 0.5s cubic-bezier(0.22,1,0.36,1), opacity 0.3s; opacity: 0.55; }
+.ocx-half.is-dark { background: linear-gradient(135deg, #0b1220, #1e293b); color: #fff; clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%); margin-inline-end: -6%; }
+.ocx-half.is-light { background: linear-gradient(135deg, #f8fafc, #e2e8f0); color: #0b1220; clip-path: polygon(12% 0, 100% 0, 100% 100%, 0 100%); }
+.ocx-half.on { flex: 1.6; opacity: 1; }
+.ocx-orbs { position: relative; width: 270px; height: 270px; flex: none; display: grid; place-items: center; }
+.ocx-orbs::before { content: ''; position: absolute; inset: 22px; border-radius: 50%; border: 1px dashed rgba(255,255,255,0.18); animation: ocx-spin 30s linear infinite; }
+.ocx-orbs::after { content: ''; position: absolute; inset: 60px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--th) 45%, transparent), transparent 70%); filter: blur(10px); transition: background 0.6s; }
+.ocx-orb-arm { position: absolute; inset: 0; pointer-events: none; animation: ocx-orbit 40s linear infinite; }
+@keyframes ocx-orbit { from { rotate: 0deg; } to { rotate: 360deg; } }
+.ocx-orb { pointer-events: auto; position: absolute; top: 4px; left: 50%; width: 46px; height: 46px; margin-left: -23px; border-radius: 50%; padding: 0; cursor: pointer;
+  display: grid; place-items: center; font-weight: 800; font-size: 1.05rem; color: #fff; overflow: hidden;
+  border: 2px solid rgba(255,255,255,0.3); box-shadow: 0 8px 20px rgba(0,0,0,0.45); transition: box-shadow 0.3s, scale 0.3s;
+  animation: ocx-orbit 40s linear infinite reverse; }
+.ocx-orb img { width: 100%; height: 100%; object-fit: cover; }
+.ocx-orb.on { scale: 1.22; border-color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--sw) 45%, transparent), 0 0 28px var(--sw); }
+.ocx-preview { position: relative; z-index: 1; width: 150px; padding: 0.7rem 0.75rem; border-radius: 18px; text-align: start;
+  background: rgba(8,12,18,0.88); color: #fff; border: 1px solid color-mix(in srgb, var(--th) 50%, transparent);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 0 30px color-mix(in srgb, var(--th) 35%, transparent);
+  animation: ocx-flipcard 0.7s cubic-bezier(0.22,1,0.36,1); }
+.ocx-preview.is-light { background: rgba(255,255,255,0.95); color: #0b1220; }
+@keyframes ocx-flipcard { from { transform: perspective(600px) rotateY(-80deg) scale(0.9); opacity: 0; } }
+.ocx-preview small { font-size: 0.58rem; font-weight: 700; opacity: 0.65; }
+.ocx-preview b { display: block; font-size: 1.1rem; font-weight: 800; margin: 0.1rem 0 0.45rem; }
+.ocx-preview-btns { display: flex; gap: 0.3rem; }
+.ocx-preview-btns span { flex: 1; text-align: center; padding: 0.28rem 0; border-radius: 8px; font-size: 0.62rem; font-weight: 800; color: #fff; }
+.ocx-preview-btns .is-buy { background: #16a34a; } .ocx-preview-btns .is-sell { background: #e11d48; }
+.ocx-paint { position: fixed; z-index: 1; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; pointer-events: none; opacity: 0.6;
+  animation: ocx-paint 1.1s cubic-bezier(0.22,1,0.36,1) forwards; }
+@keyframes ocx-paint { 60% { opacity: 0.35; } to { transform: scale(130); opacity: 0; } }
+
+/* ── Security: fingerprint ───────────────────────────────────────────── */
+.ocx-print { position: relative; width: 170px; height: 190px; display: grid; place-items: center; flex: none; }
+.ocx-print svg { width: 130px; height: 152px; overflow: visible; filter: drop-shadow(0 0 12px var(--glow)); }
+.ocx-print path { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 160; stroke-dashoffset: 160;
+  animation: ocx-trace 1.4s cubic-bezier(0.65,0,0.35,1) forwards, ocx-shine 2.4s 1.6s ease-in-out infinite; }
+@keyframes ocx-trace { to { stroke-dashoffset: 0; } }
+@keyframes ocx-shine { 50% { stroke: color-mix(in srgb, var(--accent) 55%, #fff); } }
+.ocx-beam { position: absolute; left: 0; right: 0; height: 3px; top: 0; border-radius: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent); box-shadow: 0 0 18px var(--accent); animation: ocx-beam 2.2s ease-in-out infinite; }
+@keyframes ocx-beam { 0%, 100% { top: 6%; } 50% { top: 92%; } }
+.ocx-print.is-on .ocx-beam { display: none; }
+.ocx-ok { position: absolute; right: 6px; bottom: 8px; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: #04140a; box-shadow: 0 0 22px var(--accent); }
+.ocx-pill { margin-top: 1rem; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.85rem 1.4rem; border-radius: 999px; font: inherit; font-weight: 800;
+  color: #fff; background: color-mix(in srgb, var(--accent) 18%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); cursor: pointer; }
+.ocx-pill.is-on { color: var(--accent); }
+.ocx-err { margin-top: 0.6rem; font-size: 0.78rem; color: #fca5a5; max-width: 300px; }
+
+/* ── Launch: hold the ring ───────────────────────────────────────────── */
+.no-nav-next.ocx-hold { position: relative; width: 170px; height: 170px; border-radius: 50%; padding: 0; border: 0; background: none; box-shadow: none; cursor: pointer;
+  display: grid; place-items: center; touch-action: none; -webkit-tap-highlight-color: transparent; flex: none; }
+.ocx-hold svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.ocx-hold-track { fill: none; stroke: rgba(255,255,255,0.12); stroke-width: 6; }
+.ocx-hold-fill { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; filter: drop-shadow(0 0 8px var(--accent)); }
+.ocx-hold-core { width: 104px; height: 104px; border-radius: 50%; display: grid; place-items: center; color: #04140a;
+  background: radial-gradient(circle at 35% 30%, #bbf7d0, var(--accent)); box-shadow: 0 0 50px var(--glow); animation: ocx-breathe 2.2s ease-in-out infinite; }
+.ocx-hold:active .ocx-hold-core { transform: scale(0.94); }
+.ocx-hold.is-go .ocx-hold-core { animation: ocx-go 0.9s cubic-bezier(0.55,0,1,0.45) forwards; }
+@keyframes ocx-breathe { 50% { transform: scale(1.06); box-shadow: 0 0 80px var(--glow); } }
+@keyframes ocx-go { to { transform: translateY(-60vh) scale(0.6); opacity: 0; } }
+.ocx-hint { margin-bottom: auto; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); animation: ocx-blink 1.6s ease-in-out infinite; }
+@keyframes ocx-blink { 50% { opacity: 0.45; } }
+
+/* ── Bottom: continue ────────────────────────────────────────────────── */
+.ocx-next-wrap { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 0.8rem 0 1.3rem; }
+.no-nav-next.ocx-next { width: 64px; height: 64px; border-radius: 50%; padding: 0; display: grid; place-items: center; border: 0; cursor: pointer; color: #04140a;
+  background: radial-gradient(circle at 35% 30%, #fff, var(--accent)); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 20%, transparent), 0 12px 34px var(--glow);
+  animation: ocx-bob 2s ease-in-out infinite; }
+@keyframes ocx-bob { 50% { transform: translateY(-6px); } }
+.ocx-swipe { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+
+@media (max-height: 720px) {
+  .ocx-lens { width: 220px; height: 220px; } .ocx-core { inset: 66px; }
+  .ocx-orbs { width: 240px; height: 240px; }
+  .ocx-drum { height: 250px; }
+  .ocx-title { font-size: 1.95rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ocx-scene, .ocx-word, .ocx-flip-word, .ocx-ring, .ocx-orbit, .ocx-coin, .ocx-core, .ocx-orb-arm, .ocx-orbs::before, .ocx-preview,
+  .ocx-print path, .ocx-beam, .ocx-hold-core, .ocx-next, .ocx-hint, .ocx-paint, .ocx-bar.now i { animation: none !important; }
+  .ocx-word, .ocx-flip-word { opacity: 1; transform: none; filter: none; }
+  .ocx-print path { stroke-dashoffset: 0; }
+  .ocx-bar.now i { width: 100%; }
+}
