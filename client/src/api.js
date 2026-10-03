@@ -2397,7 +2397,7 @@ export const api = {
     const sym = String(symbol || '').toUpperCase();
     if (api.hasLiveCandles(id, sym)) {
       const limit = Math.min(1000, plan.visible + warmup);
-      const cacheKey = `candles::${sym}::${plan.interval}::${limit}`;
+      const cacheKey = `candles2::${sym}::${plan.interval}::${limit}`;
       const hit = _chartCache[cacheKey];
       if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length) return { candles: hit.v, visible: plan.visible, closeOnly: false };
       try {
@@ -2405,7 +2405,7 @@ export const api = {
         if (res.ok) {
           const rows = await res.json();
           const candles = (Array.isArray(rows) ? rows : [])
-            .map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4] }))
+            .map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] || 0 }))
             .filter(k => k.c > 0 && k.h >= k.l);
           if (candles.length > 10) {
             try { _chartCache[cacheKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
@@ -2418,7 +2418,7 @@ export const api = {
     // server-side, so no CORS proxies in the way.
     const ticker = api.candleTicker(id);
     if (ticker) {
-      const cacheKey = `candles::${ticker}::${tf}`;
+      const cacheKey = `candles2::${ticker}::${tf}`;
       const hit = _chartCache[cacheKey];
       if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length) return { candles: hit.v, visible: Math.min(plan.visible, hit.v.length), closeOnly: false };
       try {
@@ -2426,7 +2426,7 @@ export const api = {
         if (res.ok) {
           const body = await res.json();
           const candles = (Array.isArray(body?.candles) ? body.candles : [])
-            .map(k => ({ t: +k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c }))
+            .map(k => (k.v != null ? { t: +k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c, v: +k.v } : { t: +k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c }))
             .filter(k => k.c > 0 && k.h >= k.l);
           if (candles.length > 10) {
             try { _chartCache[cacheKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}

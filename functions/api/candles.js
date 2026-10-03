@@ -58,8 +58,11 @@ export function parseYahoo(data) {
   const out = []
   for (let i = 0; i < ts.length; i++) {
     const o = q.open?.[i], h = q.high?.[i], l = q.low?.[i], c = q.close?.[i]
+    const v = q.volume?.[i]
     if ([o, h, l, c].every(v => typeof v === 'number' && isFinite(v) && v > 0) && h >= l) {
-      out.push({ t: ts[i] * 1000, o, h, l, c })
+      // Volume where Yahoo has it (stocks; futures report it too), for the
+      // chart's volume bars. Left off rather than invented when missing.
+      out.push(typeof v === 'number' && isFinite(v) && v >= 0 ? { t: ts[i] * 1000, o, h, l, c, v } : { t: ts[i] * 1000, o, h, l, c })
     }
   }
   return out
@@ -84,6 +87,7 @@ export function groupCandles(candles, n) {
       cur.h = Math.max(cur.h, k.h)
       cur.l = Math.min(cur.l, k.l)
       cur.c = k.c
+      if (k.v != null) cur.v = (cur.v || 0) + k.v
       count++
     }
   }

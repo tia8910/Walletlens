@@ -161,14 +161,78 @@ export function computeChartSignals(candles, rawParams) {
     }
   }
 
+  // What became of each signal, judged on the candles after it.
+  signals.forEach((s, k) => { s.outcome = signalOutcome(candles, s, signals[k + 1]?.i ?? null) })
+  // A signal on the newest candle can still disappear: that candle has not
+  // closed, so its EMA and RSI values move with every tick. Shown as
+  // unconfirmed rather than as a fact.
+  const lastSig = signals.length ? signals[signals.length - 1] : null
+  if (lastSig && lastSig.i === closes.length - 1) lastSig.forming = true
+
   return {
     params: p,
     ema: { fast: e1, mid: e2, slow: e3 },
     rsi,
     signals,
     crosses,
-    last: signals.length ? signals[signals.length - 1] : null,
+    last: lastSig,
+    stats: signalStats(signals),
+    trend: trendRead(closes, { fast: e1, mid: e2, slow: e3 }, rsi),
   }
+}
+
+/**
+ * What happened after a signal, candle by candle, until the next signal.
+ *
+ * status: 'open' (no level touched yet), 'tp' (best target reached, `hit`
+ * says which), 'stopped' (stop hit before any target), 'replaced' (the next
+ * signal came before either). A candle that touches the stop and a target
+ * together counts as stopped, the cautious reading, because candles do not
+ * say which came first.
+ */
+export function signalOutcome(candles, s, endI = null) {
+  const end = endI == null ? candles.length - 1 : endI
+  const buy = s.side === 'buy'
+  let hit = 0
+  for (let i = s.i + 1; i <= end && i < candles.length; i++) {
+    const c = candles[i]
+    const stopped = buy ? c.l <= s.stop : c.h >= s.stop
+    let reach = 0
+    s.targets.forEach((tp, k) => { if (buy ? c.h >= tp : c.l <= tp) reach = k + 1 })
+    if (stopped) return { status: hit ? 'tp' : 'stopped', hit, at: i, stopped: !hit }
+    if (reach > hit) hit = reach
+    if (hit === s.targets.length) return { status: 'tp', hit, at: i, stopped: false }
+  }
+  if (hit) return { status: 'tp', hit, at: null, stopped: false, running: endI == null }
+  return { status: endI == null ? 'open' : 'replaced', hit: 0, at: null, stopped: false }
+}
+
+/** How the signals on this chart have done: resolved ones only. */
+export function signalStats(signals) {
+  const done = (signals || []).filter(s => s.outcome && (s.outcome.status === 'tp' || s.outcome.status === 'stopped' || s.outcome.status === 'replaced'))
+  const n = done.length
+  if (!n) return { n: 0, tp1: 0, stopped: 0, rate: null }
+  const tp1 = done.filter(s => s.outcome.hit >= 1).length
+  const stopped = done.filter(s => s.outcome.status === 'stopped').length
+  return { n, tp1, stopped, rate: tp1 / n }
+}
+
+/**
+ * The trend in words: where price sits against the long EMA, how the three
+ * EMAs are stacked, and where RSI is.
+ *   dir: 'up' | 'down' | 'mixed'
+ */
+export function trendRead(closes, ema, rsi) {
+  const c = closes?.at(-1)
+  const f = ema?.fast?.at(-1), m = ema?.mid?.at(-1), sl = ema?.slow?.at(-1)
+  const r = rsi?.at(-1)
+  if (c == null || f == null || m == null || sl == null) return null
+  const stackUp = f > m && m > sl
+  const stackDown = f < m && m < sl
+  const above = c >= sl
+  const dir = stackUp && above ? 'up' : stackDown && !above ? 'down' : 'mixed'
+  const rsiZone = r == null ? null : r >= 70 ? 'overbought' : r <= 30 ? 'oversold' : r >= 50 ? 'firm' : 'soft'
+  return { dir, above, stackUp, stackDown, rsi: r ?? null, rsiZone, vsSlowPct: ((c - sl) / sl) * 100 }
 }
 
 /** Candles from a close-only series (no highs or lows available). */
@@ -202,7 +266,10 @@ export function parseYahooCandles(data) {
   const out = []
   for (let i = 0; i < ts.length; i++) {
     const o = q.open?.[i], h = q.high?.[i], l = q.low?.[i], c = q.close?.[i]
-    if ([o, h, l, c].every(v => typeof v === 'number' && isFinite(v) && v > 0) && h >= l) out.push({ t: ts[i] * 1000, o, h, l, c })
+    const v = q.volume?.[i]
+    if ([o, h, l, c].every(v => typeof v === 'number' && isFinite(v) && v > 0) && h >= l) {
+      out.push(typeof v === 'number' && v >= 0 ? { t: ts[i] * 1000, o, h, l, c, v } : { t: ts[i] * 1000, o, h, l, c })
+    }
   }
   return out
 }
@@ -218,6 +285,7 @@ export function groupCandles(candles, n) {
       cur = { ...k }; day = d; count = 1
     } else {
       cur.h = Math.max(cur.h, k.h); cur.l = Math.min(cur.l, k.l); cur.c = k.c; count++
+      if (k.v != null) cur.v = (cur.v || 0) + k.v
     }
   }
   if (cur) out.push(cur)

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeChartSignals, rsiSeries, atrSeries, normalizeParams, candlesFromCloses, DEFAULT_CHART_PARAMS } from './chartSignals'
+import { computeChartSignals, rsiSeries, atrSeries, normalizeParams, candlesFromCloses, DEFAULT_CHART_PARAMS, signalOutcome, signalStats, trendRead } from './chartSignals'
 
 // A price path with a clear fall then a clear rise: the fast EMA must cross
 // the slow one upward during the rise, and RSI there is well above 50.
@@ -90,5 +90,47 @@ describe('signals alternate', () => {
     const sides = computeChartSignals(candles, DEFAULT_CHART_PARAMS).signals.map(s => s.side)
     expect(sides.length).toBeGreaterThan(2)
     for (let i = 1; i < sides.length; i++) expect(sides[i]).not.toBe(sides[i - 1])
+  })
+})
+
+describe('what became of a signal', () => {
+  const c = (h, l, cl = (h + l) / 2) => ({ t: 0, o: cl, h, l, c: cl })
+  const buy = { i: 0, side: 'buy', entry: 100, stop: 95, targets: [105, 110, 115] }
+
+  it('counts the best target reached and keeps running', () => {
+    const o = signalOutcome([c(101, 99), c(106, 100), c(111, 104)], buy)
+    expect(o).toMatchObject({ status: 'tp', hit: 2, stopped: false, running: true })
+  })
+
+  it('calls a stop before any target stopped out', () => {
+    expect(signalOutcome([c(101, 99), c(102, 94)], buy)).toMatchObject({ status: 'stopped', stopped: true })
+  })
+
+  it('reads a candle touching both the stop and a target as stopped, the cautious way', () => {
+    expect(signalOutcome([c(101, 99), c(106, 94)], buy).status).toBe('stopped')
+  })
+
+  it('is replaced when the next signal comes first', () => {
+    expect(signalOutcome([c(101, 99), c(102, 98), c(103, 97)], buy, 2).status).toBe('replaced')
+  })
+
+  it('works the other way round for a sell', () => {
+    const sell = { i: 0, side: 'sell', entry: 100, stop: 105, targets: [95, 90] }
+    expect(signalOutcome([c(101, 99), c(100, 89)], sell)).toMatchObject({ status: 'tp', hit: 2 })
+  })
+
+  it('sums up the track record over resolved signals only', () => {
+    const st = signalStats([
+      { outcome: { status: 'tp', hit: 1 } }, { outcome: { status: 'stopped', hit: 0 } },
+      { outcome: { status: 'tp', hit: 3 } }, { outcome: { status: 'open', hit: 0 } },
+    ])
+    expect(st).toMatchObject({ n: 3, tp1: 2, stopped: 1 })
+    expect(st.rate).toBeCloseTo(2 / 3)
+  })
+
+  it('reads the trend from the EMA stack and the long EMA', () => {
+    expect(trendRead([10, 12], { fast: [11, 11.5], mid: [10, 11], slow: [9, 10] }, [55, 60])).toMatchObject({ dir: 'up', rsiZone: 'firm' })
+    expect(trendRead([10, 8], { fast: [9, 8.5], mid: [10, 9], slow: [11, 10] }, [40, 25])).toMatchObject({ dir: 'down', rsiZone: 'oversold' })
+    expect(trendRead([10, 10.5], { fast: [9, 10], mid: [10, 11], slow: [11, 10] }, [50, 50]).dir).toBe('mixed')
   })
 })

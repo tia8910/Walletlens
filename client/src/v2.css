@@ -683,12 +683,12 @@ html.wl-v2 .eval-cat-tip {
    The sections below the chart are the classic ones, restyled as glass. */
 /* Chart colours, shared by the asset page and Technicals. */
 html.wl-v2 {
-  --sc-up: #34d399; --sc-dn: #fb7185; --sc-e1: #22d3ee; --sc-e2: #f59e0b; --sc-e3: #facc15;
-  --sc-grid: rgba(255,255,255,0.06); --sc-axis: rgba(255,255,255,0.5);
+  --sc-up: #34d399; --sc-dn: #fb7185; --sc-e1: #22d3ee; --sc-e2: #f59e0b; --sc-e3: #c084fc; --sc-gold: #facc15;
+  --sc-grid: rgba(255,255,255,0.06); --sc-axis: rgba(255,255,255,0.5); --sc-rsi: #a78bfa;
 }
 html.wl-v2[data-wl-light] {
-  --sc-up: #0f9d58; --sc-dn: #e11d48; --sc-e1: #0891b2; --sc-e2: #d97706; --sc-e3: #ca8a04;
-  --sc-grid: rgba(0,0,0,0.06); --sc-axis: rgba(0,0,0,0.45);
+  --sc-up: #0f9d58; --sc-dn: #e11d48; --sc-e1: #0891b2; --sc-e2: #d97706; --sc-e3: #7c3aed; --sc-gold: #ca8a04;
+  --sc-grid: rgba(0,0,0,0.06); --sc-axis: rgba(0,0,0,0.45); --sc-rsi: #6d28d9;
 }
 html.wl-v2 .ac-page {
   display: flex; flex-direction: column; gap: 0.75rem;
@@ -803,7 +803,7 @@ html.wl-v2 .ac-chip svg { max-width: none; flex-shrink: 0; }
 html.wl-v2 .ac-chip.on { color: var(--text); border-color: rgba(var(--g-rgb),0.5); background: rgba(var(--g-rgb),0.13); }
 html.wl-v2 .ac-dot { width: 8px; height: 8px; border-radius: 50%; }
 html.wl-v2 .ac-dot.is-sig { background: var(--sc-up); }
-html.wl-v2 .ac-dot.is-gc { background: var(--sc-e3); }
+html.wl-v2 .ac-dot.is-gc { background: var(--sc-gold); }
 html.wl-v2 .ac-note { margin: 0; padding: 0 0.4rem; font-size: 0.7rem; color: var(--text-sub); line-height: 1.45; }
 
 /* the chart */
@@ -829,7 +829,7 @@ html.wl-v2 .sc-e2 { stroke: var(--sc-e2); stroke-width: 1.4; }
 html.wl-v2 .sc-e3 { stroke: var(--sc-e3); stroke-width: 1.8; }
 html.wl-v2 .sc-cross circle { fill: var(--sc-up); stroke: #0b1220; stroke-width: 1; }
 html.wl-v2 .sc-cross rect { fill: var(--sc-up); opacity: 0.95; }
-html.wl-v2 .sc-cross.is-big circle, html.wl-v2 .sc-cross.is-big rect { fill: var(--sc-e3); }
+html.wl-v2 .sc-cross.is-big circle, html.wl-v2 .sc-cross.is-big rect { fill: var(--sc-gold); }
 html.wl-v2 .sc-cross.is-bad circle, html.wl-v2 .sc-cross.is-bad rect { fill: var(--sc-dn); }
 html.wl-v2 .sc-cross text { fill: #0b1220; font-size: 7.5px; font-weight: 800; }
 html.wl-v2 .sc-sig.is-buy path, html.wl-v2 .sc-sig.is-buy rect { fill: var(--sc-up); }
@@ -842,6 +842,27 @@ html.wl-v2 .sc-level.is-tp line { stroke: var(--sc-up); } html.wl-v2 .sc-level.i
 html.wl-v2 .sc-level.is-entry line { stroke: var(--sc-axis); } html.wl-v2 .sc-level.is-entry rect { fill: var(--sc-axis); }
 html.wl-v2 .sc-now { stroke: var(--g); stroke-dasharray: 1 3; }
 html.wl-v2 .sc-cursor { stroke: var(--sc-axis); stroke-dasharray: 2 3; }
+/* Volume, RSI, tags and leaders (SignalChart). EMA 200 is purple so the
+   three lines are told apart at a glance; the gold stays with the cross. */
+html.wl-v2 .sc-vol { opacity: 0.18; }
+html.wl-v2 .sc-svg text { letter-spacing: 0; }
+/* Older signals step back so the latest one reads first. */
+html.wl-v2 .sc-sig.is-past { opacity: 0.55; }
+html.wl-v2 .sc-vol.is-up { fill: var(--sc-up); } html.wl-v2 .sc-vol.is-dn { fill: var(--sc-dn); }
+html.wl-v2 .sc-lead { stroke: var(--sc-axis); stroke-width: 0.6; opacity: 0.55; }
+html.wl-v2 .sc-sig.is-forming rect { fill-opacity: 0.25; stroke-dasharray: 2 2; stroke-width: 1; }
+html.wl-v2 .sc-sig.is-buy.is-forming rect { stroke: var(--sc-up); } html.wl-v2 .sc-sig.is-sell.is-forming rect { stroke: var(--sc-dn); }
+html.wl-v2 .sc-sig.is-buy.is-forming text { fill: var(--sc-up); } html.wl-v2 .sc-sig.is-sell.is-forming text { fill: var(--sc-dn); }
+html.wl-v2 .sc-level.is-done { opacity: 0.4; }
+html.wl-v2 .sc-nowtag text, html.wl-v2 .sc-hover-text { fill: #fff; font-size: 7.5px; font-weight: 800; font-family: 'DM Mono', ui-monospace, monospace; }
+html.wl-v2 .sc-nowtag.is-now-up rect { fill: var(--sc-up); } html.wl-v2 .sc-nowtag.is-now-dn rect { fill: var(--sc-dn); }
+html.wl-v2 .sc-hover-tag { fill: var(--text, #111); opacity: 0.85; }
+html.wl-v2[data-wl-light] .sc-hover-tag { fill: #0b1220; }
+html.wl-v2 .sc-rsi-band { fill: var(--sc-rsi); opacity: 0.07; }
+html.wl-v2 .sc-rsi-mid { stroke: var(--sc-axis); stroke-dasharray: 2 3; opacity: 0.5; }
+html.wl-v2 .sc-rsi-line { fill: none; stroke: var(--sc-rsi); stroke-width: 1.3; }
+html.wl-v2 .sc-rsi-label { fill: var(--sc-axis); font-size: 8px; font-weight: 700; }
+html.wl-v2 .sc-rsi-label .sc-t-up { fill: var(--sc-up); } html.wl-v2 .sc-rsi-label .sc-t-dn { fill: var(--sc-dn); }
 
 /* signal card */
 html.wl-v2 .ac-sig { padding: 0.8rem 0.85rem; display: flex; flex-direction: column; gap: 0.6rem; }
@@ -857,7 +878,18 @@ html.wl-v2 .ac-lv b { font-size: 0.76rem; }
 html.wl-v2 .ac-lv.is-sl b { color: var(--sc-dn); } html.wl-v2 .ac-lv.is-tp b { color: var(--sc-up); }
 html.wl-v2 .ac-gc { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.72rem; color: var(--text-muted); padding-top: 0.55rem; border-top: 1px solid rgba(127,127,127,0.14); }
 html.wl-v2 .ac-sig > .ac-gc:first-child { border-top: 0; padding-top: 0; }
-html.wl-v2 .ac-tag { font-size: 0.6rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 7px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--sc-e3); background: color-mix(in srgb, var(--sc-e3) 18%, transparent); }
+/* Signal status, track record and trend lines under the chart. */
+html.wl-v2 .ac-status { margin: 0.1rem 0 0.4rem; font-size: 0.74rem; font-weight: 700; color: var(--text-muted); }
+html.wl-v2 .ac-status.is-tp { color: var(--sc-up); } html.wl-v2 .ac-status.is-stopped { color: var(--sc-dn); }
+html.wl-v2 .ac-status.is-forming { color: var(--sc-e2); }
+html.wl-v2 .ac-lv.is-hit { outline: 1.5px solid currentColor; outline-offset: -1.5px; }
+html.wl-v2 .ac-record { margin-top: 0.45rem; }
+html.wl-v2 .ac-trend { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.72rem; color: var(--text-muted); padding-top: 0.55rem; margin-top: 0.55rem; border-top: 1px solid rgba(127,127,127,0.14); }
+html.wl-v2 .ac-trend .ac-tag.is-up { background: color-mix(in srgb, var(--sc-up) 18%, transparent); color: var(--sc-up); }
+html.wl-v2 .ac-trend .ac-tag.is-down { background: color-mix(in srgb, var(--sc-dn) 18%, transparent); color: var(--sc-dn); }
+html.wl-v2 .ac-rsi { font-weight: 700; }
+html.wl-v2 .ac-rsi.is-overbought { color: var(--sc-dn); } html.wl-v2 .ac-rsi.is-oversold { color: var(--sc-up); }
+html.wl-v2 .ac-tag { font-size: 0.6rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 7px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--sc-gold); background: color-mix(in srgb, var(--sc-gold) 18%, transparent); }
 html.wl-v2 .ac-tag.is-bad { color: var(--sc-dn); background: color-mix(in srgb, var(--sc-dn) 15%, transparent); }
 
 /* settings sheet */
