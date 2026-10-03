@@ -3,7 +3,7 @@ import { useLanguage } from '../LanguageContext'
 import { useLocation } from 'react-router-dom'
 import Icon from './Icon'
 import { track } from '../analytics'
-import { noteFriction } from '../reviewPrompt'
+import { noteFriction, noteMoment } from '../reviewPrompt'
 import { noteSupportFriction } from '../supportNudge'
 import {
   connect, backupNow, backupWithStoredKey, restoreNow, driveState, previouslyConnected,
@@ -280,6 +280,7 @@ export default function DriveBackup({ embedded = false }) {
       } else if (which === 'backup') {
         const { txCount } = await backupNow(pass, { automatic: auto, replace })
         track('drive_backup', { txCount, automatic: auto })
+        noteMoment('backup_saved')
         refresh(); setConnected(true); setAutoOn(autoBackupEnabled()); setPaused(false); setMismatch(false)
         setFound(f => f || { id: driveState().fileId })
         say('ok', auto

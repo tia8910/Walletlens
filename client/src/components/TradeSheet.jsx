@@ -679,6 +679,9 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
         // The moment the app stops being empty. Matters most for the
         // single-asset users the old holdings floor excluded entirely.
         noteMoment('first_holding')
+      } else {
+        // Every buy or sell is a thing the app just did for them.
+        noteMoment('trade_saved')
       }
       // v2 shows a receipt the user dismisses; classic closes itself.
       if (!v2) setTimeout(() => { onClose(); onDone() }, 1200)

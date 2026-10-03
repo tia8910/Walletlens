@@ -559,6 +559,8 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     if (isFirstHolding) {
       trackProfileCreated({ method: 'manual_trade', source: 'transactions_page' })
       noteMoment('first_holding')
+    } else {
+      noteMoment('trade_saved')
     }
 
     setForm({ wallet_id: form.wallet_id, type: 'buy', category: 'crypto', coin_id: '', coin_symbol: '', coin_name: '', coin_image: '', amount: '', price_per_unit: '', exchange: '', notes: '', date: new Date().toISOString().split('T')[0], sell_for: 'USD', sell_for_custom: '', buy_with: 'NONE', buy_with_custom: '' })
