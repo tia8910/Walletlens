@@ -224,12 +224,12 @@
     <!-- CDN (coin icons) — crossorigin because it serves CORS assets -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <!-- assets.coincap.io: stage-4 coin icon fallback in CoinLogo (100+ icons per portfolio) -->
-    <link rel="preconnect" href="https://assets.coincap.io" crossorigin />
+    <link rel="dns-prefetch" href="https://assets.coincap.io" />
     <!-- LiveCoinWatch coin icon CDN — primary fallback for coin logos -->
-    <link rel="preconnect" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" crossorigin />
+    <link rel="dns-prefetch" href="https://lcw.nyc3.cdn.digitaloceanspaces.com" />
 
     <!-- corsproxy.io is the fallback CORS proxy; preconnect ensures TLS is ready. -->
-    <link rel="preconnect" href="https://corsproxy.io" crossorigin />
+    <link rel="dns-prefetch" href="https://corsproxy.io" />
     <!-- DNS prefetch for secondary APIs (cheaper than preconnect) -->
     <link rel="dns-prefetch" href="https://rest.coincap.io" />
     <!-- min-api.cryptocompare.com: prewarm fallback when Binance is blocked;
