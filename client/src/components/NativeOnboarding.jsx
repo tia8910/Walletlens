@@ -93,6 +93,7 @@ export default function NativeOnboarding({ onDone }) {
   const [hold, setHold] = useState(0)
   const [featIdx, setFeatIdx] = useState(0)
   const [count, setCount] = useState(0)
+  const [shutter, setShutter] = useState(false)
   const { theme, setTheme, mode, setMode } = useTheme()
   const { lang, setLang, t } = useLanguage()
   const touch = useRef({ x: 0, y: 0, on: false })
@@ -138,6 +139,14 @@ export default function NativeOnboarding({ onDone }) {
       try { sfx.playRise(i > step) } catch {}
     }
   }, [step, total])
+
+  // Tapping the lens snaps the shutter closed and open again.
+  function snap() {
+    if (shutter) return
+    setShutter(true)
+    try { sfx.playTick(5); sfx.haptic(12) } catch {}
+    setTimeout(() => setShutter(false), 420)
+  }
 
   // ── language drum ─────────────────────────────────────────────────────
   const langIdx = Math.max(0, LANGUAGES.findIndex(l => l.code === lang))
@@ -239,11 +248,6 @@ export default function NativeOnboarding({ onDone }) {
     setTimeout(finish, 1100)
   }
 
-  function skip() {
-    try { track('onboarding_skipped', { at_step: step }) } catch {}
-    finish()
-  }
-
   function finish() {
     // Unlock the screen-effects AudioContext while we are still inside the tap.
     //
@@ -276,16 +280,34 @@ export default function NativeOnboarding({ onDone }) {
   if (s.id === 'welcome') {
     scene = (
       <>
-        <div className="ocx-lens">
-          <span className="ocx-ring r1" /><span className="ocx-ring r2" /><span className="ocx-ring r3" />
-          {[['₿', '#f7931a'], ['Au', 'linear-gradient(135deg,#f5d36b,#c99a17)'], ['Ξ', '#627eea'], ['AAPL', '#0f172a']].map(([g, bg], i) => (
-            <span key={g} className={`ocx-orbit o${i}`}><span className="ocx-coin" style={{ background: bg }}>{g}</span></span>
-          ))}
-          <div className="ocx-core">
+        <button className={`ocx-aperture${shutter ? ' is-snap' : ''}`} onClick={snap} aria-label="WalletLens">
+          <span className="ocx-ap-halo" />
+          <span className="ocx-ap-rim" />
+          <span className="ocx-ap-glass">
             <small>{t('obPreviewLabel')}</small>
             <b>${Math.round(count).toLocaleString('en-US')}</b>
-          </div>
-        </div>
+            <svg className="ocx-ap-chart" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M0 34 C14 32 20 36 32 28 S50 22 60 24 S80 12 92 14 S110 6 120 3" />
+            </svg>
+            <em>▲ 2.4%</em>
+          </span>
+          <svg className="ocx-ap-iris" viewBox="0 0 200 200" aria-hidden="true">
+            <defs>
+              <linearGradient id="ocxBlade" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#3a4a42" /><stop offset="0.5" stopColor="#141c18" /><stop offset="1" stopColor="#060a08" />
+              </linearGradient>
+              <clipPath id="ocxClip"><circle cx="100" cy="100" r="78" /></clipPath>
+            </defs>
+            <g clipPath="url(#ocxClip)">
+              {Array.from({ length: 8 }, (_, i) => (
+                <g key={i} transform={`rotate(${i * 45} 100 100)`}>
+                  <path className="ocx-blade" d="M100 14 L176 62 L112 112 L86 100 Z" />
+                </g>
+              ))}
+            </g>
+          </svg>
+          <span className="ocx-ap-flare" />
+        </button>
         <div className="ocx-copy">
           <div className="ocx-eyebrow">{t('obWelcomeEyebrow')}</div>
           <h1 className="ocx-title ocx-brand">{words('WalletLens')}</h1>
@@ -440,7 +462,7 @@ export default function NativeOnboarding({ onDone }) {
         <div className="ocx-top-row">
           {step > 0 ? <button className="ocx-ghost" onClick={goPrev} aria-label={t('obBack')}><Icon name="arrow-down" size={18} /></button> : <span className="ocx-ghost-ph" />}
           <span className="ocx-count">{t('obStepOf')(step + 1, total)}</span>
-          {!s.final ? <button className="ocx-skip" onClick={skip}>{t('obSkip')}</button> : <span className="ocx-ghost-ph" />}
+          <span className="ocx-ghost-ph" />
         </div>
       </div>
 

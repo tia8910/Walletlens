@@ -24,7 +24,6 @@
   background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: #fff; cursor: pointer; }
 .ocx-ghost-ph { width: 36px; }
 .ocx-count { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
-.ocx-skip { background: none; border: 0; color: rgba(255,255,255,0.7); font: inherit; font-size: 0.85rem; font-weight: 700; padding: 0.4rem 0.2rem; cursor: pointer; }
 
 /* ── Scene frame ─────────────────────────────────────────────────────── */
 .no-slide.ocx-scene {
@@ -56,30 +55,48 @@
 .ocx-chip svg { color: var(--accent); }
 .ocx-chip.on { color: #fff; background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: color-mix(in srgb, var(--accent) 70%, transparent); box-shadow: 0 0 18px var(--glow); }
 
-/* ── Intro: the lens ─────────────────────────────────────────────────── */
-.ocx-lens { position: relative; width: 280px; height: 280px; flex: none; }
-.ocx-lens::before { content: ''; position: absolute; inset: -30px; border-radius: 50%; background: radial-gradient(closest-side, var(--glow), transparent 70%); animation: ocx-pulse-halo 4s ease-in-out infinite; }
-@keyframes ocx-pulse-halo { 50% { transform: scale(1.12); opacity: 0.6; } }
-.ocx-ring { position: absolute; inset: 0; border-radius: 50%; border: 1.5px dashed color-mix(in srgb, var(--accent) 45%, transparent); animation: ocx-spin 28s linear infinite; }
-.ocx-ring.r2 { inset: 34px; border-style: solid; border-color: color-mix(in srgb, var(--accent) 20%, transparent); animation-duration: 18s; animation-direction: reverse; }
-.ocx-ring.r3 { inset: 66px; border: 2.5px solid transparent; border-top-color: var(--accent); border-right-color: color-mix(in srgb, var(--accent) 35%, transparent); animation-duration: 2.8s; filter: drop-shadow(0 0 10px var(--accent)); }
+/* ── Intro: the aperture ─────────────────────────────────────────────
+   A camera lens: a brushed-metal rim with a turning sheen, eight iris
+   blades that open to reveal the figure on glass, and a flare that sweeps
+   across. Tapping it snaps the shutter. */
+.ocx-aperture { position: relative; width: 270px; height: 270px; flex: none; padding: 0; border: 0; background: none; cursor: pointer;
+  border-radius: 50%; -webkit-tap-highlight-color: transparent; animation: ocx-ap-in 1s cubic-bezier(0.22,1,0.36,1); }
+@keyframes ocx-ap-in { from { transform: scale(0.6) rotate(-40deg); opacity: 0; filter: blur(12px); } }
+.ocx-ap-halo { position: absolute; inset: -34px; border-radius: 50%; background: radial-gradient(closest-side, var(--glow), transparent 72%);
+  animation: ocx-halo 4s ease-in-out infinite; }
+@keyframes ocx-halo { 50% { transform: scale(1.1); opacity: 0.65; } }
+/* The rim: brushed metal, with a highlight that turns around it. */
+.ocx-ap-rim { position: absolute; inset: 0; border-radius: 50%;
+  background:
+    conic-gradient(from 0deg, transparent 0 20%, rgba(255,255,255,0.75) 25%, transparent 32% 70%, color-mix(in srgb, var(--accent) 80%, #fff) 76%, transparent 84%),
+    repeating-conic-gradient(from 0deg, #1d2a24 0deg 2deg, #0e1512 2deg 4deg),
+    radial-gradient(circle, #2c3a33, #0b100e);
+  -webkit-mask: radial-gradient(circle, transparent 57%, #000 58%, #000 70%, transparent 71%, transparent 74%, #000 75%);
+          mask: radial-gradient(circle, transparent 57%, #000 58%, #000 70%, transparent 71%, transparent 74%, #000 75%);
+  animation: ocx-spin 9s linear infinite; box-shadow: 0 30px 60px rgba(0,0,0,0.6); }
 @keyframes ocx-spin { to { transform: rotate(360deg); } }
-.ocx-orbit { position: absolute; inset: 0; animation: ocx-spin 14s linear infinite; }
-.ocx-orbit.o1 { inset: 34px; animation-duration: 9s; animation-direction: reverse; }
-.ocx-orbit.o2 { animation-delay: -7s; }
-.ocx-orbit.o3 { inset: 34px; animation-duration: 9s; animation-direction: reverse; animation-delay: -4.5s; }
-.ocx-coin { position: absolute; top: -18px; left: 50%; min-width: 36px; height: 36px; margin-left: -18px; padding: 0 6px; box-sizing: border-box;
-  border-radius: 999px; display: grid; place-items: center; font-size: 0.68rem; font-weight: 800; color: #fff;
-  border: 2px solid rgba(255,255,255,0.28); box-shadow: 0 8px 20px rgba(0,0,0,0.5), 0 0 16px rgba(255,255,255,0.15);
-  animation: ocx-spin 14s linear infinite reverse; }
-.ocx-orbit.o1 .ocx-coin, .ocx-orbit.o3 .ocx-coin { animation-duration: 9s; animation-direction: normal; }
-.ocx-orbit.o2 .ocx-coin { animation-delay: -7s; } .ocx-orbit.o3 .ocx-coin { animation-delay: -4.5s; }
-.ocx-core { position: absolute; inset: 86px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 38%, #0b1a10), #020a05 75%);
-  box-shadow: 0 0 50px var(--glow), inset 0 0 22px rgba(0,0,0,0.7); animation: ocx-pulse 3s ease-in-out infinite; }
-.ocx-core small { font-size: 0.48rem; font-weight: 800; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.1em; color: #fff; }
-.ocx-core b { font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; color: #fff; }
-@keyframes ocx-pulse { 50% { box-shadow: 0 0 90px var(--glow), inset 0 0 22px rgba(0,0,0,0.7); } }
+/* The glass behind the iris. */
+.ocx-ap-glass { position: absolute; inset: 22.5%; border-radius: 50%; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 35% 28%, color-mix(in srgb, var(--accent) 30%, #0d1f16), #020805 78%);
+  box-shadow: inset 0 0 26px rgba(0,0,0,0.85), inset 0 0 0 1px rgba(255,255,255,0.08), 0 0 40px var(--glow); color: #fff; }
+.ocx-ap-glass small { font-size: 0.48rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; }
+.ocx-ap-glass b { font-size: 1.12rem; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.ocx-ap-glass em { font-style: normal; font-size: 0.6rem; font-weight: 800; color: #4ade80; }
+.ocx-ap-chart { width: 64%; height: 22px; margin: 2px 0 1px; overflow: visible; }
+.ocx-ap-chart path { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 160; stroke-dashoffset: 160;
+  animation: ocx-trace 1.6s 1.3s cubic-bezier(0.65,0,0.35,1) forwards; filter: drop-shadow(0 0 4px var(--accent)); }
+/* The iris: eight blades that swing open from closed. */
+.ocx-ap-iris { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.ocx-blade { fill: url(#ocxBlade); stroke: color-mix(in srgb, var(--accent) 45%, rgba(255,255,255,0.2)); stroke-width: 0.9; transform-box: view-box; transform-origin: 100px 14px;
+  animation: ocx-iris 1.3s 0.35s cubic-bezier(0.7,0,0.2,1) forwards; }
+@keyframes ocx-iris { to { transform: rotate(-58deg); } }
+.ocx-aperture.is-snap .ocx-blade { animation: ocx-snap 0.42s cubic-bezier(0.7,0,0.2,1) forwards; transform: rotate(-58deg); }
+@keyframes ocx-snap { 0% { transform: rotate(-58deg); } 45% { transform: rotate(0deg); } 100% { transform: rotate(-58deg); } }
+/* A light flare sweeping across the glass. */
+.ocx-ap-flare { position: absolute; inset: 22.5%; border-radius: 50%; overflow: hidden; pointer-events: none; }
+.ocx-ap-flare::after { content: ''; position: absolute; top: -40%; left: -60%; width: 40%; height: 180%; transform: rotate(25deg);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent); animation: ocx-flare 4.5s 2s ease-in-out infinite; }
+@keyframes ocx-flare { 0% { left: -60%; } 35%, 100% { left: 130%; } }
 
 /* ── Language: a 3D drum of greetings ───────────────────────────────── */
 .ocx-drum { position: relative; width: 100%; height: 300px; perspective: 700px; display: grid; place-items: center; flex: none; }
@@ -172,15 +189,16 @@
 .ocx-swipe { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
 
 @media (max-height: 720px) {
-  .ocx-lens { width: 220px; height: 220px; } .ocx-core { inset: 66px; }
+  .ocx-aperture { width: 230px; height: 230px; }
   .ocx-orbs { width: 240px; height: 240px; }
   .ocx-drum { height: 250px; }
   .ocx-title { font-size: 1.95rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ocx-scene, .ocx-word, .ocx-chip, .ocx-lens::before, .ocx-ring, .ocx-orbit, .ocx-coin, .ocx-core, .ocx-orb-arm, .ocx-orbs::before, .ocx-preview,
+  .ocx-scene, .ocx-word, .ocx-chip, .ocx-aperture, .ocx-ap-halo, .ocx-ap-rim, .ocx-ap-chart path, .ocx-ap-flare::after, .ocx-orb-arm, .ocx-orbs::before, .ocx-preview,
   .ocx-print path, .ocx-beam, .ocx-hold-core, .ocx-next, .ocx-hint, .ocx-paint, .ocx-bar.now i { animation: none !important; }
   .ocx-word, .ocx-chip { opacity: 1; transform: none; filter: none; }
-  .ocx-print path { stroke-dashoffset: 0; }
+  .ocx-print path, .ocx-ap-chart path { stroke-dashoffset: 0; }
+  .ocx-blade { animation: none !important; transform: rotate(-58deg); }
   .ocx-bar.now i { width: 100%; }
 }
