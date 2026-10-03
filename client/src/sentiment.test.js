@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
-  BEARISH_KW, headlineTone, marketDirection, marketMood, MOOD_THRESHOLD,
+  BEARISH_KW, headlineTone, marketDirection, marketMood, MOOD_THRESHOLD, moodReading, marketStats,
 } from './sentiment'
 
 // The bug this replaces: a red BEARISH badge on a morning Bitcoin was up 8.9%
@@ -136,5 +136,48 @@ describe('marketMood', () => {
     const mood = marketMood({ articles, coins })
     if (direction > MOOD_THRESHOLD) expect(mood).not.toBe('bearish')
     if (direction < -MOOD_THRESHOLD) expect(mood).not.toBe('bullish')
+  })
+})
+
+describe('a more accurate reading', () => {
+  const coin = (id, day, week, cap = 1e9, price = 10) => ({
+    id, current_price: price, market_cap: cap,
+    price_change_percentage_24h: day, price_change_percentage_7d_in_currency: week,
+  })
+
+  it('leaves stablecoins out, so they neither dilute the move nor count as up', () => {
+    const coins = [coin('bitcoin', -3, -3, 1e12), coin('tether', 0.02, 0.01, 1e12, 1), coin('mystery-usd', 0.05, 0.1, 1e9, 1.0)]
+    const st = marketStats(coins)
+    expect(st.n).toBe(1)
+    expect(st.up).toBe(0)
+    expect(st.day).toBeCloseTo(-3)
+  })
+
+  it('weights each coin by its size', () => {
+    const st = marketStats([coin('bitcoin', 2, 0, 9e11), coin('tiny', -20, 0, 1e9)])
+    expect(st.day).toBeGreaterThan(1.9)
+  })
+
+  it('calls an ordinary 1% dip neutral, not bearish', () => {
+    const coins = Array.from({ length: 50 }, (_, i) => coin(`c${i}`, -0.8, 1))
+    expect(marketMood({ coins })).toBe('neutral')
+  })
+
+  it('calls a normal 2-3% red day on a flat week neutral', () => {
+    // The day this was tuned on: market −2.3%, week +0.2%, most coins red.
+    const coins = Array.from({ length: 83 }, (_, i) => coin(`c${i}`, i < 17 ? 0.5 : i < 27 ? -0.5 : -2.8, 0.2))
+    expect(marketMood({ coins })).toBe('neutral')
+  })
+
+  it('says how strong the move is', () => {
+    const mild = Array.from({ length: 50 }, (_, i) => coin(`c${i}`, -3.5, -2))
+    const rout = Array.from({ length: 50 }, (_, i) => coin(`c${i}`, -8, -15))
+    expect(moodReading({ coins: mild })).toMatchObject({ mood: 'bearish', strength: 'slight' })
+    expect(moodReading({ coins: rout })).toMatchObject({ mood: 'bearish', strength: 'strong' })
+  })
+
+  it('lets a strong week steady a slightly red day', () => {
+    const coins = Array.from({ length: 50 }, (_, i) => coin(`c${i}`, -1.2, 14))
+    expect(marketMood({ coins })).not.toBe('bearish')
   })
 })
