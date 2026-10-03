@@ -70,6 +70,39 @@ function slidesFor(canLock) {
   return canLock ? SLIDES : SLIDES.filter(sl => !sl.isSecurity)
 }
 
+/** One odometer digit: starts at 0 and rolls to its value, and on to each new one. */
+function OdoDigit({ d, delay }) {
+  const [v, setV] = useState(0)
+  useEffect(() => { const r = requestAnimationFrame(() => setV(d)); return () => cancelAnimationFrame(r) }, [d])
+  return (
+    <span className="ocx-odo-col" aria-hidden="true">
+      <span className="ocx-odo-strip" style={{ transform: `translateY(-${v * 10}%)`, transitionDelay: `${delay}ms` }}>
+        {'0123456789'.split('').map(x => <span key={x}>{x}</span>)}
+      </span>
+    </span>
+  )
+}
+
+/**
+ * A number whose digits roll like an odometer, flashing green or red with
+ * the way it moved.
+ */
+function Odometer({ value, move }) {
+  const str = '$' + Math.max(0, Math.round(value)).toLocaleString('en-US')
+  const chars = str.split('')
+  return (
+    <b className={`ocx-odo is-${move}`} aria-label={str}>
+      {chars.map((ch, i) => {
+        const pos = chars.length - i
+        return /\d/.test(ch)
+          ? <OdoDigit key={`d${pos}`} d={Number(ch)} delay={pos * 45} />
+          : <span key={`s${pos}`} className="ocx-odo-sep" aria-hidden="true">{ch}</span>
+      })}
+      <span key={Math.round(value)} className="ocx-odo-flash" aria-hidden="true" />
+    </b>
+  )
+}
+
 export default function NativeOnboarding({ onDone }) {
   const { enabled: bioEnabled, available: bioAvailable, enable: enableBio } = useBiometricLock()
   const slides = useMemo(() => slidesFor(bioAvailable), [bioAvailable])
@@ -93,6 +126,7 @@ export default function NativeOnboarding({ onDone }) {
   const [hold, setHold] = useState(0)
   const [featIdx, setFeatIdx] = useState(0)
   const [count, setCount] = useState(0)
+  const [move, setMove] = useState('up')
   const [shutter, setShutter] = useState(false)
   const { theme, setTheme, mode, setMode } = useTheme()
   const { lang, setLang, t } = useLanguage()
@@ -109,19 +143,18 @@ export default function NativeOnboarding({ onDone }) {
     try { localStorage.setItem(ONBOARD_STEP_KEY, String(step)) } catch {}
   }, [step])
 
-  // Intro: the figure counts up and the feature words take turns.
+  // Intro: the figure rolls in like an odometer, then keeps ticking like a
+  // live price, and the feature words take turns.
   useEffect(() => {
     if (s.id !== 'welcome') return
-    let raf = 0
-    const t0 = performance.now()
-    const tick = (now) => {
-      const k = Math.min(1, (now - t0) / 1600)
-      setCount(128450 * (1 - Math.pow(1 - k, 3)))
-      if (k < 1) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
+    const t0 = setTimeout(() => setCount(128450), 450)
+    const live = setInterval(() => {
+      const d = Math.round((Math.random() - 0.38) * 900)
+      setCount(v => v + d)
+      setMove(d >= 0 ? 'up' : 'down')
+    }, 2300)
     const iv = setInterval(() => setFeatIdx(i => (i + 1) % FEATURE_KEYS.length), 1400)
-    return () => { cancelAnimationFrame(raf); clearInterval(iv) }
+    return () => { clearTimeout(t0); clearInterval(live); clearInterval(iv) }
   }, [s.id])
 
   const goNext = useCallback(() => {
@@ -285,11 +318,13 @@ export default function NativeOnboarding({ onDone }) {
           <span className="ocx-ap-rim" />
           <span className="ocx-ap-glass">
             <small>{t('obPreviewLabel')}</small>
-            <b>${Math.round(count).toLocaleString('en-US')}</b>
+            <Odometer value={count} move={move} />
             <svg className="ocx-ap-chart" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M0 34 C14 32 20 36 32 28 S50 22 60 24 S80 12 92 14 S110 6 120 3" />
+              <g className="ocx-ap-scroll">
+                <path d="M0 30 C10 28 16 33 26 26 S42 20 52 23 S68 14 78 17 S94 8 104 11 S116 6 120 8 C130 10 136 5 146 9 S162 14 172 6 S190 10 200 4 S216 12 226 7 S236 9 240 8" />
+              </g>
             </svg>
-            <em>▲ 2.4%</em>
+            <em className={`ocx-chg is-${move}`}>{move === 'up' ? '▲' : '▼'} {((count - 125440) / 1254.4).toFixed(2)}%</em>
           </span>
           <svg className="ocx-ap-iris" viewBox="0 0 200 200" aria-hidden="true">
             <defs>
@@ -364,24 +399,30 @@ export default function NativeOnboarding({ onDone }) {
             <Icon name="sun" size={18} /><span>{t('modeLight')}</span>
           </button>
         </div>
-        <div className="ocx-orbs" style={{ '--th': th.swatch }}>
+        <div className="ocx-look" style={{ '--th': th.swatch }}>
           <div className={`ocx-preview${light ? ' is-light' : ''}`} key={`${theme}-${mode}`}>
             <small>{t('obPreviewLabel')}</small>
             <b>$128,450</b>
             <div className="ocx-preview-btns"><span className="is-buy">+ {t('buy')}</span><span className="is-sell">− {t('sell')}</span></div>
           </div>
-          {THEMES.map((x, i) => {
-            const a = (i / THEMES.length) * 360
-            const on = theme === x.id
-            return (
-              <span key={x.id} className="ocx-orb-arm" style={{ transform: `rotate(${a}deg)` }}>
-                <button className={`ocx-orb${on ? ' on' : ''}`} style={{ transform: `rotate(${-a}deg)`, '--sw': x.swatch, background: `radial-gradient(circle at 35% 30%, ${x.light}, ${x.swatch})` }}
-                  onClick={(e) => pickTheme(x, e)} aria-label={x.name} aria-pressed={on}>
+          {/* A dial of colours on an arc; it turns so the chosen one sits in the middle. */}
+          <div className="ocx-dial" role="radiogroup" aria-label={t('obThemeTitle')}>
+            <span className="ocx-dial-track" />
+            {THEMES.map((x, i) => {
+              const sel = Math.max(0, THEMES.findIndex(y => y.id === theme))
+              const a = (i - sel) * 26
+              const on = theme === x.id
+              return (
+                <button key={x.id} role="radio" aria-checked={on} aria-label={x.name}
+                  className={`ocx-dot${on ? ' on' : ''}`}
+                  style={{ transform: `rotate(${a}deg) translateY(150px) rotate(${-a}deg) scale(${on ? 1.25 : 0.9})`, opacity: Math.abs(a) > 80 ? 0 : 1 - Math.abs(a) / 160,
+                    '--sw': x.swatch, background: `radial-gradient(circle at 35% 30%, ${x.light}, ${x.swatch})` }}
+                  onClick={(e) => pickTheme(x, e)}>
                   {getThemeIcon(x)}
                 </button>
-              </span>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
         <div className="ocx-copy">
           <h1 className="ocx-title">{words(t('obThemeTitle'))}</h1>
