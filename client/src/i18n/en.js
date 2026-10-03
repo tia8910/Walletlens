@@ -356,7 +356,7 @@ export default {
     catCommodities: 'Commodities',
     // ── Onboarding — slides ─────────────────────────────────────
     obWelcomeEyebrow: 'WELCOME TO',
-    obWelcomeDesc: 'Your private net-worth tracker. Crypto, stocks, gold, cash — all in one place.',
+    obWelcomeDesc: 'Your private net worth tracker. Crypto, stocks, gold and cash, all in one place.',
     obFeatPrivate: 'Private',
     obFeatLivePnl: 'Live P&L',
     obFeatInsights: 'Insights',

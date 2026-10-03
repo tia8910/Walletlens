@@ -356,7 +356,7 @@ export default {
     catCommodities: 'السلع',
     // ── Onboarding — slides ─────────────────────────────────────
     obWelcomeEyebrow: 'مرحباً بك في',
-    obWelcomeDesc: 'متتبِّع ثروتك الخاص. العملات الرقمية والأسهم والذهب والنقد — في مكان واحد.',
+    obWelcomeDesc: 'متتبِّع ثروتك الخاص. العملات الرقمية والأسهم والذهب والنقد في مكان واحد.',
     obFeatPrivate: 'خصوصية تامة',
     obFeatLivePnl: 'أرباح وخسائر مباشرة',
     obFeatInsights: 'رؤى تحليلية',

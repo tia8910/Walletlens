@@ -356,7 +356,7 @@ export default {
     catCommodities: 'Materie prime',
     // ── Onboarding — slides ─────────────────────────────────────
     obWelcomeEyebrow: 'BENVENUTO IN',
-    obWelcomeDesc: 'Il tuo tracker patrimoniale privato. Cripto, azioni, oro, liquidità — tutto in un unico posto.',
+    obWelcomeDesc: 'Il tuo tracker patrimoniale privato. Cripto, azioni, oro e liquidità, tutto in un unico posto.',
     obFeatPrivate: 'Privato',
     obFeatLivePnl: 'U/P in tempo reale',
     obFeatInsights: 'Approfondimenti',

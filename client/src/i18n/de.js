@@ -356,9 +356,9 @@ export default {
     catCommodities: 'Rohstoffe',
     // ── Onboarding — slides ─────────────────────────────────────
     obWelcomeEyebrow: 'WILLKOMMEN BEI',
-    obWelcomeDesc: 'Ihr privater Vermögens-Tracker. Krypto, Aktien, Gold, Bargeld — alles an einem Ort.',
+    obWelcomeDesc: 'Ihr privater Vermögenstracker. Krypto, Aktien, Gold und Bargeld an einem Ort.',
     obFeatPrivate: 'Privat',
-    obFeatLivePnl: 'Live-G/V',
+    obFeatLivePnl: 'Gewinne live',
     obFeatInsights: 'Erkenntnisse',
     obFeatFree: 'Kostenlos',
     obThemeEyebrow: 'PERSONALISIEREN',
@@ -386,7 +386,7 @@ export default {
     obBioEnable: 'Fingerabdrucksperre aktivieren',
     obSettingUp: 'Wird eingerichtet…',
     obBioSetupFailed: 'Fingerabdruck konnte nicht eingerichtet werden. Prüfen Sie, ob er in den Geräteeinstellungen hinterlegt ist.',
-    obBioSetupError: 'Biometrie-Einrichtung fehlgeschlagen. Sie können sie später in den Einstellungen aktivieren.',
+    obBioSetupError: 'Die biometrische Einrichtung ist fehlgeschlagen. Sie können sie später in den Einstellungen aktivieren.',
     modeDark: 'Dunkel',
     modeLight: 'Hell',
     // ── Onboarding — “what do you track?” ───────────────────────────

@@ -44,6 +44,7 @@ const SLIDES = [
 // "Hello" in each language's own words, for the language drum.
 const HELLO = { en: 'Hello', ar: 'مرحبا', fr: 'Bonjour', es: 'Hola', de: 'Hallo', it: 'Ciao' }
 const FEATURE_KEYS = ['obFeatPrivate', 'obFeatLivePnl', 'obFeatInsights', 'obFeatFree']
+const FEATURE_ICONS = { obFeatPrivate: 'lock', obFeatLivePnl: 'pulse', obFeatInsights: 'sparkles', obFeatFree: 'gift' }
 const HOLD_MS = 1100
 
 /**
@@ -118,23 +119,23 @@ export default function NativeOnboarding({ onDone }) {
       if (k < 1) raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
-    const iv = setInterval(() => setFeatIdx(i => (i + 1) % FEATURE_KEYS.length), 1700)
+    const iv = setInterval(() => setFeatIdx(i => (i + 1) % FEATURE_KEYS.length), 1400)
     return () => { cancelAnimationFrame(raf); clearInterval(iv) }
   }, [s.id])
 
   const goNext = useCallback(() => {
-    if (step < total - 1) { setDir(1); setStep(x => x + 1); try { sfx.playWhoosh() } catch {} }
+    if (step < total - 1) { setDir(1); setStep(x => x + 1); try { sfx.playRise(true); sfx.haptic(8) } catch {} }
   }, [step, total])
 
   const goPrev = useCallback(() => {
-    if (step > 0) { setDir(-1); setStep(x => x - 1); try { sfx.playWhoosh() } catch {} }
+    if (step > 0) { setDir(-1); setStep(x => x - 1); try { sfx.playRise(false) } catch {} }
   }, [step])
 
   const goTo = useCallback((i) => {
     if (i >= 0 && i < total && i !== step) {
       setDir(i > step ? 1 : -1)
       setStep(i)
-      try { sfx.playWhoosh() } catch {}
+      try { sfx.playRise(i > step) } catch {}
     }
   }, [step, total])
 
@@ -144,7 +145,7 @@ export default function NativeOnboarding({ onDone }) {
     if (code === lang) return
     try { setLang(code) } catch {}
     try { track('language_changed', { lang: code, source: 'onboarding' }) } catch {}
-    try { sfx.playWhoosh() } catch {}
+    try { sfx.playTick(LANGUAGES.findIndex(l => l.code === code)); sfx.haptic(6) } catch {}
   }
   function spinLang(d) {
     const n = LANGUAGES.length
@@ -181,13 +182,14 @@ export default function NativeOnboarding({ onDone }) {
   }, [goNext, goPrev])
 
   useEffect(() => {
-    try { sfx.startAmbient() } catch {}
-    return () => { try { sfx.stopAmbient() } catch {} }
+    try { sfx.startDrone() } catch {}
+    return () => { try { sfx.stopDrone(); sfx.stopCharge() } catch {} }
   }, [])
 
   // ── look ──────────────────────────────────────────────────────────────
   function pickMode(m) {
     try { setMode(m) } catch {}
+    try { sfx.playTick(m === 'light' ? 4 : 0); sfx.haptic(6) } catch {}
     try { track('mode_changed', { mode: m, source: 'onboarding' }) } catch {}
   }
   function pickTheme(x, e) {
@@ -195,6 +197,7 @@ export default function NativeOnboarding({ onDone }) {
     const r = e.currentTarget.getBoundingClientRect()
     setPaint({ x: r.left + r.width / 2, y: r.top + r.height / 2, c: x.swatch, k: Date.now() })
     try { setTheme(x.id) } catch {}
+    try { sfx.playBloom(THEMES.findIndex(y => y.id === x.id)); sfx.haptic(10) } catch {}
     try { track('theme_changed', { theme: x.id }) } catch {}
   }
 
@@ -212,6 +215,7 @@ export default function NativeOnboarding({ onDone }) {
   // ── launch: hold to fill the ring, then warp ──────────────────────────
   function holdStart() {
     if (warp) return
+    try { sfx.startCharge(HOLD_MS); sfx.haptic(15) } catch {}
     const t0 = performance.now()
     const tick = (now) => {
       const k = Math.min(1, (now - t0) / HOLD_MS)
@@ -223,13 +227,14 @@ export default function NativeOnboarding({ onDone }) {
   }
   function holdEnd() {
     cancelAnimationFrame(holdRef.current)
+    try { sfx.stopCharge() } catch {}
     if (!warp) setHold(0)
   }
   useEffect(() => () => cancelAnimationFrame(holdRef.current), [])
 
   function launch() {
     if (warp) return
-    try { sfx.playTriumph() } catch {}
+    try { sfx.stopCharge(); sfx.stopDrone(); sfx.playWarp(); sfx.haptic([20, 40, 60]) } catch {}
     setWarp(true); setBurst(b => b + 1); setHold(1)
     setTimeout(finish, 1100)
   }
@@ -242,7 +247,7 @@ export default function NativeOnboarding({ onDone }) {
   function finish() {
     // Unlock the screen-effects AudioContext while we are still inside the tap.
     //
-    // sfx.playTriumph() above unlocks a DIFFERENT context — sfx.js has its
+    // sfx.playWarp() above unlocks a DIFFERENT context — sfx.js has its
     // own — so without this the one guaranteed gesture of the whole first-run
     // flow leaves the effects context asleep, and the first-open burst the
     // dashboard is about to fire arrives silent on a phone at full volume.
@@ -284,8 +289,12 @@ export default function NativeOnboarding({ onDone }) {
         <div className="ocx-copy">
           <div className="ocx-eyebrow">{t('obWelcomeEyebrow')}</div>
           <h1 className="ocx-title ocx-brand">{words('WalletLens')}</h1>
-          <div className="ocx-flip" aria-live="polite">
-            <span key={featIdx} className="ocx-flip-word">{t(FEATURE_KEYS[featIdx])}</span>
+          <div className="ocx-chips">
+            {FEATURE_KEYS.map((k, i) => (
+              <span key={k} className={`ocx-chip${i === featIdx ? ' on' : ''}`} style={{ animationDelay: `${0.5 + i * 0.1}s` }}>
+                <Icon name={FEATURE_ICONS[k]} size={13} />{t(k)}
+              </span>
+            ))}
           </div>
           <p className="ocx-desc">{t('obWelcomeDesc')}</p>
         </div>

@@ -48,18 +48,18 @@
   animation: ocx-word 0.8s cubic-bezier(0.22,1,0.36,1) forwards; }
 @keyframes ocx-word { to { opacity: 1; transform: none; filter: none; } }
 
-/* Feature words flipping in one after another */
-.ocx-flip { height: 1.8rem; perspective: 400px; margin-bottom: 0.4rem; }
-.ocx-flip-word { display: inline-block; font-size: 1.15rem; font-weight: 800; color: var(--accent); text-shadow: 0 0 18px var(--glow);
-  animation: ocx-flip 1.7s cubic-bezier(0.22,1,0.36,1) both; transform-origin: 50% 50% -20px; }
-@keyframes ocx-flip {
-  0% { opacity: 0; transform: rotateX(-90deg); }
-  18%, 82% { opacity: 1; transform: rotateX(0); }
-  100% { opacity: 0; transform: rotateX(90deg); }
-}
+/* Feature chips: all four visible, each lighting up in turn */
+.ocx-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem; margin: 0.2rem 0 0.9rem; max-width: 360px; }
+.ocx-chip { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.36rem 0.55rem; border-radius: 999px; white-space: nowrap;
+  font-size: 0.7rem; font-weight: 700; color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  opacity: 0; animation: ocx-word 0.6s cubic-bezier(0.22,1,0.36,1) forwards; transition: color 0.4s, background 0.4s, border-color 0.4s, box-shadow 0.4s; }
+.ocx-chip svg { color: var(--accent); }
+.ocx-chip.on { color: #fff; background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: color-mix(in srgb, var(--accent) 70%, transparent); box-shadow: 0 0 18px var(--glow); }
 
 /* ── Intro: the lens ─────────────────────────────────────────────────── */
-.ocx-lens { position: relative; width: 260px; height: 260px; flex: none; }
+.ocx-lens { position: relative; width: 280px; height: 280px; flex: none; }
+.ocx-lens::before { content: ''; position: absolute; inset: -30px; border-radius: 50%; background: radial-gradient(closest-side, var(--glow), transparent 70%); animation: ocx-pulse-halo 4s ease-in-out infinite; }
+@keyframes ocx-pulse-halo { 50% { transform: scale(1.12); opacity: 0.6; } }
 .ocx-ring { position: absolute; inset: 0; border-radius: 50%; border: 1.5px dashed color-mix(in srgb, var(--accent) 45%, transparent); animation: ocx-spin 28s linear infinite; }
 .ocx-ring.r2 { inset: 34px; border-style: solid; border-color: color-mix(in srgb, var(--accent) 20%, transparent); animation-duration: 18s; animation-direction: reverse; }
 .ocx-ring.r3 { inset: 66px; border: 2.5px solid transparent; border-top-color: var(--accent); border-right-color: color-mix(in srgb, var(--accent) 35%, transparent); animation-duration: 2.8s; filter: drop-shadow(0 0 10px var(--accent)); }
@@ -74,7 +74,7 @@
   animation: ocx-spin 14s linear infinite reverse; }
 .ocx-orbit.o1 .ocx-coin, .ocx-orbit.o3 .ocx-coin { animation-duration: 9s; animation-direction: normal; }
 .ocx-orbit.o2 .ocx-coin { animation-delay: -7s; } .ocx-orbit.o3 .ocx-coin { animation-delay: -4.5s; }
-.ocx-core { position: absolute; inset: 82px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+.ocx-core { position: absolute; inset: 86px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
   background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 38%, #0b1a10), #020a05 75%);
   box-shadow: 0 0 50px var(--glow), inset 0 0 22px rgba(0,0,0,0.7); animation: ocx-pulse 3s ease-in-out infinite; }
 .ocx-core small { font-size: 0.48rem; font-weight: 800; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.1em; color: #fff; }
@@ -178,9 +178,9 @@
   .ocx-title { font-size: 1.95rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ocx-scene, .ocx-word, .ocx-flip-word, .ocx-ring, .ocx-orbit, .ocx-coin, .ocx-core, .ocx-orb-arm, .ocx-orbs::before, .ocx-preview,
+  .ocx-scene, .ocx-word, .ocx-chip, .ocx-lens::before, .ocx-ring, .ocx-orbit, .ocx-coin, .ocx-core, .ocx-orb-arm, .ocx-orbs::before, .ocx-preview,
   .ocx-print path, .ocx-beam, .ocx-hold-core, .ocx-next, .ocx-hint, .ocx-paint, .ocx-bar.now i { animation: none !important; }
-  .ocx-word, .ocx-flip-word { opacity: 1; transform: none; filter: none; }
+  .ocx-word, .ocx-chip { opacity: 1; transform: none; filter: none; }
   .ocx-print path { stroke-dashoffset: 0; }
   .ocx-bar.now i { width: 100%; }
 }

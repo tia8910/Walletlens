@@ -249,6 +249,153 @@ function holdAmbient() {
   }
 }
 
+// ── Onboarding story sounds ──────────────────────────────────────────────
+// The first-run story has its own sound, matched to its pictures: a deep
+// space drone under the particle field, an airy rise between scenes, a
+// wooden tick as the language drum turns, a bell bloom for each colour, a
+// charge that climbs while the launch ring is held, and a warp on launch.
+
+let drone = null
+function startDrone() {
+  if (!enabled) return
+  const c = ensure(); if (!c || !master || drone) return
+  const now = c.currentTime
+  const out = c.createGain()
+  out.gain.setValueAtTime(0.0001, now)
+  out.gain.exponentialRampToValueAtTime(0.28, now + 3)
+  const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420; lp.Q.value = 3
+  const sweep = c.createOscillator(); const sg = c.createGain()
+  sweep.frequency.value = 0.05; sg.gain.value = 260
+  sweep.connect(sg); sg.connect(lp.frequency); sweep.start()
+  lp.connect(out); out.connect(master)
+  // A low D with a fifth and a soft ninth: open, calm, a little cosmic.
+  const parts = [[73.42, 'sine', 0.5], [110, 'sawtooth', 0.06], [146.83, 'sawtooth', 0.05], [164.81, 'triangle', 0.08], [220, 'sine', 0.05]]
+  const oscs = parts.map(([f, type, gain], i) => {
+    const o = c.createOscillator(); const g = c.createGain()
+    o.type = type; o.frequency.value = f; o.detune.value = (i % 2 ? 6 : -6)
+    g.gain.value = gain
+    o.connect(g); g.connect(lp); o.start()
+    return o
+  })
+  drone = { out, lp, sweep, oscs }
+}
+function stopDrone() {
+  const c = ctx; if (!c || !drone) return
+  const d = drone; drone = null
+  const now = c.currentTime
+  try { d.out.gain.cancelScheduledValues(now); d.out.gain.setValueAtTime(Math.max(0.0001, d.out.gain.value), now); d.out.gain.exponentialRampToValueAtTime(0.0001, now + 1.2) } catch {}
+  setTimeout(() => { try { d.oscs.forEach(o => o.stop()); d.sweep.stop(); d.out.disconnect() } catch {} }, 1400)
+}
+
+function noiseBuffer(c, secs) {
+  const len = Math.floor(c.sampleRate * secs)
+  const buf = c.createBuffer(1, len, c.sampleRate)
+  const data = buf.getChannelData(0)
+  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1
+  return buf
+}
+function tone(c, freq, t, type, peak, dur, dest = master) {
+  const o = c.createOscillator(); const g = c.createGain()
+  o.type = type; o.frequency.value = freq
+  g.gain.setValueAtTime(0.0001, t)
+  g.gain.exponentialRampToValueAtTime(peak, t + 0.02)
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+  o.connect(g); g.connect(dest); o.start(t); o.stop(t + dur + 0.05)
+  return o
+}
+
+/** Between scenes: air rising through a filter, with a soft upward glide. */
+function playRise(up = true) {
+  if (!enabled) return
+  const c = ensure(); if (!c) return
+  const now = c.currentTime
+  const src = c.createBufferSource(); src.buffer = noiseBuffer(c, 0.6)
+  const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.9
+  bp.frequency.setValueAtTime(up ? 500 : 3000, now)
+  bp.frequency.exponentialRampToValueAtTime(up ? 3200 : 500, now + 0.45)
+  const g = c.createGain()
+  g.gain.setValueAtTime(0.0001, now)
+  g.gain.exponentialRampToValueAtTime(0.09, now + 0.18)
+  g.gain.exponentialRampToValueAtTime(0.0001, now + 0.55)
+  src.connect(bp); bp.connect(g); g.connect(master); src.start(now); src.stop(now + 0.6)
+  const o = c.createOscillator(); const og = c.createGain()
+  o.type = 'sine'
+  o.frequency.setValueAtTime(up ? 293.66 : 440, now + 0.05)
+  o.frequency.exponentialRampToValueAtTime(up ? 440 : 293.66, now + 0.4)
+  og.gain.setValueAtTime(0.0001, now + 0.05)
+  og.gain.exponentialRampToValueAtTime(0.07, now + 0.15)
+  og.gain.exponentialRampToValueAtTime(0.0001, now + 0.5)
+  o.connect(og); og.connect(master); o.start(now + 0.05); o.stop(now + 0.55)
+}
+
+/** The language drum turning one notch: a short wooden tick. */
+function playTick(n = 0) {
+  if (!enabled) return
+  const c = ensure(); if (!c) return
+  const now = c.currentTime
+  const src = c.createBufferSource(); src.buffer = noiseBuffer(c, 0.03)
+  const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800 + (n % 6) * 120; bp.Q.value = 6
+  const g = c.createGain(); g.gain.value = 0.25
+  src.connect(bp); bp.connect(g); g.connect(master); src.start(now); src.stop(now + 0.04)
+  tone(c, 880 + (n % 6) * 55, now, 'sine', 0.05, 0.12)
+}
+
+/** A colour picked: a bell that blooms, pitched by the colour's place. */
+const BLOOM = [523.25, 587.33, 659.25, 783.99, 880, 987.77, 1046.5]
+function playBloom(i = 0) {
+  if (!enabled) return
+  const c = ensure(); if (!c) return
+  const now = c.currentTime
+  const f = BLOOM[Math.abs(i) % BLOOM.length]
+  tone(c, f, now, 'sine', 0.16, 1.1)
+  tone(c, f * 2.01, now + 0.01, 'sine', 0.05, 0.7)
+  tone(c, f * 3.02, now + 0.02, 'triangle', 0.02, 0.4)
+  tone(c, f / 2, now, 'sine', 0.06, 0.9)
+}
+
+/** Holding the launch ring: a tone climbing with the fill. */
+let charge = null
+function startCharge(ms = 1100) {
+  if (!enabled || charge) return
+  const c = ensure(); if (!c) return
+  const now = c.currentTime, secs = ms / 1000
+  const o = c.createOscillator(); const o2 = c.createOscillator(); const g = c.createGain()
+  const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 6
+  o.type = 'sawtooth'; o2.type = 'sine'
+  o.frequency.setValueAtTime(110, now); o.frequency.exponentialRampToValueAtTime(440, now + secs)
+  o2.frequency.setValueAtTime(220, now); o2.frequency.exponentialRampToValueAtTime(880, now + secs)
+  lp.frequency.setValueAtTime(300, now); lp.frequency.exponentialRampToValueAtTime(4000, now + secs)
+  g.gain.setValueAtTime(0.0001, now); g.gain.exponentialRampToValueAtTime(0.08, now + secs)
+  o.connect(lp); o2.connect(lp); lp.connect(g); g.connect(master)
+  o.start(now); o2.start(now)
+  charge = { o, o2, g }
+}
+function stopCharge() {
+  const c = ctx; if (!c || !charge) return
+  const ch = charge; charge = null
+  const now = c.currentTime
+  try { ch.g.gain.cancelScheduledValues(now); ch.g.gain.setValueAtTime(Math.max(0.0001, ch.g.gain.value), now); ch.g.gain.exponentialRampToValueAtTime(0.0001, now + 0.15) } catch {}
+  try { ch.o.stop(now + 0.2); ch.o2.stop(now + 0.2) } catch {}
+}
+
+/** Launch: a rushing sweep, a sub drop and a bright major chord on top. */
+function playWarp() {
+  if (!enabled) return
+  const c = ensure(); if (!c) return
+  const now = c.currentTime
+  const src = c.createBufferSource(); src.buffer = noiseBuffer(c, 1.4)
+  const hp = c.createBiquadFilter(); hp.type = 'bandpass'; hp.Q.value = 0.7
+  hp.frequency.setValueAtTime(300, now); hp.frequency.exponentialRampToValueAtTime(7000, now + 1.1)
+  const ng = c.createGain()
+  ng.gain.setValueAtTime(0.0001, now); ng.gain.exponentialRampToValueAtTime(0.18, now + 0.5); ng.gain.exponentialRampToValueAtTime(0.0001, now + 1.3)
+  src.connect(hp); hp.connect(ng); ng.connect(master); src.start(now); src.stop(now + 1.4)
+  const sub = c.createOscillator(); const sg = c.createGain()
+  sub.type = 'sine'; sub.frequency.setValueAtTime(110, now); sub.frequency.exponentialRampToValueAtTime(38, now + 0.9)
+  sg.gain.setValueAtTime(0.0001, now); sg.gain.exponentialRampToValueAtTime(0.35, now + 0.05); sg.gain.exponentialRampToValueAtTime(0.0001, now + 1)
+  sub.connect(sg); sg.connect(master); sub.start(now); sub.stop(now + 1.05)
+  ;[587.33, 739.99, 880, 1174.66].forEach((f, i) => tone(c, f, now + 0.35 + i * 0.07, i < 2 ? 'triangle' : 'sine', 0.12, 1.4))
+}
+
 const sfx = {
   startAmbient,
   stopAmbient,
@@ -258,6 +405,14 @@ const sfx = {
   playSelect,
   playUnlock,
   holdAmbient,
+  startDrone,
+  stopDrone,
+  playRise,
+  playTick,
+  playBloom,
+  startCharge,
+  stopCharge,
+  playWarp,
   /** Opens the audio context inside a tap, so a sound that follows later
    *  (after a native prompt returns) is allowed to play. */
   prime() { ensure() },
@@ -267,7 +422,7 @@ const sfx = {
   setEnabled(v) {
     enabled = !!v
     try { localStorage.setItem('wl_sfx_enabled', enabled ? '1' : '0') } catch {}
-    if (!enabled) stopAmbient()
+    if (!enabled) { stopAmbient(); stopDrone(); stopCharge() }
   },
 }
 
