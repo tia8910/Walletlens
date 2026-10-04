@@ -1696,11 +1696,17 @@ export default {
     wlNotifyMe: 'Avvisami',
     // ── Smart import ────────────────────────────────────────────
     siPngJpg: 'PNG, JPG, WEBP · selezionane più di uno insieme',
+    siDropLabel: 'Trascina qui gli screenshot o tocca per scegliere',
+    siAddMore: 'Aggiungi altri screenshot',
+    siDetected: 'Posizioni trovate: {n}. Controlla e modifica qui sotto.',
+    siDetectedPartial: 'Posizioni trovate: {n}. Screenshot non letti: {e}. Controlla e modifica qui sotto.',
+    siParsed: 'Righe lette: {n}. Controlla e modifica qui sotto.',
+    siImported: 'Transazioni importate: {n}.',
     siXlsx: 'XLSX, XLS, CSV',
     siUseHeaders: 'Usa le intestazioni di colonna:',
     siHeaderList: 'Simbolo, Nome, Quantità, Prezzo, Data, Tipo',
     siBuySell: '(acquisto/vendita). Sono supportati sia CSV sia XLSX.',
-    siMultiShots: 'Seleziona più screenshot insieme — da exchange o wallet diversi — e tutte le posizioni vengono unite in un’unica importazione.',
+    siMultiShots: 'Seleziona più screenshot insieme, da exchange o wallet diversi, e tutte le posizioni vengono unite in un’unica importazione.',
     siNoColumns: 'Non è stato possibile individuare una colonna Simbolo o Nome. Usa le intestazioni: Simbolo, Nome, Quantità, Prezzo, Data, Tipo',
 
     // ── Errors and status messages ──────────────────────────────

@@ -1757,11 +1757,17 @@ export default {
     wlNotifyMe: 'Notify me',
     // ── Smart import ────────────────────────────────────────────
     siPngJpg: 'PNG, JPG, WEBP · select multiple at once',
+    siDropLabel: 'Drop screenshots here or tap to select',
+    siAddMore: 'Add more screenshots',
+    siDetected: 'Holdings found: {n}. Review and edit below.',
+    siDetectedPartial: 'Holdings found: {n}. Screenshots not read: {e}. Review and edit below.',
+    siParsed: 'Rows read: {n}. Review and edit below.',
+    siImported: 'Transactions imported: {n}.',
     siXlsx: 'XLSX, XLS, CSV',
     siUseHeaders: 'Use column headers:',
     siHeaderList: 'Symbol, Name, Amount, Price, Date, Type',
     siBuySell: '(buy/sell). CSV and XLSX both supported.',
-    siMultiShots: 'Select multiple screenshots at once — from different exchanges or wallets — and all holdings are combined into one import.',
+    siMultiShots: 'Select several screenshots at once, from different exchanges or wallets, and all holdings are combined into one import.',
     siNoColumns: 'Could not detect a Symbol or Name column. Use headers: Symbol, Name, Amount, Price, Date, Type',
 
     // ── Errors and status messages ──────────────────────────────
