@@ -17112,9 +17112,15 @@ input, select, textarea, .dvx-input {
   }
 }
 
-/* Microsoft Store edition (msStore.js): no link to another store may show,
-   whichever page it sits on. Components already drop their own badges; this
+/* Microsoft Store edition (msStore.js): no link to another store, and no
+   referral link, may show, whichever page it sits on. Components already drop their own badges; this
    catches any plain link that remains. */
 html.wl-msstore a[href*="play.google.com"],
 html.wl-msstore a[href*="chromewebstore.google.com"],
-html.wl-msstore a[href*="chrome.google.com/webstore"] { display: none !important; }
+html.wl-msstore a[href*="chrome.google.com/webstore"],
+html.wl-msstore .blog-binance-ref,
+html.wl-msstore a[href*="bybit.com/invite"],
+html.wl-msstore a[href*="binance.com/register"],
+html.wl-msstore a[href*="binance.com/referral"],
+html.wl-msstore a[href*="okx.com/join"],
+html.wl-msstore a[href*="ibkr.com/referral"] { display: none !important; }
