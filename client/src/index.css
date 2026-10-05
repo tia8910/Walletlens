@@ -17111,3 +17111,10 @@ input, select, textarea, .dvx-input {
     0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
   }
 }
+
+/* Microsoft Store edition (msStore.js): no link to another store may show,
+   whichever page it sits on. Components already drop their own badges; this
+   catches any plain link that remains. */
+html.wl-msstore a[href*="play.google.com"],
+html.wl-msstore a[href*="chromewebstore.google.com"],
+html.wl-msstore a[href*="chrome.google.com/webstore"] { display: none !important; }

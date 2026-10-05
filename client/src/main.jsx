@@ -8,6 +8,7 @@ import { LanguageProvider } from './LanguageContext'
 import { ThemeProvider } from './ThemeContext'
 import { initAutoTrack, initErrorTracking, initHumanSignal, setInterestSegments } from './analytics'
 import { INTERESTS_EVENT } from './data/interestsEvent'
+import { applyMsStore } from './msStore'
 import './index.css'
 // The /v2test redesign preview. Scoped under html.wl-v2, inert otherwise.
 import './v2.css'
@@ -130,7 +131,11 @@ else setTimeout(startVitals, 1)
 //
 // Loaded lazily and only when the parameter is present, so no browser pays for
 // a migration screen that will never run in it.
-if (handoffRequested()) {
+// The Microsoft Store edition (see msStore.js) opens the app, not a marketing
+// page, and hides every link to another store.
+if (applyMsStore()) {
+  // Navigating to the app; nothing to mount here.
+} else if (handoffRequested()) {
   import('./handoff.js')
     .then(m => { if (!m.mountHandoff()) mountApp() })
     .catch(mountApp)

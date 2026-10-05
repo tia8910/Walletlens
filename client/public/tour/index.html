@@ -2,6 +2,22 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
+<script>
+// Microsoft Store edition (see src/msStore.js): the Store app opens the app
+// itself, never this page, which links to other stores (policy 10.1.5).
+(function () {
+  try {
+    var q = new URLSearchParams(location.search).get('store') === 'msstore'
+    var s = localStorage.getItem('wl_store') === 'msstore'
+    var mm = window.matchMedia
+    var w = /Windows/i.test(navigator.userAgent) && !!(mm && (mm('(display-mode: standalone)').matches || mm('(display-mode: window-controls-overlay)').matches))
+    if (q || s || w) {
+      try { localStorage.setItem('wl_store', 'msstore') } catch (e) {}
+      location.replace('/dashboard' + location.search)
+    }
+  } catch (e) {}
+})()
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>WalletLens: Free Net Worth Tracker with Screenshot &amp; Voice Import</title>
 <meta name="description" content="See WalletLens in 90 seconds: import a portfolio from a screenshot or by voice in English or Arabic, track stocks, crypto, gold and property in one net worth, with technical analysis, zakat and Portfolio Guardian. Free.">

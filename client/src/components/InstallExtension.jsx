@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { track } from '../analytics'
+import { isMsStore } from '../msStore'
 
 // Public Chrome Web Store listing (works in Chrome, Edge, Brave, Opera, Arc —
 // all Chromium browsers can install from the Chrome Web Store).
@@ -46,6 +47,8 @@ export const ChromeIcon = ({ size = 18 }) => (
  */
 export default function InstallExtension({ variant = 'button', source = 'unknown', style = {} }) {
   const { canInstall, label, store } = useMemo(detectBrowser, [])
+  // The Microsoft Store edition may not promote another store (policy 10.1.5).
+  if (isMsStore()) return null
 
   const onClick = () => track('extension_install_click', { source, browser: label, can_install: canInstall })
 
