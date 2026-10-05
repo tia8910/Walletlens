@@ -1696,11 +1696,17 @@ export default {
     wlNotifyMe: 'Benachrichtige mich',
     // ── Smart import ────────────────────────────────────────────
     siPngJpg: 'PNG, JPG, WEBP · mehrere auf einmal auswählbar',
+    siDropLabel: 'Screenshots hier ablegen oder zum Auswählen tippen',
+    siAddMore: 'Weitere Screenshots hinzufügen',
+    siDetected: 'Gefundene Bestände: {n}. Unten prüfen und bearbeiten.',
+    siDetectedPartial: 'Gefundene Bestände: {n}. Nicht lesbare Screenshots: {e}. Unten prüfen und bearbeiten.',
+    siParsed: 'Gelesene Zeilen: {n}. Unten prüfen und bearbeiten.',
+    siImported: 'Importierte Transaktionen: {n}.',
     siXlsx: 'XLSX, XLS, CSV',
     siUseHeaders: 'Verwenden Sie Spaltenüberschriften:',
     siHeaderList: 'Symbol, Name, Menge, Preis, Datum, Typ',
     siBuySell: '(Kauf/Verkauf). CSV und XLSX werden beide unterstützt.',
-    siMultiShots: 'Wählen Sie mehrere Screenshots auf einmal — von verschiedenen Börsen oder Wallets — und alle Bestände werden zu einem Import zusammengefasst.',
+    siMultiShots: 'Wählen Sie mehrere Screenshots auf einmal, von verschiedenen Börsen oder Wallets, und alle Bestände werden zu einem Import zusammengefasst.',
     siNoColumns: 'Es konnte keine Spalte für Symbol oder Name erkannt werden. Verwenden Sie die Überschriften: Symbol, Name, Menge, Preis, Datum, Typ',
 
     // ── Errors and status messages ──────────────────────────────

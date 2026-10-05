@@ -1736,11 +1736,17 @@ export default {
     wlNotifyMe: 'Avísame',
     // ── Smart import ────────────────────────────────────────────
     siPngJpg: 'PNG, JPG, WEBP · selecciona varios a la vez',
+    siDropLabel: 'Suelta aquí las capturas o toca para elegir',
+    siAddMore: 'Añadir más capturas',
+    siDetected: 'Posiciones encontradas: {n}. Revisa y edita abajo.',
+    siDetectedPartial: 'Posiciones encontradas: {n}. Capturas no leídas: {e}. Revisa y edita abajo.',
+    siParsed: 'Filas leídas: {n}. Revisa y edita abajo.',
+    siImported: 'Transacciones importadas: {n}.',
     siXlsx: 'XLSX, XLS, CSV',
     siUseHeaders: 'Usa estos encabezados de columna:',
     siHeaderList: 'Símbolo, Nombre, Cantidad, Precio, Fecha, Tipo',
     siBuySell: '(compra/venta). Se admiten tanto CSV como XLSX.',
-    siMultiShots: 'Selecciona varias capturas a la vez —de distintos exchanges o carteras— y todas las posiciones se combinan en una sola importación.',
+    siMultiShots: 'Selecciona varias capturas a la vez, de distintos exchanges o carteras, y todas las posiciones se combinan en una sola importación.',
     siNoColumns: 'No se ha detectado ninguna columna de Símbolo o Nombre. Usa los encabezados: Símbolo, Nombre, Cantidad, Precio, Fecha, Tipo',
 
     // ── Errors and status messages ──────────────────────────────

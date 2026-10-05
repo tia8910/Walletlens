@@ -171,7 +171,7 @@ function MultiDragZone({ busy, onFiles, compact = false }) {
       />
       <span className="si-dropzone-icon"><Icon name={compact ? 'plus' : 'camera'} size={compact ? 18 : 24} /></span>
       <span className="si-dropzone-label">
-        {compact ? 'Add more screenshots' : 'Drop screenshots here or tap to select'}
+        {compact ? t('siAddMore') : t('siDropLabel')}
       </span>
       {!compact && <span className="si-dropzone-hint">{t('siPngJpg')}</span>}
     </div>
@@ -405,9 +405,9 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     setBusy(false)
 
     if (totalAdded > 0 && errors === 0) {
-      showMsg(`Detected ${totalAdded} holding(s) from ${files.length} screenshot${files.length > 1 ? 's' : ''} — review and edit below.`, 'ok')
+      showMsg(t('siDetected').replace('{n}', totalAdded), 'ok')
     } else if (totalAdded > 0) {
-      showMsg(`Detected ${totalAdded} holding(s) — ${errors} screenshot${errors > 1 ? 's' : ''} could not be read. Review and edit below.`, 'ok')
+      showMsg(t('siDetectedPartial').replace('{n}', totalAdded).replace('{e}', errors), 'ok')
     } else if (unreachable) {
       trackImport({ method: 'screenshot', step: 'failed', reason: 'unreachable' })
       showMsg(t('errImportUnreachable'))
@@ -474,7 +474,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       }
       setRows(parsed)
       trackImport({ method: 'spreadsheet', step: 'parsed', format })
-      showMsg(`Parsed ${parsed.length} row(s) — review and edit below.`, 'ok')
+      showMsg(t('siParsed').replace('{n}', parsed.length), 'ok')
     } catch (e) {
       // A fixed code, not e.message: parse exceptions routinely quote the
       // filename and the offending cell, and neither belongs in GA.
@@ -519,7 +519,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       const doneMethod = mode === 'screenshot' ? 'screenshot' : 'spreadsheet'
       trackImport({ method: doneMethod, step: 'saved' })
       importCompleted({ method: doneMethod })
-      showMsg(`Imported ${valid.length} transaction(s) successfully!`, 'ok')
+      showMsg(t('siImported').replace('{n}', valid.length), 'ok')
       setRows([])
       setPreviews([])
       // A screenshot or spreadsheet just turned into a portfolio — the payoff

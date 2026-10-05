@@ -1,5 +1,6 @@
 import { EXTENSION_URL, ChromeIcon } from './InstallExtension'
 import { track } from '../analytics'
+import { isMsStore } from '../msStore'
 
 // Public Google Play listing for the Android app (TWA wrapper around the PWA).
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=live.walletlens.twa'
@@ -39,6 +40,8 @@ export function PlayMark({ size = 20 }) {
  *   compact    smaller padding/type, for use in dense sections
  */
 export default function StoreBadges({ source = 'unknown', hidePlay = false, compact = false }) {
+  // The Microsoft Store edition may not promote another store (policy 10.1.5).
+  if (isMsStore()) return null
   const cls = `lp-store-row${compact ? ' lp-store-row-compact' : ''}`
   return (
     <div className={cls}>

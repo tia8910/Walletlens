@@ -44,6 +44,7 @@ import { pendingVaultPayload, consumeVaultPayload } from './nativeVault'
 import { inAppShell, seedFromVault } from './nativeShell'
 import { useZakatOn } from './zakatSwitch'
 import { useNewLook, useNewLookClass, applyLookParam } from './newLook'
+import { isMsStore, msStoreSkips } from './msStore'
 import AiReport from './components/AiReport'
 import './v3.css'
 
@@ -854,6 +855,10 @@ export default function App() {
     ro.observe(el)
     return () => ro.disconnect()
   })
+
+  // The Microsoft Store edition opens the app in place of a marketing page,
+  // including one reached by an in-app link (see msStore.js).
+  if (isMsStore() && msStoreSkips(location.pathname)) return <Navigate to="/dashboard" replace />
 
   if (locked && !isLanding) return <BiometricLockScreen onUnlock={unlock} />
 
