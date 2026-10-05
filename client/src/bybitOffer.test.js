@@ -230,4 +230,9 @@ describe('Google Analytics', () => {
     expect(c).not.toMatch(/openBybit\(placement\)/)
     expect(c.match(/ref=\{viewRef\(/g)).toHaveLength(4)
   })
+
+  it('shows no referral at all in the Microsoft Store edition', () => {
+    expect(bybitAllowed({ zone: 'Africa/Cairo', remote: true, msStore: true })).toBe(false)
+    expect(bybitAllowed({ zone: 'Africa/Cairo', remote: true, msStore: false })).toBe(true)
+  })
 })
