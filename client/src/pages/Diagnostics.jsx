@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import {
   SITE_ORIGIN, DRIVE_API, PUSH_API, VOICE_HOST, DATA_HOST, DRIVE_AUTH_HOST,
 } from '../apiHosts'
+import { reviewDiagnostics, nativeReviewStatus } from '../reviewPrompt'
 
 // Every backend hop, checked at once.
 //
@@ -239,10 +240,45 @@ export default function Diagnostics() {
         <button className="settings-chip" onClick={copy}>{copied ? 'Copied' : 'Copy report'}</button>
       </div>
 
+      <ReviewReadout />
+
       <p style={{ opacity: 0.55, fontSize: '0.74rem', marginTop: '1rem', lineHeight: 1.5 }}>
         Nothing here is sent anywhere. No token, holding or transaction is read or shown —
         only whether a credential exists and how old it is.
       </p>
+    </div>
+  )
+}
+
+// The rating card is invisible both when it works and when it does not, so
+// "it never appears" needs the rule that blocked it and Play's last answer.
+// `blockedBy` empty means our rules passed and the decision was Play's: a
+// `no_card_…ms` outcome is Play declining (already rated, or over its quota),
+// and an installer other than com.android.vending means a build Play cannot
+// show a card for at all.
+function ReviewReadout() {
+  const d = reviewDiagnostics()
+  const nat = nativeReviewStatus()
+  const line = (k, v) => `${k}: ${v}`
+  const text = [
+    line('android app', d.twa ? 'yes' : 'no'),
+    line('blocked by', d.blockedBy || 'nothing (Play decides)'),
+    line('launches', d.opens),
+    line('days since first', d.daysSinceFirst),
+    line('active minutes', d.activeMinutes),
+    line('asks so far', d.askCount),
+    line('last ask', d.asked ? new Date(d.asked).toLocaleString() : 'never'),
+    line('play outcome', nat?.outcome || 'none recorded'),
+    line('installed by', nat?.installer || 'unknown'),
+  ].join('\n')
+  return (
+    <div style={{ marginTop: '1.25rem' }}>
+      <h2 style={{ fontSize: '0.95rem', margin: '0 0 0.4rem' }}>Rating card</h2>
+      <pre style={{
+        margin: 0, padding: '0.6rem 0.7rem', borderRadius: 8, whiteSpace: 'pre-wrap',
+        background: 'var(--surface-2, #111827)', fontSize: '0.76rem',
+        fontFamily: 'ui-monospace, monospace',
+      }}>{text}</pre>
     </div>
   )
 }
