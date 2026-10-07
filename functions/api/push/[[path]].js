@@ -60,6 +60,12 @@ export async function onRequest(context) {
   const headers = new Headers({ Accept: 'application/json' })
   const contentType = request.headers.get('content-type')
   if (contentType) headers.set('Content-Type', contentType)
+  // The /admin/reports page signs its requests with a bearer token. Rebuilding
+  // the headers from scratch (so cookies never travel upstream) dropped it,
+  // and every load answered "Wrong token" whatever was typed. Only a Bearer
+  // value is passed on; nothing else about the visitor is.
+  const auth = request.headers.get('authorization')
+  if (auth && /^Bearer\s+\S+$/.test(auth)) headers.set('Authorization', auth)
   // The site's own origin, which is on the worker's allowlist. Without it the
   // worker would answer an allowlist fallback that matches nothing.
   headers.set('Origin', url.origin)
