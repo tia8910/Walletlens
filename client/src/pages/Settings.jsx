@@ -15,6 +15,7 @@ import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import DriveBackup from '../components/DriveBackup'
 import DeviceVault from '../components/DeviceVault'
 import { isAndroidTWA } from '../nativeBridge'
+import { requestReviewNow, reviewStatusLine } from '../reviewPrompt'
 import { effectSettings, setEffectSettings, primeEffectAudio } from '../screenEffectsRuntime'
 import { looksEmpty } from '../nativeVault'
 
@@ -27,6 +28,32 @@ const isAndroid = (typeof navigator !== 'undefined' && /android/i.test(navigator
 // The automatic rating card is invisible when it
 // doesn't fire, and Play deliberately never says whether it showed one. This
 // line is the only place a user — or we — can see which rule is still open.
+const RATE_STATUS_KEY = {
+  ready: 'rsReady', onboarding: 'rsOnboarding', friction: 'rsFriction',
+  'few-opens': 'rsFewOpens', 'too-new': 'rsTooNew', 'recent-ask': 'rsRecent',
+}
+
+/** Android only: rate on demand, and say what the automatic card is waiting for. */
+function RateSection() {
+  const { t } = useLanguage()
+  const { code, n } = reviewStatusLine()
+  if (code === 'off') return null
+  const key = RATE_STATUS_KEY[code]
+  return (
+    <div className="settings-section glass-card">
+      <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="star" size={16} />{t('setRate')}</h3>
+      <div className="settings-row">
+        <div className="settings-label">
+          <span>{t('setRateDesc')}</span>
+          {key && <span className="settings-hint">{t(key).replace('{n}', n)}</span>}
+        </div>
+        <button className="settings-chip" onClick={() => { track('rate_tap', { source: 'settings', status: code }); requestReviewNow('settings') }}>
+          {t('setRateBtn')}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 const SETTINGS_KEY = 'wl_settings'
 
@@ -232,6 +259,9 @@ export default function Settings() {
         <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="lock" size={16} />{t('setSecurity')}</h3>
         <BiometricToggle />
       </div>
+
+      {/* ── Rate WalletLens (Android app) ── */}
+      <RateSection />
 
       {/* ── Portfolio Guardian ── */}
       <div className="settings-section glass-card">

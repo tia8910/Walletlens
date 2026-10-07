@@ -64,6 +64,20 @@ describe('the push proxy', () => {
     expect(seen.headers.get('CF-Connecting-IP')).toBeNull()
   })
 
+  it('passes the admin page’s bearer token on, so /admin/reports can sign in', async () => {
+    let seen
+    vi.stubGlobal('fetch', async (u, init) => { seen = init; return new Response('{}', { status: 200 }) })
+    await call('reports', { headers: { Authorization: 'Bearer s3cret-token' } })
+    expect(seen.headers.get('authorization')).toBe('Bearer s3cret-token')
+  })
+
+  it('passes no Authorization header that is not a bearer token', async () => {
+    let seen
+    vi.stubGlobal('fetch', async (u, init) => { seen = init; return new Response('{}', { status: 200 }) })
+    await call('reports', { headers: { Authorization: 'Basic dXNlcjpwYXNz' } })
+    expect(seen.headers.get('authorization')).toBeNull()
+  })
+
   it('passes the worker’s own status through, refusals included', async () => {
     // /subscribe answers 400 missing_subscription and the app reasons about
     // that code. Flattening it to 200 or 500 would break the toggle's message.

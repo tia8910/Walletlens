@@ -368,6 +368,33 @@ export function reviewDiagnostics() {
 }
 
 /**
+ * One line for Settings: which rule is still holding the automatic card back,
+ * as a code plus a number the caller words in the user's language.
+ *
+ *   ready        nothing is holding it; it comes at the next good moment
+ *   onboarding   the welcome tour is unfinished
+ *   friction     paused after an app error            n = hours left
+ *   few-opens    needs more visits                      n = visits left
+ *   too-new      needs a later day                      n = days left
+ *   recent-ask   asked recently                         n = days left
+ *   off          not the Android app, so never automatic
+ */
+export function reviewStatusLine(now = Date.now()) {
+  if (!isAndroidTWA()) return { code: 'off', n: 0 }
+  const s = readState()
+  const code = storedGates(s, now) || 'ready'
+  let n = 0
+  if (code === 'friction') n = Math.max(1, Math.ceil((FRICTION_QUIET_MS - (now - s.friction)) / 3600000))
+  else if (code === 'few-opens') n = Math.max(1, MIN_OPENS - s.opens)
+  else if (code === 'too-new') n = Math.max(1, MIN_DAYS - Math.floor((now - (s.first || now)) / DAY_MS))
+  else if (code === 'recent-ask') {
+    const gap = s.askCount >= SETTLED_ASKS ? SETTLED_REASK_DAYS : REASK_AFTER_DAYS
+    n = Math.max(1, Math.ceil((s.asked + gap * DAY_MS - now) / DAY_MS))
+  }
+  return { code, n }
+}
+
+/**
  * The gates that depend only on what we have stored. '' means none of them.
  *
  * A moment is no longer required to pass. It still decides the *source* label
