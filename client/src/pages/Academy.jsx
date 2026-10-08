@@ -5,7 +5,6 @@ import { Link } from 'react-router-dom'
 import { track } from '../analytics'
 import Icon from '../components/Icon'
 import { useTheme } from '../ThemeContext'
-import { POSTS } from '../data/blogPosts'
 import { useLanguage } from '../LanguageContext'
 import { shareFile, shareText } from '../fileOut'
 import {
@@ -708,6 +707,14 @@ export default function Academy() {
     } catch { return -1 }
   })
   const [articleFilter, setArticleFilter] = useState('All')
+  // The article bodies are ~330 KB of JS; the tab only needs them once opened.
+  const [POSTS, setPosts] = useState([])
+  useEffect(() => {
+    if (activeTab !== 'articles' || POSTS.length) return
+    let live = true
+    import('../data/blogPosts').then(m => { if (live) setPosts(m.POSTS) }).catch(() => {})
+    return () => { live = false }
+  }, [activeTab, POSTS.length])
   const timerRef = useRef(null)
   const startTime = useRef(null)
 
@@ -897,7 +904,7 @@ export default function Academy() {
           { id: 'wheel',     label: '🎡 ' + t('ayTabWheel') },
           { id: 'game',      label: '🕵️ ' + t('ayTabGame') },
           { id: 'hacks',     label: '💡 ' + t('ayTabHacks') },
-          { id: 'articles',  label: '📚 ' + t('ayArticlesTab')(POSTS.length) },
+          { id: 'articles',  label: '📚 ' + (POSTS.length ? t('ayArticlesTab')(POSTS.length) : t('ayArticlesTab')('').replace(/\s*\(\)|\s*（）|\s*（\s*）/,'')) },
         ].map(tab => (
           <button key={tab.id} className={`acad-tab ${activeTab === tab.id ? 'acad-tab-active' : ''}`}
             onClick={() => { setActiveTab(tab.id); track('academy_tab_switch', { tab: tab.id }) }}>
