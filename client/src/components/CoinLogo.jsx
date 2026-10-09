@@ -239,6 +239,17 @@ export function flagCodeFor(currency) {
 }
 const flagUrl = cc => `https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/flags/1x1/${cc}.svg`
 
+/** A country's flag in a circle (cc is ISO 3166, e.g. 'sa'); the code as text if it fails. */
+export function FlagImg({ cc, size = 18, className = '' }) {
+  const [step, setStep] = useState(0)
+  const urls = [flagUrl(cc), voiceProxy(flagUrl(cc))]
+  if (!cc || step >= urls.length) {
+    return <span className={className} style={{ width: size, height: size, borderRadius: '50%', display: 'inline-grid', placeItems: 'center', fontSize: size * 0.42, fontWeight: 800, background: 'rgba(127,127,127,0.18)', flexShrink: 0 }}>{String(cc || '').toUpperCase()}</span>
+  }
+  return <img src={urls[step]} alt="" width={size} height={size} loading="lazy" decoding="async" className={className} onError={() => setStep(n => n + 1)}
+    style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+}
+
 // Re-render the stock logos on screen once the logo table arrives.
 const stockLogoWaiters = new Set()
 function useStockLogo(ticker) {

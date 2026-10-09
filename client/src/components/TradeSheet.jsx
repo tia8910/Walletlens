@@ -40,7 +40,9 @@ function playTradeSound(isBuy) {
     }
   } catch {}
 }
-import CoinLogo from './CoinLogo'
+import CoinLogo, { FlagImg } from './CoinLogo'
+import { MARKETS, MARKET_BY_CODE, marketForCountry, isIntlTicker, intlStockName, marketOfTicker } from '../data/markets'
+import { detectCountry, searchStocks, getMarketList } from '../api'
 import { track, trackProfileCreated } from '../analytics'
 import TradeSignal from './BuySignal'
 import { useLanguage } from '../LanguageContext'
@@ -86,7 +88,9 @@ const IcoOther = (
 
 const CATEGORIES = [
   { key: 'crypto', label: 'Crypto', labelKey: 'catCrypto',  icon: '₿',           color: '#6366f1' },
-  { key: 'stock',  label: 'Stocks', labelKey: 'catStocks',  icon: 'trend-up',           color: 'var(--g-ink)' },
+  { key: 'stock',  label: 'US stocks', labelKey: 'catUsStocks', icon: 'trend-up',        color: 'var(--g-ink)' },
+  // Every market but the US, opening on the user's own.
+  { key: 'wstock', label: 'Local markets', labelKey: 'catLocalMarkets', icon: 'globe',   color: '#0ea5e9' },
   { key: 'tstock', label: 'Tokenized', labelKey: 'tcTokenized', icon: 'coins',         color: '#f0b90b' },
   { key: 'gold',   label: 'Gold', labelKey: 'catGold',    icon: IcoGoldBar,     color: '#f59e0b' },
   { key: 'silver', label: 'Silver', labelKey: 'catSilver',  icon: IcoSilverBar,   color: '#94a3b8' },
@@ -123,13 +127,31 @@ function LegIcon({ o, size }) {
     : <CatIcon icon={o.icon} size={size} />
 }
 
+// Country names that run long on a chip, said the way people say them.
+const SHORT_REGION = {
+  en: { US: 'US', GB: 'UK', AE: 'UAE', SA: 'Saudi', KR: 'Korea', HK: 'Hong Kong', NL: 'Netherlands' },
+  ar: { US: 'أمريكا', AE: 'الإمارات', SA: 'السعودية', GB: 'بريطانيا', KR: 'كوريا' },
+  fr: { US: 'États-Unis', AE: 'Émirats', SA: 'Arabie saoudite', GB: 'Royaume-Uni', KR: 'Corée' },
+  es: { US: 'EE. UU.', AE: 'Emiratos', GB: 'Reino Unido', KR: 'Corea' },
+  de: { US: 'USA', AE: 'VAE', GB: 'UK', KR: 'Korea' },
+  it: { US: 'USA', AE: 'Emirati', GB: 'Regno Unito', KR: 'Corea' },
+}
+
+// Both stock categories make the same kind of asset: stock:<ticker>.
+const isStockCat = c => c === 'stock' || c === 'wstock'
+
+// Names of stocks picked from a worldwide search, for the asset they become.
+const PICKED_NAMES = {}
+
 // ── Preset asset for each non-crypto category ─────────────────────────────
 function presetForCategory(cat, stockTicker, fiatCode, otherInput) {
   if (cat === 'gold')   return { id: GOLD_ID,   symbol: 'XAU', name: 'Gold (1 oz)',   category: 'gold',   image: '' }
   if (cat === 'silver') return { id: SILVER_ID, symbol: 'XAG', name: 'Silver (1 oz)', category: 'silver', image: '' }
-  if (cat === 'stock' && stockTicker) {
-    const info = POPULAR_TICKERS.find(t => t.ticker === stockTicker.toUpperCase())
-    return { id: `${STOCK_PREFIX}${stockTicker.toLowerCase()}`, symbol: stockTicker.toUpperCase(), name: info?.name || stockTicker.toUpperCase(), category: 'stock', image: '' }
+  if (isStockCat(cat) && stockTicker) {
+    const up = stockTicker.toUpperCase()
+    const info = POPULAR_TICKERS.find(t => t.ticker === up)
+    const name = info?.name || intlStockName(up) || PICKED_NAMES[up] || up
+    return { id: `${STOCK_PREFIX}${stockTicker.toLowerCase()}`, symbol: up, name, category: 'stock', image: '' }
   }
   if (cat === 'tstock' && stockTicker) {
     const info = POPULAR_XSTOCKS.find(t => t.ticker === stockTicker.toUpperCase())
@@ -283,7 +305,7 @@ function SlideToConfirm({ label, disabled, busy, onConfirm, tone }) {
 
 // ── TradeSheet ────────────────────────────────────────────────────────────
 export default function TradeSheet({ open, type, onClose, wallets, onDone, holdings, prefillCoin, prefillCategory, prefillStockTicker, variant = 'sheet' }) {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const isPage = variant === 'page'
   const [category, setCategory]         = useState('crypto')
   const [coinSearch, setCoinSearch]     = useState('')
@@ -293,6 +315,31 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [stockTicker, setStockTicker]   = useState('')
   const [stockInput, setStockInput]     = useState('')
   const [stockSector, setStockSector]   = useState('All')
+  // The stock market on show: the user's own (detected) unless they pick one.
+  const [market, setMarket]             = useState(() => {
+    try { const m = marketForCountry(JSON.parse(localStorage.getItem('wl_country') || 'null')?.c); return m === 'US' ? 'GB' : m } catch { return 'GB' }
+  })
+  const [homeMarket, setHomeMarket]     = useState(null)
+  const marketPicked                    = useRef(false)
+  const [stockHits, setStockHits]       = useState([])
+  const [stockSearching, setStockSearching] = useState(false)
+  // Each market's full exchange list, once loaded, and how much of it shows.
+  const [fullLists, setFullLists]       = useState({})
+  const [listLimit, setListLimit]       = useState(60)
+  // A price in its own currency, the way the user's language writes it (77.40 ج.م.‏, £2.45).
+  const localMoney = (amount, currency) => {
+    try { return new Intl.NumberFormat(lang || 'en', { style: 'currency', currency, maximumFractionDigits: amount < 10 ? 3 : 2 }).format(amount) }
+    catch { return `${Number(amount).toFixed(2)} ${currency}` }
+  }
+  const regionName = (code) => {
+    const short = SHORT_REGION[lang]?.[code] || (lang === 'en' ? SHORT_REGION.en[code] : null)
+    if (short) return short
+    try { return new Intl.DisplayNames([lang || 'en'], { type: 'region', style: 'short' }).of(code) } catch { return code }
+  }
+  // Local markets: every market but the US, opening on the user's own.
+  const localMarket = homeMarket && homeMarket !== 'US' ? MARKET_BY_CODE[homeMarket] : null
+  const catLabel = (c) => t(c.labelKey)
+  const catIcon = (c, size) => <CatIcon icon={c.icon} size={size} />
   const [fiatCode, setFiatCode]         = useState('USD')
   const [otherName, setOtherName]       = useState('')
   // Common fields
@@ -347,8 +394,12 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       setCategory('crypto')
     } else if (prefillCategory) {
       setSelectedCoin(null)
-      setCategory(prefillCategory)
-      if (prefillCategory === 'stock' && prefillStockTicker) setStockTicker(prefillStockTicker)
+      // A foreign listing opens in the market category, a US one in US stocks.
+      setCategory(prefillCategory === 'stock' && isIntlTicker(prefillStockTicker) ? 'wstock' : prefillCategory)
+      if (prefillCategory === 'stock' && prefillStockTicker) {
+        setStockTicker(prefillStockTicker)
+        if (isIntlTicker(prefillStockTicker)) { marketPicked.current = true; setMarket(marketOfTicker(prefillStockTicker)) }
+      }
     } else {
       setSelectedCoin(null)
       setCategory('crypto')
@@ -374,10 +425,53 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   // Fetch live prices for the stock markets list when the Stocks tab is open.
   // Fetch the whole popular list (one batched request server-side) so every
   // sector filter shows prices, not just the first page.
+  // Which market is the user's: detected once, opened unless they chose another.
   useEffect(() => {
-    if (!open || category !== 'stock') return
+    if (!open) return
     let alive = true
-    const ids = POPULAR_TICKERS.map(t => `${STOCK_PREFIX}${t.ticker.toLowerCase()}`)
+    detectCountry().then(c => {
+      if (!alive || !c) return
+      const m = marketForCountry(c)
+      setHomeMarket(m)
+      if (!marketPicked.current) setMarket(m === 'US' ? 'GB' : m)
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [open])
+
+  // The whole exchange for the market on show (popular names until it arrives).
+  useEffect(() => {
+    setListLimit(60)
+    if (!open || !isStockCat(category)) return
+    const code = category === 'stock' ? 'US' : market
+    if (!code || fullLists[code]) return
+    let alive = true
+    getMarketList(code).then(v => { if (alive && v) setFullLists(prev => ({ ...prev, [code]: v })) }).catch(() => {})
+    return () => { alive = false }
+  }, [open, category, market]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Worldwide search: any listed company by name or ticker, after a pause in typing.
+  useEffect(() => {
+    if (!open || !isStockCat(category)) return
+    const q = stockInput.trim()
+    if (q.length < 2) { setStockHits([]); setStockSearching(false); return }
+    let alive = true
+    setStockSearching(true)
+    const id = setTimeout(() => {
+      searchStocks(q).then(hits => {
+        if (!alive) return
+        setStockHits(hits)
+        const ids = hits.map(h => `${STOCK_PREFIX}${h.symbol.toLowerCase()}`)
+        if (ids.length) api.getPrices(ids.join(',')).then(px => { if (alive && px) setStockPrices(prev => ({ ...prev, ...px })) }).catch(() => {})
+      }).catch(() => {}).finally(() => { if (alive) setStockSearching(false) })
+    }, 450)
+    return () => { alive = false; clearTimeout(id) }
+  }, [open, category, stockInput])
+
+  useEffect(() => {
+    if (!open || !isStockCat(category)) return
+    let alive = true
+    const list = category === 'stock' ? POPULAR_TICKERS : (MARKET_BY_CODE[market]?.stocks || [])
+    const ids = list.map(t => `${STOCK_PREFIX}${t.ticker.toLowerCase()}`)
     // Paint last-known prices instantly from the persisted cache, then refresh.
     const cached = api.getCachedPrices(ids.join(','))
     if (Object.keys(cached).length) setStockPrices(prev => ({ ...cached, ...prev }))
@@ -385,7 +479,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       if (alive && px) setStockPrices(prev => ({ ...prev, ...px }))
     }).catch(() => {})
     return () => { alive = false }
-  }, [open, category])
+  }, [open, category, market])
 
   // Fetch live tokenized-stock prices (from Binance) when the Tokenized tab is open.
   useEffect(() => {
@@ -438,7 +532,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     if (category === 'crypto') return selectedCoin?.id || null
     if (category === 'gold')   return GOLD_ID
     if (category === 'silver') return SILVER_ID
-    if (category === 'stock' && stockTicker) return `${STOCK_PREFIX}${stockTicker.toLowerCase()}`
+    if (isStockCat(category) && stockTicker) return `${STOCK_PREFIX}${stockTicker.toLowerCase()}`
     if (category === 'tstock' && stockTicker) return `${XSTOCK_PREFIX}${stockTicker.toLowerCase()}`
     if (category === 'fiat' && fiatCode)    return `${FIAT_PREFIX}${fiatCode.toLowerCase()}`
     if (category === 'bond' && otherName)   return `bond:${otherName.toLowerCase()}`
@@ -826,68 +920,127 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
         </div>
       )}
 
-      {/* Stock: sector filter + searchable ticker list */}
-      {category === 'stock' && (() => {
-        const sectors = ['All', ...Array.from(new Set(POPULAR_TICKERS.map(t => t.sector)))]
-        const query = stockInput.toUpperCase()
-        const filtered = POPULAR_TICKERS.filter(t =>
-          (stockSector === 'All' || t.sector === stockSector) &&
+      {/* Stock: market + sector filter, the market's list, and worldwide search */}
+      {isStockCat(category) && (() => {
+        const isUS = category === 'stock'
+        // The whole exchange once it has loaded; the curated list until then,
+        // and for a US sector filter (the screener rows carry no sector).
+        const full = isUS ? (stockSector === 'All' ? fullLists.US : null) : fullLists[market]
+        const base = full ? full.stocks.map(x => ({ ticker: x.t, name: x.n, q: x }))
+          : isUS ? POPULAR_TICKERS
+          : (MARKET_BY_CODE[market]?.stocks || [])
+        const shownMarket = isUS ? 'US' : market
+        const sectors = isUS ? ['All', ...Array.from(new Set(POPULAR_TICKERS.map(t => t.sector)))] : []
+        const query = stockInput.trim().toUpperCase()
+        const filtered = base.filter(t =>
+          (!isUS || full || stockSector === 'All' || t.sector === stockSector) &&
           (!query || t.ticker.includes(query) || t.name.toUpperCase().includes(query))
         )
-        const selectedInfo = POPULAR_TICKERS.find(t => t.ticker === stockTicker)
+        // Worldwide results the market list does not already show.
+        const hits = query.length >= 2 ? stockHits.filter(h => !filtered.some(f => f.ticker === h.symbol)) : []
+        // Other markets: the user's own first. US shares have their own category.
+        const order = [...new Set([localMarket?.code || 'GB', ...MARKETS.map(m => m.code)].filter(c => c && c !== 'US'))]
+        const pickTicker = (ticker, name) => { if (name) PICKED_NAMES[ticker] = name; setStockTicker(ticker); setStockInput(ticker) }
+        const row = (ticker, name, sub, q) => {
+          const sid = `${STOCK_PREFIX}${ticker.toLowerCase()}`
+          // A row from the full list carries its own quote; others use the fetched prices.
+          const rec = q ? { usd: q.u, usd_24h_change: q.c, local: { price: q.p, currency: q.cur } } : stockPrices[sid]
+          const p = rec?.usd ?? rec?.price
+          const ch = rec?.usd_24h_change
+          const up = Number(ch) >= 0
+          const on = stockTicker === ticker
+          const loc = rec?.local?.price > 0 && rec.local.currency && rec.local.currency !== 'USD' ? rec.local : null
+          return (
+            <button key={ticker} type="button" className={`bs-market-row ${on ? 'active' : ''}`}
+              title={name} onClick={() => pickTicker(ticker, name)}>
+              <CoinLogo symbol={ticker} coinId={sid} size={30} className="bs-coin-thumb" />
+              <div className="bs-coin-info">
+                <strong>{ticker}</strong>
+                <span className="muted">{sub ? `${name} · ${sub}` : name}</span>
+              </div>
+              <div className="bs-market-px">
+                {/* A foreign listing shows its own price first, then the dollar figure. */}
+                {loc ? <>
+                  <span className="bs-market-price">{localMoney(loc.price, loc.currency)}</span>
+                  <span className="bs-market-usd">{p != null ? `$${Number(p).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: p < 1 ? 4 : 2 })}` : ''}
+                    {ch != null && isFinite(ch) && <b style={{ color: up ? 'var(--g-ink)' : '#f87171' }}> {up ? '+' : ''}{Number(ch).toFixed(2)}%</b>}</span>
+                </> : <>
+                  <span className="bs-market-price">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</span>
+                  {ch != null && isFinite(ch) && <span className="bs-market-chg" style={{ color: up ? 'var(--g-ink)' : '#f87171' }}>{up ? '+' : ''}{Number(ch).toFixed(2)}%</span>}
+                </>}
+              </div>
+            </button>
+          )
+        }
+        const selName = POPULAR_TICKERS.find(x => x.ticker === stockTicker)?.name || intlStockName(stockTicker) || PICKED_NAMES[stockTicker]
+        const selLocal = stockPrices[`${STOCK_PREFIX}${String(stockTicker).toLowerCase()}`]?.local
+        const selCur = selLocal?.currency || (isIntlTicker(stockTicker) ? MARKET_BY_CODE[marketOfTicker(stockTicker)]?.currency : '')
         return (
           <div className="bs-stock-wrap">
-            {/* Sector filter pills */}
-            <div className="bs-sector-row">
-              {sectors.map(s => (
-                <button key={s} className={`bs-sector-btn ${stockSector === s ? 'active' : ''}`}
-                  onClick={() => setStockSector(s)}>{s}</button>
-              ))}
-            </div>
-            {/* Search input */}
+            {/* Markets: the user's own first */}
+            {!isUS && <div className="bs-market-title">{t('stkSelectMarket')}</div>}
+            {!isUS && <div className="bs-market-chips" role="tablist" aria-label={t('stkSelectMarket')}>
+              {order.map(code => {
+                const m = MARKET_BY_CODE[code]
+                if (!m) return null
+                return (
+                  <button key={code} type="button" role="tab" aria-selected={market === code} title={m.exchange}
+                    className={`bs-market-chip ${market === code ? 'active' : ''}`}
+                    onClick={() => { marketPicked.current = true; setMarket(code); setStockSector('All') }}>
+                    <FlagImg cc={m.flag} size={18} />
+                    <span>{regionName(code)}</span>
+                    {code === homeMarket && <i className="bs-market-home" aria-hidden="true" />}
+                  </button>
+                )
+              })}
+            </div>}
+            {/* Sector filter pills (US only, where the list is long) */}
+            {sectors.length > 0 && (
+              <div className="bs-sector-row">
+                {sectors.map(sct => (
+                  <button key={sct} className={`bs-sector-btn ${stockSector === sct ? 'active' : ''}`}
+                    onClick={() => setStockSector(sct)}>{sct}</button>
+                ))}
+              </div>
+            )}
+            {/* Search: this market's list, and any company worldwide */}
             <div className="bs-search-wrap" style={{marginBottom:'0.4rem'}}>
               <span className="bs-search-icon">{IcoSearch}</span>
               <input className="bs-input bs-search-input"
-                placeholder={t('txSearchTicker')}
+                placeholder={t('stkSearchAll')}
                 value={stockInput}
-                onChange={e => { setStockInput(e.target.value); const v = e.target.value.trim().toUpperCase(); if (!POPULAR_TICKERS.find(t=>t.ticker===v)) setStockTicker(v); }}
+                onChange={e => { setStockInput(e.target.value); const v = e.target.value.trim().toUpperCase(); if (!base.find(x => x.ticker === v)) setStockTicker(v); }}
               />
             </div>
-            {/* Markets-style ticker list (same look as the crypto list) */}
             <div className="bs-markets">
-              <div className="bs-markets-head"><span>{stockSector === 'All' ? 'Popular' : stockSector}</span><span>{t('tsPrice24h')}</span></div>
+              <div className="bs-markets-head">
+                <span>{isUS && stockSector !== 'All' ? stockSector
+                  : full ? t('stkAllIn')(regionName(shownMarket), MARKET_BY_CODE[shownMarket]?.exchange || '', full.total)
+                  : t('stkPopularIn')(regionName(shownMarket), MARKET_BY_CODE[shownMarket]?.exchange || '')}</span>
+                <span>{t('tsPrice24h')}</span>
+              </div>
               <div className="bs-markets-list">
-                {filtered.slice(0, 40).map(t => {
-                  const sid = `${STOCK_PREFIX}${t.ticker.toLowerCase()}`
-                  const rec = stockPrices[sid]
-                  const p = rec?.usd ?? rec?.price
-                  const ch = rec?.usd_24h_change
-                  const up = Number(ch) >= 0
-                  const on = stockTicker === t.ticker
-                  return (
-                    <button key={t.ticker} type="button" className={`bs-market-row ${on ? 'active' : ''}`}
-                      title={t.name}
-                      onClick={() => { setStockTicker(t.ticker); setStockInput(t.ticker) }}>
-                      <CoinLogo symbol={t.ticker} coinId={sid} size={30} className="bs-coin-thumb" />
-                      <div className="bs-coin-info">
-                        <strong>{t.ticker}</strong>
-                        <span className="muted">{t.name}</span>
-                      </div>
-                      <div className="bs-market-px">
-                        <span className="bs-market-price">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</span>
-                        {ch != null && isFinite(ch) && <span className="bs-market-chg" style={{ color: up ? 'var(--g-ink)' : '#f87171' }}>{up ? '+' : ''}{Number(ch).toFixed(2)}%</span>}
-                      </div>
-                    </button>
-                  )
-                })}
-                {filtered.length === 0 && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>{t('tsNoMatch')}</p>}
+                {filtered.slice(0, full || !isUS ? listLimit : 40).map(x => row(x.ticker, x.name, null, x.q))}
+                {(full || !isUS) && filtered.length > listLimit && (
+                  <button type="button" className="bs-market-showmore" onClick={() => setListLimit(n => n + 60)}>
+                    {t('stkShowMore')(filtered.length - listLimit)}
+                  </button>
+                )}
+                {(hits.length > 0 || stockSearching) && (
+                  <div className="bs-markets-head bs-markets-sub"><span>{stockSearching && hits.length === 0 ? t('stkSearching') : t('stkResults')}</span></div>
+                )}
+                {hits.map(h => row(h.symbol, h.name, h.exchange))}
+                {filtered.length === 0 && hits.length === 0 && !stockSearching && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>{t('tsNoMatch')}</p>}
+                {!query && !full && <p className="bs-hint bs-market-more">{t('stkSearchMore')}</p>}
               </div>
             </div>
             {stockTicker && (
               <div className="bs-stock-selected">
                 <span style={{color: catInfo.color, fontWeight:700}}>{stockTicker}</span>
-                {selectedInfo && <span className="muted"> — {selectedInfo.name}</span>}
-                <span className="bs-hint" style={{marginLeft:'auto', color:catInfo.color}}>{t('tsLiveYahoo')}</span>
+                {selName && <span className="muted"> · {selName}</span>}
+                <span className="bs-hint" style={{marginInlineStart:'auto', color:catInfo.color}}>
+                  {selCur && selCur !== 'USD' ? t('stkConverted')(selCur) : t('tsLiveYahoo')}
+                </span>
               </div>
             )}
           </div>
@@ -1130,7 +1283,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       <div className="tk-cats" data-tour="ts-category">
                         {CATEGORIES.map(c => (
                           <button key={c.key} type="button" className={`tk-cat${category === c.key ? ' on' : ''}`} style={{ '--c': chipColor(c.color) }} onClick={() => pickCategory(c.key)}>
-                            <span className="tk-cat-ico"><CatIcon icon={c.icon} size={13} /></span>{t(c.labelKey)}
+                            <span className="tk-cat-ico">{catIcon(c, 13)}</span>{catLabel(c)}
                           </button>
                         ))}
                       </div>
@@ -1270,7 +1423,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       </div>
                     )}
 
-                    {asset?.id && ['crypto', 'stock', 'gold', 'silver', 'tstock'].includes(category) && (
+                    {asset?.id && ['crypto', 'stock', 'wstock', 'gold', 'silver', 'tstock'].includes(category) && (
                       <div className={`tk-card tk-signal${signalOpen ? '' : ' is-closed'}`}>
                         <button type="button" className="tk-signal-toggle" aria-expanded={signalOpen} onClick={() => setSignalOpen(v => !v)}>
                           <span>{isBuy ? t('tkEntrySignal') : t('tkExitSignal')}</span>
@@ -1441,7 +1594,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       style={category === c.key ? { borderColor: c.color, background: c.color + '18', color: c.color } : {}}
                       onClick={() => pickCategory(c.key)}
                     >
-                      <span><CatIcon icon={c.icon} size={15} /></span> {t(c.labelKey)}
+                      <span>{catIcon(c, 15)}</span> {catLabel(c)}
                     </button>
                   ))}
                 </div>
@@ -1495,7 +1648,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                   <label className="bs-label" style={{ margin:0 }}>
                     {amtMode === 'usd' ? 'USD Value'
                       : (category === 'gold' || category === 'silver') ? `QTY (${metalUnit})`
-                      : category === 'stock' ? 'Shares'
+                      : isStockCat(category) ? 'Shares'
                       : 'QTY'}
                   </label>
                   <div style={{ display: 'flex', gap: '0.35rem' }}>
@@ -1605,7 +1758,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             )}
 
             {/* Trade signal — only for assets we can build one for (price history) */}
-            {asset?.id && ['crypto', 'stock', 'gold', 'silver', 'tstock'].includes(category) && (
+            {asset?.id && ['crypto', 'stock', 'wstock', 'gold', 'silver', 'tstock'].includes(category) && (
               <div className="bs-signal-wrap">
                 <button className="bs-signal-toggle" onClick={() => setSignalOpen(v => !v)}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points={signalOpen ? '18 15 12 9 6 15' : '6 9 12 15 18 9'}/></svg>
