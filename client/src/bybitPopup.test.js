@@ -95,3 +95,17 @@ describe('the Bybit popup appears promptly', () => {
     expect(src).toMatch(/getClientRects\(\)\.length/)
   })
 })
+
+describe('the Bybit reward is worded as Welcome Gifts', () => {
+  it('names no amount in any language, and the partner card says the same', () => {
+    for (const l of ['en', 'ar', 'fr', 'es', 'de', 'it']) {
+      const s = readFileSync(join(here, `i18n/${l}.js`), 'utf8')
+      expect(s, l).toMatch(/byGift: "/)
+      const pop = s.match(/byPopHead: "([^"]+)"/)[1]
+      expect(pop, l).not.toMatch(/\$|20|USDT/)
+    }
+    const ex = readFileSync(join(here, 'components/ExchangePartners.jsx'), 'utf8')
+    expect(ex).toContain("bonus: 'Get Welcome Gifts from our partner Bybit'")
+    expect(ex).not.toMatch(/20 USDT/)
+  })
+})

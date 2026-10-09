@@ -14,7 +14,7 @@ import './BybitOffer.css'
 //   • TradFi — Bybit's stock, ETF, gold, silver and oil markets traded in
 //     USDT: on a stock's or metal's page, in Technical Analysis, and as a
 //     strip after the stock or metal holdings (one Bybit strip at most).
-// The bonus amount comes from /offers.json. Everything renders nothing unless
+// The reward is worded as Welcome Gifts (byGift), not an amount. Everything renders nothing unless
 // bybitAllowed() says so (remote switch on, region allowed).
 
 function Wordmark() {
@@ -40,7 +40,9 @@ function Gift({ className }) {
 /** Under the smart money flow card: on a crypto asset's page and in Technical Analysis. */
 export function BybitCard({ symbol, placement = 'asset_page' }) {
   const { t } = useLanguage()
-  const { allowed, bonus } = useBybitOffer()
+  const { allowed } = useBybitOffer()
+  // What new accounts get, in words: "Welcome Gifts", not a dollar figure.
+  const bonus = t('byGift')
   if (!allowed) return null
   const sym = String(symbol || '').toUpperCase()
   return (
@@ -98,7 +100,9 @@ function TradFiChips({ kind }) {
  */
 export function BybitStockCard({ symbol, kind = 'stocks', placement = 'stock_page' }) {
   const { t } = useLanguage()
-  const { allowed, bonus } = useBybitOffer()
+  const { allowed } = useBybitOffer()
+  // What new accounts get, in words: "Welcome Gifts", not a dollar figure.
+  const bonus = t('byGift')
   if (!allowed) return null
   const sym = String(symbol || '').toUpperCase()
   const k = kind === 'metals' ? 'Metals' : 'Stocks'
@@ -130,7 +134,9 @@ export function BybitStockCard({ symbol, kind = 'stocks', placement = 'stock_pag
 /** After the crypto holdings list. Dismissed, it stays hidden for 30 days. */
 export function BybitStrip({ variant = 'crypto', placement = 'holdings' }) {
   const { t } = useLanguage()
-  const { allowed, bonus } = useBybitOffer()
+  const { allowed } = useBybitOffer()
+  // What new accounts get, in words: "Welcome Gifts", not a dollar figure.
+  const bonus = t('byGift')
   const [hidden, setHidden] = useState(stripHidden)
   if (!allowed || hidden) return null
   if (variant === 'stocks' || variant === 'metals') {
@@ -209,7 +215,9 @@ function screenBusy() {
  */
 export function BybitPopup({ blocked = false }) {
   const { t } = useLanguage()
-  const { allowed, bonus } = useBybitOffer()
+  const { allowed } = useBybitOffer()
+  // What new accounts get, in words: "Welcome Gifts", not a dollar figure.
+  const bonus = t('byGift')
   const [open, setOpen] = useState(false)
   const [now, setNow] = useState(Date.now)
   const openedAt = useRef(0)
@@ -267,7 +275,7 @@ export function BybitPopup({ blocked = false }) {
           </div>
           <Gift className="byp-gift" />
           <p className="byp-eyebrow">{t('byPopEyebrow')}</p>
-          <h2 id="byp-h" className="byp-h">{headA}<em dir="ltr">{bonus}</em>{headB}</h2>
+          <h2 id="byp-h" className="byp-h">{headA}<em>{bonus}</em>{headB}</h2>
           <p className="byp-sub">{t('byPopSteps')}</p>
           <p className="byp-partner">{(() => {
             const [a, b = ''] = t('byPopPartner').split('{brand}')
