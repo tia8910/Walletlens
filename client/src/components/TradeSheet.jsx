@@ -115,6 +115,14 @@ const SELL_FOR_OPTIONS = [
   { key: 'REMOVE', label: 'Remove', labelKey: 'txRemove', icon: 'trash', color: '#f87171' },
 ]
 
+// Cash legs wear their country's flag; the coins keep their glyphs.
+const LEG_FLAGS = new Set(['USD', 'EUR'])
+function LegIcon({ o, size }) {
+  return LEG_FLAGS.has(o.key)
+    ? <CoinLogo coinId={`${FIAT_PREFIX}${o.key.toLowerCase()}`} symbol={o.key} size={size + 4} className="bs-leg-flag" />
+    : <CatIcon icon={o.icon} size={size} />
+}
+
 // ── Preset asset for each non-crypto category ─────────────────────────────
 function presetForCategory(cat, stockTicker, fiatCode, otherInput) {
   if (cat === 'gold')   return { id: GOLD_ID,   symbol: 'XAU', name: 'Gold (1 oz)',   category: 'gold',   image: '' }
@@ -950,8 +958,9 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             {POPULAR_FIAT.map(f => (
               <button key={f.code}
                 className={`bs-chip ${fiatCode === f.code ? 'active' : ''}`}
-                onClick={() => { setFiatCode(f.code) }}>
-                {f.symbol} {f.code}
+                onClick={() => { setFiatCode(f.code) }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                <CoinLogo coinId={`${FIAT_PREFIX}${f.code.toLowerCase()}`} symbol={f.code} size={18} className="bs-chip-flag" /> {f.code}
               </button>
             ))}
           </div>
@@ -1215,7 +1224,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       <div className="tk-legs">
                         {legOptions.map(o => (
                           <button key={o.key} type="button" className={`tk-leg${legValue === o.key ? ' on' : ''}`} style={{ '--c': chipColor(o.color) }} onClick={() => setLeg(o.key)}>
-                            <span className="tk-leg-ico"><CatIcon icon={o.icon} size={12} /></span>{o.labelKey ? t(o.labelKey) : o.label}
+                            <span className="tk-leg-ico"><LegIcon o={o} size={12} /></span>{o.labelKey ? t(o.labelKey) : o.label}
                           </button>
                         ))}
                       </div>
@@ -1361,7 +1370,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       className={`bs-leg-chip ${buyWith === o.key ? 'active' : ''}`}
                       style={buyWith === o.key ? { borderColor: o.color, background: o.color + '20' } : {}}
                       onClick={() => { setBuyWith(o.key); setSpendPct(null) }}>
-                      <span className="bs-leg-chip-icon" style={{ color: o.color }}><CatIcon icon={o.icon} size={15} /></span>
+                      <span className="bs-leg-chip-icon" style={{ color: o.color }}><LegIcon o={o} size={15} /></span>
                       <span className="bs-leg-chip-label" style={buyWith === o.key ? { color: o.color } : {}}>{o.labelKey ? t(o.labelKey) : o.label}</span>
                     </button>
                   ))}
@@ -1565,7 +1574,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       style={sellFor === o.key ? { borderColor: o.color, background: o.color + '20' } : {}}
                       onClick={() => setSellFor(o.key)}
                     >
-                      <span className="bs-leg-chip-icon" style={{ color: o.color }}><CatIcon icon={o.icon} size={15} /></span>
+                      <span className="bs-leg-chip-icon" style={{ color: o.color }}><LegIcon o={o} size={15} /></span>
                       <span className="bs-leg-chip-label" style={sellFor === o.key ? { color: o.color } : {}}>{o.labelKey ? t(o.labelKey) : o.label}</span>
                     </button>
                   ))}

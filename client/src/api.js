@@ -1033,6 +1033,19 @@ async function fetchXstockMarket() {
   return xstockMarket;
 }
 
+// Company logos for plain stocks. A tokenized share carries its company's
+// logo on CoinGecko, so the xStocks market doubles as a logo table for the
+// real ticker: stock:aapl shows the same Apple mark AAPLx does. Synchronous
+// read from the cache, plus a one-shot load for when the cache is empty.
+export function stockLogoFor(ticker) {
+  return xstockMarket[String(ticker || '').toUpperCase()]?.image || ''
+}
+let _xsLogoLoad = null
+export function loadStockLogos() {
+  if (Object.keys(xstockMarket).length) return Promise.resolve(xstockMarket)
+  return (_xsLogoLoad ||= fetchXstockMarket().catch(() => xstockMarket))
+}
+
 // Resolve a WalletLens xstock id (xstock:aapl) → CoinGecko coin id (apple-xstock).
 async function xstockCoinId(id) {
   const ticker = id.slice(XSTOCK_PREFIX.length).toUpperCase();

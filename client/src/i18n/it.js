@@ -539,6 +539,7 @@ export default {
     lookTry: "Nuovo design",
     nlMore: "Altro",
     nlYourNetWorth: "Il tuo patrimonio netto",
+    nlTagline: "Monitora · Analizza · Cresci",
     nlHome: "Home",
     nlSignals: "Segnali",
     nlAllNews: "Tutte le notizie",

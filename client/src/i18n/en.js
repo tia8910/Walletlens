@@ -600,6 +600,7 @@ export default {
     lookTry: "New design",
     nlMore: "More",
     nlYourNetWorth: "Your net worth",
+    nlTagline: "Track · Analyze · Grow",
     nlHome: "Home",
     nlSignals: "Signals",
     nlAllNews: "All news",

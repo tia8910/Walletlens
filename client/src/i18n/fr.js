@@ -579,6 +579,7 @@ export default {
     lookTry: "Nouveau design",
     nlMore: "Plus",
     nlYourNetWorth: "Votre patrimoine net",
+    nlTagline: "Suivre · Analyser · Croître",
     nlHome: "Accueil",
     nlSignals: "Signaux",
     nlAllNews: "Toutes les actus",

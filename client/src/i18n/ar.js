@@ -605,6 +605,7 @@ export default {
     lookTry: "التصميم الجديد",
     nlMore: "المزيد",
     nlYourNetWorth: "صافي ثروتك",
+    nlTagline: "تتبّع · حلّل · انمُ",
     nlHome: "الرئيسية",
     nlSignals: "الإشارات",
     nlAllNews: "كل الأخبار",

@@ -689,3 +689,10 @@ html.wl-v3:not([data-wl-light]) .nl-check { border-color: rgba(255, 255, 255, 0.
 .nl-row.picking .nl-row-mid { width: auto; }
 /* A checked row's tint stays inside the card's corners. */
 .nl-hold .nl-row.sel { margin: 0 !important; width: 100% !important; padding-inline: 0.35rem !important; border-radius: 14px !important; }
+/* Track · Analyze · Grow: the dots take the accent, the words stay ink. */
+.nl-topbar-greet .nl-tag-dot { font-style: normal; color: var(--g-ink); margin: 0 0.22em; }
+/* The tagline sits between the logo and three round buttons, so it shrinks
+   to fit a phone instead of running under them; the longest languages get an
+   ellipsis as a last resort. */
+.nl-topbar-greet { min-width: 0; }
+.nl-topbar-greet b.nl-tagline { font-size: clamp(0.78rem, 3.4vw, 1.06rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
