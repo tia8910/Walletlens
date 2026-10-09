@@ -946,7 +946,8 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
         return (
           <div className="bs-stock-wrap">
             {/* Markets: the user's own first */}
-            {!isUS && <div className="bs-market-chips" role="tablist" aria-label={t('stkMarket')}>
+            {!isUS && <div className="bs-market-title">{t('stkSelectMarket')}</div>}
+            {!isUS && <div className="bs-market-chips" role="tablist" aria-label={t('stkSelectMarket')}>
               {order.map(code => {
                 const m = MARKET_BY_CODE[code]
                 if (!m) return null
@@ -981,7 +982,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             </div>
             <div className="bs-markets">
               <div className="bs-markets-head">
-                <span>{isUS && stockSector !== 'All' ? stockSector : `${regionName(shownMarket)} · ${MARKET_BY_CODE[shownMarket]?.exchange || ''}`}</span>
+                <span>{isUS && stockSector !== 'All' ? stockSector : t('stkPopularIn')(regionName(shownMarket), MARKET_BY_CODE[shownMarket]?.exchange || '')}</span>
                 <span>{t('tsPrice24h')}</span>
               </div>
               <div className="bs-markets-list">
@@ -991,6 +992,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                 )}
                 {hits.map(h => row(h.symbol, h.name, h.exchange))}
                 {filtered.length === 0 && hits.length === 0 && !stockSearching && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>{t('tsNoMatch')}</p>}
+                {!query && <p className="bs-hint bs-market-more">{t('stkSearchMore')}</p>}
               </div>
             </div>
             {stockTicker && (

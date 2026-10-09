@@ -12837,3 +12837,5 @@ html.wl-msstore a[href*="ibkr.com/referral"] { display: none !important; }
 .bs-market-chip.active { border-color: rgb(var(--g-rgb)); background: rgba(var(--g-rgb), 0.12); color: var(--g-ink); }
 .bs-market-home { position: absolute; top: 3px; inset-inline-end: 5px; width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--g-rgb)); }
 .bs-markets-sub { margin-top: 0.4rem; }
+.bs-market-title { font-size: 0.78rem; font-weight: 800; color: var(--text-sub); margin: 0.1rem 0.15rem 0.4rem; }
+.bs-market-more { margin: 0.55rem 0.2rem 0.2rem; font-size: 0.78rem; text-align: center; }
