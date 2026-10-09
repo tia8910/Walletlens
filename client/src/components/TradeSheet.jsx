@@ -323,6 +323,11 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const marketPicked                    = useRef(false)
   const [stockHits, setStockHits]       = useState([])
   const [stockSearching, setStockSearching] = useState(false)
+  // A price in its own currency, the way the user's language writes it (77.40 ج.م.‏, £2.45).
+  const localMoney = (amount, currency) => {
+    try { return new Intl.NumberFormat(lang || 'en', { style: 'currency', currency, maximumFractionDigits: amount < 10 ? 3 : 2 }).format(amount) }
+    catch { return `${Number(amount).toFixed(2)} ${currency}` }
+  }
   const regionName = (code) => {
     const short = SHORT_REGION[lang]?.[code] || (lang === 'en' ? SHORT_REGION.en[code] : null)
     if (short) return short
@@ -925,6 +930,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
           const ch = rec?.usd_24h_change
           const up = Number(ch) >= 0
           const on = stockTicker === ticker
+          const loc = rec?.local?.price > 0 && rec.local.currency && rec.local.currency !== 'USD' ? rec.local : null
           return (
             <button key={ticker} type="button" className={`bs-market-row ${on ? 'active' : ''}`}
               title={name} onClick={() => pickTicker(ticker, name)}>
@@ -934,8 +940,15 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                 <span className="muted">{sub ? `${name} · ${sub}` : name}</span>
               </div>
               <div className="bs-market-px">
-                <span className="bs-market-price">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</span>
-                {ch != null && isFinite(ch) && <span className="bs-market-chg" style={{ color: up ? 'var(--g-ink)' : '#f87171' }}>{up ? '+' : ''}{Number(ch).toFixed(2)}%</span>}
+                {/* A foreign listing shows its own price first, then the dollar figure. */}
+                {loc ? <>
+                  <span className="bs-market-price">{localMoney(loc.price, loc.currency)}</span>
+                  <span className="bs-market-usd">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''}
+                    {ch != null && isFinite(ch) && <b style={{ color: up ? 'var(--g-ink)' : '#f87171' }}> {up ? '+' : ''}{Number(ch).toFixed(2)}%</b>}</span>
+                </> : <>
+                  <span className="bs-market-price">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</span>
+                  {ch != null && isFinite(ch) && <span className="bs-market-chg" style={{ color: up ? 'var(--g-ink)' : '#f87171' }}>{up ? '+' : ''}{Number(ch).toFixed(2)}%</span>}
+                </>}
               </div>
             </button>
           )
