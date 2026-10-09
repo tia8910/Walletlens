@@ -83,3 +83,15 @@ describe('the Bybit popup in Google Analytics', () => {
     expect(src).toMatch(/openBybit\('popup', 'crypto'\)/)
   })
 })
+
+describe('the Bybit popup appears promptly', () => {
+  const src = readFileSync(join(here, 'components/BybitOffer.jsx'), 'utf8')
+  it('opens 1.5 s in and re-checks every second behind another dialog', () => {
+    expect(src).toMatch(/const OPEN_DELAY_MS = 1500/)
+    expect(src).toMatch(/\}, 1000\) \}, OPEN_DELAY_MS\)/)
+  })
+  it('is not held back by a dialog kept hidden in the page', () => {
+    expect(src).toMatch(/function screenBusy\(\)/)
+    expect(src).toMatch(/getClientRects\(\)\.length/)
+  })
+})
