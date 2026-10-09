@@ -98,7 +98,9 @@ export async function onRequestGet(context) {
   const cfg = SCREENER_MARKETS[market]
   if (!cfg) return new Response(JSON.stringify({ market, total: 0, cols: [], rows: [] }), { headers: HEADERS })
 
-  const cacheKey = new Request(`https://market-list.cache/${market}`)
+  // Versioned: the edge cache outlives deploys, and an entry in an older
+  // response shape would otherwise be served to a client that cannot read it.
+  const cacheKey = new Request(`https://market-list.cache/v3/${market}`)
   const cache = caches.default
   const hit = debug ? null : await cache.match(cacheKey)
   if (hit) return hit

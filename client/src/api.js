@@ -1559,9 +1559,10 @@ export async function getMarketList(market) {
     if (!res.ok) return null;
     const body = await res.json();
     // Rows of [t, n, p, cur, u, c] (ticker, name, local price, currency, USD, change %).
-    const stocks = (Array.isArray(body?.rows) ? body.rows : [])
-      .filter(r => Array.isArray(r) && r[0])
-      .map(([t, n, p, cur, u, c]) => ({ t, n, p, cur, u, c }));
+    // Older responses sent objects under `stocks`; read either shape.
+    const stocks = Array.isArray(body?.rows)
+      ? body.rows.filter(r => Array.isArray(r) && r[0]).map(([t, n, p, cur, u, c]) => ({ t, n, p, cur, u, c }))
+      : (Array.isArray(body?.stocks) ? body.stocks.filter(x => x?.t) : []);
     if (stocks.length === 0) return null;
     const v = { total: body.total || stocks.length, stocks };
     _marketLists[market] = { t: Date.now(), v };
