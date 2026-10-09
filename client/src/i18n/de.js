@@ -549,6 +549,7 @@ export default {
     nlSignals: "Signale",
     nlAllNews: "Alle Nachrichten",
     nlMoreSub: "Alles in WalletLens",
+    nlAboutGroup: "Über WalletLens",
     nlGrow: "Mein Vermögen vergrößern",
     nlMarketIndex: "Marktindex",
     nlFearGreed: "Angst- & Gier-Index",

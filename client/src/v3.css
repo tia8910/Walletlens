@@ -729,3 +729,8 @@ html.wl-v3:not([data-wl-light]) .nl-check { border-color: rgba(255, 255, 255, 0.
 }
 .nl-rate-go { background: #f59e0b !important; color: #111 !important; border: 0 !important; }
 .nl-rate-later { background: transparent !important; color: var(--text-muted) !important; border: 1px solid var(--border, rgba(127,127,127,.25)) !important; }
+
+/* More → About WalletLens: the links that used to be the footer. */
+.nl-more-link { display: inline-flex; align-items: center; gap: 0.6rem; }
+.nl-more-link svg { color: var(--nl-sub, var(--text-muted)); }
+.nl-more-copy { margin: 0.9rem 0 0.2rem; text-align: center; font-size: 0.72rem; color: var(--nl-sub, var(--text-muted)); }

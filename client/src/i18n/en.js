@@ -610,6 +610,7 @@ export default {
     nlSignals: "Signals",
     nlAllNews: "All news",
     nlMoreSub: "Everything in WalletLens",
+    nlAboutGroup: "About WalletLens",
     nlGrow: "Grow my net worth",
     nlMarketIndex: "Market index",
     nlFearGreed: "Fear & Greed index",

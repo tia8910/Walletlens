@@ -615,6 +615,7 @@ export default {
     nlSignals: "الإشارات",
     nlAllNews: "كل الأخبار",
     nlMoreSub: "كل ما في WalletLens",
+    nlAboutGroup: "عن WalletLens",
     nlGrow: "نمِّ ثروتي",
     nlMarketIndex: "مؤشر السوق",
     nlFearGreed: "مؤشر الخوف والطمع",

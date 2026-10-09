@@ -1111,7 +1111,10 @@ export default function App() {
       </main>
       </PullToRefresh>
 
-      <AppFooter />
+      {/* Public pages only (home page, blog, FAQ, legal…). In the app the
+          same links live in More → About WalletLens, so they no longer sit
+          between every screen and the bottom bar. */}
+      {(isLanding || location.pathname.replace(/\/+$/, '') === '/terms') && <AppFooter />}
 
       {/* The classic bar is app-only. The v2 preview shows its bar in the
           browser too, since that is where it is being tested. */}

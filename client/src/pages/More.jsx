@@ -111,6 +111,22 @@ export default function More() {
           <span>{t('settingsNav')}</span><b aria-hidden="true">›</b>
         </button>
       </section>
+      {/* What used to be the footer under every screen. */}
+      <section className="nl-more-g">
+        <h2>{t('nlAboutGroup')}</h2>
+        {[
+          { icon: 'info', label: t('about'), to: '/about' },
+          { icon: 'message', label: t('faq'), to: '/faq' },
+          { icon: 'news', label: t('blog'), to: '/blog' },
+          { icon: 'shield', label: t('privacy'), to: '/privacy' },
+          { icon: 'clipboard', label: t('terms') || 'Terms', to: '/terms' },
+        ].map(l => (
+          <button key={l.to} type="button" className="nl-more-row" onClick={() => go(l.to)}>
+            <span className="nl-more-link"><Icon name={l.icon} size={16} />{l.label}</span><b aria-hidden="true">›</b>
+          </button>
+        ))}
+        <p className="nl-more-copy">WalletLens © {new Date().getFullYear()}{typeof __WL_BUILD__ === 'string' ? ` · ${__WL_BUILD__}` : ''}</p>
+      </section>
     </div>
   )
 }
