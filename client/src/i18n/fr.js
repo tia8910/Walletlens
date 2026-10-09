@@ -732,6 +732,7 @@ export default {
     evShot: "Capture",
     evVoice: "Voix",
     evTap: "Toucher",
+    evCash: "Espèces",
     evCapShot: "Photographiez l’écran de votre courtier ou plateforme. Chaque position est lue et ajoutée.",
     evCapVoice: "Dites ce que vous possédez en une phrase. Cela devient des actifs aux prix en direct.",
     evCapTap: "Touchez un actif qui tourne autour de votre portefeuille et saisissez la quantité.",

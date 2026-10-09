@@ -2481,29 +2481,7 @@ function ConstellationMap() {
   )
 }
 
-// Map an interest id (from InterestPicker) to a quick-add prefill category.
-const INTEREST_TO_CAT = { crypto:'crypto', stablecoins:'crypto', stocks:'stock', etfs:'stock', gold:'gold', silver:'gold', cash:'fiat' }
-function readInterests() {
-  try { const v = JSON.parse(localStorage.getItem('wl_interests') || 'null'); return Array.isArray(v) ? v : [] }
-  catch { return [] }
-}
-// Personalize the quick-add chips from the classes the user said they track:
-// show only those classes when that still yields a usable set, otherwise just
-// lead with them. Returns the full list when no interests are set.
-function orderQuickAdd(list) {
-  const interests = readInterests()
-  if (!interests.length) return list
-  const wanted = new Set(interests.map(i => INTEREST_TO_CAT[i]).filter(Boolean))
-  const ordered = list.map((a, i) => [a, i]).sort((x, y) => {
-    const xm = wanted.has(x[0].prefill.category) ? 0 : 1
-    const ym = wanted.has(y[0].prefill.category) ? 0 : 1
-    return xm - ym || x[1] - y[1] // stable: keep original order within a group
-  }).map(p => p[0])
-  // Hide the classes they didn't pick — but only when enough shortcuts remain.
-  const matched = ordered.filter(a => wanted.has(a.prefill.category))
-  return matched.length >= 2 ? matched : ordered
-}
-
+// Prefills for the asset orbs on the empty Home, matched by label.
 const QUICK_ADD_ASSETS = [
   { label:'USDT', imgSrc:'https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/usdt.svg', prefill:{ category:'crypto', coin:{ id:'tether',   symbol:'USDT', name:'Tether'   } } },
   { label:'USDC', imgSrc:'https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/usdc.svg', prefill:{ category:'crypto', coin:{ id:'usd-coin', symbol:'USDC', name:'USD Coin' } } },
@@ -2512,6 +2490,7 @@ const QUICK_ADD_ASSETS = [
   { label:'Gold', useGoldLogo:true, prefill:{ category:'gold' } },
   { label:'NVDA', bg:'#000', icon:'NVDA', iconColor:'#76b900', iconSize:'0.42rem', prefill:{ category:'stock', stockTicker:'NVDA' } },
   { label:'AAPL', bg:'#1d1d1f', icon:'AAPL', iconColor:'#fff',  iconSize:'0.42rem', prefill:{ category:'stock', stockTicker:'AAPL' } },
+  { label:'Cash', prefill:{ category:'fiat' } },
 ]
 
 // Header shield shown when Portfolio Guardian is active. Colour + days-left

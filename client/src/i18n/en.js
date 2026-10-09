@@ -753,6 +753,7 @@ export default {
     evShot: "Screenshot",
     evVoice: "Voice",
     evTap: "Tap",
+    evCash: "Cash",
     evCapShot: "Snap your broker or exchange screen. Every holding is read and added for you.",
     evCapVoice: "Say what you own in one sentence. It becomes assets with live prices.",
     evCapTap: "Tap any asset circling your portfolio and just enter the amount.",

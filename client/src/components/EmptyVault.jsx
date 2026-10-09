@@ -37,6 +37,7 @@ const ORBS = [
   { sym: 'NVDA', label: 'NVDA', c: '#76b900', bg: '#0b0b0b', fg: '#76b900', k: 0.7 },
   { sym: 'USDT', label: 'USDT', c: '#26a17b', bg: '#26a17b', fg: '#ffffff', k: 0.64 },
   { sym: 'AAPL', label: 'AAPL', c: '#cbd5e1', bg: '#1d1d1f', fg: '#ffffff', k: 0.56 },
+  { sym: 'CASH', label: 'Cash', c: '#22c55e', bg: '#15803d', cash: true },
 ]
 const GOLD_BAR = THEMES.find(x => x.id === 'gold')?.logo
 
@@ -52,7 +53,7 @@ const SCENES = [
   { id: 'tap', icon: 'plus', launch: [1.3, 2.2, 3.1], items: [
     { sym: 'BTC', amt: '0.1', v: 8250, c: '#f7931a', orb: 0 },
     { sym: 'GOLD', amt: '1 oz', v: 2650, c: '#e8b825', orb: 2 },
-    { sym: 'AAPL', amt: '5', v: 1150, c: '#cbd5e1', orb: 5 } ] },
+    { sym: 'CASH', amt: '$1,000', v: 1000, c: '#22c55e', orb: 6 } ] },
 ]
 const VOICE_LINE = '3 ETH, 1200 USDT, 10 AAPL'
 const VOICE_BREAK = VOICE_LINE.indexOf(' 10')  // the second line starts at "10 AAPL"
@@ -63,7 +64,7 @@ const easeOut = x => 1 - Math.pow(1 - x, 3)
 const money = n => '$' + Math.round(n).toLocaleString('en-US')
 
 export function orbPos(i, clock) {
-  const a = i * (Math.PI / 3) + clock * 0.12
+  const a = i * (2 * Math.PI / ORBS.length) + clock * 0.12
   const depth = (Math.sin(a) + 1) / 2
   return { x: CX + ORBIT_X * Math.cos(a), y: CY + ORBIT_Y * Math.sin(a), depth, s: 0.78 + 0.32 * depth }
 }
@@ -193,19 +194,24 @@ export default function EmptyVault({ onScreenshot, onVoice, onManual, onQuickAdd
     const r = 17 * o.s
     return (
       <g key={o.sym} className="ev-orb" transform={`translate(${o.x.toFixed(1)} ${o.y.toFixed(1)})`} role="button" tabIndex={0}
-        aria-label={`${t('stManualTitle')}: ${o.label}`}
+        aria-label={`${t('stManualTitle')}: ${o.cash ? t('evCash') : o.label}`}
         onClick={() => tapOrb(o)}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tapOrb(o) } }}
         style={{ opacity: 0.55 + 0.45 * o.depth }}>
         {ripple >= 0 && <circle r={r + 4 + 16 * ripple} fill="none" stroke={o.c} strokeWidth="2" opacity={0.8 * (1 - ripple)} />}
         <circle r={r + 6} fill={o.c} opacity="0.16" />
         <circle r={r} fill={o.bg} />
-        {o.gold
+        {o.cash
+          ? <g className="ev-cash">
+              <rect x={-r * 0.62} y={-r * 0.38} width={r * 1.24} height={r * 0.76} rx={r * 0.12} />
+              <text y={r * 0.25} textAnchor="middle" style={{ fontSize: `${r * 0.78}px` }}>$</text>
+            </g>
+          : o.gold
           ? GOLD_BAR && <image href={GOLD_BAR} x={-r * 0.95} y={-r * 0.95} width={r * 1.9} height={r * 1.9} />
           : <path d={LOGO_PATHS[o.sym]} fill={o.fg} transform={`translate(${-r * o.k} ${-r * o.k}) scale(${(2 * r * o.k / 24).toFixed(4)})`} />}
         <circle r={r} fill="url(#ev-gloss)" />
         <circle r={r} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="0.8" />
-        <text y={r + 9 * o.s} textAnchor="middle" className="ev-orb-t" style={{ fontSize: `${6.8 * o.s}px` }}>{o.label}</text>
+        <text y={r + 9 * o.s} textAnchor="middle" className="ev-orb-t" style={{ fontSize: `${6.8 * o.s}px` }}>{o.cash ? t('evCash') : o.label}</text>
         <g transform={`translate(${r * 0.72} ${-r * 0.72})`}>
           <circle r={5.2 * o.s} fill="#fff" />
           <text y={2.4 * o.s} textAnchor="middle" className="ev-orb-plus" style={{ fontSize: `${8 * o.s}px` }}>+</text>

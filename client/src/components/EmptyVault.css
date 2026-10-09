@@ -89,3 +89,5 @@
 @media (prefers-reduced-motion: reduce) {
   .ev-cap { animation: none; }
 }
+.ev-cash rect { fill: none; stroke: #ffffff; stroke-width: 1.4; }
+.ev-cash text { fill: #ffffff; font-weight: 900; }

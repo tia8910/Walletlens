@@ -732,6 +732,7 @@ export default {
     evShot: "Captura",
     evVoice: "Voz",
     evTap: "Toque",
+    evCash: "Efectivo",
     evCapShot: "Haz una captura de tu bróker o exchange. Cada posición se lee y se añade.",
     evCapVoice: "Di lo que tienes en una frase. Se convierte en activos con precios en directo.",
     evCapTap: "Toca cualquier activo que gira alrededor de tu cartera e introduce la cantidad.",

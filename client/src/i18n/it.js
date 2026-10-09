@@ -692,6 +692,7 @@ export default {
     evShot: "Screenshot",
     evVoice: "Voce",
     evTap: "Tocco",
+    evCash: "Contanti",
     evCapShot: "Fotografa la schermata del tuo broker o exchange. Ogni posizione viene letta e aggiunta.",
     evCapVoice: "Di’ cosa possiedi in una frase. Diventa asset con prezzi in tempo reale.",
     evCapTap: "Tocca un asset che gira attorno al portafoglio e inserisci solo la quantità.",

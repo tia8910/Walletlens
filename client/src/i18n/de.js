@@ -692,6 +692,7 @@ export default {
     evShot: "Screenshot",
     evVoice: "Stimme",
     evTap: "Tippen",
+    evCash: "Bargeld",
     evCapShot: "Fotografiere den Bildschirm deines Brokers oder deiner Börse. Jede Position wird gelesen und hinzugefügt.",
     evCapVoice: "Sag in einem Satz, was du besitzt. Daraus werden Werte mit Live-Preisen.",
     evCapTap: "Tippe auf einen Wert, der um dein Portfolio kreist, und gib nur die Menge ein.",
