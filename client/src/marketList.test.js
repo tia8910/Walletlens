@@ -28,26 +28,50 @@ describe('every stock on a market', () => {
     expect(out).toEqual([{ t: 'SHEL.L', n: 'Shell plc', p: 25.6, cur: 'GBP', c: 0.3, m: 1.6e11 }])
   })
 
-  it('returns the whole exchange with local and USD prices', async () => {
+  it('returns the whole exchange, page after page, with local and USD prices', async () => {
     vi.stubGlobal('caches', { default: { match: async () => null, put: async () => {} } })
-    vi.stubGlobal('fetch', vi.fn(async (url) => {
+    // 2,600 stocks: more than one page, so the second request must happen.
+    const all = Array.from({ length: 2600 }, (_, i) => ({ s: `EGX:S${i}`, d: [`S${i}`, `Company ${i}`, 100 - i * 0.01, 0.5, 'EGP', 1e11 - i] }))
+    const bodies = []
+    vi.stubGlobal('fetch', vi.fn(async (url, init) => {
       const u = String(url)
-      if (u.includes('scanner.tradingview.com/egypt')) return new Response(JSON.stringify({ totalCount: 223, data: [
-        { s: 'EGX:COMI', d: ['COMI', 'Commercial International Bank', 77.4, 0.74, 'EGP', 2.3e11] },
-        { s: 'EGX:TMGH', d: ['TMGH', 'Talaat Moustafa Group', 55.2, -1.16, 'EGP', 1.1e11] },
-      ] }))
+      if (u.includes('scanner.tradingview.com/egypt')) {
+        const body = JSON.parse(init.body); bodies.push(body)
+        const [from, to] = body.range
+        return new Response(JSON.stringify({ totalCount: all.length, data: all.slice(from, to) }))
+      }
       if (u.includes('EGPUSD')) return new Response(JSON.stringify({ chart: { result: [{ meta: { regularMarketPrice: 0.02 } }] } }))
       return new Response('{}', { status: 500 })
     }))
     const body = await (await onRequestGet({ request: new Request('https://x/api/market-list?market=EG'), waitUntil: () => {} })).json()
-    expect(body.total).toBe(223)
-    expect(body.stocks[0]).toEqual({ t: 'COMI.CA', n: 'Commercial International Bank', p: 77.4, cur: 'EGP', c: 0.74, m: 2.3e11, u: 77.4 * 0.02 })
+    expect(body.total).toBe(2600)
+    expect(body.rows.length).toBe(2600)
+    expect(bodies.length).toBe(2)
+    expect(bodies[0].filter[0]).toEqual({ left: 'type', operation: 'in_range', right: ['stock', 'dr'] })
+    expect(body.cols).toEqual(['t', 'n', 'p', 'cur', 'u', 'c'])
+    expect(body.rows[0]).toEqual(['S0.CA', 'Company 0', 100, 'EGP', 2, 0.5])
+  })
+
+  it('falls back to the plain stock filter if the list filter is refused', async () => {
+    vi.stubGlobal('caches', { default: { match: async () => null, put: async () => {} } })
+    vi.stubGlobal('fetch', vi.fn(async (url, init) => {
+      const u = String(url)
+      if (u.includes('scanner.tradingview.com')) {
+        const f = JSON.parse(init.body).filter[0]
+        if (f.operation === 'in_range') return new Response('bad filter', { status: 400 })
+        return new Response(JSON.stringify({ totalCount: 1, data: [{ s: 'TADAWUL:2222', d: ['2222', 'Saudi Aramco', 27.5, 1.2, 'SAR', 7e12] }] }))
+      }
+      return new Response('{}', { status: 500 }) // no live rate: the riyal peg applies
+    }))
+    const body = await (await onRequestGet({ request: new Request('https://x/api/market-list?market=SA'), waitUntil: () => {} })).json()
+    expect(body.rows[0][0]).toBe('2222.SR')
+    expect(body.rows[0][4]).toBeCloseTo(27.5 / 3.75, 4)
   })
 
   it('answers an empty list when the screener is unavailable, so the app keeps its popular names', async () => {
     vi.stubGlobal('caches', { default: { match: async () => null, put: async () => {} } })
     vi.stubGlobal('fetch', vi.fn(async () => new Response('blocked', { status: 403 })))
     const body = await (await onRequestGet({ request: new Request('https://x/api/market-list?market=EG'), waitUntil: () => {} })).json()
-    expect(body.stocks).toEqual([])
+    expect(body.rows).toEqual([])
   })
 })

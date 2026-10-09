@@ -90,7 +90,7 @@ const CATEGORIES = [
   { key: 'crypto', label: 'Crypto', labelKey: 'catCrypto',  icon: '₿',           color: '#6366f1' },
   { key: 'stock',  label: 'US stocks', labelKey: 'catUsStocks', icon: 'trend-up',        color: 'var(--g-ink)' },
   // Every market but the US, opening on the user's own.
-  { key: 'wstock', label: 'World stocks', labelKey: 'catWorldStocks', icon: 'globe',     color: '#0ea5e9' },
+  { key: 'wstock', label: 'Local markets', labelKey: 'catLocalMarkets', icon: 'globe',   color: '#0ea5e9' },
   { key: 'tstock', label: 'Tokenized', labelKey: 'tcTokenized', icon: 'coins',         color: '#f0b90b' },
   { key: 'gold',   label: 'Gold', labelKey: 'catGold',    icon: IcoGoldBar,     color: '#f59e0b' },
   { key: 'silver', label: 'Silver', labelKey: 'catSilver',  icon: IcoSilverBar,   color: '#94a3b8' },
@@ -336,8 +336,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     if (short) return short
     try { return new Intl.DisplayNames([lang || 'en'], { type: 'region', style: 'short' }).of(code) } catch { return code }
   }
-  // The market category holds every market but the US, so it is World
-  // stocks for everyone; it simply opens on the user's own market first.
+  // Local markets: every market but the US, opening on the user's own.
   const localMarket = homeMarket && homeMarket !== 'US' ? MARKET_BY_CODE[homeMarket] : null
   const catLabel = (c) => t(c.labelKey)
   const catIcon = (c, size) => <CatIcon icon={c.icon} size={size} />

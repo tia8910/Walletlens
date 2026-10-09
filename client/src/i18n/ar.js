@@ -348,7 +348,7 @@ export default {
     catStablecoins: 'العملات المستقرة',
     catStocks: 'الأسهم',
     catUsStocks: "الأسهم الأمريكية",
-    catWorldStocks: "الأسهم العالمية",
+    catLocalMarkets: "الأسواق المحلية",
     catEtfs: 'صناديق المؤشرات',
     catGold: 'الذهب',
     catSilver: 'الفضة',

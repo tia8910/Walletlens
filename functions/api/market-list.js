@@ -8,10 +8,11 @@
  * HKEX:700 → 0700.HK), and prices come back in the market's currency with
  * the USD figure beside them.
  *
- * Response: { market, total, stocks: [{ t, n, p, cur, u, c, m }] }, where
- * t is the ticker, n the name, p the local price, cur its currency, u the
- * USD price (null when no rate is known), c the day's change in percent and
- * m the market cap in local currency. Cached at the edge for 15 minutes.
+ * Response: { market, total, cols, rows }, where cols names the fields of
+ * each row: [t, n, p, cur, u, c] = ticker, name, local price, its currency,
+ * USD price (null when no rate is known) and the day's change in percent.
+ * Rows rather than objects keep a few thousand stocks small enough to send
+ * and cheap to serialise. Cached at the edge for 15 minutes.
  *
  * The screener is not a documented API; if it fails, the response is an
  * empty list and the app keeps showing its popular names for the market.
@@ -45,7 +46,11 @@ export const SCREENER_MARKETS = {
   CA: { tv: 'canada', ex: { TSX: 'TO', TSXV: 'V' } },
   BR: { tv: 'brazil', ex: { BMFBOVESPA: 'SA' } },
 }
-const MAX_ROWS = 1000
+// The whole exchange: pages of PAGE rows until the screener's own count is
+// reached. MAX_ROWS only guards against a runaway answer; the largest
+// markets here (Japan, India, Hong Kong, Korea) list a few thousand.
+const PAGE = 2500
+const MAX_ROWS = 12000
 
 /** TradingView "EXCH:NAME" → Yahoo ticker, or null for a venue not kept. */
 export function toYahooTicker(tvSymbol, market) {
@@ -80,16 +85,14 @@ export async function onRequestGet(context) {
   const { request } = context
   const market = (new URL(request.url).searchParams.get('market') || '').toUpperCase()
   const cfg = SCREENER_MARKETS[market]
-  if (!cfg) return new Response(JSON.stringify({ market, total: 0, stocks: [] }), { headers: HEADERS })
+  if (!cfg) return new Response(JSON.stringify({ market, total: 0, cols: [], rows: [] }), { headers: HEADERS })
 
   const cacheKey = new Request(`https://market-list.cache/${market}`)
   const cache = caches.default
   const hit = await cache.match(cacheKey)
   if (hit) return hit
 
-  let stocks = []
-  let total = 0
-  try {
+  const scan = async (from, to, types) => {
     const res = await fetch(`https://scanner.tradingview.com/${cfg.tv}/scan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (compatible; WalletLens/1.0)' },
@@ -97,27 +100,46 @@ export async function onRequestGet(context) {
         markets: [cfg.tv],
         symbols: { query: { types: [] }, tickers: [] },
         options: { lang: 'en' },
-        filter: [{ left: 'type', operation: 'equal', right: 'stock' }],
+        // Shares and depositary receipts: everything a person can hold as a stock.
+        filter: [types.length > 1
+          ? { left: 'type', operation: 'in_range', right: types }
+          : { left: 'type', operation: 'equal', right: types[0] }],
         columns: ['name', 'description', 'close', 'change', 'currency', 'market_cap_basic'],
         sort: { sortBy: 'market_cap_basic', sortOrder: 'desc' },
-        range: [0, MAX_ROWS],
+        range: [from, to],
       }),
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(8000),
     })
-    if (res.ok) {
-      const data = await res.json()
-      stocks = parseScreener(data, market)
-      total = Number(data?.totalCount) || stocks.length
-    }
-  } catch {}
+    return res.ok ? res.json() : null
+  }
 
+  let stocks = []
+  let total = 0
+  const seen = new Set()
+  for (const types of [['stock', 'dr'], ['stock']]) { // the plain filter if the list filter is refused
+    try {
+      for (let from = 0; from < MAX_ROWS; from += PAGE) {
+        const data = await scan(from, from + PAGE, types)
+        if (!data) break
+        total = Number(data.totalCount) || total
+        for (const x of parseScreener(data, market)) if (!seen.has(x.t)) { seen.add(x.t); stocks.push(x) }
+        if (!Array.isArray(data.data) || data.data.length < PAGE || from + PAGE >= total) break
+      }
+    } catch {}
+    if (stocks.length) break
+  }
+
+  const rows = []
   if (stocks.length) {
     const rates = await usdRates([...new Set(stocks.map(x => x.cur))])
-    for (const x of stocks) x.u = rates[x.cur] ? x.p * rates[x.cur] : null
+    for (const x of stocks) {
+      const u = rates[x.cur] ? +(x.p * rates[x.cur]).toPrecision(6) : null
+      rows.push([x.t, x.n, x.p, x.cur, u, +x.c.toFixed(2)])
+    }
   }
-  const response = new Response(JSON.stringify({ market, total, stocks }), {
-    headers: { ...HEADERS, 'Cache-Control': stocks.length ? 'public, max-age=900' : 'no-store' },
+  const response = new Response(JSON.stringify({ market, total: Math.max(total, rows.length), cols: ['t', 'n', 'p', 'cur', 'u', 'c'], rows }), {
+    headers: { ...HEADERS, 'Cache-Control': rows.length ? 'public, max-age=900' : 'no-store' },
   })
-  if (stocks.length) context.waitUntil?.(cache.put(cacheKey, response.clone()))
+  if (rows.length) context.waitUntil?.(cache.put(cacheKey, response.clone()))
   return response
 }

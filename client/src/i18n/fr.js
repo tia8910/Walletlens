@@ -327,7 +327,7 @@ export default {
     catStablecoins: 'Stablecoins',
     catStocks: 'Actions',
     catUsStocks: "Actions US",
-    catWorldStocks: "Actions monde",
+    catLocalMarkets: "Marchés locaux",
     catEtfs: 'ETF',
     catGold: 'Or',
     catSilver: 'Argent',

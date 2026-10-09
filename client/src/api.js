@@ -1547,7 +1547,7 @@ export function detectCountry() {
 }
 
 // ─── Every stock listed on a market ─────────────────────────────────────
-// From /api/market-list (the full exchange, largest first, local price and
+// From /api/market-list (the whole exchange, largest first, local price and
 // USD). Kept in memory for 15 minutes per market. Each row also primes the
 // price cache, so a stock picked from the list is priced at once.
 const _marketLists = {};
@@ -1558,7 +1558,10 @@ export async function getMarketList(market) {
     const res = await fetchWithTimeout(`/api/market-list?market=${encodeURIComponent(market)}`, 12000);
     if (!res.ok) return null;
     const body = await res.json();
-    const stocks = Array.isArray(body?.stocks) ? body.stocks : [];
+    // Rows of [t, n, p, cur, u, c] (ticker, name, local price, currency, USD, change %).
+    const stocks = (Array.isArray(body?.rows) ? body.rows : [])
+      .filter(r => Array.isArray(r) && r[0])
+      .map(([t, n, p, cur, u, c]) => ({ t, n, p, cur, u, c }));
     if (stocks.length === 0) return null;
     const v = { total: body.total || stocks.length, stocks };
     _marketLists[market] = { t: Date.now(), v };
