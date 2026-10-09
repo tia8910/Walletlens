@@ -12826,3 +12826,14 @@ html.wl-msstore a[href*="ibkr.com/referral"] { display: none !important; }
   font: inherit; font-size: 0.84rem; font-weight: 800; color: var(--g-ink); background: rgba(var(--g-rgb),0.12); border: 0; }
 .wl-st-prog-btns .wl-st-prog-main { color: #fff; background: rgb(var(--g-rgb)); }
 [dir="rtl"] .wl-tour-next-ic { transform: scaleX(-1); }
+
+/* ── Stock markets in the Buy/Sell sheet: one chip per market, the user's own first ── */
+.bs-market-chips { display: flex; gap: 0.4rem; overflow-x: auto; padding: 0.1rem 0.05rem 0.45rem; margin-bottom: 0.2rem; scrollbar-width: none; }
+.bs-market-chips::-webkit-scrollbar { display: none; }
+.bs-market-chip { position: relative; flex: none; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.38rem 0.75rem 0.38rem 0.42rem;
+  border-radius: 999px; border: 1.5px solid rgba(var(--g-rgb), 0.18); background: var(--surface-1); color: var(--text);
+  font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+[dir="rtl"] .bs-market-chip { padding: 0.38rem 0.42rem 0.38rem 0.75rem; }
+.bs-market-chip.active { border-color: rgb(var(--g-rgb)); background: rgba(var(--g-rgb), 0.12); color: var(--g-ink); }
+.bs-market-home { position: absolute; top: 3px; inset-inline-end: 5px; width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--g-rgb)); }
+.bs-markets-sub { margin-top: 0.4rem; }

@@ -46,6 +46,7 @@ import {
 } from './data/storage';
 import { foldBalances as _foldBalancesPure, diffHoldings } from './data/portfolio';
 import { analyzeTechnicals } from './technicals';
+import { isIntlTicker, toMajorUnit, countryFromDevice } from './data/markets';
 import { dataUrl, voiceProxy } from './apiHosts.js'
 
 export {
@@ -798,6 +799,14 @@ async function fetchStockLive(coinId) {
 
   const tickerUp = ticker.toUpperCase();
 
+  // A foreign listing (2222.SR) has its own path: Yahoo, in local currency,
+  // converted to USD. The US sources below would miss it or misprice it.
+  if (isIntlTicker(tickerUp)) {
+    const q = (await fetchIntlQuotes([tickerUp]))[tickerUp] || null;
+    if (q) { stockCache[coinId] = q; stockCacheTime[coinId] = now; }
+    return q;
+  }
+
   // ── 0a. Binance bStock API — live 24/7 tokenized securities ──
   // Route through Deno proxy first (bypasses CORS + regional Binance geo-blocks),
   // then try direct as fallback.
@@ -926,6 +935,62 @@ async function fetchStockLive(coinId) {
   }
 
   return null;
+}
+
+// ─── Stocks on other markets ──────────────────────────────────────────────
+// Tadawul, EGX, DFM, LSE, Tokyo and the rest, by Yahoo ticker (2222.SR).
+// The same-origin function converts to USD itself; the browser fallback asks
+// Yahoo directly, then through the relays, and converts with the app's own
+// FX table. A quote with no known exchange rate is dropped rather than shown
+// in the wrong currency. Each result keeps the local price for display.
+async function fetchIntlQuotes(tickers) {
+  const out = {};
+  const want = [...new Set(tickers.map(t => String(t).toUpperCase()))];
+  if (want.length === 0) return out;
+  try {
+    const res = await fetchWithTimeout(`/api/stocks?symbols=${encodeURIComponent(want.join(','))}`, 9000);
+    if (res.ok) {
+      const data = await res.json();
+      for (const [sym, q] of Object.entries(data || {})) {
+        if (q && q.price > 0 && q.local) {
+          out[sym.toUpperCase()] = { usd: q.price, usd_24h_change: q.change_pct || 0, name: q.name || sym, source: q.source || 'edge', local: q.local };
+        }
+      }
+    }
+  } catch {}
+  const missing = want.filter(t => !out[t]);
+  if (missing.length === 0) return out;
+  const rates = await fetchFiatRates(); // X per 1 USD
+  const results = await mapWithConcurrency(missing, YAHOO_FALLBACK_CONCURRENCY, async sym => {
+    const target = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`;
+    for (const via of [u => u, ...CORS_PROXIES]) {
+      try {
+        const res = await fetchWithTimeout(via(target), 5000);
+        if (!res.ok) continue;
+        const meta = (await res.json())?.chart?.result?.[0]?.meta;
+        if (!(meta?.regularMarketPrice > 0)) continue;
+        const local = toMajorUnit(meta.regularMarketPrice, meta.currency);
+        const perUsd = rates[local.currency];
+        if (!(perUsd > 0)) return null;
+        const prev = meta.chartPreviousClose || meta.previousClose;
+        const change = typeof meta.regularMarketChangePercent === 'number'
+          ? meta.regularMarketChangePercent
+          : prev > 0 ? ((meta.regularMarketPrice - prev) / prev) * 100 : 0;
+        return { sym, q: { usd: local.price / perUsd, usd_24h_change: change, name: meta.longName || meta.shortName || sym, source: 'yahoo', local } };
+      } catch {}
+    }
+    return null;
+  });
+  for (const r of results) if (r) out[r.sym] = r.q;
+  return out;
+}
+
+/** USD per one unit of a foreign listing's quote currency, from its last quote. */
+async function intlUsdFactor(ticker) {
+  const t = String(ticker).toUpperCase();
+  let q = batchStockCache[t];
+  if (!q?.local?.price) q = (await fetchIntlQuotes([t]))[t];
+  return q?.local?.price > 0 && q.usd > 0 ? q.usd / q.local.price : null;
 }
 
 // ─── Real-time fiat FX rates (all quoted in USD per 1 unit of currency) ───
@@ -1245,8 +1310,16 @@ async function _refreshBatchStocks(tickers) {
   const missing = tickers.filter(t => !batchStockCache[t] || now - batchStockCacheTime > STOCK_CACHE_DURATION);
   if (missing.length === 0) return batchStockCache;
 
+  // Foreign listings first, on their own path; the US sources cannot price them.
+  const intlMissing = missing.filter(isIntlTicker);
+  if (intlMissing.length > 0) {
+    const intl = await fetchIntlQuotes(intlMissing);
+    for (const [sym, data] of Object.entries(intl)) batchStockCache[sym] = data;
+  }
+  const usMissing = missing.filter(t => !isIntlTicker(t));
+
   // Primary: Twelve Data → Stooq batch → Yahoo proxy
-  const batchResult = await fetchTwelveDataBatch(missing);
+  const batchResult = usMissing.length ? await fetchTwelveDataBatch(usMissing) : null;
   if (batchResult) {
     for (const [sym, data] of Object.entries(batchResult)) {
       batchStockCache[sym] = data;
@@ -1254,7 +1327,7 @@ async function _refreshBatchStocks(tickers) {
   }
 
   // For any tickers FMP missed, fire individual Yahoo/Stooq fetches in parallel
-  const stillMissing = missing.filter(t => !batchStockCache[t]);
+  const stillMissing = usMissing.filter(t => !batchStockCache[t]);
   if (stillMissing.length > 0) {
     const results = await Promise.all(stillMissing.map(async t => ({ t, data: await fetchOneTicker(t) })));
     for (const { t, data } of results) {
@@ -1309,7 +1382,10 @@ function stooqSymbolFor(id) {
   if (id === PLATINUM_ID) return 'xptusd';
   // bStocks: use underlying stock history (NVDAB → nvda.us, etc.)
   if (BSTOCK_UNDERLYING[id]) return BSTOCK_UNDERLYING[id];
-  if (id.startsWith(STOCK_PREFIX)) return `${id.slice(STOCK_PREFIX.length).toLowerCase()}.us`;
+  if (id.startsWith(STOCK_PREFIX)) {
+    const t = id.slice(STOCK_PREFIX.length);
+    return isIntlTicker(t) ? null : `${t.toLowerCase()}.us`; // foreign listings have no Stooq .us symbol
+  }
   return null;
 }
 
@@ -1353,7 +1429,9 @@ async function fetchStooqHistory(symbol, days = 30) {
 
 // Yahoo Finance v8 OHLCV fetch for stocks, ETFs, metals
 async function fetchYahooOHLCV(ticker, days = 180) {
-  const sym = (ticker || '').toUpperCase().replace(/\./g, '-')
+  // BRK.B is BRK-B on Yahoo, but 2222.SR keeps its exchange suffix.
+  const up = (ticker || '').toUpperCase()
+  const sym = isIntlTicker(up) ? up : up.replace(/\./g, '-')
   const range = days <= 7 ? '5d' : days <= 60 ? '3mo' : days <= 180 ? '6mo' : '1y'
   const hosts = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com']
 
@@ -1444,6 +1522,57 @@ async function holdingsPerWallet(wallets) {
     for (const h of hs) out.push({ ...h, wallet_id: w.id })
   }
   return out
+}
+
+// ─── The user's country, for opening the stock picker on their market ───
+// Cloudflare's view of the connection first (/api/geo), then the device's
+// language region and time zone. Remembered for a week.
+const COUNTRY_KEY = 'wl_country';
+let _countryLoad = null;
+export function detectCountry() {
+  try {
+    const hit = JSON.parse(localStorage.getItem(COUNTRY_KEY) || 'null');
+    if (hit?.c && Date.now() - hit.t < 7 * 864e5) return Promise.resolve(hit.c);
+  } catch {}
+  return (_countryLoad ||= (async () => {
+    let c = '';
+    try {
+      const res = await fetchWithTimeout('/api/geo', 3000);
+      if (res.ok) c = String((await res.json())?.country || '').toUpperCase();
+    } catch {}
+    if (!/^[A-Z]{2}$/.test(c) || c === 'XX' || c === 'T1') c = countryFromDevice();
+    if (c) { try { localStorage.setItem(COUNTRY_KEY, JSON.stringify({ c, t: Date.now() })); } catch {} }
+    return c;
+  })());
+}
+
+// ─── Search for a listed company on any market ─────────────────────────
+// Our function first (Yahoo search, server side), then Yahoo through the
+// relays. Shares and ETFs only: [{ symbol, name, exchange }].
+export async function searchStocks(query) {
+  const q = String(query || '').trim();
+  if (q.length < 2) return [];
+  const pick = (data) => (Array.isArray(data?.quotes) ? data.quotes : [])
+    .filter(x => x?.symbol && (x.quoteType === 'EQUITY' || x.quoteType === 'ETF'))
+    .slice(0, 12)
+    .map(x => ({ symbol: String(x.symbol).toUpperCase(), name: x.shortname || x.longname || x.symbol, exchange: x.exchDisp || x.exchange || '' }));
+  try {
+    const res = await fetchWithTimeout(`/api/stock-search?q=${encodeURIComponent(q)}`, 6000);
+    if (res.ok) {
+      const body = await res.json();
+      if (Array.isArray(body?.results) && body.results.length) return body.results;
+    }
+  } catch {}
+  const target = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=15&newsCount=0&listsCount=0`;
+  for (const via of [u => u, ...CORS_PROXIES]) {
+    try {
+      const res = await fetchWithTimeout(via(target), 5000);
+      if (!res.ok) continue;
+      const found = pick(JSON.parse(await res.text()));
+      if (found.length) return found;
+    } catch {}
+  }
+  return [];
 }
 
 export const api = {
@@ -2253,6 +2382,15 @@ export const api = {
       if (!cgId) return [];
       id = cgId;
     }
+    // A foreign listing: Yahoo's daily closes, converted to USD.
+    if (id.startsWith(STOCK_PREFIX) && isIntlTicker(id.slice(STOCK_PREFIX.length))) {
+      const t = id.slice(STOCK_PREFIX.length).toUpperCase();
+      const fx = await intlUsdFactor(t);
+      if (!fx) return [];
+      const rows = await fetchYahooOHLCV(t, days);
+      const step = Math.max(1, Math.floor(rows.length / 80));
+      return rows.filter((_, i) => i % step === 0).map(r => ({ date: r.date, time: r.date, price: r.close * fx }));
+    }
     const stooqSym = stooqSymbolFor(id);
     if (stooqSym) {
       const hist = await fetchStooqHistory(stooqSym, days);
@@ -2396,7 +2534,10 @@ export const api = {
     if (METALS[id]) return METALS[id];
     if (BSTOCK_UNDERLYING[id]) return BSTOCK_UNDERLYING[id].replace(/\.us$/, '').toUpperCase();
     for (const pre of [STOCK_PREFIX, XSTOCK_PREFIX]) {
-      if (id.startsWith(pre)) return id.slice(pre.length).toUpperCase().replace(/\./g, '-');
+      if (id.startsWith(pre)) {
+        const t = id.slice(pre.length).toUpperCase();
+        return isIntlTicker(t) ? t : t.replace(/\./g, '-'); // 2222.SR keeps its suffix; BRK.B is BRK-B
+      }
     }
     return null;
   },
@@ -2438,6 +2579,15 @@ export const api = {
     // server-side, so no CORS proxies in the way.
     const ticker = api.candleTicker(id);
     if (ticker) {
+      // A foreign listing's candles come in its own currency; the app prices
+      // in USD, so they are scaled by the current rate (and not shown at all
+      // when no rate is known, rather than drawn in the wrong currency).
+      let fx = 1;
+      if (id.startsWith(STOCK_PREFIX) && isIntlTicker(ticker)) {
+        fx = await intlUsdFactor(ticker);
+        if (!fx) return { candles: [], visible: 0, closeOnly: false };
+      }
+      const toUsd = (rows) => fx === 1 ? rows : rows.map(k => ({ ...k, o: k.o * fx, h: k.h * fx, l: k.l * fx, c: k.c * fx }));
       const cacheKey = `candles2::${ticker}::${tf}`;
       const hit = _chartCache[cacheKey];
       if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length) return { candles: hit.v, visible: Math.min(plan.visible, hit.v.length), closeOnly: false };
@@ -2445,10 +2595,11 @@ export const api = {
         const res = await fetchWithTimeout(`/api/candles?symbol=${encodeURIComponent(ticker)}&interval=${tf}`, 9000);
         if (res.ok) {
           const body = await res.json();
-          const candles = (Array.isArray(body?.candles) ? body.candles : [])
+          let candles = (Array.isArray(body?.candles) ? body.candles : [])
             .map(k => (k.v != null ? { t: +k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c, v: +k.v } : { t: +k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c }))
             .filter(k => k.c > 0 && k.h >= k.l);
           if (candles.length > 10) {
+            candles = toUsd(candles);
             try { _chartCache[cacheKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
             return { candles, visible: Math.min(plan.visible, candles.length), closeOnly: false };
           }
@@ -2457,7 +2608,7 @@ export const api = {
       // Yahoo refuses some cloud servers, so the function can come back
       // empty. The browser then asks Yahoo itself, directly and through the
       // CORS relays all at once, and takes the first usable answer.
-      const candles = await fetchYahooCandlesFromBrowser(ticker, tf);
+      const candles = toUsd(await fetchYahooCandlesFromBrowser(ticker, tf));
       if (candles.length > 10) {
         try { _chartCache[cacheKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
         return { candles, visible: Math.min(plan.visible, candles.length), closeOnly: false };
@@ -2694,6 +2845,7 @@ export const api = {
       if (!id) return null;
       // Stocks, ETFs, metals — use Stooq/Yahoo for OHLCV data.
       if (stooqSymbolFor(id)) return 'stooq';
+      if (id.startsWith(STOCK_PREFIX)) return 'stooq'; // foreign listings: Yahoo, on the same path
       // Bonds, fiat, real estate, cash — no meaningful price series.
       if (id.startsWith(FIAT_PREFIX) || id.startsWith('bond:') ||
           id.startsWith('real:') || id.startsWith('cash:')) return null;
@@ -2725,8 +2877,14 @@ export const api = {
             const yahooSym = yahooTickerFor(id) || stooqSymbolFor(id)
             const stooqSym = stooqSymbolFor(id)
             // Try Yahoo OHLCV first with correct ticker (gives highs/lows/volumes for advanced indicators).
-            const yahooData = await fetchYahooOHLCV(yahooSym, days)
-            if (yahooData.length > 20) {
+            let yahooData = await fetchYahooOHLCV(yahooSym, days)
+            if (!stooqSym) {
+              // A foreign listing has no Stooq fallback, and its candles are
+              // in local currency: convert them, or skip the asset.
+              const fx = await intlUsdFactor(yahooSym)
+              yahooData = fx ? yahooData.map(r => ({ ...r, open: r.open * fx, high: r.high * fx, low: r.low * fx, close: r.close * fx })) : []
+              if (yahooData.length > 20) { closes = yahooData.map(r => r.close); out[id + ':ohlcv'] = yahooData }
+            } else if (yahooData.length > 20) {
               closes = yahooData.map(r => r.close)
               out[id + ':ohlcv'] = yahooData // stored for analyzeTechnicals
             } else {
