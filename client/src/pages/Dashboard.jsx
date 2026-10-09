@@ -6036,7 +6036,7 @@ export default function Dashboard() {
               setTimeout(() => {
                 const seen = new Set(JSON.parse(localStorage.getItem('wl_milestones_seen') || '[]'))
                 if (!seen.has('first_buy')) {
-                  setMilestone({ key: 'first_buy', type: 'first_buy', emoji: 'target', title: 'First trade logged!', sub: 'Set a price target so you know exactly when to take profit or cut losses.', ctaLabel: 'Set a Price Target' })
+                  setMilestone({ key: 'first_buy', type: 'first_buy', emoji: 'target', msg: 'msFirstBuy', cta: true, args: [] })
                 }
               }, 1400)
             }

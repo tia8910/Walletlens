@@ -1,5 +1,6 @@
 import { track } from '../analytics'
 import Icon from './Icon'
+import { useLanguage } from '../LanguageContext'
 
 const ROUND_MILESTONES = [1_000, 5_000, 10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000]
 const STORAGE_KEY = 'wl_milestones_seen'
@@ -38,7 +39,7 @@ export function detectMilestone({ totalValue, totalPnL, prevTotalPnL, dayChangeP
   // First time P&L turns positive — only if we had a real previous reading (not first load)
   if (prevTotalPnL !== null && prevTotalPnL <= 0 && totalPnL > 0) {
     const key = 'first_profit'
-    if (!seen.has(key)) return { key, type: 'first_profit', emoji: 'trophy', title: 'First profit!', sub: `Your portfolio just turned green — congrats!` }
+    if (!seen.has(key)) return { key, type: 'first_profit', emoji: 'trophy', msg: 'msFirstProfit', args: [] }
   }
 
   // Round number milestone
@@ -46,7 +47,7 @@ export function detectMilestone({ totalValue, totalPnL, prevTotalPnL, dayChangeP
     const key = `round_${m}`
     if (totalValue >= m && !seen.has(key)) {
       const label = m >= 1_000_000 ? `$${m / 1_000_000}M` : m >= 1_000 ? `$${m / 1_000}k` : `$${m}`
-      return { key, type: 'round_number', emoji: 'trophy', title: `Portfolio hit ${label}!`, sub: `You just crossed the ${label} mark. Time to celebrate!` }
+      return { key, type: 'round_number', emoji: 'trophy', msg: 'msRound', args: [label] }
     }
   }
 
@@ -54,7 +55,7 @@ export function detectMilestone({ totalValue, totalPnL, prevTotalPnL, dayChangeP
   if (dayChangePct >= 5) {
     const today = new Date().toDateString()
     const key = `green_day_${today}`
-    if (!seen.has(key)) return { key, type: 'green_day', emoji: 'rocket', title: `Up ${dayChangePct.toFixed(1)}% today!`, sub: `That's a great day. Share the win?` }
+    if (!seen.has(key)) return { key, type: 'green_day', emoji: 'rocket', msg: 'msGreenDay', args: [dayChangePct.toFixed(1)] }
   }
 
   return null
@@ -65,7 +66,14 @@ export function dismissMilestone(key) {
 }
 
 export default function MilestonePopup({ milestone, totalValue, totalPnL, totalPnLPct, topHoldings, todayPnL, onShare, onDismiss, onCta }) {
+  const { t } = useLanguage()
   if (!milestone) return null
+  // A milestone names its copy by key: msFirstBuyT is the title, msFirstBuyS
+  // the line under it, msFirstBuyCta its button. Keys may be functions of args.
+  const say = (k) => { const v = t(k); return typeof v === 'function' ? v(...(milestone.args || [])) : v }
+  const title = milestone.msg ? say(`${milestone.msg}T`) : milestone.title
+  const sub = milestone.msg ? say(`${milestone.msg}S`) : milestone.sub
+  const ctaLabel = milestone.msg && milestone.cta ? say(`${milestone.msg}Cta`) : milestone.ctaLabel
 
   function handleShare() {
     track('milestone_share_click', { milestone_type: milestone.type, milestone_key: milestone.key })
@@ -80,13 +88,13 @@ export default function MilestonePopup({ milestone, totalValue, totalPnL, totalP
   }
 
   function handleCta() {
-    track('milestone_cta_click', { milestone_type: milestone.type, cta: milestone.ctaLabel })
+    track('milestone_cta_click', { milestone_type: milestone.type, cta: milestone.msg || milestone.ctaLabel })
     dismissMilestone(milestone.key)
     onDismiss()
     if (onCta) onCta()
   }
 
-  const hasCta = milestone.ctaLabel && onCta
+  const hasCta = ctaLabel && onCta
   // Real celebration for wins — a quick confetti burst, skipped for nudge CTAs.
   const celebrate = ['first_profit', 'round_number', 'green_day'].includes(milestone.type)
   const CONFETTI = ['#10b981', '#fbbf24', '#60a5fa', '#f472b6', '#34d399', '#a78bfa']
@@ -110,24 +118,24 @@ export default function MilestonePopup({ milestone, totalValue, totalPnL, totalP
             ))}
           </div>
         )}
-        <button className="ms-close" onClick={handleDismiss} aria-label="Close">
+        <button className="ms-close" onClick={handleDismiss} aria-label={t('msClose')}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
         </button>
         <div className="ms-emoji"><Icon name={milestone.emoji} size={44} /></div>
-        <h3 className="ms-title">{milestone.title}</h3>
-        <p className="ms-sub">{milestone.sub}</p>
+        <h3 className="ms-title">{title}</h3>
+        <p className="ms-sub">{sub}</p>
         <div className="ms-actions">
           {hasCta ? (
             <button className="ms-btn ms-btn-share" onClick={handleCta}>
-              {milestone.ctaLabel}
+              {ctaLabel}
             </button>
           ) : (
             <button className="ms-btn ms-btn-share" onClick={handleShare}>
-              <Icon name="share" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />Share this win
+              <Icon name="share" size={14} style={{ verticalAlign:'-2px', marginInlineEnd:'0.35em' }} />{t('msShare')}
             </button>
           )}
           <button className="ms-btn ms-btn-skip" onClick={handleDismiss}>
-            Maybe later
+            {t('msLater')}
           </button>
         </div>
       </div>
