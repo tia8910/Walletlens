@@ -69,6 +69,20 @@ async function yahooMeta(sym, ms) {
   return (await res.json())?.chart?.result?.[0]?.meta || null
 }
 
+/** USD per one unit of each currency: Yahoo's FX pairs (SARUSD=X), pegs as backup. */
+export async function usdRates(currencies) {
+  const rates = { USD: 1 }
+  const want = [...new Set(currencies)].filter(c => c && c !== 'USD')
+  await Promise.all(want.map(async cur => {
+    try {
+      const meta = await yahooMeta(`${cur}USD=X`, 1500)
+      if (meta?.regularMarketPrice > 0) rates[cur] = meta.regularMarketPrice
+    } catch {}
+    if (!rates[cur] && PEGGED_USD[cur]) rates[cur] = PEGGED_USD[cur]
+  }))
+  return rates
+}
+
 async function fetchIntl(symbols, deadline) {
   const out = {}
   const quotes = {}
@@ -83,16 +97,7 @@ async function fetchIntl(symbols, deadline) {
       quotes[sym] = { ...toMajorUnit(meta.regularMarketPrice, meta.currency), change, name: meta.longName || meta.shortName || sym }
     } catch {}
   }))
-  // One rate per currency, from Yahoo's FX pairs (SARUSD=X), pegs as backup.
-  const currencies = [...new Set(Object.values(quotes).map(q => q.currency))].filter(c => c !== 'USD')
-  const rates = { USD: 1 }
-  await Promise.all(currencies.map(async cur => {
-    try {
-      const meta = await yahooMeta(`${cur}USD=X`, 1500)
-      if (meta?.regularMarketPrice > 0) rates[cur] = meta.regularMarketPrice
-    } catch {}
-    if (!rates[cur] && PEGGED_USD[cur]) rates[cur] = PEGGED_USD[cur]
-  }))
+  const rates = await usdRates(Object.values(quotes).map(q => q.currency))
   for (const [sym, q] of Object.entries(quotes)) {
     const fx = rates[q.currency]
     if (!fx) continue // no honest dollar figure: leave it out rather than mislabel it

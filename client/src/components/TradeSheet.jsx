@@ -42,7 +42,7 @@ function playTradeSound(isBuy) {
 }
 import CoinLogo, { FlagImg } from './CoinLogo'
 import { MARKETS, MARKET_BY_CODE, marketForCountry, isIntlTicker, intlStockName, marketOfTicker } from '../data/markets'
-import { detectCountry, searchStocks } from '../api'
+import { detectCountry, searchStocks, getMarketList } from '../api'
 import { track, trackProfileCreated } from '../analytics'
 import TradeSignal from './BuySignal'
 import { useLanguage } from '../LanguageContext'
@@ -323,6 +323,9 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const marketPicked                    = useRef(false)
   const [stockHits, setStockHits]       = useState([])
   const [stockSearching, setStockSearching] = useState(false)
+  // Each market's full exchange list, once loaded, and how much of it shows.
+  const [fullLists, setFullLists]       = useState({})
+  const [listLimit, setListLimit]       = useState(60)
   // A price in its own currency, the way the user's language writes it (77.40 ج.م.‏, £2.45).
   const localMoney = (amount, currency) => {
     try { return new Intl.NumberFormat(lang || 'en', { style: 'currency', currency, maximumFractionDigits: amount < 10 ? 3 : 2 }).format(amount) }
@@ -435,6 +438,15 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     }).catch(() => {})
     return () => { alive = false }
   }, [open])
+
+  // The whole exchange for the market on show (popular names until it arrives).
+  useEffect(() => {
+    setListLimit(60)
+    if (!open || category !== 'wstock' || !market || fullLists[market]) return
+    let alive = true
+    getMarketList(market).then(v => { if (alive && v) setFullLists(prev => ({ ...prev, [market]: v })) }).catch(() => {})
+    return () => { alive = false }
+  }, [open, category, market]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Worldwide search: any listed company by name or ticker, after a pause in typing.
   useEffect(() => {
@@ -910,7 +922,10 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       {/* Stock: market + sector filter, the market's list, and worldwide search */}
       {isStockCat(category) && (() => {
         const isUS = category === 'stock'
-        const base = isUS ? POPULAR_TICKERS : (MARKET_BY_CODE[market]?.stocks || [])
+        const full = !isUS ? fullLists[market] : null
+        const base = isUS ? POPULAR_TICKERS
+          : full ? full.stocks.map(x => ({ ticker: x.t, name: x.n, q: x }))
+          : (MARKET_BY_CODE[market]?.stocks || [])
         const shownMarket = isUS ? 'US' : market
         const sectors = isUS ? ['All', ...Array.from(new Set(POPULAR_TICKERS.map(t => t.sector)))] : []
         const query = stockInput.trim().toUpperCase()
@@ -923,9 +938,10 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
         // Other markets: the user's own first. US shares have their own category.
         const order = [...new Set([localMarket?.code || 'GB', ...MARKETS.map(m => m.code)].filter(c => c && c !== 'US'))]
         const pickTicker = (ticker, name) => { if (name) PICKED_NAMES[ticker] = name; setStockTicker(ticker); setStockInput(ticker) }
-        const row = (ticker, name, sub) => {
+        const row = (ticker, name, sub, q) => {
           const sid = `${STOCK_PREFIX}${ticker.toLowerCase()}`
-          const rec = stockPrices[sid]
+          // A row from the full list carries its own quote; others use the fetched prices.
+          const rec = q ? { usd: q.u, usd_24h_change: q.c, local: { price: q.p, currency: q.cur } } : stockPrices[sid]
           const p = rec?.usd ?? rec?.price
           const ch = rec?.usd_24h_change
           const up = Number(ch) >= 0
@@ -943,7 +959,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                 {/* A foreign listing shows its own price first, then the dollar figure. */}
                 {loc ? <>
                   <span className="bs-market-price">{localMoney(loc.price, loc.currency)}</span>
-                  <span className="bs-market-usd">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''}
+                  <span className="bs-market-usd">{p != null ? `$${Number(p).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: p < 1 ? 4 : 2 })}` : ''}
                     {ch != null && isFinite(ch) && <b style={{ color: up ? 'var(--g-ink)' : '#f87171' }}> {up ? '+' : ''}{Number(ch).toFixed(2)}%</b>}</span>
                 </> : <>
                   <span className="bs-market-price">{p != null ? `$${Number(p).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</span>
@@ -995,17 +1011,24 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             </div>
             <div className="bs-markets">
               <div className="bs-markets-head">
-                <span>{isUS && stockSector !== 'All' ? stockSector : t('stkPopularIn')(regionName(shownMarket), MARKET_BY_CODE[shownMarket]?.exchange || '')}</span>
+                <span>{isUS && stockSector !== 'All' ? stockSector
+                  : full ? t('stkAllIn')(regionName(shownMarket), MARKET_BY_CODE[shownMarket]?.exchange || '', full.total)
+                  : t('stkPopularIn')(regionName(shownMarket), MARKET_BY_CODE[shownMarket]?.exchange || '')}</span>
                 <span>{t('tsPrice24h')}</span>
               </div>
               <div className="bs-markets-list">
-                {filtered.slice(0, 40).map(x => row(x.ticker, x.name))}
+                {filtered.slice(0, isUS ? 40 : listLimit).map(x => row(x.ticker, x.name, null, x.q))}
+                {!isUS && filtered.length > listLimit && (
+                  <button type="button" className="bs-market-showmore" onClick={() => setListLimit(n => n + 60)}>
+                    {t('stkShowMore')(filtered.length - listLimit)}
+                  </button>
+                )}
                 {(hits.length > 0 || stockSearching) && (
                   <div className="bs-markets-head bs-markets-sub"><span>{stockSearching && hits.length === 0 ? t('stkSearching') : t('stkResults')}</span></div>
                 )}
                 {hits.map(h => row(h.symbol, h.name, h.exchange))}
                 {filtered.length === 0 && hits.length === 0 && !stockSearching && <p className="bs-hint" style={{ margin: '0.3rem 0' }}>{t('tsNoMatch')}</p>}
-                {!query && <p className="bs-hint bs-market-more">{t('stkSearchMore')}</p>}
+                {!query && !full && <p className="bs-hint bs-market-more">{t('stkSearchMore')}</p>}
               </div>
             </div>
             {stockTicker && (

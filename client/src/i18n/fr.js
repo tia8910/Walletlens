@@ -823,6 +823,8 @@ export default {
     tsNoMatch: 'Aucun résultat.',
     tsPrice24h: 'Prix / 24 h',
     stkMarket: "Marché",
+    stkAllIn: (n, x, c) => `Toutes les actions · ${n} (${c})${x ? ` · ${x}` : ""}`,
+    stkShowMore: n => `Voir plus (${n} restantes)`,
     stkSelectMarket: "Choisissez votre marché",
     stkPopularIn: (n, x) => `Les plus suivies · ${n}${x ? ` · ${x}` : ""}`,
     stkSearchMore: "Pas dans la liste ? Cherchez toute entreprise cotée sur ce marché ou ailleurs.",

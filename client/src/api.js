@@ -1546,6 +1546,31 @@ export function detectCountry() {
   })());
 }
 
+// ─── Every stock listed on a market ─────────────────────────────────────
+// From /api/market-list (the full exchange, largest first, local price and
+// USD). Kept in memory for 15 minutes per market. Each row also primes the
+// price cache, so a stock picked from the list is priced at once.
+const _marketLists = {};
+export async function getMarketList(market) {
+  const hit = _marketLists[market];
+  if (hit && Date.now() - hit.t < 15 * 60 * 1000) return hit.v;
+  try {
+    const res = await fetchWithTimeout(`/api/market-list?market=${encodeURIComponent(market)}`, 12000);
+    if (!res.ok) return null;
+    const body = await res.json();
+    const stocks = Array.isArray(body?.stocks) ? body.stocks : [];
+    if (stocks.length === 0) return null;
+    const v = { total: body.total || stocks.length, stocks };
+    _marketLists[market] = { t: Date.now(), v };
+    for (const x of stocks) {
+      if (x.u > 0 && !batchStockCache[x.t]) {
+        batchStockCache[x.t] = { usd: x.u, usd_24h_change: x.c || 0, name: x.n, source: 'screener', local: { price: x.p, currency: x.cur } };
+      }
+    }
+    return v;
+  } catch { return null; }
+}
+
 // ─── Search for a listed company on any market ─────────────────────────
 // Our function first (Yahoo search, server side), then Yahoo through the
 // relays. Shares and ETFs only: [{ symbol, name, exchange }].

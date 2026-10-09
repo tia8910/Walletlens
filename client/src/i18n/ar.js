@@ -849,6 +849,8 @@ export default {
     tsNoMatch: 'لا نتائج مطابقة.',
     tsPrice24h: 'السعر / 24 ساعة',
     stkMarket: "السوق",
+    stkAllIn: (n, x, c) => `كل أسهم ${n} (${c})${x ? ` · ${x}` : ""}`,
+    stkShowMore: n => `عرض المزيد (متبقٍ ${n})`,
     stkSelectMarket: "اختر سوقك",
     stkPopularIn: (n, x) => `الأشهر في ${n}${x ? ` · ${x}` : ""}`,
     stkSearchMore: "لم تجد شركتك؟ ابحث عن أي شركة مدرجة في هذا السوق أو أي سوق آخر.",

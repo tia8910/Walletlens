@@ -783,6 +783,8 @@ export default {
     tsNoMatch: 'Nessuna corrispondenza.',
     tsPrice24h: 'Prezzo / 24 h',
     stkMarket: "Mercato",
+    stkAllIn: (n, x, c) => `Tutte le azioni · ${n} (${c})${x ? ` · ${x}` : ""}`,
+    stkShowMore: n => `Mostra altri (${n})`,
     stkSelectMarket: "Scegli il tuo mercato",
     stkPopularIn: (n, x) => `I più seguiti · ${n}${x ? ` · ${x}` : ""}`,
     stkSearchMore: "Non c’è? Cerca qualsiasi società quotata qui o altrove.",

@@ -26,6 +26,7 @@ import * as translate from '../../functions/api/translate.js'
 import * as stocks from '../../functions/api/stocks.js'
 import * as stockSearch from '../../functions/api/stock-search.js'
 import * as geo from '../../functions/api/geo.js'
+import * as marketList from '../../functions/api/market-list.js'
 import * as icon from '../../functions/api/icon.js'
 import * as candles from '../../functions/api/candles.js'
 import * as push from '../../functions/api/push/[[path]].js'
@@ -139,6 +140,7 @@ const EXACT = {
   '/api/stocks': stocks,
   '/api/stock-search': stockSearch,
   '/api/geo': geo,
+  '/api/market-list': marketList,
   '/api/icon': icon,
   '/api/candles': candles,
 }
