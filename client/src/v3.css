@@ -695,4 +695,4 @@ html.wl-v3:not([data-wl-light]) .nl-check { border-color: rgba(255, 255, 255, 0.
    to fit a phone instead of running under them; the longest languages get an
    ellipsis as a last resort. */
 .nl-topbar-greet { min-width: 0; }
-.nl-topbar-greet b.nl-tagline { font-size: clamp(0.78rem, 3.4vw, 1.06rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.nl-topbar-greet b.nl-tagline { font-size: clamp(0.72rem, 2.9vw, 0.86rem); font-weight: 700; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
