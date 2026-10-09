@@ -2280,6 +2280,7 @@ export default {
     byPopEyebrow: "N'oubliez pas",
     byPopHead: "Récupérez votre bonus de {amt}",
     byPopSteps: "en 2 étapes simples",
+    byPopPartner: "Avec notre partenaire {brand}",
     byPopS1: "Inscrivez-vous",
     byPopS1x: "Environ une minute",
     byPopS2: "Vérifiez votre identité",

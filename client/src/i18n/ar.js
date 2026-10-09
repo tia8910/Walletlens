@@ -2306,6 +2306,7 @@ export default {
     byPopEyebrow: "لا تنسَ",
     byPopHead: "احصل على مكافأة {amt}",
     byPopSteps: "في خطوتين سهلتين",
+    byPopPartner: "مع شريكنا {brand}",
     byPopS1: "أنشئ حسابك",
     byPopS1x: "يستغرق دقيقة تقريبًا",
     byPopS2: "وثّق هويتك",

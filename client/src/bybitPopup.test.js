@@ -49,9 +49,9 @@ describe('the Bybit popup', () => {
     expect(DEVICE_ONLY_KEYS).toContain('wl_bybit_ends')
   })
 
-  it('is on Home, and the site sets a deadline', () => {
-    const dash = readFileSync(join(here, 'pages/Dashboard.jsx'), 'utf8')
-    expect(dash).toMatch(/<BybitPopup blocked=/)
+  it('is on every app screen, and the site sets a deadline', () => {
+    const app = readFileSync(join(here, 'App.jsx'), 'utf8')
+    expect(app).toMatch(/shellReady && !isLanding && \(onboardDone \|\| !\(isStandalone && isAndroid\)\) && <Suspense fallback=\{null\}><BybitPopup \/>/)
     const offers = JSON.parse(readFileSync(join(here, '../public/offers.json'), 'utf8'))
     expect(validEnd(offers.bybit.endsAt)).not.toBeNull()
   })
@@ -59,7 +59,7 @@ describe('the Bybit popup', () => {
   it('is translated everywhere', () => {
     for (const l of ['en', 'ar', 'fr', 'es', 'de', 'it']) {
       const s = readFileSync(join(here, `i18n/${l}.js`), 'utf8')
-      for (const k of ['byPopHead', 'byPopS1', 'byPopS2', 'byPopEnds', 'byPopCta', 'byPopNever']) expect(s, `${l} ${k}`).toContain(`${k}:`)
+      for (const k of ['byPopHead', 'byPopS1', 'byPopS2', 'byPopEnds', 'byPopPartner', 'byPopCta', 'byPopNever']) expect(s, `${l} ${k}`).toContain(`${k}:`)
     }
   })
 })

@@ -27,6 +27,7 @@ const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
 const AssistantChat = lazy(() => import('./components/AssistantChat'))
 const NotificationPrimer = lazy(() => import('./components/NotificationPrimer'))
 const WelcomeModal = lazy(() => import('./components/WelcomeModal'))
+const BybitPopup = lazy(() => import('./components/BybitOffer').then(m => ({ default: m.BybitPopup })))
 const NativeOnboarding = lazy(() => import('./components/NativeOnboarding'))
 const HelpGuide = lazy(() => import('./components/HelpGuide'))
 const AddAssetTour = lazy(() => import('./components/AddAssetTour'))
@@ -1103,6 +1104,9 @@ export default function App() {
       {shellReady && isStandalone && isAndroid && !onboardDone && <Suspense fallback={null}><NativeOnboarding onDone={() => setOnboardDone(true)} /></Suspense>}
       {shellReady && (!isStandalone || !isAndroid) && <Suspense fallback={null}><WelcomeModal /></Suspense>}
       {shellReady && <Suspense fallback={null}><AssistantChat /></Suspense>}
+      {/* The Bybit sign-up reward, for everyone while it runs. Not on the
+          landing pages, which are what search engines index. */}
+      {shellReady && !isLanding && (onboardDone || !(isStandalone && isAndroid)) && <Suspense fallback={null}><BybitPopup /></Suspense>}
 
       {/* Asks permission to notify, in the app's own words, before the browser
           dialog is ever raised. Gated on onboarding being finished so it never

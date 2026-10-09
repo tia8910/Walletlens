@@ -52,7 +52,7 @@ import { dataUrl } from '../apiHosts.js'
 import { sevenDayMap, sparkMap, trendFor } from '../assetTrend'
 import TrendArrow, { TrendBadge } from '../components/TrendArrow'
 import { MoneyFlowBadge } from '../components/MoneyFlow'
-import { BybitStrip, BybitInterestStrip, BybitPopup } from '../components/BybitOffer'
+import { BybitStrip, BybitInterestStrip } from '../components/BybitOffer'
 import { ZakatGate } from '../components/ZakatSwitch'
 import HomeTop from '../components/HomeTop'
 import NlHoldings from '../components/NlHoldings'
@@ -6099,7 +6099,6 @@ export default function Dashboard() {
           />
         </Suspense>
       )}
-      {!isDemo && <BybitPopup blocked={!!milestone || shareOpen} />}
       {milestone && (
         <MilestonePopup
           milestone={milestone}

@@ -2301,6 +2301,7 @@ export default {
     byPopEyebrow: "Don't forget",
     byPopHead: "Claim your {amt} bonus",
     byPopSteps: "in 2 easy steps",
+    byPopPartner: "With our partner {brand}",
     byPopS1: "Sign up",
     byPopS1x: "Takes about a minute",
     byPopS2: "Verify your identity",

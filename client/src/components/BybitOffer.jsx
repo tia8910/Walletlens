@@ -172,10 +172,13 @@ export function BybitStrip({ variant = 'crypto', placement = 'holdings' }) {
 }
 
 const pad2 = n => String(n).padStart(2, '0')
+// Anything already covering the screen: dialogs, the trade ticket, the
+// milestone, share and quick stats popups.
+const BUSY = '[aria-modal="true"], [role="dialog"], .bs-sheet-open, .bs-confirm-overlay, .ms-overlay, .share-overlay, .qs-overlay'
 
 /**
- * The time-limited sign-up reward, as a large popup over Home: shown to
- * everyone the offer is allowed for, a few seconds after Home opens, at most
+ * The time-limited sign-up reward, as a large popup on every screen of the
+ * app: shown to everyone the offer is allowed for, a few seconds after it opens, at most
  * once a day, and only until the end date in /offers.json. The countdown is
  * that date.
  */
@@ -185,14 +188,20 @@ export function BybitPopup({ blocked = false }) {
   const [open, setOpen] = useState(false)
   const [now, setNow] = useState(Date.now)
 
-  // A moment after Home settles, and never over another sheet or dialog.
+  // A moment after the app settles, and never over another sheet or dialog:
+  // while one is open (onboarding, a trade ticket) it keeps checking and
+  // opens once that one closes.
   useEffect(() => {
     if (open || blocked || !allowed) return
-    const id = setTimeout(() => {
-      if (document.querySelector('[aria-modal="true"]')) return
-      if (popupDue()) { setOpen(true); trackReferralEvent('referral_view', 'popup', 'crypto') }
-    }, 3500)
-    return () => clearTimeout(id)
+    const tryOpen = () => {
+      if (document.querySelector(BUSY)) return false
+      if (!popupDue()) return true
+      setOpen(true); trackReferralEvent('referral_view', 'popup', 'crypto')
+      return true
+    }
+    let id
+    const first = setTimeout(() => { if (!tryOpen()) id = setInterval(() => { if (tryOpen()) clearInterval(id) }, 3000) }, 3500)
+    return () => { clearTimeout(first); clearInterval(id) }
   }, [open, blocked, allowed])
 
   useEffect(() => {
@@ -230,6 +239,10 @@ export function BybitPopup({ blocked = false }) {
           <p className="byp-eyebrow">{t('byPopEyebrow')}</p>
           <h2 id="byp-h" className="byp-h">{headA}<em dir="ltr">{bonus}</em>{headB}</h2>
           <p className="byp-sub">{t('byPopSteps')}</p>
+          <p className="byp-partner">{(() => {
+            const [a, b = ''] = t('byPopPartner').split('{brand}')
+            return <>{a}<Wordmark />{b}</>
+          })()}</p>
         </div>
 
         <ol className="byp-steps">

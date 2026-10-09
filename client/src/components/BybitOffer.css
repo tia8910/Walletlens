@@ -157,3 +157,10 @@
 /* Centred in every language: the app's RTL rules would otherwise right-align it. */
 .byp-hero .byp-eyebrow, .byp-hero .byp-h, .byp-hero .byp-sub, .byp .by-fine { text-align: center !important; }
 .byp-h em { unicode-bidi: isolate; }
+.byp-partner {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;
+  width: fit-content; margin: 10px auto 2px; padding: 6px 12px; border-radius: 99px;
+  background: rgba(0, 0, 0, .45); border: 1px solid rgba(247, 166, 0, .35);
+  font-size: 12.5px; font-weight: 600; color: #e6ece9;
+}
+.byp-partner .by-word { font-size: 13px; unicode-bidi: isolate; direction: ltr; }
