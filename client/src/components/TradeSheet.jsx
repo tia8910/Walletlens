@@ -46,6 +46,8 @@ import { detectCountry, searchStocks, getMarketList } from '../api'
 import { track, trackProfileCreated } from '../analytics'
 import TradeSignal from './BuySignal'
 import { useLanguage } from '../LanguageContext'
+import CurrencyPicker, { CurFlag } from './CurrencyPicker'
+import { isFiatCode, currencyName, currencySymbol, fmtMoney } from '../data/currencies'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { isV2Active, homePath } from '../v2Preview'
 
@@ -122,7 +124,7 @@ const SELL_FOR_OPTIONS = [
 // Cash legs wear their country's flag; the coins keep their glyphs.
 const LEG_FLAGS = new Set(['USD', 'EUR'])
 function LegIcon({ o, size }) {
-  return LEG_FLAGS.has(o.key)
+  return LEG_FLAGS.has(o.key) || o.fiat
     ? <CoinLogo coinId={`${FIAT_PREFIX}${o.key.toLowerCase()}`} symbol={o.key} size={size + 4} className="bs-leg-flag" />
     : <CatIcon icon={o.icon} size={size} />
 }
@@ -193,6 +195,21 @@ async function legPriceUsd(id) {
   return live?.[id]?.usd || 0
 }
 
+// Any other fiat currency the FX feed knows (EGP, SAR, GBP…): a cash leg
+// priced in USD per unit, from the live price if there is one, else the rate.
+async function fiatLeg(T) {
+  if (!/^[A-Z]{3}$/.test(T)) return null
+  let rates = null
+  try { rates = await api.getFiatRates() } catch {}
+  if (!isFiatCode(T, rates)) return null
+  const lower = T.toLowerCase()
+  let usd = 0
+  try { usd = await legPriceUsd(`${FIAT_PREFIX}${lower}`) } catch {}
+  if (!(usd > 0)) usd = Number(rates?.[T]) > 0 ? 1 / Number(rates[T]) : 0
+  if (!(usd > 0)) return null
+  return { coin_id: `${FIAT_PREFIX}${lower}`, symbol: T, name: currencyName(T), category: 'fiat', pricePerUnit: usd }
+}
+
 async function buildReceiveLeg(target, proceedsUsd) {
   const T = (target || '').toUpperCase()
   if (!T) return null
@@ -210,6 +227,8 @@ async function buildReceiveLeg(target, proceedsUsd) {
     if (!eurUsd) eurUsd = 1.08
     return { coin_id: `${FIAT_PREFIX}eur`, symbol: 'EUR', name: 'Euro', category: 'fiat', amount: proceedsUsd / eurUsd, pricePerUnit: eurUsd }
   }
+  const fiat = await fiatLeg(T)
+  if (fiat) return { ...fiat, amount: proceedsUsd / fiat.pricePerUnit }
   const lower = T.toLowerCase()
   try {
     const search = await api.searchCoins?.(lower)
@@ -239,6 +258,8 @@ async function buildSpendLeg(source, costUsd) {
     if (!eurUsd) eurUsd = 1.08
     return { coin_id: `${FIAT_PREFIX}eur`, symbol: 'EUR', name: 'Euro', category: 'fiat', amount: costUsd / eurUsd, pricePerUnit: eurUsd }
   }
+  const fiat = await fiatLeg(T)
+  if (fiat) return { ...fiat, amount: costUsd / fiat.pricePerUnit }
   const lower = T.toLowerCase()
   try {
     const search = await api.searchCoins?.(lower)
@@ -353,6 +374,13 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [sellForCustom, setSellForCustom] = useState('')
   const [amtMode, setAmtMode]           = useState('qty') // 'qty' | 'usd'
   const [usdInput, setUsdInput]         = useState('')
+  // The currency the ticket is written in: amounts and prices are typed and
+  // shown in it and stored in USD, the app's base, at the live rate.
+  const [tradeCur, setTradeCur]         = useState(() => { try { return localStorage.getItem('wl_trade_cur') || 'USD' } catch { return 'USD' } })
+  const [fxRates, setFxRates]           = useState(null)
+  const [curPicker, setCurPicker]       = useState(null) // null | 'trade' | 'leg'
+  const [priceDraft, setPriceDraft]     = useState('')
+  const curPicked = useRef(false)
   const [metalUnit, setMetalUnit]       = useState('oz') // 'oz' | 'g'
   const [busy, setBusy]                 = useState(false)
   const [msg, setMsg]                   = useState('')
@@ -371,6 +399,9 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const location = useLocation()
   const navigate = useNavigate()
   const v2 = isV2Active(location.pathname)
+  // Units of the ticket's currency per 1 USD; 1 when it is USD or no rate is known.
+  const fx = v2 && tradeCur !== 'USD' && Number(fxRates?.[tradeCur]) > 0 ? Number(fxRates[tradeCur]) : 1
+  const curCode = fx === 1 ? 'USD' : tradeCur
   const searchTimer                     = useRef(null)
   const dragStartY                      = useRef(null)
 
@@ -584,7 +615,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     EUR:  `${FIAT_PREFIX}eur`,
   }
   const buyWithHolding = (isBuy && buyWith && buyWith !== 'NONE' && buyWith !== 'CUSTOM')
-    ? holdings?.find(h => h.coin_id === BUY_WITH_COIN_IDS[buyWith])
+    ? holdings?.find(h => h.coin_id === (BUY_WITH_COIN_IDS[buyWith] || (isFiatCode(buyWith, fxRates) ? `${FIAT_PREFIX}${buyWith.toLowerCase()}` : '')))
     : null
   const buyWithBalanceUsd = buyWithHolding?.value ?? 0
   const buyWithBalanceAmt = buyWithHolding?.amount ?? 0
@@ -611,15 +642,47 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   useEffect(() => {
     if (amtMode !== 'usd' || !usdInput || !price || price === '…') return
     const px = parseFloat(price)
-    if (px > 0) setAmount(String(parseFloat((parseFloat(usdInput) / px).toFixed(8))))
-  }, [price, amtMode, usdInput])
+    if (px > 0) setAmount(String(parseFloat((parseFloat(usdInput) / fx / px).toFixed(8))))
+  }, [price, amtMode, usdInput]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The rates, once per opening. Units of each currency per 1 USD.
+  useEffect(() => {
+    if (!open || !v2) return
+    let live = true
+    api.getFiatRates?.().then(r => { if (live && r) setFxRates(r) }).catch(() => {})
+    return () => { live = false }
+  }, [open, v2])
+
+  // A local market's stock opens in its own currency (COMI.CA in EGP), until
+  // the person picks one themselves.
+  useEffect(() => {
+    if (curPicked.current || !asset?.id) return
+    const home = asset.category === 'stock' && isIntlTicker(asset.id) ? MARKET_BY_CODE[marketOfTicker(asset.id)]?.currency : null
+    let saved = 'USD'
+    try { saved = localStorage.getItem('wl_trade_cur') || 'USD' } catch {}
+    setTradeCur(home || saved)
+  }, [asset?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A new currency rewrites the amount being typed in it, for the same quantity.
+  useEffect(() => {
+    if (amtMode !== 'usd') return
+    const qty = parseFloat(amount), px = parseFloat(price)
+    if (qty > 0 && px > 0) setUsdInput(String(parseFloat((qty * px * fx).toFixed(2))))
+  }, [fx]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function pickTradeCur(code) {
+    curPicked.current = true
+    setTradeCur(code)
+    try { localStorage.setItem('wl_trade_cur', code) } catch {}
+    track('trade_currency_select', { currency: code })
+  }
 
   function handleUsdInput(val) {
     setUsdInput(val)
     setSpendPct(null)
     const px = parseFloat(price)
     if (px > 0 && val) {
-      const qty = parseFloat(val) / px
+      const qty = parseFloat(val) / fx / px
       if (isFinite(qty) && qty > 0) setAmount(String(parseFloat(qty.toFixed(8))))
       else setAmount('')
     } else { setAmount('') }
@@ -629,7 +692,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     setAmtMode(mode)
     if (mode === 'usd') {
       const qty = parseFloat(amount), px = parseFloat(price)
-      setUsdInput(qty > 0 && px > 0 ? String(parseFloat((qty * px).toFixed(2))) : '')
+      setUsdInput(qty > 0 && px > 0 ? String(parseFloat((qty * px * fx).toFixed(2))) : '')
     } else {
       setUsdInput('')
     }
@@ -1177,7 +1240,8 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   if (v2) {
     const sym = asset?.symbol?.toUpperCase() || ''
     const isMetal = category === 'gold' || category === 'silver'
-    const fmtUsd = (n) => `$${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    // Every amount on the ticket, in the currency it is written in.
+    const fmtUsd = (n) => fmtMoney(Number(n || 0) * fx, curCode)
     const fmtQty = (n) => Number(parseFloat(Number(n || 0).toFixed(8))).toLocaleString(undefined, { maximumFractionDigits: 8 })
     const legMissing = isBuy ? (!buyWith || (buyWith === 'CUSTOM' && !buyWithCustom.trim()))
                              : (!sellFor || (sellFor === 'CUSTOM' && !sellForCustom.trim()))
@@ -1197,12 +1261,12 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
         setSpendPct(pct)
         const spend = buyWithBalanceUsd * pct / 100
         if (px > 0) setAmount(String(parseFloat((spend / px).toFixed(8))))
-        if (amtMode === 'usd') setUsdInput(String(parseFloat(spend.toFixed(2))))
+        if (amtMode === 'usd') setUsdInput(String(parseFloat((spend * fx).toFixed(2))))
       } else {
         setSellPct(pct)
         const q = heldAmt * pct / 100
         setAmount(String(parseFloat(q.toFixed(8))))
-        if (amtMode === 'usd' && px > 0) setUsdInput(String(parseFloat((q * px).toFixed(2))))
+        if (amtMode === 'usd' && px > 0) setUsdInput(String(parseFloat((q * px * fx).toFixed(2))))
       }
     }
     const onBig = (e) => {
@@ -1216,9 +1280,23 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       setMode(to); setAmount(''); setUsdInput(''); setSpendPct(null); setSellPct(null); setMsg('')
       if (to === 'buy') { setBuyWith('NONE'); setAmtMode('usd') } else { setSellFor('REMOVE'); setAmtMode('qty') }
     }
-    const legOptions = isBuy ? BUY_WITH_OPTIONS : SELL_FOR_OPTIONS
     const legValue = isBuy ? buyWith : sellFor
-    const setLeg = (k) => { if (isBuy) { setBuyWith(k); setSpendPct(null) } else setSellFor(k) }
+    // The fixed chips, plus the ticket's currency and any currency picked from
+    // the full list, each with its flag, before "Other".
+    const baseLegs = isBuy ? BUY_WITH_OPTIONS : SELL_FOR_OPTIONS
+    const extraCur = [...new Set([curCode, legValue])].filter(c => c && !baseLegs.some(o => o.key === c) && isFiatCode(c, fxRates))
+    const legOptions = [
+      ...baseLegs.filter(o => o.key !== 'CUSTOM' && o.key !== 'REMOVE'),
+      ...extraCur.map(c => ({ key: c, label: c, fiat: true, color: '#0ea5e9' })),
+      { key: 'MORE', label: t('tkMoreCurrencies'), icon: 'globe', color: '#0ea5e9' },
+      ...baseLegs.filter(o => o.key === 'CUSTOM' || o.key === 'REMOVE'),
+    ]
+    const setLeg = (k) => {
+      if (k === 'MORE') { setCurPicker('leg'); return }
+      if (isBuy) { setBuyWith(k); setSpendPct(null) } else setSellFor(k)
+    }
+    // The price as typed and shown in the ticket's currency; stored in USD.
+    const priceShown = price && price !== '…' && fx !== 1 ? String(parseFloat((parseFloat(price) * fx).toPrecision(6))) : price
     const legCustom = isBuy ? buyWithCustom : sellForCustom
     const setLegCustom = isBuy ? setBuyWithCustom : setSellForCustom
     const legLabel = legValue === 'CUSTOM' ? legCustom.trim().toUpperCase() : legValue
@@ -1333,9 +1411,16 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                     )}
 
                     <div className="tk-amount">
-                      <span className="tk-lbl">{isBuy ? t('tkYouSpend') : t('tkYouSell')}</span>
+                      <div className="tk-lbl-row">
+                        <span className="tk-lbl">{isBuy ? t('tkYouSpend') : t('tkYouSell')}</span>
+                        <button type="button" className="tk-curpick" aria-label={t('tkCurrency')} onClick={() => setCurPicker('trade')}>
+                          <CurFlag code={curCode} size={18} />
+                          {curCode}
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                      </div>
                       <label className="tk-big">
-                        {amtMode === 'usd' && <span className="tk-cur">$</span>}
+                        {amtMode === 'usd' && <span className="tk-cur">{currencySymbol(curCode)}</span>}
                         <input data-tour="ts-amount" inputMode="decimal" autoComplete="off" placeholder="0"
                           aria-label={isBuy ? t('tkYouSpend') : t('tkYouSell')}
                           value={bigVal} onChange={onBig}
@@ -1345,7 +1430,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       <div className="tk-conv tk-num">
                         <span>{amtMode === 'usd'
                           ? (parseFloat(amount) > 0 ? `≈ ${fmtQty(amount)} ${isMetal ? metalUnit : sym}` : (isMetal ? metalUnit : sym))
-                          : (total > 0 ? `≈ ${fmtUsd(total)}` : 'USD')}</span>
+                          : (total > 0 ? `≈ ${fmtUsd(total)}` : curCode)}</span>
                         {/* Metals get both: the oz / g unit, and the same switch
                             between a quantity and a dollar amount every other
                             asset has. The unit used to replace the switch, so
@@ -1396,10 +1481,16 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                         <span className="tk-v">
                           <input className="tk-inline tk-num" inputMode="decimal"
                             placeholder={price === '…' ? t('tkFetching') : t('tsEnterPrice')}
-                            value={price === '…' ? '' : priceFocused ? price : fmtPriceDisplay(price)}
-                            onFocus={() => setPriceFocused(true)} onBlur={() => setPriceFocused(false)}
-                            onChange={e => { setPrice(e.target.value.replace(/,/g, '')); setPriceFetchFailed(false) }}
+                            value={price === '…' ? '' : priceFocused ? (fx !== 1 ? priceDraft : price) : fmtPriceDisplay(priceShown)}
+                            onFocus={() => { setPriceDraft(priceShown || ''); setPriceFocused(true) }} onBlur={() => setPriceFocused(false)}
+                            onChange={e => {
+                              const v = e.target.value.replace(/,/g, '')
+                              if (fx !== 1) { setPriceDraft(v); setPrice(v && parseFloat(v) >= 0 ? String(parseFloat(v) / fx) : v) }
+                              else setPrice(v)
+                              setPriceFetchFailed(false)
+                            }}
                             disabled={price === '…'} aria-label={t('tkPricePer')} />
+                          {fx !== 1 && <small>{curCode}</small>}
                           {price && price !== '…' && price === fetchedPrice.current && <span className="tk-tag">{t('tkMarket')}</span>}
                         </span>
                       </div>
@@ -1467,6 +1558,11 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
             </>
           )}
           {confirmNoneOverlay}
+          <CurrencyPicker open={!!curPicker} rates={fxRates}
+            title={curPicker === 'leg' ? (isBuy ? t('tkPayWith') : t('tkReceiveIn')) : t('tkCurrency')}
+            value={curPicker === 'leg' ? legValue : curCode}
+            onClose={() => setCurPicker(null)}
+            onPick={(c) => { if (curPicker === 'leg') setLeg(c); else pickTradeCur(c); setCurPicker(null) }} />
         </div>
       </>
     )

@@ -125,6 +125,8 @@ export const DEVICE_ONLY_KEYS = [
   'wl_bybit_bonus',
   'wl_bybit_ends',
   'wl_bybit_popup',
+  // The currency last chosen on the trade ticket: a typing preference.
+  'wl_trade_cur',
   // A WebAuthn credential is bound to the device that created it. Restoring it
   // elsewhere gives a credential that cannot authenticate, and restoring the
   // "enabled" flag without a usable credential can lock someone out of their
