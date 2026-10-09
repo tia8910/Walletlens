@@ -21,7 +21,7 @@ import { track } from './analytics'
 import { INTERESTS_EVENT } from './data/interestsEvent'
 import { isMsStore } from './msStore'
 
-export const BYBIT_URL = 'https://www.bybit.com/invite?ref=BM64KOV&medium=referral&utm_campaign=evergreen'
+export const BYBIT_URL = 'https://partner.bybit.com/b/WALLETLENS'
 /** The bonus shown when the site has not said otherwise. */
 export const BYBIT_BONUS = '$20'
 

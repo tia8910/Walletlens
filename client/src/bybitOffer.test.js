@@ -12,8 +12,8 @@ const here = dirname(fileURLToPath(import.meta.url))
 const read = (p) => readFileSync(join(here, p), 'utf8')
 
 describe('where the Bybit offer may appear', () => {
-  it('uses the referral code', () => {
-    expect(BYBIT_URL).toMatch(/ref=BM64KOV/)
+  it('uses the WalletLens partner link', () => {
+    expect(BYBIT_URL).toBe('https://partner.bybit.com/b/WALLETLENS')
   })
 
   it('stays hidden where Bybit does not serve or may not be promoted', () => {
