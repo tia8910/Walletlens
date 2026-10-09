@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
 import {
   useBybitOffer, usePickedOffer, openBybit, stripHidden, hideStrip, viewRef,
-  popupDue, closePopup, markPopupShown, currentEndsAt, timeLeft, trackReferralEvent,
+  popupDue, closePopup, markPopupShown, currentEndsAt, timeLeft, trackReferralEvent, currentBonus,
 } from '../bybitOffer'
 import './BybitOffer.css'
 
@@ -172,6 +173,18 @@ export function BybitStrip({ variant = 'crypto', placement = 'holdings' }) {
 }
 
 const pad2 = n => String(n).padStart(2, '0')
+
+// The popup's own events, alongside the shared referral_* ones, so it has a
+// funnel of its own in GA: bybit_popup_view → bybit_popup_click, and
+// bybit_popup_dismiss with how it was closed (later, x, outside, escape, never).
+// Each carries the bonus shown and the days left, nothing about the person.
+function trackPopup(name, params = {}) {
+  try {
+    const end = currentEndsAt()
+    const daysLeft = end ? Math.max(0, Math.ceil((end - Date.now()) / 86400000)) : null
+    track(name, { exchange: 'Bybit', placement: 'popup', bonus: currentBonus(), days_left: daysLeft, ...params })
+  } catch { /* analytics must never block the popup */ }
+}
 // Anything already covering the screen: dialogs, the trade ticket, the
 // milestone, share and quick stats popups.
 const BUSY = '[aria-modal="true"], [role="dialog"], .bs-sheet-open, .bs-confirm-overlay, .ms-overlay, .share-overlay, .qs-overlay'
@@ -187,6 +200,7 @@ export function BybitPopup({ blocked = false }) {
   const { allowed, bonus } = useBybitOffer()
   const [open, setOpen] = useState(false)
   const [now, setNow] = useState(Date.now)
+  const openedAt = useRef(0)
 
   // A moment after the app settles, and never over another sheet or dialog:
   // while one is open (onboarding, a trade ticket) it keeps checking and
@@ -196,7 +210,9 @@ export function BybitPopup({ blocked = false }) {
     const tryOpen = () => {
       if (document.querySelector(BUSY)) return false
       if (!popupDue()) return true
-      markPopupShown(); setOpen(true); trackReferralEvent('referral_view', 'popup', 'crypto')
+      markPopupShown(); openedAt.current = Date.now(); setOpen(true)
+      trackReferralEvent('referral_view', 'popup', 'crypto')
+      trackPopup('bybit_popup_view', { screen: window.location.pathname.split('/')[1] || 'home' })
       return true
     }
     let id
@@ -207,7 +223,7 @@ export function BybitPopup({ blocked = false }) {
   useEffect(() => {
     if (!open) return
     const id = setInterval(() => setNow(Date.now()), 1000)
-    const onKey = e => { if (e.key === 'Escape') close('later') }
+    const onKey = e => { if (e.key === 'Escape') close('later', 'escape') }
     window.addEventListener('keydown', onKey)
     return () => { clearInterval(id); window.removeEventListener('keydown', onKey) }
   }, [open])
@@ -216,22 +232,24 @@ export function BybitPopup({ blocked = false }) {
   const left = end ? timeLeft(end, now) : null
   if (!open || !left) return null
 
-  function close(how) {
+  // how: 'later' (back next session) or 'done' (never again); via: what was tapped.
+  function close(how, via = how) {
     closePopup(how)
-    if (how !== 'claim') trackReferralEvent('referral_dismiss', 'popup', 'crypto', { how })
+    trackReferralEvent('referral_dismiss', 'popup', 'crypto', { how })
+    trackPopup('bybit_popup_dismiss', { how: via, seconds_open: Math.round((Date.now() - openedAt.current) / 1000) })
     setOpen(false)
   }
   const [headA, headB = ''] = t('byPopHead').split('{amt}')
 
   return createPortal(
-    <div className="byp-back" onClick={e => { if (e.target === e.currentTarget) close('later') }}>
+    <div className="byp-back" onClick={e => { if (e.target === e.currentTarget) close('later', 'outside') }}>
       <section className="byp" role="dialog" aria-modal="true" aria-labelledby="byp-h">
         <div className="byp-hero">
           <div className="byp-rays" aria-hidden="true" />
           <div className="byp-top">
             <Wordmark />
             <span className="by-tag">{t('byPartner')}</span>
-            <button type="button" className="byp-x" aria-label={t('byPopClose')} onClick={() => close('later')}>
+            <button type="button" className="byp-x" aria-label={t('byPopClose')} onClick={() => close('later', 'x')}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
             </button>
           </div>
@@ -259,13 +277,16 @@ export function BybitPopup({ blocked = false }) {
           </span>
         </div>
 
-        <button type="button" className="by-cta byp-cta" onClick={() => { closePopup('done'); setOpen(false); openBybit('popup', 'crypto') }}>
+        <button type="button" className="by-cta byp-cta" onClick={() => {
+          trackPopup('bybit_popup_click', { seconds_open: Math.round((Date.now() - openedAt.current) / 1000), transport_type: 'beacon' })
+          closePopup('done'); setOpen(false); openBybit('popup', 'crypto')
+        }}>
           {t('byPopCta').replace('{amt}', bonus)} <span aria-hidden="true" className="byp-arrow">→</span>
         </button>
         <div className="byp-links">
           <button type="button" onClick={() => close('later')}>{t('byPopLater')}</button>
           <span aria-hidden="true">·</span>
-          <button type="button" onClick={() => close('done')}>{t('byPopNever')}</button>
+          <button type="button" onClick={() => close('done', 'never')}>{t('byPopNever')}</button>
         </div>
         <p className="by-fine">{t('byFine')}</p>
       </section>

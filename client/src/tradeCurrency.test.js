@@ -51,3 +51,13 @@ describe('trade currencies', () => {
     }
   })
 })
+
+describe('currency flags ship with the app', () => {
+  it('serves the flags from /flags before the CDN', () => {
+    const logo = readFileSync(join(here, 'components/CoinLogo.jsx'), 'utf8')
+    expect(logo).toMatch(/\[flagLocal\(cc\), flagUrl\(cc\), voiceProxy\(flagUrl\(cc\)\)\]/)
+    for (const cc of ['eg', 'sa', 'ae', 'us', 'eu', 'gb', 'kw', 'jp']) {
+      expect(readFileSync(join(here, `../public/flags/${cc}.svg`), 'utf8')).toMatch(/<svg/)
+    }
+  })
+})
