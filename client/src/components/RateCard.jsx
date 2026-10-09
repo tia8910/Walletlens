@@ -13,8 +13,8 @@ import { track } from '../analytics'
 // reward; tapping it runs the same review flow, falling back to the store
 // listing when Play declines to show the card.
 //
-// Shown once there is a portfolio and a second visit, so it is never part of
-// a first launch. "Not now" waits three weeks; "Rate" ends it on this device.
+// Shown as soon as there is a portfolio, from the first day. "Not now" waits
+// three weeks; "Rate" ends it on this device.
 
 const KEY = 'wl_rate_card'
 const SNOOZE_MS = 21 * 24 * 60 * 60 * 1000
@@ -25,8 +25,7 @@ export function rateCardDue({ android = isAndroidApp(), holdings = 0, now = Date
   try {
     const v = localStorage.getItem(KEY)
     if (v === 'done' || Number(v) > now) return false
-    const opens = Number(JSON.parse(localStorage.getItem('wl_review_state_v3') || '{}').opens) || 0
-    return opens >= 2
+    return true
   } catch { return false }
 }
 

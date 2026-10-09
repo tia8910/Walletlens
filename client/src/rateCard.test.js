@@ -5,13 +5,11 @@ const seedOpens = (n) => localStorage.setItem('wl_review_state_v3', JSON.stringi
 
 describe('the Rate WalletLens card', () => {
   beforeEach(() => localStorage.clear())
-  it('shows in the Android app, with a portfolio, from the second visit', () => {
-    seedOpens(2)
+  it('shows in the Android app as soon as there is a portfolio, from the first day', () => {
+    seedOpens(1)
     expect(rateCardDue({ android: true, holdings: 1 })).toBe(true)
     expect(rateCardDue({ android: false, holdings: 1 })).toBe(false)
     expect(rateCardDue({ android: true, holdings: 0 })).toBe(false)
-    seedOpens(1)
-    expect(rateCardDue({ android: true, holdings: 1 })).toBe(false)
   })
   it('waits after Not now and ends after Rate', () => {
     seedOpens(3)

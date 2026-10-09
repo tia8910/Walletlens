@@ -140,15 +140,10 @@ describe('maybeAskForReview', () => {
     expect(maybeAskForReview(READY)).toBe(true)
   })
 
-  it('waits for a later day than the first', async () => {
-    // A single long session is still a first impression, however many hours
-    // of it there are.
+  it('does not wait for a later day: a second launch the same day qualifies', async () => {
     const { maybeAskForReview } = await loadModule()
-    seed({ first: T0 - DAY / 2 })
+    seed({ first: T0 - 60 * 60 * 1000, opens: 2 })
     vi.setSystemTime(T0 + 60 * 1000)
-    expect(maybeAskForReview(READY)).toBe(false)
-
-    seed({ first: T0 - 1 * DAY })
     expect(maybeAskForReview(READY)).toBe(true)
   })
 
@@ -689,16 +684,11 @@ describe('asking for a review does not close the app', () => {
 describe('time actually spent counts', () => {
   const MIN = 60 * 1000
 
-  it('qualifies a user with five minutes of real use over two visits, without waiting days', async () => {
+  it('qualifies on a second visit the same day, however few minutes', async () => {
     const { maybeAskForReview } = await loadModule()
-    // Second visit, same day: the launches-over-days rule alone says no.
-    // One visit short of the launches rule: the minutes are what qualify it.
-    seed({ first: T0 - 2 * 60 * MIN, opens: 2, activeMs: 4 * MIN })
+    seed({ first: T0 - 2 * 60 * MIN, opens: 2, activeMs: 1 * MIN })
     vi.setSystemTime(T0 + 61 * 1000)
-    expect(maybeAskForReview(READY), 'four minutes').toBe(false)
-
-    seed({ first: T0 - 2 * 60 * MIN, opens: 2, activeMs: 5 * MIN })
-    expect(maybeAskForReview(READY), 'five minutes').toBe(true)
+    expect(maybeAskForReview(READY)).toBe(true)
   })
 
   it('still needs a second visit: one long first session is a first impression', async () => {

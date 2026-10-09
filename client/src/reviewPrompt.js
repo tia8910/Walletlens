@@ -56,8 +56,7 @@ const SESSION_FLAG = 'wl_review_session_counted'
 //
 //   opens      — two launches. One is someone looking around; a second is
 //                someone who came back on purpose.
-//   days       — and a day after the first. A single long session is still a
-//                first impression.
+//   days       — no wait in days: the second launch may be the same day.
 //   holdings   — a portfolio. The app does one thing, and a user with nothing
 //                in it has not seen the app do it.
 //   dwell      — a full minute into the session, so the card is never part of
@@ -69,11 +68,11 @@ const SESSION_FLAG = 'wl_review_session_counted'
 //   onboarding — never while the welcome flow is unfinished. Asking someone to
 //                rate an app they are still being introduced to is the clearest
 //                possible version of this whole mistake.
-// Two launches a day apart, not three over two full days. The longer bar
-// left most users unqualified before they stopped opening the app, and
+// Two launches, on the same day if that is how someone uses the app. A wait
+// of days left most users unqualified before they stopped opening it, and
 // Play's own quota already stops a card being shown too often.
 const MIN_OPENS = 2
-const MIN_DAYS = 1
+const MIN_DAYS = 0
 
 // The other way in: time actually spent. Launch counting alone missed the
 // people who use WalletLens most. The installed app resumes one long-lived

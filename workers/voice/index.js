@@ -1448,23 +1448,10 @@ Deno.serve(async (req) => {
     // own backup code (and QR if it fit one) from noreply@walletlens.live. The
     // code is delivered once and never stored.
     if (body?.mode === "backup_email") {
-        const email = String(body.email || "").trim().toLowerCase();
-        if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            return new Response(JSON.stringify({ error: "invalid_email" }), { status: 400, headers });
-        }
-        const code = String(body.code || "");
-        // Backup codes are normally a few KB; cap generously to reject junk.
-        if (!code || code.length > 400_000) {
-            return new Response(JSON.stringify({ error: "invalid_code" }), { status: 400, headers });
-        }
-        const qrPng = sanitizeQrPng(body.qrPng);
-        const attachments = qrPng ? [{ filename: BACKUP_QR_FILENAME, content: qrPng }] : undefined;
-        const { subject, html } = backupEmailContent({ code, hasQr: !!qrPng });
-        const r = await sendEmailResult(email, subject, html, BACKUP_FROM, "contact@walletlens.live", attachments);
-        if (!r.ok) {
-            return new Response(JSON.stringify({ ok: false, reason: r.reason || "send_failed" }), { status: 200, headers });
-        }
-        return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+        // Discontinued: the weekly backup-code email is no longer sent.
+        // Backups go to the user's own Google Drive now. Older app builds
+        // that still ask are told so, and nothing is emailed.
+        return new Response(JSON.stringify({ ok: false, reason: "discontinued" }), { status: 410, headers });
     }
     // ── Weekly report: subscribe / refresh / unsubscribe ─────────────────────
     // KV schema: ["weekly", deviceId] → { deviceId, email, stats, active, createdAt, lastSentAt }

@@ -680,6 +680,22 @@ export default function App() {
   // Rating card: count time on screen and look for a good moment from every
   // page, not only the dashboard. No-op outside the installed Android app.
   useEffect(() => startReviewScheduler(), [])
+
+  // The home page's "Connect Google Drive" lands here as ?drive=connect:
+  // straight into Google's sign-in. Coming back, the dashboard finishes
+  // connecting (DriveCallback → driveConnected), restoring a backup that is
+  // already in Drive or making the first one. Someone who chose this has
+  // chosen how to start, so the welcome screens are not put in front of it.
+  useEffect(() => {
+    const q = new URLSearchParams(location.search)
+    if (q.get('drive') !== 'connect') return
+    try { ['wl_welcomed_v2', 'wl_interests_done', 'wl_started'].forEach(k => { if (!localStorage.getItem(k)) localStorage.setItem(k, '1') }) } catch {}
+    q.delete('drive')
+    const rest = q.toString()
+    try { window.history.replaceState(window.history.state, '', location.pathname + (rest ? `?${rest}` : '')) } catch {}
+    track('landing_drive_connect')
+    import('./driveSync').then(m => m.connect()).catch(() => {})
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   // Leaving a feature after real use is a moment worth asking after.
   const featureVisit = useRef({ path: '', at: 0 })
   useEffect(() => {
@@ -705,9 +721,9 @@ export default function App() {
     }
   }, [locked])
 
-  // Weekly email-backup subscription: if the user subscribed, resend their
-  // backup automatically once ~7 days have passed since the last email. The
-  // portfolio lives only on the device, so the app (not a server) does the send.
+  // The weekly backup-code email is discontinued (backups go to Google Drive
+  // now). This only ends any old subscription left on the device; it sends
+  // nothing.
   useEffect(() => {
     if (locked) return
     if (_backupChecked.current) return
@@ -1095,7 +1111,10 @@ export default function App() {
       </main>
       </PullToRefresh>
 
-      <AppFooter />
+      {/* Public pages only (home page, blog, FAQ, legal…). In the app the
+          same links live in More → About WalletLens, so they no longer sit
+          between every screen and the bottom bar. */}
+      {(isLanding || location.pathname.replace(/\/+$/, '') === '/terms') && <AppFooter />}
 
       {/* The classic bar is app-only. The v2 preview shows its bar in the
           browser too, since that is where it is being tested. */}
