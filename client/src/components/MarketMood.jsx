@@ -82,11 +82,11 @@ function computeMood(articles) {
 }
 
 function moodLabel(score) {
-  if (score >= 80) return { label: 'Extreme Greed', color: 'var(--g-ink)', icon: 'smile' }
-  if (score >= 60) return { label: 'Greed',         color: '#86efac', icon: 'smile' }
-  if (score >= 45) return { label: 'Neutral',        color: '#94a3b8', icon: 'meh' }
-  if (score >= 25) return { label: 'Fear',           color: '#fb923c', icon: 'frown' }
-  return                  { label: 'Extreme Fear',   color: '#f87171', icon: 'frown' }
+  if (score >= 80) return { label: 'Extreme Greed', key: 'mmExtremeGreed', color: 'var(--g-ink)', icon: 'smile' }
+  if (score >= 60) return { label: 'Greed', key: 'mmGreed',         color: '#86efac', icon: 'smile' }
+  if (score >= 45) return { label: 'Neutral', key: 'mmNeutral',        color: '#94a3b8', icon: 'meh' }
+  if (score >= 25) return { label: 'Fear', key: 'mmFear',           color: '#fb923c', icon: 'frown' }
+  return                  { label: 'Extreme Fear', key: 'mmExtremeFear',   color: '#f87171', icon: 'frown' }
 }
 
 // Animated arc dial
@@ -229,7 +229,7 @@ export default function MarketMood() {
           <div style={{ textAlign: 'center', marginTop: '-0.3rem', paddingBottom: '0.3rem' }}>
             <Icon name={info.icon} size={20} style={{ color: info.color, verticalAlign: '-4px' }} />
             <span style={{ fontSize: '0.92rem', fontWeight: 800, color: info.color, marginLeft: '0.4rem' }}>
-              {info.label}
+              {t(info.key) === info.key ? info.label : t(info.key)}
             </span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-sub)', marginLeft: '0.5rem' }}>
               {mood.score}/100

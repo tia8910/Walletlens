@@ -126,7 +126,7 @@ describe('Home shows each figure once', () => {
     const hold = read('components/NlHoldings.jsx')
     for (const piece of ['setSearch', 'setSort', 'setDir', 'setBreakEven', 'onExcel', 'onPdf', 'setCat', 'selectedStats', 'bindRow(h)']) expect(hold, piece).toContain(piece)
     expect(dash).toMatch(/\{nlHomeView && \(\s*<>\s*<NlHoldings/)
-    expect(dash).toMatch(/\{!nlHome && <div className="glass-card">/)
+    expect(dash).toMatch(/\{!nlHome && enriched\.length > 0 && <div className="glass-card">/)
     // The old row's ⋮ panel actions moved into the long-press menu.
     for (const k of ['dsSetTarget', 'dsSetVision', 'dsRiskScan', 'nlSelect']) expect(dash).toMatch(new RegExp(`holdingMenu[\\s\\S]*t\\('${k}'\\)`))
     // Magic Score opened the same chart as Technicals; it is gone.

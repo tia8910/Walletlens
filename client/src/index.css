@@ -17124,3 +17124,71 @@ html.wl-msstore a[href*="binance.com/register"],
 html.wl-msstore a[href*="binance.com/referral"],
 html.wl-msstore a[href*="okx.com/join"],
 html.wl-msstore a[href*="ibkr.com/referral"] { display: none !important; }
+
+/* ── Empty Home: the portfolio starter ─────────────────────────────────────
+   One job: get a new user's holdings in. The fastest route leads in solid
+   accent, the alternatives sit in a pair under it, then one-tap chips. */
+.wl-st { display: flex; flex-direction: column; gap: 0.75rem; padding: 0.75rem 0.25rem 1.5rem; text-align: start; }
+.wl-st-hero { padding: 1.1rem 1.1rem 1rem; border-radius: 20px;
+  background: linear-gradient(150deg, rgba(var(--g-rgb),0.16), rgba(var(--g-rgb),0.04) 70%);
+  border: 1px solid rgba(var(--g-rgb),0.22); }
+.wl-st-eyebrow { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--g-ink); }
+.wl-st-title { margin: 0.25rem 0 0.35rem; font-size: 1.55rem; line-height: 1.2; font-weight: 800; color: var(--text); text-wrap: balance; }
+.wl-st-sub { margin: 0; font-size: 0.88rem; line-height: 1.6; color: var(--text-muted); }
+.wl-st-steps { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.85rem 0 0; padding: 0; }
+.wl-st-steps li { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.65rem 0.3rem 0.35rem; border-radius: 999px;
+  font-size: 0.74rem; font-weight: 700; color: var(--text-muted); background: var(--surface-1); }
+[dir="rtl"] .wl-st-steps li { padding: 0.3rem 0.35rem 0.3rem 0.65rem; }
+.wl-st-steps b { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 0.7rem;
+  background: rgba(var(--g-rgb),0.14); color: var(--g-ink); }
+.wl-st-steps li.on { color: var(--text); }
+.wl-st-steps li.on b { background: rgb(var(--g-rgb)); color: #fff; }
+
+.wl-st-primary { display: flex; align-items: center; gap: 0.8rem; width: 100%; padding: 1rem; border: 0; border-radius: 18px; cursor: pointer;
+  text-align: start; font: inherit; color: #fff; background: linear-gradient(135deg, rgb(var(--g-rgb)), rgba(var(--g-rgb),0.78));
+  box-shadow: 0 10px 28px rgba(var(--g-rgb),0.32); transition: transform 0.15s; }
+.wl-st-primary:active { transform: scale(0.98); }
+.wl-st-ic { width: 46px; height: 46px; flex: none; border-radius: 14px; display: grid; place-items: center; background: rgba(255,255,255,0.2); }
+.wl-st-ic.sm { width: 36px; height: 36px; border-radius: 11px; background: rgba(var(--g-rgb),0.14); color: var(--g-ink); }
+.wl-st-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+.wl-st-txt strong { font-size: 1.02rem; font-weight: 800; }
+.wl-st-txt small { font-size: 0.78rem; opacity: 0.88; line-height: 1.4; }
+.wl-st-badge { flex: none; align-self: flex-start; padding: 0.2rem 0.55rem; border-radius: 999px; font-size: 0.66rem; font-weight: 800;
+  background: rgba(255,255,255,0.24); }
+
+.wl-st-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.wl-st-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 0.3rem; min-width: 0; padding: 0.85rem; cursor: pointer;
+  text-align: start; font: inherit; border-radius: 16px; background: var(--surface-1); border: 1.5px solid rgba(var(--g-rgb),0.2); color: var(--text); }
+.wl-st-opt strong { font-size: 0.92rem; font-weight: 800; margin-top: 0.2rem; }
+.wl-st-opt small { font-size: 0.74rem; color: var(--text-muted); line-height: 1.4; }
+.wl-st-opt:active { transform: scale(0.98); }
+
+.wl-st-label { margin-top: 0.4rem; font-size: 0.74rem; font-weight: 800; color: var(--text-sub); letter-spacing: 0.04em; }
+.wl-st-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 0.45rem; }
+.wl-st-chip { display: flex; align-items: center; gap: 0.4rem; min-width: 0; padding: 0.55rem 0.6rem; border-radius: 14px; cursor: pointer;
+  font: inherit; font-size: 0.82rem; font-weight: 800; color: var(--text); background: var(--surface-1); border: 1.5px solid rgba(var(--g-rgb),0.16); }
+.wl-st-chip img, .wl-st-chip-ic { width: 24px; height: 24px; flex: none; border-radius: 50%; object-fit: cover; display: inline-grid; place-items: center; font-weight: 800; }
+.wl-st-chip > span:nth-last-child(2) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: start; }
+.wl-st-plus { color: var(--g-ink); font-weight: 800; }
+
+.wl-st-more { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.wl-st-more button { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.8rem; border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); background: transparent; border: 1px solid rgba(var(--g-rgb),0.22); }
+.wl-st-private { font-size: 0.72rem; color: var(--text-sub); text-align: center; }
+.wl-st-unlock { margin-top: 0.6rem; text-align: center; }
+.wl-st-unlock .wl-st-label { text-align: start; margin-bottom: 0.5rem; }
+
+/* After the first asset: progress to three */
+.wl-st-prog { margin: 0.75rem 0; padding: 1rem; border-radius: 18px; background: var(--surface-1); border: 1.5px solid rgba(var(--g-rgb),0.24); }
+.wl-st-prog-h { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.wl-st-prog-h strong { font-size: 1rem; font-weight: 800; color: var(--text); }
+.wl-st-prog-x { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 0; cursor: pointer; background: transparent; color: var(--text-sub); }
+.wl-st-prog-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin: 0.7rem 0 0.4rem; }
+.wl-st-prog-bar i { height: 6px; border-radius: 3px; background: rgba(var(--g-rgb),0.15); }
+.wl-st-prog-bar i.on { background: rgb(var(--g-rgb)); }
+.wl-st-prog-n { font-size: 0.78rem; font-weight: 800; color: var(--g-ink); }
+.wl-st-prog p { margin: 0.3rem 0 0.8rem; font-size: 0.84rem; line-height: 1.55; color: var(--text-muted); }
+.wl-st-prog-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.wl-st-prog-btns button { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.6rem 0.9rem; border-radius: 12px; cursor: pointer;
+  font: inherit; font-size: 0.84rem; font-weight: 800; color: var(--g-ink); background: rgba(var(--g-rgb),0.12); border: 0; }
+.wl-st-prog-btns .wl-st-prog-main { color: #fff; background: rgb(var(--g-rgb)); }

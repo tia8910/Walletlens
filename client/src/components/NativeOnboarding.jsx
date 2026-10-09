@@ -19,7 +19,7 @@ import { primeEffectAudio } from '../screenEffectsRuntime'
 //   look      the screen splits into dark and light; colour orbs circle the
 //             preview and tapping one floods the screen with it
 //   security  a fingerprint draws itself under a scanning beam (app only)
-//   launch    hold the ring until it fills; the field goes to warp speed
+//   launch    one tap on Start; the field goes to warp speed
 
 const ONBOARD_KEY = 'wl_welcomed_v2'
 
@@ -45,7 +45,6 @@ const SLIDES = [
 const HELLO = { en: 'Hello', ar: 'مرحبا', fr: 'Bonjour', es: 'Hola', de: 'Hallo', it: 'Ciao' }
 const FEATURE_KEYS = ['obFeatPrivate', 'obFeatLivePnl', 'obFeatInsights', 'obFeatFree']
 const FEATURE_ICONS = { obFeatPrivate: 'lock', obFeatLivePnl: 'pulse', obFeatInsights: 'sparkles', obFeatFree: 'gift' }
-const HOLD_MS = 1100
 
 /**
  * The slides this context can actually deliver.
@@ -123,7 +122,6 @@ export default function NativeOnboarding({ onDone }) {
   const [burst, setBurst] = useState(0)
   const [warp, setWarp] = useState(false)
   const [paint, setPaint] = useState(null)
-  const [hold, setHold] = useState(0)
   const [featIdx, setFeatIdx] = useState(0)
   const [count, setCount] = useState(0)
   const [move, setMove] = useState('up')
@@ -132,11 +130,11 @@ export default function NativeOnboarding({ onDone }) {
   const { lang, setLang, t } = useLanguage()
   const touch = useRef({ x: 0, y: 0, on: false })
   const [drag, setDrag] = useState(0)
-  const holdRef = useRef(null)
 
   const s = slides[Math.min(step, slides.length - 1)]
   const total = slides.length
   const th = THEMES.find(x => x.id === theme) || THEMES[0]
+  const themeName = x => t('themeNames')?.[x.id] || x.name
   const light = mode === 'light'
 
   useEffect(() => {
@@ -254,30 +252,11 @@ export default function NativeOnboarding({ onDone }) {
     finally { setBioBusy(false) }
   }
 
-  // ── launch: hold to fill the ring, then warp ──────────────────────────
-  function holdStart() {
-    if (warp) return
-    try { sfx.startCharge(HOLD_MS); sfx.haptic(15) } catch {}
-    const t0 = performance.now()
-    const tick = (now) => {
-      const k = Math.min(1, (now - t0) / HOLD_MS)
-      setHold(k)
-      if (k >= 1) { launch(); return }
-      holdRef.current = requestAnimationFrame(tick)
-    }
-    holdRef.current = requestAnimationFrame(tick)
-  }
-  function holdEnd() {
-    cancelAnimationFrame(holdRef.current)
-    try { sfx.stopCharge() } catch {}
-    if (!warp) setHold(0)
-  }
-  useEffect(() => () => cancelAnimationFrame(holdRef.current), [])
-
+  // ── launch: one tap, then warp ────────────────────────────────────────
   function launch() {
     if (warp) return
-    try { sfx.stopCharge(); sfx.stopDrone(); sfx.playWarp(); sfx.haptic([20, 40, 60]) } catch {}
-    setWarp(true); setBurst(b => b + 1); setHold(1)
+    try { sfx.stopDrone(); sfx.playWarp(); sfx.haptic([20, 40, 60]) } catch {}
+    setWarp(true); setBurst(b => b + 1)
     setTimeout(finish, 1100)
   }
 
@@ -413,7 +392,7 @@ export default function NativeOnboarding({ onDone }) {
               const a = (i - sel) * 26
               const on = theme === x.id
               return (
-                <button key={x.id} role="radio" aria-checked={on} aria-label={x.name}
+                <button key={x.id} role="radio" aria-checked={on} aria-label={themeName(x)}
                   className={`ocx-dot${on ? ' on' : ''}`}
                   style={{ transform: `rotate(${a}deg) translateY(150px) rotate(${-a}deg) scale(${on ? 1.25 : 0.9})`, opacity: Math.abs(a) > 80 ? 0 : 1 - Math.abs(a) / 160,
                     '--sw': x.swatch, background: `radial-gradient(circle at 35% 30%, ${x.light}, ${x.swatch})` }}
@@ -426,7 +405,7 @@ export default function NativeOnboarding({ onDone }) {
         </div>
         <div className="ocx-copy">
           <h1 className="ocx-title">{words(t('obThemeTitle'))}</h1>
-          <p className="ocx-desc">{th.name} · {light ? t('modeLight') : t('modeDark')}</p>
+          <p className="ocx-desc">{themeName(th)} · {light ? t('modeLight') : t('modeDark')}</p>
         </div>
       </>
     )
@@ -457,7 +436,6 @@ export default function NativeOnboarding({ onDone }) {
       </>
     )
   } else {
-    const R = 62, C = 2 * Math.PI * R
     scene = (
       <>
         <div className="ocx-copy ocx-top">
@@ -465,16 +443,13 @@ export default function NativeOnboarding({ onDone }) {
           <h1 className="ocx-title">{words(t('obGoTitle'))}</h1>
           <p className="ocx-desc">{t('obGoDesc')}</p>
         </div>
-        <button className={`no-nav-next ocx-hold${warp ? ' is-go' : ''}`} aria-label={t('obStart')}
-          onPointerDown={holdStart} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd}
-          onClick={(e) => { if (e.detail === 0) launch() }}>
-          <svg viewBox="0 0 150 150" aria-hidden="true">
-            <circle cx="75" cy="75" r={R} className="ocx-hold-track" />
-            <circle cx="75" cy="75" r={R} className="ocx-hold-fill" style={{ strokeDasharray: C, strokeDashoffset: C * (1 - hold) }} />
-          </svg>
-          <span className="ocx-hold-core"><Icon name="trend-up" size={40} /></span>
+        {/* One tap. It used to be a long press on a ring, which people did
+            not discover and read as a broken button. */}
+        <button className={`no-nav-next ocx-go${warp ? ' is-go' : ''}`} onClick={launch} disabled={warp}>
+          <span>{t('obStart')}</span>
+          <Icon name="arrow-right" size={20} className="ocx-go-arrow" />
         </button>
-        <div className="ocx-hint">{t('obHoldLaunch')}</div>
+        <div className="ocx-hint">{t('obTapLaunch')}</div>
       </>
     )
   }

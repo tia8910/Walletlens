@@ -181,19 +181,19 @@
 .ocx-pill.is-on { color: var(--accent); }
 .ocx-err { margin-top: 0.6rem; font-size: 0.78rem; color: #fca5a5; max-width: 300px; }
 
-/* ── Launch: hold the ring ───────────────────────────────────────────── */
-.no-nav-next.ocx-hold { position: relative; width: 170px; height: 170px; border-radius: 50%; padding: 0; border: 0; background: none; box-shadow: none; cursor: pointer;
-  display: grid; place-items: center; touch-action: none; -webkit-tap-highlight-color: transparent; flex: none; }
-.ocx-hold svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-.ocx-hold-track { fill: none; stroke: rgba(255,255,255,0.12); stroke-width: 6; }
-.ocx-hold-fill { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; filter: drop-shadow(0 0 8px var(--accent)); }
-.ocx-hold-core { width: 104px; height: 104px; border-radius: 50%; display: grid; place-items: center; color: #04140a;
-  background: radial-gradient(circle at 35% 30%, #bbf7d0, var(--accent)); box-shadow: 0 0 50px var(--glow); animation: ocx-breathe 2.2s ease-in-out infinite; }
-.ocx-hold:active .ocx-hold-core { transform: scale(0.94); }
-.ocx-hold.is-go .ocx-hold-core { animation: ocx-go 0.9s cubic-bezier(0.55,0,1,0.45) forwards; }
-@keyframes ocx-breathe { 50% { transform: scale(1.06); box-shadow: 0 0 80px var(--glow); } }
+/* ── Launch: one tap on Start ────────────────────────────────────────── */
+.no-nav-next.ocx-go { display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; flex: none;
+  min-width: 220px; height: 64px; padding: 0 2.2rem; border: 0; border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: 1.15rem; font-weight: 800; letter-spacing: 0.01em; color: #04140a;
+  background: radial-gradient(circle at 30% 20%, #bbf7d0, var(--accent) 70%); box-shadow: 0 0 50px var(--glow), 0 10px 30px rgba(0,0,0,0.35);
+  -webkit-tap-highlight-color: transparent; animation: ocx-breathe 2.2s ease-in-out infinite; transition: transform 0.15s; }
+.no-nav-next.ocx-go:active { transform: scale(0.96); }
+.no-nav-next.ocx-go:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+.no-nav-next.ocx-go.is-go { animation: ocx-go 0.9s cubic-bezier(0.55,0,1,0.45) forwards; }
+[dir="rtl"] .ocx-go-arrow { transform: scaleX(-1); }
+@keyframes ocx-breathe { 50% { transform: scale(1.04); box-shadow: 0 0 80px var(--glow), 0 10px 30px rgba(0,0,0,0.35); } }
 @keyframes ocx-go { to { transform: translateY(-60vh) scale(0.6); opacity: 0; } }
-.ocx-hint { margin-bottom: auto; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); animation: ocx-blink 1.6s ease-in-out infinite; }
+.ocx-hint { margin-bottom: auto; font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.6); }
 @keyframes ocx-blink { 50% { opacity: 0.45; } }
 
 /* ── Bottom: continue ────────────────────────────────────────────────── */
@@ -211,9 +211,23 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .ocx-scene, .ocx-word, .ocx-chip, .ocx-aperture, .ocx-ap-halo, .ocx-ap-rim, .ocx-ap-scroll, .ocx-odo-strip, .ocx-odo-flash, .ocx-ap-flare::after, .ocx-preview,
-  .ocx-print path, .ocx-beam, .ocx-hold-core, .ocx-next, .ocx-hint, .ocx-paint, .ocx-bar.now i { animation: none !important; }
+  .ocx-print path, .ocx-beam, .ocx-go, .ocx-next, .ocx-hint, .ocx-paint, .ocx-bar.now i { animation: none !important; }
   .ocx-word, .ocx-chip { opacity: 1; transform: none; filter: none; }
   .ocx-print path { stroke-dashoffset: 0; }
   .ocx-blade { animation: none !important; transform: rotate(-58deg); }
   .ocx-bar.now i { width: 100%; }
 }
+
+/* The animated titles are built from one inline-block per word. Inline
+   blocks carry no direction of their own, so the global RTL safety net
+   (unicode-bidi: plaintext on headings) found no strong character and laid
+   Arabic titles out left to right: "اجعله على ذوقك" read "ذوقك على اجعله".
+   Isolate instead, so the words follow the page direction. */
+.no-container .ocx-title { unicode-bidi: isolate; }
+
+/* Same safety net, two more casualties in Arabic: the welcome figure is one
+   span per digit, so "$796,821" came out "796,821$"; and paragraphs got
+   text-align: start, so a two line description sat flush right while every
+   other line on the screen is centred. Figures are always left to right. */
+.no-container .ocx-odo, .no-container .ocx-chg { direction: ltr; unicode-bidi: isolate; }
+.no-container .ocx-desc { text-align: center; }

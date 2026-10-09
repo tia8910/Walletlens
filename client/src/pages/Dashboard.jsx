@@ -2542,118 +2542,111 @@ function GuardianBadge() {
   )
 }
 
+// The empty Home. Its one job is to get a new user's real holdings in, so the
+// fastest route (a screenshot of the broker) leads, the other routes follow,
+// one-tap chips cover "I just own some BTC", and the feature tour sits below
+// as what all of this unlocks.
 function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, loaded, importsSlot }) {
   const { t } = useLanguage()
   if (!loaded) return null
+  const go = (method, fn) => () => { track('starter_action', { method }); fn() }
 
   return (
-    <div style={{ textAlign:'center', padding:'2rem 1rem 1.5rem', position:'relative', overflow:'hidden', marginTop:'0.5rem' }}>
-
-      {/* Feature slideshow */}
-      <FeatureSlideshow />
-
-      {/* Headline */}
-      <div style={{ fontWeight:800, fontSize:'1.25rem', color:'var(--text)', marginBottom:'0.5rem', lineHeight:1.3 }}>
-        {t('emptyHeadline')}
+    <div className="wl-st">
+      <div className="wl-st-hero">
+        <div className="wl-st-eyebrow">{t('stEyebrow')}</div>
+        <h2 className="wl-st-title">{t('stTitle')}</h2>
+        <p className="wl-st-sub">{t('stSub')}</p>
+        <ol className="wl-st-steps">
+          <li className="on"><b>1</b>{t('stStep1')}</li>
+          <li><b>2</b>{t('stStep2')}</li>
+          <li><b>3</b>{t('stStep3')}</li>
+        </ol>
       </div>
-      <div style={{ fontSize:'0.875rem', color:'var(--text-muted)', marginBottom:'1.1rem', lineHeight:1.65 }}>
-        {t('emptySubA')}<br/>{t('emptySubB')}
-      </div>
 
-      {/* Guided walkthrough launcher — starts the step-by-step arrow tour */}
-      <button
-        className="wl-guide-cta"
-        onClick={() => { track('add_asset_guide_open', { source: 'empty_state' }); window.dispatchEvent(new Event('wl:add-asset-guide')) }}>
-        <span className="wl-guide-cta-ico" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2.2l1.7 5.1a3 3 0 0 0 1.9 1.9l5.1 1.7-5.1 1.7a3 3 0 0 0-1.9 1.9L12 19.6l-1.7-5.1a3 3 0 0 0-1.9-1.9L3.3 10.9l5.1-1.7a3 3 0 0 0 1.9-1.9L12 2.2z"/>
-            <path d="M19 3.5l.55 1.65a1 1 0 0 0 .63.63L21.8 6.3l-1.62.52a1 1 0 0 0-.63.63L19 9.1l-.55-1.65a1 1 0 0 0-.63-.63L16.2 6.3l1.62-.52a1 1 0 0 0 .63-.63L19 3.5z" opacity=".85"/>
-          </svg>
-        </span>
-        <span className="wl-guide-cta-text">
-          <strong>{t('guideCta')}</strong>
-          <span>{t('guideSub')}</span>
-        </span>
-        <span className="wl-guide-cta-badge" aria-hidden="true">{t('guideBadge')}</span>
-        <span className="wl-guide-cta-arrow" aria-hidden="true">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </span>
+      <button type="button" className="wl-st-primary" onClick={go('screenshot', () => onImportAction('screenshot'))}>
+        <span className="wl-st-ic"><Icon name="camera" size={22} /></span>
+        <span className="wl-st-txt"><strong>{t('stShotTitle')}</strong><small>{t('stShotSub')}</small></span>
+        <span className="wl-st-badge">{t('stFastest')}</span>
       </button>
 
-      {/* Primary import boxes — every method lives here (the duplicate cards
-          that used to sit below have been removed). */}
-      {(() => {
-        const boxStyle = {
-          display: 'flex', alignItems: 'center', gap: '0.45rem',
-          padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
-          background: 'rgba(var(--g-rgb),0.1)', border: '1.5px solid rgba(var(--g-rgb),0.3)',
-          color: 'var(--g-ink)', fontWeight: 700, fontSize: '0.82rem',
-          transition: 'background 0.15s',
-        }
-        return (
-      <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem',
-        marginBottom: '1.25rem',
-      }}>
-        <button data-tour="add-asset" onClick={onAddTrade} style={boxStyle}>
-          <span style={{ fontSize: '1rem', fontWeight: 700 }}>+</span> {t('startAddingAssets')}
+      <div className="wl-st-pair">
+        <button type="button" className="wl-st-opt" onClick={go('voice', () => onImportAction('voice'))}>
+          <span className="wl-st-ic sm"><Icon name="mic" size={18} /></span>
+          <strong>{t('stVoiceTitle')}</strong><small>{t('stVoiceSub')}</small>
         </button>
-        <button onClick={() => onImportAction('screenshot')} style={boxStyle}>
-          <Icon name="camera" size={15} /> {t('importScreenshot')}
-        </button>
-        <button onClick={() => onImportAction('excel')} style={boxStyle}>
-          <Icon name="bar-chart" size={15} /> {t('importExcel')}
-        </button>
-        <button onClick={() => onImportAction('voice')} style={boxStyle}>
-          <Icon name="mic" size={15} /> {t('importVoice')}
-        </button>
-        <button onClick={() => onImportAction('backup')} style={boxStyle}>
-          <Icon name="folder" size={15} /> {t('importBackup')}
+        <button type="button" className="wl-st-opt" data-tour="add-asset" onClick={go('manual', onAddTrade)}>
+          <span className="wl-st-ic sm"><Icon name="plus" size={18} /></span>
+          <strong>{t('stManualTitle')}</strong><small>{t('stManualSub')}</small>
         </button>
       </div>
-        )
-      })()}
 
-      {/* Import buttons (Excel / Voice) */}
-      {importsSlot}
-
-      {/* Quick-add chips */}
-      <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--text-sub)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.55rem' }}>
-        {t('orQuicklyAdd')}
-      </div>
-      <div style={{ display:'flex', flexWrap:'wrap', justifyContent:'center', gap:'0.45rem', marginBottom:'1.25rem' }}>
+      <div className="wl-st-label">{t('stTapOwn')}</div>
+      <div className="wl-st-chips">
         {orderQuickAdd(QUICK_ADD_ASSETS).map(a => {
           const goldLogo = a.useGoldLogo ? THEMES.find(t => t.id === 'gold')?.logo : null
           return (
-            <button key={a.label} onClick={() => onQuickAdd(a.prefill)} style={{
-              display:'inline-flex', alignItems:'center', gap:'0.38rem',
-              padding:'0.42rem 0.8rem', borderRadius:'50px',
-              background:'var(--surface-1)',
-              border:'1.5px solid rgba(var(--g-rgb),0.18)',
-              color:'var(--text)', fontWeight:700, fontSize:'0.8rem', cursor:'pointer',
-              transition:'border-color 0.15s, background 0.15s',
-            }}>
+            <button type="button" key={a.label} className="wl-st-chip" onClick={go('chip', () => onQuickAdd(a.prefill))}>
               {a.imgSrc || goldLogo
                 ? <img
-                    src={a.imgSrc
-                      ? voiceProxy(a.imgSrc)
-                      : goldLogo}
+                    src={a.imgSrc ? voiceProxy(a.imgSrc) : goldLogo}
                     onError={e => { if (a.imgSrc && !e.currentTarget.dataset.fb) { e.currentTarget.dataset.fb = '1'; e.currentTarget.src = a.imgSrc } }}
-                    alt={a.label} style={{ width:22, height:22, borderRadius:'50%', objectFit:'cover', flexShrink:0 }} />
-                : <span style={{
-                    width:22, height:22, borderRadius:'50%', background:a.bg,
-                    display:'inline-flex', alignItems:'center', justifyContent:'center',
-                    fontSize:a.iconSize || '0.6rem', color:a.iconColor || 'white', fontWeight:800, flexShrink:0,
-                  }}>{a.icon}</span>
-              }
-              <span style={{ color: 'var(--g-ink)', fontWeight: 700, fontWeight:800, fontSize:'0.75rem', marginRight:1 }}>+</span>
-              {a.label}
+                    alt="" />
+                : <span className="wl-st-chip-ic" style={{ background: a.bg, color: a.iconColor || 'white', fontSize: a.iconSize || '0.6rem' }}>{a.icon}</span>}
+              <span>{a.label}</span>
+              <span className="wl-st-plus" aria-hidden="true">+</span>
             </button>
           )
         })}
       </div>
 
-      <div style={{ fontSize:'0.72rem', color:'var(--text-sub)' }}>{t('dsDataStaysLocalNoAccount')}</div>
+      <div className="wl-st-label">{t('stMore')}</div>
+      <div className="wl-st-more">
+        <button type="button" onClick={go('excel', () => onImportAction('excel'))}><Icon name="bar-chart" size={15} />{t('importExcel')}</button>
+        <button type="button" onClick={go('backup', () => onImportAction('backup'))}><Icon name="folder" size={15} />{t('importBackup')}</button>
+        <button type="button" onClick={go('guide', () => window.dispatchEvent(new Event('wl:add-asset-guide')))}><Icon name="sparkles" size={15} />{t('guideCta')}</button>
+      </div>
+
+      {/* Import panels (screenshot, voice, Excel, backup) open here. */}
+      {importsSlot}
+
+      <div className="wl-st-private">{t('dsDataStaysLocalNoAccount')}</div>
+
+      <div className="wl-st-unlock">
+        <div className="wl-st-label">{t('stUnlock')}</div>
+        <FeatureSlideshow />
+      </div>
+    </div>
+  )
+}
+
+// After the first asset: a small progress card until there are three, so the
+// first one is not where people stop. Hidden for good once dismissed.
+const STARTER_HIDE_KEY = 'wl_starter_hidden'
+function StarterProgress({ count, onScreenshot, onAdd }) {
+  const { t } = useLanguage()
+  const [hidden, setHidden] = useState(() => { try { return localStorage.getItem(STARTER_HIDE_KEY) === '1' } catch { return false } })
+  if (hidden || count < 1 || count >= 3) return null
+  const hide = () => { try { localStorage.setItem(STARTER_HIDE_KEY, '1') } catch {} ; track('starter_progress_hide', { count }); setHidden(true) }
+  return (
+    <div className="wl-st-prog">
+      <div className="wl-st-prog-h">
+        <strong>{t('stProgTitle')}</strong>
+        <button type="button" className="wl-st-prog-x" onClick={hide} aria-label={t('stHide')}><Icon name="x" size={14} /></button>
+      </div>
+      <div className="wl-st-prog-bar" role="progressbar" aria-valuemin={0} aria-valuemax={3} aria-valuenow={count}>
+        {[0, 1, 2].map(i => <i key={i} className={i < count ? 'on' : ''} />)}
+      </div>
+      <div className="wl-st-prog-n">{t('stProgCount')(count)}</div>
+      <p>{t('stProgSub')}</p>
+      <div className="wl-st-prog-btns">
+        <button type="button" className="wl-st-prog-main" onClick={() => { track('starter_action', { method: 'screenshot', from: 'progress' }); onScreenshot() }}>
+          <Icon name="camera" size={15} />{t('stShotTitle')}
+        </button>
+        <button type="button" onClick={() => { track('starter_action', { method: 'manual', from: 'progress' }); onAdd() }}>
+          <Icon name="plus" size={15} />{t('stAddMore')}
+        </button>
+      </div>
     </div>
   )
 }
@@ -4744,7 +4737,12 @@ export default function Dashboard() {
                       loaded={loaded}
                       importsSlot={importsBlock}
                     />
-                  : importsBlock}
+                  : <>
+                      <StarterProgress count={enriched.length}
+                        onScreenshot={() => { setShowScreenshot(true); setShowExcelImport(false); setShowVoiceImport(false); setShowBackupCode(false) }}
+                        onAdd={() => openSheet('buy', 'starter_progress')} />
+                      {importsBlock}
+                    </>}
                 {/* Picked crypto as an interest, holds none yet: the offer
                     goes here instead of under a crypto list that is not there. */}
                 {!isDemo && <BybitInterestStrip holdsCrypto={enriched.some(h => categorizeAsset(h) === 'crypto')} holdsStocks={enriched.some(h => categorizeAsset(h) === 'stocks')} holdsMetals={enriched.some(h => categorizeAsset(h) === 'metals')} />}
@@ -5296,10 +5294,11 @@ export default function Dashboard() {
               )}
 
               {/* ── Holdings (primary column). The new look has them on Home. ── */}
-              {!nlHome && <div className="glass-card">
+              {/* An empty portfolio shows the starter instead of an empty list. */}
+              {!nlHome && enriched.length > 0 && <div className="glass-card">
                 <div style={CHART_HDR_STYLE}>
                   <h3 style={{ margin:0 }}>
-                    Holdings ({isHoldingsFiltered ? `${filteredHoldings.length} of ${enriched.length}` : enriched.length})
+                    {t('nlHoldings')} ({isHoldingsFiltered ? `${filteredHoldings.length} / ${enriched.length}` : enriched.length})
                   </h3>
                   <div style={{ display:'flex', gap:'0.4rem', alignItems:'center', flexWrap:'wrap' }}>
                     {pricesFailed && <span className="dvx-badge-warn" style={{ fontSize:'0.6rem' }}>{t('dsInvestedCaps')}</span>}
@@ -5693,7 +5692,7 @@ export default function Dashboard() {
             <div className="dvx-col-side">
 
               {/* ── Allocation donut (by category) ── */}
-              {cardVis.allocation && <div className="glass-card" id="dash-allocation">
+              {cardVis.allocation && enriched.length > 0 && <div className="glass-card" id="dash-allocation">
                 <h3>{pricesFailed ? t('allocationInvested') : t('dsNetWorthByCat')}</h3>
                 {catAllocData.length === 0
                   ? <p className="muted">{t('noHoldings')}</p>

@@ -132,10 +132,10 @@ export default function Settings() {
                   overflow: 'hidden', padding: 0,
                 }}>
                   {th.logo
-                    ? <img src={th.logo} alt={th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                    ? <img src={th.logo} alt={t('themeNames')?.[th.id] || th.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                     : null}
                 </span>
-                {th.name}
+                {t('themeNames')?.[th.id] || th.name}
               </button>
             ))}
           </div>
