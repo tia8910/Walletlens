@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useLanguage } from '../LanguageContext'
 import {
   useBybitOffer, usePickedOffer, openBybit, stripHidden, hideStrip, viewRef,
+  popupDue, closePopup, currentEndsAt, timeLeft, trackReferralEvent,
 } from '../bybitOffer'
 import './BybitOffer.css'
 
@@ -166,5 +168,108 @@ export function BybitStrip({ variant = 'crypto', placement = 'holdings' }) {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
       </button>
     </div>
+  )
+}
+
+const pad2 = n => String(n).padStart(2, '0')
+// Anything already covering the screen: dialogs, the trade ticket, the
+// milestone, share and quick stats popups.
+const BUSY = '[aria-modal="true"], [role="dialog"], .bs-sheet-open, .bs-confirm-overlay, .ms-overlay, .share-overlay, .qs-overlay'
+
+/**
+ * The time-limited sign-up reward, as a large popup on every screen of the
+ * app: shown to everyone the offer is allowed for, a few seconds after it opens, at most
+ * once a day, and only until the end date in /offers.json. The countdown is
+ * that date.
+ */
+export function BybitPopup({ blocked = false }) {
+  const { t } = useLanguage()
+  const { allowed, bonus } = useBybitOffer()
+  const [open, setOpen] = useState(false)
+  const [now, setNow] = useState(Date.now)
+
+  // A moment after the app settles, and never over another sheet or dialog:
+  // while one is open (onboarding, a trade ticket) it keeps checking and
+  // opens once that one closes.
+  useEffect(() => {
+    if (open || blocked || !allowed) return
+    const tryOpen = () => {
+      if (document.querySelector(BUSY)) return false
+      if (!popupDue()) return true
+      setOpen(true); trackReferralEvent('referral_view', 'popup', 'crypto')
+      return true
+    }
+    let id
+    const first = setTimeout(() => { if (!tryOpen()) id = setInterval(() => { if (tryOpen()) clearInterval(id) }, 3000) }, 3500)
+    return () => { clearTimeout(first); clearInterval(id) }
+  }, [open, blocked, allowed])
+
+  useEffect(() => {
+    if (!open) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    const onKey = e => { if (e.key === 'Escape') close('later') }
+    window.addEventListener('keydown', onKey)
+    return () => { clearInterval(id); window.removeEventListener('keydown', onKey) }
+  }, [open])
+
+  const end = currentEndsAt()
+  const left = end ? timeLeft(end, now) : null
+  if (!open || !left) return null
+
+  function close(how) {
+    closePopup(how)
+    if (how !== 'claim') trackReferralEvent('referral_dismiss', 'popup', 'crypto', { how })
+    setOpen(false)
+  }
+  const [headA, headB = ''] = t('byPopHead').split('{amt}')
+
+  return createPortal(
+    <div className="byp-back" onClick={e => { if (e.target === e.currentTarget) close('later') }}>
+      <section className="byp" role="dialog" aria-modal="true" aria-labelledby="byp-h">
+        <div className="byp-hero">
+          <div className="byp-rays" aria-hidden="true" />
+          <div className="byp-top">
+            <Wordmark />
+            <span className="by-tag">{t('byPartner')}</span>
+            <button type="button" className="byp-x" aria-label={t('byPopClose')} onClick={() => close('later')}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
+            </button>
+          </div>
+          <Gift className="byp-gift" />
+          <p className="byp-eyebrow">{t('byPopEyebrow')}</p>
+          <h2 id="byp-h" className="byp-h">{headA}<em dir="ltr">{bonus}</em>{headB}</h2>
+          <p className="byp-sub">{t('byPopSteps')}</p>
+          <p className="byp-partner">{(() => {
+            const [a, b = ''] = t('byPopPartner').split('{brand}')
+            return <>{a}<Wordmark />{b}</>
+          })()}</p>
+        </div>
+
+        <ol className="byp-steps">
+          <li><b>1</b><span><strong>{t('byPopS1')}</strong><small>{t('byPopS1x')}</small></span></li>
+          <li><b>2</b><span><strong>{t('byPopS2')}</strong><small>{t('byPopS2x').replace('{amt}', bonus)}</small></span></li>
+        </ol>
+
+        <div className="byp-timer" role="timer" aria-live="off">
+          <span className="byp-timer-l">{t('byPopEnds')}</span>
+          <span className="byp-clock" dir="ltr">
+            {[[left.d, t('byPopD')], [left.h, t('byPopH')], [left.m, t('byPopM')], [left.s, t('byPopS')]].map(([v, u], i) => (
+              <span key={i} className="byp-cell"><b>{pad2(v)}</b><i>{u}</i></span>
+            ))}
+          </span>
+        </div>
+
+        <button type="button" className="by-cta byp-cta" onClick={() => { closePopup('done'); setOpen(false); openBybit('popup', 'crypto') }}>
+          {t('byPopCta').replace('{amt}', bonus)} <span aria-hidden="true" className="byp-arrow">→</span>
+        </button>
+        <div className="byp-links">
+          <button type="button" onClick={() => close('later')}>{t('byPopLater')}</button>
+          <span aria-hidden="true">·</span>
+          <button type="button" onClick={() => close('done')}>{t('byPopNever')}</button>
+        </div>
+        <p className="by-fine">{t('byFine')}</p>
+      </section>
+    </div>,
+    document.body,
   )
 }

@@ -1,6 +1,7 @@
 {
   "enabled": true,
   "bybit": {
-    "bonus": "$20"
+    "bonus": "$20",
+    "endsAt": "2026-10-14T09:00:00Z"
   }
 }
