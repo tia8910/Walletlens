@@ -79,7 +79,8 @@ describe('nothing is removed', () => {
   })
 
   it('shows the portfolio sentiment ticker on Home, under the portfolio card', () => {
-    expect(read('pages/Dashboard.jsx')).toMatch(/sentimentSlot=\{<SentimentTicker /)
+    // Hidden only while the portfolio is empty, where Home has one job: adding assets.
+    expect(read('pages/Dashboard.jsx')).toMatch(/sentimentSlot=\{enriched\.length > 0 \|\| isDemo \? <SentimentTicker /)
     const top = read('components/HomeTop.jsx')
     expect(top.indexOf('nl-sentiment')).toBeGreaterThan(top.indexOf('className="nl-hero"'))
     expect(top.indexOf('nl-sentiment')).toBeLessThan(top.indexOf('className="nl-quick"'))
@@ -93,7 +94,9 @@ describe('nothing is removed', () => {
 
   it('shows the news only on the dashboard tab', () => {
     const dash = read('pages/Dashboard.jsx')
-    expect(dash).toMatch(/\{activeTab === 'overview' && !nlHome && <NewsTicker \/>\}/)
+    expect(dash).toMatch(/\{activeTab === 'overview' && !nlHome && \(enriched\.length > 0 \|\| isDemo\) && <NewsTicker \/>\}/)
+    // Not while the portfolio is empty.
+    expect(dash).toMatch(/newsSlot=\{enriched\.length > 0 \|\| isDemo \? <NewsTicker variant="card" \/> : null\}/)
     expect(dash.match(/<NewsTicker\b/g)).toHaveLength(2)
   })
 
@@ -126,7 +129,7 @@ describe('Home shows each figure once', () => {
     const hold = read('components/NlHoldings.jsx')
     for (const piece of ['setSearch', 'setSort', 'setDir', 'setBreakEven', 'onExcel', 'onPdf', 'setCat', 'selectedStats', 'bindRow(h)']) expect(hold, piece).toContain(piece)
     expect(dash).toMatch(/\{nlHomeView && \(\s*<>\s*<NlHoldings/)
-    expect(dash).toMatch(/\{!nlHome && <div className="glass-card">/)
+    expect(dash).toMatch(/\{!nlHome && enriched\.length > 0 && <div className="glass-card">/)
     // The old row's ⋮ panel actions moved into the long-press menu.
     for (const k of ['dsSetTarget', 'dsSetVision', 'dsRiskScan', 'nlSelect']) expect(dash).toMatch(new RegExp(`holdingMenu[\\s\\S]*t\\('${k}'\\)`))
     // Magic Score opened the same chart as Technicals; it is gone.

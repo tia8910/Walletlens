@@ -99,7 +99,7 @@ function StageTheme({ th }) {
       <div className="wx-phone" key={th.id}>
         <div className="wx-card wx-card-sm">
           <i className="wx-motif" />
-          <div className="wx-card-h"><Logo size={16} /><span>{t('totalPortfolioValue')}</span><b className="wx-tn">{th.name}</b></div>
+          <div className="wx-card-h"><Logo size={16} /><span>{t('totalPortfolioValue')}</span><b className="wx-tn">{t('themeNames')?.[th.id] || th.name}</b></div>
           <div className="wx-big">{money(total)}</div>
           <svg className="wx-spark" viewBox="0 0 300 70" preserveAspectRatio="none" aria-hidden="true">
             <path className="ar" d={SPARK.area} /><path className="ln" d={SPARK.line} pathLength="1" />

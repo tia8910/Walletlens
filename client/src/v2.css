@@ -837,6 +837,7 @@ html.wl-v2 .sc-sig.is-sell path, html.wl-v2 .sc-sig.is-sell rect { fill: var(--s
 html.wl-v2 .sc-sig text { fill: #fff; font-size: 7.5px; font-weight: 800; }
 html.wl-v2 .sc-level line { stroke-dasharray: 3 3; stroke-width: 1; }
 html.wl-v2 .sc-level text { fill: #fff; font-size: 7px; font-weight: 800; }
+html.wl-v2 .sc-level .sc-level-k { fill-opacity: 0.78; font-weight: 700; }
 html.wl-v2 .sc-level.is-sl line { stroke: var(--sc-dn); } html.wl-v2 .sc-level.is-sl rect { fill: var(--sc-dn); }
 html.wl-v2 .sc-level.is-tp line { stroke: var(--sc-up); } html.wl-v2 .sc-level.is-tp rect { fill: var(--sc-up); }
 html.wl-v2 .sc-level.is-entry line { stroke: var(--sc-axis); } html.wl-v2 .sc-level.is-entry rect { fill: var(--sc-axis); }

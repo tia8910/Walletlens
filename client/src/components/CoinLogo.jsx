@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, memo } from 'react'
-import { getCachedCoinImage } from '../api'
+import { getCachedCoinImage, stockLogoFor, loadStockLogos } from '../api'
 // Shared with the landing page's asset-class cards so both render the same
 // metal badges. See client/src/data/assetIcons.js.
 import { ASSET_ICONS, AssetIconBadge } from '../data/assetIcons'
@@ -225,7 +225,52 @@ const MAX_RETRIES = 2
  * table because no CDN carries them, so the fallback ladder in CryptoLogo
  * would only burn requests on a stock ticker before giving up.
  */
+// A currency's flag. ISO 4217 codes start with the country's ISO 3166 code
+// (USD → us, AED → ae, EGP → eg), so two letters are enough except for the
+// currencies a whole union or region shares, and the X codes that are not
+// money of any one country (XAU is gold, not a flag).
+const FLAG_OVERRIDES = { EUR: 'eu', XAF: 'cm', XOF: 'sn', XCD: 'ag', XPF: 'pf', ANG: 'cw' }
+export function flagCodeFor(currency) {
+  const c = String(currency || '').toUpperCase()
+  if (!/^[A-Z]{3}$/.test(c)) return null
+  if (FLAG_OVERRIDES[c]) return FLAG_OVERRIDES[c]
+  if (c.startsWith('X')) return null
+  return c.slice(0, 2).toLowerCase()
+}
+const flagUrl = cc => `https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/flags/1x1/${cc}.svg`
+
+// Re-render the stock logos on screen once the logo table arrives.
+const stockLogoWaiters = new Set()
+function useStockLogo(ticker) {
+  const [, bump] = useState(0)
+  const url = ticker ? stockLogoFor(ticker) : ''
+  useEffect(() => {
+    if (!ticker || url) return
+    const wake = () => bump(n => n + 1)
+    stockLogoWaiters.add(wake)
+    loadStockLogos().then(() => stockLogoWaiters.forEach(w => w()))
+    return () => { stockLogoWaiters.delete(wake) }
+  }, [ticker, url])
+  return url
+}
+
+/** Picture logos for non-crypto ids: company logos for stocks, flags for cash. */
+function nonCryptoPictures(coinId, stockUrl) {
+  if (coinId?.startsWith('fiat:')) {
+    const cc = flagCodeFor(coinId.slice(5))
+    return cc ? [flagUrl(cc), voiceProxy(flagUrl(cc))] : []
+  }
+  if (coinId?.startsWith('stock:') && stockUrl) return [stockUrl, voiceProxy(stockUrl)]
+  return []
+}
+
 function NonCryptoLogo({ coinId, symbol, size = 32, className = 'coin-logo', badgeStyle, fallbackChar }) {
+  // Hooks first: every render of this component runs the same ones.
+  const stockUrl = useStockLogo(coinId?.startsWith('stock:') ? coinId.slice(6) : '')
+  const pics = nonCryptoPictures(coinId, stockUrl)
+  const [step, setStep] = useState(0)
+  useEffect(() => { setStep(0) }, [coinId, stockUrl])
+
   // The shared badge, not a second copy of it.
   //
   // This drew its own gradient disc with the metal's ISO code, while
@@ -235,6 +280,16 @@ function NonCryptoLogo({ coinId, symbol, size = 32, className = 'coin-logo', bad
   // ingot Buy and Sell show.
   if (ASSET_ICONS[coinId]) {
     return <AssetIconBadge coinId={coinId} size={size} className={className} style={badgeStyle} />
+  }
+
+  // A company logo or a flag, trying the direct link and then the site proxy,
+  // and the lettered badge below only when neither loads.
+  if (step < pics.length) {
+    return (
+      <img src={pics[step]} alt="" width={size} height={size} loading="lazy" decoding="async"
+        className={className} onError={() => setStep(n => n + 1)}
+        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, background: '#fff', ...badgeStyle }} />
+    )
   }
 
   const label = fallbackChar || nonCryptoLabel(coinId, symbol)

@@ -1,0 +1,93 @@
+/* The empty Home stage. A deep night panel in both themes on purpose: the
+   orbs, chips and ring are light on dark, and the accent comes from the
+   chosen theme through --g-rgb. */
+.ev { display: flex; flex-direction: column; gap: 0.7rem; padding: 0.6rem 0 0.4rem; text-align: start; }
+
+.ev-stage {
+  position: relative; overflow: hidden; border-radius: 24px; padding: 1.1rem 0.9rem 1rem; color: #fff;
+  background:
+    radial-gradient(120% 70% at 50% 55%, rgba(var(--g-rgb), 0.22), transparent 62%),
+    radial-gradient(90% 60% at 100% 0%, rgba(99, 102, 241, 0.18), transparent 60%),
+    linear-gradient(180deg, #0b1622, #060d15);
+  box-shadow: 0 18px 44px rgba(3, 10, 18, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.ev-stage::before { /* a faint dot field */
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.35;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.5) 0.6px, transparent 0.8px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(80% 70% at 50% 50%, #000, transparent);
+  -webkit-mask-image: radial-gradient(80% 70% at 50% 50%, #000, transparent);
+}
+.ev-head { position: relative; padding: 0 0.3rem; }
+.ev-eyebrow { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: rgb(var(--g-rgb)); }
+.ev-title { margin: 0.2rem 0 0.25rem; font-size: 1.6rem; line-height: 1.15; font-weight: 800; color: #fff; text-wrap: balance; }
+.ev-sub { margin: 0; font-size: 0.86rem; line-height: 1.55; color: rgba(255, 255, 255, 0.66); }
+
+.ev-svg { position: relative; display: block; width: 100%; max-width: 440px; height: auto; margin: 0.2rem auto 0; overflow: visible; }
+.ev-svg text { font-family: inherit; }
+.ev-orbit { fill: none; stroke: rgba(255, 255, 255, 0.09); stroke-width: 1; stroke-dasharray: 2 5; }
+.ev-track { fill: none; stroke: rgba(255, 255, 255, 0.08); stroke-width: 10; }
+.ev-ring-k { font-size: 8.5px; font-weight: 700; fill: rgba(255, 255, 255, 0.55); }
+.ev-ring-v { font-size: 21px; font-weight: 800; fill: #fff; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.ev-ring-ex { font-size: 8px; font-weight: 800; fill: rgba(255, 255, 255, 0.4); letter-spacing: 0.06em; }
+.ev-spark { fill: none; stroke: rgb(var(--g-rgb)); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.ev-orb { cursor: pointer; outline: none; }
+.ev-orb:focus-visible circle:nth-of-type(2) { stroke: #fff; stroke-width: 2.5; }
+.ev-orb-t { font-weight: 800; fill: rgba(255, 255, 255, 0.78); pointer-events: none; }
+.ev-orb-plus { font-weight: 900; fill: #0b1220; pointer-events: none; }
+
+.ev-card { fill: rgba(13, 26, 38, 0.94); stroke: rgba(255, 255, 255, 0.14); stroke-width: 1; }
+.ev-card-dot { fill: rgba(255, 255, 255, 0.25); }
+.ev-card-h { font-size: 8.5px; font-weight: 700; fill: rgba(255, 255, 255, 0.6); }
+.ev-row-s { font-size: 10px; font-weight: 800; fill: #fff; }
+.ev-row-a { font-size: 10px; font-weight: 700; fill: rgba(255, 255, 255, 0.75); font-variant-numeric: tabular-nums; }
+.ev-row-lit { fill: rgba(var(--g-rgb), 0.18); }
+.ev-beam-line { stroke: rgb(var(--g-rgb)); stroke-width: 1.6; }
+.ev-mic { fill: rgb(var(--g-rgb)); }
+.ev-mic-g { fill: none; stroke: #04140a; stroke-width: 1.6; stroke-linecap: round; }
+.ev-wave { fill: rgba(var(--g-rgb), 0.85); }
+.ev-voice-t { font-size: 9.4px; font-weight: 700; fill: #fff; }
+.ev-caret { fill: rgb(var(--g-rgb)); }
+.ev-chip { fill: rgba(8, 16, 26, 0.95); stroke-width: 1.4; }
+.ev-chip-t { font-size: 9.5px; font-weight: 800; fill: #fff; }
+
+.ev-pills { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin-top: 0.3rem; }
+.ev-pills button {
+  position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+  padding: 0.55rem 0.4rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.12); cursor: pointer;
+  font: inherit; font-size: 0.8rem; font-weight: 800; color: rgba(255, 255, 255, 0.6); background: rgba(255, 255, 255, 0.04);
+}
+.ev-pills button.on { color: #fff; border-color: rgba(var(--g-rgb), 0.55); background: rgba(var(--g-rgb), 0.14); }
+.ev-pills button i { position: absolute; inset: auto 0 0 0; height: 2px; background: rgb(var(--g-rgb)); transform-origin: left; }
+[dir="rtl"] .ev-pills button i { transform-origin: right; }
+.ev-pills button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.ev-cap { position: relative; margin: 0.7rem 0.2rem 0; min-height: 2.9em; font-size: 0.86rem; line-height: 1.55; color: rgba(255, 255, 255, 0.78);
+  animation: ev-cap 0.5s ease both; }
+@keyframes ev-cap { from { opacity: 0; transform: translateY(6px); } }
+
+.ev-cta {
+  display: flex; align-items: center; gap: 0.8rem; width: 100%; padding: 0.95rem 1rem; border: 0; border-radius: 18px; cursor: pointer;
+  text-align: start; font: inherit; color: #fff; background: linear-gradient(135deg, rgb(var(--g-rgb)), rgba(var(--g-rgb), 0.78));
+  box-shadow: 0 12px 30px rgba(var(--g-rgb), 0.34); transition: transform 0.15s;
+}
+.ev-cta:active { transform: scale(0.98); }
+.ev-cta:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+.ev-cta-ic { width: 44px; height: 44px; flex: none; border-radius: 14px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.2); }
+.ev-cta-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+.ev-cta-txt strong { font-size: 1.02rem; font-weight: 800; }
+.ev-cta-txt small { font-size: 0.78rem; opacity: 0.88; line-height: 1.4; }
+[dir="rtl"] .ev-cta-arrow { transform: scaleX(-1); }
+
+.ev-alt { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.ev-alt button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-width: 0; padding: 0.7rem 0.5rem; border-radius: 14px; cursor: pointer;
+  font: inherit; font-size: 0.84rem; font-weight: 800; color: var(--text); background: var(--surface-1); border: 1.5px solid rgba(var(--g-rgb), 0.22);
+}
+.ev-alt button svg { color: var(--g-ink); flex: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ev-cap { animation: none; }
+}
+.ev-cash rect { fill: none; stroke: #ffffff; stroke-width: 1.4; }
+.ev-cash text { fill: #ffffff; font-weight: 900; }

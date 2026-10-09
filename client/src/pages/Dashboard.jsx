@@ -16,6 +16,7 @@ import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS
 import CoinLogo from '../components/CoinLogo'
 import Logo from '../components/Logo'
 import Icon from '../components/Icon'
+import EmptyVault from '../components/EmptyVault'
 import MilestonePopup, { detectMilestone, dismissMilestone } from '../components/MilestonePopup'
 import { applyMood } from '../moodEngine'
 import { getSoulGreeting } from '../soulGreeting'
@@ -2480,29 +2481,7 @@ function ConstellationMap() {
   )
 }
 
-// Map an interest id (from InterestPicker) to a quick-add prefill category.
-const INTEREST_TO_CAT = { crypto:'crypto', stablecoins:'crypto', stocks:'stock', etfs:'stock', gold:'gold', silver:'gold', cash:'fiat' }
-function readInterests() {
-  try { const v = JSON.parse(localStorage.getItem('wl_interests') || 'null'); return Array.isArray(v) ? v : [] }
-  catch { return [] }
-}
-// Personalize the quick-add chips from the classes the user said they track:
-// show only those classes when that still yields a usable set, otherwise just
-// lead with them. Returns the full list when no interests are set.
-function orderQuickAdd(list) {
-  const interests = readInterests()
-  if (!interests.length) return list
-  const wanted = new Set(interests.map(i => INTEREST_TO_CAT[i]).filter(Boolean))
-  const ordered = list.map((a, i) => [a, i]).sort((x, y) => {
-    const xm = wanted.has(x[0].prefill.category) ? 0 : 1
-    const ym = wanted.has(y[0].prefill.category) ? 0 : 1
-    return xm - ym || x[1] - y[1] // stable: keep original order within a group
-  }).map(p => p[0])
-  // Hide the classes they didn't pick — but only when enough shortcuts remain.
-  const matched = ordered.filter(a => wanted.has(a.prefill.category))
-  return matched.length >= 2 ? matched : ordered
-}
-
+// Prefills for the asset orbs on the empty Home, matched by label.
 const QUICK_ADD_ASSETS = [
   { label:'USDT', imgSrc:'https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/usdt.svg', prefill:{ category:'crypto', coin:{ id:'tether',   symbol:'USDT', name:'Tether'   } } },
   { label:'USDC', imgSrc:'https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/usdc.svg', prefill:{ category:'crypto', coin:{ id:'usd-coin', symbol:'USDC', name:'USD Coin' } } },
@@ -2511,6 +2490,7 @@ const QUICK_ADD_ASSETS = [
   { label:'Gold', useGoldLogo:true, prefill:{ category:'gold' } },
   { label:'NVDA', bg:'#000', icon:'NVDA', iconColor:'#76b900', iconSize:'0.42rem', prefill:{ category:'stock', stockTicker:'NVDA' } },
   { label:'AAPL', bg:'#1d1d1f', icon:'AAPL', iconColor:'#fff',  iconSize:'0.42rem', prefill:{ category:'stock', stockTicker:'AAPL' } },
+  { label:'Cash', prefill:{ category:'fiat' } },
 ]
 
 // Header shield shown when Portfolio Guardian is active. Colour + days-left
@@ -2542,118 +2522,71 @@ function GuardianBadge() {
   )
 }
 
+// The empty Home. Its one job is to get a new user's real holdings in. The
+// stage on top shows a portfolio building itself, one way in after another,
+// with tappable asset orbs; the call to action follows the method on show.
+// Other import routes and the feature tour sit below.
 function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, loaded, importsSlot }) {
   const { t } = useLanguage()
   if (!loaded) return null
+  const go = (method, fn) => (...args) => { track('starter_action', { method }); fn(...args) }
 
   return (
-    <div style={{ textAlign:'center', padding:'2rem 1rem 1.5rem', position:'relative', overflow:'hidden', marginTop:'0.5rem' }}>
+    <div className="wl-st">
+      <EmptyVault
+        onScreenshot={go('screenshot', () => onImportAction('screenshot'))}
+        onVoice={go('voice', () => onImportAction('voice'))}
+        onManual={go('manual', onAddTrade)}
+        onQuickAdd={go('orb', prefill => onQuickAdd(prefill))}
+        quickAssets={QUICK_ADD_ASSETS} />
 
-      {/* Feature slideshow */}
-      <FeatureSlideshow />
-
-      {/* Headline */}
-      <div style={{ fontWeight:800, fontSize:'1.25rem', color:'var(--text)', marginBottom:'0.5rem', lineHeight:1.3 }}>
-        {t('emptyHeadline')}
+      <div className="wl-st-label">{t('stMore')}</div>
+      <div className="wl-st-more">
+        <button type="button" onClick={go('excel', () => onImportAction('excel'))}><Icon name="bar-chart" size={15} />{t('importExcel')}</button>
+        <button type="button" onClick={go('backup', () => onImportAction('backup'))}><Icon name="folder" size={15} />{t('importBackup')}</button>
+        <button type="button" onClick={go('guide', () => window.dispatchEvent(new Event('wl:add-asset-guide')))}><Icon name="sparkles" size={15} />{t('guideCta')}</button>
       </div>
-      <div style={{ fontSize:'0.875rem', color:'var(--text-muted)', marginBottom:'1.1rem', lineHeight:1.65 }}>
-        {t('emptySubA')}<br/>{t('emptySubB')}
-      </div>
 
-      {/* Guided walkthrough launcher — starts the step-by-step arrow tour */}
-      <button
-        className="wl-guide-cta"
-        onClick={() => { track('add_asset_guide_open', { source: 'empty_state' }); window.dispatchEvent(new Event('wl:add-asset-guide')) }}>
-        <span className="wl-guide-cta-ico" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2.2l1.7 5.1a3 3 0 0 0 1.9 1.9l5.1 1.7-5.1 1.7a3 3 0 0 0-1.9 1.9L12 19.6l-1.7-5.1a3 3 0 0 0-1.9-1.9L3.3 10.9l5.1-1.7a3 3 0 0 0 1.9-1.9L12 2.2z"/>
-            <path d="M19 3.5l.55 1.65a1 1 0 0 0 .63.63L21.8 6.3l-1.62.52a1 1 0 0 0-.63.63L19 9.1l-.55-1.65a1 1 0 0 0-.63-.63L16.2 6.3l1.62-.52a1 1 0 0 0 .63-.63L19 3.5z" opacity=".85"/>
-          </svg>
-        </span>
-        <span className="wl-guide-cta-text">
-          <strong>{t('guideCta')}</strong>
-          <span>{t('guideSub')}</span>
-        </span>
-        <span className="wl-guide-cta-badge" aria-hidden="true">{t('guideBadge')}</span>
-        <span className="wl-guide-cta-arrow" aria-hidden="true">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </span>
-      </button>
-
-      {/* Primary import boxes — every method lives here (the duplicate cards
-          that used to sit below have been removed). */}
-      {(() => {
-        const boxStyle = {
-          display: 'flex', alignItems: 'center', gap: '0.45rem',
-          padding: '0.7rem 0.75rem', borderRadius: '12px', cursor: 'pointer',
-          background: 'rgba(var(--g-rgb),0.1)', border: '1.5px solid rgba(var(--g-rgb),0.3)',
-          color: 'var(--g-ink)', fontWeight: 700, fontSize: '0.82rem',
-          transition: 'background 0.15s',
-        }
-        return (
-      <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem',
-        marginBottom: '1.25rem',
-      }}>
-        <button data-tour="add-asset" onClick={onAddTrade} style={boxStyle}>
-          <span style={{ fontSize: '1rem', fontWeight: 700 }}>+</span> {t('startAddingAssets')}
-        </button>
-        <button onClick={() => onImportAction('screenshot')} style={boxStyle}>
-          <Icon name="camera" size={15} /> {t('importScreenshot')}
-        </button>
-        <button onClick={() => onImportAction('excel')} style={boxStyle}>
-          <Icon name="bar-chart" size={15} /> {t('importExcel')}
-        </button>
-        <button onClick={() => onImportAction('voice')} style={boxStyle}>
-          <Icon name="mic" size={15} /> {t('importVoice')}
-        </button>
-        <button onClick={() => onImportAction('backup')} style={boxStyle}>
-          <Icon name="folder" size={15} /> {t('importBackup')}
-        </button>
-      </div>
-        )
-      })()}
-
-      {/* Import buttons (Excel / Voice) */}
+      {/* Import panels (screenshot, voice, Excel, backup) open here. */}
       {importsSlot}
 
-      {/* Quick-add chips */}
-      <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--text-sub)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.55rem' }}>
-        {t('orQuicklyAdd')}
-      </div>
-      <div style={{ display:'flex', flexWrap:'wrap', justifyContent:'center', gap:'0.45rem', marginBottom:'1.25rem' }}>
-        {orderQuickAdd(QUICK_ADD_ASSETS).map(a => {
-          const goldLogo = a.useGoldLogo ? THEMES.find(t => t.id === 'gold')?.logo : null
-          return (
-            <button key={a.label} onClick={() => onQuickAdd(a.prefill)} style={{
-              display:'inline-flex', alignItems:'center', gap:'0.38rem',
-              padding:'0.42rem 0.8rem', borderRadius:'50px',
-              background:'var(--surface-1)',
-              border:'1.5px solid rgba(var(--g-rgb),0.18)',
-              color:'var(--text)', fontWeight:700, fontSize:'0.8rem', cursor:'pointer',
-              transition:'border-color 0.15s, background 0.15s',
-            }}>
-              {a.imgSrc || goldLogo
-                ? <img
-                    src={a.imgSrc
-                      ? voiceProxy(a.imgSrc)
-                      : goldLogo}
-                    onError={e => { if (a.imgSrc && !e.currentTarget.dataset.fb) { e.currentTarget.dataset.fb = '1'; e.currentTarget.src = a.imgSrc } }}
-                    alt={a.label} style={{ width:22, height:22, borderRadius:'50%', objectFit:'cover', flexShrink:0 }} />
-                : <span style={{
-                    width:22, height:22, borderRadius:'50%', background:a.bg,
-                    display:'inline-flex', alignItems:'center', justifyContent:'center',
-                    fontSize:a.iconSize || '0.6rem', color:a.iconColor || 'white', fontWeight:800, flexShrink:0,
-                  }}>{a.icon}</span>
-              }
-              <span style={{ color: 'var(--g-ink)', fontWeight: 700, fontWeight:800, fontSize:'0.75rem', marginRight:1 }}>+</span>
-              {a.label}
-            </button>
-          )
-        })}
-      </div>
+      <div className="wl-st-private">{t('dsDataStaysLocalNoAccount')}</div>
 
-      <div style={{ fontSize:'0.72rem', color:'var(--text-sub)' }}>{t('dsDataStaysLocalNoAccount')}</div>
+      <div className="wl-st-unlock">
+        <div className="wl-st-label">{t('stUnlock')}</div>
+        <FeatureSlideshow />
+      </div>
+    </div>
+  )
+}
+
+// After the first asset: a small progress card until there are three, so the
+// first one is not where people stop. Hidden for good once dismissed.
+const STARTER_HIDE_KEY = 'wl_starter_hidden'
+function StarterProgress({ count, onScreenshot, onAdd }) {
+  const { t } = useLanguage()
+  const [hidden, setHidden] = useState(() => { try { return localStorage.getItem(STARTER_HIDE_KEY) === '1' } catch { return false } })
+  if (hidden || count < 1 || count >= 3) return null
+  const hide = () => { try { localStorage.setItem(STARTER_HIDE_KEY, '1') } catch {} ; track('starter_progress_hide', { count }); setHidden(true) }
+  return (
+    <div className="wl-st-prog">
+      <div className="wl-st-prog-h">
+        <strong>{t('stProgTitle')}</strong>
+        <button type="button" className="wl-st-prog-x" onClick={hide} aria-label={t('stHide')}><Icon name="x" size={14} /></button>
+      </div>
+      <div className="wl-st-prog-bar" role="progressbar" aria-valuemin={0} aria-valuemax={3} aria-valuenow={count}>
+        {[0, 1, 2].map(i => <i key={i} className={i < count ? 'on' : ''} />)}
+      </div>
+      <div className="wl-st-prog-n">{t('stProgCount')(count)}</div>
+      <p>{t('stProgSub')}</p>
+      <div className="wl-st-prog-btns">
+        <button type="button" className="wl-st-prog-main" onClick={() => { track('starter_action', { method: 'screenshot', from: 'progress' }); onScreenshot() }}>
+          <Icon name="camera" size={15} />{t('stShotTitle')}
+        </button>
+        <button type="button" onClick={() => { track('starter_action', { method: 'manual', from: 'progress' }); onAdd() }}>
+          <Icon name="plus" size={15} />{t('stAddMore')}
+        </button>
+      </div>
     </div>
   )
 }
@@ -4592,8 +4525,9 @@ export default function Dashboard() {
             setTimeout(go, 80)
           }}
           onWatchAll={() => setActiveTab('watchlist')}
-          newsSlot={<NewsTicker variant="card" />}
-          sentimentSlot={<SentimentTicker holdings={enriched} totalValue={totalValue} totalPnLPct={totalPnLPct} />}
+          // An empty portfolio gets one job, adding assets: no headlines or mood until there is something to read them against.
+          newsSlot={enriched.length > 0 || isDemo ? <NewsTicker variant="card" /> : null}
+          sentimentSlot={enriched.length > 0 || isDemo ? <SentimentTicker holdings={enriched} totalValue={totalValue} totalPnLPct={totalPnLPct} /> : null}
           onAsset={(h) => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}
         />
       )}
@@ -4621,7 +4555,7 @@ export default function Dashboard() {
           headlines above Backup, Alerts or Wallets were noise on pages
           someone opened to do one job. The new look shows the same feed as a
           card inside Home instead. */}
-      {activeTab === 'overview' && !nlHome && <NewsTicker />}
+      {activeTab === 'overview' && !nlHome && (enriched.length > 0 || isDemo) && <NewsTicker />}
 
       {/* Tab content — opacity fades slightly during lazy-load transitions */}
       <div style={isTabPending ? { opacity: 0.7, transition: 'opacity 0.15s' } : undefined}>
@@ -4744,7 +4678,12 @@ export default function Dashboard() {
                       loaded={loaded}
                       importsSlot={importsBlock}
                     />
-                  : importsBlock}
+                  : <>
+                      <StarterProgress count={enriched.length}
+                        onScreenshot={() => { setShowScreenshot(true); setShowExcelImport(false); setShowVoiceImport(false); setShowBackupCode(false) }}
+                        onAdd={() => openSheet('buy', 'starter_progress')} />
+                      {importsBlock}
+                    </>}
                 {/* Picked crypto as an interest, holds none yet: the offer
                     goes here instead of under a crypto list that is not there. */}
                 {!isDemo && <BybitInterestStrip holdsCrypto={enriched.some(h => categorizeAsset(h) === 'crypto')} holdsStocks={enriched.some(h => categorizeAsset(h) === 'stocks')} holdsMetals={enriched.some(h => categorizeAsset(h) === 'metals')} />}
@@ -5296,10 +5235,11 @@ export default function Dashboard() {
               )}
 
               {/* ── Holdings (primary column). The new look has them on Home. ── */}
-              {!nlHome && <div className="glass-card">
+              {/* An empty portfolio shows the starter instead of an empty list. */}
+              {!nlHome && enriched.length > 0 && <div className="glass-card">
                 <div style={CHART_HDR_STYLE}>
                   <h3 style={{ margin:0 }}>
-                    Holdings ({isHoldingsFiltered ? `${filteredHoldings.length} of ${enriched.length}` : enriched.length})
+                    {t('nlHoldings')} ({isHoldingsFiltered ? `${filteredHoldings.length} / ${enriched.length}` : enriched.length})
                   </h3>
                   <div style={{ display:'flex', gap:'0.4rem', alignItems:'center', flexWrap:'wrap' }}>
                     {pricesFailed && <span className="dvx-badge-warn" style={{ fontSize:'0.6rem' }}>{t('dsInvestedCaps')}</span>}
@@ -5693,7 +5633,7 @@ export default function Dashboard() {
             <div className="dvx-col-side">
 
               {/* ── Allocation donut (by category) ── */}
-              {cardVis.allocation && <div className="glass-card" id="dash-allocation">
+              {cardVis.allocation && enriched.length > 0 && <div className="glass-card" id="dash-allocation">
                 <h3>{pricesFailed ? t('allocationInvested') : t('dsNetWorthByCat')}</h3>
                 {catAllocData.length === 0
                   ? <p className="muted">{t('noHoldings')}</p>
@@ -5773,7 +5713,7 @@ export default function Dashboard() {
               })()}
 
               {/* Market Mood — sentiment from crypto headlines */}
-              {cardVis.market_mood && <MarketMood />}
+              {cardVis.market_mood && (enriched.length > 0 || isDemo) && <MarketMood />}
 
               {/* Stale price warning */}
               {staleAssets.length > 0 && (
@@ -6096,7 +6036,7 @@ export default function Dashboard() {
               setTimeout(() => {
                 const seen = new Set(JSON.parse(localStorage.getItem('wl_milestones_seen') || '[]'))
                 if (!seen.has('first_buy')) {
-                  setMilestone({ key: 'first_buy', type: 'first_buy', emoji: 'target', title: 'First trade logged!', sub: 'Set a price target so you know exactly when to take profit or cut losses.', ctaLabel: 'Set a Price Target' })
+                  setMilestone({ key: 'first_buy', type: 'first_buy', emoji: 'target', msg: 'msFirstBuy', cta: true, args: [] })
                 }
               }, 1400)
             }

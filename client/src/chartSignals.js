@@ -302,3 +302,38 @@ export function candlesFromCloses(points) {
   }
   return out
 }
+
+/**
+ * Daily candles grouped into weekly ones (weeks start Monday, UTC). Used for
+ * the close-only fallback, whose source is daily closes.
+ */
+export function weeklyFromDaily(candles) {
+  const out = []
+  let cur = null, wk = null
+  for (const k of candles || []) {
+    const d = new Date(typeof k.t === 'number' ? k.t : Date.parse(k.t))
+    if (isNaN(d)) continue
+    const day = (d.getUTCDay() + 6) % 7
+    const monday = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - day)
+    if (monday !== wk) {
+      if (cur) out.push(cur)
+      cur = { ...k }; wk = monday
+    } else {
+      cur.h = Math.max(cur.h, k.h); cur.l = Math.min(cur.l, k.l); cur.c = k.c
+      if (k.v != null) cur.v = (cur.v || 0) + k.v
+    }
+  }
+  if (cur) out.push(cur)
+  return out
+}
+
+/**
+ * Whether candles fetched by ticker belong to the coin the app is showing:
+ * the last close within 5% of the live price. True when either is unknown,
+ * since there is then nothing to compare.
+ */
+export function matchesLivePrice(candles, livePrice, tolerance = 0.05) {
+  const last = candles?.[candles.length - 1]?.c
+  if (!(livePrice > 0) || !(last > 0)) return true
+  return Math.abs(last / livePrice - 1) < tolerance
+}

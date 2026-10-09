@@ -1033,6 +1033,19 @@ async function fetchXstockMarket() {
   return xstockMarket;
 }
 
+// Company logos for plain stocks. A tokenized share carries its company's
+// logo on CoinGecko, so the xStocks market doubles as a logo table for the
+// real ticker: stock:aapl shows the same Apple mark AAPLx does. Synchronous
+// read from the cache, plus a one-shot load for when the cache is empty.
+export function stockLogoFor(ticker) {
+  return xstockMarket[String(ticker || '').toUpperCase()]?.image || ''
+}
+let _xsLogoLoad = null
+export function loadStockLogos() {
+  if (Object.keys(xstockMarket).length) return Promise.resolve(xstockMarket)
+  return (_xsLogoLoad ||= fetchXstockMarket().catch(() => xstockMarket))
+}
+
 // Resolve a WalletLens xstock id (xstock:aapl) → CoinGecko coin id (apple-xstock).
 async function xstockCoinId(id) {
   const ticker = id.slice(XSTOCK_PREFIX.length).toUpperCase();
@@ -2391,15 +2404,22 @@ export const api = {
   // Candles for the indicator chart, by timeframe (candle size): 15m, 1h,
   // 4h, 1d or 1w. `warmup` extra candles load before the visible window so
   // the long EMAs are settled by the time they are drawn.
-  getCandles: async (id, symbol, tf = '1d', warmup = 200) => {
-    const { candlesFromCloses, CHART_TIMEFRAMES } = await import('./chartSignals');
+  //
+  // `livePrice`, when known, guards against charting the wrong coin: Binance
+  // is asked by ticker alone, and a ticker can belong to a different token
+  // there (a rebrand, a clash). A last close more than 5% away from the price
+  // the app shows means it is not this coin, so its own price history is
+  // used instead of a confident chart of something else.
+  getCandles: async (id, symbol, tf = '1d', warmup = 200, livePrice = 0) => {
+    const { candlesFromCloses, weeklyFromDaily, matchesLivePrice, CHART_TIMEFRAMES } = await import('./chartSignals');
+    const sameCoin = (candles) => matchesLivePrice(candles, livePrice);
     const plan = CHART_TIMEFRAMES[tf] || CHART_TIMEFRAMES['1d'];
     const sym = String(symbol || '').toUpperCase();
     if (api.hasLiveCandles(id, sym)) {
       const limit = Math.min(1000, plan.visible + warmup);
       const cacheKey = `candles2::${sym}::${plan.interval}::${limit}`;
       const hit = _chartCache[cacheKey];
-      if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length) return { candles: hit.v, visible: plan.visible, closeOnly: false };
+      if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length && sameCoin(hit.v)) return { candles: hit.v, visible: plan.visible, closeOnly: false };
       try {
         const res = await fetchWithTimeout(`https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(sym + 'USDT')}&interval=${plan.interval}&limit=${limit}`, 8000);
         if (res.ok) {
@@ -2407,7 +2427,7 @@ export const api = {
           const candles = (Array.isArray(rows) ? rows : [])
             .map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] || 0 }))
             .filter(k => k.c > 0 && k.h >= k.l);
-          if (candles.length > 10) {
+          if (candles.length > 10 && sameCoin(candles)) {
             try { _chartCache[cacheKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
             return { candles, visible: plan.visible, closeOnly: false };
           }
@@ -2449,7 +2469,10 @@ export const api = {
     // Those are daily closes, so an intraday timeframe has nothing to show.
     if (['15m', '1h', '4h'].includes(tf)) return { candles: [], visible: 0, closeOnly: true };
     const pts = await api.getChartData(id, plan.days);
-    const candles = candlesFromCloses((pts || []).map(p => ({ ...p, t: p.date })));
+    const daily = candlesFromCloses((pts || []).map(p => ({ ...p, t: p.date })));
+    // Those are daily closes, so 1W groups them into real weekly candles:
+    // EMAs and signals computed on daily candles labelled weekly are wrong.
+    const candles = tf === '1w' ? weeklyFromDaily(daily) : daily;
     return { candles, visible: candles.length, closeOnly: true };
   },
 

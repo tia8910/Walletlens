@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLanguage } from '../LanguageContext'
 
 // Candlestick chart with the on-device indicators from chartSignals.js:
 // EMA lines, golden/death crosses, BUY/SELL tags, the latest signal's stop,
@@ -16,10 +17,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 //   - Cross and signal labels are placed so they do not cover each other.
 //   - The live price has its own tag on the axis.
 
-const fmt = (v) => {
+export const fmt = (v) => {
   const n = Number(v)
   if (!isFinite(n)) return '—'
-  const d = n >= 1000 ? 0 : n >= 1 ? 2 : n >= 0.01 ? 4 : 6
+  // Below 1, significant digits rather than fixed decimals: six decimals
+  // turned 0.0000085 into 0.000009, a 6% error on an entry or a stop.
+  if (Math.abs(n) < 1) return n.toLocaleString(undefined, { maximumSignificantDigits: 5 })
+  const d = n >= 1000 ? 0 : 2
   return n.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d })
 }
 // Shorter, for tags on the narrow price axis.
@@ -85,6 +89,9 @@ const toDate = (t) => {
 }
 
 export default function SignalChart({ candles, visible, calc, height = 260, closeOnly = false, ariaLabel }) {
+  // Dates read in the app's language, not the phone's.
+  const { lang } = useLanguage()
+  const loc = lang || undefined
   const boxRef = useRef(null)
   const [w, setW] = useState(340)
   const [hover, setHover] = useState(null)
@@ -210,10 +217,10 @@ export default function SignalChart({ candles, visible, calc, height = 260, clos
   // Short enough that four fit across a phone: a time only when the whole
   // chart is about a day, otherwise the date.
   const dateFmt = (d) => spanDays <= 1.5
-    ? d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false })
+    ? d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false })
     : spanDays > 400
-      ? d.toLocaleDateString(undefined, { month: 'short', year: '2-digit' })
-      : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+      ? d.toLocaleDateString(loc, { month: 'short', year: '2-digit' })
+      : d.toLocaleDateString(loc, { day: 'numeric', month: 'short' })
   const dateTicks = d0 ? [0.1, 0.37, 0.63, 0.9].map(f => Math.round(f * (n - 1))) : []
   void perCandleH
 
@@ -257,7 +264,7 @@ export default function SignalChart({ candles, visible, calc, height = 260, clos
             </>
           )}
       </div>
-      <svg className="sc-svg" width="100%" viewBox={`0 0 ${w} ${totalH}`} role="img" aria-label={ariaLabel}
+      <svg className="sc-svg" width="100%" viewBox={`0 0 ${w} ${totalH}`} role="img" aria-label={ariaLabel} direction="ltr" style={{ direction: 'ltr' }}
         onPointerMove={onMove} onPointerDown={onMove} onPointerLeave={() => setHover(null)}>
         {/* grid and price axis */}
         {ticks.map((v, k) => (
@@ -307,7 +314,12 @@ export default function SignalChart({ candles, visible, calc, height = 260, clos
           <g key={t.label} className={`sc-level ${t.cls}${t.pin ? ' is-pinned' : ''}${resolved ? ' is-done' : ''}`}>
             {!t.pin && <line x1={x(last.i)} x2={plotW} y1={y(t.v)} y2={y(t.v)} />}
             <rect x={plotW + 1} y={t.ty - 6} width={padR - 2} height="12" rx="3" />
-            <text x={plotW + padR / 2} y={t.ty + 3} textAnchor="middle">{t.pin ? (t.pin === 'top' ? '▲' : '▼') : ''}{t.label} {fmtTag(t.v)}</text>
+            <text x={plotW + padR / 2} y={t.ty + 3} textAnchor="middle">
+              {/* Label and price as separate runs with a real gap: at 7px a
+                  space is a hairline, and "TP1 82,840" read as "TP182,840". */}
+              <tspan className="sc-level-k">{t.pin ? (t.pin === 'top' ? '▲' : '▼') : ''}{t.label}</tspan>
+              <tspan dx="3">{fmtTag(t.v)}</tspan>
+            </text>
           </g>
         ))}
 

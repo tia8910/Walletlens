@@ -42,11 +42,13 @@ export default function IndicatorChart({ coinId, symbol, name, price, source = '
     if (!coinId) return
     let alive = true
     setCandleData(d => ({ ...d, loading: true }))
-    api.getCandles(coinId, symbol, tf)
+    // The live price lets getCandles reject a same-ticker coin on Binance;
+    // it can arrive after the first load, so its arrival loads once more.
+    api.getCandles(coinId, symbol, tf, 200, price || 0)
       .then(r => { if (alive) { setCandleData({ ...r, loading: false }); onLastClose?.(r.candles.at(-1)?.c || 0) } })
       .catch(() => { if (alive) setCandleData({ candles: [], visible: 0, closeOnly: false, loading: false }) })
     return () => { alive = false }
-  }, [coinId, symbol, tf])
+  }, [coinId, symbol, tf, price > 0]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const calc = useMemo(
     () => (candleData.candles.length ? computeChartSignals(candleData.candles, chartParams) : null),

@@ -549,6 +549,28 @@ const AppFooter = memo(function AppFooter() {
 })
 
 // ── App shell ─────────────────────────────────────────────────────────
+
+// One line of bold text that shrinks to fit its box, down to 11px, instead
+// of running under the buttons beside it. The header tagline needs it: the
+// same three words are half again as long in French, German or Italian.
+function FitLine({ className, children, min = 11 }) {
+  // The words are separate spans, which the RTL safety net isolates, so the
+  // line takes the page's direction explicitly or Arabic reads backwards.
+  const { isRtl } = useLanguage()
+  const ref = useRef(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.fontSize = ''
+    let size = parseFloat(getComputedStyle(el).fontSize) || 16
+    for (let n = 0; n < 24 && el.scrollWidth > el.clientWidth && size > min; n++) {
+      size -= 0.5
+      el.style.fontSize = `${size}px`
+    }
+  })
+  return <b ref={ref} className={className} dir={isRtl ? 'rtl' : 'ltr'} style={{ unicodeBidi: 'isolate' }}>{children}</b>
+}
+
 export default function App() {
   const location = useLocation()
   // Called here rather than mounted as a component, because App returns from
@@ -938,7 +960,9 @@ export default function App() {
             {v2 && newLook && (
               <div className="nl-topbar-greet">
                 <small>{t(new Date().getHours() < 12 ? 'ntMorning' : new Date().getHours() < 18 ? 'ntAfternoon' : 'ntEvening')}</small>
-                <b>{t('nlYourNetWorth')}</b>
+                <FitLine className="nl-tagline">{String(t('nlTagline')).split(' · ').map((w, i) => (
+                  <span key={i}>{i > 0 && <i className="nl-tag-dot" aria-hidden="true">·</i>}{w}</span>
+                ))}</FitLine>
               </div>
             )}
           </div>
