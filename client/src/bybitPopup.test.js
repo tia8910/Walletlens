@@ -2,14 +2,14 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { validEnd, applyRemote, currentEndsAt, timeLeft, popupDue, closePopup, POPUP_SNOOZE_MS } from './bybitOffer'
+import { validEnd, applyRemote, currentEndsAt, timeLeft, popupDue, closePopup, markPopupShown } from './bybitOffer'
 import { DEVICE_ONLY_KEYS } from './backupCore'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const END = Date.parse('2026-10-14T09:00:00Z')
 
 describe('the Bybit popup', () => {
-  beforeEach(() => localStorage.clear())
+  beforeEach(() => { localStorage.clear(); sessionStorage.clear() })
 
   it('reads the end date from offers.json and drops a bad or missing one', () => {
     expect(validEnd('2026-10-14T09:00:00Z')).toBe(END)
@@ -35,13 +35,21 @@ describe('the Bybit popup', () => {
     expect(popupDue({ now, allowed: true, end: null })).toBe(false)
   })
 
-  it('waits a day after Later, and ends after a claim or Don\'t show again', () => {
-    const now = END - 3 * POPUP_SNOOZE_MS
-    closePopup('later', now)
-    expect(popupDue({ now: now + 1000, allowed: true, end: END })).toBe(false)
-    expect(popupDue({ now: now + POPUP_SNOOZE_MS + 1, allowed: true, end: END })).toBe(true)
-    closePopup('done', now)
-    expect(popupDue({ now: now + 2 * POPUP_SNOOZE_MS, allowed: true, end: END })).toBe(false)
+  it('shows once per session, and ends after a claim or Don\'t show again', () => {
+    const now = END - 1000
+    expect(popupDue({ now, allowed: true, end: END })).toBe(true)
+    markPopupShown()
+    expect(popupDue({ now, allowed: true, end: END })).toBe(false)
+    // A new session: the app opened again.
+    sessionStorage.clear()
+    expect(popupDue({ now, allowed: true, end: END })).toBe(true)
+    closePopup('later')
+    expect(popupDue({ now, allowed: true, end: END })).toBe(false)
+    sessionStorage.clear()
+    expect(popupDue({ now, allowed: true, end: END })).toBe(true)
+    closePopup('done')
+    sessionStorage.clear()
+    expect(popupDue({ now, allowed: true, end: END })).toBe(false)
   })
 
   it('keeps its state on this device only', () => {
