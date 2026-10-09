@@ -441,9 +441,11 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   // The whole exchange for the market on show (popular names until it arrives).
   useEffect(() => {
     setListLimit(60)
-    if (!open || category !== 'wstock' || !market || fullLists[market]) return
+    if (!open || !isStockCat(category)) return
+    const code = category === 'stock' ? 'US' : market
+    if (!code || fullLists[code]) return
     let alive = true
-    getMarketList(market).then(v => { if (alive && v) setFullLists(prev => ({ ...prev, [market]: v })) }).catch(() => {})
+    getMarketList(code).then(v => { if (alive && v) setFullLists(prev => ({ ...prev, [code]: v })) }).catch(() => {})
     return () => { alive = false }
   }, [open, category, market]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -921,15 +923,17 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       {/* Stock: market + sector filter, the market's list, and worldwide search */}
       {isStockCat(category) && (() => {
         const isUS = category === 'stock'
-        const full = !isUS ? fullLists[market] : null
-        const base = isUS ? POPULAR_TICKERS
-          : full ? full.stocks.map(x => ({ ticker: x.t, name: x.n, q: x }))
+        // The whole exchange once it has loaded; the curated list until then,
+        // and for a US sector filter (the screener rows carry no sector).
+        const full = isUS ? (stockSector === 'All' ? fullLists.US : null) : fullLists[market]
+        const base = full ? full.stocks.map(x => ({ ticker: x.t, name: x.n, q: x }))
+          : isUS ? POPULAR_TICKERS
           : (MARKET_BY_CODE[market]?.stocks || [])
         const shownMarket = isUS ? 'US' : market
         const sectors = isUS ? ['All', ...Array.from(new Set(POPULAR_TICKERS.map(t => t.sector)))] : []
         const query = stockInput.trim().toUpperCase()
         const filtered = base.filter(t =>
-          (!isUS || stockSector === 'All' || t.sector === stockSector) &&
+          (!isUS || full || stockSector === 'All' || t.sector === stockSector) &&
           (!query || t.ticker.includes(query) || t.name.toUpperCase().includes(query))
         )
         // Worldwide results the market list does not already show.
@@ -1016,8 +1020,8 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                 <span>{t('tsPrice24h')}</span>
               </div>
               <div className="bs-markets-list">
-                {filtered.slice(0, isUS ? 40 : listLimit).map(x => row(x.ticker, x.name, null, x.q))}
-                {!isUS && filtered.length > listLimit && (
+                {filtered.slice(0, full || !isUS ? listLimit : 40).map(x => row(x.ticker, x.name, null, x.q))}
+                {(full || !isUS) && filtered.length > listLimit && (
                   <button type="button" className="bs-market-showmore" onClick={() => setListLimit(n => n + 60)}>
                     {t('stkShowMore')(filtered.length - listLimit)}
                   </button>

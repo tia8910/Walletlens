@@ -24,12 +24,16 @@ const HEADERS = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'applicati
 // Market code → TradingView screener market, and the exchanges kept with the
 // Yahoo suffix each one maps to. Markets that list on several venues keep
 // only the primary one, so a company is not listed twice.
+// `only` names a market with a single exchange: every row is taken with that
+// suffix whatever venue name the screener gives it, so a renamed or
+// unexpected venue code cannot empty the list.
 export const SCREENER_MARKETS = {
-  EG: { tv: 'egypt', ex: { EGX: 'CA' } },
-  SA: { tv: 'ksa', ex: { TADAWUL: 'SR' } },
+  US: { tv: 'america', ex: { NYSE: '', NASDAQ: '', AMEX: '' } },
+  EG: { tv: 'egypt', ex: { EGX: 'CA' }, only: 'CA' },
+  SA: { tv: 'ksa', ex: { TADAWUL: 'SR' }, only: 'SR' },
   AE: { tv: 'uae', ex: { DFM: 'AE', ADX: 'AD' } },
-  QA: { tv: 'qatar', ex: { QSE: 'QA' } },
-  KW: { tv: 'kuwait', ex: { KSE: 'KW' } },
+  QA: { tv: 'qatar', ex: { QSE: 'QA' }, only: 'QA' },
+  KW: { tv: 'kuwait', ex: { KSE: 'KW' }, only: 'KW' },
   GB: { tv: 'uk', ex: { LSE: 'L' } },
   DE: { tv: 'germany', ex: { XETR: 'DE' } },
   FR: { tv: 'france', ex: { EURONEXT: 'PA' } },
@@ -50,15 +54,17 @@ export const SCREENER_MARKETS = {
 // reached. MAX_ROWS only guards against a runaway answer; the largest
 // markets here (Japan, India, Hong Kong, Korea) list a few thousand.
 const PAGE = 2500
-const MAX_ROWS = 12000
+const MAX_ROWS = 15000
 
 /** TradingView "EXCH:NAME" → Yahoo ticker, or null for a venue not kept. */
 export function toYahooTicker(tvSymbol, market) {
   const cfg = SCREENER_MARKETS[market]
   const [exch, raw] = String(tvSymbol || '').split(':')
-  const suffix = cfg?.ex[exch]
-  if (!suffix || !raw) return null
+  const suffix = cfg?.ex[exch] ?? cfg?.only
+  if (suffix == null || !raw) return null
   let name = raw.toUpperCase()
+  // US tickers carry no suffix; share classes keep their dot (BRK.B).
+  if (suffix === '') return /^[A-Z0-9.]+$/.test(name) ? name : null
   if (suffix === 'HK' && /^\d+$/.test(name)) name = name.padStart(4, '0')
   // Share classes: BT.A on LSE is BT-A.L on Yahoo.
   name = name.replace(/[./]/g, '-')
@@ -83,13 +89,18 @@ export function parseScreener(data, market) {
 
 export async function onRequestGet(context) {
   const { request } = context
-  const market = (new URL(request.url).searchParams.get('market') || '').toUpperCase()
+  const params = new URL(request.url).searchParams
+  const market = (params.get('market') || '').toUpperCase()
+  // ?debug=1 explains an empty list: what the screener answered and which
+  // venues its rows came from. Never cached.
+  const debug = params.get('debug') === '1'
+  const trace = []
   const cfg = SCREENER_MARKETS[market]
   if (!cfg) return new Response(JSON.stringify({ market, total: 0, cols: [], rows: [] }), { headers: HEADERS })
 
   const cacheKey = new Request(`https://market-list.cache/${market}`)
   const cache = caches.default
-  const hit = await cache.match(cacheKey)
+  const hit = debug ? null : await cache.match(cacheKey)
   if (hit) return hit
 
   const scan = async (from, to, types) => {
@@ -110,7 +121,14 @@ export async function onRequestGet(context) {
       }),
       signal: AbortSignal.timeout(8000),
     })
-    return res.ok ? res.json() : null
+    if (!res.ok) { trace.push({ from, types, status: res.status, body: debug ? (await res.text()).slice(0, 300) : undefined }); return null }
+    const data = await res.json()
+    if (debug) {
+      const venues = {}
+      for (const r of data?.data || []) { const v = String(r?.s || '').split(':')[0]; venues[v] = (venues[v] || 0) + 1 }
+      trace.push({ from, types, status: res.status, totalCount: data?.totalCount, rows: data?.data?.length || 0, venues, sample: (data?.data || []).slice(0, 3) })
+    }
+    return data
   }
 
   let stocks = []
@@ -125,7 +143,7 @@ export async function onRequestGet(context) {
         for (const x of parseScreener(data, market)) if (!seen.has(x.t)) { seen.add(x.t); stocks.push(x) }
         if (!Array.isArray(data.data) || data.data.length < PAGE || from + PAGE >= total) break
       }
-    } catch {}
+    } catch (err) { trace.push({ types, error: String(err?.message || err) }) }
     if (stocks.length) break
   }
 
@@ -136,6 +154,9 @@ export async function onRequestGet(context) {
       const u = rates[x.cur] ? +(x.p * rates[x.cur]).toPrecision(6) : null
       rows.push([x.t, x.n, x.p, x.cur, u, +x.c.toFixed(2)])
     }
+  }
+  if (debug) {
+    return new Response(JSON.stringify({ market, kept: rows.length, total, trace, first: rows.slice(0, 5) }, null, 2), { headers: { ...HEADERS, 'Cache-Control': 'no-store' } })
   }
   const response = new Response(JSON.stringify({ market, total: Math.max(total, rows.length), cols: ['t', 'n', 'p', 'cur', 'u', 'c'], rows }), {
     headers: { ...HEADERS, 'Cache-Control': rows.length ? 'public, max-age=900' : 'no-store' },

@@ -15,6 +15,18 @@ describe('every stock on a market', () => {
     expect(toYahooTicker('FWB:SAP', 'DE')).toBe(null) // a second German venue, not listed twice
   })
 
+  it('lists US shares under their bare ticker, keeping share classes', () => {
+    expect(toYahooTicker('NASDAQ:AAPL', 'US')).toBe('AAPL')
+    expect(toYahooTicker('NYSE:BRK.B', 'US')).toBe('BRK.B')
+    expect(toYahooTicker('OTC:TCEHY', 'US')).toBe(null) // over the counter is left out
+  })
+
+  it('takes every row of a single-exchange market whatever venue name it carries', () => {
+    expect(toYahooTicker('EGX:COMI', 'EG')).toBe('COMI.CA')
+    expect(toYahooTicker('EGXX:COMI', 'EG')).toBe('COMI.CA')
+    expect(toYahooTicker('SAU:2222', 'SA')).toBe('2222.SR')
+  })
+
   it('has a screener for every market the picker offers', () => {
     for (const m of MARKETS) if (m.code !== 'US') expect(SCREENER_MARKETS[m.code], m.code).toBeTruthy()
   })
