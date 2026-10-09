@@ -2157,6 +2157,7 @@ export default {
     tkDone: "Fertig",
     tkEnterAmount: "Betrag eingeben",
     tkEnterPrice: "Preis konnte nicht geladen werden. Bitte manuell eingeben.",
+    tkNoLivePrice: "Kein Live-Preis",
     tkEntrySignal: "Einstiegssignal",
     tkExitSignal: "Ausstiegssignal",
     tkFetching: "Preis wird geladen…",

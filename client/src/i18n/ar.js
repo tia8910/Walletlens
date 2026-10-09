@@ -2162,6 +2162,7 @@ export default {
     tkDone: "تم",
     tkEnterAmount: "أدخل المبلغ",
     tkEnterPrice: "تعذّر جلب السعر. أدخله يدوياً.",
+    tkNoLivePrice: "لا يوجد سعر مباشر",
     tkEntrySignal: "إشارة الدخول",
     tkExitSignal: "إشارة الخروج",
     tkFetching: "جارٍ جلب السعر…",
