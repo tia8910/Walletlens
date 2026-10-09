@@ -85,3 +85,20 @@ describe('the tour page', () => {
     expect(app).toMatch(/const HOME_HOP = 'wl_home_hop'/)
   })
 })
+
+describe('the tour page keeps its h1 while the film plays', () => {
+  it('has a fixed h1 outside the film, and scene captions are h2', () => {
+    expect(markup).toMatch(/<h1 class="vh">WalletLens: unique investment manager and net worth tracker/)
+    expect(markup).toMatch(/<div class="cap" id="cap"><h2>/)
+    // The film no longer turns a caption into a second, changing h1.
+    expect(html).not.toMatch(/replace\('<h2>', '<h1>'\)/)
+  })
+  it('has a title under 61 characters and a description under 161', () => {
+    const title = html.match(/<title>([^<]+)<\/title>/)[1].replace(/&amp;/g, '&')
+    expect(title.length).toBeLessThanOrEqual(60)
+    const desc = html.match(/<meta name="description" content="([^"]+)"/)[1]
+    expect(desc.length).toBeLessThanOrEqual(160)
+    expect(desc).not.toMatch(/90 seconds/)
+    expect(desc).toMatch(/6 languages/)
+  })
+})
