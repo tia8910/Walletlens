@@ -18,6 +18,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import './EmptyVault.css'
+import { LOGO_PATHS } from './evLogos'
+import { THEMES } from '../ThemeContext'
 
 const LOOP = 9          // seconds per scene
 const FLY = 1.0         // seconds a chip takes to reach the ring
@@ -26,14 +28,17 @@ const CX = 198, CY = 160, R = 66
 const CIRC = 2 * Math.PI * R
 const ORBIT_X = 146, ORBIT_Y = 112
 
+// bg is the disc, fg the mark on it, k how much of the disc the mark spans.
+// Bitcoin's mark is itself the disc with the ₿ cut out, so it sits on white.
 const ORBS = [
-  { sym: 'BTC',  label: 'BTC',  c: '#f7931a' },
-  { sym: 'ETH',  label: 'ETH',  c: '#8b9cf7' },
-  { sym: 'GOLD', label: 'Gold', c: '#e8b825' },
-  { sym: 'NVDA', label: 'NVDA', c: '#76b900' },
-  { sym: 'USDT', label: 'USDT', c: '#26a17b' },
-  { sym: 'AAPL', label: 'AAPL', c: '#cbd5e1' },
+  { sym: 'BTC',  label: 'BTC',  c: '#f7931a', bg: '#ffffff', fg: '#f7931a', k: 1 },
+  { sym: 'ETH',  label: 'ETH',  c: '#8b9cf7', bg: '#627eea', fg: '#ffffff', k: 0.62 },
+  { sym: 'GOLD', label: 'Gold', c: '#e8b825', bg: '#2a220c', gold: true },
+  { sym: 'NVDA', label: 'NVDA', c: '#76b900', bg: '#0b0b0b', fg: '#76b900', k: 0.7 },
+  { sym: 'USDT', label: 'USDT', c: '#26a17b', bg: '#26a17b', fg: '#ffffff', k: 0.64 },
+  { sym: 'AAPL', label: 'AAPL', c: '#cbd5e1', bg: '#1d1d1f', fg: '#ffffff', k: 0.56 },
 ]
+const GOLD_BAR = THEMES.find(x => x.id === 'gold')?.logo
 
 const SCENES = [
   { id: 'shot', icon: 'camera', launch: [2.5, 3.0, 3.5], items: [
@@ -194,8 +199,13 @@ export default function EmptyVault({ onScreenshot, onVoice, onManual, onQuickAdd
         style={{ opacity: 0.55 + 0.45 * o.depth }}>
         {ripple >= 0 && <circle r={r + 4 + 16 * ripple} fill="none" stroke={o.c} strokeWidth="2" opacity={0.8 * (1 - ripple)} />}
         <circle r={r + 6} fill={o.c} opacity="0.16" />
-        <circle r={r} fill={`url(#ev-g-${o.sym})`} />
-        <text y="2.8" textAnchor="middle" className="ev-orb-t" style={{ fontSize: `${7.6 * o.s}px` }}>{o.sym}</text>
+        <circle r={r} fill={o.bg} />
+        {o.gold
+          ? GOLD_BAR && <image href={GOLD_BAR} x={-r * 0.95} y={-r * 0.95} width={r * 1.9} height={r * 1.9} />
+          : <path d={LOGO_PATHS[o.sym]} fill={o.fg} transform={`translate(${-r * o.k} ${-r * o.k}) scale(${(2 * r * o.k / 24).toFixed(4)})`} />}
+        <circle r={r} fill="url(#ev-gloss)" />
+        <circle r={r} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="0.8" />
+        <text y={r + 9 * o.s} textAnchor="middle" className="ev-orb-t" style={{ fontSize: `${6.8 * o.s}px` }}>{o.label}</text>
         <g transform={`translate(${r * 0.72} ${-r * 0.72})`}>
           <circle r={5.2 * o.s} fill="#fff" />
           <text y={2.4 * o.s} textAnchor="middle" className="ev-orb-plus" style={{ fontSize: `${8 * o.s}px` }}>+</text>
@@ -225,13 +235,11 @@ export default function EmptyVault({ onScreenshot, onVoice, onManual, onQuickAdd
 
         <svg className="ev-svg" viewBox="0 0 360 320" direction="ltr" aria-hidden="false" role="group" aria-label={t('stTitle')}>
           <defs>
-            {ORBS.map(o => (
-              <radialGradient key={o.sym} id={`ev-g-${o.sym}`} cx="35%" cy="30%" r="75%">
-                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.85" />
-                <stop offset="38%" stopColor={o.c} />
-                <stop offset="100%" stopColor={o.c} stopOpacity="0.75" />
-              </radialGradient>
-            ))}
+            <radialGradient id="ev-gloss" cx="32%" cy="26%" r="70%">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.38" />
+              <stop offset="45%" stopColor="#ffffff" stopOpacity="0.06" />
+              <stop offset="100%" stopColor="#000000" stopOpacity="0.22" />
+            </radialGradient>
             <radialGradient id="ev-core" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="rgb(var(--g-rgb))" stopOpacity="0.28" />
               <stop offset="100%" stopColor="rgb(var(--g-rgb))" stopOpacity="0" />

@@ -4546,8 +4546,9 @@ export default function Dashboard() {
             setTimeout(go, 80)
           }}
           onWatchAll={() => setActiveTab('watchlist')}
-          newsSlot={<NewsTicker variant="card" />}
-          sentimentSlot={<SentimentTicker holdings={enriched} totalValue={totalValue} totalPnLPct={totalPnLPct} />}
+          // An empty portfolio gets one job, adding assets: no headlines or mood until there is something to read them against.
+          newsSlot={enriched.length > 0 || isDemo ? <NewsTicker variant="card" /> : null}
+          sentimentSlot={enriched.length > 0 || isDemo ? <SentimentTicker holdings={enriched} totalValue={totalValue} totalPnLPct={totalPnLPct} /> : null}
           onAsset={(h) => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}
         />
       )}
@@ -4575,7 +4576,7 @@ export default function Dashboard() {
           headlines above Backup, Alerts or Wallets were noise on pages
           someone opened to do one job. The new look shows the same feed as a
           card inside Home instead. */}
-      {activeTab === 'overview' && !nlHome && <NewsTicker />}
+      {activeTab === 'overview' && !nlHome && (enriched.length > 0 || isDemo) && <NewsTicker />}
 
       {/* Tab content — opacity fades slightly during lazy-load transitions */}
       <div style={isTabPending ? { opacity: 0.7, transition: 'opacity 0.15s' } : undefined}>
@@ -5733,7 +5734,7 @@ export default function Dashboard() {
               })()}
 
               {/* Market Mood — sentiment from crypto headlines */}
-              {cardVis.market_mood && <MarketMood />}
+              {cardVis.market_mood && (enriched.length > 0 || isDemo) && <MarketMood />}
 
               {/* Stale price warning */}
               {staleAssets.length > 0 && (

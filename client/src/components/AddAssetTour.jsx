@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { track } from '../analytics'
+import { useLanguage } from '../LanguageContext'
 
 /**
  * AddAssetTour — an interactive, coached walkthrough that points a live animated
@@ -12,12 +13,13 @@ import { track } from '../analytics'
  * so the walkthrough never dead-ends.
  */
 
+// Copy lives in the i18n files (tourS1T is step 1's title, tourS1X its text).
 const STEPS = [
-  { sel: '[data-tour="add-asset"]',   title: 'Open the add sheet', text: 'Tap “Add manually” to open the add sheet.', opensSheet: true },
-  { sel: '[data-tour="ts-category"]', title: 'Pick what you own',  text: 'Choose a category — Crypto, Stocks, Tokenized, Gold, Cash or Fiat.' },
-  { sel: '[data-tour="ts-asset"]',    title: 'Find your asset',    text: 'Search by name or ticker and tap your asset. The live price fills in for you.' },
-  { sel: '[data-tour="ts-amount"]',   title: 'Enter your amount',  text: 'Type how much you hold — coins, shares or ounces.' },
-  { sel: '[data-tour="ts-confirm"]',  title: 'Confirm',            text: 'Tap Confirm — your asset is added and your net worth updates instantly.' },
+  { sel: '[data-tour="add-asset"]',   key: 'tourS1', opensSheet: true },
+  { sel: '[data-tour="ts-category"]', key: 'tourS2' },
+  { sel: '[data-tour="ts-asset"]',    key: 'tourS3' },
+  { sel: '[data-tour="ts-amount"]',   key: 'tourS4' },
+  { sel: '[data-tour="ts-confirm"]',  key: 'tourS5' },
 ]
 
 const PAD = 8
@@ -31,6 +33,7 @@ function isOnScreen(r) {
 }
 
 export default function AddAssetTour({ open, onClose, onNavigate }) {
+  const { t } = useLanguage()
   const [step, setStep] = useState(0)
   const [rect, setRect] = useState(null)
   const rafRef = useRef(0)
@@ -112,7 +115,7 @@ export default function AddAssetTour({ open, onClose, onNavigate }) {
     : { top: '50%', transform: 'translate(-50%, -50%)' }
 
   return (
-    <div className="wl-tour" role="dialog" aria-label={`Add asset — step ${step + 1}`}>
+    <div className="wl-tour" role="dialog" aria-label={t('tourStep')(step + 1, STEPS.length)}>
       {/* Spotlight ring over the live target (paint-only, so the real control
           underneath stays tappable). */}
       {rect && (
@@ -138,19 +141,19 @@ export default function AddAssetTour({ open, onClose, onNavigate }) {
       {/* Instruction card */}
       <div className="wl-tour-card" style={tooltipPos}>
         <div className="wl-tour-card-top">
-          <span className="wl-tour-step">Step {step + 1} of {STEPS.length}</span>
-          <button className="wl-tour-skip" onClick={finish}>Skip</button>
+          <span className="wl-tour-step">{t('tourStep')(step + 1, STEPS.length)}</span>
+          <button className="wl-tour-skip" onClick={finish}>{t('tourSkip')}</button>
         </div>
-        <h3 className="wl-tour-title">{s.title}</h3>
-        <p className="wl-tour-text">{s.text}</p>
+        <h3 className="wl-tour-title">{t(`${s.key}T`)}</h3>
+        <p className="wl-tour-text">{t(`${s.key}X`)}</p>
         <div className="wl-tour-dots" aria-hidden="true">
           {STEPS.map((_, i) => <span key={i} className={`wl-tour-dot${i === step ? ' active' : ''}${i < step ? ' done' : ''}`} />)}
         </div>
         <div className="wl-tour-actions">
-          {step > 0 ? <button className="wl-tour-back" onClick={back}>Back</button> : <span />}
+          {step > 0 ? <button className="wl-tour-back" onClick={back}>{t('tourBack')}</button> : <span />}
           <button className="wl-tour-next" onClick={next}>
-            {isLast ? 'Done' : step === 0 ? 'Open it' : 'Next'}
-            {!isLast && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>}
+            {isLast ? t('tourDone') : step === 0 ? t('tourOpen') : t('tourNext')}
+            {!isLast && <svg className="wl-tour-next-ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>}
           </button>
         </div>
       </div>

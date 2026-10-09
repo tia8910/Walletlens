@@ -17150,3 +17150,4 @@ html.wl-msstore a[href*="ibkr.com/referral"] { display: none !important; }
 .wl-st-prog-btns button { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.6rem 0.9rem; border-radius: 12px; cursor: pointer;
   font: inherit; font-size: 0.84rem; font-weight: 800; color: var(--g-ink); background: rgba(var(--g-rgb),0.12); border: 0; }
 .wl-st-prog-btns .wl-st-prog-main { color: #fff; background: rgb(var(--g-rgb)); }
+[dir="rtl"] .wl-tour-next-ic { transform: scaleX(-1); }

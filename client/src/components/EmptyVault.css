@@ -33,8 +33,8 @@
 .ev-spark { fill: none; stroke: rgb(var(--g-rgb)); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 .ev-orb { cursor: pointer; outline: none; }
-.ev-orb:focus-visible circle:nth-of-type(2) { stroke: #fff; stroke-width: 2; }
-.ev-orb-t { font-weight: 800; fill: #0b1220; pointer-events: none; }
+.ev-orb:focus-visible circle:nth-of-type(2) { stroke: #fff; stroke-width: 2.5; }
+.ev-orb-t { font-weight: 800; fill: rgba(255, 255, 255, 0.78); pointer-events: none; }
 .ev-orb-plus { font-weight: 900; fill: #0b1220; pointer-events: none; }
 
 .ev-card { fill: rgba(13, 26, 38, 0.94); stroke: rgba(255, 255, 255, 0.14); stroke-width: 1; }
