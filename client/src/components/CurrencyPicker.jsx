@@ -14,21 +14,23 @@ export function CurFlag({ code, size = 18 }) {
  * Every currency the FX feed covers, with its flag: popular ones first, then
  * the rest by name, searchable by code or name. Opens over the trade ticket.
  */
-export default function CurrencyPicker({ open, title, value, rates, onPick, onClose }) {
+export default function CurrencyPicker({ open, title, value, rates, onPick, onClose, withBtc = false }) {
   const { t, lang } = useLanguage()
   const [q, setQ] = useState('')
   const { popular, rest } = useMemo(() => currencyList(rates, lang), [rates, lang])
   if (!open) return null
   const s = q.trim().toLowerCase()
-  const match = c => !s || c.toLowerCase().includes(s) || currencyName(c, lang).toLowerCase().includes(s)
+  const nameOf = c => c === 'BTC' ? 'Bitcoin' : currencyName(c, lang)
+  const match = c => !s || c.toLowerCase().includes(s) || nameOf(c).toLowerCase().includes(s)
   const row = c => (
     <button key={c} type="button" className={`cp-row${c === value ? ' on' : ''}`} onClick={() => { onPick(c); setQ('') }}>
-      <CurFlag code={c} size={26} />
-      <b>{c}</b><span>{currencyName(c, lang)}</span>
+      {c === 'BTC' ? <span className="cp-btc" aria-hidden="true">₿</span> : <CurFlag code={c} size={26} />}
+      <b>{c}</b><span>{nameOf(c)}</span>
       {c === value && <i aria-hidden="true">✓</i>}
     </button>
   )
-  const pop = popular.filter(match)
+  // Bitcoin, for the dashboard's "view in BTC", after the dollar and the euro.
+  const pop = (withBtc ? [...popular.slice(0, 2), 'BTC', ...popular.slice(2)] : popular).filter(match)
   const others = rest.filter(match)
   // On the body: the trade sheet is transformed, which would pin a fixed
   // child to the sheet instead of the screen.

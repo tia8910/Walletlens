@@ -14,6 +14,8 @@ import { EXPLODE, ROCKET, ATH, pickLeader } from '../screenEffects'
 import ScreenEffect from '../components/ScreenEffect'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset, GOLD_ID, SILVER_ID } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
+import CurrencyPicker from '../components/CurrencyPicker'
+import { currencySymbol } from '../data/currencies'
 import Logo from '../components/Logo'
 import Icon from '../components/Icon'
 import EmptyVault from '../components/EmptyVault'
@@ -3398,6 +3400,8 @@ export default function Dashboard() {
   const [fxRates, setFxRates] = useState({})
   const [btcUsd, setBtcUsd] = useState(0)
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
+  // The full list (every currency, with flags) opened from the Home card.
+  const [homeCurPicker, setHomeCurPicker] = useState(false)
   const [showExcelImport, setShowExcelImport] = useState(false)
   const [showVoiceImport, setShowVoiceImport] = useState(false)
   const [showScreenshot, setShowScreenshot] = useState(false)
@@ -3498,7 +3502,7 @@ export default function Dashboard() {
     }
     if (displayCurrency === 'USD') return { sym: '$', rate: 1, btc: false }
     const fiat = POPULAR_FIAT.find(f => f.code === displayCurrency)
-    return { sym: fiat?.symbol || displayCurrency, rate: fxRates[displayCurrency] || null, btc: false }
+    return { sym: fiat?.symbol || currencySymbol(displayCurrency), rate: fxRates[displayCurrency] || null, btc: false }
   }, [displayCurrency, fxRates, btcUsd, prices])
 
   // Full-precision money string in the active currency (e.g. "E£ 410,233.50").
@@ -3542,6 +3546,8 @@ export default function Dashboard() {
   function saveCurrency(code) {
     setDisplayCurrency(code)
     setShowCurrencyPicker(false)
+    setHomeCurPicker(false)
+    track('display_currency_select', { currency: code })
     try {
       const s = JSON.parse(localStorage.getItem('wl_settings') || '{}')
       localStorage.setItem('wl_settings', JSON.stringify({ ...s, displayCurrency: code }))
@@ -4529,6 +4535,7 @@ export default function Dashboard() {
           newsSlot={enriched.length > 0 || isDemo ? <NewsTicker variant="card" /> : null}
           sentimentSlot={enriched.length > 0 || isDemo ? <SentimentTicker holdings={enriched} totalValue={totalValue} totalPnLPct={totalPnLPct} /> : null}
           onAsset={(h) => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}
+          conv={curConv} currency={displayCurrency} onCurrency={() => setHomeCurPicker(true)}
         />
       )}
       {showTabGrid ? (
@@ -6099,6 +6106,8 @@ export default function Dashboard() {
           />
         </Suspense>
       )}
+      <CurrencyPicker open={homeCurPicker} withBtc rates={fxRates} value={displayCurrency}
+        onClose={() => setHomeCurPicker(false)} onPick={saveCurrency} />
       {milestone && (
         <MilestonePopup
           milestone={milestone}

@@ -5,6 +5,7 @@ import { briefParts } from '../portfolioBrief'
 import { api } from '../api'
 import usePrivateFmt from '../hooks/usePrivateFmt'
 import CoinLogo from './CoinLogo'
+import { CurFlag } from './CurrencyPicker'
 import { THEMES } from '../ThemeContext'
 import { isStablecoin } from '../stablecoins'
 
@@ -29,16 +30,22 @@ export function AssetLogo({ h, size }) {
 
 const PASTELS = ['nl-cream', 'nl-rose', 'nl-lav', 'nl-mint']
 
-const splitMoney = (v) => {
-  const s = Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+// Amounts arrive in USD and are shown in the currency picked on the card
+// (`conv`: its symbol and units per USD, or Bitcoin), as the dashboard does.
+const USD = { sym: '$', rate: 1, btc: false }
+const prefix = (c) => c.btc ? '₿ ' : c.sym + (c.sym.length > 1 ? ' ' : '')
+const splitMoney = (v, c = USD) => {
+  const n = Number(v || 0) * c.rate
+  const d = c.btc ? (Math.abs(n) < 1 ? 6 : 4) : 2
+  const s = n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })
   const i = s.lastIndexOf('.')
-  return ['$' + s.slice(0, i), s.slice(i)]
+  return [prefix(c) + s.slice(0, i), s.slice(i)]
 }
-const money = (v) => splitMoney(v).join('')
-const price = (v) => {
-  const n = Number(v || 0)
-  const d = n >= 1000 ? 0 : n >= 1 ? 2 : 4
-  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })
+const money = (v, c) => splitMoney(v, c).join('')
+const price = (v, c = USD) => {
+  const n = Number(v || 0) * c.rate
+  const d = c.btc ? 8 : n >= 1000 ? 0 : n >= 1 ? 2 : 4
+  return prefix(c) + n.toLocaleString('en-US', { minimumFractionDigits: c.btc ? 0 : d, maximumFractionDigits: d })
 }
 const signed = (v) => `${v >= 0 ? '+' : ''}${Number(v || 0).toFixed(2)}%`
 
@@ -105,7 +112,9 @@ export function Spark({ values, w = 120, h = 34, className, up: upAs }) {
 export const isWatchable = (h) => h?.price > 0 && h.category !== 'fiat' && !/^fiat:/.test(h.coin_id || '') && !isStablecoin(h.coin_id, h.coin_symbol)
 
 export default function HomeTop({ enriched = [], watch = [], totalValue = 0, todayPnL = 0, totalPnLPct = 0, cats = [], wallets = [], walletId = 'all', onWallet, newsSlot, sentimentSlot,
-  onBuy, onSell, onHistory, onImport, onWatchAll, onAsset }) {
+  onBuy, onSell, onHistory, onImport, onWatchAll, onAsset, conv, currency = 'USD', onCurrency }) {
+  // Until a rate is known the card stays in dollars rather than mislabel them.
+  const cv = conv?.rate ? conv : USD
   const { t } = useLanguage()
   const { priv } = usePrivateFmt()
 
@@ -129,7 +138,7 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
     flat: { icon: '☁️', title: t('nlMoodFlat'), sub: movers },
   }[mood]
 
-  const [whole, cents] = splitMoney(totalValue)
+  const [whole, cents] = splitMoney(totalValue, cv)
   // Which wallet the card is showing. One wallet: its name. Several: the one
   // picked, or "All wallets".
   const walletName = walletId === 'all'
@@ -148,6 +157,7 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
       <section className="nl-hero">
         <i className="nl-hero-mark" aria-hidden="true" />
         <div className="nl-hero-main">
+          <div className="nl-hero-top">
           {walletName && (
             <label className={`nl-wallet${wallets.length > 1 ? ' pick' : ''}`}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4z" /></svg>
@@ -163,10 +173,18 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
               )}
             </label>
           )}
+          {onCurrency && (
+            <button type="button" className="nl-cur" onClick={onCurrency} aria-label={t('tkCurrency')}>
+              {currency === 'BTC' ? <span className="nl-cur-btc" aria-hidden="true">₿</span> : <CurFlag code={currency} size={18} />}
+              <span>{currency}</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+          )}
+          </div>
           <small>{t('nlTotal')}</small>
           <div className="nl-hero-value">{priv(whole)}<span>{priv(cents)}</span></div>
           <div className={`nl-hero-day ${todayPnL >= 0 ? 'up' : 'down'}`}>
-            <b>{todayPnL >= 0 ? '▲' : '▼'} {priv(money(Math.abs(todayPnL)))}</b> {t('nlToday')(`${Math.abs(dayPct).toFixed(2)}%`)}
+            <b>{todayPnL >= 0 ? '▲' : '▼'} {priv(money(Math.abs(todayPnL), cv))}</b> {t('nlToday')(`${Math.abs(dayPct).toFixed(2)}%`)}
           </div>
           {/* What the total is made of: one line per category, so "how much is
               in crypto" is answered on the card instead of three taps away. */}
@@ -175,7 +193,7 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
               {cats.map(c => (
                 <li key={c.cat}>
                   <span>{c.label}</span>
-                  <b>{priv(money(c.value))}</b>
+                  <b>{priv(money(c.value, cv))}</b>
                   <em>{Math.round(c.pct)}%</em>
                 </li>
               ))}
@@ -229,7 +247,7 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
                   <b>{h.coin_symbol?.toUpperCase()}</b>
                   <small className={h.pct24h >= 0 ? 'up' : 'down'}>{signed(h.pct24h)}</small>
                 </div>
-                <div className="nl-wc-v">{price(h.price)}</div>
+                <div className="nl-wc-v">{price(h.price, cv)}</div>
                 <Spark values={sparks[h.coin_id]} className="nl-wc-spark" />
               </button>
             ))}

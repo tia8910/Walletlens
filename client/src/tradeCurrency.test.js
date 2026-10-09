@@ -61,3 +61,15 @@ describe('currency flags ship with the app', () => {
     }
   })
 })
+
+describe('Home card currency', () => {
+  it('shows the portfolio in the picked currency, with every currency and Bitcoin to pick from', () => {
+    const home = readFileSync(join(here, 'components/HomeTop.jsx'), 'utf8')
+    expect(home).toMatch(/className="nl-cur"/)
+    expect(home).toMatch(/splitMoney\(totalValue, cv\)/)
+    expect(home).toMatch(/money\(c\.value, cv\)/)
+    const dash = readFileSync(join(here, 'pages/Dashboard.jsx'), 'utf8')
+    expect(dash).toMatch(/conv=\{curConv\} currency=\{displayCurrency\} onCurrency=/)
+    expect(dash).toMatch(/<CurrencyPicker open=\{homeCurPicker\} withBtc/)
+  })
+})

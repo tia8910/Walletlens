@@ -1,6 +1,6 @@
 /* Currency picker over the trade ticket. */
 .cp-back {
-  position: fixed; inset: 0; z-index: 400; display: flex; align-items: flex-end; justify-content: center;
+  position: fixed; inset: 0; z-index: 10000; display: flex; align-items: flex-end; justify-content: center;
   background: rgba(5, 8, 10, .5); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
   animation: cp-fade .2s ease-out;
 }
@@ -36,3 +36,4 @@
 .cp-row i { font-style: normal; font-weight: 800; color: var(--g, #10b981); }
 .cp-empty { padding: 18px 0; text-align: center; color: var(--text-sub, #6b7280); font-size: .85rem; }
 .cp-flag { width: var(--s, auto); border-radius: 50%; object-fit: cover; flex-shrink: 0; box-shadow: 0 0 0 1px rgba(127, 127, 127, .2); }
+.cp-row .cp-btc, .cp-btc { flex: none !important; min-width: 0; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; background: #f7931a; color: #fff; font-weight: 800; font-size: .85rem; }
