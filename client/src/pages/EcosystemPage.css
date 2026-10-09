@@ -32,7 +32,6 @@
   }
 }
 
-
 .wl-eco *{box-sizing:border-box}
 
 .wl-eco{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;
@@ -287,12 +286,10 @@
   /* the packets carry the argument, so park them as a trail rather than a stack */ .wl-eco .lane .pk:nth-child(1){left:6%}.wl-eco .lane .pk:nth-child(2){left:26%}.wl-eco .lane .pk:nth-child(3){left:46%}
 }
 
-
 .wl-eco .feat-link{display:inline-flex;align-items:center;margin-top:8px;font-size:14px;color:var(--em-txt);
   text-decoration:underline;text-underline-offset:4px}
 .wl-eco .feat-link:focus-visible{outline:2px solid currentColor;outline-offset:3px;border-radius:5px}
 .wl-eco .dek-tail{margin-top:34px}
-.wl-eco .inline-link{text-decoration:underline;text-underline-offset:4px}
 
 /* ══ product shot ═════════════════════════════════════════════════════════
    The real app, not a drawing of it. Two crops rather than one: the trio
