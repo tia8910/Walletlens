@@ -57,6 +57,7 @@ function currentZone() {
 
 const REMOTE_KEY = 'wl_offers_remote'
 const BONUS_KEY = 'wl_bybit_bonus'
+const ENDS_KEY = 'wl_bybit_ends'
 
 // Off until the site says on. Failing closed means a phone that has never
 // reached /offers.json shows nothing, and turning the offer off is a
@@ -108,8 +109,63 @@ export function applyRemote(j) {
     if (bonus) localStorage.setItem(BONUS_KEY, bonus)
     // Removed from the file means back to the default, not stuck on the old one.
     else if (!j.bybit || j.bybit.bonus === undefined) localStorage.removeItem(BONUS_KEY)
+    const ends = validEnd(j.bybit?.endsAt)
+    if (ends) localStorage.setItem(ENDS_KEY, String(ends))
+    else localStorage.removeItem(ENDS_KEY)
   } catch { /* private mode */ }
   return true
+}
+
+// ── The deadline ────────────────────────────────────────────────────────────
+//
+// A time-limited reward has its end date in /offers.json too:
+//
+//   { "enabled": true, "bybit": { "bonus": "$20", "endsAt": "2026-10-14T09:00:00Z" } }
+//
+// The popup and its countdown exist only while that date is in the future, so
+// the clock shown is the real deadline and the popup stops itself on time.
+
+/** The end as epoch milliseconds, if it is an ISO date with a time zone. */
+export function validEnd(v) {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}T[\d:.]+(?:Z|[+-]\d{2}:\d{2})$/.test(v.trim())) return null
+  const ms = Date.parse(v.trim())
+  return Number.isFinite(ms) ? ms : null
+}
+
+/** The offer's end, as last read from the site, or null. */
+export function currentEndsAt() {
+  try { const n = Number(localStorage.getItem(ENDS_KEY)); return n > 0 ? n : null } catch { return null }
+}
+
+/** Days, hours, minutes and seconds left before `end`, or null once it has passed. */
+export function timeLeft(end, now = Date.now()) {
+  const ms = end - now
+  if (!(ms > 0)) return null
+  const s = Math.floor(ms / 1000)
+  return { d: Math.floor(s / 86400), h: Math.floor(s / 3600) % 24, m: Math.floor(s / 60) % 60, s: s % 60 }
+}
+
+// ── The popup's pacing ──────────────────────────────────────────────────────
+//
+// Shown to everyone the offer is allowed for, at most once a day. "Later"
+// waits a day; tapping the button, or "Don't show again", ends it for good.
+
+const POPUP_KEY = 'wl_bybit_popup'
+export const POPUP_SNOOZE_MS = 24 * 60 * 60 * 1000
+
+/** Whether the popup is due now. The arguments are there for tests. */
+export function popupDue({ now = Date.now(), allowed = bybitAllowed(), end = currentEndsAt() } = {}) {
+  if (!allowed || !end || end <= now) return false
+  try {
+    const v = localStorage.getItem(POPUP_KEY)
+    if (v === 'done') return false
+    return !(Number(v) > now)
+  } catch { return false }
+}
+
+/** Records a close: 'later' snoozes a day, 'done' ends it. */
+export function closePopup(how, now = Date.now()) {
+  try { localStorage.setItem(POPUP_KEY, how === 'done' ? 'done' : String(now + POPUP_SNOOZE_MS)) } catch {}
 }
 
 // Read once per session and remembered, so an offline phone keeps the last

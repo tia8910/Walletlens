@@ -86,8 +86,8 @@ describe('the bonus amount', () => {
   it('is read by every placement rather than written into it', () => {
     const c = read('components/BybitOffer.jsx')
     expect(c).not.toMatch(/\$20/)
-    // The crypto card, the stocks card and the strip.
-    expect(c.match(/const \{ allowed, bonus \} = useBybitOffer\(\)/g)).toHaveLength(3)
+    // The crypto card, the stocks card, the strip and the Home popup.
+    expect(c.match(/const \{ allowed, bonus \} = useBybitOffer\(\)/g)).toHaveLength(4)
     expect(JSON.parse(read('../public/offers.json')).bybit.bonus).toBe('$20')
     expect(DEVICE_ONLY_KEYS).toContain('wl_bybit_bonus')
   })
@@ -177,7 +177,9 @@ describe('placements', () => {
   })
 
   it('is not a popup after adding an asset', () => {
-    expect(read('components/BybitOffer.jsx')).not.toMatch(/sheet|modal/i)
+    // The one popup is the time-limited offer on Home, on its own timer.
+    expect(read('components/TradeSheet.jsx')).not.toMatch(/BybitOffer|bybitOffer/)
+    expect(read('components/BybitOffer.jsx').match(/aria-modal/g)).toHaveLength(2)
   })
 })
 
