@@ -88,7 +88,7 @@ describe('the tour page', () => {
 
 describe('the tour page keeps its h1 while the film plays', () => {
   it('has a fixed h1 outside the film, and scene captions are h2', () => {
-    expect(markup).toMatch(/<h1 class="vh">WalletLens: free net worth tracker/)
+    expect(markup).toMatch(/<h1 class="vh">WalletLens: unique investment manager and net worth tracker/)
     expect(markup).toMatch(/<div class="cap" id="cap"><h2>/)
     // The film no longer turns a caption into a second, changing h1.
     expect(html).not.toMatch(/replace\('<h2>', '<h1>'\)/)
