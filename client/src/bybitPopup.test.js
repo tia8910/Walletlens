@@ -21,11 +21,11 @@ describe('the Bybit popup', () => {
     expect(currentEndsAt()).toBeNull()
   })
 
-  it('shows no countdown', () => {
+  it('shows no countdown and no "Don\'t forget" line', () => {
     const src = readFileSync(join(here, 'components/BybitOffer.jsx'), 'utf8')
-    expect(src).not.toMatch(/byp-timer|role="timer"|byPopEnds/)
+    expect(src).not.toMatch(/byp-timer|role="timer"|byPopEnds|byPopEyebrow/)
     for (const l of ['en', 'ar', 'fr', 'es', 'de', 'it']) {
-      expect(readFileSync(join(here, `i18n/${l}.js`), 'utf8'), l).not.toContain('byPopEnds:')
+      expect(readFileSync(join(here, `i18n/${l}.js`), 'utf8'), l).not.toMatch(/byPopEnds:|byPopEyebrow:/)
     }
   })
 

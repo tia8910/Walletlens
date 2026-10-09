@@ -2318,7 +2318,6 @@ export default {
     byMetalsStripHead: "ذهب وفضة + {amt}",
     byPrizeLabel: "للحسابات الجديدة",
     byGift: "هدايا ترحيبية",
-    byPopEyebrow: "لا تنسَ",
     byPopHead: "احصل على {amt}",
     byPopSteps: "في خطوتين سهلتين",
     byPopPartner: "من شريكنا {brand}",

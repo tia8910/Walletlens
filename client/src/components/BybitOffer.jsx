@@ -267,7 +267,6 @@ export function BybitPopup({ blocked = false }) {
             </button>
           </div>
           <Gift className="byp-gift" />
-          <p className="byp-eyebrow">{t('byPopEyebrow')}</p>
           <h2 id="byp-h" className="byp-h">{headA}<em>{bonus}</em>{headB}</h2>
           <p className="byp-sub">{t('byPopSteps')}</p>
           <p className="byp-partner">{(() => {

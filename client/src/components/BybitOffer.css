@@ -133,8 +133,7 @@
   background: rgba(255, 255, 255, .08) !important; border: 1px solid rgba(255, 255, 255, .12) !important; color: #cfd7d3 !important; box-shadow: none !important;
 }
 .byp-gift { position: relative; display: block; width: 104px; height: 104px; margin: 8px auto 2px; filter: drop-shadow(0 14px 26px rgba(247, 166, 0, .5)); animation: by-float 4s ease-in-out infinite; }
-.byp-eyebrow { position: relative; margin: 0; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #ffc94d; }
-.byp-h { position: relative; margin: 4px 0 0; font: 800 30px/1.1 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif; letter-spacing: -.03em; }
+.byp-h { position: relative; margin: 6px 0 0; font: 800 30px/1.1 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif; letter-spacing: -.03em; }
 .byp-h em { display: block; font-style: normal; font-size: 1.12em; background: linear-gradient(180deg, #ffd46b, #f7a600); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .byp-sub { position: relative; margin: 4px 0 0; font-size: 14px; color: #c3ccc7; font-weight: 600; }
 .byp-steps { list-style: none; margin: 14px 0 12px; padding: 0; display: grid; gap: 8px; }
@@ -149,7 +148,7 @@
 .byp-links button { background: none !important; border: 0 !important; box-shadow: none !important; padding: 4px 2px !important; min-height: 0 !important; width: auto !important; color: #a9b3ae !important; font-size: 13px !important; font-weight: 600; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .byp, .byp-back, .byp-rays, .byp-gift { animation: none } }
 /* Centred in every language: the app's RTL rules would otherwise right-align it. */
-.byp-hero .byp-eyebrow, .byp-hero .byp-h, .byp-hero .byp-sub, .byp .by-fine { text-align: center !important; }
+.byp-hero .byp-h, .byp-hero .byp-sub, .byp .by-fine { text-align: center !important; }
 .byp-h em { unicode-bidi: isolate; }
 .byp-partner {
   position: relative; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;

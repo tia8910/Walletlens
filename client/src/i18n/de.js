@@ -2313,7 +2313,6 @@ export default {
     byMetalsStripHead: "Gold & Silber + {amt}",
     byPrizeLabel: "Neue Konten erhalten",
     byGift: "Willkommensgeschenke",
-    byPopEyebrow: "Nicht vergessen",
     byPopHead: "Hol dir {amt}",
     byPopSteps: "in 2 einfachen Schritten",
     byPopPartner: "Von unserem Partner {brand}",
