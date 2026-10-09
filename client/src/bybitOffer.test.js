@@ -12,8 +12,8 @@ const here = dirname(fileURLToPath(import.meta.url))
 const read = (p) => readFileSync(join(here, p), 'utf8')
 
 describe('where the Bybit offer may appear', () => {
-  it('uses the referral code', () => {
-    expect(BYBIT_URL).toMatch(/ref=BM64KOV/)
+  it('uses the WalletLens partner link', () => {
+    expect(BYBIT_URL).toBe('https://partner.bybit.com/b/WALLETLENS')
   })
 
   it('stays hidden where Bybit does not serve or may not be promoted', () => {
@@ -86,8 +86,9 @@ describe('the bonus amount', () => {
   it('is read by every placement rather than written into it', () => {
     const c = read('components/BybitOffer.jsx')
     expect(c).not.toMatch(/\$20/)
-    // The crypto card, the stocks card, the strip and the Home popup.
-    expect(c.match(/const \{ allowed, bonus \} = useBybitOffer\(\)/g)).toHaveLength(4)
+    // The crypto card, the stocks card, the strip and the Home popup all
+    // word the reward as Welcome Gifts rather than an amount.
+    expect(c.match(/const bonus = t\('byGift'\)/g)).toHaveLength(4)
     expect(JSON.parse(read('../public/offers.json')).bybit.bonus).toBe('$20')
     expect(DEVICE_ONLY_KEYS).toContain('wl_bybit_bonus')
   })

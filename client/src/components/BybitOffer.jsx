@@ -4,7 +4,7 @@ import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
 import {
   useBybitOffer, usePickedOffer, openBybit, stripHidden, hideStrip, viewRef,
-  popupDue, closePopup, markPopupShown, currentEndsAt, timeLeft, trackReferralEvent, currentBonus,
+  popupDue, closePopup, markPopupShown, currentEndsAt, trackReferralEvent, currentBonus,
 } from '../bybitOffer'
 import './BybitOffer.css'
 
@@ -14,7 +14,7 @@ import './BybitOffer.css'
 //   • TradFi — Bybit's stock, ETF, gold, silver and oil markets traded in
 //     USDT: on a stock's or metal's page, in Technical Analysis, and as a
 //     strip after the stock or metal holdings (one Bybit strip at most).
-// The bonus amount comes from /offers.json. Everything renders nothing unless
+// The reward is worded as Welcome Gifts (byGift), not an amount. Everything renders nothing unless
 // bybitAllowed() says so (remote switch on, region allowed).
 
 function Wordmark() {
@@ -40,7 +40,9 @@ function Gift({ className }) {
 /** Under the smart money flow card: on a crypto asset's page and in Technical Analysis. */
 export function BybitCard({ symbol, placement = 'asset_page' }) {
   const { t } = useLanguage()
-  const { allowed, bonus } = useBybitOffer()
+  const { allowed } = useBybitOffer()
+  // What new accounts get, in words: "Welcome Gifts", not a dollar figure.
+  const bonus = t('byGift')
   if (!allowed) return null
   const sym = String(symbol || '').toUpperCase()
   return (
@@ -98,7 +100,9 @@ function TradFiChips({ kind }) {
  */
 export function BybitStockCard({ symbol, kind = 'stocks', placement = 'stock_page' }) {
   const { t } = useLanguage()
-  const { allowed, bonus } = useBybitOffer()
+  const { allowed } = useBybitOffer()
+  // What new accounts get, in words: "Welcome Gifts", not a dollar figure.
+  const bonus = t('byGift')
   if (!allowed) return null
   const sym = String(symbol || '').toUpperCase()
   const k = kind === 'metals' ? 'Metals' : 'Stocks'
@@ -130,7 +134,9 @@ export function BybitStockCard({ symbol, kind = 'stocks', placement = 'stock_pag
 /** After the crypto holdings list. Dismissed, it stays hidden for 30 days. */
 export function BybitStrip({ variant = 'crypto', placement = 'holdings' }) {
   const { t } = useLanguage()
-  const { allowed, bonus } = useBybitOffer()
+  const { allowed } = useBybitOffer()
+  // What new accounts get, in words: "Welcome Gifts", not a dollar figure.
+  const bonus = t('byGift')
   const [hidden, setHidden] = useState(stripHidden)
   if (!allowed || hidden) return null
   if (variant === 'stocks' || variant === 'metals') {
@@ -172,8 +178,6 @@ export function BybitStrip({ variant = 'crypto', placement = 'holdings' }) {
   )
 }
 
-const pad2 = n => String(n).padStart(2, '0')
-
 // The popup's own events, alongside the shared referral_* ones, so it has a
 // funnel of its own in GA: bybit_popup_view → bybit_popup_click, and
 // bybit_popup_dismiss with how it was closed (later, x, outside, escape, never).
@@ -204,14 +208,14 @@ function screenBusy() {
 /**
  * The time-limited sign-up reward, as a large popup on every screen of the
  * app: shown to everyone the offer is allowed for, a few seconds after it opens,
- * once per session, and only until the end date in /offers.json. The countdown is
- * that date.
+ * once per session, and only until the end date in /offers.json.
  */
 export function BybitPopup({ blocked = false }) {
   const { t } = useLanguage()
-  const { allowed, bonus } = useBybitOffer()
+  const { allowed } = useBybitOffer()
+  // What new accounts get, in words: "Welcome Gifts", not a dollar figure.
+  const bonus = t('byGift')
   const [open, setOpen] = useState(false)
-  const [now, setNow] = useState(Date.now)
   const openedAt = useRef(0)
 
   // A moment after the app settles, and never over another sheet or dialog:
@@ -234,15 +238,12 @@ export function BybitPopup({ blocked = false }) {
 
   useEffect(() => {
     if (!open) return
-    const id = setInterval(() => setNow(Date.now()), 1000)
     const onKey = e => { if (e.key === 'Escape') close('later', 'escape') }
     window.addEventListener('keydown', onKey)
-    return () => { clearInterval(id); window.removeEventListener('keydown', onKey) }
+    return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
-  const end = currentEndsAt()
-  const left = end ? timeLeft(end, now) : null
-  if (!open || !left) return null
+  if (!open) return null
 
   // how: 'later' (back next session) or 'done' (never again); via: what was tapped.
   function close(how, via = how) {
@@ -266,8 +267,7 @@ export function BybitPopup({ blocked = false }) {
             </button>
           </div>
           <Gift className="byp-gift" />
-          <p className="byp-eyebrow">{t('byPopEyebrow')}</p>
-          <h2 id="byp-h" className="byp-h">{headA}<em dir="ltr">{bonus}</em>{headB}</h2>
+          <h2 id="byp-h" className="byp-h">{headA}<em>{bonus}</em>{headB}</h2>
           <p className="byp-sub">{t('byPopSteps')}</p>
           <p className="byp-partner">{(() => {
             const [a, b = ''] = t('byPopPartner').split('{brand}')
@@ -280,14 +280,6 @@ export function BybitPopup({ blocked = false }) {
           <li><b>2</b><span><strong>{t('byPopS2')}</strong><small>{t('byPopS2x').replace('{amt}', bonus)}</small></span></li>
         </ol>
 
-        <div className="byp-timer" role="timer" aria-live="off">
-          <span className="byp-timer-l">{t('byPopEnds')}</span>
-          <span className="byp-clock" dir="ltr">
-            {[[left.d, t('byPopD')], [left.h, t('byPopH')], [left.m, t('byPopM')], [left.s, t('byPopS')]].map(([v, u], i) => (
-              <span key={i} className="byp-cell"><b>{pad2(v)}</b><i>{u}</i></span>
-            ))}
-          </span>
-        </div>
 
         <button type="button" className="by-cta byp-cta" onClick={() => {
           trackPopup('bybit_popup_click', { seconds_open: Math.round((Date.now() - openedAt.current) / 1000), transport_type: 'beacon' })

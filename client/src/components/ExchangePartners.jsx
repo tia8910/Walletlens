@@ -47,12 +47,12 @@ const CRYPTO_EXCHANGES = [
     name: 'Bybit',
     tagline: 'Fast Derivatives & Spot',
     fee: '0.1% taker fee',
-    bonus: 'Claim 20 USDT referee reward',
-    reward: '20 USDT Bonus',
+    bonus: 'Get Welcome Gifts from our partner Bybit',
+    reward: 'Welcome Gifts',
     color: '#f7a600',
     bg: 'linear-gradient(135deg, #1a1000 0%, #241800 100%)',
     glow: 'rgba(247,166,0,0.22)',
-    url: 'https://www.bybit.com/invite?ref=3ORQD9',
+    url: 'https://partner.bybit.com/b/WALLETLENS',
     logo: (
       <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36" className="ep-logo-pulse">
         {/* Bybit official icon: white "B" path + orange vertical bar (the I) + white "T" path */}

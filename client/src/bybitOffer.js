@@ -21,7 +21,7 @@ import { track } from './analytics'
 import { INTERESTS_EVENT } from './data/interestsEvent'
 import { isMsStore } from './msStore'
 
-export const BYBIT_URL = 'https://www.bybit.com/invite?ref=BM64KOV&medium=referral&utm_campaign=evergreen'
+export const BYBIT_URL = 'https://partner.bybit.com/b/WALLETLENS'
 /** The bonus shown when the site has not said otherwise. */
 export const BYBIT_BONUS = '$20'
 
@@ -122,8 +122,8 @@ export function applyRemote(j) {
 //
 //   { "enabled": true, "bybit": { "bonus": "$20", "endsAt": "2026-10-14T09:00:00Z" } }
 //
-// The popup and its countdown exist only while that date is in the future, so
-// the clock shown is the real deadline and the popup stops itself on time.
+// The popup exists only while that date is in the future, so it stops itself
+// on time.
 
 /** The end as epoch milliseconds, if it is an ISO date with a time zone. */
 export function validEnd(v) {
@@ -135,14 +135,6 @@ export function validEnd(v) {
 /** The offer's end, as last read from the site, or null. */
 export function currentEndsAt() {
   try { const n = Number(localStorage.getItem(ENDS_KEY)); return n > 0 ? n : null } catch { return null }
-}
-
-/** Days, hours, minutes and seconds left before `end`, or null once it has passed. */
-export function timeLeft(end, now = Date.now()) {
-  const ms = end - now
-  if (!(ms > 0)) return null
-  const s = Math.floor(ms / 1000)
-  return { d: Math.floor(s / 86400), h: Math.floor(s / 3600) % 24, m: Math.floor(s / 60) % 60, s: s % 60 }
 }
 
 // ── The popup's pacing ──────────────────────────────────────────────────────
