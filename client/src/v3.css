@@ -711,3 +711,21 @@ html.wl-v3:not([data-wl-light]) .nl-check { border-color: rgba(255, 255, 255, 0.
 /* overflow: hidden (for the ellipsis) clipped the descenders at the tight
    line height: the tails of y and g, and the marks under Arabic letters. */
 .nl-topbar-greet b.nl-tagline { line-height: 1.45; padding-block: 1px 2px; }
+
+/* "Rate WalletLens on Google Play" on Home (Android app). */
+.nl-rate-card {
+  display: block;
+  margin: 0.9rem 0; padding: 0.95rem 1rem; border-radius: 20px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.16), rgba(251, 191, 36, 0.04)), var(--card-bg, #fff);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+.nl-rate-stars { font-size: 1.15rem; letter-spacing: 2px; color: #f59e0b; line-height: 1; margin-bottom: 0.4rem; }
+.nl-rate-txt b { display: block; font-size: 0.92rem; font-weight: 800; color: var(--text); }
+.nl-rate-txt small { display: block; margin-top: 0.1rem; font-size: 0.76rem; color: var(--text-muted); }
+.nl-rate-btns { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
+.nl-rate-btns button {
+  width: auto !important; min-height: 0 !important; height: 36px !important; margin: 0 !important; padding: 0 1rem !important;
+  border-radius: 12px !important; font: inherit; font-size: 0.8rem !important; font-weight: 800 !important; cursor: pointer; box-shadow: none !important;
+}
+.nl-rate-go { background: #f59e0b !important; color: #111 !important; border: 0 !important; }
+.nl-rate-later { background: transparent !important; color: var(--text-muted) !important; border: 1px solid var(--border, rgba(127,127,127,.25)) !important; }

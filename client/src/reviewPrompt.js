@@ -54,10 +54,10 @@ const SESSION_FLAG = 'wl_review_session_counted'
 // Every gate here answers one question: has this person used WalletLens enough
 // to have an opinion about it?
 //
-//   opens      — three launches. One is someone looking around; three is
+//   opens      — two launches. One is someone looking around; a second is
 //                someone who came back on purpose.
-//   days       — and on a later day than the first. A single long session is
-//                still a first impression.
+//   days       — and a day after the first. A single long session is still a
+//                first impression.
 //   holdings   — a portfolio. The app does one thing, and a user with nothing
 //                in it has not seen the app do it.
 //   dwell      — a full minute into the session, so the card is never part of
@@ -69,15 +69,18 @@ const SESSION_FLAG = 'wl_review_session_counted'
 //   onboarding — never while the welcome flow is unfinished. Asking someone to
 //                rate an app they are still being introduced to is the clearest
 //                possible version of this whole mistake.
-const MIN_OPENS = 3
-const MIN_DAYS = 2
+// Two launches a day apart, not three over two full days. The longer bar
+// left most users unqualified before they stopped opening the app, and
+// Play's own quota already stops a card being shown too often.
+const MIN_OPENS = 2
+const MIN_DAYS = 1
 
 // The other way in: time actually spent. Launch counting alone missed the
 // people who use WalletLens most. The installed app resumes one long-lived
 // session for days, so a daily user could sit at "1 launch" indefinitely, and
-// an hour of real use counted for nothing. Ten minutes of the app on screen,
+// an hour of real use counted for nothing. Five minutes of the app on screen,
 // across at least two visits, is someone who has formed an opinion.
-const ENGAGED_MS = 10 * 60 * 1000
+const ENGAGED_MS = 5 * 60 * 1000
 const ENGAGED_OPENS = 2
 // Coming back after this long away counts as a new launch, even though the
 // app never restarted.
@@ -492,12 +495,25 @@ function readSnapshot() {
   }
 }
 
+// A dialog really on screen: the dashboard's snapshot only knows its own
+// sheets, and the Bybit offer, a milestone or a picker can be open over it.
+// Hidden dialogs kept mounted in the page do not count.
+function dialogOnScreen() {
+  try {
+    return [...document.querySelectorAll('[role="dialog"], [aria-modal="true"], .ms-overlay, .share-overlay, .qs-overlay')].some(el => {
+      if (el.closest('[aria-hidden="true"]') || !el.getClientRects().length) return false
+      const cs = getComputedStyle(el)
+      return cs.visibility !== 'hidden' && cs.display !== 'none' && Number(cs.opacity) > 0.05
+    })
+  } catch { return false }
+}
+
 function evaluate(snap) {
   // Behind the App Lock screen. Nothing else is worth checking: there is no
   // app on screen to have an opinion about.
   if (!interactive) return { ok: false, blocked: 'locked' }
 
-  if (snap.busy) return { ok: false, blocked: 'busy' }
+  if (snap.busy || dialogOnScreen()) return { ok: false, blocked: 'busy' }
 
   // Live again. This sat inert behind `MIN_HOLDINGS > 0` while the rule was
   // "ask everybody"; an empty portfolio is now a reason to wait, because the

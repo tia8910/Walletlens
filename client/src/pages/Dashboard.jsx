@@ -15,6 +15,7 @@ import ScreenEffect from '../components/ScreenEffect'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset, GOLD_ID, SILVER_ID } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
 import CurrencyPicker from '../components/CurrencyPicker'
+import RateCard from '../components/RateCard'
 import { currencySymbol } from '../data/currencies'
 import Logo from '../components/Logo'
 import Icon from '../components/Icon'
@@ -4538,6 +4539,7 @@ export default function Dashboard() {
           conv={curConv} currency={displayCurrency} onCurrency={() => setHomeCurPicker(true)}
         />
       )}
+      {nlHomeView && activeTab === 'overview' && !isDemo && <RateCard holdings={enriched.length} />}
       {showTabGrid ? (
       <div className="dvx-tabgrid">
         {tabs.map(tab => (
