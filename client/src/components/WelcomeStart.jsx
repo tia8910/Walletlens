@@ -328,7 +328,8 @@ export default function WelcomeStart({ onDone }) {
       focusRow.current = rows[at].id
       setRows(prev => prev.map((r, j) => j === at ? { ...r, cat: asset.cat, asset } : r))
     }
-    track('welcome_start_pick', { cat: asset.cat, id: asset.id })
+    // The category only: the asset picked here is one the person holds.
+    track('welcome_start_pick', { cat: asset.cat, asset_category: asset.category })
   }
 
   function removeRow(i) {
@@ -404,6 +405,13 @@ export default function WelcomeStart({ onDone }) {
         })
       }
       track('welcome_start_seed', { count: seeds.length, cats: [...new Set(seeds.map(r => r.cat))].join(',') })
+      // One event per asset added, by category, in the same shape as a trade:
+      // onboarding_asset_added for the onboarding report, and buy_transaction
+      // so "what do people buy" counts the balances entered here too.
+      for (const r of seeds) {
+        track('onboarding_asset_added', { asset_category: r.asset.category, source: 'onboarding' })
+        track('buy_transaction', { asset_category: r.asset.category, source: 'onboarding' })
+      }
       trackProfileCreated({ method: 'welcome_balances', source: 'welcome_start' })
       try { sfx.playTriumph() } catch {}
       sfx.haptic([12, 40, 18])

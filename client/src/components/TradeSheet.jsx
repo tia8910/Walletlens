@@ -767,9 +767,12 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
       // from trade_submitted only, while this event kept sending all of it.
       // analyticsPrivacy.test.js could not see either call because its scanner
       // required a quoted event name and both are named by a ternary.
+      // For a stock, which market: US, or the local market's code (EG, SA…).
+      const stockMarket = assetCat === 'stock' ? marketOfTicker(asset.id) : undefined
       track(mode === 'buy' ? 'buy_transaction' : 'sell_transaction', {
         asset_category: assetCat,
         source: 'trade_sheet',
+        ...(stockMarket ? { stock_market: stockMarket } : {}),
       })
 
       // Kept for backwards compatibility with the existing GA reports.

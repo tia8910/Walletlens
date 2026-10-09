@@ -6,7 +6,8 @@
 // If you add an event, keep every param free of portfolio-derived data.
 //
 // WHAT A TRADE MAY REPORT: its direction and its asset CATEGORY (crypto,
-// stocks, gold…), plus which screen it came from. Not the symbol, not the
+// stocks, gold…), for a stock which market (US, EG, SA…), plus which screen
+// it came from, onboarding included. Not the symbol, not the
 // amount, not the dollar value or a tier of it, not the price, not what it was
 // paid for with, not how much of a position was exited, and not the realized
 // profit or loss. All fourteen of those were being sent on every trade from
