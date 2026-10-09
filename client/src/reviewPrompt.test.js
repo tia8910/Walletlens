@@ -132,11 +132,11 @@ describe('maybeAskForReview', () => {
 
   it('waits for a few launches', async () => {
     const { maybeAskForReview } = await loadModule()
-    seed({ opens: 2 })
+    seed({ opens: 1 })
     vi.setSystemTime(T0 + 60 * 1000)
     expect(maybeAskForReview(READY)).toBe(false)
 
-    seed({ opens: 3 })
+    seed({ opens: 2 })
     expect(maybeAskForReview(READY)).toBe(true)
   })
 
@@ -144,11 +144,11 @@ describe('maybeAskForReview', () => {
     // A single long session is still a first impression, however many hours
     // of it there are.
     const { maybeAskForReview } = await loadModule()
-    seed({ first: T0 - 1 * DAY })
+    seed({ first: T0 - DAY / 2 })
     vi.setSystemTime(T0 + 60 * 1000)
     expect(maybeAskForReview(READY)).toBe(false)
 
-    seed({ first: T0 - 2 * DAY })
+    seed({ first: T0 - 1 * DAY })
     expect(maybeAskForReview(READY)).toBe(true)
   })
 
@@ -689,15 +689,16 @@ describe('asking for a review does not close the app', () => {
 describe('time actually spent counts', () => {
   const MIN = 60 * 1000
 
-  it('qualifies a user with ten minutes of real use over two visits, without waiting days', async () => {
+  it('qualifies a user with five minutes of real use over two visits, without waiting days', async () => {
     const { maybeAskForReview } = await loadModule()
     // Second visit, same day: the launches-over-days rule alone says no.
-    seed({ first: T0 - 2 * 60 * MIN, opens: 2, activeMs: 9 * MIN })
+    // One visit short of the launches rule: the minutes are what qualify it.
+    seed({ first: T0 - 2 * 60 * MIN, opens: 2, activeMs: 4 * MIN })
     vi.setSystemTime(T0 + 61 * 1000)
-    expect(maybeAskForReview(READY), 'nine minutes').toBe(false)
+    expect(maybeAskForReview(READY), 'four minutes').toBe(false)
 
-    seed({ first: T0 - 2 * 60 * MIN, opens: 2, activeMs: 10 * MIN })
-    expect(maybeAskForReview(READY), 'ten minutes').toBe(true)
+    seed({ first: T0 - 2 * 60 * MIN, opens: 2, activeMs: 5 * MIN })
+    expect(maybeAskForReview(READY), 'five minutes').toBe(true)
   })
 
   it('still needs a second visit: one long first session is a first impression', async () => {
