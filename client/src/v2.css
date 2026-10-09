@@ -949,3 +949,12 @@ html.wl-v2 .ac-page .sell-btn { background: linear-gradient(135deg, #f43f5e, #be
 @media (prefers-reduced-motion: reduce) {
   html.wl-v2 body::before { transition: none; }
 }
+
+/* The ticket's currency, beside "You spend". */
+html.wl-v2 .bs-v2 .tk-lbl-row { display: flex; align-items: center; gap: 0.5rem; }
+html.wl-v2 .bs-v2 .tk-curpick {
+  display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer; font: inherit;
+  padding: 0.2rem 0.5rem 0.2rem 0.25rem; border-radius: 99px; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.02em;
+  background: var(--v2-glass); border: 1px solid var(--v2-glass-border); color: var(--text);
+}
+html.wl-v2 .bs-v2 .tk-curpick svg { max-width: none; color: var(--text-sub); }

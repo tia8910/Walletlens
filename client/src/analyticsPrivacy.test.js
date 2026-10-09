@@ -168,3 +168,22 @@ describe('trade events report a category and nothing else', () => {
     expect(trackedParams(sample).length, 'the scanner is blind to ternary-named events again').toBe(1)
   })
 })
+
+// Onboarding: every asset entered at setup is counted by category, like a trade.
+describe('onboarding reports the category of each asset added', () => {
+  const src = readFileSync(join(SRC, 'components/WelcomeStart.jsx'), 'utf8')
+
+  it('sends onboarding_asset_added and buy_transaction with the category', () => {
+    expect(src).toMatch(/track\('onboarding_asset_added', \{ asset_category: r\.asset\.category, source: 'onboarding' \}\)/)
+    expect(src).toMatch(/track\('buy_transaction', \{ asset_category: r\.asset\.category, source: 'onboarding' \}\)/)
+  })
+
+  it('no longer sends which asset was picked', () => {
+    expect(src).not.toMatch(/welcome_start_pick', \{[^}]*\bid:/)
+  })
+
+  it('a stock trade says which market', () => {
+    const ts = readFileSync(join(SRC, 'components/TradeSheet.jsx'), 'utf8')
+    expect(ts).toMatch(/stock_market: stockMarket/)
+  })
+})

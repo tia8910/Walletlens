@@ -237,12 +237,15 @@ export function flagCodeFor(currency) {
   if (c.startsWith('X')) return null
   return c.slice(0, 2).toLowerCase()
 }
+// Served from the app first (public/flags, flag-icons 7.2.3, MIT), so a flag
+// shows even where the CDN is slow or blocked; the CDN and the proxy after it.
+const flagLocal = cc => `/flags/${cc}.svg`
 const flagUrl = cc => `https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/flags/1x1/${cc}.svg`
 
 /** A country's flag in a circle (cc is ISO 3166, e.g. 'sa'); the code as text if it fails. */
 export function FlagImg({ cc, size = 18, className = '' }) {
   const [step, setStep] = useState(0)
-  const urls = [flagUrl(cc), voiceProxy(flagUrl(cc))]
+  const urls = [flagLocal(cc), flagUrl(cc), voiceProxy(flagUrl(cc))]
   if (!cc || step >= urls.length) {
     return <span className={className} style={{ width: size, height: size, borderRadius: '50%', display: 'inline-grid', placeItems: 'center', fontSize: size * 0.42, fontWeight: 800, background: 'rgba(127,127,127,0.18)', flexShrink: 0 }}>{String(cc || '').toUpperCase()}</span>
   }
@@ -269,7 +272,7 @@ function useStockLogo(ticker) {
 function nonCryptoPictures(coinId, stockUrl) {
   if (coinId?.startsWith('fiat:')) {
     const cc = flagCodeFor(coinId.slice(5))
-    return cc ? [flagUrl(cc), voiceProxy(flagUrl(cc))] : []
+    return cc ? [flagLocal(cc), flagUrl(cc), voiceProxy(flagUrl(cc))] : []
   }
   if (coinId?.startsWith('stock:') && stockUrl) return [stockUrl, voiceProxy(stockUrl)]
   return []

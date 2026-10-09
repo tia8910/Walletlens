@@ -71,3 +71,15 @@ describe('the Bybit popup', () => {
     }
   })
 })
+
+describe('the Bybit popup in Google Analytics', () => {
+  const src = readFileSync(join(here, 'components/BybitOffer.jsx'), 'utf8')
+  it('sends its own view, click and dismiss events', () => {
+    for (const e of ['bybit_popup_view', 'bybit_popup_click', 'bybit_popup_dismiss']) expect(src).toContain(`'${e}'`)
+    for (const via of ["'x'", "'outside'", "'escape'", "'never'"]) expect(src).toContain(via)
+  })
+  it('still feeds the shared referral report', () => {
+    expect(src).toMatch(/trackReferralEvent\('referral_view', 'popup'/)
+    expect(src).toMatch(/openBybit\('popup', 'crypto'\)/)
+  })
+})
