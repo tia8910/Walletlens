@@ -257,6 +257,9 @@ h3.t .soft{color:var(--sub)}
 .vs td.us{background:rgba(16,185,129,.06);color:var(--up-l);font-weight:800}
 .vs td{color:var(--sub)}
 .end{text-align:center;padding:120px 20px}
+.drive-card{max-width:760px;margin:0 auto 40px;padding:34px 28px;border-radius:28px;text-align:center;background:var(--s2);box-shadow:inset 0 0 0 1px var(--border-2)}
+.drive-card .drive-ic{width:58px;height:58px;margin:0 auto 14px;border-radius:18px;display:grid;place-items:center;background:#fff}
+.drive-card p{max-width:560px;margin:10px auto 22px;color:var(--text2);line-height:1.6}
 footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:28px 0 80px;color:var(--sub);font-size:13px;border-top:1px solid var(--border)}
 
 @property --t{syntax:'<color>';inherits:true;initial-value:#10b981}
@@ -577,6 +580,16 @@ footer nav{display:flex;flex-wrap:wrap;gap:6px 16px}
       <article><h3>AI coach and growth path</h3><p>&quot;What should I do right now?&quot; gives you a verdict on your portfolio, and Grow My Net Worth projects when you are likely to reach your goal.</p></article>
     </div>
   </div>
+</section>
+
+<section id="drive" aria-labelledby="h-drive" style="padding-top:20px">
+  <div class="wrap"><div class="drive-card">
+    <div class="drive-ic"><svg viewBox="0 0 87.3 78" width="30" height="27" aria-hidden="true"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg></div>
+    <div class="eyebrow">Backup</div>
+    <h2 class="t" id="h-drive">Backed up to your own Google Drive.</h2>
+    <p>Connect Google Drive and WalletLens keeps an encrypted copy of your portfolio there, updated as it changes. Only you hold the passphrase. New phone? Connect again and everything comes back.</p>
+    <a class="btn btn-pri" href="/dashboard/?drive=connect" data-cta="drive_connect">Connect Google Drive</a>
+  </div></div>
 </section>
 
 <section id="faq" aria-labelledby="h-faq" style="padding-top:20px">

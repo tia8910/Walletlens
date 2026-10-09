@@ -1,9 +1,7 @@
-// Core backup logic shared by the Backup panel and the weekly email-backup
-// subscription. Pure functions — no React — so they can run on app open too.
+// Core backup logic for the Backup panel. Pure functions, no React.
 //
 // 'qrcode' is dynamically imported (not a top-level import) below: this file
-// is reachable from Dashboard.jsx's static import of backupSubscription.js on
-// every app open, so a static import here would pull the QR encoder into the
+// is reachable from code that runs on every app open, so a static import here would pull the QR encoder into the
 // main bundle for everyone — defeating the `qr-libs` manualChunks split and
 // Dashboard's own _loadQrBackup() lazy-load, which exist specifically to keep
 // it out of the common path.

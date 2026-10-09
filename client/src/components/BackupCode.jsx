@@ -1,11 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { noteMoment } from '../reviewPrompt'
 import Icon from './Icon'
 import { decodeQrFromImageFile } from '../utils/qrBackup'
 import { track, trackProfileCreated } from '../analytics'
 
 import { generateBackupCode, applyBackupCode, makeQrParts } from '../backupCore'
-import { EMAIL_RE, loadBackupSub, clearBackupSub, subscribeBackupEmail, resendBackupNow, daysUntilNextBackup } from '../backupSubscription'
 import { useLanguage } from '../LanguageContext'
 import { saveFile } from '../fileOut'
 
@@ -30,12 +28,6 @@ export default function BackupCode({ hideTrigger = false }) {
   // QR export
   const [showQr, setShowQr] = useState(false)
   const [qrParts, setQrParts] = useState([])
-
-  // Weekly email-backup subscription
-  const [emailAddr, setEmailAddr] = useState('')
-  const [emailStatus, setEmailStatus] = useState('idle') // idle | sending | sent | error
-  const [emailErr, setEmailErr] = useState('')
-  const [sub, setSub] = useState(() => loadBackupSub())
 
   // QR scan (import)
   const [scanning, setScanning] = useState(false)
@@ -74,54 +66,6 @@ export default function BackupCode({ hideTrigger = false }) {
     const parts = await makeQrParts(exportCode)
     setQrParts(parts)
     setShowQr(true)
-  }
-
-  const explainMailErr = (reason) => {
-    const r = String(reason || '')
-    return r.includes('mail_not_configured') ? 'Email isn\'t set up on the server yet.'
-      : r.includes('not verified') || r.includes('domain') ? 'The walletlens.live email domain isn\'t verified in Resend yet.'
-      : r.includes('network') ? 'Couldn\'t reach the email service. Check your connection and try again.'
-      : 'Couldn\'t send the backup email. Double-check your address and try again.'
-  }
-
-  // Subscribe: sends the backup now and enables the automatic weekly email.
-  const subscribeBackup = async () => {
-    const email = emailAddr.trim().toLowerCase()
-    if (!EMAIL_RE.test(email)) { setEmailErr('Enter a valid email address.'); return }
-    setEmailErr(''); setEmailStatus('sending')
-    try {
-      await subscribeBackupEmail(email)
-      setSub(loadBackupSub())
-      setEmailStatus('sent')
-      track('backup_email_subscribed')
-      // Their portfolio is now recoverable — the anxiety this app's local-only
-      // storage creates, solved. A good moment to ask what they think of it.
-      noteMoment('backup_saved')
-    } catch (e) {
-      setEmailErr(explainMailErr(e?.reason || (e?.message === 'Failed to fetch' ? 'network' : e?.message)))
-      setEmailStatus('error')
-    }
-  }
-
-  const sendBackupNow = async () => {
-    setEmailErr(''); setEmailStatus('sending')
-    try {
-      await resendBackupNow()
-      setSub(loadBackupSub())
-      setEmailStatus('sent')
-      track('backup_email_resent')
-    } catch (e) {
-      setEmailErr(explainMailErr(e?.reason || (e?.message === 'Failed to fetch' ? 'network' : e?.message)))
-      setEmailStatus('error')
-    }
-  }
-
-  const unsubscribeBackup = () => {
-    clearBackupSub()
-    setSub(null)
-    setEmailStatus('idle')
-    setEmailErr('')
-    track('backup_email_unsubscribed')
   }
 
   // Ingest a scanned string — handles plain and multi-part WQ<i>/<n>: codes.
@@ -484,78 +428,6 @@ export default function BackupCode({ hideTrigger = false }) {
             </>
           )}
 
-          {/* ── Weekly email backup subscription (always available) ── */}
-          <div style={{ marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid rgba(255,255,255,0.09)' }}>
-            <div style={{ fontSize:'0.85rem', fontWeight:800, marginBottom:'0.15rem', display:'flex', alignItems:'center', gap:'0.4rem' }}>
-              <Icon name="mail" size={15} /> {t('bkWeeklyEmail')}
-            </div>
-
-            {!sub ? (
-              <>
-                <p style={{ fontSize:'0.72rem', color:'var(--text-muted)', margin:'0 0 0.6rem', lineHeight:1.55 }}>
-                  {t('dsBackupEmailBody')} <strong>noreply@walletlens.live</strong> {t('dsBackupEmailTail')}
-                </p>
-                <div style={{ display:'flex', gap:'0.5rem' }}>
-                  <input
-                    type="email" inputMode="email" autoComplete="email"
-                    value={emailAddr}
-                    onChange={e => { setEmailAddr(e.target.value); if (emailErr) setEmailErr(''); if (emailStatus !== 'idle') setEmailStatus('idle') }}
-                    placeholder="you@example.com"
-                    style={{
-                      flex:1, minWidth:0, background:'rgba(0,0,0,0.25)',
-                      border:'1px solid rgba(59,130,246,0.25)', borderRadius:'8px', color:'var(--text)',
-                      padding:'0.55rem 0.7rem', fontSize:'0.8rem', boxSizing:'border-box',
-                    }} />
-                  <button onClick={subscribeBackup} disabled={emailStatus === 'sending'} style={btn({
-                    background:'linear-gradient(135deg, #047857, #10b981)', border:'none', color:'#fff',
-                    fontWeight:700, opacity: emailStatus === 'sending' ? 0.7 : 1, whiteSpace:'nowrap',
-                    display:'inline-flex', alignItems:'center', gap:'0.35rem',
-                  })}>
-                    {emailStatus === 'sending' ? 'Sending…' : <><Icon name="mail" size={14} /> {t('bkSubscribe')}</>}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{
-                  display:'flex', alignItems:'center', gap:'0.5rem', flexWrap:'wrap',
-                  background:'rgba(74,222,128,0.08)', border:'1px solid rgba(74,222,128,0.25)',
-                  borderRadius:'10px', padding:'0.55rem 0.75rem', margin:'0.15rem 0 0.6rem',
-                  fontSize:'0.75rem', color:'var(--g-ink)', fontWeight:600,
-                }}>
-                  <Icon name="check" size={14} />
-                  <span style={{ wordBreak:'break-all' }}>Weekly backup on · {sub.email}</span>
-                  {daysUntilNextBackup() != null && (
-                    <span style={{ color:'var(--text-muted)', fontWeight:500, marginLeft:'auto' }}>
-                      next in ~{daysUntilNextBackup()}d
-                    </span>
-                  )}
-                </div>
-                <div style={{ display:'flex', gap:'0.5rem' }}>
-                  <button onClick={sendBackupNow} disabled={emailStatus === 'sending'} style={btn({
-                    flex:1, background:'rgba(59,130,246,0.18)', border:'1px solid rgba(59,130,246,0.4)',
-                    color:'#93c5fd', fontWeight:700, opacity: emailStatus === 'sending' ? 0.7 : 1,
-                    display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'0.35rem',
-                  })}>
-                    {emailStatus === 'sending' ? 'Sending…' : <><Icon name="mail" size={13} /> {t('bkSendNow')}</>}
-                  </button>
-                  <button onClick={unsubscribeBackup} style={btn({
-                    background:'rgba(248,113,113,0.12)', border:'1px solid rgba(248,113,113,0.3)',
-                    color:'#f87171', fontWeight:700, whiteSpace:'nowrap',
-                  })}>{t('bcUnsubscribe')}</button>
-                </div>
-              </>
-            )}
-
-            {emailStatus === 'sent' && (
-              <p style={{ fontSize:'0.72rem', color:'var(--g-ink)', margin:'0.5rem 0 0', fontWeight:600 }}>
-                <Icon name="check" size={13} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('bkSent')}
-              </p>
-            )}
-            {emailErr && (
-              <p style={{ fontSize:'0.72rem', color:'#f87171', margin:'0.5rem 0 0' }}>{emailErr}</p>
-            )}
-          </div>
         </div>
       )}
     </div>
