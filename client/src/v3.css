@@ -696,3 +696,6 @@ html.wl-v3:not([data-wl-light]) .nl-check { border-color: rgba(255, 255, 255, 0.
    ellipsis as a last resort. */
 .nl-topbar-greet { min-width: 0; }
 .nl-topbar-greet b.nl-tagline { font-size: clamp(0.72rem, 2.9vw, 0.86rem); font-weight: 700; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+/* overflow: hidden (for the ellipsis) clipped the descenders at the tight
+   line height: the tails of y and g, and the marks under Arabic letters. */
+.nl-topbar-greet b.nl-tagline { line-height: 1.45; padding-block: 1px 2px; }
