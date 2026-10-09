@@ -328,7 +328,6 @@ export default {
     catStocks: 'Actions',
     catUsStocks: "Actions US",
     catWorldStocks: "Actions monde",
-    catLocalStocks: n => `Actions ${n}`,
     catEtfs: 'ETF',
     catGold: 'Or',
     catSilver: 'Argent',

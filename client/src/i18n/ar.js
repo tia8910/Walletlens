@@ -349,7 +349,6 @@ export default {
     catStocks: 'الأسهم',
     catUsStocks: "الأسهم الأمريكية",
     catWorldStocks: "الأسهم العالمية",
-    catLocalStocks: n => `أسهم ${n}`,
     catEtfs: 'صناديق المؤشرات',
     catGold: 'الذهب',
     catSilver: 'الفضة',

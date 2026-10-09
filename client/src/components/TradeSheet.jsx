@@ -89,7 +89,7 @@ const IcoOther = (
 const CATEGORIES = [
   { key: 'crypto', label: 'Crypto', labelKey: 'catCrypto',  icon: '₿',           color: '#6366f1' },
   { key: 'stock',  label: 'US stocks', labelKey: 'catUsStocks', icon: 'trend-up',        color: 'var(--g-ink)' },
-  // The user's own market (named and flagged at render), or every non-US market.
+  // Every market but the US, opening on the user's own.
   { key: 'wstock', label: 'World stocks', labelKey: 'catWorldStocks', icon: 'globe',     color: '#0ea5e9' },
   { key: 'tstock', label: 'Tokenized', labelKey: 'tcTokenized', icon: 'coins',         color: '#f0b90b' },
   { key: 'gold',   label: 'Gold', labelKey: 'catGold',    icon: IcoGoldBar,     color: '#f59e0b' },
@@ -328,11 +328,11 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
     if (short) return short
     try { return new Intl.DisplayNames([lang || 'en'], { type: 'region', style: 'short' }).of(code) } catch { return code }
   }
-  // The market category is named and flagged after the user's market
-  // ("Egypt stocks"); for someone in the US it is simply World stocks.
+  // The market category holds every market but the US, so it is World
+  // stocks for everyone; it simply opens on the user's own market first.
   const localMarket = homeMarket && homeMarket !== 'US' ? MARKET_BY_CODE[homeMarket] : null
-  const catLabel = (c) => c.key === 'wstock' && localMarket ? t('catLocalStocks')(regionName(localMarket.code)) : t(c.labelKey)
-  const catIcon = (c, size) => c.key === 'wstock' && localMarket ? <FlagImg cc={localMarket.flag} size={size + 3} /> : <CatIcon icon={c.icon} size={size} />
+  const catLabel = (c) => t(c.labelKey)
+  const catIcon = (c, size) => <CatIcon icon={c.icon} size={size} />
   const [fiatCode, setFiatCode]         = useState('USD')
   const [otherName, setOtherName]       = useState('')
   // Common fields
