@@ -16,6 +16,7 @@ import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS
 import CoinLogo from '../components/CoinLogo'
 import Logo from '../components/Logo'
 import Icon from '../components/Icon'
+import EmptyVault from '../components/EmptyVault'
 import MilestonePopup, { detectMilestone, dismissMilestone } from '../components/MilestonePopup'
 import { applyMood } from '../moodEngine'
 import { getSoulGreeting } from '../soulGreeting'
@@ -2542,63 +2543,23 @@ function GuardianBadge() {
   )
 }
 
-// The empty Home. Its one job is to get a new user's real holdings in, so the
-// fastest route (a screenshot of the broker) leads, the other routes follow,
-// one-tap chips cover "I just own some BTC", and the feature tour sits below
-// as what all of this unlocks.
+// The empty Home. Its one job is to get a new user's real holdings in. The
+// stage on top shows a portfolio building itself, one way in after another,
+// with tappable asset orbs; the call to action follows the method on show.
+// Other import routes and the feature tour sit below.
 function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, loaded, importsSlot }) {
   const { t } = useLanguage()
   if (!loaded) return null
-  const go = (method, fn) => () => { track('starter_action', { method }); fn() }
+  const go = (method, fn) => (...args) => { track('starter_action', { method }); fn(...args) }
 
   return (
     <div className="wl-st">
-      <div className="wl-st-hero">
-        <div className="wl-st-eyebrow">{t('stEyebrow')}</div>
-        <h2 className="wl-st-title">{t('stTitle')}</h2>
-        <p className="wl-st-sub">{t('stSub')}</p>
-        <ol className="wl-st-steps">
-          <li className="on"><b>1</b>{t('stStep1')}</li>
-          <li><b>2</b>{t('stStep2')}</li>
-          <li><b>3</b>{t('stStep3')}</li>
-        </ol>
-      </div>
-
-      <button type="button" className="wl-st-primary" onClick={go('screenshot', () => onImportAction('screenshot'))}>
-        <span className="wl-st-ic"><Icon name="camera" size={22} /></span>
-        <span className="wl-st-txt"><strong>{t('stShotTitle')}</strong><small>{t('stShotSub')}</small></span>
-        <span className="wl-st-badge">{t('stFastest')}</span>
-      </button>
-
-      <div className="wl-st-pair">
-        <button type="button" className="wl-st-opt" onClick={go('voice', () => onImportAction('voice'))}>
-          <span className="wl-st-ic sm"><Icon name="mic" size={18} /></span>
-          <strong>{t('stVoiceTitle')}</strong><small>{t('stVoiceSub')}</small>
-        </button>
-        <button type="button" className="wl-st-opt" data-tour="add-asset" onClick={go('manual', onAddTrade)}>
-          <span className="wl-st-ic sm"><Icon name="plus" size={18} /></span>
-          <strong>{t('stManualTitle')}</strong><small>{t('stManualSub')}</small>
-        </button>
-      </div>
-
-      <div className="wl-st-label">{t('stTapOwn')}</div>
-      <div className="wl-st-chips">
-        {orderQuickAdd(QUICK_ADD_ASSETS).map(a => {
-          const goldLogo = a.useGoldLogo ? THEMES.find(t => t.id === 'gold')?.logo : null
-          return (
-            <button type="button" key={a.label} className="wl-st-chip" onClick={go('chip', () => onQuickAdd(a.prefill))}>
-              {a.imgSrc || goldLogo
-                ? <img
-                    src={a.imgSrc ? voiceProxy(a.imgSrc) : goldLogo}
-                    onError={e => { if (a.imgSrc && !e.currentTarget.dataset.fb) { e.currentTarget.dataset.fb = '1'; e.currentTarget.src = a.imgSrc } }}
-                    alt="" />
-                : <span className="wl-st-chip-ic" style={{ background: a.bg, color: a.iconColor || 'white', fontSize: a.iconSize || '0.6rem' }}>{a.icon}</span>}
-              <span>{a.label}</span>
-              <span className="wl-st-plus" aria-hidden="true">+</span>
-            </button>
-          )
-        })}
-      </div>
+      <EmptyVault
+        onScreenshot={go('screenshot', () => onImportAction('screenshot'))}
+        onVoice={go('voice', () => onImportAction('voice'))}
+        onManual={go('manual', onAddTrade)}
+        onQuickAdd={go('orb', prefill => onQuickAdd(prefill))}
+        quickAssets={QUICK_ADD_ASSETS} />
 
       <div className="wl-st-label">{t('stMore')}</div>
       <div className="wl-st-more">
