@@ -147,25 +147,31 @@ export function timeLeft(end, now = Date.now()) {
 
 // ── The popup's pacing ──────────────────────────────────────────────────────
 //
-// Shown to everyone the offer is allowed for, at most once a day. "Later"
-// waits a day; tapping the button, or "Don't show again", ends it for good.
+// Shown to everyone the offer is allowed for, once per session: once it has
+// appeared it stays away until the app is opened again. Tapping the button,
+// or "Don't show again", ends it for good on this device.
 
 const POPUP_KEY = 'wl_bybit_popup'
-export const POPUP_SNOOZE_MS = 24 * 60 * 60 * 1000
+const POPUP_SESSION_KEY = 'wl_bybit_popup_seen'
 
 /** Whether the popup is due now. The arguments are there for tests. */
 export function popupDue({ now = Date.now(), allowed = bybitAllowed(), end = currentEndsAt() } = {}) {
   if (!allowed || !end || end <= now) return false
   try {
-    const v = localStorage.getItem(POPUP_KEY)
-    if (v === 'done') return false
-    return !(Number(v) > now)
+    if (localStorage.getItem(POPUP_KEY) === 'done') return false
+    return sessionStorage.getItem(POPUP_SESSION_KEY) !== '1'
   } catch { return false }
 }
 
-/** Records a close: 'later' snoozes a day, 'done' ends it. */
-export function closePopup(how, now = Date.now()) {
-  try { localStorage.setItem(POPUP_KEY, how === 'done' ? 'done' : String(now + POPUP_SNOOZE_MS)) } catch {}
+/** Records that the popup appeared, so it shows once this session. */
+export function markPopupShown() {
+  try { sessionStorage.setItem(POPUP_SESSION_KEY, '1') } catch {}
+}
+
+/** Records a close: 'later' waits for the next session, 'done' ends it. */
+export function closePopup(how) {
+  markPopupShown()
+  if (how === 'done') { try { localStorage.setItem(POPUP_KEY, 'done') } catch {} }
 }
 
 // Read once per session and remembered, so an offline phone keeps the last

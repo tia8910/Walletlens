@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useLanguage } from '../LanguageContext'
 import {
   useBybitOffer, usePickedOffer, openBybit, stripHidden, hideStrip, viewRef,
-  popupDue, closePopup, currentEndsAt, timeLeft, trackReferralEvent,
+  popupDue, closePopup, markPopupShown, currentEndsAt, timeLeft, trackReferralEvent,
 } from '../bybitOffer'
 import './BybitOffer.css'
 
@@ -178,8 +178,8 @@ const BUSY = '[aria-modal="true"], [role="dialog"], .bs-sheet-open, .bs-confirm-
 
 /**
  * The time-limited sign-up reward, as a large popup on every screen of the
- * app: shown to everyone the offer is allowed for, a few seconds after it opens, at most
- * once a day, and only until the end date in /offers.json. The countdown is
+ * app: shown to everyone the offer is allowed for, a few seconds after it opens,
+ * once per session, and only until the end date in /offers.json. The countdown is
  * that date.
  */
 export function BybitPopup({ blocked = false }) {
@@ -196,7 +196,7 @@ export function BybitPopup({ blocked = false }) {
     const tryOpen = () => {
       if (document.querySelector(BUSY)) return false
       if (!popupDue()) return true
-      setOpen(true); trackReferralEvent('referral_view', 'popup', 'crypto')
+      markPopupShown(); setOpen(true); trackReferralEvent('referral_view', 'popup', 'crypto')
       return true
     }
     let id
