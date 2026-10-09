@@ -143,12 +143,6 @@
 .byp-steps span { display: flex; flex-direction: column; min-width: 0; }
 .byp-steps strong { font: 700 15px/1.25 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif; color: #fff; }
 .byp-steps small { font-size: 12px; color: #9aa49f; margin-top: 1px; }
-.byp-timer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 14px; padding: 10px 12px; border-radius: 16px; background: rgba(247, 166, 0, .08); border: 1px dashed rgba(247, 166, 0, .45); }
-.byp-timer-l { font-size: 12px; font-weight: 700; color: #ffc94d; }
-.byp-clock { display: flex; gap: 5px; }
-.byp-cell { display: flex; align-items: baseline; gap: 2px; padding: 5px 7px; border-radius: 9px; background: #000; border: 1px solid rgba(255, 255, 255, .1); }
-.byp-cell b { font: 800 17px 'Sora', ui-monospace, system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #fff; }
-.byp-cell i { font-style: normal; font-size: 10px; font-weight: 700; color: #8a948f; }
 .byp-cta { height: 54px !important; font-size: 17px !important; }
 [dir="rtl"] .byp-arrow { display: inline-block; transform: scaleX(-1); }
 .byp-links { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; color: #5f6965; }

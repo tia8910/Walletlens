@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { validEnd, applyRemote, currentEndsAt, timeLeft, popupDue, closePopup, markPopupShown } from './bybitOffer'
+import { validEnd, applyRemote, currentEndsAt, popupDue, closePopup, markPopupShown } from './bybitOffer'
 import { DEVICE_ONLY_KEYS } from './backupCore'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -21,10 +21,12 @@ describe('the Bybit popup', () => {
     expect(currentEndsAt()).toBeNull()
   })
 
-  it('counts down to the real deadline and stops at it', () => {
-    const now = END - ((4 * 24 + 15) * 3600 + 59 * 60 + 10) * 1000
-    expect(timeLeft(END, now)).toEqual({ d: 4, h: 15, m: 59, s: 10 })
-    expect(timeLeft(END, END)).toBeNull()
+  it('shows no countdown', () => {
+    const src = readFileSync(join(here, 'components/BybitOffer.jsx'), 'utf8')
+    expect(src).not.toMatch(/byp-timer|role="timer"|byPopEnds/)
+    for (const l of ['en', 'ar', 'fr', 'es', 'de', 'it']) {
+      expect(readFileSync(join(here, `i18n/${l}.js`), 'utf8'), l).not.toContain('byPopEnds:')
+    }
   })
 
   it('is due only while allowed and before the end', () => {
@@ -67,7 +69,7 @@ describe('the Bybit popup', () => {
   it('is translated everywhere', () => {
     for (const l of ['en', 'ar', 'fr', 'es', 'de', 'it']) {
       const s = readFileSync(join(here, `i18n/${l}.js`), 'utf8')
-      for (const k of ['byPopHead', 'byPopS1', 'byPopS2', 'byPopEnds', 'byPopPartner', 'byPopCta', 'byPopNever']) expect(s, `${l} ${k}`).toContain(`${k}:`)
+      for (const k of ['byPopHead', 'byPopS1', 'byPopS2', 'byPopPartner', 'byPopCta', 'byPopNever']) expect(s, `${l} ${k}`).toContain(`${k}:`)
     }
   })
 })
