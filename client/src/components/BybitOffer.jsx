@@ -188,6 +188,18 @@ function trackPopup(name, params = {}) {
 // Anything already covering the screen: dialogs, the trade ticket, the
 // milestone, share and quick stats popups.
 const BUSY = '[aria-modal="true"], [role="dialog"], .bs-sheet-open, .bs-confirm-overlay, .ms-overlay, .share-overlay, .qs-overlay'
+// Long enough for the screen to settle, short enough that people see it.
+const OPEN_DELAY_MS = 1500
+
+/** Whether something is really on screen: a dialog kept in the page but
+ *  hidden must not hold the popup back for the whole session. */
+function screenBusy() {
+  return [...document.querySelectorAll(BUSY)].some(el => {
+    if (el.closest('[aria-hidden="true"]') || !el.getClientRects().length) return false
+    const cs = getComputedStyle(el)
+    return cs.visibility !== 'hidden' && cs.display !== 'none' && Number(cs.opacity) > 0.05
+  })
+}
 
 /**
  * The time-limited sign-up reward, as a large popup on every screen of the
@@ -208,7 +220,7 @@ export function BybitPopup({ blocked = false }) {
   useEffect(() => {
     if (open || blocked || !allowed) return
     const tryOpen = () => {
-      if (document.querySelector(BUSY)) return false
+      if (screenBusy()) return false
       if (!popupDue()) return true
       markPopupShown(); openedAt.current = Date.now(); setOpen(true)
       trackReferralEvent('referral_view', 'popup', 'crypto')
@@ -216,7 +228,7 @@ export function BybitPopup({ blocked = false }) {
       return true
     }
     let id
-    const first = setTimeout(() => { if (!tryOpen()) id = setInterval(() => { if (tryOpen()) clearInterval(id) }, 3000) }, 3500)
+    const first = setTimeout(() => { if (!tryOpen()) id = setInterval(() => { if (tryOpen()) clearInterval(id) }, 1000) }, OPEN_DELAY_MS)
     return () => { clearTimeout(first); clearInterval(id) }
   }, [open, blocked, allowed])
 
