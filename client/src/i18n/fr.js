@@ -2136,6 +2136,7 @@ export default {
     tkDone: "Terminé",
     tkEnterAmount: "Saisissez un montant",
     tkEnterPrice: "Impossible de récupérer le prix. Saisissez-le manuellement.",
+    tkNoLivePrice: "Pas de prix en direct",
     tkEntrySignal: "Signal d'entrée",
     tkExitSignal: "Signal de sortie",
     tkFetching: "Récupération du prix…",

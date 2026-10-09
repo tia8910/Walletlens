@@ -2157,6 +2157,7 @@ export default {
     tkDone: "Done",
     tkEnterAmount: "Enter an amount",
     tkEnterPrice: "Couldn't fetch a price. Enter it manually.",
+    tkNoLivePrice: "No live price",
     tkEntrySignal: "Entry signal",
     tkExitSignal: "Exit signal",
     tkFetching: "Fetching price…",

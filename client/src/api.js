@@ -993,6 +993,22 @@ async function intlUsdFactor(ticker) {
   return q?.local?.price > 0 && q.usd > 0 ? q.usd / q.local.price : null;
 }
 
+/**
+ * The DexScreener pair to price a token by: its symbol, at least $10k of
+ * liquidity (thin pools are where copycat tokens with the same symbol live),
+ * within a factor of three of the last known price when there is one, and
+ * the deepest of what is left. null when nothing qualifies.
+ */
+export function pickDexPair(pairs, symbol, refPrice) {
+  const sym = String(symbol || '').toUpperCase();
+  const ok = (Array.isArray(pairs) ? pairs : []).filter(p =>
+    String(p?.baseToken?.symbol || '').toUpperCase() === sym &&
+    Number(p?.priceUsd) > 0 && Number(p?.liquidity?.usd) >= 10000);
+  const near = refPrice > 0 ? ok.filter(p => Number(p.priceUsd) / refPrice < 3 && refPrice / Number(p.priceUsd) < 3) : ok;
+  const best = near.sort((a, b) => Number(b.liquidity.usd) - Number(a.liquidity.usd))[0];
+  return best ? { usd: Number(best.priceUsd), change: Number(best?.priceChange?.h24) || 0 } : null;
+}
+
 // ─── Real-time fiat FX rates (all quoted in USD per 1 unit of currency) ───
 // Uses open.er-api.com (free, CORS-enabled, no key). Falls back to frankfurter.app.
 async function fetchFiatRates() {
@@ -2259,6 +2275,28 @@ export const api = {
               }
             }
           }
+        // ── Last resort: DexScreener, for tokens that only trade on-chain ──
+        // A small Base or Solana token (BASECAT and its kind) is listed by no
+        // exchange the stages above ask, so when CoinGecko does not answer
+        // nothing can price it. DexScreener prices every DEX pair. Searched by
+        // symbol, so the pair is chosen with care: the right symbol, real
+        // liquidity, and when an earlier price is known, one near it.
+        if (needsFresh) {
+          const stillNeed = unfilled().slice(0, 6);
+          const txs = stillNeed.length ? loadData('transactions') : [];
+          await Promise.all(stillNeed.map(async id => {
+            const sym = _symbolForId(id, txs) || String(id).toUpperCase();
+            try {
+              const url = `https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(sym)}`;
+              const res = await fetchFirstOk([url, DENO_PROXY(url)], 6000);
+              if (!res?.ok) return;
+              const pick = pickDexPair((await res.json())?.pairs, sym, priceCache[id]?.usd);
+              if (!pick) return;
+              priceCache[id] = { ...(priceCache[id] || {}), usd: pick.usd, usd_24h_change: pick.change, symbol: sym, source: 'dexscreener' };
+            } catch {}
+          }));
+          if (stillNeed.length) _saveCache(PRICE_CACHE_KEY, priceCache);
+        }
         // Stamped after the sources have been tried, not before, so a pass
         // that throws does not mark these coins as recently asked for.
         const doneAt = Date.now();

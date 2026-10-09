@@ -2157,6 +2157,7 @@ export default {
     tkDone: "Fatto",
     tkEnterAmount: "Inserisci un importo",
     tkEnterPrice: "Impossibile recuperare il prezzo. Inseriscilo manualmente.",
+    tkNoLivePrice: "Nessun prezzo live",
     tkEntrySignal: "Segnale di ingresso",
     tkExitSignal: "Segnale di uscita",
     tkFetching: "Recupero prezzo…",

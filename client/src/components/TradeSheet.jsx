@@ -1314,7 +1314,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
                       <div className="tk-assetbar-n">
                         <b>{asset?.name}</b>
                         <small className="tk-num">
-                          {price && price !== '…' ? fmtUsd(price) : t('tkFetching')}
+                          {price && price !== '…' ? fmtUsd(price) : priceFetchFailed ? t('tkNoLivePrice') : t('tkFetching')}
                           {assetChg != null && isFinite(chg) && <span className={chg >= 0 ? 'tk-up' : 'tk-dn'}> · {chg >= 0 ? '▲' : '▼'} {Math.abs(chg).toFixed(2)}%</span>}
                         </small>
                       </div>
