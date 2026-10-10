@@ -66,7 +66,12 @@ export default class ErrorBoundary extends Component {
       const where = [stack, frame].filter(Boolean).join('  |  ').slice(0, 300)
       if (where) this.setState({ where })
       // Also send it, redacted, so it lands in GA next to the message.
-      track('js_error_context', { error_message: String(err?.message || '').slice(0, 120), error_where: where.slice(0, 140) })
+      // A stale chunk after a deploy is not a crash: the tab still points at
+      // the previous build's files, and the reload below fixes it silently.
+      // Report it only once the automatic reloads have run out, when it
+      // really is stuck. Otherwise every deploy shows up as an error in GA.
+      const handledByReload = this.state.isChunk && getRetryCount() < MAX_AUTO_RETRIES
+      if (!handledByReload) track('js_error_context', { error_message: String(err?.message || '').slice(0, 120), error_where: where.slice(0, 140) })
       // Never ask for a rating in the days after the app broke in front of
       // someone. Imported lazily so the boundary keeps working even if this
       // module is the thing that failed.

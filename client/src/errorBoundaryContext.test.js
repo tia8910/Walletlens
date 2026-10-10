@@ -104,3 +104,36 @@ describe('recovering by navigation', () => {
     expect(touched).toBe(false)
   })
 })
+
+describe('stale chunks after a deploy', () => {
+  // The tab still points at the previous build's files. The boundary reloads
+  // on its own, so this is not a crash and must not be reported as one, or
+  // every deploy shows up in GA as js_error_context.
+  const chunkErr = () => new Error('Failed to fetch dynamically imported module: https://walletlens.live/assets/ZakatCalculator-DmeauxSB.js')
+  function chunkInstance() {
+    const b = instance(); b.state.isChunk = true; return b
+  }
+  const ctxEvents = (calls) => calls.filter(([k, e]) => k === 'event' && e === 'js_error_context')
+
+  it('is not reported while the automatic reload can still fix it', () => {
+    const calls = []; window.gtag = (...a) => calls.push(a)
+    sessionStorage.removeItem('wl_chunk_retry')
+    try { delete window.caches } catch {}
+    const reload = vi.fn()
+    const orig = window.location
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...orig, reload } })
+    try { chunkInstance().componentDidCatch(chunkErr(), { componentStack: '\n    at Zakat' }) } finally {
+      Object.defineProperty(window, 'location', { configurable: true, value: orig })
+    }
+    expect(ctxEvents(calls)).toHaveLength(0)
+    expect(reload).toHaveBeenCalled()
+  })
+
+  it('is reported once the reloads have run out, because then it is really stuck', () => {
+    const calls = []; window.gtag = (...a) => calls.push(a)
+    sessionStorage.setItem('wl_chunk_retry', '3')
+    chunkInstance().componentDidCatch(chunkErr(), { componentStack: '\n    at Zakat' })
+    sessionStorage.removeItem('wl_chunk_retry')
+    expect(ctxEvents(calls)).toHaveLength(1)
+  })
+})
