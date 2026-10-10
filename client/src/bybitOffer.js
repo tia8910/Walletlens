@@ -7,7 +7,6 @@
 //   • a remote switch, /offers.json on the site, so the offer can be turned
 //     off everywhere within minutes (the Play app loads the site, so no app
 //     update is needed) if a store or regulator objects;
-//   • the Microsoft Store edition, which shows no referral at all;
 //   • a region check. Bybit does not serve the US, the UK, Canada, Singapore,
 //     mainland China or sanctioned countries, and a UK crypto promotion needs
 //     an FCA-authorised approver, so the offer stays hidden where the phone's
@@ -19,7 +18,6 @@
 import { useEffect, useState } from 'react'
 import { track } from './analytics'
 import { INTERESTS_EVENT } from './data/interestsEvent'
-import { isMsStore } from './msStore'
 
 export const BYBIT_URL = 'https://partner.bybit.com/b/WALLETLENS'
 /** The bonus shown when the site has not said otherwise. */
@@ -67,10 +65,8 @@ function remoteOn() {
 }
 
 /** Whether the offer may be shown. The arguments are there for tests. */
-export function bybitAllowed({ zone = currentZone(), remote = remoteOn(), msStore = isMsStore() } = {}) {
-  // Not in the Microsoft Store edition (msStore.js) while it is in review:
-  // exchange sign-up pages point onward to other app stores.
-  if (msStore) return false
+// The Microsoft Store edition shows the offer like every other edition.
+export function bybitAllowed({ zone = currentZone(), remote = remoteOn() } = {}) {
   return remote && !restrictedZone(zone)
 }
 

@@ -136,7 +136,7 @@ describe('tokenized stocks', () => {
     const a = read('pages/AssetDetail.jsx')
     expect(a).toMatch(/assetClass\(coinId\) === 'stock' \? 'stocks'/)
     expect(a).toMatch(/\['gold', 'silver', 'copper', 'platinum'\]\.includes\(assetClass\(coinId\)\) \? 'metals'/)
-    expect(a.match(/\{showStockOffer && <BybitStockCard symbol=\{coin\.symbol\} kind=\{tradFiKind\}/g)).toHaveLength(2)
+    expect(a.match(/\{(?:!v2 && )?showStockOffer && <BybitStockCard symbol=\{coin\.symbol\} kind=\{tradFiKind\}/g)).toHaveLength(2)
     expect(read('components/TechChartPanel.jsx')).toMatch(/kind="metals" placement="technicals_metal"/)
     expect(read('components/TechChartPanel.jsx')).toMatch(/assetClass\(cur\.coin_id\) === 'stock' && <BybitStockCard/)
   })
@@ -163,7 +163,12 @@ describe('tokenized stocks', () => {
 
 describe('placements', () => {
   it('sits on the crypto asset page and once after the crypto holdings', () => {
-    expect(read('pages/AssetDetail.jsx').match(/\{showFlow && <BybitCard /g)).toHaveLength(2)
+    // Once in each look: the new look's hero, and the old look's page (gated
+    // on !v2 so the new look never shows it twice).
+    const a = read('pages/AssetDetail.jsx')
+    expect(a.match(/\{showFlow && <BybitCard /g)).toHaveLength(1)
+    expect(a.match(/\{!v2 && showFlow && <BybitCard /g)).toHaveLength(1)
+    expect(a.match(/\{!v2 && showFlow && <MoneyFlowCard /g)).toHaveLength(1)
     expect(read('pages/Dashboard.jsx')).toMatch(/\{cat === 'crypto' && !isDemo && <BybitStrip \/>\}/)
     // Technical Analysis: under the smart money card, crypto only (the panel
     // never charts a stablecoin).
@@ -234,8 +239,11 @@ describe('Google Analytics', () => {
     expect(c.match(/ref=\{viewRef\(/g)).toHaveLength(4)
   })
 
-  it('shows no referral at all in the Microsoft Store edition', () => {
-    expect(bybitAllowed({ zone: 'Africa/Cairo', remote: true, msStore: true })).toBe(false)
-    expect(bybitAllowed({ zone: 'Africa/Cairo', remote: true, msStore: false })).toBe(true)
+  it('shows the referral in the Microsoft Store edition too, and hides no referral link there', () => {
+    expect(bybitAllowed({ zone: 'Africa/Cairo', remote: true })).toBe(true)
+    expect(read('bybitOffer.js')).not.toMatch(/isMsStore/)
+    const css = read('index.css')
+    expect(css).not.toMatch(/wl-msstore a\[href\*="partner\.bybit\.com"\]/)
+    expect(css).toMatch(/wl-msstore a\[href\*="play\.google\.com"\]/)
   })
 })

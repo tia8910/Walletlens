@@ -6,11 +6,16 @@
 // marketing pages (which exist to send people to those stores) are skipped.
 //
 // The package opens with ?store=msstore in its start URL, and that is
-// remembered on the device, so every later navigation still knows. As a
-// fallback for a package built before the parameter existed, a Windows window
-// running as an installed app counts too: on Windows that is the Store build
-// or a PWA installed from Edge, and hiding other stores from either is
-// harmless. A browser tab is never affected.
+// remembered inside the installed app window, so every later navigation still
+// knows. As a fallback for a package built before the parameter existed, a
+// Windows window running as an installed app counts too: on Windows that is the
+// Store build or a PWA installed from Edge, and hiding other stores from either
+// is harmless.
+//
+// A browser tab is never affected for longer than one page load: opening
+// ?store=msstore in a tab (to test the Store link, say) used to stick for good,
+// hiding every store link and the Bybit offer from that browser. The flag is
+// now only kept in an app window, and a stale one in a tab is cleared.
 
 export const MS_STORE_PARAM = 'store'
 export const MS_STORE_VALUE = 'msstore'
@@ -23,13 +28,16 @@ export const MS_STORE_SKIP_PATHS = new Set([
   '/portfolio-tracker-no-account', '/import-portfolio-from-screenshot', '/add-holdings-by-voice',
 ])
 
-function installedWindowsApp(win) {
+/** Whether the page runs in its own installed app window, not a browser tab. */
+function appWindow(win) {
   try {
-    const ua = win.navigator?.userAgent || ''
-    if (!/Windows/i.test(ua)) return false
     const mm = win.matchMedia
     return !!(mm && (mm('(display-mode: standalone)').matches || mm('(display-mode: window-controls-overlay)').matches))
   } catch { return false }
+}
+
+function installedWindowsApp(win) {
+  try { return /Windows/i.test(win.navigator?.userAgent || '') && appWindow(win) } catch { return false }
 }
 
 /** Decides once per page load, and remembers a positive answer. */
@@ -39,9 +47,14 @@ export function detectMsStore(win = typeof window !== 'undefined' ? window : und
   try { stored = win.localStorage.getItem(KEY) } catch {}
   let param = null
   try { param = new URLSearchParams(win.location.search).get(MS_STORE_PARAM) } catch {}
-  const yes = param === MS_STORE_VALUE || stored === MS_STORE_VALUE || installedWindowsApp(win)
-  if (yes && stored !== MS_STORE_VALUE) {
+  const app = appWindow(win)
+  const yes = param === MS_STORE_VALUE || (stored === MS_STORE_VALUE && app) || installedWindowsApp(win)
+  if (yes && app && stored !== MS_STORE_VALUE) {
     try { win.localStorage.setItem(KEY, MS_STORE_VALUE) } catch {}
+  }
+  // A flag left behind in a browser tab: forget it, so the site works normally.
+  if (stored === MS_STORE_VALUE && !app) {
+    try { win.localStorage.removeItem(KEY) } catch {}
   }
   return yes
 }

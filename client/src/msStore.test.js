@@ -9,20 +9,32 @@ function win({ search = '', ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', st
     location: { search, pathname: '/' },
     navigator: { userAgent: ua },
     matchMedia: (q) => ({ matches: standalone && q.includes('standalone') }),
-    localStorage: { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) },
+    localStorage: { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, v), removeItem: k => store.delete(k) },
     _store: store,
   }
 }
 
 describe('Microsoft Store edition', () => {
   it('is on when the Store package opens with ?store=msstore, and remembers it', () => {
-    const w = win({ search: '?store=msstore' })
+    const w = win({ search: '?store=msstore', standalone: true })
     expect(detectMsStore(w)).toBe(true)
     expect(w._store.get('wl_store')).toBe('msstore')
   })
 
   it('stays on for later navigations that no longer carry the parameter', () => {
-    expect(detectMsStore(win({ stored: 'msstore' }))).toBe(true)
+    expect(detectMsStore(win({ stored: 'msstore', standalone: true }))).toBe(true)
+  })
+
+  it('never sticks in a browser tab: the parameter lasts one page load', () => {
+    const w = win({ search: '?store=msstore', ua: 'Mozilla/5.0 (Linux; Android 14; Pixel 8)' })
+    expect(detectMsStore(w)).toBe(true)
+    expect(w._store.has('wl_store')).toBe(false)
+  })
+
+  it('forgets a flag left behind in a browser tab, so the referral and store links come back', () => {
+    const w = win({ stored: 'msstore', ua: 'Mozilla/5.0 (Linux; Android 14; Pixel 8)' })
+    expect(detectMsStore(w)).toBe(false)
+    expect(w._store.has('wl_store')).toBe(false)
   })
 
   it('covers a package built before the parameter: an installed app window on Windows', () => {
