@@ -235,10 +235,13 @@ export function initErrorTracking() {
         // failing means a broken deploy.
         if (tag !== 'script' && tag !== 'link') return
         const src = e.target.src || e.target.href || ''
-        return reportError('resource', tag, {
-          // Host only: query strings on proxied asset URLs can carry lookups.
-          error_source: (() => { try { return new URL(src, location.href).host } catch { return 'unknown' } })(),
-        })
+        // Host only: query strings on proxied asset URLs can carry lookups.
+        const host = (() => { try { return new URL(src, location.href).host } catch { return '' } })()
+        // Only our own files mean a broken deploy. A third-party tag that an ad
+        // blocker or a filtered network drops (Google's tag, for one) is the
+        // visitor's choice, not a fault, and reporting it buried real errors.
+        if (host !== location.host && host !== 'walletlens.live') return
+        return reportError('resource', tag, { error_source: host })
       }
       reportError('exception', e.message, {
         error_source: (e.filename || '').split('/').pop().slice(0, 60),

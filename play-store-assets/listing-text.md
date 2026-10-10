@@ -103,19 +103,19 @@ net worth tracker, portfolio tracker, crypto portfolio, stock tracker, asset all
 
 # DATA SAFETY FORM (Play Console)
 
-> Basis: WalletLens stores all portfolio/holdings data locally on the device (localStorage); it is never sent to a WalletLens server. The app DOES load Google Analytics (GA4) and a Twitter/X ads pixel in the web content, which collect usage/analytics and may use identifiers. Answer to match what actually runs.
+> Basis: WalletLens stores all portfolio/holdings data locally on the device (localStorage); it is never sent to a WalletLens server. The app loads Google Analytics (GA4) in the web content, which collects usage analytics and may use identifiers. There is no X (Twitter) pixel any more, and the Google Ads tag is skipped inside the Play app. Answer to match what actually runs.
 
 ## Does your app collect or share any of the required user data types?
-YES, because of analytics + ads pixel. (If you remove the Twitter/X pixel and GA from the app build, you could answer NO.)
+YES, because of analytics. (If you also remove GA from the app build, you could answer NO.)
 
 ## Data collected
 | Data type | Collected | Shared | Purpose | Optional? |
 |---|---|---|---|---|
 | App activity → App interactions | Yes | No | Analytics | Required |
 | App info & performance → Crashes/Diagnostics | Yes (if GA) | No | Analytics | Required |
-| Device or other IDs | Yes | Yes* | Analytics, Advertising/Marketing | Required |
+| Device or other IDs | Yes | No | Analytics | Required |
 
-\* "Shared" applies if the Twitter/X conversion pixel (static.ads-twitter.com) runs in the app. It shares an identifier for advertising. If you strip that pixel, set Device IDs → Shared = No and remove the Advertising purpose.
+The X (Twitter) pixel has been removed, so Device IDs are not shared and there is no Advertising purpose.
 
 ## NOT collected (your privacy selling points, all true)
 • Personal info (name, email, address): NO

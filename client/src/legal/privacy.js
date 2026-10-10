@@ -65,7 +65,7 @@ export const privacy = {
       ] },
       { h: '6. Analytics', p: [
         'We use **Google Analytics (GA4)** to understand aggregate usage patterns such as page views, session duration, and device type. This helps us improve the app. Google Analytics uses cookies and may collect your IP address and browser information. You can opt out using the [Google Analytics Opt-out Browser Add-on](https://tools.google.com/dlpage/gaoptout).',
-        'Analytics events record which features are used, never what you own. Ad-personalisation signals are disabled, and no event carries asset symbols, amounts, valuations, profit or loss, or anything you have typed. On the website, Google Ads conversion measurement is enabled so we can tell which of our ads bring visitors who start a portfolio; it is not used for personalised advertising, and in the EEA, UK and Switzerland it stays off. An X (Twitter) advertising pixel also loads on the web to measure referrals from our posts there. Neither is included in the Google Play app.',
+        'Analytics events record which features are used, never what you own. Ad-personalisation signals are disabled, and no event carries asset symbols, amounts, valuations, profit or loss, or anything you have typed. On the website, Google Ads conversion measurement is enabled so we can tell which of our ads bring visitors who start a portfolio; it is not used for personalised advertising, and in the EEA, UK and Switzerland it stays off. It is not included in the Google Play app.',
         'News headlines shown in the app are translated on request through our own server, which relays the headline text to Anthropic. Only the public headline is sent — never anything from your portfolio.',
       ] },
       { h: '7. Cookies', p: [
@@ -134,7 +134,7 @@ export const privacy = {
       ] },
       { h: '٦. التحليلات', p: [
         'نستخدم **Google Analytics (GA4)** لفهم أنماط الاستخدام الإجمالية مثل مرات عرض الصفحات ومدة الجلسة ونوع الجهاز. ويساعدنا ذلك على تحسين التطبيق. ويستخدم Google Analytics ملفات تعريف الارتباط وقد يجمع عنوان IP الخاص بك ومعلومات متصفحك. ويمكنك إلغاء الاشتراك عبر [إضافة إلغاء الاشتراك في Google Analytics](https://tools.google.com/dlpage/gaoptout).',
-        'وتسجّل أحداث التحليلات أي الميزات تُستخدم، لا ما تملكه أبداً. وإشارات تخصيص الإعلانات معطَّلة، ولا يحمل أي حدث رموز أصول ولا كميات ولا تقييمات ولا أرباحاً أو خسائر ولا أي شيء كتبته. وعلى الويب تُحمَّل أيضاً بكسل إعلاني من X (تويتر) لقياس الزيارات الواردة من منشوراتنا هناك؛ وهو غير مضمَّن في تطبيق Google Play.',
+        'وتسجّل أحداث التحليلات أي الميزات تُستخدم، لا ما تملكه أبداً. وإشارات تخصيص الإعلانات معطَّلة، ولا يحمل أي حدث رموز أصول ولا كميات ولا تقييمات ولا أرباحاً أو خسائر ولا أي شيء كتبته.',
         'وتُترجَم عناوين الأخبار المعروضة في التطبيق عند الطلب عبر خادمنا، الذي يحوّل نص العنوان إلى Anthropic. ولا يُرسَل سوى العنوان العام — ولا شيء إطلاقاً من محفظتك.',
       ] },
       { h: '٧. ملفات تعريف الارتباط', p: [
@@ -203,7 +203,7 @@ export const privacy = {
       ] },
       { h: '6. Analyse d’audience', p: [
         'Nous utilisons **Google Analytics (GA4)** pour comprendre les usages agrégés : pages vues, durée des sessions, type d’appareil. Cela nous aide à améliorer l’application. Google Analytics utilise des cookies et peut collecter votre adresse IP et des informations sur votre navigateur. Vous pouvez vous y opposer via le [module de désactivation de Google Analytics](https://tools.google.com/dlpage/gaoptout).',
-        'Les événements enregistrent quelles fonctionnalités sont utilisées, jamais ce que vous détenez. Les signaux de personnalisation publicitaire sont désactivés, et aucun événement ne contient de symbole d’actif, de montant, de valorisation, de gain ou perte, ni quoi que ce soit que vous ayez saisi. Sur le web, un pixel publicitaire X (Twitter) se charge également pour mesurer les visites issues de nos publications ; il n’est pas inclus dans l’application Google Play.',
+        'Les événements enregistrent quelles fonctionnalités sont utilisées, jamais ce que vous détenez. Les signaux de personnalisation publicitaire sont désactivés, et aucun événement ne contient de symbole d’actif, de montant, de valorisation, de gain ou perte, ni quoi que ce soit que vous ayez saisi.',
         'Les titres d’actualité affichés dans l’application sont traduits à la demande via notre serveur, qui transmet le texte du titre à Anthropic. Seul le titre public est envoyé — jamais quoi que ce soit de votre portefeuille.',
       ] },
       { h: '7. Cookies', p: [
@@ -272,7 +272,7 @@ export const privacy = {
       ] },
       { h: '6. Analítica', p: [
         'Usamos **Google Analytics (GA4)** para entender patrones de uso agregados como páginas vistas, duración de la sesión y tipo de dispositivo. Esto nos ayuda a mejorar la aplicación. Google Analytics usa cookies y puede recoger tu dirección IP e información del navegador. Puedes excluirte con el [complemento de inhabilitación de Google Analytics](https://tools.google.com/dlpage/gaoptout).',
-        'Los eventos registran qué funciones se usan, nunca lo que posees. Las señales de personalización de anuncios están desactivadas y ningún evento contiene símbolos de activos, cantidades, valoraciones, ganancias o pérdidas, ni nada que hayas escrito. En la web también se carga un píxel publicitario de X (Twitter) para medir las visitas desde nuestras publicaciones; no se incluye en la aplicación de Google Play.',
+        'Los eventos registran qué funciones se usan, nunca lo que posees. Las señales de personalización de anuncios están desactivadas y ningún evento contiene símbolos de activos, cantidades, valoraciones, ganancias o pérdidas, ni nada que hayas escrito.',
         'Los titulares de noticias que se muestran en la aplicación se traducen bajo demanda a través de nuestro servidor, que transmite el texto del titular a Anthropic. Solo se envía el titular público, nunca nada de tu cartera.',
       ] },
       { h: '7. Cookies', p: [
@@ -353,7 +353,7 @@ export const privacy = {
         h: '6. Analyse',
         p: [
           'Wir nutzen **Google Analytics (GA4)**, um aggregierte Nutzungsmuster wie Seitenaufrufe, Sitzungsdauer und Gerätetyp zu verstehen. Das hilft uns, die App zu verbessern. Google Analytics verwendet Cookies und kann Ihre IP-Adresse und Browserinformationen erfassen. Sie können über das [Browser-Add-on zur Deaktivierung von Google Analytics](https://tools.google.com/dlpage/gaoptout) widersprechen.',
-          'Analyse-Ereignisse halten fest, welche Funktionen genutzt werden, nie was Sie besitzen. Signale zur Anzeigenpersonalisierung sind abgeschaltet, und kein Ereignis enthält Anlagenkürzel, Beträge, Bewertungen, Gewinne oder Verluste oder etwas, das Sie eingegeben haben. Im Web lädt zusätzlich ein Werbepixel von X (Twitter), um Verweise aus unseren dortigen Beiträgen zu messen; in der Google-Play-App ist es nicht enthalten.',
+          'Analyse-Ereignisse halten fest, welche Funktionen genutzt werden, nie was Sie besitzen. Signale zur Anzeigenpersonalisierung sind abgeschaltet, und kein Ereignis enthält Anlagenkürzel, Beträge, Bewertungen, Gewinne oder Verluste oder etwas, das Sie eingegeben haben.',
           'In der App angezeigte Nachrichten-Schlagzeilen werden auf Anfrage über unseren eigenen Server übersetzt, der den Text der Schlagzeile an Anthropic weiterreicht. Übermittelt wird nur die öffentliche Schlagzeile — nie etwas aus Ihrem Portfolio.',
         ],
       },
@@ -440,7 +440,7 @@ export const privacy = {
         h: '6. Analisi',
         p: [
           'Usiamo **Google Analytics (GA4)** per comprendere modelli d’uso aggregati come visualizzazioni di pagina, durata delle sessioni e tipo di dispositivo. Questo ci aiuta a migliorare l’app. Google Analytics usa cookie e può raccogliere il tuo indirizzo IP e informazioni sul browser. Puoi disattivarlo con il [componente aggiuntivo del browser per la disattivazione di Google Analytics](https://tools.google.com/dlpage/gaoptout).',
-          'Gli eventi di analisi registrano quali funzioni vengono usate, mai che cosa possiedi. I segnali per la personalizzazione degli annunci sono disattivati e nessun evento contiene simboli di asset, importi, valutazioni, utili o perdite né alcunché tu abbia digitato. Sul web viene caricato anche un pixel pubblicitario di X (Twitter) per misurare i rimandi dai nostri post; non è incluso nell’app di Google Play.',
+          'Gli eventi di analisi registrano quali funzioni vengono usate, mai che cosa possiedi. I segnali per la personalizzazione degli annunci sono disattivati e nessun evento contiene simboli di asset, importi, valutazioni, utili o perdite né alcunché tu abbia digitato.',
           'I titoli delle notizie mostrati nell’app vengono tradotti su richiesta dal nostro server, che inoltra il testo del titolo ad Anthropic. Viene inviato solo il titolo pubblico — mai nulla del tuo portafoglio.',
         ],
       },
