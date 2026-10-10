@@ -75,7 +75,8 @@ main { flex: 1; overflow-y: auto; padding: 0 14px 12px; scrollbar-width: thin; s
 .r.click { cursor: pointer; transition: background .2s; }
 .r.click:hover { background: var(--card2); }
 .ic { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; font: 800 9.5px var(--disp); color: #fff; flex-shrink: 0; object-fit: cover; background: #1f2329; overflow: hidden; }
-img.ic { background: #fff; padding: 2px; }
+img.ic { background: transparent; border-radius: 50%; }
+img.ic.ic-full { border-radius: 10px; }
 .nm { flex: 1; min-width: 0; font: 700 13px var(--disp); }
 .nm small { display: block; font: 600 10.5px var(--body); color: var(--mu); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .v { font: 700 12.5px var(--body); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -116,6 +117,18 @@ img.ic { background: #fff; padding: 2px; }
 .share-btns { margin-left: auto; display: flex; gap: 5px; }
 .share-btns button { width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,.08); font: 800 10.5px var(--disp); }
 .share-btns button:hover { background: rgba(255,255,255,.16); }
+
+/* Google Drive */
+.gd { width: 26px; height: 24px; flex-shrink: 0; }
+.drive-card { display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 14px; margin-top: 8px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.drive-card.on { box-shadow: inset 0 0 0 1px rgba(52,211,153,.3); }
+.dc-t { flex: 1; min-width: 0; }
+.dc-t b { display: block; font: 700 12.5px var(--disp); }
+.dc-t small { font-size: 10.5px; color: var(--mu); }
+.drive-card.on .dc-t small { color: var(--up); }
+.dc-btn { padding: 7px 12px; border-radius: 10px; font: 800 12px var(--disp); color: #03140c; background: linear-gradient(180deg, #6ee7b7, #10b981); }
+.drive-card.on .dc-btn { color: var(--text); background: var(--card2); box-shadow: inset 0 0 0 1px var(--line2); }
+.with-gd .gd { width: 20px; height: 18px; }
 
 /* forms */
 .btn { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; padding: 11px; border-radius: 13px; font: 800 13.5px var(--disp); color: #03140c; background: linear-gradient(180deg, #6ee7b7, #10b981); box-shadow: 0 12px 26px -14px rgba(16,185,129,1); margin-top: 6px; }

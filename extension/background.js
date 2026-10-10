@@ -107,6 +107,7 @@ function handleSyncPortfolio(data) {
       transactions: data.transactions,
       wallets: Array.isArray(data.wallets) ? data.wallets : [],
       settings: data.settings && typeof data.settings === 'object' ? data.settings : {},
+      drive: data.drive && typeof data.drive === 'object' ? { connected: !!data.drive.connected, backupAt: Number(data.drive.backupAt) || 0 } : null,
       syncedAt: data.syncedAt || Date.now(),
     },
   }, () => check())

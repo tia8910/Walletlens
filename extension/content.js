@@ -15,6 +15,18 @@ const WALLETS_KEY  = 'crypto_tracker_wallets';
 const SETTINGS_KEY = 'wl_settings';
 
 /**
+ * Whether this browser backs up to Google Drive, and when it last did. Only a
+ * yes/no and a time: no token, key or file content ever leaves the page.
+ */
+function driveStatus() {
+  try {
+    const connected = !!(localStorage.getItem('wl_drive_file_id') || localStorage.getItem('wl_drive_refresh'))
+    const backupAt = Number(localStorage.getItem('wl_drive_remote_at') || localStorage.getItem('wl_drive_backup_at') || 0)
+    return { connected, backupAt }
+  } catch { return { connected: false, backupAt: 0 } }
+}
+
+/**
  * Read all relevant localStorage keys and send them to the background worker.
  */
 function syncPortfolio() {
@@ -37,6 +49,7 @@ function syncPortfolio() {
         transactions,
         wallets,
         settings,
+        drive: driveStatus(),
         syncedAt: Date.now(),
       },
     }).catch(() => {
@@ -68,6 +81,7 @@ function handleAppMessage(event) {
       transactions: payload.transactions,
       wallets:      Array.isArray(payload.wallets) ? payload.wallets : [],
       settings:     (payload.settings && typeof payload.settings === 'object') ? payload.settings : {},
+      drive:        driveStatus(),
       syncedAt:     payload.syncedAt || Date.now(),
     },
   }).catch(() => {});

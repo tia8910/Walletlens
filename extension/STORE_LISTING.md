@@ -10,7 +10,7 @@
 
 ## Name (max 75, from manifest.json `name`)
 
-WalletLens: Net Worth, Crypto & Stock Portfolio Tracker
+WalletLens Investment Manager & Net Worth Tracker
 
 ## Summary (max 132, from manifest.json `description`)
 
@@ -28,7 +28,7 @@ Know what you are worth every time you open your browser.
 
 WalletLens puts your whole net worth in your toolbar: crypto, stocks and funds, gold and silver, cash in any currency, and the things that do not trade on a screen, like your home. One click shows the total, how much it moved today, and which of your assets moved it. Today's change also sits on the icon itself, green or red, so you can see it without opening anything.
 
-Version 2.0 is a complete redesign with five screens.
+Version 2.0 is a complete redesign with five screens, real logos for every asset, and Google Drive backup.
 
 Home shows your net worth with a history chart from one day to one year, your profit and loss, how your money splits between asset classes, and today's biggest movers. The history is built from a snapshot your browser saves once a day, so it never leaves your computer.
 
@@ -41,6 +41,8 @@ Market shows the Fear and Greed index with yesterday and last week beside it, th
 Alerts sends a desktop notification when a price crosses a level you set, when your net worth moves more than you choose in a day, or as a short morning summary. Alerts are checked every 15 minutes while your browser is open.
 
 See everything in your own currency, from US dollars and euros to pounds, dirhams, riyals and Egyptian pounds. One tap hides every balance and leaves percentages only, for when someone is looking over your shoulder.
+
+Back up to Google Drive from the Home screen: connect once and WalletLens saves your portfolio to your own Drive, encrypted. On a new computer, Restore from Google Drive brings it straight back.
 
 How it works: add what you own once on walletlens.live, by screenshot, by voice or by hand, and the extension picks it up on its own. It keeps working with the site closed. To bring in a portfolio from your phone, paste your WalletLens backup code into the extension.
 

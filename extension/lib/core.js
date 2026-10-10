@@ -206,6 +206,25 @@ export async function loadPortfolio(walletId = 'all') {
   return { data, map, prices, ...summarize(map, prices) }
 }
 
+// ── Stock logos ────────────────────────────────────────────────────────────
+// CoinGecko lists tokenized shares (AAPLx and the like) with the company's
+// logo, so its xStocks market doubles as a logo table for real tickers. The
+// same source the web app uses; cached for a day.
+const STOCK_LOGOS_KEY = 'wl_stock_logos'
+export async function stockLogos() {
+  const c = await get(STOCK_LOGOS_KEY)
+  if (c && Date.now() - c.at < 24 * 3600e3) return c.map
+  const list = await fetchFirst(both(`${CG}/coins/markets?vs_currency=usd&category=xstocks-ecosystem&per_page=250&page=1`), async r => { const j = await r.json(); return Array.isArray(j) && j.length ? j : null })
+  if (!list) return c?.map || {}
+  const map = {}
+  for (const x of list) {
+    const t = String(x.symbol || '').toUpperCase().replace(/X$/, '')
+    if (t && x.image) map[t] = x.image
+  }
+  await set(STOCK_LOGOS_KEY, { map, at: Date.now() })
+  return map
+}
+
 // ── Currency formatting ─────────────────────────────────────────────────────
 
 export const CURRENCIES = [

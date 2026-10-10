@@ -88,6 +88,21 @@ describe('extension package and listing', () => {
     expect(description.length).toBeLessThan(16000)
   })
 
+  it('gives every asset a picture and connects Google Drive through the site', () => {
+    const popup = ext('popup.js'), html = ext('popup.html')
+    const coins = popup.match(/const BUNDLED_COINS = new Set\((\[[^\]]*\])\)/)[1].match(/'([a-z0-9]+)'/g).map(x => x.slice(1, -1))
+    expect(coins.length).toBeGreaterThan(40)
+    for (const c of coins) expect(() => ext(`logos/coins/${c}.svg`)).not.toThrow()
+    for (const a of ['gold', 'silver', 'platinum', 'copper', 'home', 'bond', 'other', 'cash']) expect(() => ext(`logos/assets/${a}.svg`)).not.toThrow()
+    expect(popup).toContain("const DRIVE_CONNECT = SITE + '/dashboard?drive=connect'")
+    expect(html).toContain('id="drive-card"')
+    expect(html).toContain('Restore from Google Drive')
+    // The content script shares only whether Drive is on and when it last ran.
+    const content = ext('content.js')
+    expect(content).toMatch(/return \{ connected, backupAt \}/)
+    expect(content).not.toMatch(/sendMessage\([^)]*wl_drive_(token|refresh)/)
+  })
+
   it('explains every permission it asks for', () => {
     for (const perm of manifest.permissions) expect(listing).toMatch(new RegExp(`\\*\\*${perm}\\*\\*:`))
   })

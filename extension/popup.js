@@ -1,7 +1,7 @@
 // WalletLens extension popup: Home, Holdings, Signals, Market and Alerts.
 import {
   ext, SITE, STORAGE_KEY, get, set, getSettings, saveSettings, loadPortfolio, fxRates, money, pct, amount,
-  CURRENCIES, recordSnapshot, historyFor, ohlc, signalFrom, fearGreed, news, stockQuotes, metalPrice,
+  CURRENCIES, recordSnapshot, historyFor, ohlc, signalFrom, fearGreed, news, stockQuotes, metalPrice, stockLogos,
 } from './lib/core.js'
 
 const STORE_URL = 'https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn'
@@ -15,38 +15,58 @@ const CLASS_META = {
   metals: ['Metals', '#e8b825'], cash: ['Cash', '#60a5fa'], other: ['Other', '#22d3ee'],
 }
 
-const state = { settings: null, rates: { USD: 1 }, p: null, tab: 'home', range: '1W', wallet: 'all', cls: 'all', sort: 'value', signals: null, marketLoaded: false }
+const state = { settings: null, rates: { USD: 1 }, p: null, tab: 'home', range: '1W', wallet: 'all', cls: 'all', sort: 'value', signals: null, marketLoaded: false, stockLogos: {} }
 const m = (usd, o) => money(usd, state.settings.currency, state.rates, o)
 
 // ── Icons ─────────────────────────────────────────────────────────────────
+// Every asset gets a picture. Coins: a logo bundled with the extension for the
+// most held ones, then the live CoinGecko logo. Stocks: the company logo
+// CoinGecko carries for its tokenized share. Cash: the country's flag.
+// Metals, property, bonds and the rest: drawn icons bundled here.
 
-const METAL_BADGE = { 'metal:xau': ['Au', '#e8b825'], 'metal:xag': ['Ag', '#94a3b8'], 'metal:xpt': ['Pt', '#cbd5e1'], 'metal:xcu': ['Cu', '#c2410c'] }
-function badgeFor(h) {
-  const id = h.coin_id
-  if (METAL_BADGE[id]) return METAL_BADGE[id]
-  if (id.startsWith('stock:')) return [id.slice(6).toUpperCase().slice(0, 4), '#a78bfa']
-  if (id.startsWith('fiat:')) return [id.slice(5).toUpperCase().slice(0, 3), '#60a5fa']
-  if (id.startsWith('real:')) return ['🏠', '#94a3b8']
-  if (id.startsWith('cash:')) return ['$', '#60a5fa']
-  if (id.startsWith('bond:') || id.startsWith('other:')) return [(h.coin_symbol || 'OTH').slice(0, 3).toUpperCase(), '#22d3ee']
-  return null
+const BUNDLED_COINS = new Set(['1inch', 'aave', 'ada', 'algo', 'atom', 'avax', 'bat', 'bch', 'bnb', 'btc', 'chz', 'comp', 'crv', 'dai', 'dash', 'doge', 'dot', 'enj', 'eos', 'etc', 'eth', 'fil', 'grt', 'icp', 'leo', 'link', 'ltc', 'mana', 'matic', 'mkr', 'neo', 'qtum', 'sand', 'snx', 'sol', 'sushi', 'theta', 'trx', 'tusd', 'uni', 'usdc', 'usdt', 'vet', 'waves', 'xlm', 'xmr', 'xrp', 'xtz', 'yfi', 'zec', 'zil'])
+const FLAGS = new Set(['us', 'eu', 'gb', 'ae', 'sa', 'eg', 'kw', 'qa', 'tr', 'in', 'jp', 'ca', 'au', 'ch', 'ma', 'bh', 'om', 'jo', 'cn', 'kr', 'sg', 'hk', 'br', 'mx', 'za', 'ng', 'ru', 'se', 'no', 'dk', 'pl', 'id', 'my', 'th', 'ph', 'pk'])
+const FLAG_OVERRIDES = { EUR: 'eu', XAF: 'cm', XOF: 'sn' }
+const flagFor = cur => { const c = String(cur || '').toUpperCase(); return FLAG_OVERRIDES[c] || (/^[A-Z]{3}$/.test(c) && !c.startsWith('X') ? c.slice(0, 2).toLowerCase() : null) }
+const METAL_ICON = { 'metal:xau': 'gold', 'metal:xag': 'silver', 'metal:xpt': 'platinum', 'metal:xcu': 'copper' }
+
+function picturesFor(h, image) {
+  const id = h.coin_id || ''
+  if (METAL_ICON[id]) return [`logos/assets/${METAL_ICON[id]}.svg`]
+  if (id.startsWith('real:')) return ['logos/assets/home.svg']
+  if (id.startsWith('bond:')) return ['logos/assets/bond.svg']
+  if (id.startsWith('other:')) return ['logos/assets/other.svg']
+  if (id.startsWith('cash:')) return ['logos/assets/cash.svg']
+  if (id.startsWith('fiat:')) {
+    const cc = flagFor(id.slice(5))
+    return [cc && FLAGS.has(cc) && `logos/flags/${cc}.svg`, cc && `https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/flags/1x1/${cc}.svg`, 'logos/assets/cash.svg'].filter(Boolean)
+  }
+  if (id.startsWith('stock:')) {
+    const url = state.stockLogos[id.slice(6).toUpperCase()]
+    return url ? [url, PROXY(url)] : []
+  }
+  const sym = (h.coin_symbol || '').toLowerCase()
+  const out = []
+  if (BUNDLED_COINS.has(sym)) out.push(`logos/coins/${sym}.svg`)
+  for (const u of [image, h.coin_image]) if (u && /^https?:\/\//.test(u) && !out.includes(u)) out.push(u)
+  if (sym) out.push(`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`, `https://assets.coincap.io/assets/icons/${sym}@2x.png`)
+  for (const u of out.slice()) if (/^https?:/.test(u)) out.push(PROXY(u))
+  return out
 }
 function letter(h) {
-  const [label, color] = badgeFor(h) || [(h.coin_symbol || '?').toUpperCase().slice(0, 4), '#334155']
+  const id = h.coin_id || ''
+  const label = id.startsWith('stock:') ? id.slice(6).toUpperCase().slice(0, 4) : (h.coin_symbol || '?').toUpperCase().slice(0, 4)
   const d = el('span', 'ic', esc(label))
-  d.style.background = color
-  if (color === '#e8b825' || color === '#cbd5e1' || color === '#94a3b8') d.style.color = '#0a0b0d'
+  let hue = 0; for (const c of label) hue = (hue * 31 + c.charCodeAt(0)) % 360
+  d.style.background = `linear-gradient(135deg, hsl(${hue},62%,52%), hsl(${(hue + 40) % 360},68%,34%))`
   if (label.length > 3) d.style.fontSize = '8px'
   return d
 }
 function icon(h, image) {
-  if (badgeFor(h)) return letter(h)
-  const sym = (h.coin_symbol || '').toLowerCase()
-  const src = [image, h.coin_image].filter(u => u && /^https?:\/\//.test(u))
-  if (sym) src.push(`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`, `https://assets.coincap.io/assets/icons/${sym}@2x.png`)
-  for (const s of src.slice()) src.push(PROXY(s))
+  const src = picturesFor(h, image)
   if (!src.length) return letter(h)
   const img = el('img', 'ic'); img.alt = ''; img.referrerPolicy = 'no-referrer'
+  if (/^logos\/(assets|flags)\//.test(src[0])) img.classList.add('ic-full')
   let i = 0; img.src = src[0]
   img.addEventListener('error', () => { i++; if (i < src.length) img.src = src[i]; else img.replaceWith(letter(h)) })
   return img
@@ -108,6 +128,11 @@ async function load({ quiet = false } = {}) {
   state.p = await loadPortfolio(state.wallet)
   if (!state.p || !state.p.rows.length) { hide('loading'); show('no-data'); return }
   if (state.wallet === 'all') await recordSnapshot(state.p.total)
+  // Company logos for stocks: last cached table now, a fresh one when it lands.
+  if (state.p.rows.some(r => r.cls === 'stocks')) {
+    state.stockLogos = (await get('wl_stock_logos'))?.map || {}
+    stockLogos().then(map => { if (Object.keys(map).length && JSON.stringify(map) !== JSON.stringify(state.stockLogos)) { state.stockLogos = map; go(state.tab) } })
+  }
   hide('loading'); show('nav')
   fillWallets(data.wallets)
   go(state.tab)
@@ -159,6 +184,7 @@ document.addEventListener('click', () => { $('menu').hidden = true })
 $('menu').addEventListener('click', e => {
   const act = e.target.dataset.act
   if (act === 'open') open(SITE + '/dashboard')
+  if (act === 'drive') openDrive()
   if (act === 'import') openImport()
   if (act === 'share') share('copy')
   if (act === 'friend') tellFriend()
@@ -193,7 +219,27 @@ async function renderHome() {
   const box = $('movers'); box.innerHTML = ''
   ;(movers.length ? movers : p.rows.slice(0, 3)).forEach(r => box.appendChild(row(r)))
   $('synced-home').textContent = 'Synced ' + ago(p.data.syncedAt)
+  renderDrive()
 }
+
+// ── Google Drive ─────────────────────────────────────────────────────────────
+// The backup itself runs in WalletLens on the site (connected once, then
+// automatic). The extension shows whether it is on and sends people there to
+// connect or restore: ?drive=connect goes straight into Google's sign-in, and
+// on a new device it restores the backup already in Drive.
+const DRIVE_CONNECT = SITE + '/dashboard?drive=connect'
+function renderDrive() {
+  const d = state.p?.data?.drive
+  const on = !!d?.connected
+  $('drive-card').classList.toggle('on', on)
+  $('drive-title').textContent = on ? 'Google Drive backup is on' : 'Back up to Google Drive'
+  $('drive-sub').textContent = on ? (d.backupAt ? 'Last backup ' + ago(d.backupAt) : 'Backs up automatically') : 'Your portfolio, saved in your own Drive'
+  $('drive-btn').textContent = on ? 'Manage' : 'Connect'
+  $('menu-drive').textContent = on ? 'Google Drive backup' : 'Connect Google Drive'
+}
+function openDrive() { open(state.p?.data?.drive?.connected ? SITE + '/settings' : DRIVE_CONNECT) }
+$('drive-btn').addEventListener('click', openDrive)
+$('btn-drive-nodata').addEventListener('click', () => open(DRIVE_CONNECT))
 
 async function drawHistory() {
   const vals = await historyFor(state.range)
@@ -359,7 +405,7 @@ function renderAlerts() {
   const list = $('alert-list'); list.innerHTML = ''
   for (const a of s.alerts) {
     const x = el('div', 'r')
-    x.appendChild(letter({ coin_id: a.coinId.includes(':') ? a.coinId : 'x', coin_symbol: a.symbol }))
+    x.appendChild(icon({ coin_id: a.coinId, coin_symbol: a.symbol, coin_name: a.name }, state.p?.prices[a.coinId]?.image))
     x.appendChild(el('span', 'nm', `${esc(a.name)} ${a.kind === 'above' ? 'above' : 'below'} ${m(a.usd)}<small>${a.on ? 'Price alert' : a.firedAt ? 'Fired ' + ago(a.firedAt) : 'Off'}</small>`))
     const tog = el('label', 'tog', `<input type="checkbox" ${a.on ? 'checked' : ''}><i></i>`)
     tog.querySelector('input').addEventListener('change', async e => { a.on = e.target.checked; state.settings = await saveSettings({ alerts: s.alerts }); ping() })

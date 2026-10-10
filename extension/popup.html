@@ -38,6 +38,7 @@
 
 <div id="menu" class="menu" hidden>
   <button data-act="open">Open WalletLens</button>
+  <button data-act="drive" id="menu-drive">Connect Google Drive</button>
   <button data-act="import">Import a backup code</button>
   <button data-act="share">Share my performance</button>
   <button data-act="friend">Tell a friend</button>
@@ -52,6 +53,7 @@
     <h2>Your net worth, one click away</h2>
     <p>Open WalletLens once in this browser and add what you own by screenshot, voice or by hand. It appears here on its own. Tracking on another device? Paste your backup code.</p>
     <button id="btn-open-site" class="btn">Open WalletLens</button>
+    <button id="btn-drive-nodata" class="btn ghost with-gd"><svg class="gd" viewBox="0 0 87.3 78" aria-hidden="true"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>Restore from Google Drive</button>
     <button id="btn-import-nodata" class="btn ghost">Import a backup code</button>
   </div>
 
@@ -64,6 +66,11 @@
       <svg id="hist" class="hist" viewBox="0 0 320 70" preserveAspectRatio="none"></svg>
       <p id="hist-note" class="hist-note" hidden>Your chart fills in as WalletLens records your net worth each day.</p>
       <div class="range" id="range"><button data-r="1D">1D</button><button data-r="1W" class="on">1W</button><button data-r="1M">1M</button><button data-r="3M">3M</button><button data-r="1Y">1Y</button></div>
+    </div>
+    <div class="drive-card" id="drive-card">
+      <svg class="gd" viewBox="0 0 87.3 78" aria-hidden="true"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>
+      <div class="dc-t"><b id="drive-title">Back up to Google Drive</b><small id="drive-sub">Your portfolio, saved in your own Drive</small></div>
+      <button id="drive-btn" class="dc-btn">Connect</button>
     </div>
     <div class="alloc"><svg id="donut" viewBox="0 0 42 42" width="78" height="78"></svg><div id="legend" class="legend"></div></div>
     <div class="sec">Top movers today <button class="link" data-goto="holdings">See all ›</button></div>
