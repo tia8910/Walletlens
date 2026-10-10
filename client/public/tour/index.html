@@ -98,6 +98,14 @@ button{font:inherit;color:inherit}
 .ms-badge small{font:500 10.5px var(--body);letter-spacing:.01em;opacity:.9}
 .ms-badge b{font:600 17px "Segoe UI",var(--body);letter-spacing:-.01em}
 .nav .btn{height:38px;padding:0 16px;font-size:13.5px;border-radius:12px}
+/* store links in the bar: labelled on wide screens, icons only on phones */
+.stores{display:flex;align-items:center;gap:6px}
+.st{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 12px;border-radius:12px;background:var(--s2);box-shadow:inset 0 0 0 1px var(--border-2);font:700 13px var(--disp);letter-spacing:-.01em;white-space:nowrap;transition:background .2s,transform .15s}
+.st:hover{background:var(--s3)}.st:active{transform:scale(.96)}
+.st svg{width:17px;height:17px;flex-shrink:0}
+@media(max-width:900px){.st{width:38px;padding:0;justify-content:center}.st span{display:none}}
+@media(max-width:480px){.nav-in{gap:8px}.stores{gap:5px}.st{width:36px;height:36px;border-radius:11px}.nav .btn.btn-pri{padding:0 13px}}
+@media(max-width:430px){.brand .bn{display:none}}
 .btn svg{width:18px;height:18px;flex-shrink:0}
 .nav-in{gap:10px}
 
@@ -481,8 +489,8 @@ footer nav{display:flex;flex-wrap:wrap;gap:6px 16px}
 </defs></svg>
 
 <header class="nav"><div class="wrap nav-in">
-  <a class="brand" href="/" aria-label="WalletLens home"><svg><use href="#logo"/></svg>WalletLens</a>
-  <span class="sp"></span><a class="btn btn-2" href="https://play.google.com/store/apps/details?id=live.walletlens.twa" data-cta="nav_play" rel="noopener" style="height:38px;padding:0 14px;border-radius:12px;font-size:13.5px"><svg><use href="#play"/></svg>Google Play</a><a class="btn btn-pri" href="/dashboard/" data-cta="nav_web">Start free</a>
+  <a class="brand" href="/" aria-label="WalletLens home"><svg><use href="#logo"/></svg><span class="bn">WalletLens</span></a>
+  <span class="sp"></span><nav class="stores" aria-label="Get the apps"><a class="st" href="https://play.google.com/store/apps/details?id=live.walletlens.twa" data-cta="nav_play" rel="noopener" aria-label="WalletLens on Google Play" title="Google Play"><svg aria-hidden="true"><use href="#play"/></svg><span>Google Play</span></a><a class="st" href="https://apps.microsoft.com/detail/9pkvkn0p9dx2" data-cta="nav_msstore" rel="noopener" aria-label="WalletLens on the Microsoft Store" title="Microsoft Store"><svg aria-hidden="true"><use href="#ms"/></svg><span>Microsoft</span></a><a class="st" href="/chrome-extension/" data-cta="nav_chrome" aria-label="WalletLens Chrome extension" title="Chrome extension"><svg aria-hidden="true"><use href="#chrome"/></svg><span>Chrome</span></a></nav><a class="btn btn-pri" href="/dashboard/" data-cta="nav_web">Start free</a>
 </div></header>
 
 <main id="main">
