@@ -43,6 +43,19 @@ describe('the tour page', () => {
     expect(app.offers.price).toBe('0')
     expect(app.featureList.length).toBeGreaterThanOrEqual(10)
     expect(node('MobileApplication').installUrl).toMatch(/play\.google\.com\/store\/apps\/details\?id=live\.walletlens\.twa/)
+    const windows = ld['@graph'].find(n => n.name === 'WalletLens for Windows')
+    expect(windows.installUrl).toBe('https://apps.microsoft.com/detail/9pkvkn0p9dx2')
+    expect(app.operatingSystem).toMatch(/Windows/)
+    expect(app.downloadUrl).toContain('https://apps.microsoft.com/detail/9pkvkn0p9dx2')
+  })
+
+  it('shows the Microsoft Store badge next to Google Play and Chrome', () => {
+    const badges = markup.match(/<a class="ms-badge" href="https:\/\/apps\.microsoft\.com\/detail\/9pkvkn0p9dx2"[^>]*>/g)
+    expect(badges).toHaveLength(1)
+    expect(badges[0]).toContain('data-cta="end_msstore"')
+    expect(markup).toContain('<span><small>Get it from</small><b>Microsoft</b></span>')
+    expect(markup).toContain('data-cta="answer_msstore" rel="noopener">Windows</a>')
+    expect(html).toContain('data-cta="film_msstore"')
   })
 
   it('loads only what the site CSP allows: self-hosted fonts, no font CDN', () => {
