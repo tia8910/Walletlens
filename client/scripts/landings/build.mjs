@@ -41,6 +41,42 @@ const ICONS = {
 }
 const TL_ICONS = ['phone', 'mail', 'clock', 'shield']
 
+// Language flags: the two in public/flags (flag-icons, MIT) are linked, the
+// four plain tricolours are drawn inline.
+const tri = (a, b, c, vertical = true) => `<svg class="fl" viewBox="0 0 3 2" aria-hidden="true">${vertical
+  ? `<path fill="${a}" d="M0 0h1v2H0z"/><path fill="${b}" d="M1 0h1v2H1z"/><path fill="${c}" d="M2 0h1v2H2z"/>`
+  : `<path fill="${a}" d="M0 0h3v.667H0z"/><path fill="${b}" d="M0 .667h3v.667H0z"/><path fill="${c}" d="M0 1.333h3V2H0z"/>`}</svg>`
+const FLAGS = {
+  en: '<img class="fl" src="/flags/gb.svg" alt="" width="18" height="12">',
+  ar: '<img class="fl" src="/flags/sa.svg" alt="" width="18" height="12">',
+  fr: tri('#002654', '#fff', '#ce1126'),
+  es: `<svg class="fl" viewBox="0 0 3 2" aria-hidden="true"><path fill="#aa151b" d="M0 0h3v2H0z"/><path fill="#f1bf00" d="M0 .5h3v1H0z"/></svg>`,
+  de: tri('#000', '#dd0000', '#ffce00', false),
+  it: tri('#009246', '#fff', '#ce2b37'),
+}
+
+// Platform badges, drawn like the official ones: black, logo, two lines.
+const BADGE_ICONS = {
+  play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#00A0FF" d="M3.6 1.8a1.5 1.5 0 0 0-.6 1.2v18a1.5 1.5 0 0 0 .6 1.2l.1.1L13.8 12v-.2L3.7 1.7z"/><path fill="#FFBC00" d="M17.2 15.4 13.8 12v-.2l3.4-3.4.1.1 4 2.3c1.2.7 1.2 1.8 0 2.4l-4 2.3z"/><path fill="#FF3A44" d="M17.3 15.3 13.8 11.9 3.6 22.2c.4.4 1 .5 1.8.1l11.9-6.9"/><path fill="#00C853" d="M17.3 8.6 5.4 1.8C4.6 1.4 4 1.4 3.6 1.9l10.2 10z"/></svg>',
+  ms: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#F25022" d="M1 1h10.5v10.5H1z"/><path fill="#7FBA00" d="M12.5 1H23v10.5H12.5z"/><path fill="#00A4EF" d="M1 12.5h10.5V23H1z"/><path fill="#FFB900" d="M12.5 12.5H23V23H12.5z"/></svg>',
+  chrome: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 12 12 2 A10 10 0 0 1 20.66 17 Z"/><path fill="#34A853" d="M12 12 20.66 17 A10 10 0 0 1 3.34 17 Z"/><path fill="#FBBC05" d="M12 12 3.34 17 A10 10 0 0 1 12 2 Z"/><circle cx="12" cy="12" r="5.2" fill="#fff"/><circle cx="12" cy="12" r="4.2" fill="#4285F4"/></svg>',
+  web: '<svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.6 2.8 3.9 6 3.9 9.5s-1.3 6.7-3.9 9.5c-2.6-2.8-3.9-6-3.9-9.5s1.3-6.7 3.9-9.5z"/></svg>',
+}
+const BADGE_TEXT = {
+  en: { play: 'GET IT ON', ms: 'Get it from', chrome: 'Available in the', web: 'Use it free on the' },
+  ar: { play: 'احصل عليه من', ms: 'احصل عليه من', chrome: 'متوفر في', web: 'استخدمه مجانا على' },
+  fr: { play: 'DISPONIBLE SUR', ms: 'Obtenir sur', chrome: 'Disponible sur le', web: 'Gratuit sur le' },
+  es: { play: 'DISPONIBLE EN', ms: 'Obtener en', chrome: 'Disponible en', web: 'Gratis en la' },
+  de: { play: 'JETZT BEI', ms: 'Herunterladen bei', chrome: 'Verfügbar im', web: 'Kostenlos im' },
+  it: { play: 'DISPONIBILE SU', ms: 'Scarica da', chrome: 'Disponibile nel', web: 'Gratis sul' },
+}
+const WEB_WORD = { en: 'Web', ar: 'الويب', fr: 'Web', es: 'Web', de: 'Web', it: 'Web' }
+function badges(lang, pageKey) {
+  const t = BADGE_TEXT[lang]
+  const b = (key, href, big, cta, ext) => `<a class="badge" href="${href}"${ext ? ' rel="noopener"' : ''} data-cta="${pageKey}_${cta}">${BADGE_ICONS[key]}<span><small>${esc(t[key])}</small><b>${esc(big)}</b></span></a>`
+  return `<div class="badges">${b('play', PLAY, 'Google Play', 'play', true)}${b('ms', MS, 'Microsoft', 'msstore', true)}${b('chrome', '/chrome-extension/', 'Chrome Web Store', 'chrome')}${b('web', '/dashboard', WEB_WORD[lang], 'web')}</div>`
+}
+
 const LOGO = `<svg viewBox="0 0 64 64" width="30" height="30" aria-hidden="true"><defs><linearGradient id="wlg" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ade80"/><stop offset=".5" stop-color="#16a34a"/><stop offset="1" stop-color="#14532d"/></linearGradient></defs><circle cx="27" cy="25" r="19" stroke="url(#wlg)" stroke-width="5.5" fill="none"/><rect x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="url(#wlg)"/><rect x="21.5" y="21" width="5" height="13" rx="1.2" fill="url(#wlg)"/><rect x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="url(#wlg)"/><line x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wlg)" stroke-width="5.5" stroke-linecap="round"/><circle cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/></svg>`
 
 const CSS = `
@@ -63,7 +99,13 @@ nav{display:flex;align-items:center;justify-content:space-between;gap:16px;paddi
 .brand{display:flex;align-items:center;gap:10px;font:700 19px Sora,sans-serif}
 .nl{display:flex;gap:22px;align-items:center;font-weight:600;font-size:14px;color:var(--mu)}.nl a:hover{color:var(--tx)}
 .lang{display:flex;gap:2px;padding:4px;border-radius:99px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}
-.lang a{padding:4px 9px;border-radius:99px;font:700 11px Manrope,sans-serif;letter-spacing:.06em;color:var(--mu)}.lang a[aria-current]{background:var(--a2);color:#111}
+.lang a{display:inline-flex;align-items:center;gap:6px;padding:4px 9px 4px 6px;border-radius:99px;font:700 11px Manrope,sans-serif;letter-spacing:.06em;color:var(--mu)}.lang a[aria-current]{background:var(--a2);color:#111}
+.fl{width:18px;height:12px;border-radius:3px;flex-shrink:0;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.18)}
+.langs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:26px;list-style:none}.langs-h{margin-top:30px;font:800 12px var(--bd);letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}[dir=rtl] .langs-h{letter-spacing:0}
+.langs a{display:inline-flex;align-items:center;gap:8px;padding:8px 14px 8px 10px;border-radius:99px;font-weight:700;font-size:14px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow .15s}.langs a:hover{box-shadow:inset 0 0 0 1px var(--a1)}.langs a[aria-current]{box-shadow:inset 0 0 0 1.5px var(--a2);color:var(--a1)}
+.badges{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+.badge{display:inline-flex;align-items:center;gap:10px;height:52px;padding:0 18px 0 14px;border-radius:13px;background:#000;color:#fff;box-shadow:inset 0 0 0 1px #a6a6a6;transition:transform .15s,box-shadow .2s;white-space:nowrap}.badge:hover{box-shadow:inset 0 0 0 1px #fff;transform:translateY(-1px)}
+.badge svg{width:24px;height:24px;flex-shrink:0}.badge span{display:flex;flex-direction:column;line-height:1.1;text-align:start}.badge small{font:600 10px var(--bd);letter-spacing:.02em;opacity:.85}.badge b{font:700 17px var(--hd);letter-spacing:-.01em}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 22px;border-radius:14px;font-weight:800;font-size:15px;color:#111;background:linear-gradient(135deg,var(--a1),var(--a2));box-shadow:0 10px 30px -8px var(--glow),inset 0 1px 0 rgba(255,255,255,.5);transition:transform .15s}
 .btn:hover{transform:translateY(-1px)}.btn.g{color:var(--tx);background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}
 .hero{position:relative;padding:48px 0 72px;display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;z-index:1}
@@ -112,7 +154,6 @@ details[open] summary::after{content:"\\2212"}details p{color:var(--mu);line-hei
 .note{margin-top:22px;font-size:13px;color:var(--mu);font-style:italic}
 .final{text-align:center;padding:64px 32px;border-radius:30px;background:radial-gradient(60% 100% at 50% 0%,var(--glow),transparent 70%),var(--card);box-shadow:inset 0 0 0 1px var(--line)}
 .final .lead{margin:0 auto}.final .ctas{justify-content:center}
-.stores{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}.stores a{padding:10px 15px;border-radius:12px;background:#000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);font-weight:700;font-size:13px}
 footer{padding:36px 0 50px;color:var(--mu);font-size:13px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}footer nav{padding:0;display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-start}
 .ring{position:relative;width:200px;height:200px;margin:4px auto 18px}.ring svg{transform:rotate(-90deg)}
 .ring .c{position:absolute;inset:0;display:grid;place-items:center;text-align:center}.ring .c b{font:800 46px Sora,sans-serif;display:block;letter-spacing:-.04em}
@@ -129,7 +170,7 @@ footer{padding:36px 0 50px;color:var(--mu);font-size:13px;display:flex;justify-c
 @media (max-width:900px){.hero,.answer{grid-template-columns:1fr}.hero{gap:40px}}
 @media (max-width:600px){.wrap{padding:0 16px}.nl>a{display:none}.hero{padding:16px 0 40px}h1{font-size:38px}.sub{font-size:16px}h2{font-size:30px}section{padding:44px 0}
 .steps,.bento,.tl{grid-template-columns:1fr}.bx.w{grid-column:auto}.tl::before{display:none}.tl li{text-align:start;display:grid;grid-template-columns:44px 1fr;gap:4px 14px;margin-bottom:18px;padding:0}.tl i{margin:0;grid-row:span 2}
-.final{padding:44px 20px}.due{font-size:42px}.answer{padding:22px}.lang a{padding:4px 6px}.brand span{display:none}}
+.final{padding:44px 20px}.due{font-size:42px}.answer{padding:22px}.lang a{padding:4px}.lang a span{display:none}.badges{display:grid;grid-template-columns:1fr 1fr}.badge{padding:0 10px}.badge b{font-size:14px}.brand span{display:none}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
 `
 
@@ -203,7 +244,8 @@ function page(pageKey, lang) {
   const alternates = LANGS.map(l => `<link rel="alternate" hreflang="${l}" href="${ORIGIN + pathFor(pageKey, l)}">`).join('\n')
     + `\n<link rel="alternate" hreflang="x-default" href="${ORIGIN + pathFor(pageKey, 'en')}">`
   const ogAlt = LANGS.filter(l => l !== lang).map(l => `<meta property="og:locale:alternate" content="${LOCALE[l]}">`).join('\n')
-  const switcher = LANGS.map(l => `<a href="${pathFor(pageKey, l)}" hreflang="${l}" lang="${l}" title="${esc(UI[l].name)}"${l === lang ? ' aria-current="page"' : ''}>${l.toUpperCase()}</a>`).join('')
+  const switcher = LANGS.map(l => `<a href="${pathFor(pageKey, l)}" hreflang="${l}" lang="${l}" title="${esc(UI[l].name)}"${l === lang ? ' aria-current="page"' : ''}>${FLAGS[l]}<span>${l.toUpperCase()}</span></a>`).join('')
+  const langList = LANGS.map(l => `<li><a href="${pathFor(pageKey, l)}" hreflang="${l}" lang="${l}"${l === lang ? ' aria-current="page"' : ''}>${FLAGS[l]}${esc(UI[l].name)}</a></li>`).join('')
 
   const graph = {
     '@context': 'https://schema.org',
@@ -283,7 +325,8 @@ ${c.faq.map(([q, a], i) => `<details${i === 0 ? ' open' : ''}><summary><h3>${esc
 <p class="note">${esc(c.note)}</p></div></section>
 <section aria-labelledby="end-h"><div class="wrap"><div class="final"><h2 id="end-h">${c.endH}</h2><p class="lead">${esc(c.endP)}</p>
 <div class="ctas"><a class="btn" href="${P.cta(lang)}" data-cta="${pageKey}_final">${esc(c.cta)} ${arrow}</a></div>
-<div class="stores"><a href="${PLAY}" rel="noopener">Google Play</a><a href="${MS}" rel="noopener">Microsoft Store</a><a href="/chrome-extension/">Chrome</a></div></div></div></section>
+${badges(lang, pageKey)}
+<p class="langs-h">${esc(ui.langs)}</p><ul class="langs">${langList}</ul></div></div></section>
 </main>
 <div class="wrap"><footer><span>© 2026 WalletLens · ${esc(ui.foot)} · <time datetime="${UPDATED}">${UPDATED}</time></span>
 <nav aria-label="${esc(ui.more)}"><a href="${pathFor(other, lang)}">${esc(ui[other])}</a><a href="${pageKey === 'zakat' ? P.cta(lang) : PAGES.zakat.cta(lang)}">${esc(ui.calc)}</a><a href="/chrome-extension/">${esc(ui.ext)}</a><a href="/privacy">${esc(ui.privacy)}</a><a href="/terms">${esc(ui.terms)}</a><a href="/faq">${esc(ui.faq)}</a></nav></footer></div>

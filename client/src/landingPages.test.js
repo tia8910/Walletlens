@@ -92,6 +92,21 @@ describe('zakat and guardian landing pages', () => {
     }
   })
 
+  it('shows a flag for every language and the platform badges', () => {
+    for (const { html, page } of pages) {
+      expect(html).toContain('<img class="fl" src="/flags/gb.svg"')
+      expect(html).toContain('<img class="fl" src="/flags/sa.svg"')
+      expect(html.match(/<svg class="fl"/g).length).toBeGreaterThanOrEqual(8)
+      const list = html.match(/<ul class="langs">([\s\S]*?)<\/ul>/)[1]
+      for (const l of LANGS) expect(list).toContain(`href="${pathFor(page, l)}" hreflang="${l}"`)
+      const badges = html.match(/<div class="badges">([\s\S]*?)<\/div>/)[1]
+      expect(badges.match(/class="badge"/g)).toHaveLength(4)
+      for (const href of ['play.google.com/store/apps/details?id=live.walletlens.twa', 'apps.microsoft.com/detail/9pkvkn0p9dx2', '/chrome-extension/', '/dashboard']) expect(badges).toContain(href)
+    }
+    expect(existsSync(join(here, '../public/flags/gb.svg'))).toBe(true)
+    expect(existsSync(join(here, '../public/flags/sa.svg'))).toBe(true)
+  })
+
   it('is listed in llms.txt and the tour footer', () => {
     const llms = readFileSync(join(here, '../public/llms.txt'), 'utf8')
     expect(llms).toContain('https://walletlens.live/zakat/')
