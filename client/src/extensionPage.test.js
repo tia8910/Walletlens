@@ -13,7 +13,7 @@ const html = read('../public/chrome-extension/index.html')
 const markup = html.slice(0, html.lastIndexOf('<script>'))
 const ld = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1])
 const node = (type) => ld['@graph'].find(n => n['@type'] === type)
-const STORE = 'https://chromewebstore.google.com/detail/ajmjdeobjjmabgonhaeaaehoepfafhbn'
+const STORE = 'https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn'
 const decode = s => s.replace(/&amp;/g, '&').replace(/<[^>]+>/g, '')
 
 describe('the Chrome extension page', () => {
@@ -44,7 +44,7 @@ describe('the Chrome extension page', () => {
     expect(app.offers.price).toBe('0')
     expect(app).not.toHaveProperty('aggregateRating')
     expect(node('HowTo').step).toHaveLength(5)
-    expect(markup.match(/<ol class="steps">([\s\S]*?)<\/ol>/)[1].match(/<li>/g)).toHaveLength(5)
+    expect(markup.match(/<ol class="steps[^"]*">([\s\S]*?)<\/ol>/)[1].match(/<li>/g)).toHaveLength(5)
     expect(node('BreadcrumbList').itemListElement.at(-1).item).toBe('https://walletlens.live/chrome-extension/')
   })
 
