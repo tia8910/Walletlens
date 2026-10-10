@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // The privacy contract at the top of analytics.js is the thing under test here:
 // error strings are the easiest way for a portfolio amount to escape by
@@ -58,6 +61,30 @@ describe('error reporting', () => {
     expect(p.error_kind).toBe('resource')
     expect(p.error_message).toBe('script')
     expect(p.error_source).toBe('walletlens.live')
+  })
+
+  it('ignores a blocked third-party script, which is the visitor\'s ad blocker, not a fault', async () => {
+    const { events } = await freshAnalytics()
+    for (const src of ['https://www.googletagmanager.com/gtag/js?id=G-1', 'https://static.ads-twitter.com/uwt.js']) {
+      const sc = document.createElement('script')
+      sc.src = src
+      const ev = new Event('error')
+      Object.defineProperty(ev, 'target', { value: sc })
+      window.dispatchEvent(ev)
+    }
+    expect(eventsNamed(events, 'js_error')).toHaveLength(0)
+  })
+
+  it('reports our own script on whatever host serves the app', async () => {
+    const { events } = await freshAnalytics()
+    const sc = document.createElement('script')
+    sc.src = '/assets/Dashboard-a1b2.js'
+    const ev = new Event('error')
+    Object.defineProperty(ev, 'target', { value: sc })
+    window.dispatchEvent(ev)
+    const [p] = eventsNamed(events, 'js_error')
+    expect(p.error_kind).toBe('resource')
+    expect(p.error_source).toBe(location.host)
   })
 
   it('sends only the filename, never the full URL', async () => {
@@ -130,5 +157,16 @@ describe('human signal', () => {
     window.dispatchEvent(new Event('pointerdown'))
     window.dispatchEvent(new Event('keydown'))
     expect(eventsNamed(events, 'human_interaction')).toHaveLength(1)
+  })
+})
+
+describe('no X (Twitter) pixel', () => {
+  // Removed on purpose: it was blocked for many visitors and only measured X
+  // referrals. Nothing should load it, allow it, or mention it to users.
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
+  const files = ['client/index.html', 'client/public/_headers', 'workers/security-headers/index.js', 'client/src/legal/privacy.js']
+  it.each(files)('%s does not load or allow it', (f) => {
+    const s = readFileSync(join(root, f), 'utf8')
+    expect(s).not.toMatch(/ads-twitter|analytics\.twitter|twq\(|https:\/\/t\.co\b|X \(Twitter\)|X \(تويتر\)/)
   })
 })
