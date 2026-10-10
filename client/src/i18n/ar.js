@@ -221,6 +221,8 @@ export default {
     navMarket: 'السوق',
     navTransactions: 'المعاملات',
     about: 'حول',
+    chromeExtension: 'إضافة كروم',
+    extLearnMore: 'اعرف المزيد',
     blog: 'المدونة',
     privacy: 'سياسة الخصوصية',
     terms: 'الشروط',
