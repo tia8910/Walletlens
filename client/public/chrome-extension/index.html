@@ -7,9 +7,17 @@
 // store (policy 10.1.5), so the Store app goes straight to the app instead.
 (function () {
   try {
+    // Same rule as src/msStore.js: the flag only counts, and is only kept, in
+    // an installed app window; a browser tab forgets it.
     var q = new URLSearchParams(location.search).get('store') === 'msstore'
+    var mm = window.matchMedia
+    var app = !!(mm && (mm('(display-mode: standalone)').matches || mm('(display-mode: window-controls-overlay)').matches))
     var s = localStorage.getItem('wl_store') === 'msstore'
-    if (q || s) { try { localStorage.setItem('wl_store', 'msstore') } catch (e) {} location.replace('/dashboard' + location.search) }
+    if (s && !app) { try { localStorage.removeItem('wl_store') } catch (e) {} s = false }
+    if (q || s) {
+      if (app) { try { localStorage.setItem('wl_store', 'msstore') } catch (e) {} }
+      location.replace('/dashboard' + location.search)
+    }
   } catch (e) {}
 })()
 </script>

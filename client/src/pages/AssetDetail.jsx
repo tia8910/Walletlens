@@ -421,10 +421,11 @@ export default function AssetDetail() {
         </div>
       )}
 
-      {/* Smart money flow (Nansen) */}
-      {showFlow && <MoneyFlowCard symbol={coin.symbol} />}
-        {showFlow && <BybitCard symbol={coin.symbol} />}
-        {showStockOffer && <BybitStockCard symbol={coin.symbol} kind={tradFiKind} placement={`${tradFiKind}_page`} />}
+      {/* Smart money flow (Nansen) and the Bybit offer. The new look already
+          shows both in its hero, under the chart, so only the old look adds them here. */}
+      {!v2 && showFlow && <MoneyFlowCard symbol={coin.symbol} />}
+      {!v2 && showFlow && <BybitCard symbol={coin.symbol} />}
+      {!v2 && showStockOffer && <BybitStockCard symbol={coin.symbol} kind={tradFiKind} placement={`${tradFiKind}_page`} />}
 
       {/* Whale activity / smart signals */}
       {signals && <WhalePanel s={signals} symbol={coin?.symbol} />}
