@@ -1,89 +1,119 @@
 /**
- * WalletLens Portfolio Extension — Background Service Worker (MV3)
- * Persists portfolio data and triggers periodic re-syncs from the site tab.
+ * WalletLens extension: background service worker (MV3).
+ *
+ *  • keeps the portfolio the site syncs in chrome.storage.local;
+ *  • every 15 minutes prices it, puts today's change on the toolbar icon,
+ *    saves a net worth snapshot for the history chart, and checks alerts;
+ *  • every 5 minutes asks an open walletlens.live tab to re-sync.
  */
 
-'use strict';
+import {
+  ext, STORAGE_KEY, loadPortfolio, getSettings, saveSettings, recordSnapshot,
+  evaluateAlerts, badgeFor, fxRates,
+} from './lib/core.js'
 
-const ext = typeof browser !== 'undefined' ? browser : chrome;
+const SYNC_ALARM = 'wl_sync_alarm'
+const CHECK_ALARM = 'wl_check_alarm'
 
-const STORAGE_KEY  = 'wl_portfolio_cache';
-const ALARM_NAME   = 'wl_sync_alarm';
-const ALARM_PERIOD = 5; // minutes
+function ensureAlarms() {
+  ext.alarms.get(SYNC_ALARM, a => { if (!a) ext.alarms.create(SYNC_ALARM, { periodInMinutes: 5 }) })
+  ext.alarms.get(CHECK_ALARM, a => { if (!a) ext.alarms.create(CHECK_ALARM, { delayInMinutes: 1, periodInMinutes: 15 }) })
+}
+ensureAlarms()
+ext.runtime.onInstalled.addListener(() => { ensureAlarms(); check() })
+ext.runtime.onStartup?.addListener(() => { ensureAlarms(); check() })
 
-// ── Alarm setup ──────────────────────────────────────────────────────────────
+ext.alarms.onAlarm.addListener(alarm => {
+  if (alarm.name === SYNC_ALARM) requestSyncFromTabs()
+  if (alarm.name === CHECK_ALARM) check()
+})
 
-// Create the periodic alarm when the service worker first installs / wakes up.
-function ensureAlarm() {
-  ext.alarms.get(ALARM_NAME, (existing) => {
-    if (!existing) {
-      ext.alarms.create(ALARM_NAME, { periodInMinutes: ALARM_PERIOD });
+// ── The 15 minute check ─────────────────────────────────────────────────────
+
+let running = false
+async function check() {
+  if (running) return
+  running = true
+  try {
+    const p = await loadPortfolio()
+    const settings = await getSettings()
+    if (!p) { ext.action.setBadgeText({ text: '' }); return }
+    await recordSnapshot(p.total)
+    paintBadge(settings.badge ? p.dayPct : NaN)
+    const rates = settings.currency !== 'USD' ? await fxRates() : { USD: 1 }
+    // Prices for alerts on coins the portfolio does not hold are fetched by
+    // the popup when the alert is made, and checked here from the holdings'
+    // prices plus a small top up for the rest.
+    const prices = { ...p.prices, ...(await pricesForAlerts(settings, p.prices)) }
+    const { notes, settings: next } = evaluateAlerts({ ...settings, _rates: rates }, { prices, dayPct: p.dayPct, total: p.total })
+    if (notes.length) {
+      await saveSettings(next)
+      for (const n of notes) notify(n)
     }
-  });
+  } catch (e) {
+    console.debug('[WalletLens] check failed', e)
+  } finally {
+    running = false
+  }
 }
 
-ensureAlarm();
+async function pricesForAlerts(settings, have) {
+  const missing = [...new Set(settings.alerts.filter(a => a.on && !have[a.coinId]).map(a => a.coinId))].filter(id => !/:/.test(id))
+  if (!missing.length) return {}
+  try {
+    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(missing.join(','))}&vs_currencies=usd`, { signal: AbortSignal.timeout(8000) })
+    const j = await r.json()
+    return Object.fromEntries(Object.entries(j).map(([id, v]) => [id, { usd: v.usd }]))
+  } catch { return {} }
+}
 
-ext.runtime.onInstalled.addListener(() => {
-  ensureAlarm();
-});
+function paintBadge(dayPct) {
+  const { text, color } = badgeFor(dayPct)
+  ext.action.setBadgeText({ text })
+  ext.action.setBadgeBackgroundColor({ color })
+  ext.action.setBadgeTextColor?.({ color: '#ffffff' })
+}
 
-// When the alarm fires, ask any open walletlens.live tabs to re-sync
-ext.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name !== ALARM_NAME) return;
-  requestSyncFromTabs();
-});
+function notify({ id, title, message }) {
+  ext.notifications.create(id, { type: 'basic', iconUrl: 'icons/icon-128.png', title, message, priority: 1 })
+}
+ext.notifications.onClicked.addListener(id => {
+  ext.tabs.create({ url: 'https://walletlens.live/dashboard' })
+  ext.notifications.clear(id)
+})
 
-// ── Message handling ─────────────────────────────────────────────────────────
+// ── Messages ──────────────────────────────────────────────────────────────────
 
 ext.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (!message) return false;
-
+  if (!message) return false
   if (message.type === 'SYNC_PORTFOLIO') {
-    handleSyncPortfolio(message.data);
-    sendResponse({ ok: true });
-    return false; // synchronous response
+    handleSyncPortfolio(message.data)
+    sendResponse({ ok: true })
+    return false
   }
-
   if (message.type === 'GET_PORTFOLIO') {
-    ext.storage.local.get(STORAGE_KEY, (result) => {
-      sendResponse({ data: result[STORAGE_KEY] || null });
-    });
-    return true; // async
+    ext.storage.local.get(STORAGE_KEY, r => sendResponse({ data: r[STORAGE_KEY] || null }))
+    return true
   }
+  // The popup asks for a fresh check after it changes settings or alerts.
+  if (message.type === 'CHECK_NOW') { check(); sendResponse({ ok: true }); return false }
+  return false
+})
 
-  return false;
-});
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/**
- * Persist the synced portfolio payload to chrome.storage.local.
- * @param {object} data
- */
 function handleSyncPortfolio(data) {
-  if (!data || !Array.isArray(data.transactions)) return;
-
-  // Sanitise and store
-  const payload = {
-    transactions: data.transactions,
-    wallets:      Array.isArray(data.wallets) ? data.wallets : [],
-    settings:     (data.settings && typeof data.settings === 'object') ? data.settings : {},
-    syncedAt:     data.syncedAt || Date.now(),
-  };
-
-  ext.storage.local.set({ [STORAGE_KEY]: payload });
+  if (!data || !Array.isArray(data.transactions)) return
+  ext.storage.local.set({
+    [STORAGE_KEY]: {
+      transactions: data.transactions,
+      wallets: Array.isArray(data.wallets) ? data.wallets : [],
+      settings: data.settings && typeof data.settings === 'object' ? data.settings : {},
+      syncedAt: data.syncedAt || Date.now(),
+    },
+  }, () => check())
 }
 
-/**
- * Send REQUEST_SYNC to all active walletlens.live tabs so the content
- * script re-reads localStorage.
- */
 function requestSyncFromTabs() {
-  ext.tabs.query({ url: 'https://walletlens.live/*' }, (tabs) => {
-    if (!tabs || tabs.length === 0) return;
-    for (const tab of tabs) {
-      ext.tabs.sendMessage(tab.id, { type: 'REQUEST_SYNC' }).catch?.(() => {});
-    }
-  });
+  ext.tabs.query({ url: 'https://walletlens.live/*' }, tabs => {
+    for (const tab of tabs || []) ext.tabs.sendMessage(tab.id, { type: 'REQUEST_SYNC' }).catch?.(() => {})
+  })
 }

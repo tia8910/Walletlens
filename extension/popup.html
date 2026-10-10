@@ -3,228 +3,154 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WalletLens Portfolio</title>
+  <title>WalletLens</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="wlg" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ade80"/><stop offset=".5" stop-color="#16a34a"/><stop offset="1" stop-color="#14532d"/></linearGradient>
+  <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34d399" stop-opacity=".42"/><stop offset="1" stop-color="#34d399" stop-opacity="0"/></linearGradient>
+  <linearGradient id="sgr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f87171" stop-opacity=".35"/><stop offset="1" stop-color="#f87171" stop-opacity="0"/></linearGradient>
+  <linearGradient id="fg"><stop offset="0" stop-color="#f87171"/><stop offset=".5" stop-color="#e8b825"/><stop offset="1" stop-color="#34d399"/></linearGradient>
+  <symbol id="logo" viewBox="0 0 64 64"><circle cx="27" cy="25" r="19" stroke="url(#wlg)" stroke-width="5.5" fill="none"/><rect x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="url(#wlg)"/><rect x="21.5" y="21" width="5" height="13" rx="1.2" fill="url(#wlg)"/><rect x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="url(#wlg)"/><line x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wlg)" stroke-width="5.5" stroke-linecap="round"/><circle cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-sig" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M14 7h7v7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-mkt" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.9 8.3 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-ref" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</defs></svg>
 
-  <!-- ── Header ── -->
-  <header class="header">
-    <div class="logo">
-      <svg width="24" height="24" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-        <defs>
-          <linearGradient id="wlg" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse">
-            <stop offset="0"   stop-color="#4ade80"/>
-            <stop offset="0.5" stop-color="#16a34a"/>
-            <stop offset="1"   stop-color="#14532d"/>
-          </linearGradient>
-        </defs>
-        <circle cx="27" cy="25" r="19" stroke="url(#wlg)" stroke-width="5.5"/>
-        <rect x="14.5" y="26.5" width="5"   height="7.5"  rx="1.2" fill="url(#wlg)"/>
-        <rect x="21.5" y="21"   width="5"   height="13"   rx="1.2" fill="url(#wlg)"/>
-        <rect x="28.5" y="15.5" width="5"   height="18.5" rx="1.2" fill="url(#wlg)"/>
-        <line x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wlg)" stroke-width="5.5" stroke-linecap="round"/>
-        <circle cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/>
-      </svg>
-      <span class="logo-text">WalletLens</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:2px">
-      <button id="btn-import" class="btn-icon" title="Import backup code">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
-      </button>
-      <button id="btn-refresh" class="btn-icon" title="Refresh">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/>
-        </svg>
-      </button>
-    </div>
-  </header>
+<header class="top">
+  <div class="brand"><svg><use href="#logo"/></svg><span id="title">WalletLens</span></div>
+  <div class="actions">
+    <select id="currency" class="pill-select" title="Currency" aria-label="Currency"></select>
+    <button id="btn-hide" class="ib" title="Hide balances" aria-label="Hide balances"><svg><use href="#i-eye"/></svg></button>
+    <button id="btn-refresh" class="ib" title="Refresh" aria-label="Refresh"><svg><use href="#i-ref"/></svg></button>
+    <button id="btn-menu" class="ib" title="More" aria-label="More"><svg><use href="#i-more"/></svg></button>
+  </div>
+</header>
 
-  <!-- ── Tabs ── -->
-  <nav class="tabs">
-    <button class="tab-btn tab-active" data-tab="overview">Overview</button>
-    <button class="tab-btn" data-tab="holdings">Holdings</button>
-    <button class="tab-btn" data-tab="market">Market</button>
-    <button class="tab-btn" data-tab="news">News</button>
-    <button class="tab-btn" data-tab="ta">TA</button>
-  </nav>
+<div id="menu" class="menu" hidden>
+  <button data-act="open">Open WalletLens</button>
+  <button data-act="import">Import a backup code</button>
+  <button data-act="share">Share my performance</button>
+  <button data-act="friend">Tell a friend</button>
+  <button data-act="rate">Rate the extension</button>
+</div>
 
-  <!-- ── Loading ── -->
-  <div id="loading" class="state-panel center">
-    <div class="spinner" aria-label="Loading…"></div>
-    <p id="loading-caption" class="no-data-sub" hidden>Fetching your portfolio…</p>
+<main id="main">
+  <div id="loading" class="state"><div class="spinner"></div><p id="loading-caption" hidden>Fetching your portfolio…</p></div>
+
+  <div id="no-data" class="state" hidden>
+    <svg class="state-logo"><use href="#logo"/></svg>
+    <h2>Your net worth, one click away</h2>
+    <p>Open WalletLens once in this browser and add what you own by screenshot, voice or by hand. It appears here on its own. Tracking on another device? Paste your backup code.</p>
+    <button id="btn-open-site" class="btn">Open WalletLens</button>
+    <button id="btn-import-nodata" class="btn ghost">Import a backup code</button>
   </div>
 
-  <!-- ── No-data ── -->
-  <div id="no-data" class="state-panel center" hidden>
-    <svg class="no-data-icon" viewBox="0 0 48 48" width="44" height="44" aria-hidden="true">
-      <circle cx="24" cy="24" r="23" stroke="#4ade80" stroke-width="1.5" fill="none" opacity="0.3"/>
-      <path d="M14 28 Q24 18 34 28" stroke="#4ade80" stroke-width="2" fill="none" stroke-linecap="round"/>
-      <circle cx="18" cy="22" r="2" fill="#4ade80" opacity="0.6"/>
-      <circle cx="30" cy="22" r="2" fill="#4ade80" opacity="0.6"/>
-    </svg>
-    <p class="no-data-title">No portfolio data yet</p>
-    <p class="no-data-sub">We couldn't find a portfolio for walletlens.live on this device. If you track on another device, paste your backup code below to sync it here.</p>
-    <button id="btn-open-site" class="btn-primary">Open walletlens.live</button>
-    <button id="btn-import-from-nodata" class="btn-secondary">Import backup code</button>
-  </div>
-
-  <!-- ══════════════════════════════════════════
-       TAB: OVERVIEW
-  ══════════════════════════════════════════ -->
-  <div id="tab-overview" class="tab-panel" hidden>
-
-    <!-- BTC / ETH ticker -->
-    <div id="ticker" class="ticker">
-      <span class="ticker-item"><span class="ticker-sym">BTC</span> <span id="btc-price" class="ticker-price">…</span> <span id="btc-chg" class="ticker-chg">—</span></span>
-      <span class="ticker-sep">·</span>
-      <span class="ticker-item"><span class="ticker-sym">ETH</span> <span id="eth-price" class="ticker-price">…</span> <span id="eth-chg" class="ticker-chg">—</span></span>
+  <!-- HOME -->
+  <section id="tab-home" class="tab" hidden>
+    <div class="hero">
+      <div class="k">NET WORTH</div>
+      <div class="big" id="total">—</div>
+      <div class="chips"><span id="day-chip" class="chip">—</span><span id="pnl-chip" class="chip g" hidden></span></div>
+      <svg id="hist" class="hist" viewBox="0 0 320 70" preserveAspectRatio="none"></svg>
+      <p id="hist-note" class="hist-note" hidden>Your chart fills in as WalletLens records your net worth each day.</p>
+      <div class="range" id="range"><button data-r="1D">1D</button><button data-r="1W" class="on">1W</button><button data-r="1M">1M</button><button data-r="3M">3M</button><button data-r="1Y">1Y</button></div>
     </div>
-
-    <!-- Total value -->
-    <section class="total-section">
-      <p class="total-label">Total Portfolio Value</p>
-      <p id="total-value" class="total-value">—</p>
-      <div id="change-row" class="change-row">
-        <span id="change-badge" class="change-badge loading">—</span>
-        <span class="change-label">24h change</span>
-      </div>
-    </section>
-
-    <!-- P&L card -->
-    <div id="pnl-card" class="pnl-card" hidden>
-      <div class="pnl-row">
-        <span class="pnl-label">Invested</span>
-        <span id="pnl-invested" class="pnl-val">—</span>
-      </div>
-      <div class="pnl-divider"></div>
-      <div class="pnl-row">
-        <span class="pnl-label">All-time gain / loss</span>
-        <span id="pnl-gain" class="pnl-val">—</span>
-      </div>
+    <div class="alloc"><svg id="donut" viewBox="0 0 42 42" width="78" height="78"></svg><div id="legend" class="legend"></div></div>
+    <div class="sec">Top movers today <button class="link" data-goto="holdings">See all ›</button></div>
+    <div id="movers"></div>
+    <div class="share-card">
+      <div><b>Share your performance</b><small>Percentages only, never your balance</small></div>
+      <div class="share-btns"><button data-share="x" title="Share on X">𝕏</button><button data-share="whatsapp" title="Share on WhatsApp">WA</button><button data-share="telegram" title="Share on Telegram">TG</button><button data-share="copy" title="Copy">⧉</button></div>
     </div>
+    <p class="foot" id="synced-home"></p>
+  </section>
 
-    <div class="section-divider"></div>
+  <!-- HOLDINGS -->
+  <section id="tab-holdings" class="tab" hidden>
+    <div class="row-head"><h2>Holdings <span id="h-count" class="chip g">0</span></h2><select id="wallet" class="pill-select" aria-label="Wallet"></select></div>
+    <div class="seg" id="cls"><button data-c="all" class="on">All</button><button data-c="crypto">Crypto</button><button data-c="stocks">Stocks</button><button data-c="metals">Metals</button><button data-c="other">Other</button></div>
+    <div class="row-sub"><button class="link" id="sort">Sorted by value ▾</button><span>P&amp;L · 24h</span></div>
+    <div id="holdings"></div>
+    <p class="foot" id="synced-h"></p>
+  </section>
 
-    <!-- Top holdings -->
-    <section class="holdings-section">
-      <p class="section-title">Top Holdings</p>
-      <div id="overview-holdings-list" class="holdings-list"></div>
-    </section>
+  <!-- SIGNALS -->
+  <section id="tab-signals" class="tab" hidden>
+    <div class="row-head"><h2>Signals</h2><span class="chip g">Daily</span></div>
+    <div class="tiles" id="sig-count"><div class="tile"><span class="k">BUY</span><b class="up" id="n-buy">–</b></div><div class="tile"><span class="k">SELL</span><b class="dn" id="n-sell">–</b></div></div>
+    <div id="signals"></div>
+    <div id="levels"></div>
+    <p class="disclaimer">Educational signals from price data, not financial advice. Crypto holdings only.</p>
+  </section>
 
-    <!-- Quick nav -->
-    <div class="quick-nav">
-      <button class="nav-btn" data-path="/dashboard">📊 Dashboard</button>
-      <button class="nav-btn" data-path="/coach">🤖 Coach</button>
-      <button class="nav-btn" data-path="/technicals">📈 Analysis</button>
-      <button class="nav-btn" data-path="/dashboard" data-tab-nav="targets">🎯 Targets</button>
+  <!-- MARKET -->
+  <section id="tab-market" class="tab" hidden>
+    <div class="row-head"><h2>Market</h2><span class="chip">● Live</span></div>
+    <div class="alloc" id="fg-card">
+      <svg viewBox="0 0 100 56" width="108" height="60"><path d="M8 50a42 42 0 0 1 84 0" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9" stroke-linecap="round"/><path id="fg-arc" d="M8 50a42 42 0 0 1 84 0" fill="none" stroke="url(#fg)" stroke-width="9" stroke-linecap="round" stroke-dasharray="132" stroke-dashoffset="132"/></svg>
+      <div><span class="k">FEAR &amp; GREED</span><div class="fg-now" id="fg-now">—</div><span class="mu small" id="fg-past"></span></div>
     </div>
+    <div class="tiles" id="majors"></div>
+    <div class="sec">News for your holdings</div>
+    <div id="news" class="news"></div>
+  </section>
 
-    <!-- Share -->
-    <section class="share-section">
-      <p class="section-title">Share your performance</p>
-      <p class="share-sub">Brag with percentages — never your balance. Your numbers stay private.</p>
-      <div class="share-row">
-        <button class="share-btn share-x"  data-share="x"        title="Share on X">𝕏</button>
-        <button class="share-btn share-wa" data-share="whatsapp" title="Share on WhatsApp">WhatsApp</button>
-        <button class="share-btn share-tg" data-share="telegram" title="Share on Telegram">Telegram</button>
-        <button class="share-btn share-cp" data-share="copy"     title="Copy link">Copy</button>
-      </div>
-      <p id="share-copied" class="share-copied" hidden>✅ Copied — paste it anywhere</p>
-    </section>
-
-    <p id="last-synced-ov" class="last-synced">—</p>
-  </div>
-
-  <!-- ══════════════════════════════════════════
-       TAB: HOLDINGS
-  ══════════════════════════════════════════ -->
-  <div id="tab-holdings" class="tab-panel" hidden>
-    <div class="holdings-toolbar">
-      <select id="wallet-filter" class="wallet-select">
-        <option value="all">All Wallets</option>
-      </select>
-      <span id="holdings-count" class="holdings-count">—</span>
+  <!-- ALERTS -->
+  <section id="tab-alerts" class="tab" hidden>
+    <div class="row-head"><h2>Alerts</h2></div>
+    <div id="alert-list"></div>
+    <div class="r">
+      <span class="ic" style="background:#10b981">%</span><span class="nm">Net worth moves <select id="move-pct" class="inline-select"><option>2</option><option>3</option><option>5</option><option>10</option></select>% in a day<small>Portfolio alert</small></span>
+      <label class="tog"><input type="checkbox" id="move-on"><i></i></label>
     </div>
-    <div id="all-holdings-list" class="holdings-list holdings-scroll"></div>
-    <p id="last-synced-h" class="last-synced" style="padding:8px 16px 12px">—</p>
-  </div>
+    <div class="r">
+      <span class="ic" style="background:#e8b825">☀</span><span class="nm">Morning summary at <select id="digest-hour" class="inline-select"></select><small>Daily digest</small></span>
+      <label class="tog"><input type="checkbox" id="digest-on"><i></i></label>
+    </div>
+    <button id="btn-new-alert" class="btn">＋ New price alert</button>
+    <form id="alert-form" class="card form" hidden>
+      <label>Asset<select id="af-asset"></select></label>
+      <div class="two"><label>When price<select id="af-kind"><option value="above">rises above</option><option value="below">falls below</option></select></label>
+      <label>Price (<span id="af-cur">USD</span>)<input id="af-price" type="number" step="any" min="0" required></label></div>
+      <p class="mu small" id="af-now"></p>
+      <div class="two"><button type="button" id="af-cancel" class="btn ghost">Cancel</button><button type="submit" class="btn">Save alert</button></div>
+    </form>
+    <div class="sec">Toolbar and privacy</div>
+    <div class="r"><span class="nm">Show today's change on the icon<small>Green when up, red when down</small></span><label class="tog"><input type="checkbox" id="badge-on"><i></i></label></div>
+    <div class="r"><span class="nm">Hide balances<small>Show percentages only</small></span><label class="tog"><input type="checkbox" id="hide-on"><i></i></label></div>
+    <p class="disclaimer">Alerts are checked every 15 minutes while your browser is open.</p>
+  </section>
 
-  <!-- ══════════════════════════════════════════
-       TAB: MARKET
-  ══════════════════════════════════════════ -->
-  <div id="tab-market" class="tab-panel" hidden>
-    <div id="fg-card" class="fg-card">
-      <div class="fg-label">Fear &amp; Greed Index</div>
-      <div class="fg-body">
-        <div id="fg-value" class="fg-value">—</div>
-        <div id="fg-label-text" class="fg-class">Loading…</div>
-      </div>
-      <div id="fg-bar-wrap" class="fg-bar-wrap">
-        <div id="fg-bar" class="fg-bar" style="width:0%"></div>
-      </div>
-    </div>
-    <div class="section-divider" style="margin:0"></div>
-    <div id="market-list" class="market-list">
-      <div class="market-loading">
-        <div class="spinner" style="width:20px;height:20px;border-width:2px"></div>
-      </div>
-    </div>
-  </div>
+  <!-- IMPORT -->
+  <section id="import" class="sheet" hidden>
+    <div class="row-head"><h2>Import a backup code</h2><button id="import-close" class="ib"><svg><use href="#i-x"/></svg></button></div>
+    <p class="mu">In WalletLens on your other device, open Settings, then Backup, and copy your backup code. Paste it here.</p>
+    <textarea id="import-code" placeholder="WL3-…" spellcheck="false"></textarea>
+    <p id="import-error" class="err" hidden></p>
+    <p id="import-ok" class="ok" hidden></p>
+    <button id="import-apply" class="btn">Import portfolio</button>
+  </section>
+</main>
 
-  <!-- ══════════════════════════════════════════
-       TAB: NEWS
-  ══════════════════════════════════════════ -->
-  <div id="tab-news" class="tab-panel" hidden>
-    <div id="news-list" class="news-list">
-      <div class="market-loading"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div>
-    </div>
-  </div>
+<nav class="nav" id="nav" hidden>
+  <button data-tab="home" class="on"><svg><use href="#i-home"/></svg>Home</button>
+  <button data-tab="holdings"><svg><use href="#i-list"/></svg>Holdings</button>
+  <button data-tab="signals"><svg><use href="#i-sig"/></svg>Signals</button>
+  <button data-tab="market"><svg><use href="#i-mkt"/></svg>Market</button>
+  <button data-tab="alerts"><svg><use href="#i-bell"/></svg>Alerts</button>
+</nav>
+<div id="toast" class="toast" hidden></div>
 
-  <!-- ══════════════════════════════════════════
-       TAB: TA
-  ══════════════════════════════════════════ -->
-  <div id="tab-ta" class="tab-panel" hidden>
-    <div class="ta-toolbar">
-      <select id="ta-coin-select" class="wallet-select">
-        <option value="">Select a coin…</option>
-      </select>
-    </div>
-    <div id="ta-content" class="ta-content">
-      <p class="holdings-empty" style="padding:20px 0">Select a coin to see analysis</p>
-    </div>
-  </div>
-
-  <!-- ── Marketing footer (always visible) ── -->
-  <footer class="promo-footer">
-    <span class="promo-tag">Free · Private · No account</span>
-    <button id="btn-tell-friend" class="promo-cta">Tell a friend →</button>
-  </footer>
-
-  <!-- ── Import Panel (full-screen overlay) ── -->
-  <div id="import-panel" hidden>
-    <div class="import-panel-hdr">
-      <button id="btn-import-back" class="btn-icon" title="Back">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 18 9 12 15 6"/>
-        </svg>
-      </button>
-      <span class="import-panel-title">Import Portfolio</span>
-    </div>
-    <div class="import-panel-body">
-      <p class="import-hint">
-        Paste a WalletLens backup code to load your portfolio into the extension — no need to open the website.
-      </p>
-      <textarea id="import-code-input" class="import-textarea" placeholder="WL2-H4sI… or WL1-…" spellcheck="false"></textarea>
-      <div id="import-error"   class="import-msg import-msg-error" hidden></div>
-      <div id="import-success" class="import-msg import-msg-ok"    hidden></div>
-      <button id="btn-import-apply" class="btn-primary">Import portfolio</button>
-    </div>
-  </div>
-
-  <script src="popup.js"></script>
+<script type="module" src="popup.js"></script>
 </body>
 </html>

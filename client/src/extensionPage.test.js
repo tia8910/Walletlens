@@ -67,9 +67,11 @@ describe('the Chrome extension page', () => {
   it('makes no claim the extension cannot back up', () => {
     const manifest = JSON.parse(read('../../extension/manifest.json'))
     expect(html).toContain(`"softwareVersion":"${manifest.version}"`)
-    // It asks for storage only: no alarms, no tabs, no reading other sites.
-    expect(manifest.permissions).toEqual(['storage'])
-    expect(html).not.toMatch(/alarms/)
+    // Storage, alarms for the 15 minute check, notifications for alerts:
+    // nothing that reads other sites, and the page names all three.
+    expect(manifest.permissions).toEqual(['storage', 'alarms', 'notifications'])
+    expect(manifest.permissions.every(x => html.includes(x))).toBe(true)
+    expect(manifest.host_permissions.every(h => !/<all_urls>|\*:\/\/\*\//.test(h))).toBe(true)
     expect(html).not.toMatch(/\$20|USDT|ratingValue|reviewCount/)
   })
 })

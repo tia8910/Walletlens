@@ -1,1173 +1,506 @@
-'use strict';
+// WalletLens extension popup: Home, Holdings, Signals, Market and Alerts.
+import {
+  ext, SITE, STORAGE_KEY, get, set, getSettings, saveSettings, loadPortfolio, fxRates, money, pct, amount,
+  CURRENCIES, recordSnapshot, historyFor, ohlc, signalFrom, fearGreed, news, stockQuotes, metalPrice,
+} from './lib/core.js'
 
-const ext = typeof browser !== 'undefined' ? browser : chrome;
+const STORE_URL = 'https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn'
+const PROXY = u => `https://walletlens-voice.tarek-abdelhameed.workers.dev/proxy?url=${encodeURIComponent(u)}`
+const $ = id => document.getElementById(id)
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 
-const STORAGE_KEY     = 'wl_portfolio_cache';
-const PRICE_CACHE_KEY = 'wl_price_cache';
-const PRICE_TTL       = 2 * 60 * 1000;
-const SITE            = 'https://walletlens.live';
-const CG_PRICE_URL    = 'https://api.coingecko.com/api/v3/simple/price';
-const CG_MARKET_URL   = 'https://api.coingecko.com/api/v3/coins/markets';
-const FG_URL          = 'https://api.alternative.me/fng/?limit=1';
-// The voice worker's CORS proxy. This used to point at a Deno Deploy host on
-// an account that is no longer in use, so every fallback path through it was
-// reaching a service that does not answer, and the manifest was asking for a
-// host permission with nothing behind it.
-const PROXY           = u => `https://walletlens-voice.tarek-abdelhameed.workers.dev/proxy?url=${encodeURIComponent(u)}`;
-
-const MARKET_COINS = ['bitcoin','ethereum','binancecoin','solana','ripple','cardano'];
-const NEWS_URL     = 'https://walletlens.live/news.json';
-const CG_OHLC_URL  = 'https://api.coingecko.com/api/v3/coins/{id}/ohlc';
-
-// ── Formatters ────────────────────────────────────────────────────────────────
-
-function fmtUSD(v, compact = false) {
-  if (!isFinite(v)) return '—';
-  if (compact && Math.abs(v) >= 1_000_000) return '$' + (v/1_000_000).toFixed(2) + 'M';
-  if (compact && Math.abs(v) >= 10_000)    return '$' + (v/1_000).toFixed(1) + 'K';
-  return v.toLocaleString('en-US', { style:'currency', currency:'USD', minimumFractionDigits:2, maximumFractionDigits:2 });
+const CLASS_META = {
+  crypto: ['Crypto', '#f7931a'], property: ['Property', '#94a3b8'], stocks: ['Stocks', '#a78bfa'],
+  metals: ['Metals', '#e8b825'], cash: ['Cash', '#60a5fa'], other: ['Other', '#22d3ee'],
 }
 
-function fmtPct(pct) {
-  if (!isFinite(pct)) return '—';
-  return (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+const state = { settings: null, rates: { USD: 1 }, p: null, tab: 'home', range: '1W', wallet: 'all', cls: 'all', sort: 'value', signals: null, marketLoaded: false }
+const m = (usd, o) => money(usd, state.settings.currency, state.rates, o)
+
+// ── Icons ─────────────────────────────────────────────────────────────────
+
+const METAL_BADGE = { 'metal:xau': ['Au', '#e8b825'], 'metal:xag': ['Ag', '#94a3b8'], 'metal:xpt': ['Pt', '#cbd5e1'], 'metal:xcu': ['Cu', '#c2410c'] }
+function badgeFor(h) {
+  const id = h.coin_id
+  if (METAL_BADGE[id]) return METAL_BADGE[id]
+  if (id.startsWith('stock:')) return [id.slice(6).toUpperCase().slice(0, 4), '#a78bfa']
+  if (id.startsWith('fiat:')) return [id.slice(5).toUpperCase().slice(0, 3), '#60a5fa']
+  if (id.startsWith('real:')) return ['🏠', '#94a3b8']
+  if (id.startsWith('cash:')) return ['$', '#60a5fa']
+  if (id.startsWith('bond:') || id.startsWith('other:')) return [(h.coin_symbol || 'OTH').slice(0, 3).toUpperCase(), '#22d3ee']
+  return null
+}
+function letter(h) {
+  const [label, color] = badgeFor(h) || [(h.coin_symbol || '?').toUpperCase().slice(0, 4), '#334155']
+  const d = el('span', 'ic', esc(label))
+  d.style.background = color
+  if (color === '#e8b825' || color === '#cbd5e1' || color === '#94a3b8') d.style.color = '#0a0b0d'
+  if (label.length > 3) d.style.fontSize = '8px'
+  return d
+}
+function icon(h, image) {
+  if (badgeFor(h)) return letter(h)
+  const sym = (h.coin_symbol || '').toLowerCase()
+  const src = [image, h.coin_image].filter(u => u && /^https?:\/\//.test(u))
+  if (sym) src.push(`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`, `https://assets.coincap.io/assets/icons/${sym}@2x.png`)
+  for (const s of src.slice()) src.push(PROXY(s))
+  if (!src.length) return letter(h)
+  const img = el('img', 'ic'); img.alt = ''; img.referrerPolicy = 'no-referrer'
+  let i = 0; img.src = src[0]
+  img.addEventListener('error', () => { i++; if (i < src.length) img.src = src[i]; else img.replaceWith(letter(h)) })
+  return img
 }
 
-function fmtAmt(n) {
-  if (!isFinite(n)) return '—';
-  if (n >= 1000) return n.toLocaleString('en-US', { maximumFractionDigits:2 });
-  if (n >= 1)    return n.toLocaleString('en-US', { maximumFractionDigits:4 });
-  return n.toPrecision(4).replace(/\.?0+$/, '');
+// ── Little charts ───────────────────────────────────────────────────────────
+
+function sparkPath(vals, w, h, pad = 2) {
+  const lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo || 1
+  return vals.map((v, i) => `${i ? 'L' : 'M'}${(i / (vals.length - 1) * w).toFixed(1)} ${(pad + (1 - (v - lo) / span) * (h - pad * 2)).toFixed(1)}`).join(' ')
+}
+function spark(vals) {
+  if (!vals || vals.length < 2) return el('span', 'spark', '')
+  const up = vals[vals.length - 1] >= vals[0]
+  const s = el('span', 'spark', `<svg width="52" height="18" viewBox="0 0 52 18"><path d="${sparkPath(vals, 52, 18)}" fill="none" stroke="${up ? '#34d399' : '#f87171'}" stroke-width="1.7" stroke-linejoin="round"/></svg>`)
+  return s
 }
 
-function timeAgo(ts) {
-  if (!ts) return 'never';
-  const s = Math.floor((Date.now() - ts) / 1000);
-  if (s < 5)    return 'just now';
-  if (s < 60)   return s + 's ago';
-  if (s < 3600) { const m = Math.floor(s/60); return m + 'm ago'; }
-  const h = Math.floor(s/3600); return h + 'h ago';
-}
+// ── Sync from the site (unchanged behaviour from 1.x) ───────────────────────
 
-function abbrev(sym) { return (sym||'?').toUpperCase().slice(0,4); }
-
-// ── Asset icons ─────────────────────────────────────────────────────────────────
-
-// Deterministic gradient from a symbol so every letter-badge fallback has a
-// stable, distinct colour (mirrors the web app's CoinLogo fallback).
-function symbolGradient(sym) {
-  let h = 0;
-  const s = (sym || '?').toLowerCase();
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  const h1 = h % 360, h2 = (h1 + 40) % 360;
-  return `linear-gradient(135deg, hsl(${h1},70%,48%), hsl(${h2},75%,34%))`;
-}
-
-// Non-crypto badge palette — mirrors the web app's CoinLogo ASSET_ICONS /
-// nonCryptoColor so the extension and dashboard look identical.
-const METAL_BADGE = {
-  'metal:xau': { label: 'XAU', c1: '#f59e0b', c2: '#b45309' },
-  'metal:xag': { label: 'XAG', c1: '#94a3b8', c2: '#475569' },
-  'metal:xpt': { label: 'XPT', c1: '#cbd5e1', c2: '#94a3b8' },
-  'metal:xcu': { label: 'XCU', c1: '#c2410c', c2: '#92400e' },
-};
-function nonCryptoBadge(holding) {
-  const id = holding.coin_id || '';
-  if (METAL_BADGE[id]) return METAL_BADGE[id];
-  if (id.startsWith('stock:')) return { label: id.slice(6).toUpperCase().slice(0, 4), c1: '#10b981', c2: '#047857' };
-  if (id.startsWith('fiat:'))  return { label: id.slice(5).toUpperCase().slice(0, 3), c1: '#0ea5e9', c2: '#0369a1' };
-  if (id.startsWith('bond:'))  return { label: (holding.coin_symbol || 'BND').slice(0, 3).toUpperCase(), c1: '#0284c7', c2: '#075985' };
-  if (id.startsWith('other:') || id.startsWith('real:') || id.startsWith('cash:'))
-    return { label: (holding.coin_symbol || 'OTH').slice(0, 3).toUpperCase(), c1: '#a78bfa', c2: '#6d28d9' };
-  return null; // crypto
-}
-
-function letterBadge(holding, cls) {
-  const d = document.createElement('div');
-  d.className = cls;
-  const nc = nonCryptoBadge(holding);
-  if (nc) {
-    d.textContent = nc.label;
-    d.style.background = `radial-gradient(circle at 35% 35%, ${nc.c1}, ${nc.c2})`;
-    d.style.fontSize = nc.label.length > 3 ? '7px' : nc.label.length > 2 ? '8px' : '10px';
-  } else {
-    d.textContent = abbrev(holding.coin_symbol || (holding.coin_id || '').replace(/^[a-z]+:/, ''));
-    d.style.background = symbolGradient(holding.coin_symbol || holding.coin_id);
-  }
-  d.style.color = '#fff';
-  d.style.border = 'none';
-  return d;
-}
-
-// Returns an <img> of the real asset logo, falling back through official
-// CoinGecko image → stored image → icon CDNs → coloured badge. `cls` is the
-// base class (holding-icon / market-icon). Non-crypto assets go straight to
-// their styled badge.
-function assetIcon(holding, cls) {
-  if (nonCryptoBadge(holding)) return letterBadge(holding, cls);
-  const sym = (holding.coin_symbol || '').toLowerCase();
-  const official = cachedPrices[holding.coin_id]?.image;
-  const sources = [];
-  if (official && /^https?:\/\//.test(official)) sources.push(official);
-  if (holding.coin_image && /^https?:\/\//.test(holding.coin_image) && holding.coin_image !== official) sources.push(holding.coin_image);
-  if (sym) {
-    sources.push(`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`);
-    sources.push(`https://assets.coincap.io/assets/icons/${sym}@2x.png`);
-  }
-  // Deno-proxied retries — official logo still loads on networks that block
-  // the CDNs directly (proxy allowlists the logo hosts and passes bytes through)
-  for (const src of sources.slice()) sources.push(PROXY(src));
-  if (!sources.length) return letterBadge(holding, cls);
-  const img = document.createElement('img');
-  img.className = cls + ' ' + cls + '-img';
-  img.src = sources[0];
-  img.alt = '';
-  img.loading = 'lazy';
-  img.referrerPolicy = 'no-referrer';
-  let idx = 0;
-  img.addEventListener('error', () => {
-    idx += 1;
-    if (idx < sources.length) img.src = sources[idx];
-    else img.replaceWith(letterBadge(holding, cls));
-  });
-  return img;
-}
-
-// ── Portfolio math ────────────────────────────────────────────────────────────
-
-function computeHoldings(transactions) {
-  const map = new Map();
-  for (const tx of transactions) {
-    const id = String(tx.coin_id || '').trim();
-    if (!id) continue;
-    const qty  = Number(tx.amount ?? tx.quantity ?? 0);
-    const cost = Number(tx.total_cost ?? (qty * (tx.price_per_unit ?? 0)));
-    if (!isFinite(qty)) continue;
-    if (!map.has(id)) {
-      map.set(id, { coin_id:id, coin_symbol:tx.coin_symbol||id, coin_name:tx.coin_name||id, coin_image:tx.coin_image||'', amount:0, totalCost:0 });
-    }
-    const h = map.get(id);
-    if (tx.coin_symbol) h.coin_symbol = tx.coin_symbol;
-    if (tx.coin_name)   h.coin_name   = tx.coin_name;
-    if (tx.coin_image && !h.coin_image) h.coin_image = tx.coin_image;
-    const type = (tx.type||'').toLowerCase();
-    if (type === 'buy'  || type === 'deposit')  { h.amount += qty; h.totalCost += cost; }
-    if (type === 'sell' || type === 'withdraw') { h.amount -= qty; h.totalCost -= cost; }
-  }
-  for (const [id,h] of map) { if (h.amount < 1e-9) map.delete(id); }
-  return map;
-}
-
-// ── Prices ────────────────────────────────────────────────────────────────────
-
-async function fetchPrices(coinIds) {
-  if (!coinIds?.length) return {};
-  const ids = coinIds.join(',');
-  try {
-    const sess = ext.storage.session;
-    if (sess) {
-      const c = await new Promise(r => sess.get(PRICE_CACHE_KEY, x => r(x[PRICE_CACHE_KEY]||null)));
-      if (c && c.ids === ids && Date.now()-c.fetchedAt < PRICE_TTL) return c.prices;
-    }
-  } catch {}
-
-  // Primary: /coins/markets — one call returns price, 24h change AND the
-  // official CoinGecko logo URL for every coin (used by assetIcon).
-  const mktUrl = `${CG_MARKET_URL}?vs_currency=usd&ids=${encodeURIComponent(ids)}&per_page=250&page=1&sparkline=false&price_change_percentage=24h`;
-  // Fallback: simple/price — no logos, but keeps values flowing if markets fails.
-  const simpleUrl = `${CG_PRICE_URL}?ids=${encodeURIComponent(ids)}&vs_currencies=usd&include_24hr_change=true`;
-  const attempts = [
-    () => fetch(mktUrl, { signal: AbortSignal.timeout(8000) }),
-    () => fetch(PROXY(mktUrl), { signal: AbortSignal.timeout(10000) }),
-    () => fetch(simpleUrl, { signal: AbortSignal.timeout(8000) }),
-    () => fetch(PROXY(simpleUrl), { signal: AbortSignal.timeout(10000) }),
-  ];
-  for (const attempt of attempts) {
-    try {
-      const res = await attempt();
-      if (!res.ok) continue;
-      const json = await res.json();
-      let prices = null;
-      if (Array.isArray(json)) {
-        prices = {};
-        for (const c of json) {
-          if (!c?.id) continue;
-          prices[c.id] = {
-            usd: c.current_price,
-            usd_24h_change: c.price_change_percentage_24h_in_currency ?? c.price_change_percentage_24h ?? 0,
-            image: c.image || '',
-          };
-        }
-      } else if (json && typeof json === 'object') {
-        prices = json;
-      }
-      if (!prices || !Object.keys(prices).length) continue;
-      try { const s = ext.storage.session; if (s) s.set({ [PRICE_CACHE_KEY]:{ ids, prices, fetchedAt:Date.now() } }); } catch {}
-      return prices;
-    } catch {}
-  }
-  return {};
-}
-
-// ── Non-crypto prices (stocks / metals / fiat) — same sources as the web app ──
-
-const NON_CRYPTO_RE = /^(stock|metal|fiat|bond|other|real|cash):/;
-
-async function fetchStockPrices(stockIds) {
-  if (!stockIds.length) return {};
-  const tickers = stockIds.map(id => id.slice(6).toLowerCase() + '.us');
-  const url = `https://stooq.com/q/l/?s=${tickers.join('%3B')}&f=sd2t2ohlcvn&h&e=csv`;
-  // Stooq has no CORS headers — direct works on some networks, proxy elsewhere
-  const attempts = [
-    () => fetch(url, { signal: AbortSignal.timeout(7000) }),
-    () => fetch(PROXY(url), { signal: AbortSignal.timeout(9000) }),
-  ];
-  for (const attempt of attempts) {
-    try {
-      const res = await attempt();
-      if (!res.ok) continue;
-      const lines = (await res.text()).trim().split('\n').slice(1); // drop header
-      const out = {};
-      lines.forEach((line, i) => {
-        const cols = line.split(',');     // Symbol,Date,Time,Open,High,Low,Close,Volume,Name
-        const open = parseFloat(cols[3]), close = parseFloat(cols[6]);
-        if (isFinite(close) && close > 0 && stockIds[i]) {
-          out[stockIds[i]] = {
-            usd: close,
-            usd_24h_change: isFinite(open) && open > 0 ? ((close - open) / open) * 100 : null,
-          };
-        }
-      });
-      if (Object.keys(out).length) return out;
-    } catch {}
-  }
-  return {};
-}
-
-const METAL_CODE = { 'metal:xau': 'XAU', 'metal:xag': 'XAG', 'metal:xcu': 'XCU', 'metal:xpt': 'XPT' };
-
-async function fetchMetalPrices(metalIds) {
-  if (!metalIds.length) return {};
-  const out = {};
-  await Promise.all(metalIds.map(async id => {
-    const code = METAL_CODE[id];
-    if (!code) return;
-    const url = `https://api.gold-api.com/price/${code}`;
-    const attempts = [
-      () => fetch(url, { signal: AbortSignal.timeout(6000) }),
-      () => fetch(PROXY(url), { signal: AbortSignal.timeout(8000) }),
-    ];
-    for (const attempt of attempts) {
-      try {
-        const res = await attempt();
-        if (!res.ok) continue;
-        const j = await res.json();
-        if (j?.price > 0) { out[id] = { usd: j.price, usd_24h_change: 0 }; return; }
-      } catch {}
-    }
-  }));
-  return out;
-}
-
-async function fetchFiatPrices(fiatIds) {
-  if (!fiatIds.length) return {};
-  const url = 'https://open.er-api.com/v6/latest/USD';
-  const attempts = [
-    () => fetch(url, { signal: AbortSignal.timeout(6000) }),
-    () => fetch(PROXY(url), { signal: AbortSignal.timeout(8000) }),
-  ];
-  for (const attempt of attempts) {
-    try {
-      const res = await attempt();
-      if (!res.ok) continue;
-      const rates = (await res.json())?.rates;
-      if (!rates) continue;
-      const out = {};
-      for (const id of fiatIds) {
-        const r = rates[id.slice(5).toUpperCase()];
-        // rates are units-per-USD, so one unit is worth the reciprocal in USD
-        if (typeof r === 'number' && r > 0) out[id] = { usd: 1 / r, usd_24h_change: 0 };
-      }
-      if (Object.keys(out).length) return out;
-    } catch {}
-  }
-  return {};
-}
-
-// Route every holding to the right price source and merge the results.
-// bond:/other:/etc. have no live market — value them at average cost so they
-// still count toward the total instead of disappearing.
-async function fetchAllPrices(map) {
-  const ids = Array.from(map.keys());
-  const stockIds  = ids.filter(id => id.startsWith('stock:'));
-  const metalIds  = ids.filter(id => id.startsWith('metal:'));
-  const fiatIds   = ids.filter(id => id.startsWith('fiat:'));
-  const cryptoIds = ids.filter(id => !NON_CRYPTO_RE.test(id));
-  const [crypto, stocks, metals, fiats] = await Promise.all([
-    fetchPrices([...cryptoIds, 'bitcoin', 'ethereum'].filter((v, i, a) => a.indexOf(v) === i)),
-    fetchStockPrices(stockIds),
-    fetchMetalPrices(metalIds),
-    fetchFiatPrices(fiatIds),
-  ]);
-  const merged = { ...crypto, ...stocks, ...metals, ...fiats };
-  for (const [id, h] of map) {
-    if (!merged[id]?.usd && h.amount > 0 && h.totalCost > 0) {
-      merged[id] = { usd: h.totalCost / h.amount, usd_24h_change: null, estimated: true };
-    }
-  }
-  return merged;
-}
-
-async function fetchMarketCoins() {
-  const url = new URL(CG_MARKET_URL);
-  url.searchParams.set('vs_currency', 'usd');
-  url.searchParams.set('ids', MARKET_COINS.join(','));
-  url.searchParams.set('order', 'market_cap_desc');
-  url.searchParams.set('per_page', '6');
-  url.searchParams.set('page', '1');
-  url.searchParams.set('sparkline', 'false');
-  url.searchParams.set('price_change_percentage', '24h');
-  const urlStr = url.toString();
-  const attempts = [
-    () => fetch(urlStr, { signal: AbortSignal.timeout(8000) }),
-    () => fetch(PROXY(urlStr), { signal: AbortSignal.timeout(10000) }),
-  ];
-  for (const attempt of attempts) {
-    try {
-      const res = await attempt();
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (Array.isArray(data) && data.length) return data;
-    } catch {}
-  }
-  return [];
-}
-
-async function fetchNews() {
-  try {
-    const res = await fetch(NEWS_URL, { signal:AbortSignal.timeout(6000) });
-    if (!res.ok) return [];
-    const json = await res.json();
-    // news.json is { updated, count, articles: [...] }; older builds returned a bare array.
-    const list = Array.isArray(json) ? json : (Array.isArray(json?.articles) ? json.articles : []);
-    return list.slice(0, 12);
-  } catch { return []; }
-}
-
-async function fetchOHLC(coinId) {
-  const urlStr = CG_OHLC_URL.replace('{id}', coinId) + '?vs_currency=usd&days=14';
-  const attempts = [
-    () => fetch(urlStr, { signal: AbortSignal.timeout(8000) }),
-    () => fetch(PROXY(urlStr), { signal: AbortSignal.timeout(10000) }),
-  ];
-  for (const attempt of attempts) {
-    try {
-      const res = await attempt();
-      if (!res.ok) continue;
-      return await res.json();
-    } catch {}
-  }
-  return null;
-}
-
-async function fetchFearGreed() {
-  try {
-    const res = await fetch(FG_URL, { signal:AbortSignal.timeout(6000) });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json?.data?.[0] || null;
-  } catch { return null; }
-}
-
-// ── Backup-code import ────────────────────────────────────────────────────────
-
-async function gunzipB64(b64) {
-  const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  const ds = new DecompressionStream('gzip');
-  const writer = ds.writable.getWriter();
-  writer.write(bytes); writer.close();
-  const chunks = []; const reader = ds.readable.getReader();
-  let total = 0;
-  const MAX_DECOMPRESSED = 10 * 1024 * 1024; // a real backup is a few KB — anything huge is a zip bomb
-  while (true) {
-    const { done, value } = await reader.read(); if (done) break;
-    total += value.length;
-    if (total > MAX_DECOMPRESSED) { reader.cancel(); throw new Error('Backup too large to decompress.'); }
-    chunks.push(value);
-  }
-  const out = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
-  let off = 0; for (const c of chunks) { out.set(c, off); off += c.length; }
-  return new TextDecoder().decode(out);
-}
-
-function b64decode(str) { return decodeURIComponent(escape(atob(str))); }
-
-async function importFromBackupCode(raw) {
-  const code = (raw || '').trim().replace(/\s+/g, '');
-  if (!code) throw new Error('Paste a backup code first.');
-  let json;
-  if (code.startsWith('WL3-') || code.startsWith('WL2-')) {
-    try { json = await gunzipB64(code.slice(4)); }
-    catch { throw new Error('Could not decompress — make sure you copied the full code.'); }
-  } else {
-    const b64 = code.startsWith('WL1-') ? code.slice(4) : code;
-    try { json = b64decode(b64); }
-    catch { throw new Error('Could not decode — make sure you copied the full code.'); }
-  }
-  let parsed;
-  try { parsed = JSON.parse(json); }
-  catch { throw new Error('Backup data is corrupted or incomplete.'); }
-
-  let transactions, wallets = [], settings = {};
-
-  if (parsed?.v === 3) {
-    // WL3: compact parsed format — txs/ws are already objects
-    if (!Array.isArray(parsed.txs)) throw new Error('No valid transaction data found.');
-    transactions = parsed.txs.map(tx => ({ coin_image: '', category: 'crypto', ...tx }));
-    wallets  = Array.isArray(parsed.ws) ? parsed.ws : [];
-    if (parsed.st && typeof parsed.st === 'object') settings = parsed.st;
-  } else {
-    // WL1/WL2: legacy data-bag of raw localStorage strings
-    if (!parsed?.data || typeof parsed.data !== 'object') throw new Error('Backup data is missing or corrupted.');
-    try {
-      const txRaw = parsed.data['crypto_tracker_transactions'];
-      const wRaw  = parsed.data['crypto_tracker_wallets'];
-      const sRaw  = parsed.data['wl_settings'];
-      transactions = txRaw ? JSON.parse(txRaw) : [];
-      if (wRaw) wallets  = JSON.parse(wRaw);
-      if (sRaw) settings = JSON.parse(sRaw);
-    } catch { throw new Error('Transaction data is malformed.'); }
-  }
-
-  if (!Array.isArray(transactions)) throw new Error('No valid transaction data found.');
-  const payload = { transactions, wallets, settings, syncedAt: Date.now() };
-  await new Promise(r => ext.storage.local.set({ [STORAGE_KEY]: payload }, r));
-  return { txCount: transactions.length, walletCount: wallets.length };
-}
-
-// ── DOM helpers ───────────────────────────────────────────────────────────────
-
-const $ = id => document.getElementById(id);
-function show(id) { $(id).hidden = false; }
-function hide(id) { $(id).hidden = true; }
-function setText(id, t) { $(id).textContent = t; }
-
-function buildHoldingRow(holding, value, change24h, pnlGain, hideValues, showPnl = false, signalInfo = null) {
-  const row = document.createElement('div');
-  row.className = 'holding-row';
-
-  const left = document.createElement('div');
-  left.className = 'holding-left';
-  const icon = assetIcon(holding, 'holding-icon');
-  const info = document.createElement('div');
-  info.className = 'holding-info';
-  const sym = document.createElement('span');
-  sym.className = 'holding-symbol';
-  sym.textContent = (holding.coin_symbol||'').toUpperCase();
-  const amt = document.createElement('span');
-  amt.className = 'holding-amount';
-  amt.textContent = hideValues ? '••••' : fmtAmt(holding.amount) + ' ' + (holding.coin_symbol||'').toUpperCase();
-  info.append(sym, amt);
-  left.append(icon, info);
-
-  const right = document.createElement('div');
-  right.className = 'holding-right';
-  const val = document.createElement('span');
-  val.className = 'holding-value';
-  val.textContent = hideValues ? '••••' : fmtUSD(value??0, true);
-  const chg = document.createElement('span');
-  if (!isFinite(change24h)) { chg.className = 'holding-change neutral'; chg.textContent = '—'; }
-  else { chg.className = 'holding-change' + (change24h < 0 ? ' negative' : ''); chg.textContent = fmtPct(change24h); }
-  right.append(val, chg);
-
-  if (showPnl && isFinite(pnlGain) && pnlGain !== null) {
-    const pnl = document.createElement('span');
-    pnl.className = 'holding-pnl' + (pnlGain >= 0 ? ' pos' : ' neg');
-    pnl.textContent = hideValues ? '••' : (pnlGain >= 0 ? '+' : '') + fmtUSD(pnlGain, true);
-    right.appendChild(pnl);
-  }
-
-  if (signalInfo) {
-    const sig = document.createElement('span');
-    sig.className = 'holding-signal ' + signalInfo.sigClass;
-    sig.textContent = signalInfo.signal;
-    right.appendChild(sig);
-  }
-
-  row.append(left, right);
-  return row;
-}
-
-function buildMarketRow(coin) {
-  const chg = coin.price_change_percentage_24h ?? 0;
-  const row = document.createElement('div');
-  row.className = 'market-row';
-
-  const left = document.createElement('div');
-  left.className = 'market-left';
-  const icon = assetIcon({ coin_image: coin.image, coin_symbol: coin.symbol, coin_id: coin.id }, 'market-icon');
-  const info = document.createElement('div');
-  const sym = document.createElement('div');
-  sym.className = 'market-sym';
-  sym.textContent = (coin.symbol||'').toUpperCase();
-  const name = document.createElement('div');
-  name.className = 'market-name';
-  name.textContent = coin.name;
-  info.append(sym, name);
-  left.append(icon, info);
-
-  const right = document.createElement('div');
-  right.className = 'market-right';
-  const price = document.createElement('div');
-  price.className = 'market-price';
-  price.textContent = fmtUSD(coin.current_price);
-  const chgEl = document.createElement('div');
-  chgEl.className = 'market-chg' + (chg < 0 ? ' neg' : '');
-  chgEl.textContent = fmtPct(chg);
-  right.append(price, chgEl);
-
-  row.append(left, right);
-  return row;
-}
-
-// ── TA math ───────────────────────────────────────────────────────────────────
-
-function calcRSI(closes, period = 14) {
-  if (closes.length < period + 1) return null;
-  let gains = 0, losses = 0;
-  for (let i = 1; i <= period; i++) {
-    const d = closes[i] - closes[i-1];
-    if (d >= 0) gains += d; else losses -= d;
-  }
-  let avgGain = gains / period, avgLoss = losses / period;
-  for (let i = period + 1; i < closes.length; i++) {
-    const d = closes[i] - closes[i-1];
-    avgGain = (avgGain * (period-1) + (d > 0 ? d : 0)) / period;
-    avgLoss = (avgLoss * (period-1) + (d < 0 ? -d : 0)) / period;
-  }
-  if (avgLoss === 0) return 100;
-  return 100 - 100 / (1 + avgGain / avgLoss);
-}
-
-function calcSMA(closes, period) {
-  if (closes.length < period) return null;
-  return closes.slice(-period).reduce((a,b) => a+b, 0) / period;
-}
-
-function calcMACD(closes) {
-  // EMA helper
-  function ema(arr, n) {
-    const k = 2/(n+1); let e = arr[0];
-    for (let i = 1; i < arr.length; i++) e = arr[i]*k + e*(1-k);
-    return e;
-  }
-  if (closes.length < 26) return null;
-  const ema12 = ema(closes.slice(-26), 12);
-  const ema26 = ema(closes.slice(-26), 26);
-  return { macd: ema12 - ema26, signal: ema12 - ema26 }; // simplified
-}
-
-// ── News render ───────────────────────────────────────────────────────────────
-
-async function loadNewsTab() {
-  const listEl = $('news-list');
-  listEl.innerHTML = '<div class="market-loading"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div>';
-  const articles = await fetchNews();
-  listEl.innerHTML = '';
-  if (!articles.length) {
-    listEl.innerHTML = '<p class="news-empty">No news available</p>'; return;
-  }
-  for (const a of articles) {
-    const item = document.createElement('div');
-    item.className = 'news-item';
-    item.addEventListener('click', () => {
-      const url = a.url || a.link;
-      // News items come from a remote feed — only ever open http(s) links.
-      if (typeof url === 'string' && /^https?:\/\//i.test(url)) { ext.tabs.create({ url }); window.close(); }
-    });
-
-    const title = document.createElement('div');
-    title.className = 'news-title';
-    title.textContent = a.title;
-
-    const meta = document.createElement('div');
-    meta.className = 'news-meta';
-    const src = document.createElement('span');
-    src.className = 'news-source';
-    src.textContent = a.source || a.publisher || '';
-    const time = document.createElement('span');
-    time.className = 'news-time';
-    const ts = a.publishedAt || a.date || a.published_at || a.pubDate;
-    time.textContent = ts ? timeAgo(new Date(ts).getTime()) : '';
-    meta.append(src, time);
-    item.append(title, meta);
-    listEl.appendChild(item);
-  }
-}
-
-// ── TA render ─────────────────────────────────────────────────────────────────
-
-async function loadTAForCoin(coinId) {
-  const content = $('ta-content');
-  content.innerHTML = '<div class="market-loading"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div>';
-
-  const ohlc = await fetchOHLC(coinId);
-  if (!ohlc || ohlc.length < 15) {
-    content.innerHTML = '<p class="holdings-empty">Not enough price data</p>'; return;
-  }
-
-  const closes = ohlc.map(c => c[4]);
-  const lastPrice = closes[closes.length - 1];
-  const rsi = calcRSI(closes, 14);
-  const sma20 = calcSMA(closes, Math.min(20, closes.length));
-  const sma50 = calcSMA(closes, Math.min(50, closes.length));
-  const change7d = closes.length >= 7 ? ((lastPrice - closes[closes.length-7]) / closes[closes.length-7]) * 100 : null;
-
-  // Trend
-  const trend = sma20 ? (lastPrice > sma20 ? 'Bullish' : 'Bearish') : '—';
-  const trendClass = trend === 'Bullish' ? 'bullish' : trend === 'Bearish' ? 'bearish' : 'neutral';
-
-  // RSI signal
-  let rsiSignal = 'Neutral', rsiClass = 'neutral';
-  if (rsi !== null) {
-    if (rsi < 30) { rsiSignal = 'Oversold'; rsiClass = 'bullish'; }
-    else if (rsi > 70) { rsiSignal = 'Overbought'; rsiClass = 'bearish'; }
-  }
-
-  // Overall signal
-  let signal = 'Neutral', sigClass = 'neutral';
-  if (rsi !== null && sma20) {
-    const bullPoints = (rsi < 50 ? 1 : 0) + (lastPrice > sma20 ? 1 : 0) + (isFinite(change7d) && change7d > 0 ? 1 : 0);
-    if (bullPoints >= 2) { signal = '🟢 Bullish'; sigClass = 'buy'; }
-    else if (bullPoints === 0) { signal = '🔴 Bearish'; sigClass = 'sell'; }
-    else { signal = '🟡 Neutral'; sigClass = 'neutral'; }
-  }
-
-  content.innerHTML = '';
-
-  // Price card
-  const priceCard = document.createElement('div');
-  priceCard.className = 'ta-card';
-  priceCard.innerHTML = `<div class="ta-card-title">Price</div>`;
-  const rows = [
-    ['Current',  fmtUSD(lastPrice), ''],
-    ['7d Change', isFinite(change7d) ? fmtPct(change7d) : '—', change7d >= 0 ? 'bullish' : 'bearish'],
-    ['SMA 20',   sma20 ? fmtUSD(sma20) : '—', ''],
-    ['Trend',    trend, trendClass],
-  ];
-  for (const [label, val, cls] of rows) {
-    const row = document.createElement('div');
-    row.className = 'ta-row';
-    row.innerHTML = `<span class="ta-row-label">${label}</span><span class="ta-row-val ${cls}">${val}</span>`;
-    priceCard.appendChild(row);
-  }
-  content.appendChild(priceCard);
-
-  // RSI card
-  const rsiCard = document.createElement('div');
-  rsiCard.className = 'ta-card';
-  rsiCard.innerHTML = `
-    <div class="ta-card-title">RSI (14)</div>
-    <div class="ta-row">
-      <span class="ta-row-label">Value</span>
-      <span class="ta-row-val ${rsiClass}">${rsi !== null ? rsi.toFixed(1) : '—'}</span>
-    </div>
-    <div class="ta-row">
-      <span class="ta-row-label">Signal</span>
-      <span class="ta-row-val ${rsiClass}">${rsiSignal}</span>
-    </div>
-    <div class="ta-rsi-bar-wrap">
-      <div class="ta-rsi-zones"><div class="ta-rsi-zone-os"></div><div class="ta-rsi-zone-ob"></div></div>
-      <div class="ta-rsi-bar" style="width:${rsi ?? 50}%;background:${rsiClass==='bullish'?'#4ade80':rsiClass==='bearish'?'#f87171':'#fbbf24'}"></div>
-    </div>
-  `;
-  content.appendChild(rsiCard);
-
-  // Signal
-  const sigEl = document.createElement('div');
-  sigEl.className = `ta-signal ${sigClass}`;
-  sigEl.textContent = signal;
-  content.appendChild(sigEl);
-}
-
-// ── Per-holding signal badge ──────────────────────────────────────────────────
-
-const signalCache = new Map(); // coinId → { signal, sigClass }
-
-async function fetchSignalForCoin(coinId) {
-  if (signalCache.has(coinId)) return signalCache.get(coinId);
-  const ohlc = await fetchOHLC(coinId);
-  if (!ohlc || ohlc.length < 15) { const r = { signal:'—', sigClass:'neutral' }; signalCache.set(coinId, r); return r; }
-  const closes = ohlc.map(c => c[4]);
-  const last = closes[closes.length - 1];
-  const rsi  = calcRSI(closes, 14);
-  const sma  = calcSMA(closes, Math.min(20, closes.length));
-  const chg7 = closes.length >= 7 ? (last - closes[closes.length - 7]) / closes[closes.length - 7] * 100 : null;
-  let signal = '—', sigClass = 'neutral';
-  if (rsi !== null && sma) {
-    const bull = (rsi < 50 ? 1 : 0) + (last > sma ? 1 : 0) + (isFinite(chg7) && chg7 > 0 ? 1 : 0);
-    if (bull >= 2)   { signal = 'Buy';  sigClass = 'buy'; }
-    else if (bull === 0) { signal = 'Sell'; sigClass = 'sell'; }
-    else                 { signal = 'Hold'; sigClass = 'neutral'; }
-  }
-  const result = { signal, sigClass };
-  signalCache.set(coinId, result);
-  return result;
-}
-
-// ── Tab state ─────────────────────────────────────────────────────────────────
-
-let currentTab = 'overview';
-let cachedData = null;
-let cachedPrices = {};
-let marketLoaded = false;
-let newsLoaded   = false;
-const shareStats = { change24h: null, allTimePct: null, assetCount: 0, topSymbol: '' };
-
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
-    btn.classList.add('tab-active');
-    currentTab = btn.dataset.tab;
-    document.querySelectorAll('.tab-panel').forEach(p => p.hidden = true);
-    show('tab-' + currentTab);
-    if (currentTab === 'market'   && !marketLoaded) loadMarketTab();
-    if (currentTab === 'holdings') renderHoldingsTab();
-    if (currentTab === 'news'     && !newsLoaded) { newsLoaded = true; loadNewsTab(); }
-  });
-});
-
-// ── Overview tab ──────────────────────────────────────────────────────────────
-
-function renderOverviewTab(holdingsArr, hideValues, syncedAt) {
-  // Ticker
-  const btcData = cachedPrices['bitcoin'];
-  const ethData = cachedPrices['ethereum'];
-  if (btcData) {
-    setText('btc-price', fmtUSD(btcData.usd, true));
-    const chgEl = $('btc-chg');
-    chgEl.textContent = fmtPct(btcData.usd_24h_change);
-    chgEl.className = 'ticker-chg' + (btcData.usd_24h_change < 0 ? ' neg' : '');
-  }
-  if (ethData) {
-    setText('eth-price', fmtUSD(ethData.usd, true));
-    const chgEl = $('eth-chg');
-    chgEl.textContent = fmtPct(ethData.usd_24h_change);
-    chgEl.className = 'ticker-chg' + (ethData.usd_24h_change < 0 ? ' neg' : '');
-  }
-
-  // Total value + 24h change
-  let totalValue = 0, totalValuePrev = 0, totalInvested = 0;
-  for (const { holding, value, change24h } of holdingsArr) {
-    if (value !== null) {
-      totalValue += value;
-      totalInvested += holding.totalCost || 0;
-      if (isFinite(change24h)) totalValuePrev += value / (1 + change24h / 100);
-      else totalValuePrev += value;
-    }
-  }
-
-  const tvEl = $('total-value');
-  if (hideValues) { tvEl.textContent = '••••••'; tvEl.classList.add('hidden-values'); }
-  else { tvEl.textContent = fmtUSD(totalValue); tvEl.classList.remove('hidden-values'); }
-
-  const badge = $('change-badge');
-  if (totalValuePrev > 0) {
-    const pctChg = ((totalValue - totalValuePrev) / totalValuePrev) * 100;
-    badge.className = 'change-badge' + (pctChg < 0 ? ' negative' : '');
-    badge.textContent = hideValues ? '—' : fmtPct(pctChg);
-    shareStats.change24h = pctChg;
-  } else {
-    badge.className = 'change-badge loading'; badge.textContent = '—';
-  }
-
-  // Privacy-safe stats for the share message (percentages + count only)
-  shareStats.assetCount = holdingsArr.length;
-  shareStats.topSymbol = holdingsArr[0]?.holding?.coin_symbol
-    ? holdingsArr[0].holding.coin_symbol.toUpperCase() : '';
-
-  // P&L
-  if (totalInvested > 0) {
-    const gain = totalValue - totalInvested;
-    const gainPct = (gain / totalInvested) * 100;
-    shareStats.allTimePct = gainPct;
-    $('pnl-invested').textContent = hideValues ? '••••' : fmtUSD(totalInvested);
-    const gainEl = $('pnl-gain');
-    gainEl.textContent = hideValues ? '••••' : `${gain >= 0 ? '+' : ''}${fmtUSD(gain)} (${fmtPct(gainPct)})`;
-    gainEl.className = 'pnl-val' + (gain >= 0 ? ' pos' : ' neg');
-    $('pnl-card').hidden = false;
-  }
-
-  // Top 5 holdings
-  const listEl = $('overview-holdings-list');
-  listEl.innerHTML = '';
-  const top5 = holdingsArr.slice(0, 5);
-  if (!top5.length) {
-    const e = document.createElement('p'); e.className = 'holdings-empty';
-    e.textContent = 'No holdings'; listEl.appendChild(e);
-  } else {
-    for (const { holding, value, change24h } of top5) {
-      listEl.appendChild(buildHoldingRow(holding, value, change24h, null, hideValues));
-    }
-  }
-
-  setText('last-synced-ov', syncedAt ? 'Synced ' + timeAgo(syncedAt) : '—');
-}
-
-// ── Holdings tab ──────────────────────────────────────────────────────────────
-
-function renderHoldingsTab() {
-  if (!cachedData) return;
-  const { transactions, wallets, settings, syncedAt } = cachedData;
-  const hideValues = !!(settings?.hideValues);
-  const walletId = $('wallet-filter').value;
-
-  let txs = transactions;
-  if (walletId !== 'all') txs = transactions.filter(t => String(t.wallet_id) === walletId);
-
-  const map = computeHoldings(txs);
-  const holdingsArr = buildHoldingsArr(map);
-
-  const listEl = $('all-holdings-list');
-  listEl.innerHTML = '';
-  setText('holdings-count', holdingsArr.length + ' asset' + (holdingsArr.length !== 1 ? 's' : ''));
-
-  if (!holdingsArr.length) {
-    const e = document.createElement('p'); e.className = 'holdings-empty';
-    e.textContent = 'No holdings'; listEl.appendChild(e);
-  } else {
-    for (const { holding, value, change24h } of holdingsArr) {
-      const pnlGain = isFinite(value) && holding.totalCost > 0 ? value - holding.totalCost : null;
-      const row = buildHoldingRow(holding, value, change24h, pnlGain, hideValues, true);
-      row.dataset.coinId = holding.coin_id;
-      listEl.appendChild(row);
-    }
-    // Fetch signals lazily and inject badges without blocking render
-    const isCrypto = id => !NON_CRYPTO_RE.test(id);
-    for (const { holding } of holdingsArr) {
-      if (!isCrypto(holding.coin_id)) continue;
-      fetchSignalForCoin(holding.coin_id).then(sig => {
-        const row = listEl.querySelector(`[data-coin-id="${holding.coin_id}"]`);
-        if (!row) return;
-        let badge = row.querySelector('.holding-signal');
-        if (!badge) { badge = document.createElement('span'); row.querySelector('.holding-right').appendChild(badge); }
-        badge.className = 'holding-signal ' + sig.sigClass;
-        badge.textContent = sig.signal;
-      }).catch(() => {});
-    }
-  }
-  setText('last-synced-h', syncedAt ? 'Synced ' + timeAgo(syncedAt) : '—');
-}
-
-function buildHoldingsArr(map) {
-  return Array.from(map.values()).map(holding => {
-    const p = cachedPrices[holding.coin_id];
-    const value = p?.usd != null ? holding.amount * p.usd : null;
-    return { holding, value, change24h: p?.usd_24h_change ?? null };
-  }).sort((a, b) => (b.value??-Infinity) - (a.value??-Infinity));
-}
-
-// ── Market tab ────────────────────────────────────────────────────────────────
-
-async function loadMarketTab() {
-  marketLoaded = true;
-  const [coins, fg] = await Promise.all([fetchMarketCoins(), fetchFearGreed()]);
-
-  // Fear & Greed
-  if (fg) {
-    const val = parseInt(fg.value, 10);
-    setText('fg-value', val);
-    setText('fg-label-text', fg.value_classification || '—');
-    $('fg-bar').style.width = val + '%';
-    $('fg-value').style.color = val < 30 ? '#f87171' : val < 50 ? '#fbbf24' : val < 75 ? '#4ade80' : '#00e676';
-  } else {
-    setText('fg-value', '—'); setText('fg-label-text', 'Unavailable');
-  }
-
-  // Coin list
-  const listEl = $('market-list');
-  listEl.innerHTML = '';
-  if (!coins.length) {
-    listEl.innerHTML = '<p class="holdings-empty">Unable to load market data</p>';
-    return;
-  }
-  for (const coin of coins) listEl.appendChild(buildMarketRow(coin));
-}
-
-// ── Main render ───────────────────────────────────────────────────────────────
-
-function readCache() {
-  return new Promise(r => ext.storage.local.get(STORAGE_KEY, x => r(x[STORAGE_KEY] || null)));
-}
-
-function hasTransactions(d) {
-  return !!(d && Array.isArray(d.transactions) && d.transactions.length);
-}
-
-/**
- * Ask any open walletlens.live tabs to push their localStorage into storage.
- * Returns true if at least one tab was messaged, false if none were open.
- */
+const hasTx = d => !!(d && Array.isArray(d.transactions) && d.transactions.length)
 function syncFromOpenTabs() {
   return new Promise(resolve => {
-    ext.tabs.query({ url: 'https://walletlens.live/*' }, tabs => {
-      if (!tabs?.length) return resolve(false);
-      Promise.all(
-        tabs.map(t => ext.tabs.sendMessage(t.id, { type: 'REQUEST_SYNC' }).catch(() => {}))
-      ).then(() => setTimeout(() => resolve(true), 700));
-    });
-  });
+    ext.tabs.query({ url: SITE + '/*' }, tabs => {
+      if (!tabs?.length) return resolve(false)
+      Promise.all(tabs.map(t => ext.tabs.sendMessage(t.id, { type: 'REQUEST_SYNC' }).catch(() => {}))).then(() => setTimeout(() => resolve(true), 700))
+    })
+  })
 }
-
-/**
- * Last-resort sync when there's no cached data and no site tab is open:
- * open walletlens.live in a background (inactive) tab so its content script
- * reads localStorage and pushes it into storage, then close that tab.
- * This is what lets the popup show the portfolio even when the user never
- * manually opened the site on this device. Resolves true once real data lands.
- */
+// No data on this device yet and no site tab open: open the site in a
+// background tab so its content script can sync, then close it.
 function fetchViaBackgroundTab(timeoutMs = 9000) {
   return new Promise(resolve => {
-    let settled = false;
-    let createdTabId = null;
-    let timer = null;
-
-    const onChanged = (changes, area) => {
-      if (area === 'local' && changes[STORAGE_KEY] && hasTransactions(changes[STORAGE_KEY].newValue)) {
-        finish(true);
-      }
-    };
-    function cleanup() {
-      ext.storage.onChanged.removeListener(onChanged);
-      if (timer) clearTimeout(timer);
-      if (createdTabId != null) ext.tabs.remove(createdTabId).catch(() => {});
-    }
-    function finish(val) {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      resolve(val);
-    }
-
-    ext.storage.onChanged.addListener(onChanged);
-    timer = setTimeout(() => finish(false), timeoutMs);
-
-    try {
-      ext.tabs.create({ url: SITE + '/', active: false }, tab => {
-        createdTabId = tab?.id ?? null;
-        if (createdTabId == null) finish(false);
-      });
-    } catch {
-      finish(false);
-    }
-  });
+    let done = false, tabId = null
+    const onChanged = (ch, area) => { if (area === 'local' && ch[STORAGE_KEY] && hasTx(ch[STORAGE_KEY].newValue)) finish(true) }
+    const finish = v => { if (done) return; done = true; ext.storage.onChanged.removeListener(onChanged); clearTimeout(timer); if (tabId != null) ext.tabs.remove(tabId).catch(() => {}); resolve(v) }
+    ext.storage.onChanged.addListener(onChanged)
+    const timer = setTimeout(() => finish(false), timeoutMs)
+    try { ext.tabs.create({ url: SITE + '/dashboard', active: false }, t => { tabId = t?.id ?? null; if (tabId == null) finish(false) }) } catch { finish(false) }
+  })
 }
 
-async function render() {
-  show('loading');
-  hide('no-data');
-  document.querySelectorAll('.tab-panel').forEach(p => p.hidden = true);
+// ── Boot ────────────────────────────────────────────────────────────────────
 
-  // 1) Read whatever is already cached — this works fully offline / with the
-  //    site closed, as long as it has been synced at least once before.
-  let stored = await readCache();
+async function boot() {
+  state.settings = await getSettings()
+  fillCurrencies()
+  applyHide()
+  if (state.settings.currency !== 'USD') state.rates = await fxRates()
+  await load()
+}
 
-  // 2) If the site is open in a tab, refresh from it so the popup is current.
-  const siteOpen = await syncFromOpenTabs();
-  if (siteOpen) stored = await readCache();
+async function load({ quiet = false } = {}) {
+  if (!quiet) { show('loading'); hide('no-data'); document.querySelectorAll('.tab').forEach(t => t.hidden = true); hide('nav') }
+  let data = await get(STORAGE_KEY)
+  if (await syncFromOpenTabs()) data = await get(STORAGE_KEY)
+  if (!hasTx(data)) { $('loading-caption').hidden = false; if (await fetchViaBackgroundTab()) data = await get(STORAGE_KEY); $('loading-caption').hidden = true }
+  if (!hasTx(data)) { hide('loading'); show('no-data'); return }
+  state.p = await loadPortfolio(state.wallet)
+  if (!state.p || !state.p.rows.length) { hide('loading'); show('no-data'); return }
+  if (state.wallet === 'all') await recordSnapshot(state.p.total)
+  hide('loading'); show('nav')
+  fillWallets(data.wallets)
+  go(state.tab)
+}
 
-  // 3) Still nothing? The site has never synced on this device. Pull the data
-  //    ourselves by briefly opening walletlens.live in a background tab, so the
-  //    portfolio shows even when the user hasn't manually opened the site.
-  if (!hasTransactions(stored)) {
-    const cap = $('loading-caption'); if (cap) cap.hidden = false;
-    stored = await fetchViaBackgroundTab().then(ok => (ok ? readCache() : stored));
-    if (cap) cap.hidden = true;
+function show(id) { $(id).hidden = false }
+function hide(id) { $(id).hidden = true }
+
+function go(tab) {
+  state.tab = tab
+  document.querySelectorAll('.tab').forEach(t => t.hidden = t.id !== 'tab-' + tab)
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab))
+  ;({ home: renderHome, holdings: renderHoldings, signals: renderSignals, market: renderMarket, alerts: renderAlerts })[tab]()
+  $('main').scrollTop = 0
+}
+document.querySelectorAll('#nav button').forEach(b => b.addEventListener('click', () => go(b.dataset.tab)))
+document.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => go(b.dataset.goto)))
+
+// ── Header ─────────────────────────────────────────────────────────────────
+
+function fillCurrencies() {
+  $('currency').innerHTML = CURRENCIES.map(([c, f]) => `<option value="${c}">${f} ${c}</option>`).join('')
+  $('currency').value = state.settings.currency
+}
+$('currency').addEventListener('change', async e => {
+  state.settings = await saveSettings({ currency: e.target.value })
+  state.rates = e.target.value === 'USD' ? { USD: 1 } : await fxRates()
+  go(state.tab)
+})
+function applyHide() {
+  document.body.classList.toggle('hide-values', !!state.settings.hideBalances)
+  $('btn-hide').querySelector('use').setAttribute('href', state.settings.hideBalances ? '#i-eyeoff' : '#i-eye')
+}
+async function setHide(v) {
+  state.settings = await saveSettings({ hideBalances: v })
+  applyHide()
+  if ($('hide-on')) $('hide-on').checked = v
+}
+$('btn-hide').addEventListener('click', () => setHide(!state.settings.hideBalances))
+$('btn-refresh').addEventListener('click', async () => {
+  const b = $('btn-refresh'); b.classList.add('spin'); b.disabled = true
+  state.signals = null; state.marketLoaded = false
+  await set('wl_price_cache_v2', null)
+  await load({ quiet: true })
+  b.classList.remove('spin'); b.disabled = false
+})
+$('btn-menu').addEventListener('click', e => { e.stopPropagation(); $('menu').hidden = !$('menu').hidden })
+document.addEventListener('click', () => { $('menu').hidden = true })
+$('menu').addEventListener('click', e => {
+  const act = e.target.dataset.act
+  if (act === 'open') open(SITE + '/dashboard')
+  if (act === 'import') openImport()
+  if (act === 'share') share('copy')
+  if (act === 'friend') tellFriend()
+  if (act === 'rate') open(STORE_URL + '/reviews')
+})
+function open(url) { ext.tabs.create({ url }); window.close() }
+function toast(t) { const x = $('toast'); x.textContent = t; x.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { x.hidden = true }, 2200) }
+
+// ── Home ───────────────────────────────────────────────────────────────────
+
+async function renderHome() {
+  const p = state.p
+  $('total').textContent = m(p.total); $('total').classList.add('money')
+  const day = $('day-chip')
+  day.className = 'chip' + (p.dayChange < 0 ? ' r' : '')
+  day.innerHTML = `${p.dayChange < 0 ? '▼' : '▲'} <span class="money">${m(Math.abs(p.dayChange))}</span> · ${pct(p.dayPct)} today`
+  const pc = $('pnl-chip')
+  if (p.pnl != null) { pc.hidden = false; pc.innerHTML = `P&amp;L <span class="money">${m(p.pnl, { sign: true })}</span> · ${pct(p.pnlPct, 1)}` } else pc.hidden = true
+  await drawHistory()
+
+  // Allocation by class
+  const byCls = {}
+  for (const r of p.rows) if (r.value > 0) byCls[r.cls] = (byCls[r.cls] || 0) + r.value
+  const parts = Object.entries(byCls).sort((a, b) => b[1] - a[1])
+  let off = 0
+  $('donut').innerHTML = parts.map(([c, v]) => { const share = v / p.total * 100; const s = `<circle cx="21" cy="21" r="15.9" fill="none" stroke="${CLASS_META[c][1]}" stroke-width="6" stroke-dasharray="${share} ${100 - share}" stroke-dashoffset="${-off}" transform="rotate(-90 21 21)"/>`; off += share; return s }).join('')
+    + `<text x="21" y="23.6" text-anchor="middle" font-family="Sora" font-weight="800" font-size="7.5" fill="#fff">${p.rows.length}</text>`
+  $('legend').innerHTML = parts.map(([c, v]) => `<div><i style="background:${CLASS_META[c][1]}"></i>${CLASS_META[c][0]}<b>${(v / p.total * 100).toFixed(0)}%</b></div>`).join('')
+
+  // Top movers: biggest moves today among what has a live price
+  const movers = p.rows.filter(r => r.value > 0 && isFinite(r.chg) && r.chg !== null).sort((a, b) => Math.abs(b.chg) - Math.abs(a.chg)).slice(0, 3)
+  const box = $('movers'); box.innerHTML = ''
+  ;(movers.length ? movers : p.rows.slice(0, 3)).forEach(r => box.appendChild(row(r)))
+  $('synced-home').textContent = 'Synced ' + ago(p.data.syncedAt)
+}
+
+async function drawHistory() {
+  const vals = await historyFor(state.range)
+  const svg = $('hist')
+  const note = $('hist-note')
+  if (vals.length < 2) {
+    svg.innerHTML = `<path d="M0 50 L320 50" stroke="rgba(255,255,255,.18)" stroke-dasharray="4 5" fill="none"/>`
+    note.hidden = false
+    return
   }
+  note.hidden = true
+  const up = vals[vals.length - 1] >= vals[0]
+  const d = sparkPath(vals, 320, 70, 6)
+  svg.innerHTML = `<path d="${d} L320 70 L0 70Z" fill="url(#${up ? 'sg' : 'sgr'})"/><path d="${d}" fill="none" stroke="${up ? '#34d399' : '#f87171'}" stroke-width="2.2" stroke-linejoin="round"/>`
+}
+document.querySelectorAll('#range button').forEach(b => b.addEventListener('click', () => {
+  state.range = b.dataset.r
+  document.querySelectorAll('#range button').forEach(x => x.classList.toggle('on', x === b))
+  drawHistory()
+}))
 
-  if (!hasTransactions(stored)) {
-    hide('loading'); show('no-data'); return;
+function ago(ts) {
+  if (!ts) return 'never'
+  const s = Math.floor((Date.now() - ts) / 1000)
+  if (s < 60) return 'just now'
+  if (s < 3600) return Math.floor(s / 60) + ' min ago'
+  if (s < 86400) return Math.floor(s / 3600) + ' h ago'
+  return Math.floor(s / 86400) + ' d ago'
+}
+
+// ── Holdings ───────────────────────────────────────────────────────────────
+
+function row(r, { withSpark = false } = {}) {
+  const h = r.h
+  const x = el('div', 'r click')
+  x.appendChild(icon(h, r.image))
+  const sub = r.cls === 'property' || r.cls === 'other' ? (r.cls === 'property' ? 'Property' : 'Other asset') : `${amount(h.amount)} ${esc((h.coin_symbol || '').toUpperCase())}`
+  x.appendChild(el('span', 'nm', `${esc(h.coin_name || h.coin_symbol)}<small class="money">${sub}</small>`))
+  if (withSpark) x.appendChild(spark(r.spark))
+  // Assets without a market (property, bonds, other) are valued at cost, and
+  // cash does not move: neither gets a P&L or a day change.
+  const atCost = state.p.prices[h.coin_id]?.estimated
+  let small
+  if (atCost) small = '<span class="mu">Valued at cost</span>'
+  else if (r.cls === 'cash') small = '<span class="mu">Cash</span>'
+  else {
+    const chg = r.chg == null || !isFinite(r.chg) ? '' : `<span class="${r.chg < 0 ? 'dn' : 'up'}">${pct(r.chg)}</span>`
+    const pnl = withSpark && r.pnl != null && Math.abs(r.pnl) >= 0.01 ? `<span class="${r.pnl < 0 ? 'dn' : 'up'} money">${m(r.pnl, { compact: true, sign: true })}</span>` : ''
+    small = [pnl, chg].filter(Boolean).join(' · ') || '<span class="mu">·</span>'
   }
+  x.appendChild(el('span', 'v', `<span class="money">${m(r.value, { compact: r.value >= 1e5 })}</span><small>${small}</small>`))
+  x.addEventListener('click', () => open(`${SITE}/asset/${encodeURIComponent(h.coin_id)}`))
+  return x
+}
 
-  cachedData = stored;
-  const { transactions, wallets, settings, syncedAt } = stored;
-  const hideValues = !!(settings?.hideValues);
+function fillWallets(wallets) {
+  const w = $('wallet')
+  const list = Array.isArray(wallets) ? wallets : []
+  w.innerHTML = '<option value="all">All wallets</option>' + list.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('')
+  w.value = state.wallet
+  w.hidden = list.length < 2
+}
+$('wallet').addEventListener('change', async e => { state.wallet = e.target.value; state.p = await loadPortfolio(state.wallet); renderHoldings() })
+document.querySelectorAll('#cls button').forEach(b => b.addEventListener('click', () => {
+  state.cls = b.dataset.c
+  document.querySelectorAll('#cls button').forEach(x => x.classList.toggle('on', x === b))
+  renderHoldings()
+}))
+const SORTS = { value: 'Sorted by value', change: 'Sorted by today’s move', pnl: 'Sorted by P&L' }
+$('sort').addEventListener('click', () => {
+  const keys = Object.keys(SORTS); state.sort = keys[(keys.indexOf(state.sort) + 1) % keys.length]
+  renderHoldings()
+})
 
-  const map = computeHoldings(transactions);
-  if (!map.size) { hide('loading'); show('no-data'); return; }
+function renderHoldings() {
+  const p = state.p
+  $('sort').textContent = SORTS[state.sort] + ' ▾'
+  let rows = p.rows.slice()
+  if (state.cls !== 'all') rows = rows.filter(r => state.cls === 'other' ? ['cash', 'property', 'other'].includes(r.cls) : r.cls === state.cls)
+  if (state.sort === 'change') rows.sort((a, b) => (b.chg ?? -1e9) - (a.chg ?? -1e9))
+  if (state.sort === 'pnl') rows.sort((a, b) => (b.pnl ?? -1e18) - (a.pnl ?? -1e18))
+  $('h-count').textContent = rows.length
+  const box = $('holdings'); box.innerHTML = ''
+  if (!rows.length) box.appendChild(el('p', 'empty', 'Nothing in this group yet.'))
+  rows.forEach(r => box.appendChild(row(r, { withSpark: true })))
+  $('synced-h').textContent = 'Synced ' + ago(p.data.syncedAt)
+}
 
-  // Populate wallet filter
-  const wf = $('wallet-filter');
-  wf.innerHTML = '<option value="all">All Wallets</option>';
-  if (Array.isArray(wallets) && wallets.length > 1) {
-    for (const w of wallets) {
-      const opt = document.createElement('option');
-      opt.value = String(w.id); opt.textContent = w.name;
-      wf.appendChild(opt);
+// ── Signals ────────────────────────────────────────────────────────────────
+
+async function renderSignals() {
+  const crypto = state.p.rows.filter(r => r.cls === 'crypto' && r.value > 0).slice(0, 10)
+  const box = $('signals')
+  if (!crypto.length) { box.innerHTML = '<p class="empty">Signals cover crypto holdings. Add a coin in WalletLens to see one here.</p>'; $('levels').innerHTML = ''; $('n-buy').textContent = $('n-sell').textContent = '0'; return }
+  if (!state.signals) {
+    box.innerHTML = '<div class="state" style="height:120px"><div class="spinner"></div></div>'
+    const out = []
+    // A few at a time, so a long list does not trip the free price API's limit.
+    for (let i = 0; i < crypto.length; i += 3) {
+      const batch = await Promise.all(crypto.slice(i, i + 3).map(async r => ({ r, s: signalFrom(await ohlc(r.h.coin_id, 30)) })))
+      out.push(...batch)
     }
+    state.signals = out
   }
-
-  // Populate TA coin selector from holdings
-  const taSelect = $('ta-coin-select');
-  taSelect.innerHTML = '<option value="">Select a coin…</option>';
-  for (const [id, h] of map) {
-    // Only crypto coins (non-crypto assets have no CoinGecko OHLC)
-    if (NON_CRYPTO_RE.test(id)) continue;
-    const opt = document.createElement('option');
-    opt.value = id;
-    opt.textContent = (h.coin_symbol||'').toUpperCase() + ' — ' + (h.coin_name||id);
-    taSelect.appendChild(opt);
-  }
-  taSelect.addEventListener('change', () => {
-    if (taSelect.value) loadTAForCoin(taSelect.value);
-  });
-
-  // Show overview tab
-  hide('loading');
-  show('tab-' + currentTab);
-
-  // Fetch prices for every asset class (crypto, stocks, metals, fiat, …)
-  cachedPrices = await fetchAllPrices(map);
-
-  const holdingsArr = buildHoldingsArr(map);
-  renderOverviewTab(holdingsArr, hideValues, syncedAt);
-  if (currentTab === 'holdings') renderHoldingsTab();
+  const list = state.signals.filter(x => x.s)
+  $('n-buy').textContent = list.filter(x => x.s.action === 'buy').length
+  $('n-sell').textContent = list.filter(x => x.s.action === 'sell').length
+  box.innerHTML = ''
+  if (!list.length) { box.innerHTML = '<p class="empty">Price history is not available right now. Try refresh in a minute.</p>'; return }
+  list.forEach(({ r, s }, i) => {
+    const x = el('div', 'r click')
+    x.appendChild(icon(r.h, r.image))
+    x.appendChild(el('span', 'nm', `${esc(r.h.coin_name)}<small>${esc(s.why)}</small>`))
+    x.appendChild(el('span', 'sig ' + s.action, s.action.toUpperCase()))
+    x.addEventListener('click', () => levels(r, s))
+    box.appendChild(x)
+    if (i === 0) levels(r, s)
+  })
+}
+function levels(r, s) {
+  const k = v => m(v, { compact: v >= 1e4 })
+  $('levels').innerHTML = `<div class="levels ${s.action === 'sell' ? 'sell' : ''}"><div class="levels-h"><span>${esc(r.h.coin_name)} · levels</span><span class="${s.action === 'sell' ? 'dn' : s.action === 'buy' ? 'up' : ''}">${s.action[0].toUpperCase() + s.action.slice(1)}</span></div>
+    <div class="levels-g"><div><span class="k">STOP</span><span class="dn">${k(s.stop)}</span></div>${s.tp.map((v, i) => `<div><span class="k">TP${i + 1}</span><span class="up">${k(v)}</span></div>`).join('')}</div></div>`
 }
 
-// ── Refresh button ────────────────────────────────────────────────────────────
+// ── Market ─────────────────────────────────────────────────────────────────
 
-const refreshBtn = $('btn-refresh');
-refreshBtn.addEventListener('click', async () => {
-  refreshBtn.classList.add('spinning'); refreshBtn.disabled = true;
-  marketLoaded = false; newsLoaded = false; signalCache.clear();
-  try {
-    await new Promise(r => {
-      ext.tabs.query({ url:'https://walletlens.live/*' }, tabs => {
-        if (!tabs?.length) return r();
-        Promise.all(tabs.map(t => ext.tabs.sendMessage(t.id, { type:'REQUEST_SYNC' }).catch(()=>{}))).then(() => setTimeout(r, 600));
-      });
-    });
-  } catch {}
-  await render();
-  if (currentTab === 'market') loadMarketTab();
-  refreshBtn.classList.remove('spinning'); refreshBtn.disabled = false;
-});
+async function renderMarket() {
+  if (state.marketLoaded) return
+  state.marketLoaded = true
+  const [fg, spx, gold, articles] = await Promise.all([fearGreed(), stockQuotes(['^spx']), metalPrice('XAU'), news()])
+  if (fg) {
+    $('fg-arc').setAttribute('stroke-dashoffset', String(132 - fg.now / 100 * 132))
+    $('fg-now').innerHTML = `<span class="${fg.now < 45 ? 'dn' : fg.now > 55 ? 'up' : ''}">${fg.now}</span> <span style="font-size:13px">${esc(fg.label)}</span>`
+    $('fg-past').textContent = [fg.yesterday != null && `Yesterday ${fg.yesterday}`, fg.week != null && `Last week ${fg.week}`].filter(Boolean).join(' · ')
+  } else $('fg-now').textContent = 'Unavailable'
+  const pr = state.p.prices
+  const tiles = [
+    ['BITCOIN', pr.bitcoin?.usd, pr.bitcoin?.chg],
+    ['ETHEREUM', pr.ethereum?.usd, pr.ethereum?.chg],
+    ['GOLD / OZ', gold, null],
+    ['S&P 500', spx['^spx']?.usd, spx['^spx']?.chg, true],
+  ]
+  $('majors').innerHTML = tiles.map(([n, v, c, pts]) => `<div class="tile"><span class="k">${n}</span><b>${v ? (pts ? v.toLocaleString('en-US', { maximumFractionDigits: 0 }) : m(v)) : '—'}</b><small class="${c < 0 ? 'dn' : 'up'}">${c == null ? '&nbsp;' : pct(c)}</small></div>`).join('')
 
-// ── Import panel ─────────────────────────────────────────────────────────────
-
-function showImportPanel() {
-  $('import-code-input').value = '';
-  $('import-error').hidden   = true;
-  $('import-success').hidden = true;
-  $('btn-import-apply').textContent = 'Import portfolio';
-  $('btn-import-apply').disabled = false;
-  $('import-panel').hidden = false;
-}
-
-function hideImportPanel() { $('import-panel').hidden = true; }
-
-$('btn-import').addEventListener('click', showImportPanel);
-$('btn-import-from-nodata').addEventListener('click', showImportPanel);
-$('btn-import-back').addEventListener('click', hideImportPanel);
-
-$('btn-import-apply').addEventListener('click', async () => {
-  const btn = $('btn-import-apply');
-  $('import-error').hidden   = true;
-  $('import-success').hidden = true;
-  btn.textContent = 'Importing…';
-  btn.disabled = true;
-  try {
-    const { txCount, walletCount } = await importFromBackupCode($('import-code-input').value);
-    $('import-success').textContent = `✅ Imported ${txCount} transactions · ${walletCount} wallets`;
-    $('import-success').hidden = false;
-    setTimeout(async () => {
-      hideImportPanel();
-      cachedData = null; cachedPrices = {}; marketLoaded = false; newsLoaded = false; signalCache.clear();
-      await render();
-    }, 1200);
-  } catch (err) {
-    $('import-error').textContent = '⚠️ ' + err.message;
-    $('import-error').hidden = false;
-    btn.textContent = 'Import portfolio';
-    btn.disabled = false;
+  // Headlines that mention something you hold come first.
+  const names = state.p.rows.flatMap(r => [r.h.coin_name, (r.h.coin_symbol || '').toUpperCase()]).filter(s => s && s.length > 2)
+  const mine = a => names.find(n => new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(a.title || ''))
+  const ranked = articles.map(a => ({ a, hit: mine(a) })).sort((x, y) => (y.hit ? 1 : 0) - (x.hit ? 1 : 0)).slice(0, 8)
+  const box = $('news'); box.innerHTML = ''
+  if (!ranked.length) box.innerHTML = '<p class="empty">No headlines right now.</p>'
+  for (const { a, hit } of ranked) {
+    const link = el('a', '', `${esc(a.title)}<small>${hit ? `<span class="tag">${esc(hit)}</span> · ` : ''}${esc(a.source || a.publisher || '')}${a.publishedAt || a.date ? ' · ' + ago(new Date(a.publishedAt || a.date).getTime()) : ''}</small>`)
+    link.addEventListener('click', () => { const u = a.url || a.link; if (typeof u === 'string' && /^https?:\/\//i.test(u)) open(u) })
+    box.appendChild(link)
   }
-});
-
-// ── Open site buttons ─────────────────────────────────────────────────────────
-
-function openURL(url) { ext.tabs.create({ url }); window.close(); }
-
-$('btn-open-site').addEventListener('click', () => openURL(SITE));
-
-document.querySelectorAll('.nav-btn').forEach(btn => {
-  btn.addEventListener('click', () => openURL(SITE + btn.dataset.path));
-});
-
-// Wallet filter change
-$('wallet-filter').addEventListener('change', renderHoldingsTab);
-
-// ── Share / marketing ─────────────────────────────────────────────────────────
-
-// Referral link — every shared link is attributed so growth is measurable.
-function shareLink(campaign) {
-  return `${SITE}/?ref=ext&utm_source=extension&utm_medium=share&utm_campaign=${campaign}`;
 }
 
-// Privacy-safe message: percentages and asset count only — never a balance.
-function buildShareText() {
-  const lines = [];
-  const a = shareStats.allTimePct, d = shareStats.change24h;
-  if (isFinite(a) && a !== null) {
-    lines.push(`My portfolio is ${a >= 0 ? 'up' : 'down'} ${Math.abs(a).toFixed(1)}% all-time 📊`);
-  } else if (isFinite(d) && d !== null) {
-    lines.push(`My portfolio moved ${d >= 0 ? '+' : ''}${d.toFixed(1)}% in 24h 📊`);
+// ── Alerts ─────────────────────────────────────────────────────────────────
+
+function renderAlerts() {
+  const s = state.settings
+  const list = $('alert-list'); list.innerHTML = ''
+  for (const a of s.alerts) {
+    const x = el('div', 'r')
+    x.appendChild(letter({ coin_id: a.coinId.includes(':') ? a.coinId : 'x', coin_symbol: a.symbol }))
+    x.appendChild(el('span', 'nm', `${esc(a.name)} ${a.kind === 'above' ? 'above' : 'below'} ${m(a.usd)}<small>${a.on ? 'Price alert' : a.firedAt ? 'Fired ' + ago(a.firedAt) : 'Off'}</small>`))
+    const tog = el('label', 'tog', `<input type="checkbox" ${a.on ? 'checked' : ''}><i></i>`)
+    tog.querySelector('input').addEventListener('change', async e => { a.on = e.target.checked; state.settings = await saveSettings({ alerts: s.alerts }); ping() })
+    const del = el('button', 'del', '<svg><use href="#i-trash"/></svg>'); del.title = 'Delete alert'
+    del.addEventListener('click', async () => { state.settings = await saveSettings({ alerts: s.alerts.filter(y => y.id !== a.id) }); renderAlerts() })
+    x.append(tog, del)
+    list.appendChild(x)
+  }
+  $('move-pct').value = String(s.moveAlert.pct)
+  $('move-on').checked = s.moveAlert.on
+  $('digest-hour').innerHTML = Array.from({ length: 24 }, (_, h) => `<option value="${h}">${String(h).padStart(2, '0')}:00</option>`).join('')
+  $('digest-hour').value = String(s.digest.hour)
+  $('digest-on').checked = s.digest.on
+  $('badge-on').checked = s.badge
+  $('hide-on').checked = s.hideBalances
+}
+const ping = () => ext.runtime.sendMessage({ type: 'CHECK_NOW' }).catch?.(() => {})
+$('move-on').addEventListener('change', async e => { state.settings = await saveSettings({ moveAlert: { ...state.settings.moveAlert, on: e.target.checked } }) })
+$('move-pct').addEventListener('change', async e => { state.settings = await saveSettings({ moveAlert: { ...state.settings.moveAlert, pct: +e.target.value } }) })
+$('digest-on').addEventListener('change', async e => { state.settings = await saveSettings({ digest: { ...state.settings.digest, on: e.target.checked } }) })
+$('digest-hour').addEventListener('change', async e => { state.settings = await saveSettings({ digest: { ...state.settings.digest, hour: +e.target.value, lastDay: '' } }) })
+$('badge-on').addEventListener('change', async e => {
+  state.settings = await saveSettings({ badge: e.target.checked })
+  if (!e.target.checked) ext.action.setBadgeText({ text: '' }); else ping()
+})
+$('hide-on').addEventListener('change', e => setHide(e.target.checked))
+
+// New price alert
+$('btn-new-alert').addEventListener('click', () => {
+  const opts = state.p.rows.filter(r => state.p.prices[r.h.coin_id]?.usd > 0 && !state.p.prices[r.h.coin_id]?.estimated)
+  const extra = ['bitcoin', 'ethereum'].filter(id => !opts.find(r => r.h.coin_id === id) && state.p.prices[id])
+  $('af-asset').innerHTML = opts.map(r => `<option value="${esc(r.h.coin_id)}">${esc(r.h.coin_name)} (${esc((r.h.coin_symbol || '').toUpperCase())})</option>`).join('')
+    + extra.map(id => `<option value="${id}">${id === 'bitcoin' ? 'Bitcoin (BTC)' : 'Ethereum (ETH)'}</option>`).join('')
+  $('af-cur').textContent = state.settings.currency
+  $('alert-form').hidden = false; $('btn-new-alert').hidden = true
+  showNow()
+})
+const rate = () => state.settings.currency === 'USD' ? 1 : (state.rates[state.settings.currency] || 1)
+function showNow() {
+  const id = $('af-asset').value, p = state.p.prices[id]?.usd
+  $('af-now').textContent = p ? `Now ${m(p)}` : ''
+  if (p && !$('af-price').value) $('af-price').placeholder = (p * rate()).toFixed(p * rate() >= 100 ? 0 : 4)
+}
+$('af-asset').addEventListener('change', () => { $('af-price').value = ''; showNow() })
+$('af-cancel').addEventListener('click', () => { $('alert-form').hidden = true; $('btn-new-alert').hidden = false })
+$('alert-form').addEventListener('submit', async e => {
+  e.preventDefault()
+  const id = $('af-asset').value, v = parseFloat($('af-price').value)
+  if (!id || !(v > 0)) return
+  const r = state.p.rows.find(x => x.h.coin_id === id)
+  const name = r ? r.h.coin_name : id === 'bitcoin' ? 'Bitcoin' : 'Ethereum'
+  const symbol = r ? (r.h.coin_symbol || '').toUpperCase() : id === 'bitcoin' ? 'BTC' : 'ETH'
+  const alert = { id: Date.now().toString(36), kind: $('af-kind').value, coinId: id, symbol, name, usd: v / rate(), on: true, firedAt: 0 }
+  state.settings = await saveSettings({ alerts: [...state.settings.alerts, alert] })
+  $('alert-form').reset(); $('alert-form').hidden = true; $('btn-new-alert').hidden = false
+  renderAlerts(); toast('Alert saved'); ping()
+})
+
+// ── Import ─────────────────────────────────────────────────────────────────
+
+function openImport() { $('import-code').value = ''; hide('import-error'); hide('import-ok'); show('import') }
+$('btn-import-nodata').addEventListener('click', openImport)
+$('import-close').addEventListener('click', () => hide('import'))
+$('btn-open-site').addEventListener('click', () => open(SITE + '/dashboard'))
+
+async function gunzipB64(b64) {
+  const bin = atob(b64), bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  const ds = new DecompressionStream('gzip'), w = ds.writable.getWriter()
+  w.write(bytes); w.close()
+  const reader = ds.readable.getReader(), chunks = []; let total = 0
+  for (;;) {
+    const { done, value } = await reader.read(); if (done) break
+    total += value.length
+    if (total > 10 * 1024 * 1024) { reader.cancel(); throw new Error('Backup too large to decompress.') }
+    chunks.push(value)
+  }
+  const out = new Uint8Array(total); let o = 0; for (const c of chunks) { out.set(c, o); o += c.length }
+  return new TextDecoder().decode(out)
+}
+async function importCode(raw) {
+  const code = (raw || '').trim().replace(/\s+/g, '')
+  if (!code) throw new Error('Paste a backup code first.')
+  let json
+  if (code.startsWith('WL3-') || code.startsWith('WL2-')) {
+    try { json = await gunzipB64(code.slice(4)) } catch { throw new Error('Could not read the code. Make sure you copied all of it.') }
   } else {
-    lines.push('I track my whole net worth — crypto, stocks & gold — in one place 📊');
+    try { json = decodeURIComponent(escape(atob(code.startsWith('WL1-') ? code.slice(4) : code))) } catch { throw new Error('Could not read the code. Make sure you copied all of it.') }
   }
-  lines.push('Free, private, no account — data never leaves my device. Tracked with WalletLens 👇');
-  return lines.join('\n');
-}
-
-function flashCopied() {
-  const el = $('share-copied');
-  if (!el) return;
-  el.hidden = false;
-  setTimeout(() => { el.hidden = true; }, 2200);
-}
-
-async function doShare(channel) {
-  const text = buildShareText();
-  const url  = shareLink('portfolio_share');
-  if (channel === 'copy') {
-    try { await navigator.clipboard.writeText(`${text}\n${url}`); flashCopied(); }
-    catch { /* clipboard blocked — ignore */ }
-    return;
+  let parsed; try { parsed = JSON.parse(json) } catch { throw new Error('The backup data is incomplete.') }
+  let transactions, wallets = [], settings = {}
+  if (parsed?.v === 3) {
+    if (!Array.isArray(parsed.txs)) throw new Error('No transactions found in this code.')
+    transactions = parsed.txs.map(tx => ({ coin_image: '', category: 'crypto', ...tx }))
+    wallets = Array.isArray(parsed.ws) ? parsed.ws : []
+    if (parsed.st && typeof parsed.st === 'object') settings = parsed.st
+  } else {
+    if (!parsed?.data || typeof parsed.data !== 'object') throw new Error('The backup data is incomplete.')
+    try {
+      transactions = JSON.parse(parsed.data.crypto_tracker_transactions || '[]')
+      if (parsed.data.crypto_tracker_wallets) wallets = JSON.parse(parsed.data.crypto_tracker_wallets)
+      if (parsed.data.wl_settings) settings = JSON.parse(parsed.data.wl_settings)
+    } catch { throw new Error('The transactions in this code are malformed.') }
   }
-  let target;
-  if (channel === 'x')        target = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-  else if (channel === 'whatsapp') target = `https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`;
-  else if (channel === 'telegram') target = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
-  if (target) openURL(target);
+  if (!Array.isArray(transactions)) throw new Error('No transactions found in this code.')
+  await set(STORAGE_KEY, { transactions, wallets, settings, syncedAt: Date.now() })
+  return { txCount: transactions.length, walletCount: wallets.length }
+}
+$('import-apply').addEventListener('click', async () => {
+  const b = $('import-apply'); hide('import-error'); hide('import-ok'); b.textContent = 'Importing…'; b.disabled = true
+  try {
+    const { txCount, walletCount } = await importCode($('import-code').value)
+    $('import-ok').textContent = `Imported ${txCount} transactions and ${walletCount} wallets.`; show('import-ok')
+    setTimeout(async () => { hide('import'); state.signals = null; state.marketLoaded = false; await load(); ping() }, 1000)
+  } catch (err) {
+    $('import-error').textContent = err.message; show('import-error')
+  }
+  b.textContent = 'Import portfolio'; b.disabled = false
+})
+
+// ── Share (percentages only, never a balance) ───────────────────────────────
+
+const shareLink = c => `${SITE}/?ref=ext&utm_source=extension&utm_medium=share&utm_campaign=${c}`
+function shareText() {
+  const p = state.p
+  const line = p?.pnlPct != null ? `My portfolio is ${p.pnlPct >= 0 ? 'up' : 'down'} ${Math.abs(p.pnlPct).toFixed(1)}% all time 📊`
+    : p ? `My portfolio moved ${pct(p.dayPct, 1)} today 📊` : 'I track my whole net worth in one place 📊'
+  return `${line}\nFree, private, no account. Tracked with WalletLens 👇`
+}
+async function share(ch) {
+  const text = shareText(), url = shareLink('portfolio_share')
+  if (ch === 'copy') { try { await navigator.clipboard.writeText(`${text}\n${url}`); toast('Copied to clipboard') } catch {} return }
+  const t = { x: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, whatsapp: `https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`, telegram: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}` }[ch]
+  if (t) open(t)
+}
+document.querySelectorAll('[data-share]').forEach(b => b.addEventListener('click', () => share(b.dataset.share)))
+async function tellFriend() {
+  const url = shareLink('tell_friend')
+  const text = 'A free, private net worth tracker: crypto, stocks, gold and cash in one place, no account. It lives in your browser toolbar too 👇'
+  try { await navigator.clipboard.writeText(`${text}\n${url}`) } catch {}
+  open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`)
 }
 
-document.querySelectorAll('.share-btn').forEach(btn => {
-  btn.addEventListener('click', () => doShare(btn.dataset.share));
-});
-
-// "Tell a friend" — promotes the free extension itself (top-of-funnel growth).
-$('btn-tell-friend')?.addEventListener('click', async () => {
-  const url = `${SITE}/?ref=ext&utm_source=extension&utm_medium=share&utm_campaign=tell_friend`;
-  const text = 'Found a free, private net-worth tracker — crypto, stocks, gold & cash in one dashboard, no account needed. There\'s a browser extension too 👇';
-  try { await navigator.clipboard.writeText(`${text}\n${url}`); flashCopied(); }
-  catch {}
-  openURL(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`);
-});
-
-// ── Boot ──────────────────────────────────────────────────────────────────────
-
-render().catch(err => {
-  console.error('[WalletLens ext]', err);
-  hide('loading'); show('no-data');
-});
+boot().catch(err => { console.error('[WalletLens]', err); hide('loading'); show('no-data') })
