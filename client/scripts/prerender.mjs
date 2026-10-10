@@ -21,6 +21,7 @@ import { COMPARISONS } from '../src/data/comparisons.js'
 import { PRICE_ASSETS } from '../src/data/priceAssets.js'
 import { AR_FEATURES, AR_LANDING, AR_COMPARISONS, AR_VS } from '../src/data/arabic.js'
 import { AR_POSTS } from '../src/data/arabicBlog.js'
+import { buildLandings, LANDING_ROUTES } from './landings/build.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, '..', 'dist')
@@ -2116,7 +2117,7 @@ ${zkStepsEn.map(x => `<li>${x}</li>`).join('\n')}
 
 <h2>Zakat on a live portfolio, not a snapshot</h2>
 <p>A calculator gives you one number on one day. Zakat needs a <strong>full year</strong> — the hawl — and the value that matters is the one on your due date. <a href="https://walletlens.live">WalletLens</a> values your holdings at live prices, tracks the hawl for you, and reminds you a month before, a week before, and on the day. The reminder carries a date only, never an amount.</p>
-<p><a href="/dashboard">Open the free portfolio tracker &rarr;</a> · <a href="/ar/zakat-calculator">&#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</a> · <a href="/rebalancing-calculator">Rebalancing calculator</a></p>
+<p><a href="/dashboard">Open the free portfolio tracker &rarr;</a> · <a href="/zakat/">Zakat tracker in 6 languages</a> · <a href="/portfolio-guardian/">Portfolio Guardian</a> · <a href="/ar/zakat-calculator">&#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</a> · <a href="/rebalancing-calculator">Rebalancing calculator</a></p>
 
 <p><em>This is a calculation tool, not a fatwa. Rulings differ between schools and scholars, particularly on crypto and on shares.</em></p>
 
@@ -2184,7 +2185,7 @@ write('/ar/zakat-calculator', buildPage({
 
 <h2>&#1586;&#1603;&#1575;&#1577; &#1605;&#1581;&#1601;&#1592;&#1577; &#1581;&#1610;&#1617;&#1577;&#1548; &#1604;&#1575; &#1604;&#1602;&#1591;&#1577; &#1608;&#1575;&#1581;&#1583;&#1577;</h2>
 <p>&#1575;&#1604;&#1581;&#1575;&#1587;&#1576;&#1577; &#1578;&#1593;&#1591;&#1610;&#1603; &#1585;&#1602;&#1605;&#1611;&#1575; &#1608;&#1575;&#1581;&#1583;&#1611;&#1575; &#1601;&#1610; &#1610;&#1608;&#1605; &#1608;&#1575;&#1581;&#1583;&#1548; &#1608;&#1575;&#1604;&#1586;&#1603;&#1575;&#1577; &#1578;&#1581;&#1578;&#1575;&#1580; &#1581;&#1608;&#1604;&#1575;&#1611; &#1603;&#1575;&#1605;&#1604;&#1575;&#1611;. <a href="https://walletlens.live">WalletLens</a> &#1610;&#1602;&#1608;&#1617;&#1605; &#1605;&#1605;&#1578;&#1604;&#1603;&#1575;&#1578;&#1603; &#1576;&#1575;&#1604;&#1571;&#1587;&#1593;&#1575;&#1585; &#1575;&#1604;&#1581;&#1610;&#1617;&#1577;&#1548; &#1608;&#1610;&#1578;&#1578;&#1576;&#1593; &#1575;&#1604;&#1581;&#1608;&#1604; &#1593;&#1606;&#1603;&#1548; &#1608;&#1610;&#1584;&#1603;&#1617;&#1585;&#1603; &#1602;&#1576;&#1604; &#1578;&#1605;&#1575;&#1605;&#1607; &#1576;&#1588;&#1607;&#1585; &#1608;&#1576;&#1571;&#1587;&#1576;&#1608;&#1593; &#1608;&#1601;&#1610; &#1610;&#1608;&#1605;&#1607;. &#1608;&#1575;&#1604;&#1578;&#1584;&#1603;&#1610;&#1585; &#1610;&#1581;&#1605;&#1604; &#1578;&#1575;&#1585;&#1610;&#1582;&#1611;&#1575; &#1601;&#1602;&#1591; &#1608;&#1604;&#1575; &#1610;&#1581;&#1605;&#1604; &#1605;&#1576;&#1604;&#1594;&#1611;&#1575; &#1571;&#1576;&#1583;&#1611;&#1575;.</p>
-<p><a href="/dashboard">&#1575;&#1601;&#1578;&#1581; &#1575;&#1604;&#1605;&#1578;&#1578;&#1576;&#1593; &#1575;&#1604;&#1605;&#1580;&#1575;&#1606;&#1610; &#8592;</a> · <a href="/zakat-calculator">English</a></p>
+<p><a href="/dashboard">&#1575;&#1601;&#1578;&#1581; &#1575;&#1604;&#1605;&#1578;&#1578;&#1576;&#1593; &#1575;&#1604;&#1605;&#1580;&#1575;&#1606;&#1610; &#8592;</a> · <a href="/ar/zakat/">&#1578;&#1591;&#1576;&#1610;&#1602; &#1575;&#1604;&#1586;&#1603;&#1575;&#1577;</a> · <a href="/ar/portfolio-guardian/">&#1581;&#1575;&#1585;&#1587; &#1575;&#1604;&#1605;&#1581;&#1601;&#1592;&#1577;</a> · <a href="/zakat-calculator">English</a></p>
 
 <p><em>&#1607;&#1584;&#1607; &#1571;&#1583;&#1575;&#1577; &#1581;&#1587;&#1575;&#1576; &#1604;&#1575; &#1601;&#1578;&#1608;&#1609;. &#1578;&#1582;&#1578;&#1604;&#1601; &#1575;&#1604;&#1571;&#1602;&#1608;&#1575;&#1604; &#1576;&#1610;&#1606; &#1575;&#1604;&#1605;&#1584;&#1575;&#1607;&#1576; &#1608;&#1575;&#1604;&#1593;&#1604;&#1605;&#1575;&#1569;.</em></p>
 
@@ -2495,6 +2496,12 @@ write('/ecosystem', buildPage({
   ],
 }))
 
+// ── Zakat and Portfolio Guardian landing pages, six languages each ───────────
+// Self contained premium pages (see scripts/landings/). They carry their own
+// head, hreflang cluster and JSON-LD, so they are written as is, not through
+// buildPage.
+for (const l of buildLandings()) write(l.path.replace(/\/$/, ''), l.html)
+
 // ── sitemap.xml ────────────────────────────────────────────────────────────
 // Only list pages with prerendered content and their own canonical tags.
 // App routes (/dashboard, /whales, /alpha, etc.) are intentionally excluded:
@@ -2547,6 +2554,7 @@ const sitemapUrls = [
   ...COMPARISONS.map(c => urlEntry({ loc: `${ORIGIN}/vs/${c.slug}/`, lastmod: TODAY, changefreq: 'monthly', priority: '0.75' })),
   ...GLOSSARY.map(t => urlEntry({ loc: `${ORIGIN}/learn/${t.slug}/`, lastmod: TODAY, changefreq: 'monthly', priority: '0.6' })),
   ...AR_ROUTES.map(p => urlEntry({ loc: ORIGIN + withSlash(p), lastmod: TODAY, changefreq: 'monthly', priority: '0.85' })),
+  ...LANDING_ROUTES.map(p => urlEntry({ loc: ORIGIN + p, lastmod: TODAY, changefreq: 'monthly', priority: '0.9' })),
   // Top track pages — the only indexed asset pages; rest stay noindex.
   ...ALL_TRACK_ASSETS.filter(c => TOP_INDEXED_SLUGS.has(c.slug)).map(c =>
     urlEntry({ loc: `${ORIGIN}/track/${c.slug}/`, lastmod: TODAY, changefreq: 'weekly', priority: '0.8' })),

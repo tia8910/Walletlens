@@ -1,4 +1,4 @@
-# WalletLens Portfolio Browser Extension
+# WalletLens Browser Extension (2.0)
 
 A Manifest V3 browser extension for [WalletLens](https://walletlens.live) that shows your crypto portfolio summary — total value, 24h change, and top holdings — directly from the browser toolbar. It syncs your portfolio data from the WalletLens app and works even when the WalletLens tab is closed.
 
@@ -42,10 +42,11 @@ A Manifest V3 browser extension for [WalletLens](https://walletlens.live) that s
 
 | Permission | Why |
 |---|---|
-| `storage` | Save portfolio data locally so the popup works without an open tab |
-| `alarms` | Trigger periodic re-syncs every 5 minutes |
-| `https://walletlens.live/*` | Read portfolio data from localStorage on the WalletLens site |
-| `https://api.coingecko.com/*` | Fetch live coin prices for the popup display |
+| `storage` | Keep the portfolio, settings, alerts and a daily net worth snapshot in the browser |
+| `alarms` | Check every 15 minutes (icon badge, snapshot, alerts) and re-sync an open site tab every 5 minutes |
+| `notifications` | Price, portfolio move and morning summary alerts the user turns on |
+| `https://walletlens.live/*` | Read the portfolio the user keeps on walletlens.live |
+| Price hosts (CoinGecko, Stooq, gold-api, open.er-api, alternative.me, the WalletLens proxy) | Public prices, exchange rates and the Fear and Greed index, by asset id only |
 
 ---
 
