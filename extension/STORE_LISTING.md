@@ -10,7 +10,7 @@
 
 ## Name (max 75, from manifest.json `name`)
 
-WalletLens Investment Manager & Net Worth Tracker
+WalletLens Investment Manager & Networth Tracker
 
 ## Summary (max 132, from manifest.json `description`)
 
