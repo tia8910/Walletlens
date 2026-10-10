@@ -4,6 +4,12 @@
 /airdrop /    301
 /airdrop/ /   301
 
+# Short and guessable names for the Chrome extension page.
+/extension        /chrome-extension/ 301
+/extension/       /chrome-extension/ 301
+/browser-extension /chrome-extension/ 301
+/browser-extension/ /chrome-extension/ 301
+
 # /asset/:coinId is the target of every price alert, and it is the one
 # notification destination that cannot have a prerendered shell: the id is a
 # holding, not a fixed route. Tapping an alert is a cold navigation, so without

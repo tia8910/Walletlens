@@ -7,6 +7,10 @@ import { isMsStore } from '../msStore'
 export const EXTENSION_URL =
   'https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn'
 
+// The extension's own page on the site (a static file in public/), which
+// explains it in full before anyone is sent to the store.
+export const EXTENSION_PAGE = '/chrome-extension/'
+
 // Detect the browser so the label matches what the user sees ("Add to Chrome"
 // vs "Add to Edge"). Returns { canInstall, label, store }.
 function detectBrowser() {
@@ -91,7 +95,11 @@ export default function InstallExtension({ variant = 'button', source = 'unknown
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 700, color: '#e2f5ea', fontSize: '0.92rem' }}>Get the WalletLens extension</div>
             <div style={{ color: 'var(--text-muted, #94a3b8)', fontSize: '0.78rem' }}>
-              See your portfolio from the toolbar — no need to open the site.
+              See your portfolio from the toolbar — no need to open the site.{' '}
+              <a href={EXTENSION_PAGE} onClick={() => track('extension_page_click', { source })}
+                style={{ color: '#4ade80', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                Learn more ›
+              </a>
             </div>
           </div>
         </div>

@@ -2509,6 +2509,8 @@ const STATIC_ROUTES = [
   { path: '/add-holdings-by-voice', changefreq: 'monthly', priority: '0.9' },
   { path: '/export-portfolio-to-excel', changefreq: 'monthly', priority: '0.9' },
   { path: '/crypto-portfolio-tax-report', changefreq: 'monthly', priority: '0.9' },
+  // A static page in public/, not prerendered here, but indexable all the same.
+  { path: '/chrome-extension', changefreq: 'monthly', priority: '0.9' },
   { path: '/blog',    changefreq: 'weekly',  priority: '0.9' },
   { path: '/market-index', changefreq: 'daily', priority: '0.9' },
   { path: '/fear-and-greed-index', changefreq: 'daily', priority: '0.9' },

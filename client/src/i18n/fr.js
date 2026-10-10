@@ -207,6 +207,8 @@ export default {
     navMarket: 'Marché',
     navTransactions: 'Transactions',
     about: 'À propos',
+    chromeExtension: 'Extension Chrome',
+    extLearnMore: 'En savoir plus',
     blog: 'Blog',
     privacy: 'Politique de confidentialité',
     terms: 'Conditions',

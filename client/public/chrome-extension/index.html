@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<script>
+// Microsoft Store edition (see src/msStore.js): it may not promote another
+// store (policy 10.1.5), so the Store app goes straight to the app instead.
+(function () {
+  try {
+    var q = new URLSearchParams(location.search).get('store') === 'msstore'
+    var s = localStorage.getItem('wl_store') === 'msstore'
+    if (q || s) { try { localStorage.setItem('wl_store', 'msstore') } catch (e) {} location.replace('/dashboard' + location.search) }
+  } catch (e) {}
+})()
+</script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>WalletLens Chrome Extension: Net Worth &amp; Portfolio Tracker</title>
+<meta name="description" content="Free Chrome extension that shows your whole net worth in the toolbar: crypto, stocks, gold and cash, live P&amp;L, signals and news. No account, data stays private.">
+<meta name="keywords" content="net worth chrome extension, portfolio tracker chrome extension, crypto portfolio tracker extension, stock portfolio tracker extension, crypto price extension, net worth tracker, WalletLens extension">
+<link rel="canonical" href="https://walletlens.live/chrome-extension/">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta name="theme-color" content="#0a0b0d">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="WalletLens">
+<meta property="og:title" content="WalletLens Chrome Extension: Net Worth &amp; Portfolio Tracker">
+<meta property="og:description" content="Your whole net worth in your browser toolbar: crypto, stocks, gold and cash, live. Free, no account, private.">
+<meta property="og:url" content="https://walletlens.live/chrome-extension/">
+<meta property="og:image" content="https://walletlens.live/og-image.png">
+<meta property="og:image:alt" content="The WalletLens extension popup showing total net worth and top holdings">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="WalletLens Chrome Extension: Net Worth &amp; Portfolio Tracker">
+<meta name="twitter:description" content="Your whole net worth in your browser toolbar: crypto, stocks, gold and cash, live. Free, no account, private.">
+<meta name="twitter:image" content="https://walletlens.live/og-image.png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="alternate" type="text/plain" title="LLM summary" href="https://walletlens.live/llms.txt">
+<link rel="preload" href="/fonts/sora-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[
+{"@type":"Organization","@id":"https://walletlens.live/#org","name":"WalletLens","url":"https://walletlens.live/","logo":"https://walletlens.live/icon-512.png","sameAs":["https://play.google.com/store/apps/details?id=live.walletlens.twa","https://chromewebstore.google.com/detail/ajmjdeobjjmabgonhaeaaehoepfafhbn","https://github.com/tia8910/walletlens"]},
+{"@type":"SoftwareApplication","@id":"https://walletlens.live/chrome-extension/#extension","name":"WalletLens: Net Worth & Portfolio Tracker (Chrome extension)","alternateName":["WalletLens extension","WalletLens Chrome extension"],"url":"https://walletlens.live/chrome-extension/","installUrl":"https://chromewebstore.google.com/detail/ajmjdeobjjmabgonhaeaaehoepfafhbn","downloadUrl":"https://chromewebstore.google.com/detail/ajmjdeobjjmabgonhaeaaehoepfafhbn","applicationCategory":"BrowserApplication","applicationSubCategory":"FinanceApplication","operatingSystem":"Chrome, Microsoft Edge, Brave, Opera, Arc (any Chromium browser on Windows, macOS, Linux, ChromeOS)","browserRequirements":"Requires a Chromium-based browser that installs from the Chrome Web Store","softwareVersion":"1.5.3","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@id":"https://walletlens.live/#org"},"isRelatedTo":{"@type":"WebApplication","name":"WalletLens","url":"https://walletlens.live/dashboard/"},"permissions":"storage, plus access to walletlens.live and public price and market data services","image":"https://walletlens.live/og-image.png","featureList":["Total net worth and 24 hour change in the browser toolbar","Profit and loss per asset with coin and company logos","Top holdings and the full holdings list","Crypto, stocks, ETFs, gold, silver, cash, bonds and property in one number","Market overview and the Fear and Greed index","Technical analysis tab with a clear read per holding","Market news inside the popup","Syncs with walletlens.live on its own, works with the site closed","Import a backup code to sync from another device","Share performance as a percentage, never the balance","No account, no API keys, no exchange or bank login","No analytics or telemetry inside the extension"]},
+{"@type":"WebPage","@id":"https://walletlens.live/chrome-extension/","url":"https://walletlens.live/chrome-extension/","name":"WalletLens Chrome Extension: Net Worth & Portfolio Tracker","description":"Free Chrome extension that shows your whole net worth in the toolbar: crypto, stocks, gold and cash, live P&L, signals and news. No account, data stays private.","inLanguage":"en","datePublished":"2026-10-10","dateModified":"2026-10-10","isPartOf":{"@type":"WebSite","url":"https://walletlens.live/","name":"WalletLens"},"about":{"@id":"https://walletlens.live/chrome-extension/#extension"},"mainEntity":{"@id":"https://walletlens.live/chrome-extension/#extension"},"primaryImageOfPage":"https://walletlens.live/og-image.png","speakable":{"@type":"SpeakableSpecification","cssSelector":["h1","#answer"]}},
+{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WalletLens","item":"https://walletlens.live/"},{"@type":"ListItem","position":2,"name":"Chrome extension","item":"https://walletlens.live/chrome-extension/"}]},
+{"@type":"HowTo","name":"How to install the WalletLens Chrome extension","totalTime":"PT1M","estimatedCost":{"@type":"MonetaryAmount","currency":"USD","value":"0"},"step":[{"@type":"HowToStep","position":1,"name":"Open the Chrome Web Store listing","text":"Open the WalletLens listing on the Chrome Web Store in Chrome, Edge, Brave, Opera or Arc.","url":"https://chromewebstore.google.com/detail/ajmjdeobjjmabgonhaeaaehoepfafhbn"},{"@type":"HowToStep","position":2,"name":"Add it to your browser","text":"Click Add to Chrome, then Add extension. It needs no account and asks for no personal details."},{"@type":"HowToStep","position":3,"name":"Pin it to the toolbar","text":"Click the puzzle icon next to the address bar and pin WalletLens so your net worth is always one click away."},{"@type":"HowToStep","position":4,"name":"Open WalletLens once","text":"Open walletlens.live in the same browser and add your holdings by screenshot, voice or by hand. The extension picks them up on its own.","url":"https://walletlens.live/dashboard/"},{"@type":"HowToStep","position":5,"name":"Click the icon","text":"Click the WalletLens icon at any time to see your total, the 24 hour change, your top holdings, market data and news."}]},
+{"@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Is the WalletLens Chrome extension free?","acceptedAnswer":{"@type":"Answer","text":"Yes. The extension and the WalletLens app are free, with no paid tier, no holding limit and no ads inside the extension."}},
+{"@type":"Question","name":"Do I need an account to use the extension?","acceptedAnswer":{"@type":"Answer","text":"No. There is no sign up, no email and no password. The extension reads your portfolio from walletlens.live in the same browser and keeps a copy in your browser's own extension storage."}},
+{"@type":"Question","name":"Which browsers does the WalletLens extension work in?","acceptedAnswer":{"@type":"Answer","text":"Any Chromium browser that installs from the Chrome Web Store: Google Chrome, Microsoft Edge, Brave, Opera, Vivaldi and Arc, on Windows, macOS, Linux and ChromeOS. Firefox and Safari are not supported; use walletlens.live there instead."}},
+{"@type":"Question","name":"What can I track with the extension?","acceptedAnswer":{"@type":"Answer","text":"Everything you track in WalletLens: over 10,000 cryptocurrencies, stocks and ETFs, gold and silver, cash, bonds, property and any other asset you record. The toolbar shows them all as one net worth number with the 24 hour change."}},
+{"@type":"Question","name":"Is my portfolio data private?","acceptedAnswer":{"@type":"Answer","text":"Yes. Your holdings stay in your browser. The extension has no analytics or telemetry. Its only outside requests fetch public prices, exchange rates, news and the Fear and Greed index, and they carry asset symbols, never your balances, amounts or addresses."}},
+{"@type":"Question","name":"Does the extension work when walletlens.live is closed?","acceptedAnswer":{"@type":"Answer","text":"Yes. It saves your portfolio to extension storage and fetches live prices each time you open it, so the toolbar stays current even with no WalletLens tab open."}},
+{"@type":"Question","name":"Do I have to connect an exchange, wallet or bank?","acceptedAnswer":{"@type":"Answer","text":"No. Nothing is connected: no exchange API key, no wallet signature and no bank login. You add holdings in WalletLens by screenshot, by voice in English or Arabic, from a spreadsheet or by hand."}},
+{"@type":"Question","name":"How do I sync the extension with my phone?","acceptedAnswer":{"@type":"Answer","text":"Create a backup code in WalletLens on your phone and paste it into the extension with the import button. Your whole portfolio appears in the toolbar in seconds, with no account in between."}},
+{"@type":"Question","name":"What permissions does the extension ask for?","acceptedAnswer":{"@type":"Answer","text":"Storage, to keep your portfolio in the browser, and access to walletlens.live plus a short list of public price and market data services such as CoinGecko, Stooq and gold-api. It cannot read the other websites you visit."}}
+]}
+]}</script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'granted',
+    region: ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'] });
+  gtag('consent', 'default', { ad_storage: 'granted', ad_user_data: 'granted', ad_personalization: 'denied', analytics_storage: 'granted' });
+  gtag('js', new Date());
+  gtag('config', 'G-69L5NCXNGB');
+  gtag('config', 'AW-18295184733');
+  addEventListener('load', function () { var g = document.createElement('script'); g.async = true; g.src = 'https://www.googletagmanager.com/gtag/js?id=G-69L5NCXNGB'; document.head.appendChild(g) }, { once: true });
+</script>
+<style>
+@font-face{font-family:'Sora';font-style:normal;font-weight:400 800;font-display:swap;src:url('/fonts/sora-latin.woff2') format('woff2')}
+@font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;font-display:swap;src:url('/fonts/manrope-latin.woff2') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/dm-mono-400-latin.woff2') format('woff2')}
+:root{
+  --bg:#0a0b0d; --bg2:#0e1013; --bg4:#16181d; --card:rgba(20,22,26,.92);
+  --s1:rgba(255,255,255,.04); --s2:rgba(255,255,255,.07);
+  --border:rgba(255,255,255,.08); --border-2:rgba(255,255,255,.15);
+  --text:#f5f6f7; --text2:rgba(255,255,255,.74); --sub:rgba(255,255,255,.5);
+  --up:#10b981; --up-l:#34d399; --down:#f87171; --gold:#e8b825; --blue:#60a5fa;
+  --disp:Sora,system-ui,sans-serif; --body:Manrope,system-ui,sans-serif; --mono:"DM Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:500 16px/1.6 var(--body);-webkit-font-smoothing:antialiased;overflow-x:clip}
+a{color:inherit}
+.wrap{max-width:1160px;margin:0 auto;padding:0 20px}
+.up{color:var(--up-l)} .dn{color:var(--down)}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:50;background:rgba(10,11,13,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.nav-in{display:flex;align-items:center;gap:10px;height:62px}
+.brand{display:flex;align-items:center;gap:9px;font:700 17px var(--disp);letter-spacing:-.02em;text-decoration:none}
+.brand svg{width:26px;height:26px}
+.nav .sp{margin-left:auto}
+.nav-links{display:flex;gap:18px;font:600 14px var(--body);color:var(--text2)}
+.nav-links a{text-decoration:none}.nav-links a:hover{color:var(--text)}
+@media(max-width:760px){.nav-links{display:none}.nav .btn{margin-left:auto}}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;height:50px;padding:0 22px;border-radius:14px;font:700 15px var(--disp);letter-spacing:-.01em;cursor:pointer;border:0;white-space:nowrap;text-decoration:none;transition:transform .15s,box-shadow .2s}
+.btn:active{transform:scale(.97)}
+.btn-pri{background:linear-gradient(180deg,#34d399,#10b981);color:#04130c;box-shadow:0 12px 32px -12px rgba(16,185,129,.85),inset 0 1px 0 rgba(255,255,255,.35)}
+.btn-pri:hover{box-shadow:0 16px 40px -12px rgba(16,185,129,1),inset 0 1px 0 rgba(255,255,255,.35)}
+.btn-2{background:var(--s2);box-shadow:inset 0 0 0 1px var(--border-2)}
+.btn svg{width:20px;height:20px;flex-shrink:0}
+.nav .btn{height:38px;padding:0 14px;font-size:13.5px;border-radius:11px}
+
+/* hero */
+.hero{position:relative;overflow:hidden;padding:72px 0 64px}
+.hero::before{content:"";position:absolute;inset:-30% -10% auto;height:120%;background:radial-gradient(40% 50% at 70% 40%,rgba(16,185,129,.22),transparent 70%),radial-gradient(30% 40% at 15% 20%,rgba(96,165,250,.12),transparent 70%);pointer-events:none}
+.hero-g{position:relative;display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+@media(max-width:900px){.hero-g{grid-template-columns:1fr;gap:44px}.hero{padding-top:44px}}
+.kick{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:99px;font:700 11.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--up-l);background:rgba(16,185,129,.1);box-shadow:inset 0 0 0 1px rgba(16,185,129,.3)}
+h1{font:800 clamp(38px,5.6vw,66px)/1.02 var(--disp);letter-spacing:-.045em;margin:18px 0 18px}
+h1 .a{background:linear-gradient(180deg,#6ee7b7,#10b981);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:19px;color:var(--text2);margin:0;max-width:560px}
+.ctas{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.trust{display:flex;flex-wrap:wrap;gap:8px 18px;margin:22px 0 0;padding:0;list-style:none;font:600 13.5px var(--body);color:var(--text2)}
+.trust li{display:flex;align-items:center;gap:7px}
+.trust li::before{content:"";width:16px;height:16px;border-radius:50%;background:rgba(16,185,129,.16) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2334d399' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/11px no-repeat}
+.browsers{display:flex;align-items:center;gap:10px;margin-top:22px;font:600 12px var(--mono);color:var(--sub);letter-spacing:.04em}
+
+/* browser + popup mock */
+.stage{position:relative}
+.win{border-radius:16px;background:#1b1d22;box-shadow:0 50px 100px -30px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.09),0 0 120px -40px rgba(16,185,129,.55);overflow:visible}
+.win-top{display:flex;align-items:center;gap:8px;padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.dots{display:flex;gap:6px}.dots i{width:10px;height:10px;border-radius:50%;background:#3a3d44}
+.dots i:nth-child(1){background:#ff5f57}.dots i:nth-child(2){background:#febc2e}.dots i:nth-child(3){background:#28c840}
+.url{flex:1;min-width:0;height:28px;border-radius:99px;background:#0f1114;display:flex;align-items:center;padding:0 12px;font:500 12px var(--mono);color:var(--sub);overflow:hidden;white-space:nowrap}
+.tb{display:flex;align-items:center;gap:6px}
+.tb span{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:var(--sub)}
+.tb .wl{position:relative;background:rgba(16,185,129,.16);box-shadow:inset 0 0 0 1px rgba(16,185,129,.5);animation:ping 2.6s ease-in-out infinite}
+@keyframes ping{50%{box-shadow:inset 0 0 0 1px rgba(16,185,129,.5),0 0 0 6px rgba(16,185,129,.12)}}
+.win-body{position:relative;height:430px;padding:22px;background:linear-gradient(180deg,#121418,#0d0f12);border-radius:0 0 16px 16px}
+.ghost{height:12px;border-radius:6px;background:rgba(255,255,255,.05);margin-bottom:12px}
+.pop{position:absolute;top:-6px;right:14px;width:310px;border-radius:16px;background:#0f1013;box-shadow:0 30px 70px -20px rgba(0,0,0,.95),0 0 0 1px rgba(255,255,255,.1);overflow:hidden;animation:drop .7s cubic-bezier(.2,.9,.3,1) .3s both}
+@keyframes drop{from{opacity:0;transform:translateY(-10px) scale(.97)}}
+@media(max-width:420px){.pop{width:calc(100% - 20px);right:10px}}
+.pop-h{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+.pop-h b{display:flex;align-items:center;gap:7px;font:700 14px var(--disp)}
+.pop-tabs{display:flex;gap:4px;padding:8px 10px 0;font:700 11px var(--body);color:var(--sub)}
+.pop-tabs span{padding:6px 8px;border-radius:8px}.pop-tabs .on{color:var(--text);background:var(--s2)}
+.pop-total{padding:14px 14px 10px}
+.pop-total small{font:700 10px var(--mono);letter-spacing:.14em;color:var(--sub)}
+.pop-total strong{display:block;font:800 30px var(--disp);letter-spacing:-.04em;font-variant-numeric:tabular-nums;margin:2px 0}
+.pop-total em{font:700 12.5px var(--mono);font-style:normal}
+.spark{display:block;width:100%;height:46px;margin-top:6px}
+.pop-list{padding:4px 10px 12px;display:grid;gap:6px}
+.r{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:11px;background:var(--bg4);box-shadow:inset 0 0 0 1px var(--border)}
+.r i{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font:800 9.5px var(--disp);color:#0a0b0d;font-style:normal;flex-shrink:0}
+.r b{flex:1;font:700 12.5px var(--disp)}.r b small{display:block;font:600 10px var(--mono);color:var(--sub)}
+.r span{font:700 12px var(--mono);text-align:right}.r span small{display:block;font-size:10px}
+
+/* sections */
+section{padding:72px 0;border-top:1px solid var(--border)}
+.eyebrow{font:700 11.5px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--up-l);margin:0}
+h2{font:800 clamp(28px,3.6vw,42px)/1.1 var(--disp);letter-spacing:-.035em;margin:10px 0 14px}
+h3{font:700 18px/1.3 var(--disp);letter-spacing:-.02em;margin:0 0 6px}
+.sec-lead{font-size:17.5px;color:var(--text2);max-width:740px;margin:0 0 34px}
+
+/* answer box for LLMs and snippets */
+.answer{display:grid;grid-template-columns:1.2fr 1fr;gap:28px;align-items:start}
+@media(max-width:860px){.answer{grid-template-columns:1fr}}
+#answer{font-size:18px;color:var(--text);margin:0}
+.facts{margin:0;display:grid;gap:0;border-radius:18px;background:var(--card);box-shadow:inset 0 0 0 1px var(--border);overflow:hidden}
+.facts div{display:grid;grid-template-columns:130px 1fr;gap:12px;padding:12px 16px;border-top:1px solid var(--border)}
+.facts div:first-child{border-top:0}
+.facts dt{font:700 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--sub);padding-top:3px}
+.facts dd{margin:0;font-weight:600;font-size:15px}
+
+/* features */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:580px){.grid{grid-template-columns:1fr}}
+.card{padding:22px;border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));box-shadow:inset 0 0 0 1px var(--border)}
+.card .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;margin-bottom:14px;background:rgba(16,185,129,.12);color:var(--up-l);box-shadow:inset 0 0 0 1px rgba(16,185,129,.28)}
+.card .ic svg{width:21px;height:21px}
+.card p{margin:0;color:var(--text2);font-size:15px}
+
+/* steps */
+.steps{counter-reset:s;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+@media(max-width:980px){.steps{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.steps{grid-template-columns:1fr}}
+.steps li{counter-increment:s;position:relative;padding:20px 18px 18px;border-radius:16px;background:var(--s1);box-shadow:inset 0 0 0 1px var(--border)}
+.steps li::before{content:counter(s);display:grid;place-items:center;width:30px;height:30px;border-radius:9px;margin-bottom:12px;font:800 14px var(--disp);color:#04130c;background:linear-gradient(180deg,#34d399,#10b981)}
+.steps p{margin:0;color:var(--text2);font-size:14.5px}
+
+/* table */
+.tbl-w{overflow-x:auto;border-radius:18px;box-shadow:inset 0 0 0 1px var(--border)}
+table{width:100%;border-collapse:collapse;font-size:15px;min-width:560px}
+th,td{padding:13px 16px;text-align:left;border-top:1px solid var(--border);vertical-align:top}
+thead th{border-top:0;font:700 11.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--sub);background:var(--s1)}
+td:first-child{font-weight:700}
+.yes{color:var(--up-l);font-weight:700}.no{color:var(--sub)}
+
+/* privacy */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}
+@media(max-width:860px){.split{grid-template-columns:1fr}}
+.ul{margin:0;padding:0;list-style:none;display:grid;gap:12px}
+.ul li{padding-left:28px;position:relative;color:var(--text2)}
+.ul li b{color:var(--text)}
+.ul li::before{content:"";position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;background:rgba(16,185,129,.16) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2334d399' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/12px no-repeat}
+
+/* faq */
+.faq{display:grid;gap:10px;max-width:860px}
+details{border-radius:14px;background:var(--s1);box-shadow:inset 0 0 0 1px var(--border)}
+summary{cursor:pointer;list-style:none;padding:16px 46px 16px 18px;position:relative}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";position:absolute;right:18px;top:12px;font:400 24px var(--disp);color:var(--sub);transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+summary h3{margin:0;font-size:16.5px}
+details p{margin:0;padding:0 18px 18px;color:var(--text2)}
+
+/* final cta */
+.end{text-align:center;padding:84px 0;background:radial-gradient(50% 70% at 50% 100%,rgba(16,185,129,.18),transparent 70%)}
+.end .ctas{justify-content:center}
+.end p{color:var(--text2);font-size:17.5px;max-width:620px;margin:0 auto}
+
+footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:28px 0 60px;color:var(--sub);font-size:13px;border-top:1px solid var(--border)}
+footer nav{display:flex;flex-wrap:wrap;gap:6px 16px}
+footer a{text-decoration:none}footer a:hover{color:var(--text)}
+.crumbs{font:600 12.5px var(--mono);color:var(--sub);margin:0 0 6px}.crumbs a{text-decoration:none}
+:focus-visible{outline:2px solid var(--up-l);outline-offset:3px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="wlg" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ade80"/><stop offset=".5" stop-color="#16a34a"/><stop offset="1" stop-color="#14532d"/></linearGradient>
+    <symbol id="logo" viewBox="0 0 64 64"><circle cx="27" cy="25" r="19" stroke="url(#wlg)" stroke-width="5.5" fill="none"/><rect x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="url(#wlg)"/><rect x="21.5" y="21" width="5" height="13" rx="1.2" fill="url(#wlg)"/><rect x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="url(#wlg)"/><line x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wlg)" stroke-width="5.5" stroke-linecap="round"/><circle cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/></symbol>
+    <symbol id="chrome" viewBox="0 0 48 48"><circle cx="24" cy="24" r="11" fill="#fff"/><path fill="#4caf50" d="M24 13h17.6A23.9 23.9 0 0 0 24 0 24 24 0 0 0 3.4 11.8L12 26.7A12 12 0 0 1 24 13z"/><path fill="#ffc107" d="M41.6 13H24a12 12 0 0 1 10.4 18l-8.6 14.9A24 24 0 0 0 41.6 13z"/><path fill="#f44336" d="M12 26.7 3.4 11.8A24 24 0 0 0 25.8 47.9L34.4 33A12 12 0 0 1 12 26.7z"/><circle cx="24" cy="24" r="6" fill="#2196f3"/></symbol>
+  </defs>
+</svg>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="/" aria-label="WalletLens home"><svg aria-hidden="true"><use href="#logo"/></svg>WalletLens</a>
+    <nav class="nav-links sp" aria-label="On this page"><a href="#features">Features</a><a href="#install">Install</a><a href="#privacy">Privacy</a><a href="#faq">FAQ</a></nav>
+    <a class="btn btn-2" href="/dashboard/" data-cta="nav_app">Open the app</a>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="wrap hero-g">
+      <div>
+        <p class="crumbs"><a href="/">WalletLens</a> / Chrome extension</p>
+        <span class="kick">Free Chrome extension</span>
+        <h1>Your whole net worth, <span class="a">one click away</span> in your browser.</h1>
+        <p class="lead">The WalletLens extension puts your crypto, stocks, gold, cash and property in your toolbar as one live number, with your profit and loss, top holdings, signals and market news. Free, no account, and your holdings never leave your browser.</p>
+        <div class="ctas">
+          <a class="btn btn-pri store" href="https://chromewebstore.google.com/detail/ajmjdeobjjmabgonhaeaaehoepfafhbn" rel="noopener" data-cta="hero_store"><svg aria-hidden="true"><use href="#chrome"/></svg><span class="add">Add to Chrome</span> · it's free</a>
+          <a class="btn btn-2" href="/dashboard/" data-cta="hero_app">Open WalletLens</a>
+        </div>
+        <ul class="trust">
+          <li>No account</li><li>No API keys</li><li>No ads in the extension</li><li>No tracking inside it</li>
+        </ul>
+        <p class="browsers">Works in Chrome · Edge · Brave · Opera · Arc</p>
+      </div>
+
+      <div class="stage" aria-label="The WalletLens extension open in the browser toolbar" role="img">
+        <div class="win">
+          <div class="win-top">
+            <span class="dots"><i></i><i></i><i></i></span>
+            <span class="url">news.example.com/markets</span>
+            <span class="tb"><span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-3a2 2 0 0 1-2-2V2M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l5 5v9a2 2 0 0 1-2 2Z"/></svg></span><span class="wl"><svg width="17" height="17"><use href="#logo"/></svg></span></span>
+          </div>
+          <div class="win-body">
+            <div class="ghost" style="width:56%"></div><div class="ghost" style="width:82%"></div><div class="ghost" style="width:70%"></div><div class="ghost" style="width:40%"></div>
+            <div class="pop">
+              <div class="pop-h"><b><svg width="20" height="20"><use href="#logo"/></svg>WalletLens</b><small style="font:600 10px var(--mono);color:var(--sub)">synced just now</small></div>
+              <div class="pop-tabs"><span class="on">Overview</span><span>Holdings</span><span>Market</span><span>News</span><span>TA</span></div>
+              <div class="pop-total">
+                <small>NET WORTH</small>
+                <strong>$248,630</strong>
+                <em class="up">▲ $3,412 (+1.39%) 24h</em>
+                <svg class="spark" viewBox="0 0 280 46" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10b981" stop-opacity=".35"/><stop offset="1" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs><path d="M0 36 L20 33 L40 35 L60 28 L80 30 L100 24 L120 26 L140 19 L160 22 L180 15 L200 17 L220 11 L240 13 L260 7 L280 5 L280 46 L0 46Z" fill="url(#sg)"/><path d="M0 36 L20 33 L40 35 L60 28 L80 30 L100 24 L120 26 L140 19 L160 22 L180 15 L200 17 L220 11 L240 13 L260 7 L280 5" fill="none" stroke="#34d399" stroke-width="2"/></svg>
+              </div>
+              <div class="pop-list">
+                <div class="r"><i style="background:#f7931a">BTC</i><b>Bitcoin<small>0.85 BTC</small></b><span>$96,410<small class="up">+2.1%</small></span></div>
+                <div class="r"><i style="background:#e5e7eb;font-size:8px">AAPL</i><b>Apple<small>120 shares</small></b><span>$28,560<small class="up">+0.8%</small></span></div>
+                <div class="r"><i style="background:#e8b825">Au</i><b>Gold<small>10 oz</small></b><span>$26,050<small class="dn">-0.3%</small></span></div>
+                <div class="r"><i style="background:#94a3b8">🏠</i><b>Home<small>Property</small></b><span>$85,000<small style="color:var(--sub)">0.0%</small></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section id="what" aria-labelledby="what-h">
+    <div class="wrap answer">
+      <div>
+        <p class="eyebrow">In one paragraph</p>
+        <h2 id="what-h">What is the WalletLens Chrome extension?</h2>
+        <p id="answer">The WalletLens Chrome extension is a free net worth and portfolio tracker that lives in your browser toolbar. One click shows your total net worth across crypto, stocks, ETFs, gold, silver, cash, bonds and property, the 24 hour change, profit and loss per asset, market data, technical signals and news. It syncs on its own with the WalletLens app at walletlens.live, needs no account, never connects to an exchange or bank, and keeps your holdings inside your own browser.</p>
+      </div>
+      <dl class="facts">
+        <div><dt>Price</dt><dd>Free, no paid tier</dd></div>
+        <div><dt>Account</dt><dd>None needed</dd></div>
+        <div><dt>Browsers</dt><dd>Chrome, Edge, Brave, Opera, Vivaldi, Arc</dd></div>
+        <div><dt>Assets</dt><dd>10,000+ coins, stocks and ETFs, gold, silver, cash, bonds, property</dd></div>
+        <div><dt>Data</dt><dd>Stays in your browser. No analytics in the extension</dd></div>
+        <div><dt>Version</dt><dd>1.5.3, Manifest V3</dd></div>
+        <div><dt>Made by</dt><dd><a href="/about/">WalletLens</a>, open source on <a href="https://github.com/tia8910/walletlens" rel="noopener">GitHub</a></dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section id="features" aria-labelledby="feat-h">
+    <div class="wrap">
+      <p class="eyebrow">Features</p>
+      <h2 id="feat-h">Everything you own, in your toolbar</h2>
+      <p class="sec-lead">Most portfolio extensions only follow coin prices. WalletLens follows your actual net worth, every asset you own, and keeps it current while you browse.</p>
+      <div class="grid">
+        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div><h3>Live net worth and 24h change</h3><p>One total across every account and asset, updated with live prices, plus the move in the last 24 hours in money and percent.</p></article>
+        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg></div><h3>Profit and loss per asset</h3><p>Real coin and company logos, the value of each holding and how it is doing, with your top holdings first and the full list a tab away.</p></article>
+        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="10" rx="2"/><path d="M7 10V7a5 5 0 0 1 10 0v3"/></svg></div><h3>Crypto, stocks, gold and property</h3><p>Bitcoin and 10,000 other coins, stocks and ETFs, gold and silver, cash, bonds and your home. If it has a value, it counts.</p></article>
+        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16"/><path d="M8 15l3-4 3 2 5-6"/></svg></div><h3>Signals and technical analysis</h3><p>A TA tab with a clear read per holding, plus the market overview and the Fear and Greed index, so you know the mood before you act.</p></article>
+        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2z"/><path d="M18 8h2v10a2 2 0 0 1-2 2M8 8h6M8 12h6M8 16h4"/></svg></div><h3>Market news in the popup</h3><p>Headlines that move markets, without opening another tab or leaving the page you are on.</p></article>
+        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></div><h3>Syncs on its own</h3><p>Add a trade on walletlens.live and the toolbar updates. It keeps working with the site closed, and a backup code brings in your phone's portfolio.</p></article>
+        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg></div><h3>Share performance, not your balance</h3><p>Post your return as a percentage to X, WhatsApp or Telegram. The amount you hold stays private.</p></article>
+        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="12" cy="12" r="3"/></svg></div><h3>Screenshot and voice import</h3><p>Build your portfolio in WalletLens from a <a href="/import-portfolio-from-screenshot/">screenshot of any app</a> or <a href="/add-holdings-by-voice/">by voice</a>, and it shows up in the toolbar.</p></article>
+        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div><h3>Nothing to connect</h3><p>No exchange API keys, no wallet signatures, no bank logins. Nothing is linked, so nothing can leak.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section id="install" aria-labelledby="inst-h">
+    <div class="wrap">
+      <p class="eyebrow">Under a minute</p>
+      <h2 id="inst-h">How to install the WalletLens Chrome extension</h2>
+      <p class="sec-lead">Five steps, no sign up. The same steps work in Edge, Brave, Opera and Arc.</p>
+      <ol class="steps">
+        <li><h3>Open the listing</h3><p>Go to WalletLens on the <a href="https://chromewebstore.google.com/detail/ajmjdeobjjmabgonhaeaaehoepfafhbn" rel="noopener" data-cta="step_store">Chrome Web Store</a>.</p></li>
+        <li><h3>Add it</h3><p>Click <b>Add to Chrome</b>, then <b>Add extension</b>. No account and no personal details.</p></li>
+        <li><h3>Pin it</h3><p>Click the puzzle icon by the address bar and pin WalletLens to the toolbar.</p></li>
+        <li><h3>Open WalletLens once</h3><p>Visit <a href="/dashboard/" data-cta="step_app">walletlens.live</a> and add your holdings by screenshot, voice or by hand.</p></li>
+        <li><h3>Click the icon</h3><p>Your net worth, holdings, market data and news, whenever you want them.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="compare" aria-labelledby="cmp-h">
+    <div class="wrap">
+      <p class="eyebrow">Extension, web or Android</p>
+      <h2 id="cmp-h">One portfolio, three ways to see it</h2>
+      <p class="sec-lead">The extension is the fastest glance. The web app and the Android app are where you add holdings, plan and analyse. All three are free and read the same portfolio.</p>
+      <div class="tbl-w">
+        <table>
+          <thead><tr><th scope="col">What you get</th><th scope="col">Chrome extension</th><th scope="col">Web app</th><th scope="col">Android app</th></tr></thead>
+          <tbody>
+            <tr><td>Net worth and 24h change</td><td class="yes">Yes, one click</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+            <tr><td>Holdings with P&amp;L</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+            <tr><td>Market data, news, TA</td><td class="yes">Yes</td><td class="yes">Yes, in depth</td><td class="yes">Yes, in depth</td></tr>
+            <tr><td>Add holdings by screenshot or voice</td><td class="no">In the app</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+            <tr><td>AI coach, sell plans, zakat, goals</td><td class="no">In the app</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+            <tr><td>Works while you browse other sites</td><td class="yes">Yes</td><td class="no">In its own tab</td><td class="no">On your phone</td></tr>
+            <tr><td>Account needed</td><td class="yes">No</td><td class="yes">No</td><td class="yes">No</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin:22px 0 0;color:var(--text2)">Get the others: <a href="/dashboard/" data-cta="cmp_web">WalletLens on the web</a> · <a href="https://play.google.com/store/apps/details?id=live.walletlens.twa" rel="noopener" data-cta="cmp_play">WalletLens on Google Play</a></p>
+    </div>
+  </section>
+
+  <section id="privacy" aria-labelledby="priv-h">
+    <div class="wrap split">
+      <div>
+        <p class="eyebrow">Private by design</p>
+        <h2 id="priv-h">Your portfolio stays in your browser</h2>
+        <p class="sec-lead" style="margin-bottom:0">Most free trackers are free because your data is the product. WalletLens never sees your balances, so there is nothing to sell. The extension is open source, so anyone can check.</p>
+      </div>
+      <ul class="ul">
+        <li><b>No account.</b> No email, no password, nothing to breach.</li>
+        <li><b>Local storage only.</b> Your holdings are kept in your browser's extension storage.</li>
+        <li><b>No analytics or telemetry</b> inside the extension.</li>
+        <li><b>Market data only:</b> prices, exchange rates, news and the Fear and Greed index are fetched by asset symbol. Never your amounts, balances or addresses.</li>
+        <li><b>Narrow permissions:</b> storage, walletlens.live and public market data services. It cannot read the other sites you visit.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="who" aria-labelledby="who-h">
+    <div class="wrap">
+      <p class="eyebrow">Who it is for</p>
+      <h2 id="who-h">Built for people who check often and share nothing</h2>
+      <div class="grid">
+        <article class="card"><h3>Long term investors</h3><p>One honest number for everything you own, without opening five apps.</p></article>
+        <article class="card"><h3>Crypto and stock holders</h3><p>Coins next to stocks, ETFs and gold, so your allocation is real, not half the picture.</p></article>
+        <article class="card"><h3>Privacy first users</h3><p>A portfolio tracker with no bank login, no exchange key and no email address.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" aria-labelledby="faq-h">
+    <div class="wrap">
+      <p class="eyebrow">Questions</p>
+      <h2 id="faq-h">Frequently asked questions</h2>
+      <div class="faq">
+        <details open><summary><h3>Is the WalletLens Chrome extension free?</h3></summary><p>Yes. The extension and the WalletLens app are free, with no paid tier, no holding limit and no ads inside the extension.</p></details>
+        <details><summary><h3>Do I need an account to use the extension?</h3></summary><p>No. There is no sign up, no email and no password. The extension reads your portfolio from walletlens.live in the same browser and keeps a copy in your browser's own extension storage.</p></details>
+        <details><summary><h3>Which browsers does the WalletLens extension work in?</h3></summary><p>Any Chromium browser that installs from the Chrome Web Store: Google Chrome, Microsoft Edge, Brave, Opera, Vivaldi and Arc, on Windows, macOS, Linux and ChromeOS. Firefox and Safari are not supported; use walletlens.live there instead.</p></details>
+        <details><summary><h3>What can I track with the extension?</h3></summary><p>Everything you track in WalletLens: over 10,000 cryptocurrencies, stocks and ETFs, gold and silver, cash, bonds, property and any other asset you record. The toolbar shows them all as one net worth number with the 24 hour change.</p></details>
+        <details><summary><h3>Is my portfolio data private?</h3></summary><p>Yes. Your holdings stay in your browser. The extension has no analytics or telemetry. Its only outside requests fetch public prices, exchange rates, news and the Fear and Greed index, and they carry asset symbols, never your balances, amounts or addresses.</p></details>
+        <details><summary><h3>Does the extension work when walletlens.live is closed?</h3></summary><p>Yes. It saves your portfolio to extension storage and fetches live prices each time you open it, so the toolbar stays current even with no WalletLens tab open.</p></details>
+        <details><summary><h3>Do I have to connect an exchange, wallet or bank?</h3></summary><p>No. Nothing is connected: no exchange API key, no wallet signature and no bank login. You add holdings in WalletLens by screenshot, by voice in English or Arabic, from a spreadsheet or by hand.</p></details>
+        <details><summary><h3>How do I sync the extension with my phone?</h3></summary><p>Create a backup code in WalletLens on your phone and paste it into the extension with the import button. Your whole portfolio appears in the toolbar in seconds, with no account in between.</p></details>
+        <details><summary><h3>What permissions does the extension ask for?</h3></summary><p>Storage, to keep your portfolio in the browser, and access to walletlens.live plus a short list of public price and market data services such as CoinGecko, Stooq and gold-api. It cannot read the other websites you visit.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="end" aria-labelledby="end-h">
+    <div class="wrap">
+      <h2 id="end-h">Know what you are worth, every time you open your browser</h2>
+      <p>Free forever. No account. Ready in under a minute.</p>
+      <div class="ctas">
+        <a class="btn btn-pri store" href="https://chromewebstore.google.com/detail/ajmjdeobjjmabgonhaeaaehoepfafhbn" rel="noopener" data-cta="end_store"><svg aria-hidden="true"><use href="#chrome"/></svg><span class="add">Add to Chrome</span></a>
+        <a class="btn btn-2" href="/dashboard/" data-cta="end_app">Open the web app →</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="wrap"><footer><span>© 2026 WalletLens · Updated <time datetime="2026-10-10">10 October 2026</time></span>
+  <nav aria-label="Footer"><a href="/">Home</a><a href="/dashboard/">Open the app</a><a href="/free-net-worth-tracker/">Free net worth tracker</a><a href="/crypto-and-stock-portfolio-tracker/">Crypto and stock tracker</a><a href="/portfolio-tracker-no-account/">No account tracker</a><a href="/import-portfolio-from-screenshot/">Screenshot import</a><a href="/add-holdings-by-voice/">Voice import</a><a href="/faq/">FAQ</a><a href="/privacy/">Privacy</a><a href="/llms.txt">llms.txt</a></nav></footer></div>
+
+<script>
+// The button says the browser people actually use ("Add to Edge", "Add to Brave").
+(function () {
+  var ua = navigator.userAgent, name = 'Chrome'
+  if (/Edg\//.test(ua)) name = 'Edge'
+  else if (/OPR\//.test(ua)) name = 'Opera'
+  else if (navigator.brave) name = 'Brave'
+  var other = /Firefox\//.test(ua) || (/Safari\//.test(ua) && !/Chrome\//.test(ua))
+  document.querySelectorAll('.store .add').forEach(function (el) { el.textContent = other ? 'Get it for Chrome' : 'Add to ' + name })
+})()
+// Which buttons send people to the store and to the app.
+document.addEventListener('click', function (e) {
+  var a = e.target.closest('[data-cta]'); if (!a || typeof gtag !== 'function') return
+  var cta = a.dataset.cta
+  gtag('event', 'landing_cta', { cta: cta, page: 'chrome_extension', transport_type: 'beacon' })
+  if (/store$/.test(cta)) gtag('event', 'extension_install_click', { source: 'ext_page_' + cta, transport_type: 'beacon' })
+})
+</script>
+</body>
+</html>

@@ -8,6 +8,8 @@ import { homePath } from '../v2Preview'
 import { track } from '../analytics'
 import { useCanInstall, promptInstall } from '../pwaInstall'
 import { SUPPORT_URL } from '../components/CoffeeButton'
+import { EXTENSION_PAGE } from '../components/InstallExtension'
+import { isMsStore } from '../msStore'
 
 // "More": every feature in the app on one screen, so the shorter bottom bar of
 // the new look never hides one. The destinations are the menu's, one for one;
@@ -118,10 +120,13 @@ export default function More() {
           { icon: 'info', label: t('about'), to: '/about' },
           { icon: 'message', label: t('faq'), to: '/faq' },
           { icon: 'news', label: t('blog'), to: '/blog' },
+          // A static page, not an app route: a full page load, and never in the
+          // Microsoft Store edition, which may not promote another store.
+          ...(isMsStore() ? [] : [{ icon: 'globe', label: t('chromeExtension'), to: EXTENSION_PAGE, page: true }]),
           { icon: 'shield', label: t('privacy'), to: '/privacy' },
           { icon: 'clipboard', label: t('terms') || 'Terms', to: '/terms' },
         ].map(l => (
-          <button key={l.to} type="button" className="nl-more-row" onClick={() => go(l.to)}>
+          <button key={l.to} type="button" className="nl-more-row" onClick={() => l.page ? (track('more_nav', { to: l.to }), window.location.assign(l.to)) : go(l.to)}>
             <span className="nl-more-link"><Icon name={l.icon} size={16} />{l.label}</span><b aria-hidden="true">›</b>
           </button>
         ))}
