@@ -239,8 +239,11 @@ describe('Google Analytics', () => {
     expect(c.match(/ref=\{viewRef\(/g)).toHaveLength(4)
   })
 
-  it('shows no referral at all in the Microsoft Store edition', () => {
-    expect(bybitAllowed({ zone: 'Africa/Cairo', remote: true, msStore: true })).toBe(false)
-    expect(bybitAllowed({ zone: 'Africa/Cairo', remote: true, msStore: false })).toBe(true)
+  it('shows the referral in the Microsoft Store edition too, and hides no referral link there', () => {
+    expect(bybitAllowed({ zone: 'Africa/Cairo', remote: true })).toBe(true)
+    expect(read('bybitOffer.js')).not.toMatch(/isMsStore/)
+    const css = read('index.css')
+    expect(css).not.toMatch(/wl-msstore a\[href\*="partner\.bybit\.com"\]/)
+    expect(css).toMatch(/wl-msstore a\[href\*="play\.google\.com"\]/)
   })
 })
