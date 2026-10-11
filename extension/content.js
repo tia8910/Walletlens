@@ -9,6 +9,12 @@
 
 const ext = typeof browser !== 'undefined' ? browser : chrome;
 
+// Tell the page the extension is here, so walletlens.live stops offering it.
+// Only the version number: the page learns nothing else from it.
+try {
+  document.documentElement.setAttribute('data-wl-ext', ext.runtime.getManifest().version);
+} catch {}
+
 // Keys used by the WalletLens app
 const TX_KEY       = 'crypto_tracker_transactions';
 const WALLETS_KEY  = 'crypto_tracker_wallets';

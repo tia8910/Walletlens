@@ -46,6 +46,7 @@ import { inAppShell, seedFromVault } from './nativeShell'
 import { useZakatOn } from './zakatSwitch'
 import { useNewLook, useNewLookClass, applyLookParam } from './newLook'
 import { isMsStore, msStoreSkips } from './msStore'
+import ExtensionToolbar from './components/ExtensionToolbar'
 import AiReport from './components/AiReport'
 import './v3.css'
 
@@ -936,6 +937,7 @@ export default function App() {
           <Route path="/admin/mail" element={<AdminMail />} />
           <Route path="/admin/reports" element={<AdminReports />} />
         </Routes></Suspense></ErrorBoundary>
+        <ExtensionToolbar />
       </div>
     )
   }
@@ -943,6 +945,7 @@ export default function App() {
   return (
     <div className="wl-app">
       <DynamicBackground />
+      <ExtensionToolbar />
       <div className="wl-mood-aura" aria-hidden="true" />
 
       <header className="wl-topbar" ref={topbarRef}>

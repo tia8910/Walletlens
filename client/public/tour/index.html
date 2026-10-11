@@ -1042,5 +1042,6 @@ const BLURB = ['What WalletLens is','Any screenshot becomes holdings','English o
 $('#grid').innerHTML = SCENES.slice(1).map((s, k) => `<button class="tile" data-i="${k + 1}" style="--c:${s.acc === 'T' ? '16,185,129' : s.acc}"><span class="n">SCENE ${String(k + 1).padStart(2, '0')} · ${fmt(s.d)}</span><span class="play">▶</span><span class="e">${s.e}</span><b>${s.name}</b><small>${BLURB[k + 1]}</small></button>`).join('')
 $('#grid').onclick = e => { const b = e.target.closest('.tile'); if (!b) return; seek(+b.dataset.i); setPlaying(true); $('#film').scrollIntoView({ behavior: 'smooth' }) }
 </script>
+<script src="/ext-bar.js" defer></script>
 </body>
 </html>
