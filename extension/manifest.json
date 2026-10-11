@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "WalletLens Investment Manager & Networth Tracker",
   "short_name": "WalletLens",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Your whole net worth in the toolbar: crypto, stocks, gold, cash and property. Price alerts, signals and history. Free, no account.",
   "icons": {
     "16": "icons/icon-16.png",

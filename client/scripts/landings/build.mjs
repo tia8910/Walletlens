@@ -330,6 +330,7 @@ ${badges(lang, pageKey)}
 </main>
 <div class="wrap"><footer><span>© 2026 WalletLens · ${esc(ui.foot)} · <time datetime="${UPDATED}">${UPDATED}</time></span>
 <nav aria-label="${esc(ui.more)}"><a href="${pathFor(other, lang)}">${esc(ui[other])}</a><a href="${pageKey === 'zakat' ? P.cta(lang) : PAGES.zakat.cta(lang)}">${esc(ui.calc)}</a><a href="/chrome-extension/">${esc(ui.ext)}</a><a href="/privacy">${esc(ui.privacy)}</a><a href="/terms">${esc(ui.terms)}</a><a href="/faq">${esc(ui.faq)}</a></nav></footer></div>
+<script src="/ext-bar.js" defer></script>
 </body>
 </html>
 `
