@@ -12891,7 +12891,12 @@ html.wl-msstore .wl-extbar { display: none !important; }
   animation: wl-bell-in .2s ease both;
 }
 @keyframes wl-bell-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
-.wl-bell-panel[dir="rtl"] { right: auto; left: 0; }
+/* The bell sits at the right end of the bar in every language (the top bar
+   does not mirror), so the panel stays anchored there in Arabic too; flipping
+   it to left: 0 pushed it off the right edge of the screen. */
+@media (max-width: 640px) {
+  .wl-bell-panel { position: fixed; top: calc(var(--wl-topbar-h, 64px) + 8px); left: 10px; right: 10px; width: auto; max-height: calc(100vh - var(--wl-topbar-h, 64px) - 120px); }
+}
 .wl-bell-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: 14px 16px 10px; border-bottom: 1px solid var(--nl-line, rgba(15, 29, 43, .08)); }
 .wl-bell-head b { font-size: .98rem; font-weight: 800; }
 .wl-bell-head span { display: flex; gap: .25rem; }
@@ -12938,3 +12943,43 @@ html.wl-msstore .wl-extbar { display: none !important; }
   .np-ask-yes:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 14px 26px -10px rgba(22, 199, 132, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.25); }
   .np-ask-no:hover { filter: none; background: rgba(120, 130, 150, 0.1); color: var(--text); }
 }
+/* Only the list shrinks and scrolls. The tab row scrolls sideways, which lets
+   a flex column squash it to a sliver under a long list. */
+.wl-bell-head, .wl-bell-tabs, .wl-bell-foot, .wl-bell-empty { flex: none; }
+.wl-bell-list { flex: 1 1 auto; min-height: 0; }
+.wl-bell-tabs { display: flex; gap: 4px; padding: 8px 10px 6px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; border-bottom: 1px solid var(--nl-line, rgba(15, 29, 43, .08)); }
+.wl-bell-tabs::-webkit-scrollbar { display: none; }
+.wl-bell-tabs button {
+  flex: none; display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border: 0; border-radius: 999px; cursor: pointer;
+  background: transparent; color: var(--nl-sub, var(--text-muted, #64748b)); font: inherit; font-size: .76rem; font-weight: 700;
+}
+.wl-bell-tabs button.on { background: var(--nl-ink, #0f1d2b); color: var(--nl-card, #fff); }
+.wl-bell-tabs button:not(.on):hover { filter: none; background: var(--nl-seg, rgba(15, 29, 43, .06)); }
+.wl-bell-tabs i { font-style: normal; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; display: grid; place-items: center; font-size: 10px; background: #e5484d; color: #fff; }
+.wl-bell-new { font-style: normal; display: inline-block; margin-right: 6px; padding: 1px 6px; border-radius: 6px; font-size: .62rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; vertical-align: 1px; color: #fff; background: linear-gradient(135deg, #8b5cf6, #22c55e); }
+.wl-bell-panel[dir="rtl"] .wl-bell-new { margin-right: 0; margin-left: 6px; }
+.wl-bell-none { padding: 22px 12px; text-align: center; font-size: .8rem; color: var(--nl-sub, var(--text-muted, #64748b)); }
+.wl-bell-panel[dir="rtl"] .wl-bell-list button.unread::after { right: auto; left: 10px; }
+.wl-bell-panel[dir="rtl"] .wl-bell-txt { padding-right: 0; padding-left: 14px; }
+.wl-bell-panel[dir="rtl"] .wl-bell-list button.unread time { margin-right: 0; margin-left: 12px; }
+html.wl-bell-open .wlc-fab { opacity: 0; pointer-events: none; }
+
+/* ── Feature landing link (LandingLink.jsx) ──
+   From Zakat and Portfolio Guardian in the app to their landing pages. */
+.wl-landing-link {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 12px; border-radius: 14px; text-decoration: none; color: var(--text);
+  background: linear-gradient(135deg, rgba(var(--g-rgb), 0.10), rgba(var(--g-rgb), 0.03));
+  box-shadow: inset 0 0 0 1px rgba(var(--g-rgb), 0.22);
+  transition: box-shadow .18s ease, transform .18s ease, background .18s ease;
+}
+.wl-landing-link:hover { box-shadow: inset 0 0 0 1px rgba(var(--g-rgb), 0.45), 0 8px 22px -14px rgba(var(--g-rgb), 0.6); transform: translateY(-1px); }
+.wl-landing-link:focus-visible { outline: 2px solid var(--g); outline-offset: 2px; }
+.wl-landing-link-ic { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 11px; color: var(--g); background: rgba(var(--g-rgb), 0.14); }
+.wl-landing-link-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.wl-landing-link-txt b { font-size: 0.86rem; font-weight: 700; line-height: 1.3; }
+.wl-landing-link-txt small { font-size: 0.74rem; color: var(--text-muted); line-height: 1.4; }
+.wl-landing-link-go { flex: none; color: var(--g); transition: transform .18s ease; }
+.wl-landing-link:hover .wl-landing-link-go { transform: translateX(2px); }
+[dir="rtl"] .wl-landing-link-go { transform: scaleX(-1); }
+[dir="rtl"] .wl-landing-link:hover .wl-landing-link-go { transform: scaleX(-1) translateX(2px); }

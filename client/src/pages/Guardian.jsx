@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
 import PortfolioGuardian from '../components/PortfolioGuardian'
+import LandingLink from '../components/LandingLink'
 import { useLanguage } from '../LanguageContext'
 
 // Portfolio Guardian lives on its own page, reachable only from the drawer —
@@ -30,6 +31,7 @@ export default function Guardian() {
         <p className="settings-hint" style={{ marginBottom: '0.85rem' }}>
           {t('pgDeadMansSwitch')}
         </p>
+        <LandingLink page="guardian" source="guardian_page" style={{ marginBottom: '1rem' }} />
         <PortfolioGuardian />
       </div>
     </div>

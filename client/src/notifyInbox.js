@@ -74,3 +74,168 @@ export function listenToWorker() {
   })
   drainWorkerInbox()
 }
+
+// ── Backfill ────────────────────────────────────────────────────────────────
+// The inbox only hears about notifications sent after it shipped, so on first
+// open it would be empty although the app has alerts on record. These are
+// imported once each (by a stable key), in time order, read if older than a day.
+
+const IMPORTED_KEY = 'wl_notif_imported'
+const DAY = 86_400_000
+const SIGNAL_TEXT = {
+  saWhale: (usd, sym) => `Whale moved ${usd} ${sym} on chain`,
+  saMomentum24: (m) => `${m} in 24h`,
+  saMomentum1h: (m) => `${m} in 1h`,
+  saVolume: (pct) => `Volume ${pct}% of market cap`,
+}
+const signalText = (d) => Array.isArray(d) ? (SIGNAL_TEXT[d[0]] ? SIGNAL_TEXT[d[0]](...d.slice(1)) : '') : String(d || '')
+const money = (n) => (Number(n) >= 1 ? '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + Number(n).toPrecision(4))
+const readJson = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v ?? d } catch { return d } }
+
+/** Turn the alerts the app already keeps into inbox items. Pure, for tests. */
+export function collectExisting(now = Date.now()) {
+  const out = []
+  for (const a of readJson('wl_smart_alerts', [])) {
+    if (!a?.coinSymbol || !a.firedAt) continue
+    const n = a.signalCount || (a.signals || []).length
+    out.push({ key: `sa:${a.id}:${a.firedAt}`, title: `${a.coinSymbol}: ${n} signal alert`, body: (a.signals || []).map(s => signalText(s.desc)).filter(Boolean).join(' · '), channel: 'smart', url: a.coinId ? `/asset/?id=${a.coinId}` : '', at: Date.parse(a.firedAt),
+      tpl: { k: 'smart', sym: a.coinSymbol, n, signals: (a.signals || []).map(s => s.desc).filter(Boolean) } })
+  }
+  const priceLike = (list, prefix) => {
+    for (const a of list || []) {
+      if (!a?.triggered || !a.triggeredAt) continue
+      const sym = String(a.coin_symbol || a.coin_id || '').toUpperCase()
+      out.push({ key: `${prefix}:${a.id}:${a.triggeredAt}`, title: `${sym} ${a.condition === 'below' ? 'fell below' : 'rose above'} ${money(a.targetPrice)}`, body: a.triggeredPrice ? `Price alert hit at ${money(a.triggeredPrice)}` : 'Price alert hit', channel: 'target', url: a.coin_id ? `/asset/?id=${a.coin_id}` : '', at: Date.parse(a.triggeredAt),
+        tpl: { k: 'price', sym, below: a.condition === 'below', target: money(a.targetPrice), hit: a.triggeredPrice ? money(a.triggeredPrice) : '' } })
+    }
+  }
+  priceLike(readJson('walletlens_price_alerts', []), 'pa')
+  priceLike(readJson('wl_watchlist_alerts', []), 'wa')
+  return out.filter(x => Number.isFinite(x.at)).map(x => ({ ...x, read: now - x.at > DAY }))
+}
+
+/** Merge items into the inbox once each, keeping it newest first. */
+export function importItems(items) {
+  const seen = new Set(readJson(IMPORTED_KEY, []))
+  const fresh = items.filter(x => x.key && !seen.has(x.key))
+  const list = readInbox()
+  // Items imported before they carried a template or translations get them
+  // now, so older entries follow the language picker too.
+  const extra = new Map(items.filter(x => x.key && (x.tpl || x.i18n)).map(x => [`imp-${x.key}`, x]))
+  let upgraded = false
+  for (const n of list) {
+    const x = extra.get(n.id)
+    if (!x) continue
+    if (x.tpl && !n.tpl) { n.tpl = x.tpl; upgraded = true }
+    if (x.i18n && !n.i18n) { n.i18n = x.i18n; upgraded = true }
+  }
+  if (!fresh.length) { if (upgraded) writeInbox(list); return 0 }
+  for (const x of fresh) {
+    seen.add(x.key)
+    list.push({ id: `imp-${x.key}`, title: String(x.title), body: String(x.body || ''), url: String(x.url || ''), channel: String(x.channel || ''), tag: x.key, at: x.at, read: !!x.read, ...(x.i18n ? { i18n: x.i18n } : {}), ...(x.tpl ? { tpl: x.tpl } : {}) })
+  }
+  list.sort((a, b) => b.at - a.at)
+  try { localStorage.setItem(IMPORTED_KEY, JSON.stringify([...seen].slice(-400))) } catch { /* private mode */ }
+  writeInbox(list)
+  return fresh.length
+}
+
+/** Fill the inbox from alerts on record and from notifications still showing in the system tray. */
+export async function backfillInbox() {
+  let n = importItems(collectExisting())
+  try {
+    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+      const reg = await navigator.serviceWorker.getRegistration()
+      const shown = reg?.getNotifications ? await reg.getNotifications() : []
+      n += importItems(shown.map(x => ({ key: `tray:${x.tag || ''}:${x.timestamp}:${x.title}`, title: x.title, body: x.body, url: x.data?.url || '', channel: x.data?.channel || '', at: x.timestamp || Date.now() })))
+    }
+  } catch { /* no worker */ }
+  return n
+}
+
+// ── Feeds: WalletLens updates and market news ───────────────────────────────
+// announcements.json is the app's own news: new features and updates, written
+// by hand and published with the site. news.json is the market news the app
+// already fetches; the bell takes the headlines about what you hold.
+
+export const FEED_CHANNELS = new Set(['news', 'feature', 'update', 'tip'])
+const WEEK = 7 * DAY
+
+/** WalletLens announcements as inbox items. Unread for a week after release. */
+export function collectAnnouncements(json, now = Date.now(), lang = 'en') {
+  return (json?.items || []).filter(a => a?.id && a.title).map(a => {
+    const at = Date.parse(a.date || '') || now
+    const t = a.i18n?.[lang] || {}
+    return { key: `ann:${a.id}`, title: t.title || a.title, body: t.body || a.body || '', i18n: a.i18n || null, channel: FEED_CHANNELS.has(a.kind) ? a.kind : 'update', url: a.url || '', at, read: now - at > WEEK }
+  }).slice(0, 12)
+}
+
+/** The coins someone holds, as words to look for in a headline. */
+export function heldWords() {
+  const words = new Set()
+  for (const tx of readJson('crypto_tracker_transactions', [])) {
+    const sym = String(tx?.coin_symbol || '').trim()
+    const id = String(tx?.coin_id || '').trim()
+    if (sym.length >= 2) words.add(sym.toUpperCase())
+    if (id.length >= 4 && !id.includes('-')) words.add(id.toLowerCase())
+  }
+  return [...words]
+}
+
+/** Headlines about held coins (up to 4 from two days), plus the two newest of the last 12 hours. */
+export function collectNews(articles, words = [], now = Date.now()) {
+  const fresh = (articles || []).filter(a => a?.title && a.link).map(a => ({ a, at: Date.parse(a.pubDate || a.isoDate || '') || 0 }))
+    .filter(x => x.at && now - x.at < 2 * DAY).sort((x, y) => y.at - x.at)
+  const about = (title) => words.find(w => (w === w.toUpperCase() ? new RegExp(`\\b${w.replace(/[^A-Z0-9]/g, '')}\\b`) : new RegExp(`\\b${w}\\b`, 'i')).test(title))
+  const picked = new Map()
+  for (const x of fresh) { const w = about(x.a.title); if (w && picked.size < 4) picked.set(x.a.link, { ...x, w }) }
+  for (const x of fresh.filter(x => now - x.at < DAY / 2).slice(0, 2)) if (!picked.has(x.a.link)) picked.set(x.a.link, x)
+  return [...picked.values()].map(({ a, at, w }) => ({
+    key: `news:${a.link}`, title: a.title, body: [w ? (w === w.toUpperCase() ? w : w[0].toUpperCase() + w.slice(1)) : '', a.source || ''].filter(Boolean).join(' · ') || 'Market news',
+    channel: 'news', url: a.link, at, read: now - at > DAY / 4,
+  }))
+}
+
+let lastFeedFetch = 0
+/** Fetch both feeds at most every 15 minutes per page and import what is new. */
+export async function fetchFeeds({ force = false, fetchImpl = (typeof fetch !== 'undefined' ? fetch : null), base = '', lang = 'en' } = {}) {
+  if (!fetchImpl || (!force && Date.now() - lastFeedFetch < 15 * 60_000)) return 0
+  lastFeedFetch = Date.now()
+  const get = (name) => fetchImpl(`${base}/${name}?t=${Math.floor(Date.now() / 900_000)}`).then(r => (r.ok ? r.json() : null)).catch(() => null)
+  const [ann, news] = await Promise.all([get('announcements.json'), get('news.json')])
+  return importItems([...collectAnnouncements(ann, Date.now(), lang), ...collectNews(news?.articles, heldWords())])
+}
+
+// ── Alert text in the reader's language ─────────────────────────────────────
+// Alerts imported from the app's own records are rebuilt from their template
+// at display time, so they follow the language picker. Nothing here leaves the
+// device: alerts describe someone's holdings and must never be sent out for
+// translation.
+const ALERT_COPY = {
+  en: { smart: (s, n) => `${s}: ${n} signal alert`, above: (s, p) => `${s} rose above ${p}`, below: (s, p) => `${s} fell below ${p}`, hit: (p) => (p ? `Price alert hit at ${p}` : 'Price alert hit') },
+  ar: { smart: (s, n) => `${s}: تنبيه بـ ${n} إشارات`, above: (s, p) => `${s} تجاوز ${p}`, below: (s, p) => `${s} نزل تحت ${p}`, hit: (p) => (p ? `تحقق تنبيه السعر عند ${p}` : 'تحقق تنبيه السعر') },
+  fr: { smart: (s, n) => `${s} : alerte à ${n} signaux`, above: (s, p) => `${s} est passé au dessus de ${p}`, below: (s, p) => `${s} est passé sous ${p}`, hit: (p) => (p ? `Alerte de prix atteinte à ${p}` : 'Alerte de prix atteinte') },
+  es: { smart: (s, n) => `${s}: alerta de ${n} señales`, above: (s, p) => `${s} superó ${p}`, below: (s, p) => `${s} bajó de ${p}`, hit: (p) => (p ? `Alerta de precio alcanzada en ${p}` : 'Alerta de precio alcanzada') },
+  de: { smart: (s, n) => `${s}: Alarm mit ${n} Signalen`, above: (s, p) => `${s} stieg über ${p}`, below: (s, p) => `${s} fiel unter ${p}`, hit: (p) => (p ? `Preisalarm ausgelöst bei ${p}` : 'Preisalarm ausgelöst') },
+  it: { smart: (s, n) => `${s}: avviso con ${n} segnali`, above: (s, p) => `${s} ha superato ${p}`, below: (s, p) => `${s} è sceso sotto ${p}`, hit: (p) => (p ? `Avviso di prezzo raggiunto a ${p}` : 'Avviso di prezzo raggiunto') },
+}
+
+/**
+ * Title and body for an alert built from a template, in `lang`. `t` is the
+ * app's translator, used for the smart alert signal lines it already words in
+ * every language; `tr` maps public headline text to its translation.
+ */
+export function localizeAlert(item, lang = 'en', t = null, tr = {}) {
+  const tpl = item?.tpl
+  if (!tpl) return null
+  const c = ALERT_COPY[lang] || ALERT_COPY.en
+  if (tpl.k === 'price') return { title: (tpl.below ? c.below : c.above)(tpl.sym, tpl.target), body: c.hit(tpl.hit) }
+  if (tpl.k === 'smart') {
+    const line = (d) => {
+      if (Array.isArray(d)) { const f = t ? t(d[0]) : null; return typeof f === 'function' ? f(...d.slice(1)) : signalText(d) }
+      return tr[d] || String(d || '')
+    }
+    return { title: c.smart(tpl.sym, tpl.n), body: (tpl.signals || []).map(line).filter(Boolean).join(' · ') }
+  }
+  return null
+}

@@ -10,6 +10,7 @@ import InstallExtension from '../components/InstallExtension'
 import InterestPicker from '../components/InterestPicker'
 import PushToggle from '../components/PushToggle'
 import { ZakatSettings } from '../components/ZakatSwitch'
+import LandingLink from '../components/LandingLink'
 import NewLookToggle from '../components/NewLookToggle'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import DriveBackup from '../components/DriveBackup'
@@ -246,6 +247,7 @@ export default function Settings() {
       <div className="settings-section glass-card">
         <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="crescent" size={16} />{t('setZakat')}</h3>
         <ZakatSettings />
+        <LandingLink page="zakat" source="settings" style={{ marginTop: '0.75rem' }} />
       </div>
 
       {/* ── Weekly Report ── */}
@@ -283,6 +285,7 @@ export default function Settings() {
             <span className="settings-toggle-thumb"/>
           </button>
         </div>
+        <LandingLink page="guardian" source="settings" style={{ marginTop: '0.75rem' }} />
       </div>
 
       {/* ── Screen effects ── On by default, unlike the sound-only feature

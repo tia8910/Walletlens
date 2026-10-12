@@ -1,0 +1,215 @@
+{
+  "note": "WalletLens updates shown in the notifications bell. Newest first. Each id is shown once per device, so never reuse one. i18n holds the title and body per language; English is the fallback.",
+  "items": [
+    {
+      "id": "2026-10-12-inbox",
+      "kind": "feature",
+      "date": "2026-10-12",
+      "title": "All your notifications in one place",
+      "body": "Tap the bell for your alerts, market news about what you hold and WalletLens updates.",
+      "url": "/dashboard",
+      "i18n": {
+        "ar": {
+          "title": "كل إشعاراتك في مكان واحد",
+          "body": "اضغط على الجرس لترى تنبيهاتك وأخبار السوق عن أصولك وتحديثات WalletLens."
+        },
+        "fr": {
+          "title": "Toutes vos notifications au même endroit",
+          "body": "Touchez la cloche pour vos alertes, l'actualité de vos actifs et les nouveautés WalletLens."
+        },
+        "es": {
+          "title": "Todas tus notificaciones en un solo lugar",
+          "body": "Toca la campana para ver tus alertas, noticias de lo que tienes y novedades de WalletLens."
+        },
+        "de": {
+          "title": "Alle Benachrichtigungen an einem Ort",
+          "body": "Tippe auf die Glocke für deine Alarme, News zu deinen Werten und WalletLens Neuigkeiten."
+        },
+        "it": {
+          "title": "Tutte le notifiche in un unico posto",
+          "body": "Tocca la campanella per avvisi, notizie su ciò che possiedi e novità di WalletLens."
+        }
+      }
+    },
+    {
+      "id": "2026-10-12-desktop-polish",
+      "kind": "update",
+      "date": "2026-10-12",
+      "title": "A calmer look on desktop",
+      "body": "Softer hovers, clearer buttons and the new Solana logo across the app.",
+      "url": "/dashboard",
+      "i18n": {
+        "ar": {
+          "title": "مظهر أهدأ على سطح المكتب",
+          "body": "تأثيرات أنعم عند تمرير الماوس وأزرار أوضح وشعار سولانا الجديد في التطبيق."
+        },
+        "fr": {
+          "title": "Un affichage plus doux sur ordinateur",
+          "body": "Survols plus discrets, boutons plus lisibles et le nouveau logo Solana."
+        },
+        "es": {
+          "title": "Un aspecto más sereno en escritorio",
+          "body": "Efectos más suaves al pasar el ratón, botones más claros y el nuevo logo de Solana."
+        },
+        "de": {
+          "title": "Ruhigerer Look am Desktop",
+          "body": "Sanftere Hover Effekte, klarere Buttons und das neue Solana Logo."
+        },
+        "it": {
+          "title": "Un aspetto più sobrio su desktop",
+          "body": "Effetti al passaggio del mouse più morbidi, pulsanti più chiari e il nuovo logo Solana."
+        }
+      }
+    },
+    {
+      "id": "2026-10-11-extension-2",
+      "kind": "feature",
+      "date": "2026-10-11",
+      "title": "Your net worth in the browser toolbar",
+      "body": "Extension 2.0 for Chrome, Edge and Brave: your total, price alerts and a morning summary.",
+      "url": "/chrome-extension/",
+      "i18n": {
+        "ar": {
+          "title": "ثروتك في شريط المتصفح",
+          "body": "الإصدار 2.0 من الإضافة لكروم وإيدج وبريف: إجماليك وتنبيهات الأسعار وملخص صباحي."
+        },
+        "fr": {
+          "title": "Votre patrimoine dans la barre du navigateur",
+          "body": "Extension 2.0 pour Chrome, Edge et Brave : votre total, alertes de prix et résumé du matin."
+        },
+        "es": {
+          "title": "Tu patrimonio en la barra del navegador",
+          "body": "Extensión 2.0 para Chrome, Edge y Brave: tu total, alertas de precio y un resumen matinal."
+        },
+        "de": {
+          "title": "Dein Vermögen in der Browserleiste",
+          "body": "Erweiterung 2.0 für Chrome, Edge und Brave: Gesamtwert, Preisalarme und Morgenübersicht."
+        },
+        "it": {
+          "title": "Il tuo patrimonio nella barra del browser",
+          "body": "Estensione 2.0 per Chrome, Edge e Brave: il totale, avvisi di prezzo e un riepilogo mattutino."
+        }
+      }
+    },
+    {
+      "id": "2026-10-10-zakat",
+      "kind": "feature",
+      "date": "2026-10-10",
+      "title": "Zakat calculator in six languages",
+      "body": "Zakat on your live portfolio, with nisab from today's gold and silver prices.",
+      "url": "/zakat/",
+      "i18n": {
+        "ar": {
+          "title": "حاسبة الزكاة بست لغات",
+          "body": "زكاة محفظتك الحية مع نصاب محسوب من أسعار الذهب والفضة اليوم."
+        },
+        "fr": {
+          "title": "Calcul de la zakat en six langues",
+          "body": "La zakat sur votre portefeuille en direct, avec un nisab basé sur l'or et l'argent du jour."
+        },
+        "es": {
+          "title": "Calculadora de zakat en seis idiomas",
+          "body": "El zakat de tu cartera en vivo, con el nisab según el oro y la plata de hoy."
+        },
+        "de": {
+          "title": "Zakat Rechner in sechs Sprachen",
+          "body": "Zakat auf dein Live Portfolio, mit Nisab aus den heutigen Gold und Silberpreisen."
+        },
+        "it": {
+          "title": "Calcolatore della zakat in sei lingue",
+          "body": "La zakat sul tuo portafoglio in tempo reale, con il nisab dai prezzi di oggi di oro e argento."
+        }
+      }
+    },
+    {
+      "id": "2026-10-10-guardian",
+      "kind": "feature",
+      "date": "2026-10-10",
+      "title": "Portfolio Guardian",
+      "body": "Choose who should be able to find your holdings if you ever can't tell them yourself.",
+      "url": "/portfolio-guardian/",
+      "i18n": {
+        "ar": {
+          "title": "حارس المحفظة",
+          "body": "اختر من يستطيع الوصول إلى معرفة أصولك إذا لم تستطع إخبارهم بنفسك."
+        },
+        "fr": {
+          "title": "Gardien du portefeuille",
+          "body": "Choisissez qui pourra retrouver vos avoirs si vous ne pouvez plus le leur dire."
+        },
+        "es": {
+          "title": "Guardián de la cartera",
+          "body": "Elige quién podrá encontrar tus activos si algún día no puedes decírselo tú."
+        },
+        "de": {
+          "title": "Portfolio Wächter",
+          "body": "Lege fest, wer deine Werte finden kann, falls du es selbst nicht mehr sagen kannst."
+        },
+        "it": {
+          "title": "Guardiano del portafoglio",
+          "body": "Scegli chi potrà trovare i tuoi beni se un giorno non potrai dirglielo tu."
+        }
+      }
+    },
+    {
+      "id": "2026-10-08-drive",
+      "kind": "feature",
+      "date": "2026-10-08",
+      "title": "Automatic Google Drive backup",
+      "body": "Encrypted on your device, kept current by itself, restored on any phone or computer.",
+      "url": "/settings",
+      "i18n": {
+        "ar": {
+          "title": "نسخ احتياطي تلقائي إلى Google Drive",
+          "body": "مشفّر على جهازك، يتحدث تلقائيًا، ويُستعاد على أي هاتف أو كمبيوتر."
+        },
+        "fr": {
+          "title": "Sauvegarde automatique sur Google Drive",
+          "body": "Chiffrée sur votre appareil, toujours à jour, restaurable sur n'importe quel téléphone ou ordinateur."
+        },
+        "es": {
+          "title": "Copia automática en Google Drive",
+          "body": "Cifrada en tu dispositivo, siempre al día y recuperable en cualquier móvil u ordenador."
+        },
+        "de": {
+          "title": "Automatische Google Drive Sicherung",
+          "body": "Auf deinem Gerät verschlüsselt, immer aktuell, auf jedem Handy oder Computer wiederherstellbar."
+        },
+        "it": {
+          "title": "Backup automatico su Google Drive",
+          "body": "Cifrato sul tuo dispositivo, sempre aggiornato, ripristinabile su qualsiasi telefono o computer."
+        }
+      }
+    },
+    {
+      "id": "2026-10-05-currency",
+      "kind": "update",
+      "date": "2026-10-05",
+      "title": "Buy and sell in any currency",
+      "body": "Enter the amount and price in the currency you paid with. WalletLens converts the rest.",
+      "url": "/dashboard",
+      "i18n": {
+        "ar": {
+          "title": "شراء وبيع بأي عملة",
+          "body": "أدخل المبلغ والسعر بالعملة التي دفعت بها، ويتولى WalletLens التحويل."
+        },
+        "fr": {
+          "title": "Achat et vente dans toutes les devises",
+          "body": "Saisissez montant et prix dans la devise utilisée. WalletLens convertit le reste."
+        },
+        "es": {
+          "title": "Compra y vende en cualquier moneda",
+          "body": "Introduce el importe y el precio en la moneda con la que pagaste. WalletLens convierte el resto."
+        },
+        "de": {
+          "title": "Kaufen und verkaufen in jeder Währung",
+          "body": "Betrag und Preis in der bezahlten Währung eingeben. WalletLens rechnet den Rest um."
+        },
+        "it": {
+          "title": "Compra e vendi in qualsiasi valuta",
+          "body": "Inserisci importo e prezzo nella valuta usata. WalletLens converte il resto."
+        }
+      }
+    }
+  ]
+}

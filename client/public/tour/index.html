@@ -85,7 +85,7 @@ button{font:inherit;color:inherit}
 .flag{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:90;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);color:var(--sub);font:600 11px var(--mono);padding:6px 12px;border-radius:99px;white-space:nowrap;max-width:calc(100vw - 20px);overflow:hidden;text-overflow:ellipsis}
 
 /* nav */
-.nav{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(10,11,13,.85),transparent)}
+.nav{position:fixed;top:0;left:0;right:0;z-index:60;background:rgba(10,11,13,.9);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%);box-shadow:0 1px 0 rgba(255,255,255,.06)}
 .nav-in{display:flex;align-items:center;gap:22px;height:64px}
 .brand{display:flex;align-items:center;gap:9px;font:700 17px var(--disp);letter-spacing:-.02em}
 .brand svg{width:26px;height:26px}
@@ -461,7 +461,8 @@ footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;paddin
 .live{flex:none;width:12px;height:12px;border-radius:50%;background:var(--up);box-shadow:0 0 0 0 rgba(var(--acc-rgb),.6);animation:ping 1.8s infinite}
 @keyframes ping{to{box-shadow:0 0 0 14px rgba(var(--acc-rgb),0)}}
 @media(max-width:560px){.facts{grid-template-columns:1fr}.answer-in{padding:20px}.alloc{grid-template-columns:92px 1fr;gap:14px}.donut{width:92px;height:92px}}
-@media(prefers-reduced-motion:reduce){.js .fact,.js .bal,.js .alloc li,.js #answer .w{opacity:1!important;transform:none!important;scale:1!important;filter:none!important;transition:none!important}.chips i,.hello i,.dev em::after,.answer-in::before,.answer-in::after,.mot,.live{animation:none!important}.spark .ln{stroke-dashoffset:0!important}.spark .ar{opacity:1!important}.donut circle:not(.bg){stroke-dasharray:calc(var(--l) - .6) calc(100 - var(--l) + .6)!important}.hello i:first-child{opacity:1;transform:none}.feats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:34px}
+@media(prefers-reduced-motion:reduce){.js .fact,.js .bal,.js .alloc li,.js #answer .w{opacity:1!important;transform:none!important;scale:1!important;filter:none!important;transition:none!important}.chips i,.hello i,.dev em::after,.answer-in::before,.answer-in::after,.mot,.live{animation:none!important}.spark .ln{stroke-dashoffset:0!important}.spark .ar{opacity:1!important}.donut circle:not(.bg){stroke-dasharray:calc(var(--l) - .6) calc(100 - var(--l) + .6)!important}.hello i:first-child{opacity:1;transform:none}}
+.feats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:34px}
 .feats article{padding:22px;border-radius:20px;background:var(--card);box-shadow:inset 0 0 0 1px var(--border)}
 .feats h3{font:700 18px/1.2 var(--disp);letter-spacing:-.02em;margin:0 0 8px}
 .feats p{margin:0;color:var(--muted);font-size:15px}
@@ -640,7 +641,7 @@ footer nav{display:flex;flex-wrap:wrap;gap:6px 16px}
 </article>
 </main>
 <div class="wrap"><footer><span>© 2026 WalletLens · Updated <time datetime="2026-10-09">9 October 2026</time></span>
-  <nav aria-label="Footer"><a href="/dashboard/">Open the app</a><a href="/blog/">Blog</a><a href="/faq/">FAQ</a><a href="/about/">About</a><a href="/zakat-calculator/">Zakat calculator</a><a href="/zakat/">Zakat</a><a href="/portfolio-guardian/">Portfolio Guardian</a><a href="/import-portfolio-from-screenshot/">Screenshot import</a><a href="/add-holdings-by-voice/">Voice import</a><a href="/chrome-extension/">Chrome extension</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/llms.txt">llms.txt</a></nav></footer></div>
+  <nav aria-label="Footer"><a href="/dashboard/">Open the app</a><a href="/blog/">Blog</a><a href="/faq/">FAQ</a><a href="/about/">About</a><a href="/zakat-calculator/">Zakat calculator</a><a href="/zakat/">Zakat</a><a href="/portfolio-guardian/">Portfolio Guardian</a><a href="/import-portfolio-from-screenshot/">Screenshot import</a><a href="/add-holdings-by-voice/">Voice import</a><a href="/chrome-extension/">Chrome extension</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></nav></footer></div>
 
 <script>
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)]
