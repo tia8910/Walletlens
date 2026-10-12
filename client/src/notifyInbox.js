@@ -139,3 +139,55 @@ export async function backfillInbox() {
   } catch { /* no worker */ }
   return n
 }
+
+// ── Feeds: WalletLens updates and market news ───────────────────────────────
+// announcements.json is the app's own news: new features and updates, written
+// by hand and published with the site. news.json is the market news the app
+// already fetches; the bell takes the headlines about what you hold.
+
+export const FEED_CHANNELS = new Set(['news', 'feature', 'update', 'tip'])
+const WEEK = 7 * DAY
+
+/** WalletLens announcements as inbox items. Unread for a week after release. */
+export function collectAnnouncements(json, now = Date.now()) {
+  return (json?.items || []).filter(a => a?.id && a.title).map(a => {
+    const at = Date.parse(a.date || '') || now
+    return { key: `ann:${a.id}`, title: a.title, body: a.body || '', channel: FEED_CHANNELS.has(a.kind) ? a.kind : 'update', url: a.url || '', at, read: now - at > WEEK }
+  }).slice(0, 12)
+}
+
+/** The coins someone holds, as words to look for in a headline. */
+export function heldWords() {
+  const words = new Set()
+  for (const tx of readJson('crypto_tracker_transactions', [])) {
+    const sym = String(tx?.coin_symbol || '').trim()
+    const id = String(tx?.coin_id || '').trim()
+    if (sym.length >= 2) words.add(sym.toUpperCase())
+    if (id.length >= 4 && !id.includes('-')) words.add(id.toLowerCase())
+  }
+  return [...words]
+}
+
+/** Headlines about held coins (up to 4 from two days), plus the two newest of the last 12 hours. */
+export function collectNews(articles, words = [], now = Date.now()) {
+  const fresh = (articles || []).filter(a => a?.title && a.link).map(a => ({ a, at: Date.parse(a.pubDate || a.isoDate || '') || 0 }))
+    .filter(x => x.at && now - x.at < 2 * DAY).sort((x, y) => y.at - x.at)
+  const about = (title) => words.find(w => (w === w.toUpperCase() ? new RegExp(`\\b${w.replace(/[^A-Z0-9]/g, '')}\\b`) : new RegExp(`\\b${w}\\b`, 'i')).test(title))
+  const picked = new Map()
+  for (const x of fresh) { const w = about(x.a.title); if (w && picked.size < 4) picked.set(x.a.link, { ...x, w }) }
+  for (const x of fresh.filter(x => now - x.at < DAY / 2).slice(0, 2)) if (!picked.has(x.a.link)) picked.set(x.a.link, x)
+  return [...picked.values()].map(({ a, at, w }) => ({
+    key: `news:${a.link}`, title: a.title, body: [w ? (w === w.toUpperCase() ? w : w[0].toUpperCase() + w.slice(1)) : '', a.source || ''].filter(Boolean).join(' · ') || 'Market news',
+    channel: 'news', url: a.link, at, read: now - at > DAY / 4,
+  }))
+}
+
+let lastFeedFetch = 0
+/** Fetch both feeds at most every 15 minutes per page and import what is new. */
+export async function fetchFeeds({ force = false, fetchImpl = (typeof fetch !== 'undefined' ? fetch : null), base = '' } = {}) {
+  if (!fetchImpl || (!force && Date.now() - lastFeedFetch < 15 * 60_000)) return 0
+  lastFeedFetch = Date.now()
+  const get = (name) => fetchImpl(`${base}/${name}?t=${Math.floor(Date.now() / 900_000)}`).then(r => (r.ok ? r.json() : null)).catch(() => null)
+  const [ann, news] = await Promise.all([get('announcements.json'), get('news.json')])
+  return importItems([...collectAnnouncements(ann), ...collectNews(news?.articles, heldWords())])
+}

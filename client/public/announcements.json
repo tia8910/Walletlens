@@ -1,0 +1,12 @@
+{
+  "note": "WalletLens updates shown in the notifications bell. Newest first. Each id is shown once per device, so never reuse one.",
+  "items": [
+    { "id": "2026-10-12-inbox", "kind": "feature", "date": "2026-10-12", "title": "All your notifications in one place", "body": "Tap the bell for your alerts, market news about what you hold and WalletLens updates.", "url": "/dashboard" },
+    { "id": "2026-10-12-desktop-polish", "kind": "update", "date": "2026-10-12", "title": "A calmer look on desktop", "body": "Softer hovers, clearer buttons and the new Solana logo across the app.", "url": "/dashboard" },
+    { "id": "2026-10-11-extension-2", "kind": "feature", "date": "2026-10-11", "title": "Your net worth in the browser toolbar", "body": "Extension 2.0 for Chrome, Edge and Brave: your total, price alerts and a morning summary.", "url": "/chrome-extension/" },
+    { "id": "2026-10-10-zakat", "kind": "feature", "date": "2026-10-10", "title": "Zakat calculator in six languages", "body": "Zakat on your live portfolio, with nisab from today's gold and silver prices.", "url": "/zakat/" },
+    { "id": "2026-10-10-guardian", "kind": "feature", "date": "2026-10-10", "title": "Portfolio Guardian", "body": "Choose who should be able to find your holdings if you ever can't tell them yourself.", "url": "/portfolio-guardian/" },
+    { "id": "2026-10-08-drive", "kind": "feature", "date": "2026-10-08", "title": "Automatic Google Drive backup", "body": "Encrypted on your device, kept current by itself, restored on any phone or computer.", "url": "/settings" },
+    { "id": "2026-10-05-currency", "kind": "update", "date": "2026-10-05", "title": "Buy and sell in any currency", "body": "Enter the amount and price in the currency you paid with. WalletLens converts the rest.", "url": "/dashboard" }
+  ]
+}
