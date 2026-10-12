@@ -8,6 +8,7 @@ import {
   computeZakat, loadSettings, saveSettings, loadHawl, saveHawl,
   loadIntents, saveIntents, markPaid, saveDueDate, DEFAULT_SETTINGS, HAWL, REASONS,
 } from '../zakat'
+import LandingLink from './LandingLink'
 import { formatHijri, hijriSupported } from '../hijri'
 
 // Zakat al-Mal calculator.
@@ -172,6 +173,7 @@ export default function ZakatCalculator({ holdings = [], prices = {} }) {
       <p style={{ margin: '0 0 0.6rem', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
         {t('zkSubtitle')}
       </p>
+      <LandingLink page="zakat" source="zakat_tab" style={{ marginBottom: '1rem' }} />
 
       {/* ── Currency selector ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>

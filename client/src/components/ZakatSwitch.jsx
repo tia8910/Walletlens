@@ -2,6 +2,7 @@ import { useZakatOn, setZakatOn } from '../zakatSwitch'
 import { setPushPrefs } from '../push'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
+import LandingLink from './LandingLink'
 import ZakatNotifyToggle from './ZakatNotifyToggle'
 
 // Settings → Zakat. The master switch for the whole feature; the reminder
@@ -43,6 +44,7 @@ export function ZakatGate({ children }) {
       <h3 style={{ margin: '0 0 0.4rem' }}>{t('zkTitle')}</h3>
       <p className="settings-hint" style={{ margin: '0 0 1rem' }}>{t('zkOffHint')}</p>
       <button className="dvx-btn-primary" onClick={() => { setZakatOn(true); track('zakat_on', { source: 'dashboard' }) }}>{t('zkTurnOn')}</button>
+      <LandingLink page="zakat" source="zakat_off" style={{ marginTop: '1rem', textAlign: 'start' }} />
     </div>
   )
 }
