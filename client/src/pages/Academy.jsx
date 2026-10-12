@@ -15,6 +15,8 @@ import {
   achievementText,
   CATEGORY_KEYS,
 } from '../data/academyContent'
+import AcademyWatch, { WATCH_COPY, VIDEO_QUIZ_IQ } from '../components/AcademyWatch'
+import { VIDEOS, youtubeId, videoForHack, isLesson } from '../data/academyVideos'
 
 // ── Persistence helpers ───────────────────────────────────────────────────
 const STORE_KEY = 'wl_academy_v1'
@@ -462,6 +464,9 @@ const ACHIEVEMENTS = [
   { id: 'iq_1000',         icon: '🥈', pts: 0   },
   { id: 'iq_2000',         icon: '🥇', pts: 0   },
   { id: 'iq_5000',         icon: '👑', pts: 0   },
+  { id: 'first_watch',     icon: '🎬', pts: 50  },
+  { id: 'binge_learner',   icon: '🍿', pts: 150 },
+  { id: 'full_course',     icon: '🎓', pts: 300 },
 ]
 
 // A key rather than a word: this runs at module scope, with no hook to call.
@@ -614,7 +619,7 @@ const ARTICLE_CAT_COLORS = {
 }
 
 // ── HackCard ──────────────────────────────────────────────────────────────
-function HackCard({ hack, color, startOpen = false }) {
+function HackCard({ hack, color, startOpen = false, video = null, onPlay }) {
   const { t } = useLanguage()
   const [open, setOpen] = useState(startOpen)
   const [sharing, setSharing] = useState(false)
@@ -655,6 +660,12 @@ function HackCard({ hack, color, startOpen = false }) {
           <div className="acad-hack-title">{hack.title}</div>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+          {video && (
+            <button type="button" className="hack-play-btn" onClick={(e) => { e.stopPropagation(); onPlay(video) }}
+              aria-label={video.name} title={video.name}>
+              <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+            </button>
+          )}
           <button className="hack-share-btn" onClick={handleShare} disabled={sharing}
             title={t('share')}>
             {sharing ? '⏳' : '𝕏'}
@@ -688,10 +699,12 @@ export default function Academy() {
     // dashboard "Spin & Learn" card).
     try {
       const t = new URLSearchParams(window.location.search).get('tab')
-      if (['challenge', 'badges', 'wheel', 'game', 'hacks', 'articles'].includes(t)) return t
+      if (['watch', 'challenge', 'badges', 'wheel', 'game', 'hacks', 'articles'].includes(t)) return t
     } catch { /* no window/search */ }
-    return 'challenge'
-  }) // challenge | badges | wheel | game | hacks | articles
+    // Lessons first once there are any to watch.
+    return VIDEOS.some(v => youtubeId(v.youtube)) ? 'watch' : 'challenge'
+  }) // watch | challenge | badges | wheel | game | hacks | articles
+  const [openVideo, setOpenVideo] = useState(null)
 
   // Which hack a notification asked for, as an index into the list.
   //
@@ -826,6 +839,41 @@ export default function Academy() {
     })
   }
 
+  // Video lessons: watching counts toward three badges, and the question after
+  // a lesson earns IQ once, the first time it is answered.
+  function awardVideo(prev, patch, iqGain) {
+    const next = { ...prev, ...patch }
+    const lessonKeys = VIDEOS.filter(v => isLesson(v) && youtubeId(v.youtube)).map(v => v.key)
+    const seen = Object.keys(next.watched || {}).filter(k => lessonKeys.includes(k)).length
+    const earned = new Set(prev.earnedBadges || [])
+    const fresh = []
+    const maybe = (id) => { if (!earned.has(id)) { earned.add(id); fresh.push(id) } }
+    if (seen >= 1) maybe('first_watch')
+    if (seen >= 10) maybe('binge_learner')
+    if (lessonKeys.length >= 5 && seen >= lessonKeys.length) maybe('full_course')
+    const pts = fresh.reduce((s, id) => s + (ACHIEVEMENTS.find(a => a.id === id)?.pts || 0), 0)
+    if (fresh.length) { setNewBadges(fresh); noteMoment('achievement') }
+    const iq = (prev.iq || 0) + iqGain + pts
+    for (const [id, at] of [['iq_500', 500], ['iq_1000', 1000], ['iq_2000', 2000], ['iq_5000', 5000]]) if (iq >= at) earned.add(id)
+    return { ...next, iq, earnedBadges: [...earned] }
+  }
+  function handleVideoWatch(v) {
+    setStore(prev => {
+      if (prev.watched?.[v.key]) return prev
+      const updated = awardVideo(prev, { watched: { ...(prev.watched || {}), [v.key]: Date.now() } }, 0)
+      saveStore(updated)
+      return updated
+    })
+  }
+  function handleVideoQuiz(v, correct) {
+    setStore(prev => {
+      if (prev.vquiz?.[v.key]) return prev
+      const updated = awardVideo(prev, { vquiz: { ...(prev.vquiz || {}), [v.key]: correct ? 'right' : 'wrong' } }, correct ? VIDEO_QUIZ_IQ : 0)
+      saveStore(updated)
+      return updated
+    })
+  }
+
   const rank = getRank(store.iq || 0)
   const earnedSet = new Set(store.earnedBadges || [])
 
@@ -892,6 +940,7 @@ export default function Academy() {
       {/* Tabs */}
       <div className="acad-tabs">
         {[
+          { id: 'watch',     label: '🎬 ' + (WATCH_COPY[lang] || WATCH_COPY.en).tab },
           { id: 'challenge', label: '📅 ' + t('ayTabChallenge') },
           { id: 'badges',    label: '🏆 ' + t('ayBadgesTab')((store.earnedBadges||[]).length, ACHIEVEMENTS.length) },
           { id: 'wheel',     label: '🎡 ' + t('ayTabWheel') },
@@ -905,6 +954,12 @@ export default function Academy() {
           </button>
         ))}
       </div>
+
+      {/* ── WATCH TAB ── */}
+      {activeTab === 'watch' && (
+        <AcademyWatch store={store} onWatch={handleVideoWatch} onQuiz={handleVideoQuiz}
+          openKey={openVideo} onOpened={() => setOpenVideo(null)} />
+      )}
 
       {/* ── CHALLENGE TAB ── */}
       {activeTab === 'challenge' && (
@@ -1045,7 +1100,8 @@ export default function Academy() {
             const palette = isLight ? CAT_COLORS_LIGHT : CAT_COLORS
             const color = palette[h.cat] || (isLight ? '#15803d' : '#a78bfa')
             return (
-              <HackCard key={i} hack={h} color={color} startOpen={i === deepLinkedHack} />
+              <HackCard key={i} hack={h} color={color} startOpen={i === deepLinkedHack}
+                video={videoForHack(i)} onPlay={(v) => { setOpenVideo(v.key); setActiveTab('watch'); track('hack_video_click', { video: v.key }) }} />
             )
           })}
         </div>

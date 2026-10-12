@@ -37,6 +37,9 @@ export const ACHIEVEMENT_TEXT = {
     iq_1000:         ['Strategist',         'Reach 1,000 Investor IQ'],
     iq_2000:         ['Whale',              'Reach 2,000 Investor IQ'],
     iq_5000:         ['Legend',             'Reach 5,000 Investor IQ'],
+    first_watch: ['First Watch', 'Watch your first video lesson'],
+    binge_learner: ['Binge Learner', 'Watch 10 video lessons'],
+    full_course: ['Full Course', 'Watch every video lesson'],
   },
   ar: {
     first_lesson:    ['الدرس الأول',        'أكمل أول تحدٍّ يومي لك'],
@@ -55,6 +58,9 @@ export const ACHIEVEMENT_TEXT = {
     iq_1000:         ['استراتيجي',          'اِبلغ 1,000 نقطة ذكاء استثماري'],
     iq_2000:         ['حوت',                'اِبلغ 2,000 نقطة ذكاء استثماري'],
     iq_5000:         ['أسطورة',             'اِبلغ 5,000 نقطة ذكاء استثماري'],
+    first_watch: ['المشاهدة الأولى', 'شاهد أول درس مصور'],
+    binge_learner: ['متعلم شغوف', 'شاهد 10 دروس مصورة'],
+    full_course: ['الدورة كاملة', 'شاهد كل الدروس المصورة'],
   },
   fr: {
     first_lesson:    ['Première leçon',     'Terminez votre premier défi quotidien'],
@@ -73,6 +79,9 @@ export const ACHIEVEMENT_TEXT = {
     iq_1000:         ['Stratège',           'Atteignez 1 000 de QI investisseur'],
     iq_2000:         ['Baleine',            'Atteignez 2 000 de QI investisseur'],
     iq_5000:         ['Légende',            'Atteignez 5 000 de QI investisseur'],
+    first_watch: ['Premier visionnage', 'Regardez votre première leçon vidéo'],
+    binge_learner: ['Apprenant assidu', 'Regardez 10 leçons vidéo'],
+    full_course: ['Cursus complet', 'Regardez toutes les leçons vidéo'],
   },
   es: {
     first_lesson:    ['Primera lección',    'Completa tu primer reto diario'],
@@ -91,6 +100,9 @@ export const ACHIEVEMENT_TEXT = {
     iq_1000:         ['Estratega',          'Alcanza 1.000 de CI del inversor'],
     iq_2000:         ['Ballena',            'Alcanza 2.000 de CI del inversor'],
     iq_5000:         ['Leyenda',            'Alcanza 5.000 de CI del inversor'],
+    first_watch: ['Primera lección', 'Mira tu primera lección en vídeo'],
+    binge_learner: ['Maratón de aprendizaje', 'Mira 10 lecciones en vídeo'],
+    full_course: ['Curso completo', 'Mira todas las lecciones en vídeo'],
   },
   de: {
     first_lesson:    ['Erste Lektion',      'Schließen Sie Ihre erste tägliche Aufgabe ab'],
@@ -109,6 +121,9 @@ export const ACHIEVEMENT_TEXT = {
     iq_1000:         ['Stratege',           'Erreichen Sie 1.000 Anleger-IQ'],
     iq_2000:         ['Wal',                'Erreichen Sie 2.000 Anleger-IQ'],
     iq_5000:         ['Legende',            'Erreichen Sie 5.000 Anleger-IQ'],
+    first_watch: ['Erste Lektion', 'Sieh dir deine erste Videolektion an'],
+    binge_learner: ['Lernmarathon', 'Sieh dir 10 Videolektionen an'],
+    full_course: ['Ganzer Kurs', 'Sieh dir alle Videolektionen an'],
   },
   it: {
     first_lesson:    ['Prima lezione',      'Completa la tua prima sfida quotidiana'],
@@ -127,6 +142,9 @@ export const ACHIEVEMENT_TEXT = {
     iq_1000:         ['Stratega',           'Raggiungi 1.000 di QI dell’investitore'],
     iq_2000:         ['Balena',             'Raggiungi 2.000 di QI dell’investitore'],
     iq_5000:         ['Leggenda',           'Raggiungi 5.000 di QI dell’investitore'],
+    first_watch: ['Prima visione', 'Guarda la tua prima lezione video'],
+    binge_learner: ['Studente instancabile', 'Guarda 10 lezioni video'],
+    full_course: ['Corso completo', 'Guarda tutte le lezioni video'],
   },
 }
 
