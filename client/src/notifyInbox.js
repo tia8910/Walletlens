@@ -74,3 +74,68 @@ export function listenToWorker() {
   })
   drainWorkerInbox()
 }
+
+// ── Backfill ────────────────────────────────────────────────────────────────
+// The inbox only hears about notifications sent after it shipped, so on first
+// open it would be empty although the app has alerts on record. These are
+// imported once each (by a stable key), in time order, read if older than a day.
+
+const IMPORTED_KEY = 'wl_notif_imported'
+const DAY = 86_400_000
+const SIGNAL_TEXT = {
+  saWhale: (usd, sym) => `Whale moved ${usd} ${sym} on chain`,
+  saMomentum24: (m) => `${m} in 24h`,
+  saMomentum1h: (m) => `${m} in 1h`,
+  saVolume: (pct) => `Volume ${pct}% of market cap`,
+}
+const signalText = (d) => Array.isArray(d) ? (SIGNAL_TEXT[d[0]] ? SIGNAL_TEXT[d[0]](...d.slice(1)) : '') : String(d || '')
+const money = (n) => (Number(n) >= 1 ? '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + Number(n).toPrecision(4))
+const readJson = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v ?? d } catch { return d } }
+
+/** Turn the alerts the app already keeps into inbox items. Pure, for tests. */
+export function collectExisting(now = Date.now()) {
+  const out = []
+  for (const a of readJson('wl_smart_alerts', [])) {
+    if (!a?.coinSymbol || !a.firedAt) continue
+    out.push({ key: `sa:${a.id}:${a.firedAt}`, title: `${a.coinSymbol}: ${a.signalCount || (a.signals || []).length} signal alert`, body: (a.signals || []).map(s => signalText(s.desc)).filter(Boolean).join(' · '), channel: 'smart', url: a.coinId ? `/asset/?id=${a.coinId}` : '', at: Date.parse(a.firedAt) })
+  }
+  const priceLike = (list, prefix) => {
+    for (const a of list || []) {
+      if (!a?.triggered || !a.triggeredAt) continue
+      const sym = String(a.coin_symbol || a.coin_id || '').toUpperCase()
+      out.push({ key: `${prefix}:${a.id}:${a.triggeredAt}`, title: `${sym} ${a.condition === 'below' ? 'fell below' : 'rose above'} ${money(a.targetPrice)}`, body: a.triggeredPrice ? `Price alert hit at ${money(a.triggeredPrice)}` : 'Price alert hit', channel: 'target', url: a.coin_id ? `/asset/?id=${a.coin_id}` : '', at: Date.parse(a.triggeredAt) })
+    }
+  }
+  priceLike(readJson('walletlens_price_alerts', []), 'pa')
+  priceLike(readJson('wl_watchlist_alerts', []), 'wa')
+  return out.filter(x => Number.isFinite(x.at)).map(x => ({ ...x, read: now - x.at > DAY }))
+}
+
+/** Merge items into the inbox once each, keeping it newest first. */
+export function importItems(items) {
+  const seen = new Set(readJson(IMPORTED_KEY, []))
+  const fresh = items.filter(x => x.key && !seen.has(x.key))
+  if (!fresh.length) return 0
+  const list = readInbox()
+  for (const x of fresh) {
+    seen.add(x.key)
+    list.push({ id: `imp-${x.key}`, title: String(x.title), body: String(x.body || ''), url: String(x.url || ''), channel: String(x.channel || ''), tag: x.key, at: x.at, read: !!x.read })
+  }
+  list.sort((a, b) => b.at - a.at)
+  try { localStorage.setItem(IMPORTED_KEY, JSON.stringify([...seen].slice(-400))) } catch { /* private mode */ }
+  writeInbox(list)
+  return fresh.length
+}
+
+/** Fill the inbox from alerts on record and from notifications still showing in the system tray. */
+export async function backfillInbox() {
+  let n = importItems(collectExisting())
+  try {
+    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+      const reg = await navigator.serviceWorker.getRegistration()
+      const shown = reg?.getNotifications ? await reg.getNotifications() : []
+      n += importItems(shown.map(x => ({ key: `tray:${x.tag || ''}:${x.timestamp}:${x.title}`, title: x.title, body: x.body, url: x.data?.url || '', channel: x.data?.channel || '', at: x.timestamp || Date.now() })))
+    }
+  } catch { /* no worker */ }
+  return n
+}

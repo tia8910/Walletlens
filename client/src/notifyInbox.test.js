@@ -57,3 +57,29 @@ describe('notifications inbox', () => {
     expect(app).not.toMatch(/wl-topbar-bell"\s*\n\s*onClick=\{\(\) => \{ navigate\(/)
   })
 })
+
+describe('inbox backfill', () => {
+  beforeEach(() => { localStorage.clear() })
+  it('imports smart and triggered price alerts already on record, once each, newest first', async () => {
+    const { collectExisting, importItems } = await import('./notifyInbox')
+    const now = Date.parse('2026-10-12T12:00:00Z')
+    localStorage.setItem('wl_smart_alerts', JSON.stringify([{ id: 'sei:news,volume', coinId: 'sei-network', coinSymbol: 'SEI', signalCount: 2, firedAt: '2026-10-12T11:40:00Z', signals: [{ type: 'volume', desc: ['saVolume', 11] }, { type: 'news', desc: 'UK freezes $12M penthouse' }] }]))
+    localStorage.setItem('walletlens_price_alerts', JSON.stringify([
+      { id: 'p1', coin_id: 'bitcoin', coin_symbol: 'btc', condition: 'above', targetPrice: 84000, triggered: true, triggeredAt: '2026-10-10T09:00:00Z', triggeredPrice: 84120 },
+      { id: 'p2', coin_id: 'solana', coin_symbol: 'sol', condition: 'below', targetPrice: 100, triggered: false },
+    ]))
+    const items = collectExisting(now)
+    expect(items).toHaveLength(2)
+    expect(importItems(items)).toBe(2)
+    const list = readInbox()
+    expect(list.map(x => x.title)).toEqual(['SEI: 2 signal alert', 'BTC rose above $84,000'])
+    expect(list[0].body).toBe('Volume 11% of market cap · UK freezes $12M penthouse')
+    expect(list[0].read).toBe(false)
+    expect(list[1].read).toBe(true)
+    expect(list[1].url).toBe('/asset/?id=bitcoin')
+    // Running again imports nothing, and a cleared inbox stays cleared.
+    clearInbox()
+    expect(importItems(collectExisting(now))).toBe(0)
+    expect(readInbox()).toHaveLength(0)
+  })
+})
