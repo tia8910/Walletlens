@@ -34,4 +34,12 @@ describe('static page styles', () => {
     expect(html).toMatch(/\n\.feats\{display:grid/)
     expect(html).toMatch(/\nfooter nav\{display:flex;flex-wrap:wrap;gap:6px 16px\}/)
   })
+
+  it('keeps llms.txt out of sight: a head link for crawlers, no footer link', () => {
+    for (const file of pages(pub)) {
+      const html = readFileSync(file, 'utf8')
+      expect(html, file).not.toMatch(/>llms\.txt</)
+    }
+    expect(readFileSync(join(pub, 'tour/index.html'), 'utf8')).toContain('<link rel="alternate" type="text/plain" title="LLM summary" href="https://walletlens.live/llms.txt">')
+  })
 })

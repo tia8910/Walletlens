@@ -174,4 +174,10 @@ describe('bell feeds: WalletLens updates and news', () => {
     expect(effect).toContain("n.channel === 'news' ? [n.title]")
     expect(effect).not.toMatch(/n\.body|tpl\.sym|tpl\.target/)
   })
+
+  it('never lets a long list squash the category tabs', () => {
+    const css = read('./index.css')
+    expect(css).toMatch(/\.wl-bell-head, \.wl-bell-tabs, \.wl-bell-foot, \.wl-bell-empty \{ flex: none; \}/)
+    expect(css).toMatch(/\.wl-bell-list \{ flex: 1 1 auto; min-height: 0; \}/)
+  })
 })
