@@ -97,13 +97,16 @@ export function collectExisting(now = Date.now()) {
   const out = []
   for (const a of readJson('wl_smart_alerts', [])) {
     if (!a?.coinSymbol || !a.firedAt) continue
-    out.push({ key: `sa:${a.id}:${a.firedAt}`, title: `${a.coinSymbol}: ${a.signalCount || (a.signals || []).length} signal alert`, body: (a.signals || []).map(s => signalText(s.desc)).filter(Boolean).join(' · '), channel: 'smart', url: a.coinId ? `/asset/?id=${a.coinId}` : '', at: Date.parse(a.firedAt) })
+    const n = a.signalCount || (a.signals || []).length
+    out.push({ key: `sa:${a.id}:${a.firedAt}`, title: `${a.coinSymbol}: ${n} signal alert`, body: (a.signals || []).map(s => signalText(s.desc)).filter(Boolean).join(' · '), channel: 'smart', url: a.coinId ? `/asset/?id=${a.coinId}` : '', at: Date.parse(a.firedAt),
+      tpl: { k: 'smart', sym: a.coinSymbol, n, signals: (a.signals || []).map(s => s.desc).filter(Boolean) } })
   }
   const priceLike = (list, prefix) => {
     for (const a of list || []) {
       if (!a?.triggered || !a.triggeredAt) continue
       const sym = String(a.coin_symbol || a.coin_id || '').toUpperCase()
-      out.push({ key: `${prefix}:${a.id}:${a.triggeredAt}`, title: `${sym} ${a.condition === 'below' ? 'fell below' : 'rose above'} ${money(a.targetPrice)}`, body: a.triggeredPrice ? `Price alert hit at ${money(a.triggeredPrice)}` : 'Price alert hit', channel: 'target', url: a.coin_id ? `/asset/?id=${a.coin_id}` : '', at: Date.parse(a.triggeredAt) })
+      out.push({ key: `${prefix}:${a.id}:${a.triggeredAt}`, title: `${sym} ${a.condition === 'below' ? 'fell below' : 'rose above'} ${money(a.targetPrice)}`, body: a.triggeredPrice ? `Price alert hit at ${money(a.triggeredPrice)}` : 'Price alert hit', channel: 'target', url: a.coin_id ? `/asset/?id=${a.coin_id}` : '', at: Date.parse(a.triggeredAt),
+        tpl: { k: 'price', sym, below: a.condition === 'below', target: money(a.targetPrice), hit: a.triggeredPrice ? money(a.triggeredPrice) : '' } })
     }
   }
   priceLike(readJson('walletlens_price_alerts', []), 'pa')
@@ -115,11 +118,21 @@ export function collectExisting(now = Date.now()) {
 export function importItems(items) {
   const seen = new Set(readJson(IMPORTED_KEY, []))
   const fresh = items.filter(x => x.key && !seen.has(x.key))
-  if (!fresh.length) return 0
   const list = readInbox()
+  // Items imported before they carried a template or translations get them
+  // now, so older entries follow the language picker too.
+  const extra = new Map(items.filter(x => x.key && (x.tpl || x.i18n)).map(x => [`imp-${x.key}`, x]))
+  let upgraded = false
+  for (const n of list) {
+    const x = extra.get(n.id)
+    if (!x) continue
+    if (x.tpl && !n.tpl) { n.tpl = x.tpl; upgraded = true }
+    if (x.i18n && !n.i18n) { n.i18n = x.i18n; upgraded = true }
+  }
+  if (!fresh.length) { if (upgraded) writeInbox(list); return 0 }
   for (const x of fresh) {
     seen.add(x.key)
-    list.push({ id: `imp-${x.key}`, title: String(x.title), body: String(x.body || ''), url: String(x.url || ''), channel: String(x.channel || ''), tag: x.key, at: x.at, read: !!x.read, ...(x.i18n ? { i18n: x.i18n } : {}) })
+    list.push({ id: `imp-${x.key}`, title: String(x.title), body: String(x.body || ''), url: String(x.url || ''), channel: String(x.channel || ''), tag: x.key, at: x.at, read: !!x.read, ...(x.i18n ? { i18n: x.i18n } : {}), ...(x.tpl ? { tpl: x.tpl } : {}) })
   }
   list.sort((a, b) => b.at - a.at)
   try { localStorage.setItem(IMPORTED_KEY, JSON.stringify([...seen].slice(-400))) } catch { /* private mode */ }
@@ -191,4 +204,38 @@ export async function fetchFeeds({ force = false, fetchImpl = (typeof fetch !== 
   const get = (name) => fetchImpl(`${base}/${name}?t=${Math.floor(Date.now() / 900_000)}`).then(r => (r.ok ? r.json() : null)).catch(() => null)
   const [ann, news] = await Promise.all([get('announcements.json'), get('news.json')])
   return importItems([...collectAnnouncements(ann, Date.now(), lang), ...collectNews(news?.articles, heldWords())])
+}
+
+// ── Alert text in the reader's language ─────────────────────────────────────
+// Alerts imported from the app's own records are rebuilt from their template
+// at display time, so they follow the language picker. Nothing here leaves the
+// device: alerts describe someone's holdings and must never be sent out for
+// translation.
+const ALERT_COPY = {
+  en: { smart: (s, n) => `${s}: ${n} signal alert`, above: (s, p) => `${s} rose above ${p}`, below: (s, p) => `${s} fell below ${p}`, hit: (p) => (p ? `Price alert hit at ${p}` : 'Price alert hit') },
+  ar: { smart: (s, n) => `${s}: تنبيه بـ ${n} إشارات`, above: (s, p) => `${s} تجاوز ${p}`, below: (s, p) => `${s} نزل تحت ${p}`, hit: (p) => (p ? `تحقق تنبيه السعر عند ${p}` : 'تحقق تنبيه السعر') },
+  fr: { smart: (s, n) => `${s} : alerte à ${n} signaux`, above: (s, p) => `${s} est passé au dessus de ${p}`, below: (s, p) => `${s} est passé sous ${p}`, hit: (p) => (p ? `Alerte de prix atteinte à ${p}` : 'Alerte de prix atteinte') },
+  es: { smart: (s, n) => `${s}: alerta de ${n} señales`, above: (s, p) => `${s} superó ${p}`, below: (s, p) => `${s} bajó de ${p}`, hit: (p) => (p ? `Alerta de precio alcanzada en ${p}` : 'Alerta de precio alcanzada') },
+  de: { smart: (s, n) => `${s}: Alarm mit ${n} Signalen`, above: (s, p) => `${s} stieg über ${p}`, below: (s, p) => `${s} fiel unter ${p}`, hit: (p) => (p ? `Preisalarm ausgelöst bei ${p}` : 'Preisalarm ausgelöst') },
+  it: { smart: (s, n) => `${s}: avviso con ${n} segnali`, above: (s, p) => `${s} ha superato ${p}`, below: (s, p) => `${s} è sceso sotto ${p}`, hit: (p) => (p ? `Avviso di prezzo raggiunto a ${p}` : 'Avviso di prezzo raggiunto') },
+}
+
+/**
+ * Title and body for an alert built from a template, in `lang`. `t` is the
+ * app's translator, used for the smart alert signal lines it already words in
+ * every language; `tr` maps public headline text to its translation.
+ */
+export function localizeAlert(item, lang = 'en', t = null, tr = {}) {
+  const tpl = item?.tpl
+  if (!tpl) return null
+  const c = ALERT_COPY[lang] || ALERT_COPY.en
+  if (tpl.k === 'price') return { title: (tpl.below ? c.below : c.above)(tpl.sym, tpl.target), body: c.hit(tpl.hit) }
+  if (tpl.k === 'smart') {
+    const line = (d) => {
+      if (Array.isArray(d)) { const f = t ? t(d[0]) : null; return typeof f === 'function' ? f(...d.slice(1)) : signalText(d) }
+      return tr[d] || String(d || '')
+    }
+    return { title: c.smart(tpl.sym, tpl.n), body: (tpl.signals || []).map(line).filter(Boolean).join(' · ') }
+  }
+  return null
 }

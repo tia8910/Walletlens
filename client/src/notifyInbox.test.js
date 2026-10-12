@@ -143,4 +143,35 @@ describe('bell feeds: WalletLens updates and news', () => {
       }
     }
   })
+  it('rebuilds imported alerts in the reader language, on device', async () => {
+    const { localizeAlert } = await import('./notifyInbox')
+    const price = { tpl: { k: 'price', sym: 'BTC', below: true, target: '$60,000', hit: '$59,800' } }
+    expect(localizeAlert(price, 'ar').title).toBe('BTC نزل تحت $60,000')
+    expect(localizeAlert(price, 'ar').body).toContain('$59,800')
+    expect(localizeAlert(price, 'en').title).toBe('BTC fell below $60,000')
+    const t = (k) => (k === 'sig_rsi' ? (v) => `مؤشر ${v}` : null)
+    const smart = { tpl: { k: 'smart', sym: 'ETH', n: 2, signals: [['sig_rsi', 28], 'Big news'] } }
+    const out = localizeAlert(smart, 'ar', t, { 'Big news': 'خبر كبير' })
+    expect(out.title).toBe('ETH: تنبيه بـ 2 إشارات')
+    expect(out.body).toBe('مؤشر 28 · خبر كبير')
+    expect(localizeAlert({ title: 'x' }, 'ar')).toBe(null)
+    for (const lang of ['ar', 'fr', 'es', 'de', 'it']) expect(localizeAlert(price, lang).title).not.toMatch(/fell below/)
+  })
+
+  it('gives alerts imported before templates their template on the next backfill', async () => {
+    const { importItems } = await import('./notifyInbox')
+    const at = Date.now()
+    importItems([{ key: 'pa:1', title: 'BTC fell below $1', channel: 'target', at }])
+    expect(readInbox().find(x => x.id === 'imp-pa:1').tpl).toBeUndefined()
+    importItems([{ key: 'pa:1', title: 'BTC fell below $1', channel: 'target', at, tpl: { k: 'price', sym: 'BTC', below: true, target: '$1', hit: '' } }])
+    expect(readInbox().find(x => x.id === 'imp-pa:1').tpl.sym).toBe('BTC')
+    expect(readInbox().filter(x => x.id === 'imp-pa:1').length).toBe(1)
+  })
+
+  it('only sends public headlines for translation, never alert text', () => {
+    const bell = read('./components/NotificationBell.jsx')
+    const effect = bell.slice(bell.indexOf('const [tr, setTr]'), bell.indexOf('const box = useRef'))
+    expect(effect).toContain("n.channel === 'news' ? [n.title]")
+    expect(effect).not.toMatch(/n\.body|tpl\.sym|tpl\.target/)
+  })
 })
