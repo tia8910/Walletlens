@@ -8,7 +8,7 @@ import { LANGUAGE_CODES } from './i18n'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { hacks, questions } from './data/academyContent.js'
+import { hacks } from './data/academyContent.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -290,7 +290,10 @@ describe('scheduled content channels', () => {
     expect(sent.filter(p => p.channel === 'portfolio')).toHaveLength(1)
   })
 
-  it('sends the day’s Academy question as the notification body', async () => {
+  it('sends no daily Academy challenge: the Academy is video lessons now', async () => {
+    // The challenge, its points and its streak were removed with the games.
+    // The Academy switch now covers new video lessons instead (see
+    // academyVideoNotify.test.js), so the old evening slot stays silent.
     atHour(ACADEMY_HOUR)
     await stubQuotes()
     const store = fakeStore([{ key: 'k1', sub: sub({ watch: watch3, tz: 0 }) }])
@@ -298,26 +301,7 @@ describe('scheduled content channels', () => {
     const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
 
     await jobs.checkDaily()
-
-    const q = sent.find(p => p.channel === 'academy')
-    expect(q, 'the challenge reached the sender').toBeTruthy()
-    // The body is a real stem from the bank, not a "your challenge is ready".
-    expect(questions('en').map(x => x.q)).toContain(q.body)
-    // The challenge tab specifically. /academy alone opens whatever tab is
-    // default, which is a coincidence rather than a destination.
-    expect(q.url).toBe('/academy?tab=challenge')
-  })
-
-  it('does not repeat the challenge later the same day', async () => {
-    atHour(ACADEMY_HOUR)
-    await stubQuotes()
-    const store = fakeStore([{ key: 'k1', sub: sub({ watch: watch3, tz: 0 }) }])
-    const sent = []
-    const jobs = createJobs({ store, send: async (s, p) => { sent.push(p); return true } })
-
-    await jobs.checkDaily()
-    await jobs.checkDaily()
-    expect(sent.filter(p => p.channel === 'academy')).toHaveLength(1)
+    expect(sent.filter(p => p.channel === 'academy')).toHaveLength(0)
   })
 
   it('sends an investment hack, and a different one next time', async () => {
@@ -580,7 +564,7 @@ describe('notifications are written in the language the user picked', () => {
   })
 
   for (const lang of ['ar', 'de', 'it', 'fr', 'es']) {
-    it(`writes the ${lang} hack and challenge in ${lang}`, async () => {
+    it(`writes the ${lang} hack in ${lang}`, async () => {
       vi.useFakeTimers()
       atHour(HACK_HOUR)
       vi.spyOn(await import('../../push-api/markets.js'), 'fetchQuotes').mockResolvedValue({})
@@ -595,14 +579,6 @@ describe('notifications are written in the language the user picked', () => {
       expect(hack.body, `${lang} must not fall back to English`)
         .not.toBe(hacks('en')[0].body)
 
-      sent.length = 0
-      atHour(ACADEMY_HOUR)
-      await jobs.checkDaily()
-      const q = sent.find(p => p.channel === 'academy')
-      expect(q, `a challenge for ${lang}`).toBeTruthy()
-      expect(questions(lang).map(x => x.q)).toContain(q.body)
-      expect(questions('en').map(x => x.q), `${lang} stem must not be English`)
-        .not.toContain(q.body)
 
       vi.useRealTimers()
       vi.restoreAllMocks()
@@ -780,7 +756,7 @@ describe('a token-addressed device reaches Firebase', () => {
   })
 
   it('gets a scheduled channel — the one that had never arrived', async () => {
-    // The hack, the academy question and the portfolio pulse all run from
+    // The hack, the new video lessons and the portfolio pulse all run from
     // checkDaily on the hourly cron. Every one of them was silent on an app
     // install for the same single reason.
     const now = atHour(HACK_HOUR)

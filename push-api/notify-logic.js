@@ -1291,7 +1291,7 @@ export const DEFAULT_PREFS = {
   // the app worth a notification on a week when the market does nothing.
   newsMarket: true, // a breaking story that names no holding of yours
   hacks: true,      // one investment hack every other day
-  academy: true,    // the daily Academy challenge
+  academy: true,    // new Academy video lessons
   portfolio: true,  // a daily breadth read on the holdings, no amounts
   movePct: 1,       // swing threshold, percent
 }
@@ -1988,8 +1988,8 @@ export const CHANNEL_URL = {
   // the dashboard. A hack that opens a portfolio screen has thrown away the
   // one thing the tap was for.
   hack: '/academy?tab=hacks',
-  academy: '/academy?tab=challenge',
-  video: '/academy?tab=watch',
+  academy: '/academy',
+  video: '/academy',
   portfolio: '/dashboard',
   test: '/settings',
 }

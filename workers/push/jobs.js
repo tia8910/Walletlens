@@ -23,8 +23,8 @@ import {
   matchArticle, isBreaking, shortHash, dueRetentionStep, pickFeatureTip,
   FEATURE_TIP_GAP_MS, RETENTION_HOUR, RETENTION_MIN_PCT, DIGEST_MIN_PCT,
   fmtPct, fmtPrice, signedPct, dueZakatReminder, trimZakatSent,
-  isMarketStory, pickHack, pickChallenge, portfolioPulse, assetUrl,
-  HACK_GAP_MS, HACK_HOUR, ACADEMY_HOUR, PORTFOLIO_HOUR, VIDEO_HOUR, PULSE_MIN_PCT, isStablecoin,
+  isMarketStory, pickHack, portfolioPulse, assetUrl,
+  HACK_GAP_MS, HACK_HOUR, PORTFOLIO_HOUR, VIDEO_HOUR, PULSE_MIN_PCT, isStablecoin,
   trendSwitched,
 } from '../../push-api/notify-logic.js'
 import { assetKey, fetchCryptoQuotes, fetchNews, fetchQuotes, fetchSevenDay, quoteFor } from '../../push-api/markets.js'
@@ -37,7 +37,7 @@ import { trendFor } from '../../client/src/assetTrend.js'
 // go together, and a second copy on the server is a second thing to translate
 // and a guaranteed drift. The file is plain data with no imports of its own,
 // which is what makes it safe to pull into a Worker bundle.
-import { hacks, questions } from '../../client/src/data/academyContent.js'
+import { hacks } from '../../client/src/data/academyContent.js'
 // The video catalog, for the same reason: the app and the push agree on which
 // videos are new, and on what the announcement says, because it is one file.
 import { newVideos, videoPush } from '../../client/src/data/academyVideos.js'
@@ -341,7 +341,6 @@ export function createJobs({ store, send }) {
         || (h === RETENTION_HOUR && sub.prefs.retention)
         || (h === ZAKAT_HOUR && sub.prefs.zakat && !!sub.zakatDue)
         || (h === PORTFOLIO_HOUR && sub.prefs.portfolio)
-        || (h === ACADEMY_HOUR && sub.prefs.academy)
         || hackDue(sub)
         || videoDue(sub)
         || featureDue(sub)
@@ -494,27 +493,8 @@ export function createJobs({ store, send }) {
         }
       }
 
-      // — Academy daily challenge —
-      // The body is the question itself. "Your daily challenge is ready" is
-      // the app talking about itself; the actual stem is a thing you either
-      // know or want to find out, and that is what earns the tap.
-      if (hour === ACADEMY_HOUR && sub.prefs.academy && sub.academyDay !== today) {
-        const bank = questions(sub.lang || 'en')
-        const idx = pickChallenge({ dayKey: today, count: bank.length })
-        const question = idx == null ? null : bank[idx]
-        if (question?.q) {
-          await send(sub, buildPayload({
-            channel: "academy",
-            title: copy("academyTitle", sub.lang)(),
-            body: question.q,
-            tag: `academy-${today}`,
-          }), { now })
-        }
-        // Marked either way: the challenge is tied to this day, and a retry an
-        // hour later would be the same question with less of the day left.
-        sub.academyDay = today
-        changed = true
-      }
+      // The Academy no longer has a daily challenge: the Academy switch now
+      // covers new video lessons (below) instead.
 
       // — New Academy videos —
       // Everything new in one push: the video itself when there is one, a

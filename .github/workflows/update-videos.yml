@@ -5,10 +5,10 @@ name: Update Videos
 #
 # Reads the channel's public feed (no API key), writes
 # client/src/data/academyVideoLinks.js, and when something changed commits it
-# and starts the site deploy. The deploy is started explicitly because a push
-# made with GITHUB_TOKEN does not trigger other workflows; a workflow_dispatch
-# is the one event it may start. Once the site is live with the new list, the
-# push worker picks it up from /academy-videos.json at 16:00 local time.
+# to main. Cloudflare Pages' Git integration builds every push to main, this
+# one included, so the commit is the deploy. Once the site is live with the
+# new list, the push worker picks it up from /academy-videos.json at 16:00
+# local time.
 
 on:
   schedule:
@@ -17,7 +17,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 concurrency:
   group: update-videos
@@ -40,9 +39,7 @@ jobs:
         working-directory: client
         run: node scripts/sync-youtube.mjs
 
-      - name: Commit and deploy when something changed
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit when something changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -53,4 +50,3 @@ jobs:
           fi
           git commit -m "chore: link new Academy videos from YouTube"
           git push
-          gh workflow run deploy-site.yml --ref main

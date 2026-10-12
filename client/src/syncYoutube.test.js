@@ -67,8 +67,11 @@ describe('sync from the YouTube channel', () => {
     expect(VIDEOS.length).toBe(BASE_VIDEOS.length + (synced.extras || []).length)
     const flow = read('../../.github/workflows/update-videos.yml')
     expect(flow).toContain('node scripts/sync-youtube.mjs')
-    expect(flow).toContain('gh workflow run deploy-site.yml --ref main')
-    expect(flow).toContain('actions: write')
+    // The commit to main is the deploy: Cloudflare Pages builds every push.
+    // deploy-site.yml is not started from here; it has not deployed since the
+    // site moved to the Git integration, and would only leave a red run.
+    expect(flow).toContain('git push')
+    expect(flow).not.toContain('deploy-site.yml')
     // The push worker redeploys itself when its own code changes.
     const workers = read('../../.github/workflows/deploy-workers.yml')
     expect(workers).toMatch(/push:\n    branches: \[ main \]/)

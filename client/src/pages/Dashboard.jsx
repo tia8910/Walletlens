@@ -43,6 +43,7 @@ import MarketMood from '../components/MarketMood'
 import { pushPortfolioToExtension } from '../utils/extensionBridge'
 import { BiometricToggle } from '../components/BiometricLock'
 import InterestPicker, { interestsDone } from '../components/InterestPicker'
+import LatestLesson from '../components/LatestLesson'
 import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
 import Tip from '../components/Tip'
 import { syncWidgets } from '../nativeWidgets'
@@ -4599,6 +4600,7 @@ export default function Dashboard() {
                 onAsset={(h) => { if (consumeLongPress()) return; track('asset_click'); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) }}
                 bindRow={(h) => bindLongPress((x, y) => showLp(x, y, holdingMenu(h), { title: (h.coin_symbol || '').toUpperCase(), subtitle: hidden ? VALUE_MASK : cv(h.value), area: 'holding' }))}
               />
+              <LatestLesson />
               {enriched.some(h => categorizeAsset(h) === 'crypto') && <BybitStrip />}
               <button type="button" className="nl-card nl-insights" onClick={openInsights}>
                 <span className="nl-insights-ic" aria-hidden="true">
