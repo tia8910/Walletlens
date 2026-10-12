@@ -327,6 +327,12 @@ function NonCryptoLogo({ coinId, symbol, size = 32, className = 'coin-logo', bad
   )
 }
 
+// Brands that changed their mark after the icon packs below were frozen. Served
+// from our own origin and tried before anything cached, so an old logo that
+// loaded once and was remembered cannot win.
+export const LOGO_OVERRIDES = { solana: '/logos/solana.svg' }
+const overrideFor = (coinId, sym) => LOGO_OVERRIDES[coinId] || (!coinId && sym === 'sol' ? LOGO_OVERRIDES.solana : null)
+
 const CryptoLogo = memo(function CryptoLogo({
   image,
   symbol,
@@ -344,7 +350,8 @@ const CryptoLogo = memo(function CryptoLogo({
   const cachedImg = coinId ? getCachedCoinImage(coinId) : null
   const logoKey = coinId || (sym ? `sym:${sym}` : '')
   const resolved = logoKey ? RESOLVED[logoKey] : null
-  const STAGES = useMemo(() => [
+  const override = overrideFor(coinId, sym)
+  const STAGES = useMemo(() => override ? [`img:${override}`] : [
     // What loaded last time, first. Everything below it is a guess by
     // comparison, and several of the guesses are hosts a given device or
     // network may block outright.
@@ -371,7 +378,7 @@ const CryptoLogo = memo(function CryptoLogo({
     // permissive CORS, so logos still load when direct requests are blocked.
     sym      ? `dproxy:https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg` : null,
     sym      ? `dproxy:https://assets.coincap.io/assets/icons/${sym}@2x.png` : null,
-  ].filter(Boolean), [image, cachedImg, sym, resolved])
+  ].filter(Boolean), [image, cachedImg, sym, resolved, override])
 
   const [stageIdx, setStageIdx] = useState(0)
   // Above every return in this component: hook order is fixed by

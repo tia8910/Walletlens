@@ -1661,7 +1661,10 @@ button { padding: 0.55rem 1.1rem; border-radius: 10px; border: none; font-weight
    base-skin fill would leave ghost/icon buttons (eye, gear, logo…) painted as
    a solid accent oval after every press. */
 @media (hover: hover) {
-  button:hover { background: var(--accent2); }
+  /* Shade whatever the button already is rather than repainting it: a
+     background here outranks single-class skins, so every white tile, red Sell
+     button and nav item used to turn solid green under the mouse. */
+  button:hover { filter: brightness(0.95); }
 }
 .btn-sm { padding: 0.3rem 0.65rem; font-size: 0.75rem; }
 
