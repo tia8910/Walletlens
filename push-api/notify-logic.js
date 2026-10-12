@@ -1131,6 +1131,8 @@ export const HACK_GAP_MS = 2 * 24 * 60 * 60 * 1000
 export const HACK_HOUR = 13
 export const ACADEMY_HOUR = 18
 export const PORTFOLIO_HOUR = 17
+/** New Academy videos: once a day at most, and only in a week one went live. */
+export const VIDEO_HOUR = 16
 
 /**
  * The next hack to send, as an index into the hack list.
@@ -1379,6 +1381,9 @@ export function normalizeSub(s = {}) {
     hacksSent: Array.isArray(s.hacksSent) ? s.hacksSent.map(String) : [],
     lastHackAt: s.lastHackAt ?? 0,
     academyDay: s.academyDay ?? '',
+    // New Academy videos already announced, by key, and the day the last went out.
+    videosSent: Array.isArray(s.videosSent) ? s.videosSent.map(String).slice(-200) : [],
+    videoDay: s.videoDay ?? '',
     pulseDay: s.pulseDay ?? '',
     sent: s.sent ?? { day: '', n: 0 },
   }
@@ -1984,6 +1989,7 @@ export const CHANNEL_URL = {
   // one thing the tap was for.
   hack: '/academy?tab=hacks',
   academy: '/academy?tab=challenge',
+  video: '/academy?tab=watch',
   portfolio: '/dashboard',
   test: '/settings',
 }
@@ -2102,6 +2108,7 @@ export const CHANNEL_DELIVERY = {
   // The challenge is the one that expires: it IS today's, and arriving after
   // midnight would point at a question that is no longer the one on screen.
   academy:   { urgency: 'low',    ttl: 5 * 60 * 60 },
+  video:     { urgency: 'low',    ttl: 24 * 60 * 60 },  // still new tomorrow
   // High urgency for three notifications a year. The reminder is worth waking
   // a dozing phone for — it is a religious obligation falling due on a date the
   // user chose, not a price that will still be there later — and the loudness

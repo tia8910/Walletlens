@@ -117,8 +117,11 @@ export function collectExisting(now = Date.now()) {
 /** Merge items into the inbox once each, keeping it newest first. */
 export function importItems(items) {
   const seen = new Set(readJson(IMPORTED_KEY, []))
-  const fresh = items.filter(x => x.key && !seen.has(x.key))
   const list = readInbox()
+  // Already in the bell under the same tag (a push that arrived first): one item, not two.
+  const tags = new Set(list.map(n => n.tag).filter(Boolean))
+  for (const x of items) if (x.key && tags.has(x.key)) seen.add(x.key)
+  const fresh = items.filter(x => x.key && !seen.has(x.key))
   // Items imported before they carried a template or translations get them
   // now, so older entries follow the language picker too.
   const extra = new Map(items.filter(x => x.key && (x.tpl || x.i18n)).map(x => [`imp-${x.key}`, x]))
@@ -140,9 +143,30 @@ export function importItems(items) {
   return fresh.length
 }
 
+/**
+ * New Academy videos as inbox items, with their wording in every language so
+ * the bell follows the language picker. `mod` is the academyVideos module,
+ * passed in because it is loaded lazily: the catalog pulls in the Academy's
+ * content, which has no place in the first paint.
+ */
+export function collectVideos(mod, now = Date.now(), lang = 'en') {
+  return mod.newVideos({ now, lang }).map(v => {
+    const i18n = {}
+    for (const l of Object.keys(mod.VIDEO_NOTICE)) i18n[l] = mod.videoNotice(v, l)
+    // The tag matches the push for the same video, so the two are one item.
+    return { key: `video-${v.key}`, title: i18n.en.title, body: i18n.en.body, i18n, channel: 'video', url: mod.videoUrl(v.key), at: mod.addedAt(v), read: false }
+  })
+}
+
+const readLang = () => { try { return (localStorage.getItem('wl_lang') || 'en').slice(0, 2) } catch { return 'en' } }
+
 /** Fill the inbox from alerts on record and from notifications still showing in the system tray. */
-export async function backfillInbox() {
+export async function backfillInbox(lang) {
   let n = importItems(collectExisting())
+  try {
+    const mod = await import('./data/academyVideos')
+    n += importItems(collectVideos(mod, Date.now(), lang || readLang()))
+  } catch { /* the catalog failed to load: the bell still has everything else */ }
   try {
     if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
       const reg = await navigator.serviceWorker.getRegistration()
@@ -158,7 +182,7 @@ export async function backfillInbox() {
 // by hand and published with the site. news.json is the market news the app
 // already fetches; the bell takes the headlines about what you hold.
 
-export const FEED_CHANNELS = new Set(['news', 'feature', 'update', 'tip'])
+export const FEED_CHANNELS = new Set(['news', 'feature', 'update', 'tip', 'video'])
 const WEEK = 7 * DAY
 
 /** WalletLens announcements as inbox items. Unread for a week after release. */

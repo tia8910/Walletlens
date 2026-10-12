@@ -22,6 +22,7 @@ import { PRICE_ASSETS } from '../src/data/priceAssets.js'
 import { AR_FEATURES, AR_LANDING, AR_COMPARISONS, AR_VS } from '../src/data/arabic.js'
 import { AR_POSTS } from '../src/data/arabicBlog.js'
 import { buildLandings, LANDING_ROUTES } from './landings/build.mjs'
+import { publishedVideos } from '../src/data/academyVideos.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, '..', 'dist')
@@ -2625,4 +2626,10 @@ try {
 } catch (e) {
   console.warn('llms.txt generation skipped:', e.message)
 }
+
+// ── Academy videos ───────────────────────────────────────────────────────────
+// The linked videos, for the push worker: it reads this at send time, so a
+// video announced by push needs only a site deploy, not a worker deploy.
+writeFileSync(resolve(DIST, 'academy-videos.json'), JSON.stringify({ videos: publishedVideos() }), 'utf8')
+console.log(`Wrote academy-videos.json (${publishedVideos().length} linked).`)
 // ── Per-asset landing pages (/track/:slug) ───────────────────────────────────

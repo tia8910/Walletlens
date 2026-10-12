@@ -24,7 +24,7 @@ import {
   FEATURE_TIP_GAP_MS, RETENTION_HOUR, RETENTION_MIN_PCT, DIGEST_MIN_PCT,
   fmtPct, fmtPrice, signedPct, dueZakatReminder, trimZakatSent,
   isMarketStory, pickHack, pickChallenge, portfolioPulse, assetUrl,
-  HACK_GAP_MS, HACK_HOUR, ACADEMY_HOUR, PORTFOLIO_HOUR, PULSE_MIN_PCT, isStablecoin,
+  HACK_GAP_MS, HACK_HOUR, ACADEMY_HOUR, PORTFOLIO_HOUR, VIDEO_HOUR, PULSE_MIN_PCT, isStablecoin,
   trendSwitched,
 } from '../../push-api/notify-logic.js'
 import { assetKey, fetchCryptoQuotes, fetchNews, fetchQuotes, fetchSevenDay, quoteFor } from '../../push-api/markets.js'
@@ -38,6 +38,10 @@ import { trendFor } from '../../client/src/assetTrend.js'
 // and a guaranteed drift. The file is plain data with no imports of its own,
 // which is what makes it safe to pull into a Worker bundle.
 import { hacks, questions } from '../../client/src/data/academyContent.js'
+// The video catalog, for the same reason: the app and the push agree on which
+// videos are new, and on what the announcement says, because it is one file.
+import { newVideos, videoPush } from '../../client/src/data/academyVideos.js'
+import { SITE_ORIGIN } from './site.js'
 
 // Local clock slots, carried over from the Deno service. The brief goes out at
 // 09:00 on the user's own clock; zakat gets its own slot so the two do not
@@ -51,6 +55,16 @@ const ZAKAT_HOUR = 11
  * @param store an object with all(), get(), save()
  * @param send  (sub, payload, opts) => Promise<truthy on delivery>
  */
+/** The published video list, or null to fall back to the bundled catalog. */
+async function fetchVideoList(fetchImpl = globalThis.fetch) {
+  try {
+    const r = await fetchImpl(`${SITE_ORIGIN}/academy-videos.json`, { cf: { cacheTtl: 300 } })
+    if (!r.ok) return null
+    const j = await r.json()
+    return Array.isArray(j?.videos) ? j.videos : null
+  } catch { return null }
+}
+
 export function createJobs({ store, send }) {
   async function checkTargets() {
     const subs = await store.all()
@@ -310,6 +324,17 @@ export function createJobs({ store, send }) {
       sub.prefs.hacks && localHour(now, sub.tz) === HACK_HOUR &&
       now - (sub.lastHackAt ?? 0) >= HACK_GAP_MS
 
+    // A new Academy video, at most once a day, under the Academy switch. The
+    // list is the site's published one, read only in an hour someone could be
+    // due: a link added and deployed with the site is announced without a
+    // worker deploy. The bundled copy stands in if the site cannot be reached.
+    const videoHourFor = subs.some(({ sub }) => sub.prefs.academy && localHour(now, sub.tz) === VIDEO_HOUR)
+    const videoList = videoHourFor ? await fetchVideoList() : null
+    const videosFor = (sub) => newVideos({ now, sent: sub.videosSent || [], lang: sub.lang || 'en', ...(videoList ? { list: videoList } : {}) })
+    const videoDue = (sub) =>
+      sub.prefs.academy && localHour(now, sub.tz) === VIDEO_HOUR &&
+      sub.videoDay !== localDayKey(now, sub.tz) && videosFor(sub).length > 0
+
     const due = subs.filter(({ sub }) => {
       const h = localHour(now, sub.tz)
       return (h === DIGEST_HOUR && sub.prefs.digest)
@@ -318,6 +343,7 @@ export function createJobs({ store, send }) {
         || (h === PORTFOLIO_HOUR && sub.prefs.portfolio)
         || (h === ACADEMY_HOUR && sub.prefs.academy)
         || hackDue(sub)
+        || videoDue(sub)
         || featureDue(sub)
     })
     if (!due.length) return
@@ -488,6 +514,22 @@ export function createJobs({ store, send }) {
         // hour later would be the same question with less of the day left.
         sub.academyDay = today
         changed = true
+      }
+
+      // — New Academy videos —
+      // Everything new in one push: the video itself when there is one, a
+      // count when several went live together. Each is announced once.
+      if (videoDue(sub)) {
+        const list = videosFor(sub)
+        const msg = videoPush(list, sub.lang || 'en')
+        if (msg) {
+          const sent = await send(sub, buildPayload({ channel: 'video', ...msg }), { now })
+          if (sent) {
+            sub.videosSent = [...(sub.videosSent || []), ...list.map(v => v.key)].slice(-200)
+            sub.videoDay = today
+            changed = true
+          }
+        }
       }
 
       // — Investment hacks —

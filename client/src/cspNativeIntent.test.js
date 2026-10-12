@@ -62,7 +62,9 @@ describe('CSP admits the native intent bridge', () => {
     // the button is a plain link and frame-src does not govern navigations.
     for (const [file] of POLICIES) {
       const sources = frameSources(read(file))
-      expect(sources).toEqual(['https://accounts.google.com', 'intent:'])
+      // The one addition: YouTube's privacy-enhanced player for the Academy
+      // lessons (no cookies until a lesson is played). Nothing else.
+      expect(sources).toEqual(['https://accounts.google.com', 'intent:', 'https://www.youtube-nocookie.com'])
     }
   })
 
