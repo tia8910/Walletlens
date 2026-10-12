@@ -6,7 +6,7 @@
 // `hack` is an index into HACK_TEXT and `q` into QUESTION_TEXT, both already
 // written in every app language: the lesson line under a video and the quiz
 // after it come from there, so nothing here needs translating.
-import { hacks, questions } from './academyContent'
+import { hacks, questions } from './academyContent.js'
 
 export const YT_CHANNEL = 'https://www.youtube.com/@walletlens'
 export const YT_SUBSCRIBE = `${YT_CHANNEL}?sub_confirmation=1`
@@ -22,6 +22,9 @@ export function youtubeId(link) {
 /** The privacy-enhanced player: no cookies are set until the viewer presses play. */
 export const embedUrl = (id) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1`
 
+// When a link is filled in, set `added` to that day ('YYYY-MM-DD'): for a
+// week after it the video is announced as new, in the bell and by push.
+//
 // kind: story (a short with a lesson), hack (a short about one hack card),
 // original (a long film), howto (a feature tutorial).
 // lang: the language spoken or written in the video; 'all' has no words that need reading.
@@ -87,3 +90,59 @@ export function academyVideos(lang = 'en', list = VIDEOS) {
 /** The video for a hack card, if one is ready. */
 export const videoForHack = (index, list = VIDEOS) =>
   list.find(v => v.kind === 'hack' && v.hack === index && youtubeId(v.youtube)) || null
+
+// ── New videos ──────────────────────────────────────────────────────────────
+// Shared by the bell (on the device) and the push worker (on the server), so
+// both announce the same videos for the same week.
+
+export const NEW_VIDEO_DAYS = 7
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** The day a video went live, as a timestamp, or NaN when it has no date. */
+export const addedAt = (v) => Date.parse(`${v.added || ''}T00:00:00Z`)
+
+/**
+ * Linked videos added in the last week, newest first, minus those already
+ * announced (`sent`, a list of keys). A tutorial in another language than the
+ * reader's is left out, as on the Watch tab.
+ */
+export function newVideos({ now = Date.now(), sent = [], lang = 'en', list = VIDEOS } = {}) {
+  const done = new Set(sent)
+  return academyVideos(lang, list)
+    .filter(v => !done.has(v.key))
+    .filter(v => { const at = addedAt(v); return at <= now && now - at < NEW_VIDEO_DAYS * DAY_MS })
+    .sort((a, b) => addedAt(b) - addedAt(a))
+}
+
+/** Where a notification about one video opens: that video, playing. */
+export const videoUrl = (key) => `/academy?tab=watch&video=${encodeURIComponent(key)}`
+
+// What the announcement says, in the bell and in the push, per language.
+const NOTICE = {
+  en: { one: (name) => `🎬 New in the Academy: ${name}`, many: (n) => `🎬 ${n} new lessons in the Academy`, tutorial: 'A short video on how it works' },
+  ar: { one: (name) => `🎬 جديد في الأكاديمية: ${name}`, many: (n) => `🎬 ${n} دروس جديدة في الأكاديمية`, tutorial: 'فيديو قصير يشرح طريقة الاستخدام' },
+  fr: { one: (name) => `🎬 Nouveau dans l’Académie : ${name}`, many: (n) => `🎬 ${n} nouvelles leçons dans l’Académie`, tutorial: 'Une courte vidéo pour comprendre comment ça marche' },
+  es: { one: (name) => `🎬 Nuevo en la Academia: ${name}`, many: (n) => `🎬 ${n} lecciones nuevas en la Academia`, tutorial: 'Un vídeo corto sobre cómo funciona' },
+  de: { one: (name) => `🎬 Neu in der Akademie: ${name}`, many: (n) => `🎬 ${n} neue Lektionen in der Akademie`, tutorial: 'Ein kurzes Video, wie es funktioniert' },
+  it: { one: (name) => `🎬 Novità nell’Academy: ${name}`, many: (n) => `🎬 ${n} nuove lezioni nell’Academy`, tutorial: 'Un breve video su come funziona' },
+}
+export const VIDEO_NOTICE = NOTICE
+
+/** Title and body announcing one video, in `lang`. The body is its lesson. */
+export function videoNotice(v, lang = 'en') {
+  const c = NOTICE[lang] || NOTICE.en
+  const lesson = v.hack != null ? hacks(lang)[v.hack]?.title : ''
+  return { title: c.one(v.name), body: lesson || c.tutorial }
+}
+
+/** One push for everything new: the video itself when there is one, a count otherwise. */
+export function videoPush(list, lang = 'en') {
+  if (!list.length) return null
+  if (list.length === 1) return { ...videoNotice(list[0], lang), url: videoUrl(list[0].key), tag: `video-${list[0].key}` }
+  const c = NOTICE[lang] || NOTICE.en
+  return { title: c.many(list.length), body: list.slice(0, 3).map(v => v.name).join(' · '), url: '/academy?tab=watch', tag: `videos-${list.map(v => v.key).sort().join('.').slice(0, 60)}` }
+}
+
+/** The linked videos, as published at /academy-videos.json for the push worker. */
+export const publishedVideos = (list = VIDEOS) =>
+  list.filter(v => youtubeId(v.youtube)).map(({ key, kind, lang, name, emoji, hack, q, youtube, added, wide }) => ({ key, kind, lang, name, emoji, hack, q, youtube, added, ...(wide ? { wide } : {}) }))

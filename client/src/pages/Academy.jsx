@@ -698,13 +698,18 @@ export default function Academy() {
     // Deep-link support: /academy?tab=wheel opens a specific tab (used by the
     // dashboard "Spin & Learn" card).
     try {
-      const t = new URLSearchParams(window.location.search).get('tab')
+      const qs = new URLSearchParams(window.location.search)
+      if (qs.get('video')) return 'watch'
+      const t = qs.get('tab')
       if (['watch', 'challenge', 'badges', 'wheel', 'game', 'hacks', 'articles'].includes(t)) return t
     } catch { /* no window/search */ }
     // Lessons first once there are any to watch.
     return VIDEOS.some(v => youtubeId(v.youtube)) ? 'watch' : 'challenge'
   }) // watch | challenge | badges | wheel | game | hacks | articles
-  const [openVideo, setOpenVideo] = useState(null)
+  // A notification about a new video opens that video, playing.
+  const [openVideo, setOpenVideo] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('video') || null } catch { return null }
+  })
 
   // Which hack a notification asked for, as an index into the list.
   //

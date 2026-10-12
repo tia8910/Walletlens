@@ -72,4 +72,11 @@ describe('academy videos', () => {
     expect(page).toContain('<AcademyWatch store={store} onWatch={handleVideoWatch} onQuiz={handleVideoQuiz}')
     expect(page).toContain("if (prev.vquiz?.[v.key]) return prev")
   })
+
+  it('loads in plain Node, which the build step that publishes it runs in', () => {
+    // Node needs the extension; without it the prerender crashed and took the
+    // whole site build with it.
+    expect(read('./data/academyVideos.js')).toContain("from './academyContent.js'")
+    expect(read('../scripts/prerender.mjs')).toContain("writeFileSync(resolve(DIST, 'academy-videos.json')")
+  })
 })

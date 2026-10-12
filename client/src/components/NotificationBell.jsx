@@ -19,7 +19,7 @@ const COPY = {
 }
 
 const ICON = {
-  target: '🎯', move: '📈', level: '📊', zakat: '🌙', smart: '⚡', news: '📰', digest: '☀️', whale: '🐋', portfolio: '💼', watchlist: '👀', feature: '✨', update: '🚀', tip: '💡',
+  target: '🎯', move: '📈', level: '📊', zakat: '🌙', smart: '⚡', news: '📰', digest: '☀️', whale: '🐋', portfolio: '💼', watchlist: '👀', feature: '✨', update: '🚀', tip: '💡', video: '🎬', academy: '🎓',
 }
 const iconFor = (ch = '') => ICON[ch] || Object.entries(ICON).find(([k]) => ch.includes(k))?.[1] || '🔔'
 
@@ -61,7 +61,7 @@ export default function NotificationBell({ alertsPath, label }) {
     // Listen first, then fill: the import writes synchronously, and an event
     // fired before the listener exists is lost, leaving the bell empty.
     if (!listening) { listening = true; listenToWorker() }
-    backfillInbox().then(sync)
+    backfillInbox(lang).then(sync)
     fetchFeeds({ base: SITE_ORIGIN, lang }).then(sync)
     return () => { window.removeEventListener(INBOX_EVENT, sync); window.removeEventListener('storage', sync) }
   }, [])
@@ -105,7 +105,7 @@ export default function NotificationBell({ alertsPath, label }) {
     <div className="wl-bell-wrap" ref={box}>
       <button
         className="wl-topbar-x wl-topbar-bell"
-        onClick={() => { if (!open) { setItems(readInbox()); backfillInbox().then(() => setItems(readInbox())); fetchFeeds({ base: SITE_ORIGIN, lang }).then(() => setItems(readInbox())) } setOpen(o => !o); track('notifications_open', { source: 'topbar', unread }) }}
+        onClick={() => { if (!open) { setItems(readInbox()); backfillInbox(lang).then(() => setItems(readInbox())); fetchFeeds({ base: SITE_ORIGIN, lang }).then(() => setItems(readInbox())) } setOpen(o => !o); track('notifications_open', { source: 'topbar', unread }) }}
         title={label} aria-label={unread ? `${label} (${unread})` : label} aria-expanded={open} aria-haspopup="dialog"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
