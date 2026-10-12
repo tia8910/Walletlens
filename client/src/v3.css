@@ -734,3 +734,35 @@ html.wl-v3:not([data-wl-light]) .nl-check { border-color: rgba(255, 255, 255, 0.
 .nl-more-link { display: inline-flex; align-items: center; gap: 0.6rem; }
 .nl-more-link svg { color: var(--nl-sub, var(--text-muted)); }
 .nl-more-copy { margin: 0.9rem 0 0.2rem; text-align: center; font-size: 0.72rem; color: var(--nl-sub, var(--text-muted)); }
+
+/* ── Desktop hover: quiet and premium, never a green fill ─────────────── */
+@media (hover: hover) {
+  html.wl-v3 .nl-quick button,
+  html.wl-v3 .nl-hero-actions button,
+  html.wl-v3 .wl-nav-item,
+  html.wl-v3 .wl-nav-fab { transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, color .18s ease, filter .18s ease; }
+  /* Quick import tiles lift on a deeper shadow and stay white. */
+  html.wl-v3 .nl-quick button:hover {
+    filter: none; background: var(--nl-card); transform: translateY(-2px);
+    box-shadow: 0 0 0 1px var(--nl-line), 0 14px 28px -14px rgba(15, 29, 43, 0.32);
+  }
+  html.wl-v3 .nl-quick button:hover svg { transform: scale(1.08); transition: transform .18s ease; }
+  /* Buy stays green, Sell stays red: a touch brighter and lifted. */
+  html.wl-v3 .nl-hero-actions button:hover { filter: brightness(1.08) saturate(1.05); transform: translateY(-1px); }
+  /* Bottom bar: a soft neutral pill and darker ink, not a coloured block. */
+  html.wl-v3 .wl-nav-item:hover { filter: none; background: transparent !important; color: var(--nl-ink) !important; }
+  html.wl-v3 .wl-nav-item:hover .wl-nav-label { color: var(--nl-ink) !important; }
+  html.wl-v3 .wl-nav-item:not(.active):hover .wl-nav-icon { background: var(--nl-seg) !important; }
+  /* More page: rows and tiles lift on a deeper shadow and keep their card colour. */
+  .nl-more-row, .nl-more-tile { transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
+  .nl-more-row:hover, .nl-more-tile:hover {
+    filter: none; background: var(--nl-card, var(--card-bg)) !important; transform: translateY(-1px);
+    box-shadow: 0 0 0 1px var(--nl-line), 0 12px 26px -14px rgba(15, 29, 43, 0.35) !important;
+  }
+  .nl-more-row:hover svg, .nl-more-tile:hover svg { color: var(--g-ink, var(--g)); }
+  /* Watchlist cards keep their pastel and float up a little. */
+  .nl-wc { transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
+  .nl-wc:hover { filter: none; transform: translateY(-3px); box-shadow: 0 14px 26px -14px rgba(15, 29, 43, 0.45); }
+  html.wl-v3:not([data-wl-light]) .nl-wc:hover { filter: saturate(0.95) brightness(1); }
+  html.wl-v3 .wl-nav-fab:hover { filter: none; transform: translateY(-2px) scale(1.04); box-shadow: 0 14px 28px -6px rgba(var(--g-rgb), 0.75), 0 0 0 6px var(--nl-bg); }
+}

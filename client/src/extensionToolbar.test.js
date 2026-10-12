@@ -82,4 +82,9 @@ describe('extension marks the page', () => {
     expect(js).toContain('display-mode: standalone')
     expect(js).not.toMatch(/innerHTML\s*=\s*[^'"]*c\[/)
   })
+
+  it('leaves room for the close icon in both bars', () => {
+    expect(read('./index.css')).toMatch(/\.wl-extbar-close \{[^}]*padding: 0;/)
+    expect(read('../public/ext-bar.js')).toContain('.wl-extbar-close{flex:none;width:30px;height:30px;padding:0;')
+  })
 })

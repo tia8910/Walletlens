@@ -122,6 +122,12 @@ html[dir='rtl'] .su-cta-arrow { transform: scaleX(-1); }
   transition: transform .18s cubic-bezier(.3, 1.6, .5, 1), border-color .2s, background .2s, box-shadow .2s;
 }
 .su-tile:active { transform: scale(.96); }
+/* Desktop hover: a hint of the selected state, never a solid fill. */
+@media (hover: hover) {
+  .su-tile:hover { filter: none; transform: translateY(-2px); border-color: rgba(18, 212, 122, 0.4); background: var(--su-card); box-shadow: 0 12px 28px -16px rgba(0, 0, 0, 0.7); }
+  .su-tile.on:hover { background: linear-gradient(160deg, rgba(18, 212, 122, 0.2), rgba(18, 212, 122, 0.06)); border-color: rgba(18, 212, 122, 0.8); }
+  .su-tile:hover .su-tile-ck { border-color: rgba(18, 212, 122, 0.7); }
+}
 .su-tile-ic {
   width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
   background: rgba(255, 255, 255, 0.05);

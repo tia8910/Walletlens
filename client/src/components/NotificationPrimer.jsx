@@ -197,25 +197,10 @@ export default function NotificationPrimer() {
           {t('npAskPrivacy')}
         </p>
 
-        <button
-          onClick={accept}
-          disabled={busy}
-          style={{
-            width: '100%', padding: '0.8rem', borderRadius: '12px', border: 'none',
-            background: 'var(--g)', color: '#04150c', fontWeight: 800, fontSize: '0.95rem',
-            cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1,
-          }}
-        >
+        <button className="np-ask-yes" onClick={accept} disabled={busy}>
           {t('npAskYes')}
         </button>
-        <button
-          onClick={() => dismiss('not-now')}
-          style={{
-            width: '100%', marginTop: '0.5rem', padding: '0.6rem', borderRadius: '12px',
-            border: 'none', background: 'transparent', color: 'var(--text-sub)',
-            fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
-          }}
-        >
+        <button className="np-ask-no" onClick={() => dismiss('not-now')}>
           {t('npAskNo')}
         </button>
       </div>

@@ -1,3 +1,4 @@
+import { addToInbox } from './notifyInbox'
 // Notifications the page raises itself, while it is running.
 //
 // Distinct from push (push.js + sw.js), which is the only thing that can reach
@@ -83,6 +84,9 @@ export async function requestNotifyPermission() {
  * alert-checking loop that asked for it.
  */
 export async function showLocalNotification(title, options = {}) {
+  // Into the bell's inbox whether or not the system is allowed to show it:
+  // an alert someone turned the browser notification off for still happened.
+  addToInbox({ title, body: options.body, url: options.data?.url, channel: options.data?.channel || options.tag, tag: options.tag })
   if (!canNotify()) return false
 
   const b = shell()
