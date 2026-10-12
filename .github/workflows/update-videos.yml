@@ -1,0 +1,56 @@
+name: Update Videos
+
+# Links new videos on youtube.com/@walletlens to the Academy, so a video goes
+# from upload to the app, the bell and a push with nobody pasting a link.
+#
+# Reads the channel's public feed (no API key), writes
+# client/src/data/academyVideoLinks.js, and when something changed commits it
+# and starts the site deploy. The deploy is started explicitly because a push
+# made with GITHUB_TOKEN does not trigger other workflows; a workflow_dispatch
+# is the one event it may start. Once the site is live with the new list, the
+# push worker picks it up from /academy-videos.json at 16:00 local time.
+
+on:
+  schedule:
+    - cron: '17 */2 * * *'   # every 2 hours, off the hour
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: update-videos
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Find new videos on the channel
+        working-directory: client
+        run: node scripts/sync-youtube.mjs
+
+      - name: Commit and deploy when something changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add client/src/data/academyVideoLinks.js
+          if git diff --staged --quiet; then
+            echo "Nothing new."
+            exit 0
+          fi
+          git commit -m "chore: link new Academy videos from YouTube"
+          git push
+          gh workflow run deploy-site.yml --ref main

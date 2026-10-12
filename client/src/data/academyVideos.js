@@ -7,6 +7,7 @@
 // written in every app language: the lesson line under a video and the quiz
 // after it come from there, so nothing here needs translating.
 import { hacks, questions } from './academyContent.js'
+import synced from './academyVideoLinks.js'
 
 export const YT_CHANNEL = 'https://www.youtube.com/@walletlens'
 export const YT_SUBSCRIBE = `${YT_CHANNEL}?sub_confirmation=1`
@@ -22,13 +23,16 @@ export function youtubeId(link) {
 /** The privacy-enhanced player: no cookies are set until the viewer presses play. */
 export const embedUrl = (id) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1`
 
-// When a link is filled in, set `added` to that day ('YYYY-MM-DD'): for a
-// week after it the video is announced as new, in the bell and by push.
+// Links are found automatically: the Update Videos workflow reads the
+// channel's feed every two hours and writes academyVideoLinks.js, which is
+// merged in below. A link set here by hand wins. `added` is the day it went
+// live ('YYYY-MM-DD'): for a week after it the video is announced as new, in
+// the bell and by push.
 //
 // kind: story (a short with a lesson), hack (a short about one hack card),
 // original (a long film), howto (a feature tutorial).
 // lang: the language spoken or written in the video; 'all' has no words that need reading.
-export const VIDEOS = [
+export const BASE_VIDEOS = [
   { key: 'stop-loss-skydive',  kind: 'story', lang: 'en', name: 'The Stop Loss Skydive',  emoji: '🪂', hack: 1,  q: 11, youtube: '' },
   { key: 'crash-sale',         kind: 'story', lang: 'en', name: 'The Crash Sale',         emoji: '🏷️', hack: 7,  q: 20, youtube: '' },
   { key: 'breakout-concert',   kind: 'story', lang: 'en', name: 'The Breakout Concert',   emoji: '🎸', hack: 11, q: 43, youtube: '' },
@@ -65,6 +69,12 @@ export const VIDEOS = [
   { key: 'howto-ar-decision',    kind: 'howto', lang: 'ar', name: 'أشتري، أبيع أم أنتظر؟',               emoji: '🧭', youtube: '' },
   { key: 'howto-ar-guardian',    kind: 'howto', lang: 'ar', name: 'حارس المحفظة: خريطة الكنز',            emoji: '🗺️', youtube: '' },
   { key: 'howto-ar-zakat',       kind: 'howto', lang: 'ar', name: 'الزكاة في محادثة العائلة',              emoji: '🌙', youtube: '' },
+]
+
+/** The catalog with the channel's videos linked in, plus any the catalog does not name. */
+export const VIDEOS = [
+  ...BASE_VIDEOS.map(v => (v.youtube || !synced.links?.[v.key] ? v : { ...v, ...synced.links[v.key] })),
+  ...(synced.extras || []),
 ]
 
 /** Lessons the quiz and badges count: everything that teaches, not the tutorials. */

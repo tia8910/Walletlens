@@ -28,6 +28,17 @@ name: Deploy Cloudflare Workers
 # existing subscriber and makes each of them re-enable notifications by hand.
 
 on:
+  # The push worker deploys itself when its code changes on main, including
+  # the Academy content and video catalog it reads. A new VIDEO does not
+  # redeploy it: those reach it through the site's /academy-videos.json.
+  push:
+    branches: [ main ]
+    paths:
+      - 'workers/push/**'
+      - 'push-api/**'
+      - 'client/src/data/academyContent.js'
+      - 'client/src/data/academyVideos.js'
+      - 'client/src/assetTrend.js'
   workflow_dispatch:
     inputs:
       worker:
@@ -57,7 +68,8 @@ jobs:
       max-parallel: 1
       fail-fast: false
       matrix:
-        worker: ${{ inputs.worker == 'both' && fromJSON('["voice","push"]') || fromJSON(format('["{0}"]', inputs.worker)) }}
+        # A push to main has no inputs: that is the push worker deploying itself.
+        worker: ${{ inputs.worker == 'both' && fromJSON('["voice","push"]') || fromJSON(format('["{0}"]', inputs.worker || 'push')) }}
 
     steps:
       - name: Checkout repository
