@@ -376,6 +376,29 @@ self.addEventListener('fetch', e => {
 // now derives the set from CHANNEL_DELIVERY so the two cannot drift again.
 const LOUD_CHANNELS = new Set(['target', 'move', 'level', 'zakat', 'test'])
 
+// The bell's inbox. A worker has no localStorage, so a push is kept in
+// IndexedDB until a window drains it (notifyInbox.js), and any open window is
+// told to drain now.
+function keepForInbox(item) {
+  return new Promise(resolve => {
+    let req
+    try { req = indexedDB.open('wl-inbox', 1) } catch { resolve(); return }
+    req.onupgradeneeded = () => { try { req.result.createObjectStore('items', { autoIncrement: true }) } catch {} }
+    req.onerror = () => resolve()
+    req.onsuccess = () => {
+      const db = req.result
+      try {
+        const tx = db.transaction('items', 'readwrite')
+        tx.objectStore('items').add(item)
+        tx.oncomplete = () => { db.close(); resolve() }
+        tx.onerror = () => { db.close(); resolve() }
+      } catch { db.close(); resolve() }
+    }
+  }).then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
+    .then(list => list.forEach(c => { try { c.postMessage({ type: 'WL_PUSH' }) } catch {} }))
+    .catch(() => {})
+}
+
 self.addEventListener('push', e => {
   let data = {}
   try { data = e.data ? e.data.json() : {} } catch { data = { body: e.data && e.data.text() } }
@@ -383,7 +406,7 @@ self.addEventListener('push', e => {
   const channel = data.channel || 'walletlens'
   const loud = LOUD_CHANNELS.has(channel)
 
-  e.waitUntil(
+  e.waitUntil(Promise.all([keepForInbox({ title, body: data.body || '', url: data.url || '/', channel, tag: data.tag || channel, at: Date.now() }),
     self.registration.showNotification(title, {
       body: data.body || '',
       icon: '/icon-192.png',
@@ -401,7 +424,7 @@ self.addEventListener('push', e => {
       vibrate: loud ? [80, 40, 80] : undefined,
       timestamp: Date.now(),
       data: { url: data.url || '/', channel, sym: data.sym || '' },
-    })
+    })])
   )
 })
 
