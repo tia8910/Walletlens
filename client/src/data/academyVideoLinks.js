@@ -6,6 +6,8 @@
 // extras: videos on the channel that match no catalog entry, shown as they are
 export default {
   channelId: '',
-  links: {},
+  links: {
+    'patience-pays': { youtube: 'kjjOrmpSL9M', added: '2026-10-12' },
+  },
   extras: [],
 }

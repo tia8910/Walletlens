@@ -46,6 +46,8 @@ describe('sync from the YouTube channel', () => {
     expect(matchVideo(d)).toBe('the-3am-pump')
     expect(matchVideo(e)).toBe(null)
     expect(matchVideo(f)).toBe('howto-ar-zakat')
+    // Uploaded under a different title: found through its alternative.
+    expect(matchVideo({ title: 'paper hands vs. the patient one', description: '' })).toBe('patience-pays')
     expect(norm('The Crash  Sale!')).toBe('the crash sale')
   })
 

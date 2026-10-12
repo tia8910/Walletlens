@@ -39,17 +39,23 @@ export function parseFeed(xml) {
 /**
  * Which catalog entry a video is. A `wl:key` tag in the description decides;
  * otherwise the catalog name must appear in the title (or the title in the
- * name, for a title shortened on upload). Longest name wins, so "3am, 100x
- * Long" is not taken for "The 3am Pump".
+ * name, for a title shortened on upload), or one of its `alt` titles. Longest
+ * name wins, so "3am, 100x Long" is not taken for "The 3am Pump".
  */
 export function matchVideo(video, catalog = BASE_VIDEOS) {
   const tag = /\bwl:([a-z0-9-]+)/i.exec(video.description || '')?.[1]
   if (tag && catalog.some(v => v.key === tag)) return tag
   const t = norm(video.title)
   if (!t) return null
-  const hits = catalog.filter(v => { const n = norm(v.name); return n && (t.includes(n) || (t.length >= 8 && n.includes(t))) })
-  hits.sort((a, b) => norm(b.name).length - norm(a.name).length)
-  return hits[0]?.key || null
+  // The longest matching name across every entry, its own and its alternatives.
+  let best = null
+  for (const v of catalog) {
+    for (const name of [v.name, ...(v.alt || [])]) {
+      const n = norm(name)
+      if (n && (t.includes(n) || (t.length >= 8 && n.includes(t))) && (!best || n.length > best.len)) best = { key: v.key, len: n.length }
+    }
+  }
+  return best?.key || null
 }
 
 /** Merge feed entries into the saved links. Returns the new state and what was added. */

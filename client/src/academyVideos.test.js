@@ -12,7 +12,7 @@ import { WATCH_COPY } from './components/AcademyWatch'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const read = p => readFileSync(join(here, p), 'utf8')
-const withIds = (ids) => VIDEOS.map(v => (ids[v.key] ? { ...v, youtube: ids[v.key] } : v))
+const withIds = (ids) => VIDEOS.map(v => ({ ...v, youtube: ids[v.key] || '' }))
 
 describe('academy videos', () => {
   it('reads a video id from every shape of YouTube link', () => {

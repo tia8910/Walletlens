@@ -32,6 +32,7 @@ export const embedUrl = (id) => `https://www.youtube-nocookie.com/embed/${id}?au
 // kind: story (a short with a lesson), hack (a short about one hack card),
 // original (a long film), howto (a feature tutorial).
 // lang: the language spoken or written in the video; 'all' has no words that need reading.
+// alt: other titles the video was uploaded under, so the channel sync still finds it.
 export const BASE_VIDEOS = [
   { key: 'stop-loss-skydive',  kind: 'story', lang: 'en', name: 'The Stop Loss Skydive',  emoji: '🪂', hack: 1,  q: 11, youtube: '' },
   { key: 'crash-sale',         kind: 'story', lang: 'en', name: 'The Crash Sale',         emoji: '🏷️', hack: 7,  q: 20, youtube: '' },
@@ -40,7 +41,7 @@ export const BASE_VIDEOS = [
   { key: 'fear-and-greed',     kind: 'story', lang: 'en', name: 'Fear and Greed',         emoji: '😱', hack: 17, q: 27, youtube: '' },
   { key: 'leverage-the-game',  kind: 'story', lang: 'en', name: 'Leverage: The Game',     emoji: '🎮', hack: 13, q: 13, youtube: '' },
   { key: 'panic-or-wait',      kind: 'story', lang: 'en', name: 'Panic or Wait 48h',      emoji: '⏳', hack: 8,  q: 21, youtube: '' },
-  { key: 'patience-pays',      kind: 'story', lang: 'en', name: 'Patience Pays',          emoji: '🌱', hack: 15, q: 22, youtube: '' },
+  { key: 'patience-pays',      kind: 'story', lang: 'en', name: 'Patience Pays',          emoji: '🎣', hack: 15, q: 22, youtube: '', alt: ['paper hands vs the patient one'] },
   { key: 'the-3am-pump',       kind: 'story', lang: 'en', name: 'The 3am Pump',           emoji: '🌙', hack: 5,  q: 18, youtube: '' },
   { key: 'one-that-got-away',  kind: 'story', lang: 'en', name: 'The One That Got Away',  emoji: '🎣', hack: 4,  q: 39, youtube: '' },
   { key: 'press-conference',   kind: 'story', lang: 'en', name: 'The Press Conference',   emoji: '🎤', hack: 4,  q: 38, youtube: '' },
