@@ -25,6 +25,13 @@ describe('desktop hover', () => {
   })
 })
 
+describe('setup tiles hover', () => {
+  it('hint the selected state on desktop and keep their card colour', () => {
+    const css = read('./components/SetupScreens.css')
+    expect(css).toMatch(/\.su-tile:hover \{ filter: none;[^}]*background: var\(--su-card\)/)
+  })
+})
+
 describe('Solana logo', () => {
   it('uses the current mark from our own origin, in the app and the extension', () => {
     expect(LOGO_OVERRIDES.solana).toBe('/logos/solana.svg')
