@@ -1,0 +1,90 @@
+// Words for the Academy screens and the Home lesson card, per language. Kept
+// apart from the video catalog so Home can show its card without loading the
+// Academy's lesson text.
+
+export const ACADEMY_COPY = {
+  en: {
+    title: 'Academy', sub: 'Short lessons from real market moments',
+    newEp: 'New episode', newLesson: 'New lesson', upNext: 'Up next', watch: 'Watch', next: 'Next', watchAgain: 'Watch again',
+    progressH: 'Your progress', progress: (a, b) => `${a} of ${b} lessons watched`, allDone: 'You have watched every lesson. New ones land every week.',
+    seeAll: 'See all', more: 'More lessons', howto: 'How WalletLens works',
+    read: 'Read', hacks: 'Investing hacks', hacksSub: (n) => `${n} short rules to invest by`, articles: 'Articles', articlesSub: 'Guides on crypto, tax and net worth',
+    subT: 'New lessons every week', subS: 'Follow @walletlens on YouTube', subscribe: 'Subscribe',
+    comingT: 'Lessons are on the way', comingS: 'The first episodes land here soon. Watch them on our channel meanwhile.',
+    takeaway: 'The takeaway', tryIt: 'Try it in WalletLens', close: 'Close', back: 'Back',
+    source: 'Plays from YouTube', advice: 'For learning only, not financial advice.',
+    short: 'Short', film: 'Film', tutorial: 'Tutorial', course: 'Course', lesson: (n) => `Lesson ${n}`, watched: 'Watched',
+    courseProgress: (a, b) => `${a} of ${b} watched`, continueCourse: 'Continue course',
+  },
+  ar: {
+    title: 'الأكاديمية', sub: 'دروس قصيرة من لحظات حقيقية في السوق',
+    newEp: 'حلقة جديدة', newLesson: 'درس جديد', upNext: 'التالي', watch: 'شاهد', next: 'التالي', watchAgain: 'شاهد مرة أخرى',
+    progressH: 'تقدمك', progress: (a, b) => `شاهدت ${a} من ${b} دروس`, allDone: 'شاهدت كل الدروس. دروس جديدة كل أسبوع.',
+    seeAll: 'عرض الكل', more: 'دروس أخرى', howto: 'كيف يعمل WalletLens',
+    read: 'اقرأ', hacks: 'حيل الاستثمار', hacksSub: (n) => `${n} قاعدة قصيرة للاستثمار`, articles: 'المقالات', articlesSub: 'أدلة عن العملات الرقمية والضرائب وصافي الثروة',
+    subT: 'دروس جديدة كل أسبوع', subS: 'تابع @walletlens على يوتيوب', subscribe: 'اشترك',
+    comingT: 'الدروس في الطريق', comingS: 'ستصل الحلقات الأولى هنا قريبا. شاهدها على قناتنا حتى ذلك الحين.',
+    takeaway: 'الخلاصة', tryIt: 'جربه في WalletLens', close: 'إغلاق', back: 'رجوع',
+    source: 'يعمل من يوتيوب', advice: 'للتعلم فقط، وليس نصيحة مالية.',
+    short: 'قصير', film: 'فيلم', tutorial: 'شرح', course: 'دورة', lesson: (n) => `الدرس ${n}`, watched: 'تمت المشاهدة',
+    courseProgress: (a, b) => `شاهدت ${a} من ${b}`, continueCourse: 'تابع الدورة',
+  },
+  fr: {
+    title: 'Académie', sub: 'De courtes leçons tirées de vrais moments de marché',
+    newEp: 'Nouvel épisode', newLesson: 'Nouvelle leçon', upNext: 'À suivre', watch: 'Regarder', next: 'Suivant', watchAgain: 'Revoir',
+    progressH: 'Votre progression', progress: (a, b) => `${a} leçons vues sur ${b}`, allDone: 'Vous avez vu toutes les leçons. De nouvelles arrivent chaque semaine.',
+    seeAll: 'Tout voir', more: 'Autres leçons', howto: 'Comment marche WalletLens',
+    read: 'À lire', hacks: 'Astuces d’investissement', hacksSub: (n) => `${n} règles courtes pour investir`, articles: 'Articles', articlesSub: 'Guides sur la crypto, les impôts et le patrimoine',
+    subT: 'De nouvelles leçons chaque semaine', subS: 'Suivez @walletlens sur YouTube', subscribe: 'S’abonner',
+    comingT: 'Les leçons arrivent', comingS: 'Les premiers épisodes arrivent bientôt ici. En attendant, regardez les sur notre chaîne.',
+    takeaway: 'À retenir', tryIt: 'Essayez dans WalletLens', close: 'Fermer', back: 'Retour',
+    source: 'Lu depuis YouTube', advice: 'Pour apprendre, pas un conseil financier.',
+    short: 'Short', film: 'Film', tutorial: 'Tutoriel', course: 'Parcours', lesson: (n) => `Leçon ${n}`, watched: 'Vu',
+    courseProgress: (a, b) => `${a} sur ${b} vues`, continueCourse: 'Continuer le parcours',
+  },
+  es: {
+    title: 'Academia', sub: 'Lecciones cortas de momentos reales del mercado',
+    newEp: 'Nuevo episodio', newLesson: 'Nueva lección', upNext: 'A continuación', watch: 'Ver', next: 'Siguiente', watchAgain: 'Ver de nuevo',
+    progressH: 'Tu progreso', progress: (a, b) => `${a} de ${b} lecciones vistas`, allDone: 'Has visto todas las lecciones. Cada semana llegan nuevas.',
+    seeAll: 'Ver todo', more: 'Más lecciones', howto: 'Cómo funciona WalletLens',
+    read: 'Para leer', hacks: 'Trucos de inversión', hacksSub: (n) => `${n} reglas cortas para invertir`, articles: 'Artículos', articlesSub: 'Guías sobre cripto, impuestos y patrimonio',
+    subT: 'Lecciones nuevas cada semana', subS: 'Sigue a @walletlens en YouTube', subscribe: 'Suscribirse',
+    comingT: 'Las lecciones están en camino', comingS: 'Los primeros episodios llegan pronto. Mientras tanto, míralos en nuestro canal.',
+    takeaway: 'La idea clave', tryIt: 'Pruébalo en WalletLens', close: 'Cerrar', back: 'Volver',
+    source: 'Se reproduce desde YouTube', advice: 'Solo para aprender, no es asesoría financiera.',
+    short: 'Short', film: 'Película', tutorial: 'Tutorial', course: 'Curso', lesson: (n) => `Lección ${n}`, watched: 'Visto',
+    courseProgress: (a, b) => `${a} de ${b} vistas`, continueCourse: 'Seguir el curso',
+  },
+  de: {
+    title: 'Akademie', sub: 'Kurze Lektionen aus echten Marktmomenten',
+    newEp: 'Neue Folge', newLesson: 'Neue Lektion', upNext: 'Als Nächstes', watch: 'Ansehen', next: 'Weiter', watchAgain: 'Noch einmal',
+    progressH: 'Dein Fortschritt', progress: (a, b) => `${a} von ${b} Lektionen gesehen`, allDone: 'Du hast alle Lektionen gesehen. Jede Woche kommen neue.',
+    seeAll: 'Alle ansehen', more: 'Weitere Lektionen', howto: 'So funktioniert WalletLens',
+    read: 'Lesen', hacks: 'Investment Tricks', hacksSub: (n) => `${n} kurze Regeln fürs Investieren`, articles: 'Artikel', articlesSub: 'Ratgeber zu Krypto, Steuern und Vermögen',
+    subT: 'Jede Woche neue Lektionen', subS: 'Folge @walletlens auf YouTube', subscribe: 'Abonnieren',
+    comingT: 'Die Lektionen sind unterwegs', comingS: 'Die ersten Folgen kommen bald hierher. Bis dahin findest du sie auf unserem Kanal.',
+    takeaway: 'Das Wichtigste', tryIt: 'In WalletLens ausprobieren', close: 'Schließen', back: 'Zurück',
+    source: 'Wird von YouTube abgespielt', advice: 'Nur zum Lernen, keine Finanzberatung.',
+    short: 'Short', film: 'Film', tutorial: 'Anleitung', course: 'Kurs', lesson: (n) => `Lektion ${n}`, watched: 'Gesehen',
+    courseProgress: (a, b) => `${a} von ${b} gesehen`, continueCourse: 'Kurs fortsetzen',
+  },
+  it: {
+    title: 'Academy', sub: 'Brevi lezioni da veri momenti di mercato',
+    newEp: 'Nuovo episodio', newLesson: 'Nuova lezione', upNext: 'Prossima', watch: 'Guarda', next: 'Avanti', watchAgain: 'Riguarda',
+    progressH: 'I tuoi progressi', progress: (a, b) => `${a} lezioni viste su ${b}`, allDone: 'Hai visto tutte le lezioni. Ogni settimana ne arrivano di nuove.',
+    seeAll: 'Vedi tutto', more: 'Altre lezioni', howto: 'Come funziona WalletLens',
+    read: 'Da leggere', hacks: 'Trucchi di investimento', hacksSub: (n) => `${n} regole brevi per investire`, articles: 'Articoli', articlesSub: 'Guide su crypto, tasse e patrimonio',
+    subT: 'Nuove lezioni ogni settimana', subS: 'Segui @walletlens su YouTube', subscribe: 'Iscriviti',
+    comingT: 'Le lezioni stanno arrivando', comingS: 'I primi episodi arrivano presto qui. Nel frattempo guardali sul nostro canale.',
+    takeaway: 'Il punto chiave', tryIt: 'Provalo in WalletLens', close: 'Chiudi', back: 'Indietro',
+    source: 'Riprodotto da YouTube', advice: 'Solo per imparare, non è una consulenza finanziaria.',
+    short: 'Short', film: 'Film', tutorial: 'Tutorial', course: 'Corso', lesson: (n) => `Lezione ${n}`, watched: 'Visto',
+    courseProgress: (a, b) => `${a} di ${b} viste`, continueCourse: 'Continua il corso',
+  },
+}
+
+export const academyCopy = (lang) => ACADEMY_COPY[lang] || ACADEMY_COPY.en
+
+/** Poster colours, picked per video so each shelf reads as a row of different scenes. */
+export const POSTERS = ['sunset', 'day', 'night', 'ember', 'mint']
+export const posterFor = (key = '', own) => (POSTERS.includes(own) ? own : POSTERS[[...key].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7) % POSTERS.length])

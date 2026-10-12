@@ -48,7 +48,7 @@ describe('which videos are new', () => {
   it('announces one video by name and lesson, several by count, in every language', () => {
     const now = at(12)
     const [one] = mod.newVideos({ now, sent: ['crash-sale'] })
-    expect(mod.videoPush([one], 'ar')).toEqual({ title: '🎬 جديد في الأكاديمية: The Stop Loss Skydive', body: hacks('ar')[1].title, url: '/academy?tab=watch&video=stop-loss-skydive', tag: 'video-stop-loss-skydive' })
+    expect(mod.videoPush([one], 'ar')).toEqual({ title: '🎬 جديد في الأكاديمية: The Stop Loss Skydive', body: hacks('ar')[1].title, url: '/academy?video=stop-loss-skydive', tag: 'video-stop-loss-skydive' })
     expect(mod.videoPush(mod.newVideos({ now }), 'fr').title).toBe('🎬 2 nouvelles leçons dans l’Académie')
     for (const l of ['en', 'ar', 'fr', 'es', 'de', 'it']) {
       const n = mod.VIDEO_NOTICE[l]
@@ -66,7 +66,7 @@ describe('the bell', () => {
     expect(items[0].i18n.ar.title).toMatch(/^🎬 جديد في الأكاديمية: /)
     expect(importItems(items)).toBe(2)
     expect(importItems(collectVideos(mod, now, 'en'))).toBe(0)
-    expect(readInbox().find(x => x.tag === 'video-crash-sale').url).toBe('/academy?tab=watch&video=crash-sale')
+    expect(readInbox().find(x => x.tag === 'video-crash-sale').url).toBe('/academy?video=crash-sale')
   })
 
   it('does not add a second item when the push got there first', () => {
@@ -87,7 +87,7 @@ describe('the push', () => {
     const videos = sent.filter(([, p]) => p.channel === 'video')
     expect(videos).toHaveLength(1)
     expect(videos[0][1].title).toBe('🎬 2 new lessons in the Academy')
-    expect(videos[0][1].url).toBe('/academy?tab=watch')
+    expect(videos[0][1].url).toBe('/academy')
     expect(store.map.get('k1').videosSent.sort()).toEqual(['crash-sale', 'stop-loss-skydive'])
     // Kept through the normalizer, so the next save does not forget them.
     expect(normalizeSub(store.map.get('k1')).videosSent).toHaveLength(2)
@@ -105,7 +105,7 @@ describe('the push', () => {
     // The published list carries only linked videos, with what the push needs.
     const pub = mod.publishedVideos(mod.VIDEOS)
     expect(pub.map(v => v.key).sort()).toEqual(['crash-sale', 'howto-ar-zakat', 'patience-pays', 'stop-loss-skydive'])
-    expect(Object.keys(pub[0]).sort()).toEqual(['added', 'emoji', 'hack', 'key', 'kind', 'lang', 'name', 'q', 'youtube'])
+    expect(Object.keys(pub[0]).sort()).toEqual(['act', 'added', 'course', 'emoji', 'hack', 'key', 'kind', 'lang', 'name', 'youtube'])
 
     vi.stubGlobal('fetch', async () => { throw new Error('offline') })
     const sent = []

@@ -48,7 +48,7 @@ const STEPS = [
     id: 'ai', mode: 'card',
     icon: 'cpu',
     title: 'AI & Safety Tools',
-    desc: 'Risk Scanner catches scams & rug pulls. Advisor gives personalised portfolio recommendations. Academy sharpens your crypto IQ.',
+    desc: 'Risk Scanner catches scams & rug pulls. Advisor gives personalised portfolio recommendations. Academy teaches with short videos from real market moments.',
     cta: 'Got it →',
     accent: '#f87171',
     grad: 'linear-gradient(135deg,#2d0808 0%,#3d1515 100%)',

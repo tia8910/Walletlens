@@ -116,6 +116,7 @@ export const BACKUP_KEYS = [...CORE_KEYS, ...Object.values(BACKUP_FIELDS)]
 // so it can be asserted against in tests: a new key must be classified one way
 // or the other, not forgotten.
 export const DEVICE_ONLY_KEYS = [
+  'wl_academy_watched',  // lessons watched on this device; small, and rebuilt by watching
   // The bell's inbox and what it has imported: a history of what this device
   // was told, and the smart alerts it fired, which it reads from.
   'wl_notif_inbox',

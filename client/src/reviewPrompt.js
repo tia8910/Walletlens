@@ -186,7 +186,7 @@ export const MOMENTS = new Set([
   'goal_reached',      // a savings/net-worth goal completed
   'import_success',    // screenshot / CSV / voice import landed
   'backup_saved',      // exported a backup code or QR
-  'achievement',       // an Academy badge
+  'achievement',       // finished every lesson in an Academy course
   'streak',            // a multi-day usage streak milestone
   'guardian_active',   // finished setting up Portfolio Guardian
   'first_holding',     // added their very first asset

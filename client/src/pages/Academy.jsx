@@ -1,432 +1,20 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { noteFeatureUse } from '../featureUse'
-import { noteMoment } from '../reviewPrompt'
 import { Link } from 'react-router-dom'
 import { track } from '../analytics'
-import Icon from '../components/Icon'
 import { useTheme } from '../ThemeContext'
 import { POSTS } from '../data/blogPosts'
 import { useLanguage } from '../LanguageContext'
-import { shareFile, shareText } from '../fileOut'
-import {
-  questions as academyQuestions,
-  guessrCoins,
-  hacks as academyHacks,
-  achievementText,
-  CATEGORY_KEYS,
-} from '../data/academyContent'
-import AcademyWatch, { WATCH_COPY, VIDEO_QUIZ_IQ } from '../components/AcademyWatch'
-import { VIDEOS, youtubeId, videoForHack, isLesson } from '../data/academyVideos'
+import { shareFile } from '../fileOut'
+import { hacks as academyHacks } from '../data/academyContent'
+import { videoForHack } from '../data/academyVideos'
+import { academyCopy } from '../data/academyCopy'
+import AcademyWatch from '../components/AcademyWatch'
 
-// ── Persistence helpers ───────────────────────────────────────────────────
-const STORE_KEY = 'wl_academy_v1'
-function loadStore() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}') } catch { return {} }
-}
-function saveStore(s) { try { localStorage.setItem(STORE_KEY, JSON.stringify(s)) } catch {} }
-
-function getTodayStr() { return new Date().toISOString().split('T')[0] }
-
-// ── Question bank ─────────────────────────────────────────────────────────
-// The bank itself lives in data/academyContent.js, one copy per language,
-// with the correct-answer index and the category shared across all of them.
-// Note the day index rather than a random pick: everyone gets the same daily
-// question, and it must be the same question in every language.
-
-// Shuffle deterministically by day so everyone gets the same daily question
-function getDailyQuestion(bank) {
-  const daysSinceEpoch = Math.floor(Date.now() / 86400000)
-  return bank[daysSinceEpoch % bank.length]
-}
-
-// ── Game: Crypto Guessr ───────────────────────────────────────────────────
-function shuffle(arr) {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-
-const GUESSR_ROUNDS = 5
-
-function CryptoGuessr({ onIqGain }) {
-  const { t, lang } = useLanguage()
-  const [phase, setPhase] = useState('idle') // idle | playing | over
-  const [round, setRound] = useState(0)
-  const [clueIdx, setClueIdx] = useState(0)
-  const [score, setScore] = useState(0)
-  const [roundResult, setRoundResult] = useState(null) // null | 'correct' | 'wrong'
-  const [chosen, setChosen] = useState(null)
-  const [coins, setCoins] = useState([])
-  const [highScore, setHighScore] = useState(() => {
-    try { return parseInt(localStorage.getItem('wl_guessr_hs') || '0') } catch { return 0 }
-  })
-
-  function startGame() {
-    const picked = shuffle(guessrCoins(lang)).slice(0, GUESSR_ROUNDS)
-    setCoins(picked)
-    setRound(0); setClueIdx(0); setScore(0); setRoundResult(null); setChosen(null)
-    setPhase('playing')
-    track('guessr_start')
-  }
-
-  function getOptions(coin) {
-    const wrongs = shuffle(coin.wrong).slice(0, 3)
-    return shuffle([coin.name, ...wrongs])
-  }
-
-  function revealClue() {
-    if (clueIdx < 4) setClueIdx(c => c + 1)
-  }
-
-  function handleGuess(name) {
-    if (roundResult !== null) return
-    const coin = coins[round]
-    const correct = name === coin.name
-    const pts = correct ? [50, 40, 30, 20, 10][clueIdx] : 0
-    setChosen(name)
-    setRoundResult(correct ? 'correct' : 'wrong')
-    if (pts > 0) setScore(s => s + pts)
-  }
-
-  function nextRound() {
-    if (round + 1 >= GUESSR_ROUNDS) {
-      endGame()
-    } else {
-      setRound(r => r + 1)
-      setClueIdx(0)
-      setRoundResult(null)
-      setChosen(null)
-    }
-  }
-
-  function endGame() {
-    setPhase('over')
-    const finalScore = score
-    if (finalScore > highScore) {
-      setHighScore(finalScore)
-      try { localStorage.setItem('wl_guessr_hs', String(finalScore)) } catch {}
-    }
-    const iqGain = Math.floor(finalScore / 5)
-    if (iqGain > 0) onIqGain(iqGain)
-    track('guessr_end', { score: finalScore })
-  }
-
-  if (phase === 'idle') {
-    return (
-      <div className="guessr-idle">
-        <div className="guessr-idle-icon">🕵️</div>
-        <div className="guessr-idle-title">{t('ayTabGame')}</div>
-        <div className="guessr-idle-sub muted">
-          {t('ayGuessrIntro')}<br />
-          {t('ayGuessrRules')}
-        </div>
-        <div className="guessr-pts-table">
-          {[50, 40, 30, 20, 10].map((pts, i) => (
-            <div key={pts} className="guessr-pts-row muted">{t('ayClueWorth')(pts, i + 1)}</div>
-          ))}
-        </div>
-        <div className="blitz-hs-row">
-          <span className="muted">{t('ayBestScore')}</span>
-          <span className="blitz-hs">{t('ayPts')(highScore)}</span>
-        </div>
-        <button className="blitz-start-btn" onClick={startGame}>{t('ayStartGame')} 🕵️</button>
-      </div>
-    )
-  }
-
-  if (phase === 'over') {
-    const isNewHs = score >= highScore && score > 0
-    return (
-      <div className="blitz-over">
-        <div className="blitz-over-icon">{isNewHs ? '🏆' : '🕵️'}</div>
-        <div className="blitz-over-score">{score}</div>
-        <div className="blitz-over-label">{t('ayPoints')}</div>
-        {isNewHs && <div className="blitz-new-hs">🎉 {t('ayNewHighScore')}</div>}
-        <div className="blitz-iq-gain muted">{t('ayIqEarned')(Math.floor(score / 5))}</div>
-        <div className="blitz-hs-row">
-          <span className="muted">{t('ayBest')}</span>
-          <span className="blitz-hs">{t('ayPts')(Math.max(score, highScore))}</span>
-        </div>
-        <button className="blitz-start-btn" onClick={startGame}>{t('ayPlayAgain')} 🕵️</button>
-      </div>
-    )
-  }
-
-  const coin = coins[round]
-  if (!coin) return null
-  const clues = coin.clues.slice(0, clueIdx + 1)
-  const options = getOptions(coin)
-  const ptsAvailable = [50, 40, 30, 20, 10][clueIdx]
-
-  return (
-    <div className="guessr-playing">
-      <div className="guessr-header">
-        <div className="guessr-round muted">{t('ayRound')(round + 1, GUESSR_ROUNDS)}</div>
-        <div className="guessr-score-pill">{t('ayPts')(score)}</div>
-      </div>
-
-      <div className="guessr-mystery-coin">
-        <div className="guessr-mystery-icon">❓</div>
-        <div className="guessr-mystery-label">{t('ayMysteryCoin')}</div>
-        <div className="guessr-pts-badge">{t('ayPtsIfCorrect')(ptsAvailable)}</div>
-      </div>
-
-      <div className="guessr-clues">
-        {clues.map((clue, i) => (
-          <div key={i} className="guessr-clue">
-            <span className="guessr-clue-num">{i + 1}</span>
-            <span>{clue}</span>
-          </div>
-        ))}
-      </div>
-
-      {roundResult === null && clueIdx < 4 && (
-        <button className="guessr-reveal-btn" onClick={revealClue}>
-          {t('ayRevealClue')}
-        </button>
-      )}
-
-      {roundResult === null && (
-        <div className="guessr-options">
-          {options.map(name => (
-            <button key={name} className="guessr-option" onClick={() => handleGuess(name)}>
-              {name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {roundResult !== null && (
-        <div className={`guessr-result ${roundResult === 'correct' ? 'guessr-result-correct' : 'guessr-result-wrong'}`}>
-          <div className="guessr-result-row">
-            <span>{roundResult === 'correct' ? '✅' : '❌'}</span>
-            <span>
-              {roundResult === 'correct'
-                ? t('ayGuessrCorrect')(ptsAvailable)
-                : t('ayGuessrWrong')(`${coin.emoji} ${coin.name} (${coin.symbol})`)}
-            </span>
-          </div>
-          <div className="guessr-result-options">
-            {options.map(name => (
-              <div key={name} className={`guessr-result-opt ${name === coin.name ? 'guessr-result-correct-opt' : name === chosen ? 'guessr-result-wrong-opt' : ''}`}>
-                {name}
-              </div>
-            ))}
-          </div>
-          <button className="blitz-start-btn" style={{ marginTop: '1rem' }} onClick={nextRound}>
-            {round + 1 >= GUESSR_ROUNDS ? t('aySeeResults') : t('ayNextRound') + ' →'}
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Game: Knowledge Wheel (Spin & Learn) ──────────────────────────────────
-// A spin-the-wheel quiz. Six topic wedges serve a question from that category;
-// two bonus wedges reward the player (2× IQ question, or +2 free spins). Correct
-// answers grant IQ + a free spin; sharing grants spins once a day. All spins are
-// tracked in the shared academy store so the dashboard card can show them.
-// `cat` is the question-bank category id and stays English; labelKey is what
-// the player reads.
-const WHEEL_WEDGES = [
-  { id: 'crypto',   labelKey: 'assetCrypto',      icon: 'coins',    cat: 'Crypto',   color: '#f7931a' },
-  { id: 'markets',  labelKey: 'ayCatMarkets',     icon: 'trend-up', cat: 'Markets',  color: '#3b82f6' },
-  { id: 'risk',     labelKey: 'ayCatRisk',        icon: 'shield',   cat: 'Risk',     color: '#ef4444' },
-  { id: 'defi',     labelKey: 'ayCatDefi',        icon: 'bank',     cat: 'DeFi',     color: '#22c55e' },
-  { id: 'security', labelKey: 'ayCatSecurity',    icon: 'lock',     cat: 'Security', color: '#8b5cf6' },
-  { id: 'strategy', labelKey: 'ayCatStrategy',    icon: 'target',   cat: 'Strategy', color: '#0ea5e9' },
-  { id: 'double',   labelKey: 'ayWedgeDouble',    icon: 'diamond',  cat: null, multiplier: 2, color: '#fbbf24' },
-  { id: 'bonus',    labelKey: 'ayWedgeBonus',     icon: 'gift',     cat: null, reward: 'spins', color: '#ec4899' },
-]
-const WHEEL_SLICE = 360 / WHEEL_WEDGES.length
-const WHEEL_DAILY_SPINS = 3
-
-function wheelStateOf(store) {
-  const today = getTodayStr()
-  const w = store?.wheel
-  if (!w || w.date !== today) return { date: today, left: WHEEL_DAILY_SPINS, sharedToday: false }
-  return w
-}
-
-function pickQuestion(cat, bank) {
-  const pool = cat ? bank.filter(q => q.cat === cat) : bank
-  const list = pool.length ? pool : bank
-  return list[Math.floor(Math.random() * list.length)]
-}
-
-function KnowledgeWheel({ store, onIqGain, setWheel }) {
-  const { t, lang } = useLanguage()
-  const [rotation, setRotation] = useState(0)
-  const [spinning, setSpinning] = useState(false)
-  const [phase, setPhase]       = useState('idle') // idle | question | answered | reward
-  const [wedge, setWedge]       = useState(null)
-  const [q, setQ]               = useState(null)
-  const [selected, setSelected] = useState(null)
-  const [rewardMsg, setRewardMsg] = useState('')
-  const [lastIq, setLastIq]     = useState(0)
-  const rotRef = useRef(0)
-  const wRef   = useRef(wheelStateOf(store))
-  wRef.current = wheelStateOf(store)
-  const spins = wRef.current.left
-  const sharedToday = wRef.current.sharedToday
-
-  function commitWheel(patch) {
-    const next = { ...wRef.current, ...patch }
-    wRef.current = next
-    setWheel(next)
-  }
-
-  function spin() {
-    if (spinning || spins <= 0) return
-    setSpinning(true)
-    setPhase('idle'); setWedge(null); setQ(null); setSelected(null); setRewardMsg('')
-    commitWheel({ left: spins - 1 })
-    const k = Math.floor(Math.random() * WHEEL_WEDGES.length)
-    const targetPos = k * WHEEL_SLICE + WHEEL_SLICE / 2
-    const currentMod = ((rotRef.current % 360) + 360) % 360
-    let delta = ((360 - targetPos) - currentMod)
-    delta = ((delta % 360) + 360) % 360
-    const next = rotRef.current + 360 * 5 + delta
-    rotRef.current = next
-    setRotation(next)
-    track('wheel_spin', { wedge: WHEEL_WEDGES[k].id })
-    setTimeout(() => {
-      setSpinning(false)
-      const landed = WHEEL_WEDGES[k]
-      setWedge(landed)
-      if (landed.reward === 'spins') {
-        commitWheel({ left: wRef.current.left + 2 })
-        setRewardMsg('🎁 ' + t('ayBonusSpins'))
-        setPhase('reward')
-      } else {
-        setQ(pickQuestion(landed.cat, academyQuestions(lang)))
-        setPhase('question')
-      }
-    }, 4200)
-  }
-
-  function answer(idx) {
-    if (phase !== 'question' || selected !== null) return
-    setSelected(idx)
-    const correct = idx === q.a
-    const mult = wedge?.multiplier || 1
-    const gain = correct ? 25 * mult : 0
-    setLastIq(gain)
-    if (correct) {
-      onIqGain(gain)
-      commitWheel({ left: wRef.current.left + 1 }) // earn a spin for a correct answer
-    }
-    setPhase('answered')
-    track('wheel_answer', { correct, cat: wedge?.cat || wedge?.id, gain })
-  }
-
-  async function shareForSpins() {
-    track('wheel_share', { alreadyClaimed: sharedToday })
-    const text = t('ayWheelShareText')
-    const url = 'https://walletlens.live/academy?tab=wheel'
-    try {
-      // shareText, because navigator.share does not exist in the app's own
-      // WebView: the else-branch below would have opened an X compose window
-      // inside the app instead of the share sheet.
-      if (!await shareText(text, { title: t('ayWheelShareTitle'), url })) {
-        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank', 'noopener')
-      }
-    } catch { /* user cancelled share sheet — still grant once daily below */ }
-    if (!wRef.current.sharedToday) {
-      commitWheel({ left: wRef.current.left + 2, sharedToday: true })
-      setRewardMsg('🎉 ' + t('ayThanksSharing'))
-    }
-  }
-
-  return (
-    <div className="kw-wrap">
-      <div className="kw-topbar">
-        <div className="kw-spins">
-          <span className="kw-spins-num">{spins}</span>
-          <span className="kw-spins-lbl muted">{t('aySpinsLeft')}</span>
-        </div>
-        <button className="kw-share-btn" onClick={shareForSpins} disabled={sharedToday}
-          title={sharedToday ? t('ayShareClaimedTitle') : t('ayShareTitle')}>
-          {sharedToday ? '✓ ' + t('aySharedClaimed') : '📤 ' + t('ayShareForSpins')}
-        </button>
-      </div>
-
-      <div className="kw-wheel-stage">
-        <div className="kw-pointer" />
-        <div className="kw-wheel" style={{
-          transform: `rotate(${rotation}deg)`,
-          transition: spinning ? 'transform 4.1s cubic-bezier(0.16,1,0.3,1)' : 'none',
-          background: `conic-gradient(${WHEEL_WEDGES.map((w, i) => `${w.color} ${i * WHEEL_SLICE}deg ${(i + 1) * WHEEL_SLICE}deg`).join(', ')})`,
-        }}>
-          {WHEEL_WEDGES.map((w, i) => {
-            const angle = i * WHEEL_SLICE + WHEEL_SLICE / 2
-            return (
-              <div key={w.id} className="kw-wedge-label" style={{ transform: `rotate(${angle}deg) translateY(-96px) rotate(${-angle}deg)` }}>
-                <Icon name={w.icon} size={24} />
-              </div>
-            )
-          })}
-        </div>
-        <div className="kw-hub">🎡</div>
-      </div>
-
-      <button className="kw-spin-btn blitz-start-btn" onClick={spin} disabled={spinning || spins <= 0}>
-        {spinning ? t('aySpinning') : spins > 0 ? t('aySpin') : t('ayNoSpins')}
-      </button>
-      {spins <= 0 && !spinning && (
-        <p className="kw-hint muted">{t('aySpinsHint')}</p>
-      )}
-
-      {/* Reward wedge result */}
-      {phase === 'reward' && wedge && (
-        <div className="kw-result glass-card">
-          <div className="kw-result-emoji" style={{ color: wedge.color }}><Icon name={wedge.icon} size={40} /></div>
-          <div className="kw-result-title">{rewardMsg}</div>
-          <button className="blitz-start-btn" onClick={spin} disabled={spins <= 0}>{t('aySpinAgain')}</button>
-        </div>
-      )}
-
-      {/* Question flow */}
-      {(phase === 'question' || phase === 'answered') && q && (
-        <div className="kw-question glass-card">
-          <div className="kw-q-cat" style={{ background: (wedge?.color || 'var(--g)') + '22', color: wedge?.color || 'var(--g-ink)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-            {wedge && <Icon name={wedge.icon} size={14} />} {wedge ? t(wedge.labelKey) : ''}{wedge?.multiplier ? ' — ' + t('ayDoublePoints') : ''}
-          </div>
-          <div className="kw-q-text">{q.q}</div>
-          <div className="kw-q-opts">
-            {q.opts.map((opt, i) => {
-              let cls = 'kw-q-opt'
-              if (phase === 'answered') {
-                if (i === q.a) cls += ' kw-q-correct'
-                else if (i === selected) cls += ' kw-q-wrong'
-              }
-              return (
-                <button key={i} className={cls} onClick={() => answer(i)} disabled={phase === 'answered'}>
-                  {opt}
-                </button>
-              )
-            })}
-          </div>
-          {phase === 'answered' && (
-            <div className="kw-explain">
-              <div className={`kw-verdict ${selected === q.a ? 'ok' : 'no'}`}>
-                {selected === q.a ? '✅ ' + t('ayCorrectIqSpin')(lastIq) : '❌ ' + t('ayNotQuite')}
-              </div>
-              <p className="kw-exp-text">{q.exp}</p>
-              <button className="blitz-start-btn" onClick={spin} disabled={spins <= 0}>
-                {spins > 0 ? t('aySpinAgain') : t('ayOutOfSpins')}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
+// The Academy: video lessons first (AcademyWatch), then the reading, the
+// investment hacks and the articles, each on a page of its own. There are no
+// points, ranks, badges or games any more; what a lesson leaves behind is its
+// takeaway and a way into the part of the app that puts it to work.
 
 const CAT_COLORS = {
   Entry: 'var(--g)', Risk: '#f87171', Strategy: '#a78bfa',
@@ -441,42 +29,6 @@ const CAT_COLORS_LIGHT = {
   Profit:     '#b45309',
   Psychology: '#be185d',
   Research:   '#0369a1',
-}
-
-// ── Achievements ──────────────────────────────────────────────────────────
-// Ids and point values only. Titles and descriptions are per-language and
-// live in data/academyContent.js; the id is what a user's earned-badge list
-// is keyed on, so it must never change.
-const ACHIEVEMENTS = [
-  { id: 'first_lesson',    icon: '📖', pts: 50  },
-  { id: 'streak_3',        icon: '🔥', pts: 100 },
-  { id: 'streak_7',        icon: '⚡', pts: 200 },
-  { id: 'streak_30',       icon: '💎', pts: 500 },
-  { id: 'perfect_score',   icon: '🎯', pts: 75  },
-  { id: 'fast_answer',     icon: '⚡', pts: 100 },
-  { id: 'all_categories',  icon: '🌈', pts: 150 },
-  { id: 'security_expert', icon: '🛡️', pts: 120 },
-  { id: 'defi_master',     icon: '🏦', pts: 100 },
-  { id: 'risk_aware',      icon: '⚠️', pts: 120 },
-  { id: 'crypto_scholar',  icon: '🎓', pts: 200 },
-  { id: 'psychologist',    icon: '🧠', pts: 100 },
-  { id: 'iq_500',          icon: '🥉', pts: 0   },
-  { id: 'iq_1000',         icon: '🥈', pts: 0   },
-  { id: 'iq_2000',         icon: '🥇', pts: 0   },
-  { id: 'iq_5000',         icon: '👑', pts: 0   },
-  { id: 'first_watch',     icon: '🎬', pts: 50  },
-  { id: 'binge_learner',   icon: '🍿', pts: 150 },
-  { id: 'full_course',     icon: '🎓', pts: 300 },
-]
-
-// A key rather than a word: this runs at module scope, with no hook to call.
-function getRank(iq) {
-  if (iq >= 5000) return { labelKey: 'ayRankLegend', color: '#ffd700', icon: '👑' }
-  if (iq >= 2000) return { labelKey: 'ayRankWhale',  color: '#a78bfa', icon: '🥇' }
-  if (iq >= 1000) return { labelKey: 'ayRankStrategist', color: '#60a5fa', icon: '🥈' }
-  if (iq >= 500)  return { labelKey: 'ayRankAnalyst', color: 'var(--g-ink)', fontWeight: 700, icon: '🥉' }
-  if (iq >= 200)  return { labelKey: 'ayRankTrader',  color: '#f59e0b', icon: '📈' }
-  return { labelKey: 'ayRankRookie', color: 'rgba(255,255,255,0.75)', icon: '🌱' }
 }
 
 // ── Share hack as image ────────────────────────────────────────────────────
@@ -684,39 +236,30 @@ function HackCard({ hack, color, startOpen = false, video = null, onPlay }) {
 export default function Academy() {
   // Records the discovery, so the feature tip for this page stops being
   // offered to someone who has already found it.
-  useEffect(() => { noteFeatureUse('academy') }, [])
+  useEffect(() => { noteFeatureUse('academy'); track('academy_view') }, [])
 
   const { t, lang } = useLanguage()
+  const c = academyCopy(lang)
   const { mode: themeMode } = useTheme()
   const isLight = themeMode === 'light'
-  const [store, setStore] = useState(loadStore)
-  const [phase, setPhase]         = useState('idle')  // idle | playing | result | explanation
-  const [selected, setSelected]   = useState(null)
-  const [timeLeft, setTimeLeft]   = useState(10)
-  const [newBadges, setNewBadges] = useState([])
-  const [activeTab, setActiveTab] = useState(() => {
-    // Deep-link support: /academy?tab=wheel opens a specific tab (used by the
-    // dashboard "Spin & Learn" card).
+
+  // Where the reader arrived: a hack from a notification (?tab=hacks&hack=N),
+  // the articles, or a video (?video=key) from the bell, a push or Home.
+  // Links to the old game tabs land on the lessons.
+  const [view, setView] = useState(() => {
     try {
-      const qs = new URLSearchParams(window.location.search)
-      if (qs.get('video')) return 'watch'
-      const t = qs.get('tab')
-      if (['watch', 'challenge', 'badges', 'wheel', 'game', 'hacks', 'articles'].includes(t)) return t
-    } catch { /* no window/search */ }
-    // Lessons first once there are any to watch.
-    return VIDEOS.some(v => youtubeId(v.youtube)) ? 'watch' : 'challenge'
-  }) // watch | challenge | badges | wheel | game | hacks | articles
-  // A notification about a new video opens that video, playing.
+      const tab = new URLSearchParams(window.location.search).get('tab')
+      if (tab === 'hacks' || tab === 'articles') return tab
+    } catch { /* no window */ }
+    return 'lessons'
+  })
   const [openVideo, setOpenVideo] = useState(() => {
     try { return new URLSearchParams(window.location.search).get('video') || null } catch { return null }
   })
 
-  // Which hack a notification asked for, as an index into the list.
-  //
-  // The index is the one pickHack chose and hacksSent recorded on the server,
-  // so the link and the rotation cannot disagree about which hack was sent.
-  // Read once, on mount: this is where the user arrived, not a control they
-  // operate, and re-reading it would re-open the card every render.
+  // Which hack a notification asked for, as an index into the list. The index
+  // is the one the push worker's rotation recorded, so the link and the
+  // rotation cannot disagree. Read once, on mount.
   const [deepLinkedHack] = useState(() => {
     try {
       const raw = new URLSearchParams(window.location.search).get('hack')
@@ -726,394 +269,43 @@ export default function Academy() {
     } catch { return -1 }
   })
   const [articleFilter, setArticleFilter] = useState('All')
-  const timerRef = useRef(null)
-  const startTime = useRef(null)
+  const hackList = academyHacks(lang)
 
-  const todayStr   = getTodayStr()
-  const alreadyDone = store.lastPlayed === todayStr
-  const badgeText  = achievementText(lang)
-  const question   = getDailyQuestion(academyQuestions(lang))
-
-  // Init store defaults
-  useEffect(() => {
-    track('academy_view')
-    setStore(prev => ({
-      iq: 0, streak: 0, lastPlayed: null, totalCorrect: 0,
-      categoryCounts: {}, earnedBadges: [],
-      ...prev,
-    }))
-  }, [])
-
-  // Countdown timer
-  useEffect(() => {
-    if (phase !== 'playing') { clearInterval(timerRef.current); return }
-    timerRef.current = setInterval(() => {
-      setTimeLeft(t => {
-        if (t <= 1) { clearInterval(timerRef.current); handleTimeout(); return 0 }
-        return t - 1
-      })
-    }, 1000)
-    return () => clearInterval(timerRef.current)
-  }, [phase])
-
-  function startChallenge() {
-    setPhase('playing')
-    setSelected(null)
-    setTimeLeft(10)
-    startTime.current = Date.now()
-    track('academy_challenge_start', { question_cat: question.cat })
-  }
-
-  function handleTimeout() {
-    setSelected(-1) // timed out
-    setPhase('result')
-    updateStore(false, 99)
-  }
-
-  function handleAnswer(idx) {
-    if (phase !== 'playing' || selected !== null) return
-    clearInterval(timerRef.current)
-    const elapsed = (Date.now() - startTime.current) / 1000
-    const correct = idx === question.a
-    setSelected(idx)
-    setPhase('result')
-    updateStore(correct, elapsed)
-    track('academy_answer', { correct, cat: question.cat, elapsed_s: elapsed.toFixed(1) })
-  }
-
-  function updateStore(correct, elapsed) {
-    setStore(prev => {
-      const today = getTodayStr()
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
-      const newStreak = correct
-        ? (prev.lastPlayed === yesterday ? (prev.streak || 0) + 1 : 1)
-        : 0
-
-      const catCounts = { ...(prev.categoryCounts || {}) }
-      if (correct) catCounts[question.cat] = (catCounts[question.cat] || 0) + 1
-
-      const iqGain = correct
-        ? 20 + (elapsed < 3 ? 30 : elapsed < 5 ? 10 : 0) + (newStreak >= 7 ? 20 : newStreak >= 3 ? 10 : 0)
-        : 0
-      const newIq = (prev.iq || 0) + iqGain
-      const newCorrect = (prev.totalCorrect || 0) + (correct ? 1 : 0)
-
-      // Check badge unlocks
-      const earned = new Set(prev.earnedBadges || [])
-      const freshBadges = []
-      function maybeEarn(id) { if (!earned.has(id)) { earned.add(id); freshBadges.push(id) } }
-
-      if (correct && newCorrect === 1)   maybeEarn('first_lesson')
-      if (correct && newStreak >= 3)     maybeEarn('streak_3')
-      if (correct && newStreak >= 7)     maybeEarn('streak_7')
-      if (correct && newStreak >= 30)    maybeEarn('streak_30')
-      if (correct)                        maybeEarn('perfect_score')
-      if (correct && elapsed < 3)        maybeEarn('fast_answer')
-      if (Object.keys(catCounts).length >= 5) maybeEarn('all_categories')
-      if ((catCounts['Security'] || 0) >= 5)  maybeEarn('security_expert')
-      if ((catCounts['DeFi'] || 0) >= 3)      maybeEarn('defi_master')
-      if ((catCounts['Risk'] || 0) >= 5)      maybeEarn('risk_aware')
-      if ((catCounts['Crypto'] || 0) >= 10)   maybeEarn('crypto_scholar')
-      if ((catCounts['Psychology'] || 0) >= 3) maybeEarn('psychologist')
-      if (newIq >= 500)  maybeEarn('iq_500')
-      if (newIq >= 1000) maybeEarn('iq_1000')
-      if (newIq >= 2000) maybeEarn('iq_2000')
-      if (newIq >= 5000) maybeEarn('iq_5000')
-
-      const badgePts = freshBadges.reduce((s, id) => {
-        const b = ACHIEVEMENTS.find(a => a.id === id)
-        return s + (b?.pts || 0)
-      }, 0)
-
-      if (freshBadges.length) {
-        setNewBadges(freshBadges)
-        noteMoment('achievement')
-      }
-
-      const updated = {
-        ...prev,
-        iq: newIq + badgePts,
-        streak: newStreak,
-        lastPlayed: today,
-        totalCorrect: newCorrect,
-        categoryCounts: catCounts,
-        earnedBadges: [...earned],
-      }
-      saveStore(updated)
-      return updated
-    })
-  }
-
-  // Video lessons: watching counts toward three badges, and the question after
-  // a lesson earns IQ once, the first time it is answered.
-  function awardVideo(prev, patch, iqGain) {
-    const next = { ...prev, ...patch }
-    const lessonKeys = VIDEOS.filter(v => isLesson(v) && youtubeId(v.youtube)).map(v => v.key)
-    const seen = Object.keys(next.watched || {}).filter(k => lessonKeys.includes(k)).length
-    const earned = new Set(prev.earnedBadges || [])
-    const fresh = []
-    const maybe = (id) => { if (!earned.has(id)) { earned.add(id); fresh.push(id) } }
-    if (seen >= 1) maybe('first_watch')
-    if (seen >= 10) maybe('binge_learner')
-    if (lessonKeys.length >= 5 && seen >= lessonKeys.length) maybe('full_course')
-    const pts = fresh.reduce((s, id) => s + (ACHIEVEMENTS.find(a => a.id === id)?.pts || 0), 0)
-    if (fresh.length) { setNewBadges(fresh); noteMoment('achievement') }
-    const iq = (prev.iq || 0) + iqGain + pts
-    for (const [id, at] of [['iq_500', 500], ['iq_1000', 1000], ['iq_2000', 2000], ['iq_5000', 5000]]) if (iq >= at) earned.add(id)
-    return { ...next, iq, earnedBadges: [...earned] }
-  }
-  function handleVideoWatch(v) {
-    setStore(prev => {
-      if (prev.watched?.[v.key]) return prev
-      const updated = awardVideo(prev, { watched: { ...(prev.watched || {}), [v.key]: Date.now() } }, 0)
-      saveStore(updated)
-      return updated
-    })
-  }
-  function handleVideoQuiz(v, correct) {
-    setStore(prev => {
-      if (prev.vquiz?.[v.key]) return prev
-      const updated = awardVideo(prev, { vquiz: { ...(prev.vquiz || {}), [v.key]: correct ? 'right' : 'wrong' } }, correct ? VIDEO_QUIZ_IQ : 0)
-      saveStore(updated)
-      return updated
-    })
-  }
-
-  const rank = getRank(store.iq || 0)
-  const earnedSet = new Set(store.earnedBadges || [])
+  const go = (v) => { setView(v); track('academy_view_switch', { view: v }); try { window.scrollTo({ top: 0 }) } catch { /* old WebView */ } }
 
   return (
     <div className="acad-root">
-      {/* New badge toast */}
-      {newBadges.length > 0 && (
-        <div className="acad-toast-wrap">
-          {newBadges.map(id => {
-            const b = ACHIEVEMENTS.find(a => a.id === id)
-            return b ? (
-              <div key={id} className="acad-toast" onAnimationEnd={() => setNewBadges(p => p.filter(x => x !== id))}>
-                <span className="acad-toast-icon">{b.icon}</span>
-                <div>
-                  <div className="acad-toast-title">{t('ayBadgeUnlocked')}</div>
-                  <div className="acad-toast-badge">{badgeText[b.id]?.title}</div>
-                </div>
-              </div>
-            ) : null
-          })}
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="acad-header">
-        <div className="acad-header-left">
-          <div className="acad-logo">🎓</div>
-          <div>
-            <div className="acad-title">{t('ayTitle')}</div>
-            <div className="acad-subtitle muted">{t('aySubtitle')}</div>
-          </div>
-        </div>
-        <div className="acad-iq-pill" style={{ borderColor: rank.color + '44', background: rank.color + '12' }}>
-          <span style={{ color: rank.color }}>{rank.icon} {store.iq || 0}</span>
-          <span className="muted" style={{ fontSize: '0.7rem' }}>{t('ayIq')}</span>
-        </div>
-      </div>
-
-      {/* Rank card */}
-      <div className="glass-card acad-rank-card">
-        <div className="acad-rank-left">
-          <div className="acad-rank-icon" style={{ color: rank.color }}>{rank.icon}</div>
-          <div>
-            <div className="acad-rank-label" style={{ color: rank.color }}>{t(rank.labelKey)}</div>
-            <div className="muted" style={{ fontSize: '0.74rem' }}>{t('ayIqValue')((store.iq || 0).toLocaleString())}</div>
-          </div>
-        </div>
-        <div className="acad-rank-stats">
-          <div className="acad-stat">
-            <div className="acad-stat-val">{store.totalCorrect || 0}</div>
-            <div className="acad-stat-lbl muted">{t('ayCorrect')}</div>
-          </div>
-          <div className="acad-stat">
-            <div className="acad-stat-val">{store.streak || 0}🔥</div>
-            <div className="acad-stat-lbl muted">{t('ayStreak')}</div>
-          </div>
-          <div className="acad-stat">
-            <div className="acad-stat-val">{(store.earnedBadges || []).length}</div>
-            <div className="acad-stat-lbl muted">{t('ayBadges')}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="acad-tabs">
-        {[
-          { id: 'watch',     label: '🎬 ' + (WATCH_COPY[lang] || WATCH_COPY.en).tab },
-          { id: 'challenge', label: '📅 ' + t('ayTabChallenge') },
-          { id: 'badges',    label: '🏆 ' + t('ayBadgesTab')((store.earnedBadges||[]).length, ACHIEVEMENTS.length) },
-          { id: 'wheel',     label: '🎡 ' + t('ayTabWheel') },
-          { id: 'game',      label: '🕵️ ' + t('ayTabGame') },
-          { id: 'hacks',     label: '💡 ' + t('ayTabHacks') },
-          { id: 'articles',  label: '📚 ' + t('ayArticlesTab')(POSTS.length) },
-        ].map(tab => (
-          <button key={tab.id} className={`acad-tab ${activeTab === tab.id ? 'acad-tab-active' : ''}`}
-            onClick={() => { setActiveTab(tab.id); track('academy_tab_switch', { tab: tab.id }) }}>
-            {tab.label}
+      <div className="acad-header aw-page-head">
+        {view !== 'lessons' && (
+          <button type="button" className="aw-back-ic" onClick={() => go('lessons')} aria-label={c.back} title={c.back}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
-        ))}
+        )}
+        <div>
+          <div className="acad-title">{view === 'hacks' ? c.hacks : view === 'articles' ? c.articles : c.title}</div>
+          <div className="acad-subtitle muted">{view === 'lessons' ? c.sub : view === 'hacks' ? c.hacksSub(hackList.length) : c.articlesSub}</div>
+        </div>
       </div>
 
-      {/* ── WATCH TAB ── */}
-      {activeTab === 'watch' && (
-        <AcademyWatch store={store} onWatch={handleVideoWatch} onQuiz={handleVideoQuiz}
-          openKey={openVideo} onOpened={() => setOpenVideo(null)} />
+      {view === 'lessons' && (
+        <AcademyWatch openKey={openVideo} onOpened={() => setOpenVideo(null)}
+          onOpenHacks={() => go('hacks')} onOpenArticles={() => go('articles')} hackCount={hackList.length} />
       )}
 
-      {/* ── CHALLENGE TAB ── */}
-      {activeTab === 'challenge' && (
-        <div className="glass-card acad-challenge-card">
-          {/* Category + timer */}
-          <div className="acad-challenge-meta">
-            <span className="acad-cat-badge">{t(CATEGORY_KEYS[question.cat] || question.cat)}</span>
-            {phase === 'playing' && (
-              <div className="acad-timer" style={{ color: timeLeft <= 3 ? '#f87171' : 'var(--g-ink)' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                {t('ayTimerSeconds')(timeLeft)}
-              </div>
-            )}
-          </div>
-
-          {/* Question */}
-          <div className="acad-question">{question.q}</div>
-
-          {/* Options */}
-          <div className="acad-options">
-            {question.opts.map((opt, i) => {
-              let cls = 'acad-option'
-              if (phase === 'result' || phase === 'explanation') {
-                if (i === question.a) cls += ' acad-option-correct'
-                else if (i === selected) cls += ' acad-option-wrong'
-              }
-              return (
-                <button key={i} className={cls}
-                  onClick={() => handleAnswer(i)}
-                  disabled={phase !== 'playing'}>
-                  <span className="acad-option-letter">{String.fromCharCode(65 + i)}</span>
-                  <span>{opt}</span>
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Idle state */}
-          {phase === 'idle' && !alreadyDone && (
-            <button className="acad-start-btn" onClick={startChallenge}>
-              {t('ayStartChallenge')}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            </button>
-          )}
-
-          {/* Already done */}
-          {alreadyDone && phase === 'idle' && (
-            <div className="acad-done-msg">
-              <span className="acad-done-icon">✅</span>
-              <div>
-                <div style={{ fontWeight: 700, color: 'var(--g-ink)' }}>{t('ayDoneTitle')}</div>
-                <div className="muted" style={{ fontSize: '0.78rem', marginTop: '0.25rem' }}>{t('ayComeBack')(store.streak)}🔥</div>
-              </div>
-            </div>
-          )}
-
-          {/* Result */}
-          {phase === 'result' && (
-            <div className={`acad-result ${selected === question.a ? 'acad-result-correct' : 'acad-result-wrong'}`}>
-              {selected === -1 ? (
-                <><span>⏱️</span> {t('ayTimesUp')()} <strong>{question.opts[question.a]}</strong></>
-              ) : selected === question.a ? (
-                <><span>✅</span> {t('ayCorrectIq')(selected === question.a && (Date.now() - startTime.current) / 1000 < 3 ? '50' : '20')}</>
-              ) : (
-                <><span>❌</span> {t('ayWrongAnswer')()} <strong>{question.opts[question.a]}</strong></>
-              )}
-              <button className="acad-explain-btn" onClick={() => setPhase('explanation')}>{t('ayWhy')} →</button>
-            </div>
-          )}
-
-          {/* Explanation */}
-          {phase === 'explanation' && (
-            <div className="acad-explanation">
-              <div className="acad-explain-title">💡 {t('ayExplanation')}</div>
-              <div className="acad-explain-text">{question.exp}</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── BADGES TAB ── */}
-      {activeTab === 'badges' && (
-        <div className="acad-badges-grid">
-          {ACHIEVEMENTS.map(b => {
-            const earned = earnedSet.has(b.id)
-            return (
-              <div key={b.id} className={`acad-badge-card ${earned ? 'acad-badge-earned' : 'acad-badge-locked'}`}>
-                <div className="acad-badge-icon" style={{ opacity: earned ? 1 : 0.3 }}>{b.icon}</div>
-                <div className="acad-badge-title" style={{ color: earned ? 'var(--text)' : 'var(--text-sub)' }}>{badgeText[b.id]?.title}</div>
-                <div className="acad-badge-desc muted">{badgeText[b.id]?.desc}</div>
-                {b.pts > 0 && <div className="acad-badge-pts" style={{ color: earned ? '#fbbf24' : 'var(--text-sub)' }}>{t('ayBadgePts')(b.pts)}</div>}
-                {earned && <div className="acad-badge-earned-label">{t('ayEarned')}</div>}
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* ── GAME TAB ── */}
-      {activeTab === 'wheel' && (
-        <div className="glass-card" style={{ padding: '1.25rem' }}>
-          <KnowledgeWheel
-            store={store}
-            onIqGain={pts => {
-              setStore(prev => {
-                const updated = { ...prev, iq: (prev.iq || 0) + pts }
-                saveStore(updated)
-                return updated
-              })
-            }}
-            setWheel={w => {
-              setStore(prev => {
-                const updated = { ...prev, wheel: w }
-                saveStore(updated)
-                return updated
-              })
-            }}
-          />
-        </div>
-      )}
-
-      {activeTab === 'game' && (
-        <div className="glass-card" style={{ padding: '1.25rem' }}>
-          <CryptoGuessr onIqGain={pts => {
-            setStore(prev => {
-              const updated = { ...prev, iq: (prev.iq || 0) + pts }
-              saveStore(updated)
-              return updated
-            })
-          }} />
-        </div>
-      )}
-
-      {/* ── HACKS TAB ── */}
-      {activeTab === 'hacks' && (
+      {view === 'hacks' && (
         <div className="acad-hacks-list">
-          {academyHacks(lang).map((h, i) => {
+          {hackList.map((h, i) => {
             const palette = isLight ? CAT_COLORS_LIGHT : CAT_COLORS
             const color = palette[h.cat] || (isLight ? '#15803d' : '#a78bfa')
             return (
               <HackCard key={i} hack={h} color={color} startOpen={i === deepLinkedHack}
-                video={videoForHack(i)} onPlay={(v) => { setOpenVideo(v.key); setActiveTab('watch'); track('hack_video_click', { video: v.key }) }} />
+                video={videoForHack(i)} onPlay={(v) => { setOpenVideo(v.key); setView('lessons'); track('hack_video_click', { video: v.key }) }} />
             )
           })}
         </div>
       )}
 
-      {/* ── ARTICLES TAB ── */}
-      {activeTab === 'articles' && (
+      {view === 'articles' && (
         <div className="acad-articles-wrap">
           <div className="acad-articles-filters">
             {ARTICLE_CATS.map(cat => (
@@ -1154,30 +346,6 @@ export default function Academy() {
           </div>
         </div>
       )}
-
-      {/* IQ guide */}
-      <div className="glass-card acad-iq-guide">
-        <div className="acad-iq-guide-title">{t('ayIqRanks')}</div>
-        <div className="acad-iq-guide-grid">
-          {[
-            { icon: '🌱', label: t('ayRankRookie'),     range: '0–199' },
-            { icon: '📈', label: t('ayRankTrader'),     range: '200–499' },
-            { icon: '🥉', label: t('ayRankAnalyst'),    range: '500–999' },
-            { icon: '🥈', label: t('ayRankStrategist'), range: '1,000–1,999' },
-            { icon: '🥇', label: t('ayRankWhale'),      range: '2,000–4,999' },
-            { icon: '👑', label: t('ayRankLegend'),     range: '5,000+' },
-          ].map(r => (
-            <div key={r.label} className="acad-iq-guide-row">
-              <span>{r.icon}</span>
-              <span style={{ fontWeight: 700, fontSize: '0.82rem' }}>{r.label}</span>
-              <span className="muted" style={{ fontSize: '0.74rem' }}>{r.range}</span>
-            </div>
-          ))}
-        </div>
-        <p className="muted" style={{ fontSize: '0.72rem', marginTop: '0.75rem', lineHeight: 1.5 }}>
-          {t('ayIqExplain')}
-        </p>
-      </div>
     </div>
   )
 }

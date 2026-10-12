@@ -141,8 +141,9 @@ describe('every channel lands on what it is about', () => {
     expect(CHANNEL_URL.zakat).toBe('/dashboard?tab=zakat')
   })
 
-  it('the academy question opens the challenge', () => {
-    expect(CHANNEL_URL.academy).toBe('/academy?tab=challenge')
+  it('the academy channel opens the Academy, where the new lessons are', () => {
+    expect(CHANNEL_URL.academy).toBe('/academy')
+    expect(CHANNEL_URL.video).toBe('/academy')
   })
 
   it('every channel default is a path this app serves', () => {
