@@ -12891,7 +12891,12 @@ html.wl-msstore .wl-extbar { display: none !important; }
   animation: wl-bell-in .2s ease both;
 }
 @keyframes wl-bell-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
-.wl-bell-panel[dir="rtl"] { right: auto; left: 0; }
+/* The bell sits at the right end of the bar in every language (the top bar
+   does not mirror), so the panel stays anchored there in Arabic too; flipping
+   it to left: 0 pushed it off the right edge of the screen. */
+@media (max-width: 640px) {
+  .wl-bell-panel { position: fixed; top: calc(var(--wl-topbar-h, 64px) + 8px); left: 10px; right: 10px; width: auto; max-height: calc(100vh - var(--wl-topbar-h, 64px) - 120px); }
+}
 .wl-bell-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: 14px 16px 10px; border-bottom: 1px solid var(--nl-line, rgba(15, 29, 43, .08)); }
 .wl-bell-head b { font-size: .98rem; font-weight: 800; }
 .wl-bell-head span { display: flex; gap: .25rem; }
@@ -12949,3 +12954,7 @@ html.wl-msstore .wl-extbar { display: none !important; }
 .wl-bell-new { font-style: normal; display: inline-block; margin-right: 6px; padding: 1px 6px; border-radius: 6px; font-size: .62rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; vertical-align: 1px; color: #fff; background: linear-gradient(135deg, #8b5cf6, #22c55e); }
 .wl-bell-panel[dir="rtl"] .wl-bell-new { margin-right: 0; margin-left: 6px; }
 .wl-bell-none { padding: 22px 12px; text-align: center; font-size: .8rem; color: var(--nl-sub, var(--text-muted, #64748b)); }
+.wl-bell-panel[dir="rtl"] .wl-bell-list button.unread::after { right: auto; left: 10px; }
+.wl-bell-panel[dir="rtl"] .wl-bell-txt { padding-right: 0; padding-left: 14px; }
+.wl-bell-panel[dir="rtl"] .wl-bell-list button.unread time { margin-right: 0; margin-left: 12px; }
+html.wl-bell-open .wlc-fab { opacity: 0; pointer-events: none; }

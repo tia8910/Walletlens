@@ -88,6 +88,13 @@ describe('bell feeds: WalletLens updates and news', () => {
   beforeEach(() => { localStorage.clear() })
   const now = Date.parse('2026-10-12T12:00:00Z')
 
+  it('uses the reader\'s language when the update has it', async () => {
+    const { collectAnnouncements } = await import('./notifyInbox')
+    const json = { items: [{ id: 'z', kind: 'feature', date: '2026-10-12', title: 'Hello', body: 'World', i18n: { ar: { title: 'مرحبا', body: 'عالم' } } }] }
+    expect(collectAnnouncements(json, now, 'ar')[0]).toMatchObject({ title: 'مرحبا', body: 'عالم' })
+    expect(collectAnnouncements(json, now, 'de')[0]).toMatchObject({ title: 'Hello', body: 'World' })
+  })
+
   it('turns announcements into update items, unread for a week', async () => {
     const { collectAnnouncements } = await import('./notifyInbox')
     const items = collectAnnouncements({ items: [
@@ -129,6 +136,11 @@ describe('bell feeds: WalletLens updates and news', () => {
     for (const a of ann.items) {
       expect(['feature', 'update', 'tip']).toContain(a.kind)
       expect(`${a.title} ${a.body}`).not.toMatch(/[—–]| - /)
+      // Every update reads in all six languages, and in none of them with a dash.
+      for (const lang of ['ar', 'fr', 'es', 'de', 'it']) {
+        expect(a.i18n?.[lang]?.title, `${a.id} ${lang}`).toBeTruthy()
+        expect(`${a.i18n[lang].title} ${a.i18n[lang].body}`).not.toMatch(/[—–]| - /)
+      }
     }
   })
 })

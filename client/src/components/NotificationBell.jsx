@@ -49,9 +49,14 @@ export default function NotificationBell({ alertsPath, label }) {
     // fired before the listener exists is lost, leaving the bell empty.
     if (!listening) { listening = true; listenToWorker() }
     backfillInbox().then(sync)
-    fetchFeeds({ base: SITE_ORIGIN }).then(sync)
+    fetchFeeds({ base: SITE_ORIGIN, lang }).then(sync)
     return () => { window.removeEventListener(INBOX_EVENT, sync); window.removeEventListener('storage', sync) }
   }, [])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('wl-bell-open', open)
+    return () => document.documentElement.classList.remove('wl-bell-open')
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -79,7 +84,7 @@ export default function NotificationBell({ alertsPath, label }) {
     <div className="wl-bell-wrap" ref={box}>
       <button
         className="wl-topbar-x wl-topbar-bell"
-        onClick={() => { if (!open) { setItems(readInbox()); backfillInbox().then(() => setItems(readInbox())); fetchFeeds({ base: SITE_ORIGIN }).then(() => setItems(readInbox())) } setOpen(o => !o); track('notifications_open', { source: 'topbar', unread }) }}
+        onClick={() => { if (!open) { setItems(readInbox()); backfillInbox().then(() => setItems(readInbox())); fetchFeeds({ base: SITE_ORIGIN, lang }).then(() => setItems(readInbox())) } setOpen(o => !o); track('notifications_open', { source: 'topbar', unread }) }}
         title={label} aria-label={unread ? `${label} (${unread})` : label} aria-expanded={open} aria-haspopup="dialog"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -113,7 +118,7 @@ export default function NotificationBell({ alertsPath, label }) {
                 <li key={n.id}>
                   <button type="button" className={n.read ? '' : 'unread'} onClick={() => { markRead(n.id); track('notification_inbox_click', { channel: n.channel }); go(n.url) }}>
                     <span className="wl-bell-ic" aria-hidden="true">{iconFor(n.channel)}</span>
-                    <span className="wl-bell-txt"><b>{(n.channel === 'feature' || n.channel === 'update') && <em className="wl-bell-new">{c[n.channel]}</em>}{n.title}</b>{n.body && <small>{n.body}</small>}</span>
+                    <span className="wl-bell-txt"><b>{(n.channel === 'feature' || n.channel === 'update') && <em className="wl-bell-new">{c[n.channel]}</em>}<span dir="auto">{n.i18n?.[lang]?.title || n.title}</span></b>{n.body && <small dir="auto">{n.i18n?.[lang]?.body || n.body}</small>}</span>
                     <time>{ago(n.at, c)}</time>
                   </button>
                 </li>

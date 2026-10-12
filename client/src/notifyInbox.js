@@ -119,7 +119,7 @@ export function importItems(items) {
   const list = readInbox()
   for (const x of fresh) {
     seen.add(x.key)
-    list.push({ id: `imp-${x.key}`, title: String(x.title), body: String(x.body || ''), url: String(x.url || ''), channel: String(x.channel || ''), tag: x.key, at: x.at, read: !!x.read })
+    list.push({ id: `imp-${x.key}`, title: String(x.title), body: String(x.body || ''), url: String(x.url || ''), channel: String(x.channel || ''), tag: x.key, at: x.at, read: !!x.read, ...(x.i18n ? { i18n: x.i18n } : {}) })
   }
   list.sort((a, b) => b.at - a.at)
   try { localStorage.setItem(IMPORTED_KEY, JSON.stringify([...seen].slice(-400))) } catch { /* private mode */ }
@@ -149,10 +149,11 @@ export const FEED_CHANNELS = new Set(['news', 'feature', 'update', 'tip'])
 const WEEK = 7 * DAY
 
 /** WalletLens announcements as inbox items. Unread for a week after release. */
-export function collectAnnouncements(json, now = Date.now()) {
+export function collectAnnouncements(json, now = Date.now(), lang = 'en') {
   return (json?.items || []).filter(a => a?.id && a.title).map(a => {
     const at = Date.parse(a.date || '') || now
-    return { key: `ann:${a.id}`, title: a.title, body: a.body || '', channel: FEED_CHANNELS.has(a.kind) ? a.kind : 'update', url: a.url || '', at, read: now - at > WEEK }
+    const t = a.i18n?.[lang] || {}
+    return { key: `ann:${a.id}`, title: t.title || a.title, body: t.body || a.body || '', i18n: a.i18n || null, channel: FEED_CHANNELS.has(a.kind) ? a.kind : 'update', url: a.url || '', at, read: now - at > WEEK }
   }).slice(0, 12)
 }
 
@@ -184,10 +185,10 @@ export function collectNews(articles, words = [], now = Date.now()) {
 
 let lastFeedFetch = 0
 /** Fetch both feeds at most every 15 minutes per page and import what is new. */
-export async function fetchFeeds({ force = false, fetchImpl = (typeof fetch !== 'undefined' ? fetch : null), base = '' } = {}) {
+export async function fetchFeeds({ force = false, fetchImpl = (typeof fetch !== 'undefined' ? fetch : null), base = '', lang = 'en' } = {}) {
   if (!fetchImpl || (!force && Date.now() - lastFeedFetch < 15 * 60_000)) return 0
   lastFeedFetch = Date.now()
   const get = (name) => fetchImpl(`${base}/${name}?t=${Math.floor(Date.now() / 900_000)}`).then(r => (r.ok ? r.json() : null)).catch(() => null)
   const [ann, news] = await Promise.all([get('announcements.json'), get('news.json')])
-  return importItems([...collectAnnouncements(ann), ...collectNews(news?.articles, heldWords())])
+  return importItems([...collectAnnouncements(ann, Date.now(), lang), ...collectNews(news?.articles, heldWords())])
 }
