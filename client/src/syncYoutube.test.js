@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parseFeed, matchVideo, merge, norm } from '../scripts/sync-youtube.mjs'
+import { parseFeed, matchVideo, merge, norm, channelIdFrom, videoIdsFrom } from '../scripts/sync-youtube.mjs'
 import synced from './data/academyVideoLinks.js'
 import { VIDEOS, BASE_VIDEOS } from './data/academyVideos.js'
 
@@ -60,6 +60,22 @@ describe('sync from the YouTube channel', () => {
     expect(next.extras).toEqual([{ key: 'yt-EEEEEEEEEEE', kind: 'original', name: 'Q&A: our first 1,000 users', emoji: '🎬', lang: 'en', youtube: 'EEEEEEEEEEE', added: '2026-10-12', wide: true }])
     // A second run over the same feed changes nothing.
     expect(merge(next, entries).added).toEqual([])
+  })
+
+  it('finds this channel on its page, not another channel the page shows', () => {
+    // The first run took a stray "channelId" and the feed answered 404.
+    const page = '{"channelId":"UCotherotherotherother1"} <link rel="canonical" href="https://www.youtube.com/channel/UCwalletlenswalletlens12"> "externalId":"UCwalletlenswalletlens12"'
+    expect(channelIdFrom(page)).toBe('UCwalletlenswalletlens12')
+    expect(channelIdFrom('"externalId":"UCwalletlenswalletlens12"')).toBe('UCwalletlenswalletlens12')
+    expect(channelIdFrom('nothing here')).toBe('')
+  })
+
+  it('reads the videos off the channel pages when the feed is down', () => {
+    const page = '"reelWatchEndpoint":{"videoId":"kjjOrmpSL9M"} "videoId":"AAAAAAAAAAA" "videoId":"kjjOrmpSL9M"'
+    expect(videoIdsFrom(page)).toEqual(['kjjOrmpSL9M', 'AAAAAAAAAAA'])
+    const src = read('../scripts/sync-youtube.mjs')
+    expect(src).toContain('playlist_id=UU')
+    expect(src).toContain('fromChannelPages()')
   })
 
   it('feeds the catalog the app, the bell and the push all read', () => {

@@ -82,19 +82,78 @@ export function merge(state, entries, catalog = BASE_VIDEOS) {
 
 const render = (s) => readFileSync(FILE, 'utf8').replace(/export default \{[\s\S]*$/, `export default ${JSON.stringify(s, null, 2)}\n`)
 
+// A browser's headers, and consent already given, so YouTube serves the real
+// page to the workflow's runner instead of a consent screen.
+const HEADERS = { 'accept-language': 'en', 'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36', cookie: 'CONSENT=YES+1; SOCS=CAI' }
+
+/**
+ * The channel's own id from its page. The canonical link and externalId name
+ * this channel; a bare "channelId" can belong to another channel shown on the
+ * page, which made the feed 404.
+ */
+export function channelIdFrom(page) {
+  const m = /<link rel="canonical" href="https:\/\/www\.youtube\.com\/channel\/(UC[\w-]{22})"/.exec(page)
+    || /"externalId":"(UC[\w-]{22})"/.exec(page)
+    || /<meta itemprop="identifier" content="(UC[\w-]{22})"/.exec(page)
+    || /"browseId":"(UC[\w-]{22})"/.exec(page)
+  return m?.[1] || ''
+}
+
+/** Video ids on a channel tab, newest first, each once. */
+export function videoIdsFrom(page) {
+  return [...new Set([...String(page).matchAll(/"videoId":"([\w-]{11})"/g)].map(m => m[1]))]
+}
+
+const today = () => new Date().toISOString().slice(0, 10)
+
+/**
+ * The newest videos when the feed is down: the ids on the channel's Shorts and
+ * Videos tabs, each checked with oEmbed to be ours and to give its title.
+ */
+async function fromChannelPages() {
+  const out = []
+  for (const tab of ['shorts', 'videos']) {
+    const res = await fetch(`${HANDLE}/${tab}`, { headers: HEADERS })
+    if (!res.ok) continue
+    for (const id of videoIdsFrom(await res.text()).slice(0, 15)) {
+      if (out.some(e => e.id === id)) continue
+      const o = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/${tab === 'shorts' ? 'shorts/' : 'watch?v='}${id}`)}`)
+      if (!o.ok) continue
+      const meta = await o.json()
+      if (!/@walletlens\b/i.test(meta.author_url || '')) continue
+      out.push({ id, title: meta.title || '', description: '', added: today(), short: tab === 'shorts' })
+    }
+  }
+  return out
+}
+
+/** The channel feed, by channel and then by its uploads playlist. Null when neither answers. */
+async function fromFeed(channelId) {
+  if (!channelId) return null
+  for (const q of [`channel_id=${channelId}`, `playlist_id=UU${channelId.slice(2)}`]) {
+    const res = await fetch(`https://www.youtube.com/feeds/videos.xml?${q}`, { headers: HEADERS })
+    if (res.ok) return parseFeed(await res.text())
+    console.log(`feed ${q}: HTTP ${res.status}`)
+  }
+  return null
+}
+
 async function main() {
   const { default: state } = await import(`${FILE}?t=${Date.now()}`)
   let channelId = state.channelId
   if (!channelId) {
-    const page = await (await fetch(HANDLE, { headers: { 'accept-language': 'en' } })).text()
-    channelId = (/"(?:channelId|externalId)":"(UC[\w-]{22})"/.exec(page) || /channel\/(UC[\w-]{22})/.exec(page) || [])[1]
-    if (!channelId) throw new Error('could not find the channel id on ' + HANDLE)
+    const page = await (await fetch(HANDLE, { headers: HEADERS })).text()
+    channelId = channelIdFrom(page)
+    console.log(`channel id: ${channelId || 'not found'}`)
   }
-  const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`)
-  if (!res.ok) throw new Error(`feed: HTTP ${res.status}`)
-  const entries = parseFeed(await res.text())
+  let entries = await fromFeed(channelId)
+  if (!entries) {
+    entries = await fromChannelPages()
+    console.log(`read the channel pages instead: ${entries.length} videos`)
+    if (!entries.length) throw new Error('found no videos on ' + HANDLE)
+  }
   const { next, added } = merge({ ...state, channelId }, entries)
-  if (!added.length && state.channelId === channelId) { console.log(`No new videos (${entries.length} in the feed).`); return }
+  if (!added.length && state.channelId === channelId) { console.log(`No new videos (${entries.length} found).`); return }
   writeFileSync(FILE, render(next), 'utf8')
   console.log(`Linked ${added.length}: ${added.join(', ') || '(channel id only)'}`)
 }
