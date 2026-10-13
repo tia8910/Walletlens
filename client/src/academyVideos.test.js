@@ -172,7 +172,13 @@ describe('the Academy has no points or games', () => {
     // The shell's WebView shows its broken page in the player's frame, so the
     // app gets a play button that leaves for YouTube, and every player keeps
     // a "Watch on YouTube" link in case the embed fails.
-    expect(watch).toContain('inAppShell()')
+    expect(watch).toContain("inAppShell() && shellVersion() === 'webview-1'")
+    // The shell that fixes frames says so, and the site plays inline there.
+    const bridge = read('../../walletlens_source/release_package/app/src/main/java/live/walletlens/twa/WalletLensBridge.java')
+    expect(bridge).toContain('return "webview-2"')
+    const shellSrc = read('../../walletlens_source/release_package/app/src/main/java/live/walletlens/twa/AppShellActivity.java')
+    expect(shellSrc).toContain('if (!request.isForMainFrame()) return false;')
+    expect(shellSrc).toContain('public void onShowCustomView(')
     expect(watch).toContain('window.location.href = watchUrl(video.id)')
     expect(watch).toMatch(/className="aw-yt" href=\{watchUrl\(video\.id\)\}/)
   })

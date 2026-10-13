@@ -6,7 +6,7 @@ import { useLanguage } from '../LanguageContext'
 import { academyVideos, lessonOrder, newestLesson, embedUrl, watchUrl, isLesson, COURSES, ACTIONS, inLang, YT_SUBSCRIBE } from '../data/academyVideos'
 import { academyCopy, posterFor } from '../data/academyCopy'
 import { readWatched, markWatched, WATCHED_EVENT } from '../academyProgress'
-import { inAppShell } from '../nativeShell'
+import { inAppShell, shellVersion } from '../nativeShell'
 
 // The Academy, built around the video lessons on the WalletLens channel:
 // the newest episode, progress through the lessons, the courses as shelves,
@@ -47,7 +47,10 @@ function Player({ video, c, lang, onNext, nextVideo, onClose }) {
     return () => document.removeEventListener('keydown', esc)
   }, [onClose])
   const act = video.act && ACTIONS[video.act]
-  const shell = inAppShell()
+  // The first app shell (webview-1) sent any navigation inside a frame to a
+  // browser tab, so YouTube's player died there; from webview-2 the frame
+  // loads in place and the lesson plays inline like everywhere else.
+  const shell = inAppShell() && shellVersion() === 'webview-1'
   // In the app a link with a target opens nothing, so the page itself goes
   // there: the shell hands any outside address to a browser tab or YouTube.
   const openOnYoutube = (e) => {
@@ -63,9 +66,9 @@ function Player({ video, c, lang, onNext, nextVideo, onClose }) {
         <button type="button" className="aw-close" onClick={onClose} aria-label={c.close} title={c.close}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
-        {/* The Android app's WebView cannot load YouTube's player in a frame
-            (it shows its broken page there), so in the app the lesson opens on
-            YouTube itself; everywhere else it plays here. */}
+        {/* The first Android app cannot load YouTube's player in a frame (it
+            shows its broken page there), so in that app the lesson opens on
+            YouTube itself; everywhere else, newer apps included, it plays here. */}
         {shell ? (
           <button type="button" className="aw-frame aw-frame-out" onClick={openOnYoutube}>
             <Poster video={video} />
