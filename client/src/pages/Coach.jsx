@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { noteFeatureUse } from '../featureUse'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { isV2Active, homePath } from '../v2Preview'
+import { isNewLook } from '../newLook'
 import { api } from '../api'
 import { assetClass, getStockSector } from '../data/assets'
 import { track } from '../analytics'
@@ -14,6 +15,10 @@ const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
 // v2 merges the dashboard's Analysis tab (AI analysis, Technicals, Risk) in here.
 const ToolsTab = lazy(() => import('./Dashboard').then(m => ({ default: m.ToolsTab })))
 // v2 shows the dashboard's Wallet Evaluation, not the older copy below.
+// The dashboard's sell targets, set and tracked from the Targets section here.
+const TargetsSection = lazy(() => import('./Dashboard').then(m => ({
+  default: (props) => <m.TargetsTab {...props} targetsAnalysis={m.computeTargetsAnalysis(props.enriched, props.coinTargets)} />,
+})))
 const WalletEvalTab = lazy(() => import('./Dashboard').then(m => ({ default: m.WalletEvalTab })))
 
 // ── Asset-mix helpers ──────────────────────────────────────────────────────
@@ -203,22 +208,30 @@ export default function Coach() {
   const [prices, setPrices]           = useState({})
   const [transactions, setTransactions] = useState([])
   const [targets, setTargets]         = useState([])
+  const [coinTargets, setCoinTargets] = useState({})
   const [loaded, setLoaded]           = useState(false)
   const [evalExpanded, setEvalExpanded] = useState(null)
   const location = useLocation()
   const v2 = isV2Active(location.pathname)
+  // The new look calls this page Analyze, after its tab in the bottom bar.
+  const v3 = v2 && isNewLook()
+  const SECTION_IDS = ['analysis', 'targets']
   const ANALYSIS_TOOLS = ['ai', 'ta', 'risk']
   const [activeSection, setActiveSection] = useState(() =>
-    v2 && location.state?.section === 'analysis' ? 'analysis' : 'engine')
+    v2 && SECTION_IDS.includes(location.state?.section) ? location.state.section : 'engine')
   const [analysisTool, setAnalysisTool] = useState(() =>
     ANALYSIS_TOOLS.includes(location.state?.tool) ? location.state.tool : 'ai')
   const [pricesLoading, setPricesLoading] = useState(true)
   // A second link into the Analysis section while Coach is already open.
   useEffect(() => {
-    if (!v2 || location.state?.section !== 'analysis') return
-    setActiveSection('analysis')
+    if (!v2 || !SECTION_IDS.includes(location.state?.section)) return
+    setActiveSection(location.state.section)
     if (ANALYSIS_TOOLS.includes(location.state?.tool)) setAnalysisTool(location.state.tool)
   }, [location.state]) // eslint-disable-line react-hooks/exhaustive-deps
+  const reloadTargets = () => api.getCoinTargets().then(ct => {
+    setCoinTargets(ct || {})
+    setTargets(Object.entries(ct || {}).map(([coin_id, v]) => ({ coin_id, ...v })))
+  }).catch(() => {})
   const openAnalysis = (tool) => { setAnalysisTool(tool); setActiveSection('analysis') }
 
   useEffect(() => {
@@ -230,6 +243,7 @@ export default function Coach() {
       setPortfolio(p || [])
       setTransactions(txs || [])
       setTargets(Object.entries(ct || {}).map(([coin_id, v]) => ({ coin_id, ...v })))
+      setCoinTargets(ct || {})
       if (p?.length) {
         const ids = p.map(h => h.coin_id).join(',')
         api.getPrices(ids).then(px => setPrices(px || {})).catch(() => {}).finally(() => setPricesLoading(false))
@@ -266,6 +280,7 @@ export default function Coach() {
     { id: 'engine',   label: t('cchSecEngine'), icon: 'zap' },
     { id: 'eval',     label: t('cchSecEval'),   icon: 'search' },
     { id: 'analysis', label: t('analysis'),     icon: 'trend-up' },
+    { id: 'targets',  label: t('targets'),      icon: 'target' },
     { id: 'alpha',    label: t('cchSecAlpha'),  icon: 'α' },
   ] : [
     { id: 'engine',  label: t('cchSecEngine'),  icon: 'zap' },
@@ -285,15 +300,21 @@ export default function Coach() {
         <div className="coach-hero-glow" />
         <div className="coach-hero-inner">
           <div className="coach-hero-icon">
-            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
-              <line x1="9" y1="21" x2="15" y2="21"/>
-              <line x1="10" y1="17" x2="10" y2="21"/>
-              <line x1="14" y1="17" x2="14" y2="21"/>
-            </svg>
+            {v3 ? (
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 20V10M9.5 20V4M15 20v-7"/><circle cx="18.5" cy="8.5" r="3"/><path d="M20.7 10.7L22 12"/>
+              </svg>
+            ) : (
+              <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+                <line x1="9" y1="21" x2="15" y2="21"/>
+                <line x1="10" y1="17" x2="10" y2="21"/>
+                <line x1="14" y1="17" x2="14" y2="21"/>
+              </svg>
+            )}
           </div>
           <div>
-            <h1 className="coach-hero-title">{t('cchTitle')}</h1>
+            <h1 className="coach-hero-title">{v3 ? t('navAnalyze') : t('cchTitle')}</h1>
             <p className="coach-hero-sub">{t('cchSub')}</p>
           </div>
         </div>
@@ -447,6 +468,16 @@ export default function Coach() {
             <ToolsTab key={analysisTool} enriched={enriched} prices={prices} transactions={transactions}
               totalValue={evalTotal}
               isDemo={false} pricesLoading={pricesLoading} initialTool={analysisTool} />
+          </Suspense>
+        </div>
+      )}
+
+      {/* ── Targets (v2): sell targets for each holding ── */}
+      {v2 && activeSection === 'targets' && enriched.length > 0 && (
+        <div style={{ padding: '1rem' }}>
+          <Suspense fallback={<div className="coach-loading-bar"><span className="coach-loading-dot" /></div>}>
+            <TargetsSection enriched={enriched} coinTargets={coinTargets} prices={prices}
+              onTargetsChange={reloadTargets} />
           </Suspense>
         </div>
       )}
