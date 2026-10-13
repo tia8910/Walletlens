@@ -26,6 +26,14 @@ export default {
     "howto-decision": {
       "youtube": "LUlMPZu-zTQ",
       "added": "2026-10-08"
+    },
+    "t-never-bet-the-farm": {
+      "youtube": "nJOx0WJ2fWc",
+      "added": "2026-10-13"
+    },
+    "t-ready-when-the-dip-comes": {
+      "youtube": "Qk_eFotZh6Y",
+      "added": "2026-10-13"
     }
   },
   "extras": [
