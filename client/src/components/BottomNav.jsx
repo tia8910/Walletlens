@@ -97,8 +97,8 @@ const V2_NAV_ITEMS = [
     route: '/vision',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M5 21V4"/>
-        <path d="M5 4h11l-2 4 2 4H5"/>
+        <path d="M3 17l6-6 4 4 8-8"/>
+        <path d="M14 7h7v7"/>
       </svg>
     ),
   },
@@ -132,7 +132,18 @@ const V3_NAV_ITEMS = [
     ),
   },
   { id: 'add', fab: true, labelKey: 'quickAddTrade' },
-  V2_NAV_ITEMS.find(i => i.id === 'coach'),
+  // Coach is called Analyze here: its page holds the analysis, the wallet
+  // score, the decision engine and the sell targets.
+  {
+    id: 'coach',
+    labelKey: 'navAnalyze',
+    route: '/coach',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 20V10M9.5 20V4M15 20v-7"/><circle cx="18.5" cy="8.5" r="3"/><path d="M20.7 10.7L22 12"/>
+      </svg>
+    ),
+  },
   {
     id: 'more',
     labelKey: 'nlMore',

@@ -2170,7 +2170,7 @@ function FeatureNudgeStrip({ onGoToTargets, onGoToVision, onWeeklyReport }) {
   function dismiss() { localStorage.setItem(FN_DISMISS_KEY, '1'); setVisible(false); track('feature_nudge_dismissed') }
   const items = [
     { emoji: 'target', label: t('qaPriceTargets'), action: () => { onGoToTargets(); dismiss() } },
-    { emoji: 'map', label: t('qaGoals'), action: () => { onGoToVision(); dismiss() } },
+    { emoji: 'grow', label: t('qaGoals'), action: () => { onGoToVision(); dismiss() } },
     { emoji: 'calendar', label: t('qaWeeklyReport'), action: () => { onWeeklyReport(); dismiss() } },
   ]
   return (
@@ -2580,7 +2580,46 @@ function TargetRealityCheck({ coinId, coinSymbol, coinName, currentPrice, target
   )
 }
 
-function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsChange }) {
+// Sell targets per holding, with progress and proceeds. Shared by the
+// dashboard's Targets tab and the Targets section of Analyze.
+export function computeTargetsAnalysis(enriched, coinTargets) {
+  const rows = []
+  let totalPotentialProceeds = 0
+  let totalReached = 0
+
+  for (const h of enriched) {
+    if (categorizeAsset(h) === 'cash' || isStablecoin(h.coin_id, h.coin_symbol)) continue
+    const plan = coinTargets[h.coin_id]?.targets || []
+    if (!plan.length) {
+      rows.push({ coinId: h.coin_id, coinSymbol: h.coin_symbol, currentPrice: h.price, amount: h.amount, targets: [] })
+      continue
+    }
+    const currentPrice = h.price
+    const holdingRows = plan.map(t => {
+      const sellQty    = t.quantity == null ? h.amount : Math.min(t.quantity, h.amount)
+      const proceeds   = sellQty * t.price
+      const progress   = currentPrice > 0 && t.price > 0 ? Math.min((currentPrice / t.price) * 100, 100) : 0
+      const reached    = currentPrice >= t.price && currentPrice > 0
+      const gainVsNow  = currentPrice > 0 ? ((t.price - currentPrice) / currentPrice) * 100 : 0
+      totalPotentialProceeds += proceeds
+      if (reached) totalReached++
+      return { ...t, sellQty, proceeds, progress, reached, gainVsNow, coinSymbol: h.coin_symbol, coinId: h.coin_id }
+    }).sort((a, b) => a.price - b.price)
+    rows.push({ coinId: h.coin_id, coinSymbol: h.coin_symbol, currentPrice, amount: h.amount, targets: holdingRows })
+  }
+
+  const chartData = rows.flatMap(r =>
+    r.targets.map(t => ({
+      name: `${r.coinSymbol} $${t.price >= 1000 ? (t.price/1000).toFixed(0)+'k' : t.price.toFixed(0)}`,
+      proceeds: parseFloat(t.proceeds.toFixed(2)),
+      reached: t.reached,
+    }))
+  ).slice(0, 10)
+
+  return { rows, totalPotentialProceeds, totalReached, chartData, totalTargets: rows.reduce((s, r) => s + r.targets.length, 0), rowsWithTargets: rows.filter(r => r.targets.length > 0).length }
+}
+
+export function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsChange }) {
   const { t } = useLanguage()
   const navigate = useNavigate()
   const [adding, setAdding] = useState({}) // coinId → { price, mode, pct, qty }
@@ -3715,42 +3754,7 @@ export default function Dashboard() {
   // hook just below reads it: a hook cannot depend on a const
   // declared after it without tripping over the temporal dead zone when React
   // evaluates the dependency array during render.
-  const targetsAnalysis = useMemo(() => {
-    const rows = []
-    let totalPotentialProceeds = 0
-    let totalReached = 0
-
-    for (const h of enriched) {
-      if (categorizeAsset(h) === 'cash' || isStablecoin(h.coin_id, h.coin_symbol)) continue
-      const plan = coinTargets[h.coin_id]?.targets || []
-      if (!plan.length) {
-        rows.push({ coinId: h.coin_id, coinSymbol: h.coin_symbol, currentPrice: h.price, amount: h.amount, targets: [] })
-        continue
-      }
-      const currentPrice = h.price
-      const holdingRows = plan.map(t => {
-        const sellQty    = t.quantity == null ? h.amount : Math.min(t.quantity, h.amount)
-        const proceeds   = sellQty * t.price
-        const progress   = currentPrice > 0 && t.price > 0 ? Math.min((currentPrice / t.price) * 100, 100) : 0
-        const reached    = currentPrice >= t.price && currentPrice > 0
-        const gainVsNow  = currentPrice > 0 ? ((t.price - currentPrice) / currentPrice) * 100 : 0
-        totalPotentialProceeds += proceeds
-        if (reached) totalReached++
-        return { ...t, sellQty, proceeds, progress, reached, gainVsNow, coinSymbol: h.coin_symbol, coinId: h.coin_id }
-      }).sort((a, b) => a.price - b.price)
-      rows.push({ coinId: h.coin_id, coinSymbol: h.coin_symbol, currentPrice, amount: h.amount, targets: holdingRows })
-    }
-
-    const chartData = rows.flatMap(r =>
-      r.targets.map(t => ({
-        name: `${r.coinSymbol} $${t.price >= 1000 ? (t.price/1000).toFixed(0)+'k' : t.price.toFixed(0)}`,
-        proceeds: parseFloat(t.proceeds.toFixed(2)),
-        reached: t.reached,
-      }))
-    ).slice(0, 10)
-
-    return { rows, totalPotentialProceeds, totalReached, chartData, totalTargets: rows.reduce((s, r) => s + r.targets.length, 0), rowsWithTargets: rows.filter(r => r.targets.length > 0).length }
-  }, [enriched, coinTargets])
+  const targetsAnalysis = useMemo(() => computeTargetsAnalysis(enriched, coinTargets), [enriched, coinTargets])
 
   // The day's P&L in currency, weighted by holding size.
   //

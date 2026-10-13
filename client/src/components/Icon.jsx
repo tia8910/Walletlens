@@ -5,6 +5,8 @@ import { memo } from 'react'
 const PATHS = {
   // Trend & price movement
   'trend-up':       'M3 17l5-5 4 4 9-9',
+  'analyze':        'M4 20V10M9.5 20V4M15 20v-7M21.5 8.5a3 3 0 11-6 0 3 3 0 016 0zM20.7 10.7L22 12',
+  'grow':           'M3 17l6-6 4 4 8-8M14 7h7v7',
   'trend-down':     'M3 7l5 5 4-4 9 9',
   'bar-chart':      'M3 18V13M7 18V8M11 18V4M15 18V10M19 18V6',
   'arrow-up':       'M12 19V5M5 12l7-7 7 7',

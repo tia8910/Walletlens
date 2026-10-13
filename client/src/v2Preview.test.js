@@ -125,9 +125,9 @@ describe('v2 Coach has no duplicate sections', () => {
   const coach = read('pages/Coach.jsx')
   const v2Sections = coach.slice(coach.indexOf('const SECTIONS = v2 ? ['), coach.indexOf('] : [', coach.indexOf('const SECTIONS = v2 ? [')))
 
-  it('lists Decision Engine, Wallet Score, Analysis and Alpha, and no shortcut section', () => {
+  it('lists Decision Engine, Wallet Score, Analysis, Targets and Alpha, and no shortcut section', () => {
     const ids = [...v2Sections.matchAll(/id: '(\w+)'/g)].map(m => m[1])
-    expect(ids).toEqual(['engine', 'eval', 'analysis', 'alpha'])
+    expect(ids).toEqual(['engine', 'eval', 'analysis', 'targets', 'alpha'])
   })
 })
 
@@ -192,5 +192,18 @@ describe('v2 bars are solid', () => {
     expect(css).toMatch(/@keyframes v2-heartbeat \{[^}]*opacity/)
     const blurred = [...css.matchAll(/([^{}]+)\{[^}]*backdrop-filter:\s*blur/g)].map(m => m[1].trim())
     expect(blurred).toEqual(['html.wl-v2 .bs-v2 .tk-foot'])
+  })
+})
+
+describe('the new look names Coach Analyze and keeps the sell targets there', () => {
+  const nav = read('components/BottomNav.jsx')
+  const coach = read('pages/Coach.jsx')
+  it('labels the bottom bar tab Analyze and the Coach page with it', () => {
+    expect(nav).toMatch(/id: 'coach',\n    labelKey: 'navAnalyze'/)
+    expect(coach).toContain("v3 ? t('navAnalyze') : t('cchTitle')")
+  })
+  it('sets and tracks targets inside Analyze, with the dashboard math', () => {
+    expect(coach).toMatch(/activeSection === 'targets'[\s\S]*?<TargetsSection /)
+    expect(read('pages/Dashboard.jsx')).toContain('useMemo(() => computeTargetsAnalysis(enriched, coinTargets)')
   })
 })

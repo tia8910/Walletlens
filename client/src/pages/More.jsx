@@ -30,7 +30,7 @@ export default function More() {
       { icon: 'eye', label: t('watchlist'), on: () => go(home, { tab: 'watchlist' }) },
       { icon: 'wallet', label: t('wallets'), on: () => go(home, { tab: 'wallets' }) },
       { icon: 'exchange', label: t('trades'), on: () => go('/transactions') },
-      { icon: 'map', label: t('navGoals'), on: () => { try { localStorage.setItem('wl_vision_visited', '1') } catch {} go('/vision') } },
+      { icon: 'grow', label: t('navGoals'), on: () => { try { localStorage.setItem('wl_vision_visited', '1') } catch {} go('/vision') } },
       { icon: 'sprout', label: t('nlGrow'), on: () => go('/grow') },
     ] },
     { label: t('v2GroupMarkets'), items: [
@@ -39,7 +39,7 @@ export default function More() {
       { icon: 'calendar', label: t('calendar'), on: () => go('/calendar') },
     ] },
     { label: t('v2GroupAi'), items: [
-      { icon: 'sparkles', label: t('coach'), on: () => go('/coach') },
+      { icon: 'analyze', label: t('navAnalyze'), on: () => go('/coach') },
       { icon: 'brain', label: t('portfolioAnalysisNav'), on: () => go('/coach', { section: 'analysis', tool: 'ai' }) },
       { icon: 'graduation', label: t('academy'), on: () => go('/academy') },
     ] },
