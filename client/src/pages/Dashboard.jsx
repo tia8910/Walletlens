@@ -2,10 +2,7 @@ import { lazy, Suspense, memo, useEffect, useMemo, useRef, useState, useCallback
 import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { isV2Active } from '../v2Preview'
-import {
-  ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line,
-  PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
-} from 'recharts'
+import LazyRecharts from '../components/LazyRecharts'
 import { api, getCachedCoinImage } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
@@ -4927,6 +4924,7 @@ export default function Dashboard() {
               // Driven directly by the real perfSeries values (snapshots → transaction
               // replay → simulation), so the curve is accurate across all chart types.
               return (
+                <LazyRecharts height={180}>{({ ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line, PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine }) => (
                 <ResponsiveContainer key={perfTf + chartType} width="100%" height={180}>
                   <ComposedChart data={isCandles ? perfCandles : perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}>
                     <defs>
@@ -4982,6 +4980,7 @@ export default function Dashboard() {
                     )}
                   </ComposedChart>
                 </ResponsiveContainer>
+                )}</LazyRecharts>
               )
             })()}
             {!isDemo && totalValue > 0 && (
@@ -5092,6 +5091,7 @@ export default function Dashboard() {
               {cardVis.pnl_chart && pnlData.length > 0 && (
                 <div className="glass-card">
                   <h3 style={{ margin:'0 0 0.75rem' }}>{t('dsPnlByAsset')}</h3>
+                  <LazyRecharts height={160}>{({ ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line, PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine }) => (
                   <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={pnlData} margin={{ left:0, right:0, top:4, bottom:0 }}>
                       <defs>
@@ -5118,6 +5118,7 @@ export default function Dashboard() {
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
+                  )}</LazyRecharts>
                 </div>
               )}
 
@@ -5525,6 +5526,7 @@ export default function Dashboard() {
                 {catAllocData.length === 0
                   ? <p className="muted">{t('noHoldings')}</p>
                   : <>
+                    <LazyRecharts height={200}>{({ ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line, PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine }) => (
                     <ResponsiveContainer width="100%" height={200}>
                       <PieChart>
                         <Pie data={catAllocData} dataKey="value" cx="50%" cy="50%"
@@ -5534,6 +5536,7 @@ export default function Dashboard() {
                         <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color:'var(--text)', fontWeight:700 }} labelStyle={{ color:'var(--text)', fontWeight:700 }} formatter={(v, n) => [cv(v), n]}/>
                       </PieChart>
                     </ResponsiveContainer>
+                    )}</LazyRecharts>
                     <ul className="dvx-legend">
                       {catAllocData.map((d, i) => (
                         <li key={d.name} className="dvx-legend-item">
@@ -5579,6 +5582,7 @@ export default function Dashboard() {
                       <h3 style={{ margin:0, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="pulse" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('cardNetWorthHistory')}</h3>
                       <span className="muted" style={{ fontSize:'0.72rem' }}>{t('dsInvestedCapital30d')}</span>
                     </div>
+                    <LazyRecharts height={175}>{({ ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line, PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine }) => (
                     <ResponsiveContainer width="100%" height={175}>
                       <AreaChart data={points} margin={{ left:0, right:8, top:10, bottom:0 }}>
                         <defs>
@@ -5595,6 +5599,7 @@ export default function Dashboard() {
                         <Area type="monotone" dataKey="v" stroke="var(--g)" strokeWidth={1.5} fill="url(#nwg)" dot={false} activeDot={{ r:4, fill:'var(--g)', stroke:'var(--bg)', strokeWidth:2 }}/>
                       </AreaChart>
                     </ResponsiveContainer>
+                    )}</LazyRecharts>
                   </div>
                 )
               })()}
