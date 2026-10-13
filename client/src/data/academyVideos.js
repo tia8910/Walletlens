@@ -20,6 +20,9 @@ export function youtubeId(link) {
 }
 
 /** The privacy-enhanced player: no cookies are set until the viewer presses play. */
+/** The video on YouTube itself, for when it cannot play inside the app. */
+export const watchUrl = (id) => `https://www.youtube.com/watch?v=${id}`
+
 export const embedUrl = (id) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1`
 
 // Links are found automatically: the Update Videos workflow reads the

@@ -13094,6 +13094,12 @@ html.wl-bell-open .wlc-fab { opacity: 0; pointer-events: none; }
 .aw-frame { position: relative; width: 100%; aspect-ratio: 9 / 16; max-height: 62vh; background: #000; }
 .aw-player-card.wide .aw-frame { aspect-ratio: 16 / 9; max-height: none; }
 .aw-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.aw-frame-out { display: block; padding: 0; border: 0; cursor: pointer; overflow: hidden; }
+.aw-frame-out:hover { filter: none; }
+.aw-frame-out .aw-poster { position: absolute; inset: 0; }
+.aw-frame-out-btn { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: inline-flex; align-items: center; gap: 10px; padding: 14px 20px; border-radius: 999px; white-space: nowrap; font: inherit; font-size: .95rem; font-weight: 800; color: #0f1d2b; background: #fff; box-shadow: 0 14px 30px -12px rgba(0, 0, 0, .7); }
+.aw-yt { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; font-size: .84rem; font-weight: 700; color: #e2e8f0; text-decoration: none; }
+.aw-yt:hover { color: #fff; text-decoration: underline; }
 .aw-after { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 .aw-head { display: flex; flex-direction: column; gap: 4px; }
 .aw-name { font-weight: 800; font-size: 1.15rem; color: #fff; }

@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
 import { noteMoment } from '../reviewPrompt'
 import { useLanguage } from '../LanguageContext'
-import { academyVideos, lessonOrder, newestLesson, embedUrl, isLesson, COURSES, ACTIONS, inLang, YT_SUBSCRIBE } from '../data/academyVideos'
+import { academyVideos, lessonOrder, newestLesson, embedUrl, watchUrl, isLesson, COURSES, ACTIONS, inLang, YT_SUBSCRIBE } from '../data/academyVideos'
 import { academyCopy, posterFor } from '../data/academyCopy'
 import { readWatched, markWatched, WATCHED_EVENT } from '../academyProgress'
+import { inAppShell } from '../nativeShell'
 
 // The Academy, built around the video lessons on the WalletLens channel:
 // the newest episode, progress through the lessons, the courses as shelves,
@@ -19,6 +20,7 @@ const PlayIcon = ({ size = 14, color = 'currentColor' }) => (
 const Chevron = () => (
   <svg className="aw-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
 )
+const YT_PLAY = <svg width="18" height="13" viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#e00030" /><path d="M11 5.5v9l8-4.5z" fill="#fff" /></svg>
 const YT_ICON = <svg width="20" height="14" viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#e00030" /><path d="M11 5.5v9l8-4.5z" fill="#fff" /></svg>
 
 /** A painted scene standing in for a thumbnail: no image is fetched from YouTube until play. */
@@ -45,6 +47,15 @@ function Player({ video, c, lang, onNext, nextVideo, onClose }) {
     return () => document.removeEventListener('keydown', esc)
   }, [onClose])
   const act = video.act && ACTIONS[video.act]
+  const shell = inAppShell()
+  // In the app a link with a target opens nothing, so the page itself goes
+  // there: the shell hands any outside address to a browser tab or YouTube.
+  const openOnYoutube = (e) => {
+    track('academy_open_youtube', { video: video.key, shell })
+    if (!shell) return
+    e?.preventDefault?.()
+    try { window.location.href = watchUrl(video.id) } catch { /* nothing to open with */ }
+  }
   const course = COURSES.find(x => x.id === video.course)
   return (
     <div className="aw-player" role="dialog" aria-modal="true" aria-label={video.name} onClick={onClose}>
@@ -52,9 +63,19 @@ function Player({ video, c, lang, onNext, nextVideo, onClose }) {
         <button type="button" className="aw-close" onClick={onClose} aria-label={c.close} title={c.close}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
-        <div className="aw-frame">
-          <iframe src={embedUrl(video.id)} title={video.name} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
-        </div>
+        {/* The Android app's WebView cannot load YouTube's player in a frame
+            (it shows its broken page there), so in the app the lesson opens on
+            YouTube itself; everywhere else it plays here. */}
+        {shell ? (
+          <button type="button" className="aw-frame aw-frame-out" onClick={openOnYoutube}>
+            <Poster video={video} />
+            <span className="aw-frame-out-btn">{YT_PLAY}{c.playYt}</span>
+          </button>
+        ) : (
+          <div className="aw-frame">
+            <iframe src={embedUrl(video.id)} title={video.name} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
+          </div>
+        )}
         <div className="aw-after">
           <div className="aw-head">
             {course && <span className="aw-over">{inLang(course.name, lang)}</span>}
@@ -83,6 +104,7 @@ function Player({ video, c, lang, onNext, nextVideo, onClose }) {
               <span className="aw-pill">{c.next}</span>
             </button>
           )}
+          <a className="aw-yt" href={watchUrl(video.id)} target="_blank" rel="noopener noreferrer" onClick={openOnYoutube}>{YT_PLAY}{c.watchYt}</a>
           <small className="aw-foot">{c.source} · {c.advice}</small>
         </div>
       </div>

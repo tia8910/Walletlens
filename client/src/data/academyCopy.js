@@ -14,6 +14,7 @@ export const ACADEMY_COPY = {
     takeaway: 'The takeaway', tryIt: 'Try it in WalletLens', close: 'Close', back: 'Back',
     source: 'Plays from YouTube', advice: 'For learning only, not financial advice.',
     short: 'Short', film: 'Film', tutorial: 'Tutorial', course: 'Course', lesson: (n) => `Lesson ${n}`, watched: 'Watched',
+    playYt: 'Play on YouTube', watchYt: 'Watch on YouTube',
     courseProgress: (a, b) => `${a} of ${b} watched`, continueCourse: 'Continue course',
   },
   ar: {
@@ -27,6 +28,7 @@ export const ACADEMY_COPY = {
     takeaway: 'الخلاصة', tryIt: 'جربه في WalletLens', close: 'إغلاق', back: 'رجوع',
     source: 'يعمل من يوتيوب', advice: 'للتعلم فقط، وليس نصيحة مالية.',
     short: 'قصير', film: 'فيلم', tutorial: 'شرح', course: 'دورة', lesson: (n) => `الدرس ${n}`, watched: 'تمت المشاهدة',
+    playYt: 'شغّل على يوتيوب', watchYt: 'شاهد على يوتيوب',
     courseProgress: (a, b) => `شاهدت ${a} من ${b}`, continueCourse: 'تابع الدورة',
   },
   fr: {
@@ -40,6 +42,7 @@ export const ACADEMY_COPY = {
     takeaway: 'À retenir', tryIt: 'Essayez dans WalletLens', close: 'Fermer', back: 'Retour',
     source: 'Lu depuis YouTube', advice: 'Pour apprendre, pas un conseil financier.',
     short: 'Short', film: 'Film', tutorial: 'Tutoriel', course: 'Parcours', lesson: (n) => `Leçon ${n}`, watched: 'Vu',
+    playYt: 'Lire sur YouTube', watchYt: 'Regarder sur YouTube',
     courseProgress: (a, b) => `${a} sur ${b} vues`, continueCourse: 'Continuer le parcours',
   },
   es: {
@@ -53,6 +56,7 @@ export const ACADEMY_COPY = {
     takeaway: 'La idea clave', tryIt: 'Pruébalo en WalletLens', close: 'Cerrar', back: 'Volver',
     source: 'Se reproduce desde YouTube', advice: 'Solo para aprender, no es asesoría financiera.',
     short: 'Short', film: 'Película', tutorial: 'Tutorial', course: 'Curso', lesson: (n) => `Lección ${n}`, watched: 'Visto',
+    playYt: 'Ver en YouTube', watchYt: 'Abrir en YouTube',
     courseProgress: (a, b) => `${a} de ${b} vistas`, continueCourse: 'Seguir el curso',
   },
   de: {
@@ -66,6 +70,7 @@ export const ACADEMY_COPY = {
     takeaway: 'Das Wichtigste', tryIt: 'In WalletLens ausprobieren', close: 'Schließen', back: 'Zurück',
     source: 'Wird von YouTube abgespielt', advice: 'Nur zum Lernen, keine Finanzberatung.',
     short: 'Short', film: 'Film', tutorial: 'Anleitung', course: 'Kurs', lesson: (n) => `Lektion ${n}`, watched: 'Gesehen',
+    playYt: 'Auf YouTube abspielen', watchYt: 'Auf YouTube ansehen',
     courseProgress: (a, b) => `${a} von ${b} gesehen`, continueCourse: 'Kurs fortsetzen',
   },
   it: {
@@ -79,6 +84,7 @@ export const ACADEMY_COPY = {
     takeaway: 'Il punto chiave', tryIt: 'Provalo in WalletLens', close: 'Chiudi', back: 'Indietro',
     source: 'Riprodotto da YouTube', advice: 'Solo per imparare, non è una consulenza finanziaria.',
     short: 'Short', film: 'Film', tutorial: 'Tutorial', course: 'Corso', lesson: (n) => `Lezione ${n}`, watched: 'Visto',
+    playYt: 'Riproduci su YouTube', watchYt: 'Guarda su YouTube',
     courseProgress: (a, b) => `${a} di ${b} viste`, continueCourse: 'Continua il corso',
   },
 }

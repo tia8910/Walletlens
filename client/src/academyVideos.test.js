@@ -167,4 +167,13 @@ describe('the Academy has no points or games', () => {
   it('leaves no file behind from the games', () => {
     expect(existsSync(join(here, 'components/KnowledgeWheel.jsx'))).toBe(false)
   })
+
+  it('opens the lesson on YouTube inside the Android app, whose WebView cannot frame the player', () => {
+    // The shell's WebView shows its broken page in the player's frame, so the
+    // app gets a play button that leaves for YouTube, and every player keeps
+    // a "Watch on YouTube" link in case the embed fails.
+    expect(watch).toContain('inAppShell()')
+    expect(watch).toContain('window.location.href = watchUrl(video.id)')
+    expect(watch).toMatch(/className="aw-yt" href=\{watchUrl\(video\.id\)\}/)
+  })
 })
