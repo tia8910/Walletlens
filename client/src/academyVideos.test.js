@@ -182,4 +182,14 @@ describe('the Academy has no points or games', () => {
     expect(watch).toContain('window.location.href = watchUrl(video.id)')
     expect(watch).toMatch(/className="aw-yt" href=\{watchUrl\(video\.id\)\}/)
   })
+
+  it('lets the lesson player through every policy on walletlens.live, the edge worker included', () => {
+    // The preview played and the live site blocked the frame: walletlens.live
+    // alone passes through the security headers worker, whose CSP said
+    // frame-src 'none'. Every copy must allow the player.
+    const frameSrc = (txt) => /frame-src ([^;"]*)/.exec(txt)?.[1] || ''
+    for (const f of ['../public/_headers', '../index.html', '../../workers/security-headers/index.js']) {
+      expect(frameSrc(read(f)), f).toContain('https://www.youtube-nocookie.com')
+    }
+  })
 })
