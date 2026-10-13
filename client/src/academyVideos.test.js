@@ -187,7 +187,8 @@ describe('the Academy has no points or games', () => {
     // The preview played and the live site blocked the frame: walletlens.live
     // alone passes through the security headers worker, whose CSP said
     // frame-src 'none'. Every copy must allow the player.
-    const frameSrc = (txt) => /frame-src ([^;"]*)/.exec(txt)?.[1] || ''
+    // The directive itself, not a comment that mentions it.
+    const frameSrc = (txt) => /frame-src (https:[^;"\n]*)/.exec(txt)?.[1] || ''
     for (const f of ['../public/_headers', '../index.html', '../../workers/security-headers/index.js']) {
       expect(frameSrc(read(f)), f).toContain('https://www.youtube-nocookie.com')
     }
