@@ -34,6 +34,10 @@ export default {
     "t-ready-when-the-dip-comes": {
       "youtube": "Qk_eFotZh6Y",
       "added": "2026-10-13"
+    },
+    "t-stop-watching-the-chart": {
+      "youtube": "RdoM68zv2AY",
+      "added": "2026-10-13"
     }
   },
   "extras": [
@@ -127,6 +131,16 @@ export default {
       "lang": "en",
       "youtube": "qTuEgxESmvc",
       "added": "2026-10-08"
+    },
+    {
+      "key": "yt-rzmtCADbNFU",
+      "kind": "original",
+      "name": "Walletlens.live networth Tracker built genuinely for crypto lovers",
+      "emoji": "🎬",
+      "lang": "en",
+      "youtube": "rzmtCADbNFU",
+      "added": "2026-10-13",
+      "wide": true
     }
   ]
 }
