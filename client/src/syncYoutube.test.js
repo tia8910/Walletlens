@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { parseFeed, matchVideo, merge, norm, channelIdFrom, videoIdsFrom } from '../scripts/sync-youtube.mjs'
 import synced from './data/academyVideoLinks.js'
 import { VIDEOS, BASE_VIDEOS } from './data/academyVideos.js'
+import { TITLE_BANK } from './data/academyTitles.js'
 
 // Uploading to the channel is the whole job: the Update Videos workflow finds
 // the video in the public feed, links it to its lesson, and the app, the bell
@@ -60,6 +61,15 @@ describe('sync from the YouTube channel', () => {
     expect(next.extras).toEqual([{ key: 'yt-EEEEEEEEEEE', kind: 'original', name: 'Q&A: our first 1,000 users', emoji: '🎬', lang: 'en', youtube: 'EEEEEEEEEEE', added: '2026-10-12', wide: true }])
     // A second run over the same feed changes nothing.
     expect(merge(next, entries).added).toEqual([])
+  })
+
+  it('links a video uploaded under any title in the bank to that title', () => {
+    expect(TITLE_BANK.length).toBeGreaterThan(100)
+    for (const v of TITLE_BANK) {
+      expect(matchVideo({ title: `${v.name} #shorts` }), v.name).toBe(v.key)
+      expect(v.name).not.toMatch(/[—–]| - /)
+    }
+    expect(matchVideo({ title: 'Check on-chain data before trusting charts' })).toBe('t-check-on-chain-data-before-trusting-charts')
   })
 
   it('finds this channel on its page, not another channel the page shows', () => {

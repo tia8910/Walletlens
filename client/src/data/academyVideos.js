@@ -7,6 +7,7 @@
 // the lesson line and the takeaway under a video come from there.
 import { hacks } from './academyContent.js'
 import synced from './academyVideoLinks.js'
+import { TITLE_BANK } from './academyTitles.js'
 
 export const YT_CHANNEL = 'https://www.youtube.com/@walletlens'
 export const YT_SUBSCRIBE = `${YT_CHANNEL}?sub_confirmation=1`
@@ -75,6 +76,9 @@ export const BASE_VIDEOS = [
   { key: 'howto-ar-decision',    kind: 'howto', lang: 'ar', name: 'أشتري، أبيع أم أنتظر؟',               emoji: '🧭', youtube: '' },
   { key: 'howto-ar-guardian',    kind: 'howto', lang: 'ar', name: 'حارس المحفظة: خريطة الكنز',            emoji: '🗺️', youtube: '' },
   { key: 'howto-ar-zakat',       kind: 'howto', lang: 'ar', name: 'الزكاة في محادثة العائلة',              emoji: '🌙', youtube: '' },
+
+  // Titles ready for the next Shorts (academyTitles.js).
+  ...TITLE_BANK,
 ]
 
 /** The catalog with the channel's videos linked in, plus any the catalog does not name. */
