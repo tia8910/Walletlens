@@ -2170,7 +2170,7 @@ function FeatureNudgeStrip({ onGoToTargets, onGoToVision, onWeeklyReport }) {
   function dismiss() { localStorage.setItem(FN_DISMISS_KEY, '1'); setVisible(false); track('feature_nudge_dismissed') }
   const items = [
     { emoji: 'target', label: t('qaPriceTargets'), action: () => { onGoToTargets(); dismiss() } },
-    { emoji: 'map', label: t('qaGoals'), action: () => { onGoToVision(); dismiss() } },
+    { emoji: 'grow', label: t('qaGoals'), action: () => { onGoToVision(); dismiss() } },
     { emoji: 'calendar', label: t('qaWeeklyReport'), action: () => { onWeeklyReport(); dismiss() } },
   ]
   return (

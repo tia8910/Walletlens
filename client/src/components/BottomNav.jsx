@@ -97,8 +97,8 @@ const V2_NAV_ITEMS = [
     route: '/vision',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M5 21V4"/>
-        <path d="M5 4h11l-2 4 2 4H5"/>
+        <path d="M3 17l6-6 4 4 8-8"/>
+        <path d="M14 7h7v7"/>
       </svg>
     ),
   },
