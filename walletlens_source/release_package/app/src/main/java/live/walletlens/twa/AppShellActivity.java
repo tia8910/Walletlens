@@ -701,6 +701,15 @@ public class AppShellActivity extends ComponentActivity {
                 return true;
             }
 
+            // A web page inside a frame stays in its frame. The Academy plays
+            // its lessons in YouTube's player, which navigates inside its own
+            // frame; sending that to a Custom Tab cancelled the frame and left
+            // WebView's broken "net::ERR_FAILED" page where the video should
+            // be. Only the page's own navigations leave the app. (Non-web
+            // schemes above still go to Android from any frame: the intent
+            // bridge fires them from a hidden one.)
+            if (!request.isForMainFrame()) return false;
+
             // A Custom Tab rather than a browser intent, for http(s) only. Two
             // reasons, and the
             // second is the one that matters: it keeps the user inside the app
@@ -788,6 +797,26 @@ public class AppShellActivity extends ComponentActivity {
      * microphone and camera.
      */
     private class ShellChrome extends WebChromeClient {
+
+        /**
+         * A video asked for full screen (the YouTube player's button). Without
+         * this the button does nothing in a WebView. The video's own view is
+         * laid over everything until it asks to leave, or Back is pressed.
+         */
+        @Override
+        public void onShowCustomView(View view, CustomViewCallback callback) {
+            if (fullscreenView != null) { callback.onCustomViewHidden(); return; }
+            fullscreenView = view;
+            fullscreenCallback = callback;
+            ((ViewGroup) getWindow().getDecorView()).addView(view, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            if (web != null) web.setVisibility(View.INVISIBLE);
+        }
+
+        @Override
+        public void onHideCustomView() {
+            leaveFullscreen();
+        }
 
         /**
          * The page wants hardware. Ask Android first, then answer the page.
@@ -1077,8 +1106,22 @@ public class AppShellActivity extends ComponentActivity {
         if (web != null) web.saveState(outState);
     }
 
+    /** The full screen video view, while one is showing. */
+    private View fullscreenView;
+    private WebChromeClient.CustomViewCallback fullscreenCallback;
+
+    private void leaveFullscreen() {
+        if (fullscreenView == null) return;
+        ((ViewGroup) getWindow().getDecorView()).removeView(fullscreenView);
+        fullscreenView = null;
+        if (web != null) web.setVisibility(View.VISIBLE);
+        if (fullscreenCallback != null) { fullscreenCallback.onCustomViewHidden(); fullscreenCallback = null; }
+    }
+
     @Override
     public void onBackPressed() {
+        // A full screen video closes first, as it would in a browser.
+        if (fullscreenView != null) { leaveFullscreen(); return; }
         // Back means "back a page" while there is one, which is what a browser
         // does and what the TWA did. Only when the history is exhausted does it
         // mean "leave the app".

@@ -110,7 +110,10 @@ public class WalletLensBridge {
      */
     @JavascriptInterface
     public String shellVersion() {
-        return "webview-1";
+        // webview-2: embedded frames (the Academy's YouTube player) load in
+        // place and can go full screen. The site plays lessons inline from
+        // this version on, and opens them on YouTube for webview-1.
+        return "webview-2";
     }
 
     // ── Storage ──────────────────────────────────────────────────────────

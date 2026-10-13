@@ -172,8 +172,25 @@ describe('the Academy has no points or games', () => {
     // The shell's WebView shows its broken page in the player's frame, so the
     // app gets a play button that leaves for YouTube, and every player keeps
     // a "Watch on YouTube" link in case the embed fails.
-    expect(watch).toContain('inAppShell()')
+    expect(watch).toContain("inAppShell() && shellVersion() === 'webview-1'")
+    // The shell that fixes frames says so, and the site plays inline there.
+    const bridge = read('../../walletlens_source/release_package/app/src/main/java/live/walletlens/twa/WalletLensBridge.java')
+    expect(bridge).toContain('return "webview-2"')
+    const shellSrc = read('../../walletlens_source/release_package/app/src/main/java/live/walletlens/twa/AppShellActivity.java')
+    expect(shellSrc).toContain('if (!request.isForMainFrame()) return false;')
+    expect(shellSrc).toContain('public void onShowCustomView(')
     expect(watch).toContain('window.location.href = watchUrl(video.id)')
     expect(watch).toMatch(/className="aw-yt" href=\{watchUrl\(video\.id\)\}/)
+  })
+
+  it('lets the lesson player through every policy on walletlens.live, the edge worker included', () => {
+    // The preview played and the live site blocked the frame: walletlens.live
+    // alone passes through the security headers worker, whose CSP said
+    // frame-src 'none'. Every copy must allow the player.
+    // The directive itself, not a comment that mentions it.
+    const frameSrc = (txt) => /frame-src (https:[^;"\n]*)/.exec(txt)?.[1] || ''
+    for (const f of ['../public/_headers', '../index.html', '../../workers/security-headers/index.js']) {
+      expect(frameSrc(read(f)), f).toContain('https://www.youtube-nocookie.com')
+    }
   })
 })
