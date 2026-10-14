@@ -223,7 +223,7 @@ function ThumbStrip({ previews }) {
         <div key={i} className={`si-thumb si-thumb-${p.status}`}>
           {/* A format the browser can read but not draw (HEIC) still imports;
               show a plain tile rather than a broken image and its alt text. */}
-          <img src={p.src} alt="" onError={e => { e.currentTarget.style.visibility = 'hidden' }} />
+          <img src={p.src} alt="" loading="lazy" decoding="async" onError={e => { e.currentTarget.style.visibility = 'hidden' }} />
           <span className="si-thumb-badge">
             {p.status === 'reading'  && <span className="si-thumb-spin" />}
             {p.status === 'queued'   && <Icon name="hourglass" size={13} />}

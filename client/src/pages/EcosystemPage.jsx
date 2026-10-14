@@ -205,7 +205,7 @@ export default function EcosystemPage() {
             <div className="shot-stage">
               <picture>
                 <source media="(min-width: 720px)" srcSet="/screens/app-three-screens.webp" />
-                <img className="shot" src="/screens/app-dashboard.webp" width="1031" height="877"
+                <img className="shot" src="/screens/app-dashboard.webp" width="1031" height="877" loading="lazy" decoding="async"
                   alt="WalletLens on Android: a portfolio analysis screen with allocation by asset class,
                     the dashboard showing total portfolio value and a candlestick chart, and a goals screen
                     splitting net worth into funded buckets." />
