@@ -141,6 +141,15 @@ export default {
       "youtube": "rzmtCADbNFU",
       "added": "2026-10-13",
       "wide": true
+    },
+    {
+      "key": "yt-ofOddmubj7M",
+      "kind": "story",
+      "name": "Never Bet the Farm",
+      "emoji": "🎬",
+      "lang": "en",
+      "youtube": "ofOddmubj7M",
+      "added": "2026-10-14"
     }
   ]
 }
