@@ -38,6 +38,10 @@ export default {
     "t-stop-watching-the-chart": {
       "youtube": "RdoM68zv2AY",
       "added": "2026-10-13"
+    },
+    "t-small-bets-long-life": {
+      "youtube": "4eWgxvCc7P4",
+      "added": "2026-10-14"
     }
   },
   "extras": [
