@@ -42,6 +42,10 @@ export default {
     "t-small-bets-long-life": {
       "youtube": "4eWgxvCc7P4",
       "added": "2026-10-14"
+    },
+    "t-sleep-on-it": {
+      "youtube": "O-Gvdr3d15c",
+      "added": "2026-10-15"
     }
   },
   "extras": [
