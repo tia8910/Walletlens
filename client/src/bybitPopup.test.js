@@ -59,9 +59,12 @@ describe('the Bybit popup', () => {
     expect(DEVICE_ONLY_KEYS).toContain('wl_bybit_ends')
   })
 
-  it('is on every app screen, and the site sets a deadline', () => {
+  it('is shown to no one: the app renders no popup', () => {
     const app = readFileSync(join(here, 'App.jsx'), 'utf8')
-    expect(app).toMatch(/shellReady && !isLanding && \(onboardDone \|\| !\(isStandalone && isAndroid\)\) && <Suspense fallback=\{null\}><BybitPopup \/>/)
+    expect(app).not.toMatch(/<BybitPopup/)
+  })
+
+  it('still reads a deadline from the site', () => {
     const offers = JSON.parse(readFileSync(join(here, '../public/offers.json'), 'utf8'))
     expect(validEnd(offers.bybit.endsAt)).not.toBeNull()
   })

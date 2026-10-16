@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  bybitAllowed, restrictedZone, stripHidden, hideStrip, STRIP_SNOOZE_MS, BYBIT_URL, pickedCrypto,
+  bybitAllowed, restrictedZone, stripHidden, hideStrip, STRIP_SNOOZE_MS, BYBIT_URL, BYBIT_STOCKS_URL, bybitUrl, pickedCrypto,
   validBonus, currentBonus, applyRemote, BYBIT_BONUS, pickedOffer,
 } from './bybitOffer'
 import { DEVICE_ONLY_KEYS } from './backupCore'
@@ -196,6 +196,20 @@ describe('Google Analytics', () => {
     localStorage.clear()
     window.gtag = (...a) => calls.push(a)
     window.open = () => null
+  })
+
+  it('opens the stock event for stocks, the sign-up link for crypto and metals', async () => {
+    expect(BYBIT_STOCKS_URL).toBe('https://www.bybit.com/stock_launch_carnival?affiliate_id=WALLETLENS')
+    expect(bybitUrl('stocks')).toBe(BYBIT_STOCKS_URL)
+    expect(bybitUrl('crypto')).toBe(BYBIT_URL)
+    expect(bybitUrl('metals')).toBe(BYBIT_URL)
+    const opened = []
+    window.open = (url) => { opened.push(url); return null }
+    const { openBybit } = await import('./bybitOffer')
+    openBybit('stock_page', 'stocks')
+    openBybit('dashboard_interest', 'stocks')
+    openBybit('asset_page', 'crypto')
+    expect(opened).toEqual([BYBIT_STOCKS_URL, BYBIT_STOCKS_URL, BYBIT_URL])
   })
 
   it('sends one referral_click per tap, with where, what and how much', async () => {
