@@ -168,6 +168,16 @@ export default {
       "youtube": "iapUIPJnE3Q",
       "added": "2026-10-16",
       "wide": true
+    },
+    {
+      "key": "yt-PLnBgt3oV6I",
+      "kind": "original",
+      "name": "Why DCA Beats Timing the Market",
+      "emoji": "🎬",
+      "lang": "en",
+      "youtube": "PLnBgt3oV6I",
+      "added": "2026-10-16",
+      "wide": true
     }
   ]
 }
