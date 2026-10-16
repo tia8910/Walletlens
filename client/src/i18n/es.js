@@ -1854,6 +1854,7 @@ export default {
     errNoRowsToImport: 'No hay filas válidas para importar (se necesita símbolo y cantidad > 0).',
     errNoHoldingsDetected: 'No se han detectado posiciones en ninguna captura. Prueba con capturas más nítidas y ajustadas de la lista de posiciones.',
     errImportUnreachable: 'No se ha podido cargar el lector de capturas. Se descarga una sola vez, la primera vez que lo usas, y después funciona sin conexión. Conéctate a internet e inténtalo de nuevo; tu captura está bien.',
+    errScreenshotReader: 'El lector de capturas se ha detenido en este dispositivo. Tu captura está bien: recarga la página e inténtalo de nuevo, o usa la importación de Excel/CSV.',
     errParsePrefix: 'Error de análisis: ',
     errImportPrefix: 'Error de importación: ',
     errImportFailedPrefix: 'Error al importar: ',

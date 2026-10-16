@@ -1814,6 +1814,7 @@ export default {
     errNoRowsToImport: 'Keine gültigen Zeilen zum Importieren (benötigt Symbol und Menge größer als 0).',
     errNoHoldingsDetected: 'In keinem Screenshot wurden Bestände erkannt. Versuchen Sie schärfere, enger zugeschnittene Aufnahmen der Bestandsliste.',
     errImportUnreachable: 'Der Screenshot-Leser konnte nicht geladen werden. Er wird einmalig bei der ersten Nutzung heruntergeladen und funktioniert danach offline. Stellen Sie eine Internetverbindung her und versuchen Sie es erneut; Ihr Screenshot ist in Ordnung.',
+    errScreenshotReader: 'Der Screenshot-Leser wurde auf diesem Gerät unterbrochen. Ihr Screenshot ist in Ordnung: Laden Sie die Seite neu und versuchen Sie es erneut, oder nutzen Sie den Excel/CSV-Import.',
     errParsePrefix: 'Auswertungsfehler: ',
     errImportPrefix: 'Importfehler: ',
     errImportFailedPrefix: 'Import fehlgeschlagen: ',

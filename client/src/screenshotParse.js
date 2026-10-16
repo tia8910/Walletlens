@@ -82,6 +82,8 @@ export function parseNumber(raw) {
   // OCR reads an O for a zero inside figures.
   s = s.replace(/(?<=\d)[Oo](?=[\d.,]|$)/g, '0')
   if (!/^\d[\d.,]*$/.test(s)) return NaN
+  // "04" is an icon read as text, not a figure anyone writes.
+  if (/^0\d/.test(s)) return NaN
   const dots = (s.match(/\./g) || []).length, commas = (s.match(/,/g) || []).length
   if (dots && commas) {
     // The later separator is the decimal one.
@@ -172,7 +174,7 @@ function groupAnchors(anchors) {
   const sorted = [...anchors].sort((a, b) => a.cy - b.cy)
   const groups = []
   for (const a of sorted) {
-    const g = groups.find(g => g.symbol === a.entry.symbol && Math.abs(g.cy - a.cy) < 2.4 * Math.max(g.h, a.h))
+    const g = groups.find(g => g.symbol === a.entry.symbol && Math.abs(g.cy - a.cy) < 3.2 * Math.max(g.h, a.h))
     if (g) {
       g.members.push(a)
       Object.assign(g, box([g, a]), { cy: (Math.min(g.y0, a.y0) + Math.max(g.y1, a.y1)) / 2 })
@@ -208,7 +210,7 @@ function solveRow(nums, symbol, market) {
   const nearMarket = (n) => market > 0 && off(n.value, market) < 1.25
   let amount = strong ? strong.value : 0
   if (!amount) {
-    const plain = nums.find(n => !n.money && !n.label && !nearMarket(n))
+    const plain = nums.find(n => !n.money && !n.label && !nearMarket(n) && n.inRow)
     if (plain) amount = plain.value
   }
   const amountTok = strong || nums.find(n => n.value === amount && !n.money)
@@ -246,8 +248,14 @@ function solveRow(nums, symbol, market) {
 function columnHeaders(tokens) {
   const kindOf = (t) => (PRICE_LABEL.test(t.text) ? 'price' : VALUE_LABEL.test(t.text) ? 'value' : AMOUNT_LABEL.test(t.text) ? 'amount' : null)
   const labelled = tokens.filter(kindOf)
+  // A header is a short line that is mostly labels of different kinds, not a
+  // sentence that happens to say "holdings" twice.
   return labelled
-    .filter(t => labelled.filter(o => o !== t && sameLine(o, t)).length >= 1)
+    .filter(t => {
+      const line = tokens.filter(o => sameLine(o, t))
+      const labels = line.filter(kindOf)
+      return labels.length >= 2 && new Set(labels.map(kindOf)).size >= 2 && labels.length * 2 >= line.length
+    })
     .map(t => ({ kind: kindOf(t), x0: t.x0, x1: t.x1, y0: t.y0, y1: t.y1 }))
     .sort((a, b) => b.y1 - a.y1)
 }
@@ -267,6 +275,12 @@ export function parseHoldingsFromWords(words, catalogue) {
   const rowH = median(groups.map(g => g.h)) || 10
   const anchorIdx = new Set(anchors.flatMap(a => a.idx))
   const headers = columnHeaders(tokens)
+  // The spacing between the lines of one holding (its name over its ticker),
+  // measured on this screen; 0 when no holding shows both.
+  const pitch = median(groups.filter(g => g.members.length > 1).map(g => {
+    const cys = g.members.map(m => m.cy)
+    return Math.max(...cys) - Math.min(...cys)
+  }).filter(d => d > rowH * 0.5))
   const rows = []
 
   groups.forEach((g, gi) => {
@@ -289,7 +303,12 @@ export function parseHoldingsFromWords(words, catalogue) {
       if (!n) continue
       // In a table the label is the column's header, somewhere above.
       const head = n.label || n.strong ? null : headers.find(hd => hd.y1 <= n.tok.y0 && hd.x0 - n.tok.h <= n.tok.x1 && n.tok.x0 <= hd.x1 + n.tok.h)
-      if (head) { if (head.kind === 'amount') n.strong = true; else n.label = head.kind }
+      if (head) { if (head.kind !== 'amount') n.label = head.kind; else if (!n.money) n.strong = true }
+      // An unmarked figure is the amount only on the asset's own line, the
+      // line next to it, or right under its name: not an icon further down
+      // (a tab bar) that OCR read as "88".
+      const cy = (n.tok.y0 + n.tok.y1) / 2
+      n.inRow = g.members.some(m => Math.abs(m.cy - cy) < (pitch || m.h * 2.6) * 1.25) || Math.abs(n.tok.x0 - g.x0) < g.h * 2
       nums.push(n)
     }
     const solved = solveRow(nums, g.symbol, g.entry.price)

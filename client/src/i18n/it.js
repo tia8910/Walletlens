@@ -1814,6 +1814,7 @@ export default {
     errNoRowsToImport: 'Nessuna riga valida da importare (servono simbolo e quantità maggiore di 0).',
     errNoHoldingsDetected: 'Nessuna posizione rilevata negli screenshot. Prova con immagini più nitide e ravvicinate dell’elenco delle posizioni.',
     errImportUnreachable: "Impossibile caricare il lettore di screenshot. Si scarica una sola volta, al primo utilizzo, e poi funziona offline. Connettiti a internet e riprova; lo screenshot non c'entra.",
+    errScreenshotReader: "Il lettore di screenshot si è interrotto su questo dispositivo. Lo screenshot non c'entra: ricarica la pagina e riprova, oppure usa l'importazione Excel/CSV.",
     errParsePrefix: 'Errore di lettura: ',
     errImportPrefix: 'Errore di importazione: ',
     errImportFailedPrefix: 'Importazione non riuscita: ',

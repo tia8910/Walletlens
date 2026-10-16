@@ -120,6 +120,21 @@ describe('layouts with no fixture', () => {
     expect(parseHoldingsFromWords(w, catalogue(true))).toEqual([])
   })
 
+  it("WalletLens's own list: a banner saying \"holdings\" twice is not a table header, and tab bar icons are not amounts", () => {
+    const w = [
+      ...line(100, [0, 'No'], [40, 'holdings'], [160, 'detected'], [300, 'in'], [340, 'any'], [400, 'screenshot.'], [560, 'Try'], [620, 'holdings'], [740, 'list.']),
+      ...line(300, [200, 'Ethereum'], [700, '$26,096.00']),
+      ...line(360, [200, '10'], [240, 'ETH'], [600, '$2,609.60']),
+      ...line(480, [200, 'Bitcoin'], [700, '$33,618.50']),
+      ...line(540, [200, '0.5BTC'], [600, '$67,237.00']),
+      ...line(660, [200, 'Apple'], [700, '$2,310.00']),
+      ...line(760, [260, '04'], [500, '88']),
+      ...line(820, [200, 'Home'], [300, 'Signals'], [500, 'More']),
+    ]
+    expect(brief(parseHoldingsFromWords(w, catalogue(true)))).toEqual([['ETH', 10, 2609.6], ['BTC', 0.5, 67237], ['AAPL', 10, 231]])
+    expect(brief(parseHoldingsFromWords(w, catalogue(false)))).toEqual([['ETH', 10, 2609.6], ['BTC', 0.5, 67237]])
+  })
+
   it('nothing readable gives nothing', () => {
     expect(parseHoldingsFromWords([], catalogue())).toEqual([])
     expect(parseHoldingsFromWords(line(0, [0, 'Hello'], [100, 'world']), catalogue())).toEqual([])

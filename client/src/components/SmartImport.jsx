@@ -362,6 +362,7 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     const batch = []
     let errors = 0
     let unreachable = false
+    let crashed = false
     // The word lists load while the first screenshot is being read.
     const catalogueP = importCatalogue()
 
@@ -409,6 +410,9 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
         // which is advice to re-photograph an exchange for a request that was
         // never sent. A failure to reach the reader is not a failure to read.
         unreachable = unreachable || isUnreachable(e)
+        // Anything else is the reader breaking, which is not the screenshot's
+        // fault either; it gets its own message and the console gets the cause.
+        if (!isUnreachable(e)) { crashed = true; console.error('screenshot reader', e) }
         errors++
       }
     }
@@ -441,6 +445,9 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     } else if (unreachable) {
       trackImport({ method: 'screenshot', step: 'failed', reason: 'unreachable' })
       showMsg(t('errImportUnreachable'))
+    } else if (crashed) {
+      trackImport({ method: 'screenshot', step: 'failed', reason: 'reader_error' })
+      showMsg(t('errScreenshotReader'))
     } else {
       trackImport({ method: 'screenshot', step: 'failed', reason: 'nothing_detected' })
       showMsg(t('errNoHoldingsDetected'))
