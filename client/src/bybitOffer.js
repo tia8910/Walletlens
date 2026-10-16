@@ -20,6 +20,13 @@ import { track } from './analytics'
 import { INTERESTS_EVENT } from './data/interestsEvent'
 
 export const BYBIT_URL = 'https://partner.bybit.com/b/WALLETLENS'
+/** Bybit's stock trading event, with the same affiliate id: where every stocks placement goes. */
+export const BYBIT_STOCKS_URL = 'https://www.bybit.com/stock_launch_carnival?affiliate_id=WALLETLENS'
+
+/** The link for an offer: the stock event for stocks, the sign-up page otherwise. */
+export function bybitUrl(offer = 'crypto') {
+  return offer === 'stocks' ? BYBIT_STOCKS_URL : BYBIT_URL
+}
 /** The bonus shown when the site has not said otherwise. */
 export const BYBIT_BONUS = '$20'
 
@@ -325,5 +332,5 @@ export function viewRef(placement, offer = 'crypto') {
 export function openBybit(placement, offer = 'crypto') {
   // 'beacon' so the hit leaves even as the browser switches to Bybit.
   trackReferralEvent('referral_click', placement, offer, { transport_type: 'beacon' })
-  try { window.open(BYBIT_URL, '_blank', 'noopener,noreferrer') } catch { /* no window */ }
+  try { window.open(bybitUrl(offer), '_blank', 'noopener,noreferrer') } catch { /* no window */ }
 }
