@@ -1876,6 +1876,7 @@ export default {
     errNoHoldingsDetected: 'No holdings detected in any screenshot. Try clearer, tighter shots of the holdings list.',
     errImportUnreachable: 'Could not load the screenshot reader. It downloads once, the first time you use it, then works offline. Connect to the internet and try again; nothing is wrong with your screenshot.',
     errScreenshotReader: 'The screenshot reader stopped on this device. Nothing is wrong with your screenshot: reload the page and try again, or use Excel/CSV import.',
+    errScreenshotHeic: 'This picture is in HEIC format, which this phone cannot open in the browser. Take a normal screenshot (PNG or JPG) of the holdings list and try again.',
     errParsePrefix: 'Parse error: ',
     errImportPrefix: 'Import error: ',
     errImportFailedPrefix: 'Import failed: ',

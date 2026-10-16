@@ -1855,6 +1855,7 @@ export default {
     errNoHoldingsDetected: 'No se han detectado posiciones en ninguna captura. Prueba con capturas más nítidas y ajustadas de la lista de posiciones.',
     errImportUnreachable: 'No se ha podido cargar el lector de capturas. Se descarga una sola vez, la primera vez que lo usas, y después funciona sin conexión. Conéctate a internet e inténtalo de nuevo; tu captura está bien.',
     errScreenshotReader: 'El lector de capturas se ha detenido en este dispositivo. Tu captura está bien: recarga la página e inténtalo de nuevo, o usa la importación de Excel/CSV.',
+    errScreenshotHeic: 'Esta imagen está en formato HEIC, que el navegador de este teléfono no puede abrir. Haz una captura normal (PNG o JPG) de la lista de posiciones e inténtalo de nuevo.',
     errParsePrefix: 'Error de análisis: ',
     errImportPrefix: 'Error de importación: ',
     errImportFailedPrefix: 'Error al importar: ',

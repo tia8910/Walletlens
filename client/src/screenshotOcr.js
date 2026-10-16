@@ -52,11 +52,35 @@ function loadImage(file) {
   })
 }
 
+// Two ways to open the picture: createImageBitmap reads some files an <img>
+// will not (and the reverse), so each is the other's fallback.
+async function decodeImage(file) {
+  if (typeof createImageBitmap === 'function') {
+    try { return await createImageBitmap(file) } catch { /* try the <img> path */ }
+  }
+  return loadImage(file)
+}
+
+// What the file really is, from its first bytes: a phone can hand over a
+// HEIC photo under a .jpg name, and no browser on Android draws HEIC.
+async function sniff(file) {
+  try {
+    const b = new Uint8Array(await file.slice(0, 16).arrayBuffer())
+    const ascii = String.fromCharCode(...b)
+    if (ascii.slice(4, 8) === 'ftyp') return /heic|heix|hevc|mif1|msf1|heim|heis/.test(ascii.slice(8, 12)) ? 'heic' : ascii.slice(8, 12).trim()
+    if (b[0] === 0x89 && b[1] === 0x50) return 'png'
+    if (b[0] === 0xff && b[1] === 0xd8) return 'jpeg'
+    if (ascii.slice(0, 4) === 'RIFF') return 'webp'
+    return 'unknown'
+  } catch { return 'unknown' }
+}
+
 // The model reads dark text on a light page best, at a text height of roughly
 // 20 to 40 px. Phone screenshots are usually fine as they are; a small crop is
 // enlarged, a huge one reduced, and a dark-mode screen inverted, all in grey.
 export function prepareCanvas(img) {
   const w0 = img.naturalWidth || img.width, h0 = img.naturalHeight || img.height
+  if (!(w0 > 0 && h0 > 0)) throw new Error('empty_image')
   const scale = w0 < 900 ? Math.min(2.5, 1400 / w0) : w0 > 2400 ? 2400 / w0 : 1
   const w = Math.round(w0 * scale), h = Math.round(h0 * scale)
   const canvas = document.createElement('canvas')
@@ -83,11 +107,26 @@ export function prepareCanvas(img) {
  * coordinates of the original image.
  */
 export async function readScreenshotWords(file) {
-  const img = await loadImage(file)
-  const { canvas, scale } = prepareCanvas(img)
+  let source = file, scale = 1
+  try {
+    const prepared = prepareCanvas(await decodeImage(file))
+    source = prepared.canvas
+    scale = prepared.scale
+  } catch {
+    // The browser cannot draw it. The reader decodes PNG, JPEG and WebP
+    // itself, so it gets the raw file; HEIC it cannot, and says so.
+    const kind = await sniff(file)
+    if (kind === 'heic') throw new Error('image_heic')
+    if (!['png', 'jpeg', 'webp'].includes(kind)) throw new Error(`image_unreadable:${kind}`)
+  }
   let worker
   try { worker = await getWorker() } catch { throw new Error('ocr_unavailable') }
-  const { data } = await worker.recognize(canvas, {}, { blocks: true, text: false })
+  let data
+  try {
+    ({ data } = await worker.recognize(source, {}, { blocks: true, text: false }))
+  } catch (e) {
+    throw new Error(`ocr_failed:${String(e?.message || e).slice(0, 80)}`)
+  }
   const words = []
   for (const b of data.blocks || []) for (const p of b.paragraphs || []) for (const l of p.lines || []) for (const wd of l.words || []) {
     const text = String(wd.text || '').trim()

@@ -362,7 +362,8 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     const batch = []
     let errors = 0
     let unreachable = false
-    let crashed = false
+    let crashed = ''
+    let heic = false
     // The word lists load while the first screenshot is being read.
     const catalogueP = importCatalogue()
 
@@ -412,7 +413,12 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
         unreachable = unreachable || isUnreachable(e)
         // Anything else is the reader breaking, which is not the screenshot's
         // fault either; it gets its own message and the console gets the cause.
-        if (!isUnreachable(e)) { crashed = true; console.error('screenshot reader', e) }
+        if (!isUnreachable(e)) {
+          console.error('screenshot reader', e)
+          const m = String(e?.message || e || '')
+          if (m === 'image_heic') heic = true
+          else crashed = crashed || m.slice(0, 90) || 'unknown'
+        }
         errors++
       }
     }
@@ -445,9 +451,13 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     } else if (unreachable) {
       trackImport({ method: 'screenshot', step: 'failed', reason: 'unreachable' })
       showMsg(t('errImportUnreachable'))
+    } else if (heic) {
+      trackImport({ method: 'screenshot', step: 'failed', reason: 'heic' })
+      showMsg(t('errScreenshotHeic'))
     } else if (crashed) {
       trackImport({ method: 'screenshot', step: 'failed', reason: 'reader_error' })
-      showMsg(t('errScreenshotReader'))
+      // The short cause rides along, so a report of this screen says what broke.
+      showMsg(`${t('errScreenshotReader')} (${crashed})`)
     } else {
       trackImport({ method: 'screenshot', step: 'failed', reason: 'nothing_detected' })
       showMsg(t('errNoHoldingsDetected'))

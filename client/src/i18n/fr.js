@@ -1855,6 +1855,7 @@ export default {
     errNoHoldingsDetected: 'Aucune position détectée sur les captures. Essayez des captures plus nettes et plus serrées de la liste des positions.',
     errImportUnreachable: "Impossible de charger le lecteur de captures. Il se télécharge une seule fois, à la première utilisation, puis fonctionne hors ligne. Connectez-vous à Internet et réessayez ; votre capture n'est pas en cause.",
     errScreenshotReader: "Le lecteur de captures s'est arrêté sur cet appareil. Votre capture n'est pas en cause : rechargez la page et réessayez, ou utilisez l'import Excel/CSV.",
+    errScreenshotHeic: "Cette image est au format HEIC, que le navigateur de ce téléphone ne sait pas ouvrir. Faites une capture d'écran normale (PNG ou JPG) de la liste des positions et réessayez.",
     errParsePrefix: 'Erreur d\'analyse : ',
     errImportPrefix: 'Erreur d\'import : ',
     errImportFailedPrefix: 'Échec de l\'import : ',
