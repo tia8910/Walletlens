@@ -158,6 +158,16 @@ export default {
       "lang": "en",
       "youtube": "ofOddmubj7M",
       "added": "2026-10-14"
+    },
+    {
+      "key": "yt-iapUIPJnE3Q",
+      "kind": "original",
+      "name": "The 10.10 Crypto Crash  ",
+      "emoji": "🎬",
+      "lang": "en",
+      "youtube": "iapUIPJnE3Q",
+      "added": "2026-10-16",
+      "wide": true
     }
   ]
 }
