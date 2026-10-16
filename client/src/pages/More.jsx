@@ -93,7 +93,7 @@ export default function More() {
               <button key={th.id} type="button" aria-label={th.name} title={th.name} aria-pressed={theme === th.id}
                 className={theme === th.id ? 'on' : ''} style={{ '--c': th.swatch }} onClick={() => setTheme(th.id)}>
                 {/* Each theme's own mark: the bars, the coins, the emerald's sparkle. */}
-                {th.logo ? <img src={th.logo} alt="" /> : <Icon name={th.icon} size={15} />}
+                {th.logo ? <img src={th.logo} alt="" loading="lazy" decoding="async" /> : <Icon name={th.icon} size={15} />}
               </button>
             ))}
           </div>
