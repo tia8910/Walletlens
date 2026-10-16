@@ -1820,6 +1820,23 @@ ${aboutFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
   // with sameAs + contactPoint); the About page adds no duplicate of its own.
 }))
 
+// ── YouTube ────────────────────────────────────────────────
+write('/youtube', buildPage({
+  path: '/youtube',
+  title: 'WalletLens on YouTube — Stories and Tutorials',
+  description: 'Short stories and tutorials about money habits, risk and getting the most out of WalletLens, on the WalletLens YouTube channel.',
+  bodyHtml: `
+<h1>WalletLens on YouTube</h1>
+<p>Short stories and tutorials about money habits, risk and getting the most out of WalletLens.</p>
+<p><a href="https://www.youtube.com/@walletlens?sub_confirmation=1">Subscribe on YouTube</a> · <a href="https://www.youtube.com/@walletlens">Open the channel</a></p>
+<h2>Latest videos</h2>
+<ul>
+${publishedVideos().filter(v => v.lang === 'en' || v.lang === 'all').map(v => `<li><a href="https://www.youtube.com/watch?v=${esc(String(v.youtube).replace(/^.*(?:v=|youtu\.be\/|shorts\/)/, ''))}">${esc(v.name)}</a></li>`).join('\n')}
+</ul>
+<p><a href="/academy">Watch with lessons in the Academy</a> · <a href="/dashboard">Open WalletLens free</a></p>
+`,
+}))
+
 // ── FAQ ──────────────────────────────────────────────────────────────────────
 // Mirrors client/src/pages/FAQ.jsx (FAQ_SECTIONS) — keep the two in sync.
 const faqPageSections = [
@@ -2525,6 +2542,7 @@ const STATIC_ROUTES = [
   { path: '/rebalancing-calculator', changefreq: 'monthly', priority: '0.85' },
   { path: '/zakat-calculator', changefreq: 'weekly', priority: '0.9' },
   { path: '/about',   changefreq: 'monthly', priority: '0.7' },
+  { path: '/youtube', changefreq: 'weekly',  priority: '0.6' },
   { path: '/vision',  changefreq: 'monthly', priority: '0.8' },
   { path: '/faq',     changefreq: 'monthly', priority: '0.7' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.5' },

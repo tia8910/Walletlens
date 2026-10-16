@@ -58,7 +58,7 @@ const LANDING_PATH_SET = new Set([
   '/portfolio-tracker-no-account', '/import-portfolio-from-screenshot',
   '/add-holdings-by-voice', '/blog', '/about', '/market-index',
   '/fear-and-greed-index', '/rebalancing-calculator', '/faq', '/privacy',
-  '/zakat-calculator', '/ecosystem',
+  '/zakat-calculator', '/ecosystem', '/youtube',
 ])
 const LANDING_PREFIXES = [
   '/blog/', '/track/', '/calculator/', '/learn/', '/vs/', '/price/', '/ar/', '/admin/',
@@ -102,6 +102,7 @@ const Technicals   = lazy(() => import('./pages/Technicals'))
 const AssetDetail  = lazy(() => import('./pages/AssetDetail'))
 const Blog             = lazy(() => import('./pages/Blog'))
 const About            = lazy(() => import('./pages/About'))
+const YouTube          = lazy(() => import('./pages/YouTube'))
 const MarketIndex      = lazy(() => import('./pages/MarketIndex'))
 const FearAndGreedIndex = lazy(() => import('./pages/FearAndGreedIndex'))
 const Rebalancing      = lazy(() => import('./pages/Rebalancing'))
@@ -541,6 +542,7 @@ const AppFooter = memo(function AppFooter() {
       </div>
       <nav className="wl-app-footer-links">
         <button onClick={() => navigate('/about')}>{t('about')}</button>
+        <button onClick={() => navigate('/youtube')}>YouTube</button>
         <button onClick={() => navigate('/faq')}>{t('faq')}</button>
         <button onClick={() => navigate('/blog')}>{t('blog')}</button>
         <button onClick={() => navigate('/privacy')}>{t('privacy')}</button>
@@ -928,6 +930,7 @@ export default function App() {
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<Blog />} />
           <Route path="/about" element={<About />} />
+          <Route path="/youtube" element={<YouTube />} />
           <Route path="/market-index" element={<MarketIndex />} />
           <Route path="/fear-and-greed-index" element={<FearAndGreedIndex />} />
           <Route path="/rebalancing-calculator" element={<Rebalancing />} />
@@ -1083,6 +1086,7 @@ export default function App() {
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<Blog />} />
               <Route path="/about" element={<About />} />
+              <Route path="/youtube" element={<YouTube />} />
               <Route path="/market-index" element={<MarketIndex />} />
               <Route path="/fear-and-greed-index" element={<FearAndGreedIndex />} />
               <Route path="/rebalancing-calculator" element={<Rebalancing />} />
