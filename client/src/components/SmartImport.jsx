@@ -80,8 +80,24 @@ function parseSpreadsheet(file) {
 function filterImageFiles(files) {
   return Array.from(files).filter(f => {
     const ext = (f.name.split('.').pop() || '').toLowerCase()
-    return ['png','jpg','jpeg','webp','gif'].includes(ext)
+    // A phone's picker can hand over "1000012345" with no extension; its type still says image.
+    return ['png','jpg','jpeg','webp','gif'].includes(ext) || /^image\//.test(f.type || '')
   })
+}
+
+// Copy a picked file into memory at once. On Android the picker's file can
+// stop being readable once the input is cleared or leaves the page (it does,
+// as soon as the first thumbnail shows), and the reader opens it later.
+async function snapshotFile(f) {
+  try {
+    const buf = await f.arrayBuffer()
+    if (!buf.byteLength) throw Object.assign(new Error('empty'), { name: 'EmptyFile' })
+    return new File([buf], f.name || 'screenshot', { type: f.type || 'image/png' })
+  } catch (e) {
+    // Keep it, with why it could not be read: the reader reports that.
+    f.readError = `${e?.name || 'Error'}:${f.size || 0}`
+    return f
+  }
 }
 
 // ── Which asset a row is ──────────────────────────────────────────────────────
@@ -169,9 +185,9 @@ function MultiDragZone({ busy, onFiles, compact = false }) {
   const [over, setOver] = useState(false)
   const inputRef = useRef()
 
-  const handle = useCallback((fileList) => {
+  const handle = useCallback(async (fileList) => {
     const imgs = filterImageFiles(fileList)
-    if (imgs.length) onFiles(imgs)
+    if (imgs.length) onFiles(await Promise.all(imgs.map(snapshotFile)))
   }, [onFiles])
 
   return (
@@ -189,7 +205,11 @@ function MultiDragZone({ busy, onFiles, compact = false }) {
         accept="image/*"
         multiple
         style={{ display: 'none' }}
-        onChange={e => { handle(e.target.files); e.target.value = '' }}
+        onChange={e => {
+          // Read the files before clearing the input (see snapshotFile).
+          const input = e.target
+          handle(Array.from(input.files || [])).finally(() => { input.value = '' })
+        }}
       />
       <span className="si-dropzone-icon"><Icon name={compact ? 'plus' : 'camera'} size={compact ? 18 : 24} /></span>
       <span className="si-dropzone-label">

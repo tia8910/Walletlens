@@ -71,8 +71,8 @@ async function sniff(file) {
     if (b[0] === 0x89 && b[1] === 0x50) return 'png'
     if (b[0] === 0xff && b[1] === 0xd8) return 'jpeg'
     if (ascii.slice(0, 4) === 'RIFF') return 'webp'
-    return 'unknown'
-  } catch { return 'unknown' }
+    return `unknown:${[...b.slice(0, 4)].map(x => x.toString(16).padStart(2, '0')).join('')}:${file.size}`
+  } catch (e) { return `read_error:${e?.name || 'Error'}:${file.size}` }
 }
 
 // The model reads dark text on a light page best, at a text height of roughly
@@ -115,6 +115,7 @@ export async function readScreenshotWords(file) {
   } catch {
     // The browser cannot draw it. The reader decodes PNG, JPEG and WebP
     // itself, so it gets the raw file; HEIC it cannot, and says so.
+    if (file.readError) throw new Error(`image_unreadable:picked:${file.readError}`)
     const kind = await sniff(file)
     if (kind === 'heic') throw new Error('image_heic')
     if (!['png', 'jpeg', 'webp'].includes(kind)) throw new Error(`image_unreadable:${kind}`)
