@@ -1127,11 +1127,11 @@ Try voice import free at [walletlens.live](https://walletlens.live) — no accou
     content: `
 Setting up a portfolio tracker from scratch is the biggest friction point in personal finance. If you hold assets on three exchanges and two wallets, entering every holding manually takes 30–60 minutes. Most people give up partway through and end up with a portfolio tracker that only shows half their net worth.
 
-WalletLens screenshot import eliminates that friction: take a screenshot of your holdings page, upload it, and the AI builds your portfolio from the image — in under two minutes.
+WalletLens screenshot import eliminates that friction: take a screenshot of your holdings page, upload it, and WalletLens builds your portfolio from the image — in under two minutes, without the image ever leaving your phone.
 
 ## How screenshot import works
 
-WalletLens uses AI vision to read the layout of your screenshot and extract each asset, quantity, and price. Because it reads the visual content of the image rather than connecting to an API, it works with any exchange, broker, or wallet — not just the ones WalletLens has a formal integration with.
+WalletLens reads the text of your screenshot on your own device, then uses the layout (which name sits beside which amount and which price) to extract each asset, quantity, and price. Because it reads the visual content of the image rather than connecting to an API, it works with any exchange, broker, or wallet — not just the ones WalletLens has a formal integration with.
 
 The steps:
 
@@ -1139,7 +1139,7 @@ The steps:
 2. Take a screenshot of your holdings on any exchange or wallet app.
 3. Tap Smart Import (the camera icon) in the dashboard.
 4. Upload or paste the screenshot.
-5. Review the extracted holdings — the AI shows you what it found. Edit any field if needed.
+5. Review the extracted holdings — WalletLens shows you what it found. Edit any field if needed.
 6. Confirm and all holdings are added to your live dashboard instantly.
 
 ## Which exchanges and apps are supported?
@@ -1152,15 +1152,15 @@ Because WalletLens reads the image directly, it supports any source you can scre
 
 **Stock brokers:** Robinhood, Fidelity, Charles Schwab, TD Ameritrade, Interactive Brokers, eToro, Trading 212.
 
-**Other:** Brokerage account statements, trade confirmation emails, handwritten lists, screenshots of spreadsheets. If you can see it, the AI can usually read it.
+**Other:** Brokerage account statements, trade confirmation emails and screenshots of spreadsheets. Clear, typed text reads best; handwriting does not.
 
 ## The review step: always check before saving
 
-After the AI extracts your holdings, it shows you each one in an editable panel before saving. You can correct the asset name, quantity, price, or date for any row. This means even unusual layouts or partially-legible screenshots can work — you just fix the parts the AI got wrong.
+After WalletLens extracts your holdings, it shows you each one in an editable panel before saving. You can correct the asset name, quantity, price, or date for any row. This means even unusual layouts or partially-legible screenshots can work — you just fix the parts it got wrong.
 
 ## What happens to my screenshot?
 
-Your screenshot is sent to the WalletLens AI service for processing. It is not stored — the image is processed once to extract the holdings data and then discarded. The extracted holdings are saved only to your browser's local storage. They never reach any WalletLens server and are not associated with any account.
+Nothing. Your screenshot is read on your own device, by a text reader that runs inside the app, and it is never uploaded anywhere. The first time you use it, the reader itself (about 7 MB) is downloaded once; after that it works offline. The extracted holdings are saved only to your browser's local storage. They never reach any WalletLens server and are not associated with any account.
 
 ## Screenshot import vs other import methods
 

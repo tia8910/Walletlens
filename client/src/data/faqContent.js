@@ -55,7 +55,7 @@ export const FAQ_TEXT = {
       ['What is the voice import?',
        'Tap the microphone and say something like "I bought half a Bitcoin at sixty thousand dollars in January" — the AI parses it into a structured transaction for you to confirm. It works in English and Arabic.'],
       ['What is the screenshot import?',
-       'Upload a screenshot of any exchange, broker, or bank app and the AI reads the holdings from the image and adds them to your portfolio — useful for migrating from another tracker in one step.'],
+       'Upload a screenshot of any exchange, broker, or bank app and WalletLens reads the holdings from the image on your device (the image is never uploaded) and adds them to your portfolio — useful for migrating from another tracker in one step.'],
       ['What does the Chrome extension do?',
        'The WalletLens extension shows your portfolio total, all holdings with live prices, market data, the Fear & Greed index, news, and technical signals from your browser toolbar. It syncs with the web app through your local data — no account needed.'],
     ]],

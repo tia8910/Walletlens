@@ -335,7 +335,7 @@ const homeBody = `
 <li><strong>100% free</strong> — no paid tier, no premium paywall, no subscription. Every feature is free forever.</li>
 <li><strong>Smart money flow</strong> — see which tokens large wallets are moving in and out of, live in the header.</li>
 <li><strong>AI portfolio analysis</strong> — portfolio health score A–F, diversification grade, risk scanner, stress test, and rebalance planner — all on your device.</li>
-<li><strong>Import from screenshot</strong> — <a href="/import-portfolio-from-screenshot">photograph any exchange, broker or wallet screen</a>; AI reads it into your portfolio.</li>
+<li><strong>Import from screenshot</strong> — <a href="/import-portfolio-from-screenshot">photograph any exchange, broker or wallet screen</a>; it is read on your device into your portfolio, never uploaded.</li>
 <li><strong>Voice import (English &amp; Arabic)</strong> — <a href="/add-holdings-by-voice">speak your trades hands-free</a>, AI logs them instantly.</li>
 <li><strong>Excel / CSV import &amp; export</strong> — <a href="/export-portfolio-to-excel">download your portfolio as a CSV</a> for Excel, Google Sheets, or your accountant; import a spreadsheet to bulk-add holdings.</li>
 <li><strong>Crypto tax report export</strong> — <a href="/crypto-portfolio-tax-report">export your full transaction history</a> as a CSV for Koinly, CoinTracker, TurboTax, or your tax professional.</li>
@@ -576,7 +576,7 @@ const cryptoStockBody = `
 <li><strong>Crypto:</strong> 10,000+ coins with live prices — <a href="/track/bitcoin">Bitcoin</a>, <a href="/track/ethereum">Ethereum</a>, <a href="/track/solana">Solana</a> and more.</li>
 <li><strong>US stocks &amp; ETFs:</strong> live quotes for <a href="/track/apple">Apple</a>, <a href="/track/tesla">Tesla</a>, <a href="/track/nvidia">Nvidia</a> and thousands more.</li>
 <li><strong>Gold, silver, cash &amp; FX:</strong> round out your full net worth in the same dashboard.</li>
-<li><strong>Fast import:</strong> <a href="/import-portfolio-from-screenshot">snap a screenshot</a> of your exchange or broker, or <a href="/add-holdings-by-voice">add holdings by voice</a> — AI does the data entry.</li>
+<li><strong>Fast import:</strong> <a href="/import-portfolio-from-screenshot">snap a screenshot</a> of your exchange or broker, or <a href="/add-holdings-by-voice">add holdings by voice</a> — no typing.</li>
 <li><strong>AI analysis:</strong> a health score, diversification grade and risk scan across crypto and stocks together, computed on your device.</li>
 </ul>
 <h2>Free, private, no account</h2>
@@ -672,18 +672,18 @@ write('/portfolio-tracker-no-account', buildPage({
     'Open WalletLens at walletlens.live — no account, email or sign-up required.',
     'Take a screenshot of your portfolio, holdings list, or trade history from any exchange, broker or wallet app.',
     'Tap the Smart Import button (camera icon) in the WalletLens dashboard.',
-    'Upload or paste your screenshot — the AI reads the image and identifies every asset, quantity and price it contains.',
+    'Upload or paste your screenshot — WalletLens reads it on your device and identifies every asset, quantity and price it contains.',
     'Review the extracted holdings in the confirmation panel, edit any field if needed, and tap Confirm.',
     'Your holdings are instantly added to your live net-worth dashboard with real-time price tracking.',
   ]
   const faq = faqBlock([
     {
       q: 'Can I import my crypto portfolio from a screenshot?',
-      a: 'Yes. WalletLens lets you import holdings directly from a screenshot of any exchange, broker or wallet app. Its AI vision reads the image and extracts each asset, amount and price automatically — no manual typing, no CSV, and no account required.',
+      a: 'Yes. WalletLens lets you import holdings directly from a screenshot of any exchange, broker or wallet app. It reads the image on your device and extracts each asset, amount and price automatically — no manual typing, no CSV, and no account required.',
     },
     {
       q: 'Which apps and exchanges can I screenshot to import from?',
-      a: 'Any of them. Because WalletLens reads the picture rather than connecting to an API, you can screenshot Binance, Coinbase, Kraken, MetaMask, Robinhood, Fidelity, a broker statement, a trade confirmation, or even a handwritten list — and it turns the image into structured holdings. The AI handles a wide variety of layouts and formats.',
+      a: 'Any of them. Because WalletLens reads the picture rather than connecting to an API, you can screenshot Binance, Coinbase, Kraken, MetaMask, Robinhood, Fidelity, a broker statement, or a trade confirmation, and it turns the image into structured holdings. Clear, typed screens read best; handwriting does not.',
     },
     {
       q: 'Do I need an API key or to connect my exchange?',
@@ -694,26 +694,26 @@ write('/portfolio-tracker-no-account', buildPage({
       a: 'Yes — completely free with no account, no subscription, and no hidden limits, just like everything else in WalletLens.',
     },
     {
-      q: 'What if the AI misreads a number in my screenshot?',
+      q: 'What if a number in my screenshot is misread?',
       a: 'You always get a review step before anything is saved. The extracted holdings are shown in an editable panel so you can correct any field — asset name, quantity, price, or date — before confirming.',
     },
     {
       q: 'Can I import a screenshot that shows multiple assets?',
-      a: 'Yes. If your screenshot shows a full holdings page with ten or twenty assets, the AI reads them all at once and creates a holding entry for each. You review and confirm the full list in one step.',
+      a: 'Yes. If your screenshot shows a full holdings page with ten or twenty assets, WalletLens reads them all at once and creates a holding entry for each. You review and confirm the full list in one step.',
     },
     {
       q: 'Is my screenshot uploaded to a server?',
-      a: 'The image is sent to the WalletLens AI service for processing but is not stored — it is processed once to extract the holdings data and then discarded. The extracted holdings are saved only to your browser\'s local storage, not to any server.',
+      a: 'No. The image is read on your own device by a text reader that runs inside the app, and it never leaves your phone. The extracted holdings are saved only to your browser\'s local storage, not to any server.',
     },
   ])
   const body = `
 <h1>Import Your Portfolio From a Screenshot</h1>
-<p>WalletLens is the only free net-worth tracker that can build your entire portfolio from a <strong>screenshot</strong>. Photograph or capture your holdings on any exchange, broker or wallet app, and WalletLens reads the image with AI — extracting every asset, quantity and price automatically. No manual entry. No CSV. No account. No API key. Just a picture.</p>
+<p>WalletLens is the only free net-worth tracker that can build your entire portfolio from a <strong>screenshot</strong>. Photograph or capture your holdings on any exchange, broker or wallet app, and WalletLens reads the image right on your device — extracting every asset, quantity and price automatically. No manual entry. No CSV. No account. No API key. Just a picture.</p>
 <p><a href="/dashboard">Try screenshot import free →</a></p>
 
 <h2>Why screenshot import changes how people track portfolios</h2>
 <p>The biggest barrier to portfolio tracking is the setup. If you hold assets on three exchanges, a broker, and a hardware wallet, manually entering every holding takes 30–60 minutes. Most people give up partway through and end up tracking only part of their portfolio — which makes the data almost useless.</p>
-<p>Screenshot import eliminates that barrier entirely. Instead of typing "I hold 0.3412 BTC, 2.5 ETH, 150 ADA…" you open each exchange app, take a screenshot of the holdings page, and upload it to WalletLens. The AI reads the image and creates the entries for you. A full five-exchange portfolio migration can take under three minutes.</p>
+<p>Screenshot import eliminates that barrier entirely. Instead of typing "I hold 0.3412 BTC, 2.5 ETH, 150 ADA…" you open each exchange app, take a screenshot of the holdings page, and add it to WalletLens. It reads the image on your device and creates the entries for you. A full five-exchange portfolio migration can take under three minutes.</p>
 <p>The other reason screenshot import is uniquely powerful is that it works with <em>anything</em>. Most "automatic import" solutions require an API integration — which means the tracker only works with whichever exchanges have partnered with it, and you must create API keys with read access to your account. Screenshot import has no such limitation. If you can see it on your screen, WalletLens can read it.</p>
 
 <h2>How to import a portfolio from a screenshot</h2>
@@ -729,9 +729,9 @@ ${steps.map(s => `<li>${esc(s)}</li>`).join('\n')}
 <li><strong>Crypto exchanges:</strong> Binance, Coinbase, Kraken, OKX, Bybit, KuCoin, Gate.io, Bitfinex, Gemini, Crypto.com</li>
 <li><strong>Wallets:</strong> MetaMask, Trust Wallet, Phantom, Ledger Live, Exodus, Atomic Wallet, Rainbow</li>
 <li><strong>Stock brokers:</strong> Robinhood, Fidelity, Charles Schwab, TD Ameritrade, Interactive Brokers, eToro, Trading 212</li>
-<li><strong>Other:</strong> Brokerage account statements, trade confirmation emails, bank statements showing investment balances, handwritten or printed holding lists</li>
+<li><strong>Other:</strong> Brokerage account statements, trade confirmation emails, bank statements showing investment balances, printed holding lists</li>
 </ul>
-<p>If the layout is unusual or the AI misses a field, the editable review step lets you correct it before saving — so even unsupported formats work in practice.</p>
+<p>If the layout is unusual or a field is missed, the editable review step lets you correct it before saving — so even unsupported formats work in practice.</p>
 
 <h2>What asset types can be extracted</h2>
 <p>WalletLens tracks crypto, US stocks, metals (gold, silver, platinum), and cash. Screenshot import supports all of them:</p>
@@ -752,7 +752,7 @@ ${steps.map(s => `<li>${esc(s)}</li>`).join('\n')}
 </ul>
 
 <h2>Privacy and data security</h2>
-<p>Your screenshot is sent to the WalletLens AI processing service only to extract the holdings data. It is not stored, logged, or shared. Once the AI returns the extracted data, the image is discarded. The extracted holdings are saved exclusively to your browser's local storage — they never reach a WalletLens server, and they are not associated with any account (because there are no accounts).</p>
+<p>Your screenshot never leaves your device. WalletLens reads it with a text reader that runs inside the app itself, so there is no upload, no server and nothing to store, log or share. The reader is downloaded once on first use (about 7 MB) and works offline after that. The extracted holdings are saved exclusively to your browser's local storage — they never reach a WalletLens server, and they are not associated with any account (because there are no accounts).</p>
 <p>This means your financial data is as private as anything stored on your own device. No employee of WalletLens can see your holdings, and there is no database to be breached.</p>
 
 ${faq.html}
@@ -761,7 +761,7 @@ ${faq.html}
   write('/import-portfolio-from-screenshot', buildPage({
     path: '/import-portfolio-from-screenshot',
     title: 'Import Your Portfolio From a Screenshot — Free | WalletLens',
-    description: 'WalletLens reads a screenshot of any exchange, broker or wallet and extracts every holding automatically — no manual entry, no API key, no account. Free AI screenshot portfolio import.',
+    description: 'WalletLens reads a screenshot of any exchange, broker or wallet and extracts every holding automatically — no manual entry, no API key, no account, and the image never leaves your phone. Free screenshot portfolio import.',
     bodyHtml: body,
     jsonLd: [
       {

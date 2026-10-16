@@ -85,8 +85,13 @@ describe('the Report button in the app', () => {
     expect(read('components/AssistantChat.jsx')).toMatch(/<AiReport surface="assistant"/)
     expect(read('components/AIDecisionEngine.jsx')).toMatch(/result\.source === 'ai' && <AiReport surface="decision"/)
     expect(read('components/GrowthPlan.jsx')).toMatch(/<AiReport surface="growth_plan"/)
-    expect(read('components/SmartImport.jsx')).toMatch(/<AiReport surface="screenshot_import"/)
     expect(read('components/VoiceImport.jsx')).toMatch(/<AiReport surface="voice_import"/)
+  })
+
+  it('is not under screenshot import, which no model writes', () => {
+    // The screenshot is read on the device by text recognition and layout
+    // rules (screenshotParse.js); there is no generated answer to report.
+    expect(read('components/SmartImport.jsx')).not.toMatch(/AiReport/)
   })
 
   it('has an admin page to review reports', () => {

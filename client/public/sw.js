@@ -347,6 +347,12 @@ self.addEventListener('fetch', e => {
     return
   }
 
+  // ── The screenshot reader's engine and model (/ocr/, ~7 MB): left to the
+  // browser's HTTP cache, and the model to the reader's own IndexedDB copy.
+  // Copying them into STATIC as well would store them twice, and again on
+  // every release, for a feature most visits never open.
+  if (url.origin === self.location.origin && url.pathname.startsWith('/ocr/')) return
+
   // ── Same-origin static files (icons, manifest, etc): network with cache fallback
   if (url.origin === self.location.origin) {
     e.respondWith(

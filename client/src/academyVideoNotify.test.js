@@ -104,7 +104,10 @@ describe('the push', () => {
     expect(fetched).toEqual(['https://walletlens.live/academy-videos.json'])
     // The published list carries only linked videos, with what the push needs.
     const pub = mod.publishedVideos(mod.VIDEOS)
-    expect(pub.map(v => v.key).sort()).toEqual(['crash-sale', 'howto-ar-zakat', 'patience-pays', 'stop-loss-skydive'])
+    // Every video with a link, and only those; the scheduled job adds links as
+    // they go live, so the list grows without this test being edited.
+    expect(pub.map(v => v.key).sort()).toEqual(mod.VIDEOS.filter(v => mod.youtubeId(v.youtube)).map(v => v.key).sort())
+    expect(pub.map(v => v.key)).toEqual(expect.arrayContaining(['crash-sale', 'howto-ar-zakat', 'patience-pays', 'stop-loss-skydive']))
     expect(Object.keys(pub[0]).sort()).toEqual(['act', 'added', 'course', 'emoji', 'hack', 'key', 'kind', 'lang', 'name', 'youtube'])
 
     vi.stubGlobal('fetch', async () => { throw new Error('offline') })
