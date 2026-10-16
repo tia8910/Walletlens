@@ -1,13 +1,14 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { noteMoment, noteFriction } from '../reviewPrompt'
 import { noteSupportFriction } from '../supportNudge'
 import { api } from '../api'
-import { reclassifyAsset } from '../data/assets'
-import { parseScreenshotWithClaude } from '../visionAi'
+import { reclassifyAsset, PRESET_ASSETS, POPULAR_TICKERS } from '../data/assets'
+import { IMPORT_COINS } from '../data/importCoins'
+import { readScreenshotWords, warmUpOcr } from '../screenshotOcr'
+import { buildCatalogue, parseHoldingsFromWords } from '../screenshotParse'
 import { track, trackImport, importCompleted, trackProfileCreated } from '../analytics'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
-import AiReport from './AiReport'
 
 // Column header aliases → canonical field names
 const COL_MAP = {
@@ -28,13 +29,34 @@ function detectColumn(headers, field) {
   return -1
 }
 
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result.split(',')[1])
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
+// What the screenshot reader can recognise: the top 1000 coins (by rank, so a
+// shared ticker means the bigger coin), live prices for the top 250 (to tell
+// a price from a value), metals, popular stocks, and whatever is already held.
+// Each fetched source is optional: the bundled IMPORT_COINS keep the big coins
+// recognisable with no network at all.
+async function importCatalogue() {
+  // Each list gets a few seconds: a slow price API must not hold up a reader
+  // that works offline, and a missing list only means fewer names to match.
+  const settle = (p) => Promise.race([
+    Promise.resolve().then(p).catch(() => []),
+    new Promise(r => setTimeout(() => r([]), 5000)),
+  ])
+  const [coins, market, held] = await Promise.all([
+    settle(() => api.getCoinCatalogue()),
+    settle(() => api.getWhaleMarketSnapshot()),
+    settle(() => api.getPortfolio()),
+  ])
+  const list = (x) => (Array.isArray(x) ? x : [])
+  const price = {}
+  for (const m of list(market)) if (m?.symbol && m.current_price > 0) price[String(m.symbol).toUpperCase()] ??= m.current_price
+  return buildCatalogue([
+    ...list(coins).map(c => ({ symbol: c.symbol, name: c.name, rank: c.rank || c.market_cap_rank, price: price[String(c.symbol || '').toUpperCase()] })),
+    ...IMPORT_COINS.map(c => ({ ...c, price: price[c.symbol] })),
+    ...list(market).map(m => ({ symbol: m.symbol, name: m.name, rank: m.market_cap_rank, price: m.current_price })),
+    ...Object.values(PRESET_ASSETS).map(a => ({ symbol: a.symbol, name: a.name.replace(/\s*\(.*\)$/, ''), rank: 0, aliases: [a.name] })),
+    ...POPULAR_TICKERS.map(s => ({ symbol: s.ticker, name: s.name, rank: 5000 })),
+    ...list(held).map(h => ({ symbol: h.coin_symbol, name: h.coin_name, rank: 0 })),
+  ])
 }
 
 function parseSpreadsheet(file) {
@@ -58,8 +80,24 @@ function parseSpreadsheet(file) {
 function filterImageFiles(files) {
   return Array.from(files).filter(f => {
     const ext = (f.name.split('.').pop() || '').toLowerCase()
-    return ['png','jpg','jpeg','webp','gif'].includes(ext)
+    // A phone's picker can hand over "1000012345" with no extension; its type still says image.
+    return ['png','jpg','jpeg','webp','gif'].includes(ext) || /^image\//.test(f.type || '')
   })
+}
+
+// Copy a picked file into memory at once. On Android the picker's file can
+// stop being readable once the input is cleared or leaves the page (it does,
+// as soon as the first thumbnail shows), and the reader opens it later.
+async function snapshotFile(f) {
+  try {
+    const buf = await f.arrayBuffer()
+    if (!buf.byteLength) throw Object.assign(new Error('empty'), { name: 'EmptyFile' })
+    return new File([buf], f.name || 'screenshot', { type: f.type || 'image/png' })
+  } catch (e) {
+    // Keep it, with why it could not be read: the reader reports that.
+    f.readError = `${e?.name || 'Error'}:${f.size || 0}`
+    return f
+  }
 }
 
 // ── Which asset a row is ──────────────────────────────────────────────────────
@@ -147,9 +185,9 @@ function MultiDragZone({ busy, onFiles, compact = false }) {
   const [over, setOver] = useState(false)
   const inputRef = useRef()
 
-  const handle = useCallback((fileList) => {
+  const handle = useCallback(async (fileList) => {
     const imgs = filterImageFiles(fileList)
-    if (imgs.length) onFiles(imgs)
+    if (imgs.length) onFiles(await Promise.all(imgs.map(snapshotFile)))
   }, [onFiles])
 
   return (
@@ -167,7 +205,11 @@ function MultiDragZone({ busy, onFiles, compact = false }) {
         accept="image/*"
         multiple
         style={{ display: 'none' }}
-        onChange={e => { handle(e.target.files); e.target.value = '' }}
+        onChange={e => {
+          // Read the files before clearing the input (see snapshotFile).
+          const input = e.target
+          handle(Array.from(input.files || [])).finally(() => { input.value = '' })
+        }}
       />
       <span className="si-dropzone-icon"><Icon name={compact ? 'plus' : 'camera'} size={compact ? 18 : 24} /></span>
       <span className="si-dropzone-label">
@@ -278,14 +320,14 @@ function ReviewTable({ rows, onChange, onRemove }) {
 /**
  * Whether this failure means the image could not be READ, or could not be SENT.
  *
- * visionAi throws a written sentence when no endpoint answered, and a bare
- * TypeError when the request itself never completed. Either way nothing about
- * the screenshot is at fault, and telling someone to take a clearer photo is
- * the worst possible response.
+ * The screenshot is read on the device, but the reader itself has to be
+ * downloaded once. A first use with no connection fails before the image is
+ * looked at, and telling someone to take a clearer photo then is the worst
+ * possible response.
  */
 function isUnreachable(e) {
   const m = String(e?.message || e || '')
-  return /Failed to fetch|NetworkError|Load failed|AI endpoint|unavailable/i.test(m)
+  return /ocr_unavailable|Failed to fetch|NetworkError|Load failed/i.test(m)
 }
 
 export default function SmartImport({ wallets, onImported, defaultMode = 'excel' }) {
@@ -310,8 +352,12 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
   }
   function removeRow(i) { setRows(prev => prev.filter((_, idx) => idx !== i)) }
 
+  // The reader is ~7 MB on first use: start fetching it as soon as the
+  // screenshot tab is open, not when the first picture arrives.
+  useEffect(() => { if (mode === 'screenshot') warmUpOcr() }, [mode])
+
   // ── Multi-screenshot handler ───────────────────────────────────────────────
-  // Processes files sequentially so we don't hammer the AI endpoint in parallel.
+  // Each screenshot is read on the device, one at a time (one reader).
   // Each screenshot transitions through: queued → reading → done|error.
   // Extracted rows are appended to the existing table so the user can build up
   // the full picture from multiple exchanges / wallets before hitting Import.
@@ -336,6 +382,10 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     const batch = []
     let errors = 0
     let unreachable = false
+    let crashed = ''
+    let heic = false
+    // The word lists load while the first screenshot is being read.
+    const catalogueP = importCatalogue()
 
     for (let i = 0; i < files.length; i++) {
       const thumbIdx = startIdx + i
@@ -344,10 +394,8 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       setPreviews(prev => prev.map((p, idx) => idx === thumbIdx ? { ...p, status: 'reading' } : p))
 
       try {
-        const file = files[i]
-        const base64    = await fileToBase64(file)
-        const mediaType = file.type || 'image/png'
-        const extracted = await parseScreenshotWithClaude(base64, mediaType)
+        const words = await readScreenshotWords(files[i])
+        const extracted = parseHoldingsFromWords(words, await catalogueP)
 
         if (!Array.isArray(extracted) || !extracted.length) {
           setPreviews(prev => prev.map((p, idx) => idx === thumbIdx ? { ...p, status: 'error', count: 0 } : p))
@@ -383,6 +431,14 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
         // which is advice to re-photograph an exchange for a request that was
         // never sent. A failure to reach the reader is not a failure to read.
         unreachable = unreachable || isUnreachable(e)
+        // Anything else is the reader breaking, which is not the screenshot's
+        // fault either; it gets its own message and the console gets the cause.
+        if (!isUnreachable(e)) {
+          console.error('screenshot reader', e)
+          const m = String(e?.message || e || '')
+          if (m === 'image_heic') heic = true
+          else crashed = crashed || m.slice(0, 90) || 'unknown'
+        }
         errors++
       }
     }
@@ -395,7 +451,11 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
         // Gold or cash read as a ticker is priced under its own id.
         const idOf = (r) => { const a = pick(r.symbol, r.name); return reclassifyAsset(a.coin_id, a.coin_symbol, a.category)?.coin_id || a.coin_id }
         const ids = [...new Set(current.map(idOf))]
-        const px = ids.length ? await Promise.resolve(api.getPrices(ids.join(','))).catch(() => ({})) : {}
+        // Bounded like the word lists: reading works offline, so the price check must not hang on a dead network.
+        const px = ids.length ? await Promise.race([
+          Promise.resolve(api.getPrices(ids.join(','))).catch(() => ({})),
+          new Promise(r => setTimeout(() => r({}), 6000)),
+        ]) : {}
         const tidy = tidyImportRows(current, r => Number(px?.[idOf(r)]?.usd) || 0)
         setRows(tidy)
         totalAdded = tidy.length
@@ -411,6 +471,13 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     } else if (unreachable) {
       trackImport({ method: 'screenshot', step: 'failed', reason: 'unreachable' })
       showMsg(t('errImportUnreachable'))
+    } else if (heic) {
+      trackImport({ method: 'screenshot', step: 'failed', reason: 'heic' })
+      showMsg(t('errScreenshotHeic'))
+    } else if (crashed) {
+      trackImport({ method: 'screenshot', step: 'failed', reason: 'reader_error' })
+      // The short cause rides along, so a report of this screen says what broke.
+      showMsg(`${t('errScreenshotReader')} (${crashed})`)
     } else {
       trackImport({ method: 'screenshot', step: 'failed', reason: 'nothing_detected' })
       showMsg(t('errNoHoldingsDetected'))
@@ -601,7 +668,6 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
       {rows.length > 0 && (
         <>
           <ReviewTable rows={rows} onChange={changeRow} onRemove={removeRow} />
-          {mode === 'screenshot' && <AiReport surface="screenshot_import" compact output={() => JSON.stringify(rows.slice(0, 40))} />}
 
           {/* Add more screenshots while reviewing */}
           {mode === 'screenshot' && (

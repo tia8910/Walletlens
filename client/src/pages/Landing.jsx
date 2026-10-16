@@ -454,7 +454,7 @@ export default function Landing() {
           <FeatureCard delay={160} accent="244,114,182"
             icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>}
             title="📸 No API Key? Take a Photo"
-            desc="Exchanges guard their API keys and half of them never give you one. So point your camera at the balances screen instead. The AI reads the rows out of the image, symbol, amount and cost, and hands them to you to check before anything is saved. Works the same on a broker statement or a wallet app."
+            desc="Exchanges guard their API keys and half of them never give you one. So point your camera at the balances screen instead. Your phone reads the rows out of the image, symbol, amount and cost, without uploading it, and hands them to you to check before anything is saved. Works the same on a broker statement or a wallet app."
           />
           <FeatureCard delay={0} accent="96,165,250"
             icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>}

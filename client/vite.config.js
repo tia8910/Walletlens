@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { readFileSync, writeFileSync } from 'fs'
+import { readFileSync, writeFileSync, copyFileSync, mkdirSync, existsSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { visualizer } from 'rollup-plugin-visualizer'
@@ -74,6 +74,40 @@ const BUILD_ID = (() => {
 })()
 
 
+// The screenshot reader runs on the device: tesseract.js in a web worker, its
+// WebAssembly core and the English model, all served from this origin under
+// /ocr/ so no image, and no request about one, leaves the user's phone. The
+// files come straight from node_modules (pinned in package-lock), copied into
+// the build and served from there in dev. They are fetched only when someone
+// opens screenshot import, then kept by the browser (the model in IndexedDB).
+const OCR_FILES = {
+  'worker.min.js': 'tesseract.js/dist/worker.min.js',
+  // The worker picks one by what the device supports; LSTM only, as recognize uses.
+  'tesseract-core-relaxedsimd-lstm.wasm.js': 'tesseract.js-core/tesseract-core-relaxedsimd-lstm.wasm.js',
+  'tesseract-core-simd-lstm.wasm.js': 'tesseract.js-core/tesseract-core-simd-lstm.wasm.js',
+  'tesseract-core-lstm.wasm.js': 'tesseract.js-core/tesseract-core-lstm.wasm.js',
+  'eng.traineddata.gz': '@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz',
+}
+function ocrAssetsPlugin() {
+  const src = (f) => resolve(__dirname, 'node_modules', OCR_FILES[f])
+  return {
+    name: 'ocr-assets',
+    configureServer(server) {
+      server.middlewares.use('/ocr/', (req, res, next) => {
+        const f = decodeURIComponent((req.url || '').split('?')[0].replace(/^\//, ''))
+        if (!OCR_FILES[f]) return next()
+        res.setHeader('Content-Type', f.endsWith('.js') ? 'text/javascript' : 'application/octet-stream')
+        res.end(readFileSync(src(f)))
+      })
+    },
+    closeBundle() {
+      if (!existsSync(resolve(__dirname, 'dist'))) return
+      mkdirSync(resolve(__dirname, 'dist/ocr'), { recursive: true })
+      for (const f of Object.keys(OCR_FILES)) copyFileSync(src(f), resolve(__dirname, 'dist/ocr', f))
+    },
+  }
+}
+
 // Bundle the Pages functions into dist/_worker.js, so a zip deploy carries them.
 //
 // Cloudflare compiles functions/ only when the deploy runs through
@@ -132,6 +166,7 @@ export default defineConfig({
     react(),
     swVersionPlugin(),
     pagesWorkerPlugin(),
+    ocrAssetsPlugin(),
     // Bundle visualizer: run `ANALYZE=true npm run build` to generate dist/stats.html
     process.env.ANALYZE && visualizer({
       filename: 'dist/stats.html',
