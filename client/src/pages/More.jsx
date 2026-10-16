@@ -118,6 +118,7 @@ export default function More() {
         <h2>{t('nlAboutGroup')}</h2>
         {[
           { icon: 'info', label: t('about'), to: '/about' },
+          { icon: 'monitor', label: 'YouTube', to: '/youtube' },
           { icon: 'message', label: t('faq'), to: '/faq' },
           { icon: 'news', label: t('blog'), to: '/blog' },
           // A static page, not an app route: a full page load, and never in the

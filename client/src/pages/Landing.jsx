@@ -843,6 +843,8 @@ export default function Landing() {
           <span>·</span>
           <button className="lp-link" onClick={() => navigate('/academy')}>Academy</button>
           <span>·</span>
+          <button className="lp-link" onClick={() => navigate('/youtube')}>YouTube</button>
+          <span>·</span>
           <button className="lp-link" onClick={() => navigate('/dashboard', { state: { tab: 'ai' } })}>Advisor</button>
         </div>
       </section>
