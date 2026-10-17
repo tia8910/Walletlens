@@ -975,6 +975,7 @@ export default {
     siSymbol: 'Symbol',
     siName: 'Name',
     siPriceUsd: 'Kurs (USD)',
+    siQuote: 'Abgerechnet in',
     siClear: 'Leeren',
     // ── Rebalance panel ─────────────────────────────────────────
     rbRebalance: 'Rebalancing',

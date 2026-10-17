@@ -39,6 +39,7 @@ const NOT_NAMES = new Set(['total', 'value', 'balance', 'balances', 'price', 'ho
   'stacks', 'core', 'origin', 'story', 'sonic', 'render', 'graph', 'status', 'just', 'ever', 'safe', 'echo', 'frax'])
 const TOTAL_WORDS = /^(total|estimated|est\.?|net|balance|portfolio|equity|worth)$/i
 const UNIT_WORDS = /^(shares?|sh|oz|ounces?|units?|coins?|tokens?|grams?|g|lb)$/i
+const CARD_LABEL = /^(amount|qty|quantity|price|filled|executed|size|avg\.?)$/i
 const PRICE_LABEL = /^(price|last|mark|avg|average|cost|entry)$/i
 const VALUE_LABEL = /^(value|balance|worth|equity|total)$/i
 const AMOUNT_LABEL = /^(amount|qty|quantity|holdings?|available|units|size)$/i
@@ -113,6 +114,21 @@ function tokenize(words) {
     const text = String(w.text || '').trim().replace(/^[([{]+|[)\]},;:]+$/g, '')
     if (!text) continue
     const base = { x0: w.x0, y0: w.y0, x1: w.x1, y1: w.y1, h: Math.max(1, w.y1 - w.y0) }
+    // An order card writes "filled / total": "3,213.3/3,213.3", "1,000/". Two
+    // figures, the first one counts. (Three parts is a date, left whole.)
+    const parts = text.split('/')
+    if (parts.length === 2 && parts.every(x => /^[\d.,]*$/.test(x)) && parts.some(x => /\d/.test(x))) {
+      let at = 0
+      parts.forEach((part, k) => {
+        if (part) {
+          const x0 = w.x0 + (w.x1 - w.x0) * at / text.length, x1 = w.x0 + (w.x1 - w.x0) * (at + part.length) / text.length
+          // "1,000/" ends with the slash: the figure after it is the second half.
+          out.push({ ...base, text: part, x0, x1, pair: true, second: k === 1, slashAfter: k === 0 && !parts[1] })
+        }
+        at += part.length + 1
+      })
+      continue
+    }
     const glued = text.match(/^([+-]?[\d.,]+)([A-Za-z]{2,10})$/)
     if (glued && !/^[kmb]$/i.test(glued[2])) {
       const cut = w.x0 + (w.x1 - w.x0) * glued[1].length / text.length
@@ -152,13 +168,14 @@ function findAnchors(tokens, cat) {
   }
   tokens.forEach((t, i) => {
     if (used.has(i)) return
-    const pair = t.text.match(/^([A-Z0-9]{2,10})[/-](USDT|USDC|USD|BUSD|EUR|BTC|ETH)$/)
+    const pair = t.text.match(/^([A-Z0-9]{2,10})[/-](USDT|USDC|FDUSD|USD|BUSD|DAI|EUR|TRY|BTC|ETH|BNB)$/)
     const sym = (pair ? pair[1] : t.text).replace(/[^A-Z0-9]/g, '')
     if (!/^[A-Z][A-Z0-9]{1,9}$/.test(t.text.replace(/[/-].*$/, '')) || NOT_ANCHORS.has(sym)) return
     const entry = cat.bySymbol.get(sym)
     if (!entry) return
     used.add(i)
-    anchors.push({ entry, kind: 'ticker', idx: [i], ...box([t]) })
+    // "SEI/USDT": the trade was against USDT, which the import books too.
+    anchors.push({ entry, kind: 'ticker', idx: [i], quote: pair ? pair[2] : '', ...box([t]) })
   })
   return anchors
 }
@@ -187,6 +204,8 @@ function groupAnchors(anchors) {
 }
 
 function classify(tok, prev, next, symbol) {
+  // The second figure of "filled / total" repeats the order, not a value.
+  if (tok.second || (prev && (prev.text === '/' || prev.slashAfter) && sameLine(prev, tok))) return null
   let text = tok.text
   const money = MONEY.test(text) || (prev && /^(US\$|\$|€|£|≈|~|=)$/.test(prev.text) && sameLine(prev, tok))
   text = text.replace(MONEY, '').replace(/^[+-]/, '')
@@ -200,6 +219,8 @@ function classify(tok, prev, next, symbol) {
   const fiatAfter = FIAT_CODE.test(after) && after.toUpperCase() !== symbol
   const strong = !!nextSame && (after.toUpperCase() === symbol || UNIT_WORDS.test(after))
   const label = prevSame ? (PRICE_LABEL.test(prevSame.text) ? 'price' : VALUE_LABEL.test(prevSame.text) ? 'value' : AMOUNT_LABEL.test(prevSame.text) ? 'amount' : null) : null
+  // Half of an "a/b" pair counts only on a labelled line: "7/7" alone is a page counter.
+  if (tok.pair && !label) return null
   return { value, money: money || fiatAfter, strong: strong || label === 'amount', label: label === 'amount' ? null : label, h: tok.h, tok }
 }
 
@@ -222,11 +243,12 @@ function solveRow(nums, symbol, market) {
     const v = money.find(n => market > 0 && !nearMarket(n) && n.label !== 'price')
     return v ? { amount: v.value / market, price: market } : null
   }
+  // A figure the screen calls the price is the price.
+  const lp = money.find(n => n.label === 'price')
+  if (lp) return { amount, price: lp.value }
   for (const p of money) for (const v of money) {
     if (p !== v && Math.abs(amount * p.value - v.value) <= v.value * 0.015 + 0.01) return { amount, price: p.value }
   }
-  const lp = money.find(n => n.label === 'price')
-  if (lp) return { amount, price: lp.value }
   const lv = money.find(n => n.label === 'value')
   if (lv) return { amount, price: lv.value / amount }
   if (!money.length) return { amount, price: 0 }
@@ -294,8 +316,17 @@ export function parseHoldingsFromWords(words, catalogue) {
     const prevG = groups[gi - 1], nextG = groups[gi + 1]
     const top = Math.max(prevG ? (prevG.cy + g.cy) / 2 : -Infinity, g.y0 - g.h * 2.2)
     const bottom = Math.min(nextG ? (nextG.cy + g.cy) / 2 : Infinity, g.y1 + g.h * 2.6)
+    // An order or trade card puts "Amount" and "Price" several lines under
+    // the pair. A line that starts with such a label belongs to the card,
+    // down to the next card.
+    const far = Math.min(nextG ? nextG.y0 - nextG.h * 0.3 : Infinity, g.y1 + g.h * 10)
+    const labelled = (t) => tokens.some(o => sameLine(o, t) && o.x1 < t.x0 && CARD_LABEL.test(o.text))
     const band = []
-    tokens.forEach((t, i) => { if (!anchorIdx.has(i) && (t.y0 + t.y1) / 2 >= top && (t.y0 + t.y1) / 2 < bottom) band.push(i) })
+    tokens.forEach((t, i) => {
+      const cy = (t.y0 + t.y1) / 2
+      if (anchorIdx.has(i) || cy < top) return
+      if (cy < bottom || (cy < far && labelled(t))) band.push(i)
+    })
 
     const nums = []
     for (const i of band) {
@@ -315,12 +346,17 @@ export function parseHoldingsFromWords(words, catalogue) {
     if (!solved || !(solved.amount > 0) || !Number.isFinite(solved.amount)) return
     const words = band.map(i => tokens[i].text.toLowerCase())
     const type = words.some(w => /^(sell|sold)$/.test(w)) && !words.some(w => /^(buy|bought)$/.test(w)) ? 'sell' : 'buy'
+    // The trade's day, when the card shows one ("2026-10-17", "2026/10/17").
+    const day = band.map(i => tokens[i].text.match(/^(\d{4})[-/.](\d{2})[-/.](\d{2})$/)).find(Boolean)
+    const date = day && +day[2] >= 1 && +day[2] <= 12 && +day[3] >= 1 && +day[3] <= 31 ? `${day[1]}-${day[2]}-${day[3]}` : null
     rows.push({
       symbol: g.symbol,
       name: g.entry.name,
       amount: +solved.amount.toPrecision(10),
       price: solved.price > 0 ? +solved.price.toPrecision(10) : 0,
       type,
+      ...(date ? { date } : {}),
+      ...(g.members.find(m => m.quote) ? { quote: g.members.find(m => m.quote).quote } : {}),
     })
   })
   return rows

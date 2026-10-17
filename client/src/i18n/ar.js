@@ -1041,6 +1041,7 @@ export default {
     siSymbol: 'الرمز',
     siName: 'الاسم',
     siPriceUsd: 'السعر (دولار)',
+    siQuote: 'التسوية بـ',
     siClear: 'مسح',
     // ── Rebalance panel ─────────────────────────────────────────
     rbRebalance: 'إعادة التوازن',
