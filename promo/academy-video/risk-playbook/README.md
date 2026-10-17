@@ -1,6 +1,6 @@
 # The Risk Playbook: Academy long video
 
-A 64-second, 16:9 cinematic story in a 3D toy-brick style (minifigure-style characters on a studded baseplate), rendered with bloom, film grading, letterbox moments, a freeze-frame and VHS rewind, and a slow-motion dolly zoom. Story: at 3 a.m. Trump posts "100% TARIFFS" (named, appearing as a Lego caricature in a press-room set) and Rex's cat coin crashes. Three days earlier an influencer said "to the moon", the boy called his friend a boomer and asked an AI about 10x leverage ("probably fine"). His friend follows the Risk Playbook. The next morning he posts "just kidding, deal coming". The film covers four of the six rules on screen, and the teacher's board completes all six.
+A 64-second, 16:9 cinematic story in a 3D toy-brick style (minifigure-style characters on a studded baseplate), rendered with bloom, film grading, letterbox moments, a freeze-frame and VHS rewind, and a slow-motion dolly zoom. Story: at 3 a.m. Trump posts "100% TARIFFS" (named, appearing as a Lego caricature in a press-room set) and the boy's cat coin crashes. Three days earlier an influencer said "to the moon", the boy called his friend a boomer and asked an AI about 10x leverage ("probably fine"). His friend follows the Risk Playbook. The next morning he posts "just kidding, deal coming". The film covers four of the six rules on screen, and the teacher's board completes all six.
 
 | File | What it is |
 |---|---|
