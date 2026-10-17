@@ -45,11 +45,37 @@ def reporters():
         a = say('Mister President!' if j % 2 == 0 else 'Mister President! Sir!', v, 1.25) * (.6 + .4 * rng.random())
         i = int(off * SR); a = a[: len(out) - i]; out[i:i + len(a)] += a
     return verb(filt(out, 'high', 150), IR_PRESS, .3)
+# Trump: a parody character voice built here, not a clone. A blend of Kokoro styles that lands in his
+# speaking range (~120 Hz, wide swings), delivered phrase by phrase with dramatic pauses, the
+# signature words punched and drawn out, then a nasal, raspy podium-mic treatment.
+POTUS = (.4 * k.get_voice_style('am_onyx') + .3 * k.get_voice_style('am_santa') + .3 * k.get_voice_style('am_adam')).astype(np.float32)
+PUNCH = ('tremendous', 'huge', 'nobody', 'hundred', 'everything', 'believe', 'beautiful', 'welcome', 'hello', 'panic', 'moon', 'seen', 'maybe')
+def peak(x, f, gain_db, q=1.2):  # RBJ peaking EQ
+    A = 10 ** (gain_db / 40); w = 2 * np.pi * f / SR; al = np.sin(w) / (2 * q)
+    b = [1 + al * A, -2 * np.cos(w), 1 - al * A]; a = [1 + al / A, -2 * np.cos(w), 1 - al / A]
+    from scipy.signal import lfilter; return lfilter(np.array(b) / a[0], np.array(a) / a[0], x)
+def potus(text, room):
+    frags = [f.strip() for f in re.split(r'(?<=[.!?])\s+', clean(text)) if f.strip()]
+    for f_ in (1.0, 1.08, 1.16, 1.25, 1.35, 1.45, 1.55):  # re-voice faster (never pitch-shift) until it fits its slot
+        parts = []
+        for f in frags:
+            punch = any(w in f.lower() for w in PUNCH)
+            parts.append((say(f, POTUS, (.8 if punch else .9) * f_) * (1.25 if punch else 1.0), (.42 if f.endswith(('.', '!')) else .25) / f_))
+        speech = sum(len(a) for a, _ in parts) / SR; gaps = sum(g for _, g in parts[:-1])
+        if speech + gaps * .45 <= room: break
+    if speech + gaps > room: sc = max(.45, (room - speech) / gaps) if gaps else 0; parts = [(a, g * sc) for a, g in parts]
+    out = np.concatenate([np.concatenate([a, np.zeros(int(g * SR))]) for a, g in parts[:-1]] + [parts[-1][0]])
+    out = filt(filt(out, 'high', 140), 'low', 7500); out = peak(out, 1150, 7, 1.4); out = peak(out, 2800, 3, 1.0); out = peak(out, 260, -3, .8)
+    env = np.abs(out); env = np.convolve(env, np.ones(240) / 240, 'same')
+    rasp = filt(rng.standard_normal(len(out)), 'band', [1800, 5500]) * env * .9
+    out = np.tanh((out + rasp) / (np.abs(out).max() + 1e-9) * 2.4)
+    return verb(out, IR_PRESS, .2)
 man, lips = [], {}
 for e in EV:
     if e[1] != 'vo': continue
     t0, text, room, who, key, i = e[0], e[2], e[3], e[4], e[5], e[6]
     if who == 'r': a = reporters(); sp = 1.25
+    elif who == 't': a = potus(text, room); sp = 0
     else:
         voice, sp, pf, kind = CAST[who]; txt = clean(text)
         a = say(txt, voice, sp); need = len(a) / SR * pf
