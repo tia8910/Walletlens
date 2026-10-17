@@ -1,27 +1,98 @@
-# Egyptian Arabic voice-over: recording script
+# Egyptian Arabic voice-over: recording script (5-minute cut)
 
-There are 13 lines. Record each one as its own WAV file (`01.wav` … `13.wav`, mono or stereo, any sample rate) in one folder. Then run:
+There are 90 lines. Record each one as its own WAV file (`01.wav`, `02.wav`, …) in one folder, then run `./make.sh ar path/to/folder`.
 
-```bash
-./make.sh ar path/to/that/folder
-```
+The tone is a funny Egyptian storyteller with comic timing, like a friend telling a story from school. Our characters have no names (هو / صاحبه); Trump is named. Keep each line inside its time slot; if a line runs long, say it a little faster rather than cutting words.
 
-The tone is a funny Egyptian storyteller, like a friend telling a story from school with comic timing. Keep each line inside its time slot. If a line runs long, say it a little faster rather than cutting words. Our characters have no names (هو / صاحبه). Trump is named in lines 01 and 11 only, quoting his real tariff posts. Keep it light and playful, not insulting.
-
-| # | Starts at | Max length | Line | Delivery |
+| # | Starts at | Max length | Line | Scene |
 |---|---|---|---|---|
-| 01 | 0:00.2 | 4.2 s | الساعة تلاتة الفجر، ترامب كتب: جمارك مية في المية. | News-anchor drama, then a beat |
-| 02 | 0:04.5 | 2.2 s | صاحبه كان نايم. استنى القاعدة رقم ستة. | Teasing, a promise |
-| 03 | 0:07.1 | 2.7 s | أيوه، ده هو. اشترى عملة قطة عشان إنفلونسر قال كده. | Deadpan, the freeze-frame meme |
-| 04 | 0:12.4 | 5.8 s | قبلها بتلات أيام، إنفلونسر قال: على القمر. باع جهاز الألعاب ودخل بكل فلوسه. | Mock-hype on "على القمر" |
-| 05 | 0:18.7 | 1.8 s | صاحبه قاله: خمسة في المية بالكتير. | Calm, matter of fact |
-| 06 | 0:20.5 | 1.9 s | رد عليه: ماشي يا حاج. | Cheeky |
-| 07 | 0:22.5 | 2.4 s | صاحبه عنده خمستاشر سنة. | Dry punchline, pause first |
-| 08 | 0:25.7 | 2.1 s | سأل ذكاء اصطناعي، قاله: غالباً تمام. | Ironic |
-| 09 | 0:31.9 | 1.9 s | اتصفّى. كله تمام. | Low and slow, then sarcastic "كله تمام" |
-| 10 | 0:34.2 | 6.8 s | صاحبه وقت الكراش؟ رايق. الخروج باع عند سالب عشرة، والكاش اشترى النزلة. | Confident, the turnaround |
-| 11 | 0:41.9 | 7.0 s | تاني يوم الصبح ترامب كتب: بهزر، في اتفاق جاي. السوق رجع طلع. وسأل صاحبه: علّمني الخطة. | Comic timing; the boy's question embarrassed |
-| 12 | 0:49.6 | 5.9 s | قبل البوست الجاي الساعة تلاتة الفجر، شوف محفظتك. والت لينز بينبّهك لو أي حاجة عدّت خمسة في المية. | Direct, friendly advice |
-| 13 | 0:57.5 | 6.0 s | والت لينز. تتبّع كل أصولك وإدارة استثماراتك. ومتنساش تتابعنا. | Brand sign-off, smiling |
-
-The on-screen captions in the Arabic cut follow these same lines.
+| 01 | 0:00.6 | 1.8 s | ٣:٠٧ الفجر. | 3:07 AM |
+| 02 | 0:02.6 | 3.4 s | في مكان ما، رئيس دولة مش جايله نوم. | 3:07 AM |
+| 03 | 0:06.2 | 3.5 s | فتح موبايله. | 3:07 AM |
+| 04 | 0:10.4 | 2.1 s | وكتب أربع كلمات: | The post |
+| 05 | 0:12.7 | 4.0 s | "جمارك ١٠٠٪ على كل حاجة." | The post |
+| 06 | 0:17.8 | 2.3 s | على الناحية التانية، موبايله نوّر. | Across town |
+| 07 | 0:20.4 | 2.6 s | عملة القطة بتاعته: −٥٠٪. | Across town |
+| 08 | 0:23.2 | 2.9 s | الساعة ٣ الفجر. وعنده مدرسة الصبح. | Across town |
+| 09 | 0:26.3 | 1.3 s | أيوه. ده هو. | Across town |
+| 10 | 0:27.9 | 2.3 s | أكيد بتسأل نفسك وصل لكده إزاي. | Across town |
+| 11 | 0:35.8 | 3.0 s | قبلها بتلات أيام، إنفلونسر عمل لايف. | To the moon |
+| 12 | 0:39.0 | 2.9 s | "عملة القطة على القمر 🚀." | To the moon |
+| 13 | 0:42.2 | 3.0 s | "مش نصيحة مالية 😉." | To the moon |
+| 14 | 0:45.4 | 2.5 s | الفصل كله صدّقه. | To the moon |
+| 15 | 0:48.2 | 2.6 s | وهو أكتر واحد صدّق. | To the moon |
+| 16 | 0:51.4 | 3.8 s | بالليل، باع جهاز الألعاب. | Sold |
+| 17 | 0:55.4 | 4.3 s | وحط آخر جنيه معاه في عملة واحدة. | Sold |
+| 18 | 1:00.5 | 2.4 s | صاحبه كان عنده قاعدة واحدة للعملات الجديدة: | Ok boomer |
+| 19 | 1:03.1 | 2.4 s | خمسة في المية. بالكتير. | Ok boomer |
+| 20 | 1:05.8 | 2.8 s | "ماشي يا حاج." | Ok boomer |
+| 21 | 1:08.8 | 1.9 s | صاحبه عنده ١٥ سنة. | Ok boomer |
+| 22 | 1:11.0 | 1.8 s | حتى السلحفاة اتضايقت. | Ok boomer |
+| 23 | 1:13.5 | 3.3 s | صاحبه قبل ما يشتري، بيقرا. كتير. | Research |
+| 24 | 1:17.0 | 2.3 s | أربعين صفحة ملاحظات. | Research |
+| 25 | 1:19.6 | 3.2 s | بحثه هو: فيديو واحد. سبع ثواني. | Research |
+| 26 | 1:23.0 | 3.3 s | القاعدة التانية: الرهان الكبير بس على اللي فاهمه. | Research |
+| 27 | 1:26.6 | 2.2 s | هو كان فاهم إن المزيكا حلوة. | Research |
+| 28 | 1:29.4 | 2.6 s | بعدين ورّاه باقي العملات. | Thirty coins |
+| 29 | 1:32.2 | 2.0 s | تلاتين عملة. | Thirty coins |
+| 30 | 1:34.4 | 1.8 s | "اشرحلي واحدة." | Thirty coins |
+| 31 | 1:36.4 | 1.9 s | "…إحساس." | Thirty coins |
+| 32 | 1:38.6 | 3.2 s | القاعدة الخامسة: امتلك أقل، واعرف أكتر. | Thirty coins |
+| 33 | 1:42.5 | 3.8 s | صاحبه بيحدد هيخرج إمتى قبل ما يشتري. | Exit first |
+| 34 | 1:46.5 | 3.3 s | نزلت عشرة في المية؟ برا. من غير دراما. | Exit first |
+| 35 | 1:50.0 | 2.6 s | القاعدة التالتة: حدد خروجك الأول. | Exit first |
+| 36 | 1:52.8 | 2.1 s | "الخروج ده للي بيستسلموا." | Exit first |
+| 37 | 1:55.2 | 1.6 s | قالها. بثقة. | Exit first |
+| 38 | 1:57.4 | 2.8 s | صاحبه دايماً شايل شوية كاش. | Keep cash |
+| 39 | 2:00.4 | 2.8 s | خمستاشر في المية. جاهز لأي أوكازيون. | Keep cash |
+| 40 | 2:03.4 | 2.5 s | القاعدة الرابعة: خلّي كاش للنزلة. | Keep cash |
+| 41 | 2:06.2 | 2.2 s | فلوس الغدا بتاعته؟ برضه في عملة القطة. | Keep cash |
+| 42 | 2:08.6 | 1.2 s | الغدا كان هوا. | Keep cash |
+| 43 | 2:10.4 | 3.8 s | وفي نفس الوقت، الأخبار صوتها بيعلى. | Louder |
+| 44 | 2:14.4 | 2.8 s | كلام عن الجمارك. إشاعات. هيصة. | Louder |
+| 45 | 2:17.4 | 2.3 s | محدش كان عنده خطة. غير ولد واحد. | Louder |
+| 46 | 2:20.4 | 2.8 s | بالليل، جاتله فكرة. | Ask the AI |
+| 47 | 2:23.4 | 2.4 s | سأل شات بوت ذكاء اصطناعي: | Ask the AI |
+| 48 | 2:26.0 | 2.6 s | "أستخدم رافعة عشر أضعاف؟" | Ask the AI |
+| 49 | 2:28.8 | 2.1 s | "غالباً تمام 👍." | Ask the AI |
+| 50 | 2:31.2 | 1.6 s | ماكانش تمام. | Ask the AI |
+| 51 | 2:33.4 | 2.1 s | داس عليها. | The shark |
+| 52 | 2:35.8 | 2.5 s | عشر أضعاف الفلوس. سلف. | The shark |
+| 53 | 2:38.6 | 2.6 s | وفي حاجة بدأت تلف حواليه. | The shark |
+| 54 | 2:41.4 | 2.3 s | قرش التصفية. | The shark |
+| 55 | 2:44.4 | 3.0 s | وبعدين… ٣:٠٧ الفجر. | Back to 3:07 |
+| 56 | 2:47.6 | 4.2 s | دلوقتي عرفت وصل لكده إزاي. | Back to 3:07 |
+| 57 | 2:52.3 | 4.2 s | نازل خمسين في المية. برافعة عشر أضعاف. | Chomp |
+| 58 | 2:56.7 | 1.6 s | هَمّ. | Chomp |
+| 59 | 2:58.6 | 2.2 s | اتصفّى. | Chomp |
+| 60 | 3:01.0 | 2.9 s | القاعدة السادسة: عمرك ما تستلف عشان تراهن. | Chomp |
+| 61 | 3:04.2 | 2.6 s | "كله تمام." | Chomp |
+| 62 | 3:07.5 | 2.9 s | وفي نفس الوقت، صاحبه كان نايم. | Meanwhile |
+| 63 | 3:10.6 | 3.4 s | الخروج باع عند سالب عشرة. لوحده. | Meanwhile |
+| 64 | 3:14.2 | 2.4 s | والكاش اشترى النزلة. | Meanwhile |
+| 65 | 3:16.8 | 1.9 s | والسلحفاة كانت بتشخّر. | Meanwhile |
+| 66 | 3:19.5 | 2.6 s | تاني يوم الصبح، ترامب كتب تاني: | Just kidding |
+| 67 | 3:22.4 | 3.4 s | "بهزر. في اتفاق جاي 🤝." | Just kidding |
+| 68 | 3:26.0 | 3.8 s | والسوق رجع طلع على طول. | Just kidding |
+| 69 | 3:30.5 | 2.9 s | هو كان اتصفّى خلاص. | The bottom |
+| 70 | 3:33.6 | 3.6 s | باع في القاع. بالظبط. | The bottom |
+| 71 | 3:37.4 | 3.3 s | صاحبه كسبان. ونايم كويس. | The bottom |
+| 72 | 3:41.0 | 3.8 s | "…ممكن تعلّمني؟" | The bottom |
+| 73 | 3:45.5 | 4.3 s | فصاحبه علّمه دليل المخاطر. | The shield |
+| 74 | 3:50.0 | 3.8 s | ست قواعد. ست طوبات. | The shield |
+| 75 | 3:54.0 | 3.8 s | خمسة في المية. افهم. حدد خروجك. | The shield |
+| 76 | 3:58.0 | 3.4 s | خلّي كاش. امتلك أقل. ومتستلفش. | The shield |
+| 77 | 4:01.6 | 3.1 s | مع بعض بيعملوا درع. | The shield |
+| 78 | 4:05.5 | 3.0 s | وبعدين نزّل والت لينز. | WalletLens |
+| 79 | 4:08.8 | 4.0 s | كريبتو، أسهم، دهب وكاش. كله في مكان واحد. | WalletLens |
+| 80 | 4:13.0 | 3.3 s | بينبّهك لو أي حاجة عدّت خمسة في المية. | WalletLens |
+| 81 | 4:16.6 | 4.7 s | وبيمسكله الخروج. حتى الساعة ٣ الفجر. | WalletLens |
+| 82 | 4:22.0 | 4.5 s | بعدها بأسبوع. ٣:٠٧ الفجر. | One week later |
+| 83 | 4:26.7 | 3.0 s | "جمارك ٢٠٠٪!!!" | One week later |
+| 84 | 4:29.9 | 2.5 s | المرة دي، كان نايم. | One week later |
+| 85 | 4:32.7 | 2.2 s | الموبايل على وشه. والخطة شغالة. | One week later |
+| 86 | 4:35.1 | 2.2 s | القرش خبط في الدرع. طاخ. | One week later |
+| 87 | 4:37.5 | 2.4 s | ترامب استنى الذعر. | One week later |
+| 88 | 4:40.1 | 2.1 s | "…ألو؟" | One week later |
+| 89 | 4:44.2 | 4.0 s | والت لينز. تتبّع كل أصولك وإدارة استثماراتك. | WalletLens |
+| 90 | 4:48.5 | 3.8 s | ومتنساش تتابعنا. | WalletLens |

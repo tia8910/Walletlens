@@ -1,33 +1,25 @@
-# Builds soundtrack.wav for the Risk Playbook video:
-#   narration (Kokoro TTS, one line per scene, fitted to the scene length)
-#   + a punchy music bed (808 drums/bass, builds, a heavy hit on the crash) that ducks under the voice
-#   + story sound effects (phone buzz, record scratch, party horn, crowd, power-up, slide whistle,
-#     cash register, applause, chalk, logo shimmer) and the UI sounds the renderer logged in events.json.
-# Everything is synthesised or generated locally, so there is nothing to license.
-#   python3 soundtrack.py [voice] [events.json] [lang]
-#     voice: am_michael (default) | af_heart | ... | none | a folder of recorded lines (01.wav, 02.wav, ...)
-#     lang:  en (default) | ar  (Egyptian Arabic script; Kokoro has no Arabic voice, so use 'none' or recordings)
-import json, sys, wave
+# Builds soundtrack3_<lang>.wav for the 5-minute Risk Playbook film, entirely from the cues the renderer
+# logged (frames*-events.json): scene starts with their music style, narration lines with their slot,
+# and sound effects (pings, typing, splash, chomp, bonk, applause, ...). Everything is synthesised or
+# generated locally (Kokoro TTS for English narration), so nothing needs a licence.
+#   python3 soundtrack3.py <voice|none|recordings-folder> <events.json> <en|ar>
+import json, os, sys, wave
 import numpy as np
 from scipy.signal import butter, sosfilt, fftconvolve, resample_poly
 
-import os
-TTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tts')
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-SR = 48000
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
 VOICE = sys.argv[1] if len(sys.argv) > 1 else 'am_michael'
+EVENTS = sys.argv[2] if len(sys.argv) > 2 else 'events.json'
 LANG = sys.argv[3] if len(sys.argv) > 3 else 'en'
-SCENES = [('hook', 10.8), ('party', 7.5), ('ollie', 7), ('lev', 8.5), ('plan', 7.5), ('end', 8), ('cta', 6.5), ('outro', 8)]
-FREEZE, REWIND = 6.8, 9.8          # hook: freeze frame, then VHS rewind into the party
-CRASH, SLOW_END, FALL, LAND = 2.55, 4.2, 5.67, 6.27   # lev, real seconds
-TOTAL = sum(d for _, d in SCENES)
-N = int(TOTAL * SR)
-S = {}; acc = 0
-for k, d in SCENES: S[k] = acc; acc += d
-rng = np.random.default_rng(11)
+SR = 48000
+ev = json.load(open(EVENTS))
+scenes = [(e[0], e[2], e[3], e[4]) for e in ev if e[1] == 'scene']
+TOTAL = scenes[-1][0] + scenes[-1][2]
+N = int(TOTAL * SR) + SR
+rng = np.random.default_rng(5)
 music = np.zeros((N, 2)); sfx = np.zeros((N, 2)); vo = np.zeros((N, 2))
 
-# ── helpers ──
 def tt(d): return np.arange(int(d * SR)) / SR
 def midi(n): return 440.0 * 2 ** ((n - 69) / 12)
 def filt(x, kind, f): return sosfilt(butter(2, f, kind, fs=SR, output='sos'), x, axis=0)
@@ -40,289 +32,167 @@ def put(buf, t0, sig, gain=1.0, pan=0.0):
     i = int(max(0, t0) * SR)
     if i >= N: return
     sig = sig[: N - i]
-    if sig.ndim == 1:
-        sig = np.stack([sig * np.cos((pan + 1) * np.pi / 4), sig * np.sin((pan + 1) * np.pi / 4)], 1) * 1.414
+    if sig.ndim == 1: sig = np.stack([sig * np.cos((pan + 1) * np.pi / 4), sig * np.sin((pan + 1) * np.pi / 4)], 1) * 1.414
     buf[i:i + len(sig)] += sig * gain
 def noise(d): return rng.standard_normal(int(d * SR))
 def sweep_bp(x, f0, f1, q=1.6):
     out = np.zeros(len(x)); seg = int(SR * 0.015)
     for i in range(0, len(x), seg):
-        fc = f0 * (f1 / f0) ** (i / len(x))
+        fc = f0 * (f1 / f0) ** (i / max(1, len(x)))
         out[i:i + seg] = filt(x[i:i + seg], 'band', [max(40, fc / q), min(SR / 2 - 100, fc * q)])
     return out
 IR = noise(1.6) * np.exp(-np.linspace(0, 6, int(1.6 * SR))); IR = filt(IR, 'low', 6000); IR /= np.sqrt(np.sum(IR ** 2))
-def verb(x, wet=0.25):
-    return x + wet * fftconvolve(x, IR)[: len(x)] if x.ndim == 1 else x
+def verb(x, wet=0.25): return x + wet * fftconvolve(x, IR)[: len(x)]
 
-# ── drums & instruments ──
-def kick(punch=1.0):
+# ── instruments ──
+def kick(p=1.0):
     t = tt(0.45); f = 42 + 130 * np.exp(-t * 32)
-    body = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 7)
-    click = filt(noise(0.45), 'high', 3000) * np.exp(-t * 300) * 0.4
-    return np.tanh((body + click) * 1.8 * punch)
+    return np.tanh((np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 7) + filt(noise(0.45), 'high', 3000) * np.exp(-t * 300) * 0.4) * 1.8 * p)
 def snare():
-    t = tt(0.3); tone = np.sin(2 * np.pi * 190 * t) * np.exp(-t * 25)
-    n = filt(noise(0.3), 'band', [1500, 8000]) * np.exp(-t * 16)
-    return verb(np.tanh((tone * 0.6 + n) * 1.5), 0.18)
+    t = tt(0.3); return verb(np.tanh((np.sin(2 * np.pi * 190 * t) * np.exp(-t * 25) * .6 + filt(noise(0.3), 'band', [1500, 8000]) * np.exp(-t * 16)) * 1.5), .18)
 def clap():
     t = tt(0.25); n = filt(noise(0.25), 'band', [900, 3500]); e = np.zeros(len(t))
     for d in (0, 0.009, 0.018): e += np.exp(-np.maximum(0, t - d) * 35) * (t >= d)
     return verb(n * e * 0.6, 0.3)
 def hat(d=0.05): t = tt(d); return filt(noise(d), 'high', 8000) * np.exp(-t * (6 / d)) * 0.45
-def b808(n, d, glide_from=None):
-    t = tt(d); f = np.full(len(t), midi(n))
-    if glide_from: f = midi(n) + (midi(glide_from) - midi(n)) * np.exp(-t * 18)
-    x = np.sin(2 * np.pi * np.cumsum(f) / SR)
-    return np.tanh(2.2 * x) * np.exp(-t * 1.4) * env(len(t), 0.004, 0.06)
-def supersaw(notes, d, cutoff=2200, det=(-0.15, -0.05, 0.05, 0.15)):
+def b808(n, d):
+    t = tt(d); return np.tanh(2.2 * np.sin(2 * np.pi * midi(n) * t)) * np.exp(-t * 1.4) * env(len(t), 0.004, 0.06)
+def saw(notes, d, cutoff=2200):
     t = tt(d); x = np.zeros(len(t))
     for n in notes:
-        for dd in det: x += 2 * ((t * midi(n) * 2 ** (dd / 12) + rng.random()) % 1) - 1
-    x = filt(x / (len(notes) * len(det)), 'low', cutoff)
-    return x * env(len(t), 0.25, 0.5)
+        for dd in (-0.15, -0.05, 0.05, 0.15): x += 2 * ((t * midi(n) * 2 ** (dd / 12) + rng.random()) % 1) - 1
+    return filt(x / (len(notes) * 4), 'low', cutoff) * env(len(t), 0.25, 0.5)
 def bell(n, d=1.2):
     t = tt(d); f = midi(n)
-    x = sum(a * np.sin(2 * np.pi * f * m * t) * np.exp(-t * dc) for m, a, dc in ((1, 1, 3), (2.76, .5, 5), (5.4, .25, 8), (8.93, .12, 12)))
-    return verb(x * env(len(t), 0.002, 0.1), 0.3)
-def impact(size=1.0):
+    return verb(sum(a * np.sin(2 * np.pi * f * m * t) * np.exp(-t * dc) for m, a, dc in ((1, 1, 3), (2.76, .5, 5), (5.4, .25, 8))) * env(len(t), 0.002, 0.1), 0.3)
+def impact(s=1.0):
     t = tt(3.0); f = 28 + 90 * np.exp(-t * 5)
-    sub = np.tanh(2.5 * np.sin(2 * np.pi * np.cumsum(f) / SR)) * np.exp(-t * 1.3)
-    crack = filt(noise(3.0), 'low', 2500) * np.exp(-t * 6)
-    return verb((sub + crack * 0.7) * size, 0.4)
+    return verb((np.tanh(2.5 * np.sin(2 * np.pi * np.cumsum(f) / SR)) * np.exp(-t * 1.3) + filt(noise(3.0), 'low', 2500) * np.exp(-t * 6) * .7) * s, 0.4)
 def braam(d=4.0):
     t = tt(d); x = np.zeros(len(t))
     for n in (33, 40, 45):
         for dd in (-0.2, 0, 0.2): x += 2 * ((t * midi(n) * 2 ** (dd / 12)) % 1) - 1
-    cut = 300 + 1600 * np.exp(-t * 1.5)
-    out = np.zeros(len(t)); seg = int(SR * 0.02)
-    for i in range(0, len(t), seg): out[i:i + seg] = filt(x[i:i + seg], 'low', cut[i])
-    return np.tanh(out / 4) * np.exp(-t * 0.5) * env(len(t), 0.02, 1.0)
+    return np.tanh(filt(x, 'low', 700) / 4) * np.exp(-t * 0.5) * env(len(t), 0.02, 1.0)
 def riser(d): return sweep_bp(noise(d), 200, 7000) * np.linspace(0, 1, int(d * SR)) ** 2
-def reverse_cymbal(d=1.2): x = filt(noise(d), 'high', 5000) * np.linspace(0, 1, int(d * SR)) ** 3; return x
+def rev_cym(d=1.0): return filt(noise(d), 'high', 5000) * np.linspace(0, 1, int(d * SR)) ** 3
 
-def section(key, chords, bpm, style, cutoff=2400, gain=1.0, start_off=0.0, end_off=0.0):
-    t0 = S[key] + start_off; d = dict(SCENES)[key] - start_off - end_off
-    beat = 60 / bpm; bar = 4 * beat; nb = int(np.ceil(d / bar))
-    for b in range(nb):
+Am, F, C, G, Dm, E = [57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62], [50, 53, 57], [52, 56, 59]
+def section(t0, d, chords, bpm, style, cutoff=2400, g=1.0):
+    beat = 60 / bpm; bar = 4 * beat
+    for b in range(int(np.ceil(d / bar))):
         c = chords[b % len(chords)]; bt = t0 + b * bar
         if bt >= t0 + d: break
-        L = min(bar, t0 + d - bt)
-        put(music, bt, supersaw([n + 12 for n in c], L + 0.3, cutoff), 0.16 * gain, 0)
+        L = min(bar, t0 + d - bt); put(music, bt, saw([n + 12 for n in c], L + .3, cutoff), .15 * g)
         for q in range(4):
             ts = bt + q * beat
             if ts >= t0 + d: break
             if style in ('trap', 'drive'):
-                if q == 0 or (style == 'drive'): put(music, ts, kick(), 0.55 * gain)
-                if q in (1, 3) and style == 'drive': put(music, ts, clap(), 0.38 * gain, -0.05)
-                if q == 2 and style == 'trap': put(music, ts, snare(), 0.42 * gain); put(music, ts, clap(), 0.25 * gain)
-                if q == 3 and style == 'trap' and b % 2 == 1: put(music, ts + beat / 2, kick(.8), 0.4 * gain)
-                nh = 4 if (style == 'trap' and q == 3 and b % 2 == 1) else 2
-                for h in range(nh): put(music, ts + h * beat / nh, hat(), 0.16 * gain, 0.35 if h % 2 else -0.2)
-                if q == 0: put(music, ts, b808(c[0] - 24, beat * 1.9, c[0] - 12 if b % 2 else None), 0.45 * gain)
-                if q == 2 and style == 'drive': put(music, ts, b808(c[0] - 24, beat * 1.9), 0.4 * gain)
-            if style == 'soft':
-                if q % 2 == 0: put(music, ts, kick(.7), 0.35 * gain)
-                put(music, ts + beat / 2, hat(.04), 0.1 * gain, 0.3)
-                if q == 0: put(music, ts, b808(c[0] - 24, bar * 0.9), 0.32 * gain)
-            if style in ('soft', 'drive'):
-                put(music, ts, bell(c[q % 3] + 24, 0.9), 0.07 * gain, -0.4 + 0.8 * (q % 2))
+                if q == 0 or style == 'drive': put(music, ts, kick(), .5 * g)
+                if style == 'drive' and q in (1, 3): put(music, ts, clap(), .34 * g)
+                if style == 'trap' and q == 2: put(music, ts, snare(), .4 * g); put(music, ts, clap(), .22 * g)
+                for h in range(4 if (style == 'trap' and q == 3 and b % 2) else 2): put(music, ts + h * beat / (4 if (style == 'trap' and q == 3 and b % 2) else 2), hat(), .15 * g, .3)
+                if q == 0: put(music, ts, b808(c[0] - 24, beat * 1.9), .42 * g)
+            if style in ('soft', 'gold'):
+                if style == 'soft' and q % 2 == 0: put(music, ts, kick(.7), .3 * g)
+                if style == 'soft': put(music, ts + beat / 2, hat(.04), .08 * g, .3)
+                if q == 0: put(music, ts, b808(c[0] - 24, bar * .9), .26 * g)
+                put(music, ts, bell(c[q % 3] + 24, .9), (.07 if style == 'soft' else .09) * g, -.4 + .8 * (q % 2))
+            if style == 'dark':
+                if q % 2 == 0: put(music, ts, b808(c[0] - 24, beat * 1.8), .4 * g)
+                put(music, ts + beat / 2, hat(.03), .05 * g)
+def score(t0, d, style):
+    if style == 'tense':
+        put(music, t0, saw([45, 52, 57, 60], d + .3, 700), .2)
+        for i in range(int(d / .8)): put(music, t0 + .4 + i * .8, kick(.9), .38); put(music, t0 + .6 + i * .8, kick(.6), .22)
+        put(music, t0 + d - 1.0, riser(1.0), .18)
+    elif style == 'trap': section(t0, d, [C, G, Am, F], 140, 'trap', 3400); put(music, t0, impact(.7), .35)
+    elif style == 'soft': section(t0, d, [F, C, G, Am], 92, 'soft', 1700)
+    elif style == 'drive': section(t0, d, [F, G, C, Am], 120, 'drive', 3600)
+    elif style == 'dark': section(t0, d, [Dm, Am, Dm, E], 84, 'dark', 900); put(music, t0, saw([38, 45, 50], d, 500), .18)
+    elif style == 'gold': section(t0, d, [C, F, Am, G], 80, 'gold', 2600, .9)
+    elif style == 'crash':
+        put(music, t0, impact(1.4), 1.0); put(music, t0, braam(6.0), .55)
+        for i in range(4): put(music, t0 + .4 + i * .7, kick(1.2), .45)
+        section(t0 + 6.5, d - 6.5, [Am, F, Dm, E], 84, 'dark', 900, .8)
+    elif style == 'outro':
+        put(music, t0 + .15, impact(.55), .32); put(music, t0 + .15, saw([48, 55, 60, 64, 67, 72], d - .2, 2800), .2); put(music, t0 + .15, b808(36, 4), .28)
+for t0, key, d, style in scenes:
+    if style != 'none': score(t0, d, style)
+    put(music, t0 - .8, rev_cym(.8), .22)
 
-Am, F, C, G, Dm, E = [57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62], [50, 53, 57], [52, 56, 59]
-
-# ── music ──
-# hook: dark drone + heartbeat, impact on frame 1
-drone = supersaw([45, 52, 57, 60], FREEZE + .05, 700); drone[-int(.04 * SR):] *= np.linspace(1, 0, int(.04 * SR))
-put(music, 0, drone, 0.22)
-put(music, 0.0, impact(1.0), 0.55)
-for i in range(int((FREEZE - 0.5) / 0.8)):
-    put(music, 0.5 + i * 0.8, kick(.9), 0.42); put(music, 0.5 + i * 0.8 + 0.2, kick(.6), 0.26)
-put(music, FREEZE - 0.9, riser(0.9), 0.2)
-put(music, S['party'] - 1.0, reverse_cymbal(1.0), 0.4)
-put(music, S['party'], impact(.8), 0.5)
-# party: bright trap with a drop on the time jump
-section('party', [C, G, Am, F], 140, 'trap', 3600)
-# ollie: chill
-section('ollie', [F, C, G, Am], 90, 'soft', 1700)
-# lev: build, crash
-lv = S['lev']
-put(music, lv, supersaw([50, 57, 62], 2.6, 1400), 0.18)
-for i in range(16): put(music, lv + i * 0.16, snare(), 0.10 + i * 0.016)
-put(music, lv + 0.3, riser(2.25), 0.35)
-put(music, lv + CRASH, impact(1.4), 1.0); put(music, lv + CRASH, braam(5.5), 0.6)
-for i in range(3): put(music, lv + CRASH + 0.3 + i * 0.55, kick(1.2), 0.5)          # slow heartbeat in slow motion
-for i in range(6): put(music, lv + SLOW_END + i * 0.5, kick(1.0), 0.35)
-# plan: rebuild
-section('plan', [Am, F, C, G], 96, 'soft', 1900, gain=.95)
-put(music, S['end'] - 1.0, reverse_cymbal(1.0), 0.35)
-# end: uplifting drive
-put(music, S['end'], impact(.7), 0.4)
-section('end', [F, G, C, Am], 120, 'drive', 3800)
-section('cta', [C, G, F, C], 120, 'soft', 2600, gain=.85)
-put(music, S['outro'] - 0.8, reverse_cymbal(.8), 0.3)
-# outro: warm chord under the logo
-o = S['outro']
-put(music, o + 0.15, impact(.55), 0.35)
-put(music, o + 0.15, supersaw([48, 55, 60, 64, 67, 72], 7.6, 2800), 0.22)
-put(music, o + 0.15, b808(36, 4), 0.3)
-
-# ── story sound effects ──
-def phone_buzz():
-    t = tt(0.32); x = np.sign(np.sin(2 * np.pi * 160 * t)) * (0.5 + 0.5 * np.sin(2 * np.pi * 22 * t))
-    return filt(x, 'low', 900) * env(len(t), 0.01, 0.04)
-def record_scratch():
-    t = tt(0.55); f = 300 + 900 * np.abs(np.sin(2 * np.pi * 3.2 * t))
-    x = np.sin(2 * np.pi * np.cumsum(f) / SR) * 0.4 + sweep_bp(noise(0.55), 600, 2500) * 0.6
-    return x * env(len(t), 0.005, 0.1)
-def party_horn():
-    t = tt(0.7); f = 380 + 220 * np.minimum(1, t / 0.12)
-    x = 2 * ((np.cumsum(f) / SR) % 1) - 1; x = filt(x, 'band', [500, 3500])
-    return x * (1 + 0.3 * np.sin(2 * np.pi * 30 * t)) * env(len(t), 0.02, 0.15)
-def crowd(d=3.0, cheer=True):
-    t = tt(d); out = np.zeros(len(t))
-    for v in range(14):
-        f0 = rng.uniform(180, 420); vib = np.sin(2 * np.pi * rng.uniform(3, 7) * t + rng.random() * 6)
-        voice = sweep_bp(noise(d), f0 * 2.2, f0 * 3.2, 1.3) * (0.5 + 0.5 * vib)
-        out += voice * env(len(t), rng.uniform(.05, .4), rng.uniform(.4, 1.2))
-    out = filt(out, 'band', [250, 4500])
-    return verb(out / 6 * env(len(t), 0.15, 1.0), 0.35)
-def applause(d=4.0, density=90):
-    out = np.zeros(int(d * SR))
-    for _ in range(int(d * density)):
-        c = clap() * rng.uniform(.2, .6); i = int(rng.uniform(0, d - 0.3) * SR); out[i:i + len(c)] += c[: len(out) - i]
-    return filt(out, 'high', 500) * env(len(out), 0.3, 1.2)
-def pop(): t = tt(0.08); return np.sin(2 * np.pi * (900 - 6000 * t) * t) * np.exp(-t * 60)
-def power_up(d=2.0):
-    t = tt(d); f = 200 * (8 ** (t / d)); x = 2 * ((np.cumsum(f) / SR) % 1) - 1
-    return filt(x, 'low', 4000) * (0.5 + 0.5 * np.sin(2 * np.pi * 14 * t)) * env(len(t), 0.05, 0.1) * 0.6
-def slide_whistle(d=0.7):
-    t = tt(d); f = 1800 * (0.25 ** (t / d)); return np.sin(2 * np.pi * np.cumsum(f) / SR) * env(len(t), 0.02, 0.1)
-def thud(): t = tt(0.4); return np.tanh(3 * np.sin(2 * np.pi * (60 + 80 * np.exp(-t * 30)) * t)) * np.exp(-t * 12) + filt(noise(0.4), 'low', 800) * np.exp(-t * 20) * .5
-def ka_ching():
-    out = np.concatenate([filt(noise(0.06), 'band', [2000, 6000]) * np.exp(-tt(0.06) * 60), np.zeros(int(0.05 * SR))])
-    b = bell(88, 1.4) + bell(93, 1.4) * 0.7
-    return np.concatenate([out, b])
-def chalk(d=4.4):
-    out = np.zeros(int(d * SR)); i = 0
-    while i < len(out):
-        n = noise(rng.uniform(.08, .22)); L = len(n); s = filt(n, 'band', [2500, 7000]) * env(L, 0.01, 0.03) * rng.uniform(.3, .8)
-        out[i:i + L] += s[: len(out) - i]; i += L + int(rng.uniform(.02, .12) * SR)
-    return out
-def click(): t = tt(0.05); return filt(noise(0.05), 'band', [1500, 5000]) * np.exp(-t * 120)
-def shimmer(d=2.2):
-    out = np.zeros(int(d * SR))
-    for i, n in enumerate([84, 88, 91, 96, 100, 103]):
-        b = bell(n, 1.5) * 0.5; j = int(i * 0.09 * SR); out[j:j + len(b)] += b[: len(out) - j]
-    return out
-
-for i in range(3): put(sfx, 0.35 + i * 0.45, phone_buzz(), 0.45, 0.3)
-put(sfx, S['party'] + 0.2, party_horn(), 0.35, -0.5); put(sfx, S['party'] + 0.6, party_horn(), 0.3, 0.5)
-put(sfx, S['party'] + 0.1, crowd(4.5), 0.55)
-for i in range(10): put(sfx, S['party'] + 0.1 + rng.uniform(0, 1.2), pop(), 0.18, rng.uniform(-.8, .8))
-put(sfx, lv + 0.3, power_up(2.15), 0.3); put(sfx, lv + 2.42, click(), 0.7)
-put(sfx, lv + FALL - 0.1, slide_whistle(), 0.35); put(sfx, lv + LAND, thud(), 0.65)
-put(sfx, S['plan'] + 1.6, click(), 0.4); put(sfx, S['plan'] + 3.4, ka_ching(), 0.35, 0.2)
-put(sfx, S['end'] + 0.6, applause(5.5), 0.55)
-put(sfx, S['end'] + 2.2, chalk(4.4), 0.12, -0.2)
-put(sfx, S['cta'] + 0.3, pop(), 0.3)
-put(sfx, o + 0.25, shimmer(), 0.4)
-for i in range(3): put(sfx, o + 1.1 + i * 0.1, click(), 0.3)
-
-def rewind_fx(d=1.0):
-    t = tt(d); out = np.zeros(len(t))
-    for k in range(7):
-        f0 = rng.uniform(1500, 3200); seg = np.sin(2 * np.pi * np.cumsum(f0 * (0.35 ** (t / d)) * (1 + .3 * np.sin(2 * np.pi * 40 * t))) / SR)
-        out += seg * np.exp(-((t - k * d / 7) % (d / 7)) * 18) * 0.25
-    return filt(out + sweep_bp(noise(d), 4000, 600) * 0.5, 'band', [300, 6000]) * env(len(t), 0.02, 0.1)
-def slowmo_drop(d=2.4):
-    t = tt(d); f = 160 * (0.25 ** (t / d)); x = np.tanh(2 * np.sin(2 * np.pi * np.cumsum(f) / SR))
-    return verb(x * env(len(t), 0.01, 0.6), 0.5)
-# UI sounds logged by the renderer
+# ── sound effects ──
 def tone(f, d, dec=6, tri=False):
     t = tt(d); w = (2 / np.pi) * np.arcsin(np.sin(2 * np.pi * f * t)) if tri else np.sin(2 * np.pi * f * t)
     return w * np.exp(-t * dec) * env(len(t), 0.004, 0.05)
-def whoosh(v=0.5):
-    t = tt(0.6); x = sweep_bp(noise(0.6), 250, 4000, 1.4)
-    return x * np.sin(np.pi * t / t[-1]) ** 2 * v
+def whoosh(): t = tt(.6); return sweep_bp(noise(.6), 250, 4000, 1.4) * np.sin(np.pi * t / t[-1]) ** 2 * .5
+def ping(): out = np.zeros(int(1.2 * SR)); [out.__setitem__(slice(int(i * .16 * SR), int(i * .16 * SR) + int(.5 * SR)), out[int(i * .16 * SR):int(i * .16 * SR) + int(.5 * SR)] + tone(f, .5, 7)) for i, f in enumerate((1318, 1760, 1318))]; return verb(out, .2)
+def typing(d=2.4):
+    out = np.zeros(int(d * SR)); i = 0
+    while i < len(out) - 2000:
+        c = filt(noise(.03), 'band', [1800, 6000]) * np.exp(-tt(.03) * 160) * rng.uniform(.4, 1); out[i:i + len(c)] += c; i += int(rng.uniform(.07, .16) * SR)
+    return out
+def buzz():
+    t = tt(1.3); x = filt(np.sign(np.sin(2 * np.pi * 160 * t)), 'low', 900); g = ((t % .43) < .3).astype(float); return x * g * .6
+def ka_ching(): return np.concatenate([filt(noise(.06), 'band', [2000, 6000]) * np.exp(-tt(.06) * 60), np.zeros(int(.05 * SR)), bell(88, 1.4) + bell(93, 1.4) * .7])
+def splash(): t = tt(1.4); return verb(filt(noise(1.4), 'band', [300, 4000]) * np.exp(-t * 3) * env(len(t), .02, .4), .4)
+def chomp(): t = tt(.5); return np.tanh(3 * (filt(noise(.5), 'band', [200, 1800]) * np.exp(-t * 14) + np.sin(2 * np.pi * (90 + 60 * np.exp(-t * 20)) * t) * np.exp(-t * 9)))
+def snore(d=3.0):
+    t = tt(d); inh = filt(noise(d), 'band', [150, 900]) * (np.sin(2 * np.pi * t / 1.5) > 0) * (.5 + .5 * np.sin(2 * np.pi * 38 * t)); return inh * env(len(t), .2, .4) * .7
+def bonk(): t = tt(.6); return np.sin(2 * np.pi * (520 * np.exp(-t * 3)) * t) * np.exp(-t * 6) + filt(noise(.6), 'band', [400, 1200]) * np.exp(-t * 30) * .8
+def brick_click(): t = tt(.06); return filt(noise(.06), 'band', [1500, 5000]) * np.exp(-t * 120) + np.sin(2 * np.pi * 1900 * t) * np.exp(-t * 90) * .5
+def applause(d=4.0):
+    out = np.zeros(int(d * SR))
+    for _ in range(int(d * 90)):
+        c = clap() * rng.uniform(.2, .6); i = int(rng.uniform(0, d - .3) * SR); out[i:i + len(c)] += c[: len(out) - i]
+    return filt(out, 'high', 500) * env(len(out), .3, 1.2)
+def scratch():
+    t = tt(.55); f = 300 + 900 * np.abs(np.sin(2 * np.pi * 3.2 * t)); return (np.sin(2 * np.pi * np.cumsum(f) / SR) * .4 + sweep_bp(noise(.55), 600, 2500) * .6) * env(len(t), .005, .1)
+def rewind(d=1.0):
+    t = tt(d); out = np.zeros(len(t))
+    for k in range(7): out += np.sin(2 * np.pi * np.cumsum(rng.uniform(1500, 3200) * (.35 ** (t / d)) * (1 + .3 * np.sin(2 * np.pi * 40 * t))) / SR) * np.exp(-((t - k * d / 7) % (d / 7)) * 18) * .25
+    return filt(out + sweep_bp(noise(d), 4000, 600) * .5, 'band', [300, 6000]) * env(len(t), .02, .1)
+def slowmo(d=2.4): t = tt(d); return verb(np.tanh(2 * np.sin(2 * np.pi * np.cumsum(160 * (.25 ** (t / d))) / SR)) * env(len(t), .01, .6), .5)
 def alarm():
     out = np.zeros(int(1.6 * SR))
     for i in range(4):
-        t = tt(0.32); f = 640 - 220 * t / 0.32; s = filt(2 * ((np.cumsum(f) / SR) % 1) - 1, 'low', 2500) * env(len(t), 0.02, 0.08)
-        j = int(i * 0.36 * SR); out[j:j + len(s)] += s
+        t = tt(.32); s2 = filt(2 * ((np.cumsum(640 - 220 * t / .32) / SR) % 1) - 1, 'low', 2500) * env(len(t), .02, .08); j = int(i * .36 * SR); out[j:j + len(s2)] += s2
     return out
-events = json.load(open(sys.argv[2] if len(sys.argv) > 2 else 'events.json'))
-for e in events:
-    t0, k = e[0], e[1]
-    if k == 'whoosh': put(sfx, t0 - 0.12, whoosh(e[2] if len(e) > 2 else 0.6), 0.5)
-    elif k == 'tick': put(sfx, t0, tone(1600, 0.05, 60), 0.05)
-    elif k == 'ding':
-        put(sfx, t0, verb(tone(988, .7, 4, True), .3), 0.3); put(sfx, t0 + 0.1, verb(tone(1480, .9, 4, True), .3), 0.26)
-    elif k == 'alarm': put(sfx, t0, alarm(), 0.14)
-    elif k == 'chime': pass
-    elif k == 'scratch': put(sfx, t0 - 0.05, record_scratch(), 0.55)
-    elif k == 'rewind': put(sfx, t0, rewind_fx(1.0), 0.45)
-    elif k == 'slowmo': put(sfx, t0, slowmo_drop(), 0.5)
+FX = {'whoosh': (whoosh, .45, -.12), 'ping': (ping, .35, 0), 'typing': (typing, .3, 0), 'buzz': (buzz, .45, 0), 'cash': (ka_ching, .35, 0),
+      'splash': (splash, .5, 0), 'chomp': (chomp, .6, 0), 'snore': (snore, .35, 0), 'bonk': (bonk, .55, 0), 'pop': (brick_click, .4, 0),
+      'applause': (applause, .5, 0), 'scratch': (scratch, .55, -.05), 'rewind': (rewind, .45, 0), 'slowmo': (slowmo, .5, 0), 'alarm': (alarm, .14, 0)}
+for e in ev:
+    k = e[1]
+    if k == 'ding': put(sfx, e[0], verb(tone(988, .7, 4, True), .3), .28); put(sfx, e[0] + .1, verb(tone(1480, .9, 4, True), .3), .24)
+    elif k in FX: fn, g, off = FX[k]; put(sfx, e[0] + off, fn(), g)
+# the freeze frame: music stops dead between the record scratch and the rewind
+sc = [e[0] for e in ev if e[1] == 'scratch']; rw = [e[0] for e in ev if e[1] == 'rewind']
+if sc and rw:
+    a, b = int(sc[0] * SR), int(rw[0] * SR); f = int(.03 * SR); music[a:a + f] *= np.linspace(1, 0, f)[:, None]; music[a + f:b] = 0
 
 # ── narration ──
-from vo import Voice
-LINES = [   # (scene, offset s, text, max length s)
- ('hook', 0.2, "3 a.m. Trump posts: one hundred percent tariffs.", 4.25),
- ('hook', 4.4, "His friend slept fine. Wait for rule six.", 2.4),
- ('hook', 7.05, "Yep, that's him. He bought an influencer's cat coin.", 2.75),
- ('party', 1.6, "Three days earlier, an influencer said: to the moon. He sold his console and went all in.", 5.8),
- ('ollie', 0.4, "His friend: five percent, max.", 1.8),
- ('ollie', 2.2, "He said: okay boomer.", 1.9),
- ('ollie', 4.2, "His friend is fifteen.", 2.4),
- ('lev', 0.3, "He asked an AI: probably fine.", 2.2),
- ('lev', 6.55, "Liquidated. This is fine.", 1.9),
- ('plan', 0.4, "His friend during the crash? Chill. His exit sold at minus ten, and his cash bought the dip.", 6.8),
- ('end', 0.6, "Next morning, Trump: just kidding, deal coming. The market bounced. And he asked: teach me the playbook.", 7.0),
- ('cta', 0.3, "Before the next 3 a.m. post, check your portfolio in WalletLens.", 5.9),
- ('outro', 1.7, "WalletLens. All assets tracker and investment manager. Don't forget to follow us.", 6.0),
-]
-LINES_AR = [   # Egyptian Arabic, same slots
- ('hook', 0.2, "الساعة تلاتة الفجر، ترامب كتب: جمارك مية في المية.", 4.25),
- ('hook', 4.5, "صاحبه كان نايم. استنى القاعدة رقم ستة.", 2.25),
- ('hook', 7.05, "أيوه، ده هو. اشترى عملة قطة عشان إنفلونسر قال كده.", 2.7),
- ('party', 1.6, "قبلها بتلات أيام، إنفلونسر قال: على القمر. باع جهاز الألعاب ودخل بكل فلوسه.", 5.8),
- ('ollie', 0.4, "صاحبه قاله: خمسة في المية بالكتير.", 1.8),
- ('ollie', 2.2, "رد عليه: ماشي يا حاج.", 1.9),
- ('ollie', 4.2, "صاحبه عنده خمستاشر سنة.", 2.4),
- ('lev', 0.35, "سأل ذكاء اصطناعي، قاله: غالباً تمام.", 2.15),
- ('lev', 6.55, "اتصفّى. كله تمام.", 1.9),
- ('plan', 0.4, "صاحبه وقت الكراش؟ رايق. الخروج باع عند سالب عشرة، والكاش اشترى النزلة.", 6.8),
- ('end', 0.6, "تاني يوم الصبح ترامب كتب: بهزر، في اتفاق جاي. السوق رجع طلع. وسأل صاحبه: علّمني الخطة.", 7.0),
- ('cta', 0.3, "قبل البوست الجاي الساعة تلاتة الفجر، شوف محفظتك. والت لينز بينبّهك لو أي حاجة عدّت خمسة في المية.", 5.9),
- ('outro', 1.7, "والت لينز. تتبّع كل أصولك وإدارة استثماراتك. ومتنساش تتابعنا.", 6.0),
-]
-if LANG == 'ar': LINES = LINES_AR
-k = Voice(os.path.join(TTS, 'model_q8.onnx'), os.path.join(TTS, 'voices.npz')) if VOICE != 'none' and not os.path.isdir(VOICE) else None
-def recorded(i):
-    w = wave.open(os.path.join(VOICE, f'{i + 1:02d}.wav')); sr = w.getframerate(); ch = w.getnchannels()
-    a = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768
-    return (a.reshape(-1, ch).mean(1) if ch > 1 else a), sr
-for i, (key, off, text, room) in enumerate(LINES):
-    if VOICE == 'none': continue
+lines = [(e[0], e[2], e[3]) for e in ev if e[1] == 'vo']
+if VOICE != 'none':
     if os.path.isdir(VOICE):
-        a, sr = recorded(i); a = filt(resample_poly(a, SR, sr), 'high', 90); a = a / (np.max(np.abs(a)) + 1e-9) * 0.9
-        put(vo, S[key] + off, verb(a, 0.06), 1.0, 0); print(f'  VO {key:6s} @{off:4.1f}s recorded {len(a)/SR:4.1f}s'); continue
-    speed = 1.05
-    a, sr = k.create(text, voice=VOICE, speed=speed, lang='en-us')
-    if len(a) / sr > room:
-        speed = min(1.45, speed * (len(a) / sr) / room); a, sr = k.create(text, voice=VOICE, speed=speed, lang='en-us')
-    a = resample_poly(a, SR, sr)
-    a = filt(a, 'high', 90); a = a / (np.max(np.abs(a)) + 1e-9) * 0.9
-    put(vo, S[key] + off, verb(a, 0.06), 1.0, 0)
-    print(f'  VO {key:6s} @{off:4.1f}s {len(a)/SR:4.1f}s of {room:.1f}s  speed {speed:.2f}')
+        for i, (t0, text, room) in enumerate(lines):
+            p = os.path.join(VOICE, f'{i + 1:02d}.wav')
+            if not os.path.exists(p): continue
+            w = wave.open(p); sr = w.getframerate(); ch = w.getnchannels(); a = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768
+            a = a.reshape(-1, ch).mean(1) if ch > 1 else a; a = filt(resample_poly(a, SR, sr), 'high', 90); put(vo, t0, verb(a / (np.abs(a).max() + 1e-9) * .9, .06), 1.0)
+    else:
+        from vo import Voice
+        k = Voice(os.path.join(HERE, 'tts', 'model_q8.onnx'), os.path.join(HERE, 'tts', 'voices.npz'))
+        for t0, text, room in lines:
+            speed = 1.05; a, sr = k.create(text, voice=VOICE, speed=speed, lang='en-us')
+            if len(a) / sr > room: speed = min(1.3, speed * (len(a) / sr) / max(.5, room)); a, sr = k.create(text, voice=VOICE, speed=speed, lang='en-us')
+            a = filt(resample_poly(a, SR, sr), 'high', 90); put(vo, t0, verb(a / (np.abs(a).max() + 1e-9) * .9, .06), 1.0)
+            print(f'  VO @{t0:6.1f}s {len(a)/SR:4.1f}s/{room:4.1f}s x{speed:.2f}  {text[:48]}')
 
-# ── mix: duck music under the voice, glue, limit ──
-ve = np.abs(vo[:, 0]) + 1e-12; win = int(0.12 * SR)
-ve = np.convolve(ve, np.ones(win) / win, 'same'); ve = ve / (ve.max() + 1e-9)
-duck = 1 - 0.55 * np.clip(ve * 4, 0, 1)
-mix = music * duck[:, None] * 0.8 + sfx * (1 - 0.25 * np.clip(ve * 4, 0, 1))[:, None] + vo * 1.05
-fade = int(2.0 * SR); mix[-fade:] *= np.linspace(1, 0, fade)[:, None]
-mix = mix / (np.percentile(np.abs(mix), 99.9) + 1e-9) * 0.7
-mix = np.tanh(mix * 1.3) / np.tanh(1.3) * 0.92
-pcm = (np.clip(mix, -1, 1) * 32767).astype(np.int16)
-with wave.open(f'soundtrack_{LANG}.wav', 'wb') as w:
-    w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes(pcm.tobytes())
-print('soundtrack.wav', TOTAL, 's', len(events), 'events, voice', VOICE, 'lang', LANG)
+# ── mix ──
+ve = np.abs(vo[:, 0]) + 1e-12; win = int(.12 * SR); ve = np.convolve(ve, np.ones(win) / win, 'same'); ve = ve / (ve.max() + 1e-9)
+d = np.clip(ve * 4, 0, 1)
+mix = music * (1 - .55 * d)[:, None] * .8 + sfx * (1 - .25 * d)[:, None] + vo * 1.05
+mix = mix[: int(TOTAL * SR)]; fade = int(2 * SR); mix[-fade:] *= np.linspace(1, 0, fade)[:, None]
+mix = mix / (np.percentile(np.abs(mix), 99.9) + 1e-9) * .7; mix = np.tanh(mix * 1.3) / np.tanh(1.3) * .92
+with wave.open(os.path.join(HERE, f'soundtrack_{LANG}.wav'), 'wb') as w:
+    w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes((np.clip(mix, -1, 1) * 32767).astype(np.int16).tobytes())
+print(f'soundtrack_{LANG}.wav {TOTAL:.1f}s · {len(scenes)} scenes · {len(lines)} lines · voice {VOICE}')

@@ -24,9 +24,8 @@ rep("    if(SCENES[cur].key!=='outro')(composer||renderer).render(composer?undef
     "    if(SCENES[cur].key!=='outro'&&DRAW)(composer||renderer).render(composer?undefined:scene,composer?undefined:camera)}\n  updateCap()}")
 s=s.replace('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/','pp/')
 # sound events recorded in render mode
-rep("const SFX=(()=>{","const SFX0=(()=>{")
-rep("// ── player ───────────────────────────────────────────────────────────────",
- "const SFX=new Proxy(SFX0,{get(o,k){if(k==='toggle')return o.toggle;return(...a)=>{if(RENDER)window.__events.push([+vNow.toFixed(3),k,...a]);return o[k](...a)}}});\n// ── player ───────────────────────────────────────────────────────────────")
+rep("const SFX=new Proxy(SFX0,{get(o,k){return o[k]||(()=>{})}});",
+ "const SFX=new Proxy(SFX0,{get(o,k){if(k==='toggle')return o.toggle;return(...a)=>{if(RENDER)window.__events.push([+vNow.toFixed(3),k,...a]);return o[k]?o[k](...a):undefined}}});")
 rep("if(!document.hidden)setTimeout(()=>screen.classList.remove('whip'),520);","if(!RENDER&&!document.hidden)setTimeout(()=>screen.classList.remove('whip'),520);")
 # no rAF / thumbnails in render mode; expose stepper
 rep("resize();show(start);requestAnimationFrame(frame);",

@@ -229,7 +229,9 @@ tr:last-child td{border-bottom:0}
 #chk{top:9.6%}
 .rules{left:2.2%!important;right:auto!important;top:14.4%!important;border-radius:99px!important;padding:.38cqw 1cqw!important;background:rgba(10,13,20,.6)!important;border:1px solid rgba(255,255,255,.16)!important;gap:.4cqw!important;box-shadow:none!important}
 .rules .k{font-family:'Plus Jakarta Sans',sans-serif!important;letter-spacing:0!important;font-size:1.3cqw!important;color:#d9dee8!important;text-transform:none}
-.rules i{width:1.55cqw!important;height:1.55cqw!important;font-size:.9cqw!important;border-radius:.4cqw!important}
+.rules i{width:1.9cqw!important;height:1.2cqw!important;font-size:.85cqw!important;border-radius:.25cqw!important;position:relative;background:#2a3142;border-color:rgba(255,255,255,.18)!important}
+.rules i::after{content:'';position:absolute;left:50%;top:-.45cqw;width:.75cqw;height:.4cqw;margin-left:-.375cqw;border-radius:.2cqw .2cqw 0 0;background:inherit;border:inherit;border-bottom:0}
+.rules i.on{background:#22b04f!important;border-color:#86efac!important;color:#fff!important}
 @media (prefers-reduced-motion:reduce){.cap.pop{animation:none}.grain,.o-rays{animation:none}}
 </style>
 
@@ -243,9 +245,9 @@ tr:last-child td{border-bottom:0}
   <section class="stage h" id="stage">
     <div class="player">
       <div class="screen" id="screen">
-        <div class="logo-wm" id="logo"><svg viewBox="5 5 54 54" aria-hidden="true"><defs><linearGradient id="wlw" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ade80"/><stop offset=".5" stop-color="#22c55e"/><stop offset="1" stop-color="#15803d"/></linearGradient></defs><g fill="none" transform="translate(32 32) scale(0.8) translate(-25 -30.5)"><circle class="ring" cx="27" cy="25" r="19" stroke="url(#wlw)" stroke-width="5.5"/><circle class="dot" cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/><rect class="bar" x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="url(#wlw)"/><rect class="bar" x="21.5" y="21" width="5" height="13" rx="1.2" fill="url(#wlw)"/><rect class="bar" x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="url(#wlw)"/><line class="hdl" x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wlw)" stroke-width="5.5" stroke-linecap="round"/></g></svg><b>WalletLens</b></div><div class="rules" id="rules"><span class="k" id="rulesK">Rules learned</span><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i></div><div class="chapter" id="chapter"><div class="n"></div><div class="h"></div><div class="ln"></div></div><div class="lb t" id="lbt"></div><div class="lb b" id="lbb"></div><div class="rw" id="rw" hidden><b>◀◀ REWIND</b><span>SP · 3 DAYS EARLIER</span></div><div class="vig3"></div><div class="grain" id="grain"></div><div class="flash" id="flash"></div><div class="outro" id="outro"></div>
+        <div class="logo-wm" id="logo"><svg viewBox="5 5 54 54" aria-hidden="true"><defs><linearGradient id="wlw" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ade80"/><stop offset=".5" stop-color="#22c55e"/><stop offset="1" stop-color="#15803d"/></linearGradient></defs><g fill="none" transform="translate(32 32) scale(0.8) translate(-25 -30.5)"><circle class="ring" cx="27" cy="25" r="19" stroke="url(#wlw)" stroke-width="5.5"/><circle class="dot" cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/><rect class="bar" x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="url(#wlw)"/><rect class="bar" x="21.5" y="21" width="5" height="13" rx="1.2" fill="url(#wlw)"/><rect class="bar" x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="url(#wlw)"/><line class="hdl" x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wlw)" stroke-width="5.5" stroke-linecap="round"/></g></svg><b>WalletLens</b></div><div class="rules" id="rules"><span class="k" id="rulesK">Risk Playbook</span><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i></div><div class="chapter" id="chapter"><div class="n"></div><div class="h"></div><div class="ln"></div></div><div class="lb t" id="lbt"></div><div class="lb b" id="lbb"></div><div class="rw" id="rw" hidden><b>◀◀ REWIND</b><span>SP · 3 DAYS EARLIER</span></div><div class="vig3"></div><div class="grain" id="grain"></div><div class="flash" id="flash"></div><div class="outro" id="outro"></div>
         <div class="title-card" id="tcard"></div>
-        <div class="band"></div><div class="pill" id="chk"></div><div class="cap" id="cap"></div>
+        <div class="band"></div><div class="cap" id="cap"></div>
       </div>
       <div class="controls">
         <button class="btn" id="prev" aria-label="Previous scene">◀</button>
@@ -321,44 +323,166 @@ tr:last-child td{border-bottom:0}
 let NOW=()=>performance.now();
 const AR=/(^#|-)ar(-|$)/.test(location.hash);const TX=(en,ar)=>AR?ar:en;const REDRAW=[];
 // ── scenes data (used even if WebGL is unavailable) ──────────────────────
+// ── the 5-minute story: each scene carries its own lines (EN/AR), setup, acting and camera ──
+// set: caf | bed | press | ins (an empty dark space for full-screen screens). look: lighting preset.
+// lines: [time, English, Egyptian Arabic] — shown as captions and spoken by the narrator.
+const V3={};
+const BX=40, INS={x:-40,y:2.1,z:0};
+const KF=()=>V(0,1.95,-1.05), FF=()=>V(1.0,1.95,-1.05), KB=()=>V(BX+.8,2.1,-2.3);
 const SCENES=[
- {key:'hook',tc:'0:00',name:'The 3 AM post',d:'3:07 AM. Trump posts “100% TARIFFS”. his cat coin crashes −50% and he screams. Freeze frame, then a VHS rewind.',dur:10.8,
-  caps:[[0.3,'3:07 AM. Trump posts'],[1.7,'<em>“100% TARIFFS!!!”</em>'],[2.9,'his coin: <em class="r">−50%</em>'],[4.5,'his friend <em>slept fine</em>'],[5.7,'stay for <em>rule 6</em>'],[6.8,''],[7.1,'yep. that’s him.'],[8.1,'he bought a cat coin'],[9.0,'because <em>an influencer</em> said so'],[9.8,'']],
-  capsAr:[[0.3,'٣ الفجر، ترامب كتب'],[1.7,'<em>"جمارك ١٠٠٪!!!"</em>'],[2.9,'عملته: <em class="r">−٥٠٪</em>'],[4.5,'صاحبه <em>كان نايم</em>'],[5.7,'استنى <em>القاعدة ٦</em>'],[6.8,''],[7.1,'أيوه… ده هو.'],[8.1,'اشترى عملة قطة'],[9.0,'عشان <em>إنفلونسر</em> قال كده'],[9.8,'']],
-  rule:'Why survival wins (open loop: rule 6)',vo:'3 a.m. Trump posts: one hundred percent tariffs. his friend slept fine. Wait for rule six. That’s the kid. He bought an influencer’s cat coin.'},
- {key:'party',tc:'0:20',name:'To the moon',d:'An influencer on the big screen: “Cat coin to the moon, not financial advice 😉”. the kid sells his console and goes all in while the class parties.',dur:7.5,title:'3 DAYS EARLIER…',titleAr:'قبلها بـ ٣ أيام…',
-  caps:[[0,''],[1.7,'an influencer said'],[2.9,'<em>“TO THE MOON 🚀”</em>'],[4.4,'he sold his <em>console</em>'],[5.8,'and went <em>ALL IN</em>']],
-  capsAr:[[0,''],[1.7,'إنفلونسر قال'],[2.9,'<em>"على القمر 🚀"</em>'],[4.4,'باع <em>جهاز الألعاب</em>'],[5.8,'ودخل <em>بكل فلوسه</em>']],
-  rule:'Why survival wins',vo:'Three days earlier, an influencer said: to the moon. the kid sold his console and went all in.'},
- {key:'ollie',tc:'1:00',name:'OK boomer',d:'his friend: “5% max in new coins.” the kid: “OK boomer.” his friend: “I’m fifteen.”',dur:7,chapter:['RULE 1 OF 6','THE 5% RULE'],chapterAr:['القاعدة ١ من ٦','قاعدة الـ ٥٪'],collect:[[1,2.4]],
-  caps:[[0.4,'his friend: <em>“5% max.”</em>'],[2.2,'him: “ok <em>boomer</em>”'],[4.2,'his friend: “I’m <em>fifteen</em>”']],
-  capsAr:[[0.4,'صاحبه: <em>"٥٪ بالكتير"</em>'],[2.2,'هو: "ماشي يا <em>حاج</em>"'],[4.2,'صاحبه: "أنا عندي <em>١٥ سنة</em>"']],
-  rule:'1 · The 5% rule',vo:'his friend said: five percent, max. the kid said: okay boomer. his friend is fifteen.'},
- {key:'lev',tc:'3:00',name:'Ask the AI',d:'the kid asks an AI chatbot “10x leverage?” — “Probably fine 👍”. He slams 10x, the 3 AM post hits, slow-motion crash, fall, “this is fine” 🔥.',dur:8.5,chapter:['RULE 6 OF 6','NEVER BORROW'],chapterAr:['القاعدة ٦ من ٦','متستلفش أبداً'],collect:[[6,6.4]],
-  caps:[[0.4,'he asked an AI chatbot'],[1.4,'<em>“10x? probably fine 👍”</em>'],[2.5,''],[6.9,'<em class="r">LIQUIDATED</em>'],[7.7,'“this is fine” 🔥']],
-  capsAr:[[0.4,'سأل شات بوت ذكاء اصطناعي'],[1.4,'<em>"١٠ أضعاف؟ غالباً تمام 👍"</em>'],[2.5,''],[6.9,'<em class="r">اتصفّى</em>'],[7.7,'"كله تمام" 🔥']],
-  rule:'6 · No leverage',vo:'He asked an AI. It said: probably fine. Liquidated. This is fine.'},
- {key:'plan',tc:'5:00',name:'his friend during the crash',d:'his friend calm in golden light: his exit auto-sold at −10%, then his cash bought the dip. the kid on the floor, crying.',dur:7.5,chapter:['RULES 3 + 4','EXIT FIRST · KEEP CASH'],chapterAr:['القاعدتين ٣ + ٤','حدد خروجك · خلّي كاش'],collect:[[3,2.4],[4,4.6]],
-  caps:[[0.4,'his friend during the crash: 😌'],[2.0,'auto-sold at <em>−10%</em>'],[3.6,'bought the dip with <em>cash</em>']],
-  capsAr:[[0.4,'صاحبه وقت الكراش: 😌'],[2.0,'باع أوتوماتيك عند <em>−١٠٪</em>'],[3.6,'واشترى النزلة <em>بالكاش</em>']],
-  rule:'3 · Exit first + 4 · Spare cash',vo:'his friend during the crash? Chill. His exit sold at minus ten, and his cash bought the dip.'},
- {key:'end',tc:'8:40',name:'Just kidding',d:'Next morning Trump posts “JUST KIDDING, deal coming 🤝” and the market bounces. the kid is already out. “Teach me the playbook.” The board fills in.',dur:8,collect:[[2,4.6],[5,5.4]],
-  caps:[[0.6,'next morning: <em>“JUST KIDDING 🤝”</em>'],[2.6,'the market <em>bounced</em>'],[4.2,'him: “teach me <em>the playbook</em>”']],
-  capsAr:[[0.6,'تاني يوم: <em>"بهزر 🤝"</em>'],[2.6,'السوق <em>رجع طلع</em>'],[4.2,'هو: "علّمني <em>الخطة</em>"']],
-  rule:'All six',vo:'Next morning, Trump: just kidding, deal coming. The market bounced. the kid: teach me the playbook.'},
- {key:'cta',tc:'10:10',name:'Before the next post',d:'A giant phone shows WalletLens flagging a coin that breaks the 5% rule. his friend waves.',dur:6.5,
-  caps:[[0.3,'before the next'],[1.4,'<em>3 AM post</em>'],[2.6,'check your portfolio']],
-  capsAr:[[0.3,'قبل البوست الجاي'],[1.4,'<em>الساعة ٣ الفجر</em>'],[2.6,'شوف محفظتك']],
-  rule:'Try it',vo:'Before the next 3 a.m. post, check your portfolio. WalletLens flags anything over five percent.'},
- {key:'outro',tc:'10:20',name:'WalletLens ending',d:'Black screen, the WalletLens app icon builds itself, then “All Assets Tracker & Investment Manager” and “Don’t forget to follow us”.',dur:8,caps:[[0,'']],capsAr:[[0,'']],rule:'Brand ending',
-  vo:'WalletLens. All assets tracker and investment manager. Don’t forget to follow us.'}
+ {key:'c_trump',name:'3:07 AM',set:'press',look:'pressNight',music:'tense',dur:10,
+  d:'Trump, in bricks, can’t sleep. He picks up his phone in the dark press room.',
+  lines:[[0.6,'3:07 AM.','٣:٠٧ الفجر.'],[2.6,'Somewhere, a world leader can’t sleep.','في مكان ما، رئيس دولة مش جايله نوم.'],[6.2,'He opens his phone.','فتح موبايله.']],
+  setup(){place(chars.trump,0,13.75)},
+  update(t){trumpType(t,t<4?'tsmug':'tpout');if(t>6.2)once('typ',()=>SFX.typing())},
+  shot(t){shotList(t,[[0,5,V(1.7,2.7,18.8),V(1.0,2.55,17.5),V(0,2.1,13.75),V(0,2.15,13.75),{fov:36}],[5,10,V(.55,2.6,16.1),V(.4,2.55,15.65),V(0,2.42,13.75),V(0,2.42,13.75),{fov:34,roll:-.03}]])}},
+ {key:'c_post',name:'The post',set:'ins',look:'insert',music:'tense',dur:7,
+  d:'Full-screen post with his brick face: “100% TARIFFS ON EVERYTHING.”',
+  lines:[[0.4,'And posts four words:','وكتب أربع كلمات:'],[2.7,'<em class="r">“100% TARIFFS ON EVERYTHING.”</em>','<em class="r">"جمارك ١٠٠٪ على كل حاجة."</em>']],
+  setup(){insertHolo()},
+  update(t){V3.newsN=100;drawHolo('news',Math.max(0,(t-2.4)/2.5),t);if(t>2.6)once('ping',()=>SFX.ping())},
+  shot(t){insertShot(t,7)}},
+ {key:'c_wake',name:'Across town',set:'bed',look:'bedNight',music:'tense',dur:13.5,warp:t=>Math.min(t,9),
+  d:'His phone buzzes on the nightstand. He wakes, reads −50% and screams. Freeze frame.',
+  lines:[[0.8,'Across town, his phone lights up.','على الناحية التانية، موبايله نوّر.'],[3.4,'His cat coin: <em class="r">−50%</em>.','عملة القطة بتاعته: <em class="r">−٥٠٪</em>.'],[6.2,'At 3 AM. On a school night.','الساعة ٣ الفجر. وعنده مدرسة الصبح.'],[9.3,'Yep. That’s him.','أيوه. ده هو.'],[10.9,'You’re probably wondering how he got here.','أكيد بتسأل نفسك وصل لكده إزاي.']],
+  setup(){bedScene('kid');phoneOnStand('red')},
+  update(t){wake(t)},
+  shot(t){const tc=Math.min(t,8.99);shotList(tc,[[0,2.5,V(BX+.9,2.7,3.6),V(BX+.9,2.45,2.9),V(BX+.6,.9,-1.8),V(BX+.6,1.0,-1.8),{fov:40}],[2.5,6,V(BX+2.1,1.95,.7),V(BX+1.8,1.9,.35),V(BX+.8,1.65,-2.3),V(BX+.8,1.75,-2.3),{fov:38}],[6,9,V(BX+.8,1.95,-.85),V(BX+.8,1.92,-1.1),KB(),KB(),{fov:34}]])},
+  fx(t){if(t>=9){FX.sat=.12;FX.con=1.18;FX.flash=Math.max(0,.6-(t-9)*2.4);once('frz',()=>SFX.scratch())}}},
+ {key:'c_rewind',name:'Rewind',set:'bed',look:'bedNight',music:'none',dur:3.5,warp:t=>Math.max(0,9-t*2.8),
+  d:'VHS rewind back through the scream.',
+  lines:[[0,'','']],
+  setup(){bedScene('kid');phoneOnStand('red')},
+  update(ta){wake(ta)},
+  shot(t){shotList(t,[[0,3.5,V(BX+.8,1.92,-1.1),V(BX+.9,2.45,2.9),KB(),V(BX+.6,1.0,-1.8),{fov:36}]])},
+  fx(t){FX.rw=1;FX.sat=.7;FX.ab=.004;once('rw',()=>SFX.rewind())}},
+ {key:'hype',name:'To the moon',set:'caf',look:'party',music:'trap',dur:17,title:'3 DAYS EARLIER…',titleAr:'قبلها بـ ٣ أيام…',
+  d:'Party in the cafeteria. An influencer’s live stream: “Cat coin to the moon 🚀, not financial advice 😉.”',
+  lines:[[1.8,'Three days earlier, an influencer went live.','قبلها بتلات أيام، إنفلونسر عمل لايف.'],[5.0,'<em>“Cat coin to the moon 🚀.”</em>','<em>"عملة القطة على القمر 🚀."</em>'],[8.2,'<em>“Not financial advice 😉.”</em>','<em>"مش نصيحة مالية 😉."</em>'],[11.4,'The whole class believed him.','الفصل كله صدّقه.'],[14.2,'He believed him the most.','وهو أكتر واحد صدّق.']],
+  setup(){partyScene()},
+  update(t,ta,dt){partyAct(t,dt);drawHolo('influencer',t/4,t)},
+  shot(t){shotList(t,[[0,3,V(0,4.8,5.4),V(0,3.0,3.9),V(0,1.5,-1.6),V(0,1.9,-1.6),{fov:42}],[3,8,V(1.95,2.78,1.25),V(1.62,2.74,.82),V(1.25,2.7,-.6),V(1.25,2.7,-.6),{fov:38}],[8,12,V(.55,2.05,1.3),V(.25,2.0,1.0),KF(),KF(),{fov:36,roll:-.05}],[12,17,V(-1.7,1.0,2.3),V(-1.2,1.05,2.0),V(-.6,2.3,-2),V(-.4,2.45,-2),{fov:46}]])}},
+ {key:'console',name:'Sold',set:'caf',look:'day',music:'trap',dur:9,
+  d:'His game console gets a SOLD tag. A listing: $400 → cat coin.',
+  lines:[[0.4,'That night, he sold his game console.','بالليل، باع جهاز الألعاب.'],[4.4,'And put every last dollar into one coin.','وحط آخر جنيه معاه في عملة واحدة.']],
+  setup(){sitKid(0);V3.console.visible=true;holo.visible=false},
+  update(t){const k=chars.rex;idle(k,t);k.setFace(t<4?'grin':'smug');if(t>=4){insertHolo();drawHolo('sold',(t-4)/2,t);once('cash',()=>SFX.cash())}else holo.visible=false},
+  shot(t){if(t<4)shotList(t,[[0,4,V(.75,1.75,1.15),V(.5,1.68,.92),V(0,1.25,-.25),V(0,1.25,-.25),{fov:38}]]);else insertShot(t-4,5)}},
+ {key:'boomer',name:'Ok boomer',set:'caf',look:'day',music:'soft',dur:13,chapter:['RULE 1 OF 6','THE 5% RULE'],chapterAr:['القاعدة ١ من ٦','قاعدة الـ ٥٪'],collect:[[1,6]],
+  d:'His friend: “5% max.” Him: “Ok boomer.” The friend is fifteen. The turtle looks offended.',
+  lines:[[0.5,'His friend had one rule for new coins:','صاحبه كان عنده قاعدة واحدة للعملات الجديدة:'],[3.1,'<em>Five percent. Max.</em>','<em>خمسة في المية. بالكتير.</em>'],[5.8,'“Ok boomer.”','"ماشي يا حاج."'],[8.8,'His friend is fifteen.','صاحبه عنده ١٥ سنة.'],[11.0,'Even the turtle looked offended.','حتى السلحفاة اتضايقت.']],
+  setup(){duo();V3.turtle.visible=true;V3.turtle.position.set(1.75,1.12,-.45);V3.turtle.rotation.y=-.6;cafHolo(1.0,2.75,-.5,-.15)},
+  update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace(t<8.8?'calm':'smug');point(f,Math.min(1,t/1.2)*.5);
+    if(t>5.6&&t<8.8){laugh(k,t);k.setFace('smug')}else{idle(k,t,1);k.setFace(t>=8.8?'shock':'smile')}drawHolo('pie',t/3,t);turtleAct(t,t>11?'offended':'idle')},
+  shot(t){shotList(t,[[0,5.6,V(-2.0,2.2,1.0),V(-1.8,2.17,.75),FF(),FF(),{fov:36}],[5.6,8.8,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34,roll:.05}],[8.8,13,V(1.75,1.95,1.25),V(1.55,1.92,1.0),V(1.25,1.6,-.8),V(1.3,1.55,-.7),{fov:34}]])}},
+ {key:'notebook',name:'Research',set:'caf',look:'day',music:'soft',dur:16,chapter:['RULE 2 OF 6','SIZE BY WHAT YOU KNOW'],chapterAr:['القاعدة ٢ من ٦','الحجم على قد ما تعرف'],collect:[[2,10]],
+  d:'Forty pages of notes vs one seven-second video.',
+  lines:[[0.5,'Before buying, his friend reads. A lot.','صاحبه قبل ما يشتري، بيقرا. كتير.'],[4.0,'Forty pages of notes.','أربعين صفحة ملاحظات.'],[6.6,'His research: <em>one video. Seven seconds.</em>','بحثه هو: <em>فيديو واحد. سبع ثواني.</em>'],[10.0,'Rule two: bet big only on what you really know.','القاعدة التانية: الرهان الكبير بس على اللي فاهمه.'],[13.6,'He knew the music was catchy.','هو كان فاهم إن المزيكا حلوة.']],
+  setup(){duo();cafHolo(0,2.78,-.6,0)},
+  update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace('calm');idle(k,t,1);k.setFace(t<13.6?'smile':'grin');drawHolo('notebook',t/8,t)},
+  shot(t){shotList(t,[[0,6,V(0,2.3,3.3),V(0,2.25,2.9),V(0,2.2,-.8),V(0,2.25,-.8),{fov:40}],[6,11,V(0,2.78,1.6),V(0,2.78,1.25),V(0,2.78,-.6),V(0,2.78,-.6),{fov:40}],[11,16,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34}]])}},
+ {key:'thirty',name:'Thirty coins',set:'caf',look:'day',music:'soft',dur:13,chapter:['RULE 5 OF 6','OWN LESS, KNOW MORE'],chapterAr:['القاعدة ٥ من ٦','امتلك أقل واعرف أكتر'],collect:[[5,9]],
+  d:'Thirty coins he can’t explain. “…Vibes.”',
+  lines:[[0.4,'Then he showed off his other coins.','بعدين ورّاه باقي العملات.'],[3.2,'Thirty of them.','تلاتين عملة.'],[5.4,'“Explain one.”','"اشرحلي واحدة."'],[7.4,'“…Vibes.”','"…إحساس."'],[9.6,'Rule five: own less, know more.','القاعدة الخامسة: امتلك أقل، واعرف أكتر.']],
+  setup(){duo();cafHolo(-.6,2.75,-.5,.15)},
+  update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace(t>5.2&&t<7.4?'smug':'calm');k.setFace(t<7.4?'grin':'smile');if(t<5)point(k,.8);else idle(k,t,1);drawHolo('coins',t/9,t)},
+  shot(t){shotList(t,[[0,5,V(-1.9,2.1,1.6),V(-1.6,2.05,1.2),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:38}],[5,9,V(-.6,2.75,1.55),V(-.6,2.75,1.2),V(-.6,2.75,-.5),V(-.6,2.75,-.5),{fov:40}],[9,13,V(-.05,2.2,2.6),V(-.05,2.15,2.2),V(-.05,1.9,-1.05),V(-.05,1.95,-1.05),{fov:40}]])}},
+ {key:'exit',name:'Exit first',set:'caf',look:'day',music:'soft',dur:15,chapter:['RULE 3 OF 6','EXIT FIRST'],chapterAr:['القاعدة ٣ من ٦','حدد خروجك الأول'],collect:[[3,9.5]],
+  d:'His friend draws his exit line at −10%. Him: “Exits are for quitters.”',
+  lines:[[0.5,'His friend decides his exit before he buys.','صاحبه بيحدد هيخرج إمتى قبل ما يشتري.'],[4.5,'Down ten percent? Out. No drama.','نزلت عشرة في المية؟ برا. من غير دراما.'],[8.0,'Rule three: exit first.','القاعدة التالتة: حدد خروجك الأول.'],[10.8,'“Exits are for quitters.”','"الخروج ده للي بيستسلموا."'],[13.2,'He said. Confidently.','قالها. بثقة.']],
+  setup(){duo();cafHolo(1.0,2.75,-.5,-.15)},
+  update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace('calm');point(f,.45);if(t>10.6){laugh(k,t);k.setFace('smug')}else{idle(k,t,1);k.setFace('smile')}drawHolo('plan',Math.min(.55,t/9),t)},
+  shot(t){shotList(t,[[0,6,V(1.6,2.0,1.15),V(1.4,1.98,.92),FF(),FF(),{fov:34}],[6,10.5,V(1.0,2.75,1.6),V(1.0,2.75,1.25),V(1.0,2.75,-.5),V(1.0,2.75,-.5),{fov:40}],[10.5,15,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34,roll:.04}]])}},
+ {key:'cash',name:'Keep cash',set:'caf',look:'day',music:'soft',dur:13,chapter:['RULE 4 OF 6','KEEP CASH'],chapterAr:['القاعدة ٤ من ٦','خلّي كاش'],collect:[[4,8]],
+  d:'15% cash, ready for a sale. His lunch money is in cat coin too. Lunch is air.',
+  lines:[[0.4,'His friend always keeps some cash.','صاحبه دايماً شايل شوية كاش.'],[3.4,'Fifteen percent. Ready for a sale.','خمستاشر في المية. جاهز لأي أوكازيون.'],[6.4,'Rule four: keep cash for the dip.','القاعدة الرابعة: خلّي كاش للنزلة.'],[9.2,'His lunch money? Also in cat coin.','فلوس الغدا بتاعته؟ برضه في عملة القطة.'],[11.6,'Lunch was air.','الغدا كان هوا.']],
+  setup(){duo();cafHolo(0,2.78,-.6,0)},
+  update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace('happy');k.setFace(t>9?'cry':'smile');if(t>10.5){k.armR.rotation.x=-2.3+Math.sin(t*8)*.15;k.neck.rotation.x=Math.sin(t*8)*.05}else idle(k,t,1);drawHolo('cash',t/6,t)},
+  shot(t){shotList(t,[[0,5,V(0,2.25,3.1),V(0,2.2,2.7),V(0,2.0,-1),V(0,2.05,-1),{fov:40}],[5,9,V(0,2.78,1.6),V(0,2.78,1.25),V(0,2.78,-.6),V(0,2.78,-.6),{fov:40}],[9,13,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34}]])}},
+ {key:'newsmix',name:'Louder',set:'ins',look:'insert',music:'tense',dur:10,
+  d:'Headlines stack up: tariff talk, cat coin +80%, analysts have no idea.',
+  lines:[[0.4,'Meanwhile, the news kept getting louder.','وفي نفس الوقت، الأخبار صوتها بيعلى.'],[4.4,'Tariff talk. Rumors. Hype.','كلام عن الجمارك. إشاعات. هيصة.'],[7.4,'Nobody had a plan. Except one kid.','محدش كان عنده خطة. غير ولد واحد.']],
+  setup(){insertHolo()},
+  update(t){drawHolo('headlines',t/6,t)},
+  shot(t){insertShot(t,10)}},
+ {key:'ai',name:'Ask the AI',set:'bed',look:'bedNight',music:'dark',dur:13,
+  d:'Night. He asks an AI chatbot about 10x leverage. “Probably fine 👍.”',
+  lines:[[0.4,'That night, he had an idea.','بالليل، جاتله فكرة.'],[3.4,'He asked an AI chatbot:','سأل شات بوت ذكاء اصطناعي:'],[6.0,'<em>“Should I use 10x leverage?”</em>','<em>"أستخدم رافعة عشر أضعاف؟"</em>'],[8.8,'<em>“Probably fine 👍.”</em>','<em>"غالباً تمام 👍."</em>'],[11.2,'It was not fine.','ماكانش تمام.']],
+  setup(){bedScene('kid',true);bedHolo()},
+  update(t){const k=chars.rex;sitBed(k);k.armR.rotation.x=-1.2;k.armL.rotation.x=-1.0;k.neck.rotation.x=.18;k.setFace(t<8.8?'smile':'grin');drawHolo('ai',(t-5.6)/7.5,t)},
+  shot(t){shotList(t,[[0,6,V(BX+2.4,2.2,1.2),V(BX+2.1,2.15,.8),V(BX+1.4,2.0,-2.0),V(BX+1.4,2.05,-2.0),{fov:40}],[6,13,V(BX+2.1,2.35,.4),V(BX+2.1,2.35,.15),V(BX+2.1,2.35,-1.4),V(BX+2.1,2.35,-1.4),{fov:40}]])}},
+ {key:'flood',name:'The shark',set:'bed',look:'bedRed',music:'dark',dur:11,
+  d:'He presses 10x. The floor floods into a red chart sea, and a brick shark starts circling.',
+  lines:[[0.4,'He pressed it.','داس عليها.'],[2.8,'Ten times the money. Borrowed.','عشر أضعاف الفلوس. سلف.'],[5.6,'And something started circling.','وفي حاجة بدأت تلف حواليه.'],[8.4,'The liquidation shark.','قرش التصفية.']],
+  setup(){bedScene('kid',true);bedHolo();V3.flood.visible=true;V3.shark.visible=true},
+  update(t){const k=chars.rex;sitBed(k);if(t<2.4){point(k,1);k.setFace('grin')}else{k.setFace(t<7?'smile':'shock');idle(k,t)}
+    drawHolo('lev',Math.min(.33,.2+t/20),t);if(t>2.2)holo.visible=t<3.2;floodLevel(Math.min(.55,Math.max(0,(t-2.6)/6)*.55));sharkCircle(t-3,t>3);if(t>2.4)once('spl',()=>SFX.splash())},
+  shot(t){shotList(t,[[0,3,V(BX+2.1,2.35,.5),V(BX+2.1,2.35,.25),V(BX+2.1,2.35,-1.4),V(BX+2.1,2.35,-1.4),{fov:40}],[3,7,V(BX+.9,3.2,3.4),V(BX+.9,2.9,2.9),V(BX+.8,.6,-1.6),V(BX+.8,.7,-1.6),{fov:42}],[7,11,V(BX+3.6,1.05,1.4),V(BX+3.2,1.0,1.1),V(BX+.8,1.45,-1.8),V(BX+.8,1.5,-1.8),{fov:46}]])}},
+ {key:'post2',name:'Back to 3:07',set:'press',look:'pressNight',music:'tense',dur:8,
+  d:'Back in the press room. The post goes out.',
+  lines:[[0.4,'And then… 3:07 AM.','وبعدين… ٣:٠٧ الفجر.'],[3.6,'Now you know how he got here.','دلوقتي عرفت وصل لكده إزاي.']],
+  setup(){place(chars.trump,0,13.75)},
+  update(t){trumpType(t,t<3?'tpout':'tshout');if(t>3)once('ping',()=>SFX.ping())},
+  shot(t){shotList(t,[[0,3.5,V(-1.2,2.45,16.4),V(-.8,2.42,15.9),V(0,2.3,13.75),V(0,2.3,13.75),{fov:36,roll:.04}],[3.5,8,V(.4,2.55,15.9),V(.3,2.5,15.5),V(0,2.42,13.75),V(0,2.42,13.75),{fov:32}]])}},
+ {key:'crash',name:'Chomp',set:'bed',look:'bedRed',music:'crash',dur:15,chapter:['RULE 6 OF 6','NEVER BORROW'],chapterAr:['القاعدة ٦ من ٦','متستلفش أبداً'],collect:[[6,9]],
+  warp:t=>t<1.5?t:(t<4?1.5+(t-1.5)*.35:2.375+(t-4)),
+  d:'Slow-motion dolly zoom on his face, the shark leaps over the bed: chomp. Liquidated. “This is fine” on a floating pillow.',
+  lines:[[0.3,'Fifty percent down. On ten times leverage.','نازل خمسين في المية. برافعة عشر أضعاف.'],[4.7,'<em class="r">CHOMP.</em>','<em class="r">هَمّ.</em>'],[6.6,'<em class="r">Liquidated.</em>','<em class="r">اتصفّى.</em>'],[9.0,'Rule six: never borrow to bet.','القاعدة السادسة: عمرك ما تستلف عشان تراهن.'],[12.2,'“This is fine.”','"كله تمام."']],
+  setup(){bedScene('kid',true);bedHolo();V3.flood.visible=true;V3.shark.visible=true;floodLevel(.55)},
+  update(ta,t){crashAct(ta,t)},
+  shot(t){if(t>=1.5&&t<4){dolly(t,1.5,4,KB());return}
+    shotList(t,[[0,1.5,V(BX+1.9,1.95,.6),V(BX+1.7,1.9,.4),KB(),KB(),{fov:38}],[4,6.2,V(BX-1.5,2.3,2.6),V(BX-1.2,2.2,2.3),V(BX+1.2,1.5,-1.4),V(BX+1.1,1.5,-1.4),{fov:46,roll:.08}],[6.2,10.5,V(BX+1.9,1.5,1.4),V(BX+1.6,1.45,1.1),V(BX+1.0,1.05,-.6),V(BX+1.0,1.1,-.6),{fov:40}],[10.5,15,V(BX+1.2,1.6,1.6),V(BX+1.1,3.4,4.4),V(BX+1.0,1.0,-.6),V(BX+.9,.8,-1.0),{fov:42}]])},
+  fx(t){if(t>=1.5&&t<4){FX.ab=.0045;once('slo',()=>SFX.slowmo())}}},
+ {key:'friendsleep',name:'Meanwhile',set:'bed',look:'bedDawn',music:'gold',dur:12,
+  d:'His friend sleeps. WalletLens quietly sells at −10% and buys the dip. The turtle snores.',
+  lines:[[0.5,'Meanwhile, his friend slept.','وفي نفس الوقت، صاحبه كان نايم.'],[3.6,'His exit sold at minus ten. Automatically.','الخروج باع عند سالب عشرة. لوحده.'],[7.2,'His cash bought the dip.','والكاش اشترى النزلة.'],[9.8,'The turtle snored.','والسلحفاة كانت بتشخّر.']],
+  setup(){bedScene('friend');phoneOnStand('alerts');V3.turtle.visible=true;V3.turtle.position.set(BX-.35,.72,-2.85);V3.turtle.rotation.y=.4},
+  update(t){chars.ollie.setFace('sleep');turtleAct(t,'sleep');if(t>9.6)once('snore',()=>SFX.snore())},
+  shot(t){shotList(t,[[0,6,V(BX+1.0,2.9,3.4),V(BX+.9,2.6,2.6),V(BX+.6,.9,-1.8),V(BX+.6,1.0,-1.9),{fov:40}],[6,12,V(BX+.3,1.25,-1.3),V(BX+.15,1.2,-1.55),V(BX-.45,.85,-2.7),V(BX-.45,.85,-2.7),{fov:38}]])}},
+ {key:'kidding',name:'Just kidding',set:'press',look:'pressDay',music:'gold',dur:11,
+  d:'Next morning at the podium: “Just kidding. Deal coming 🤝.” The market bounces.',
+  lines:[[0.5,'Next morning, Trump posted again:','تاني يوم الصبح، ترامب كتب تاني:'],[3.4,'<em>“Just kidding. Deal coming 🤝.”</em>','<em>"بهزر. في اتفاق جاي 🤝."</em>'],[7.0,'And the market bounced right back.','والسوق رجع طلع على طول.']],
+  setup(){place(chars.trump,0,13.75)},
+  update(t){const T=chars.trump;T.setFace(t<1.6?'tpout':'tsmug');T.armR.rotation.z=2.3+Math.sin(t*5)*.12;T.armR.rotation.x=-.3;T.armL.rotation.x=-.5;if(t>=6){insertHolo();drawHolo('kidding',(t-6)/2.5,t)}else holo.visible=false},
+  shot(t){if(t<6)shotList(t,[[0,6,V(-.7,2.3,17.6),V(-.35,2.3,16.7),V(0,2.0,13.75),V(0,2.1,13.75),{fov:36}]]);else insertShot(t-6,5)}},
+ {key:'realize',name:'The bottom',set:'caf',look:'day',music:'soft',dur:15,
+  d:'He sold the exact bottom. His friend is up, and rested. “…Can you teach me?”',
+  lines:[[0.5,'He had already been liquidated.','هو كان اتصفّى خلاص.'],[3.6,'He sold the bottom. Perfectly.','باع في القاع. بالظبط.'],[7.4,'His friend was up. And well rested.','صاحبه كسبان. ونايم كويس.'],[11.0,'“…Can you teach me?”','"…ممكن تعلّمني؟"']],
+  setup(){duo();cafHolo(0,2.78,-.6,0)},
+  update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace('happy');k.setFace(t<10.8?'cry':'smile');k.neck.rotation.x=t<10.8?.25:0;drawHolo('kidding',1,t)},
+  shot(t){shotList(t,[[0,5,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.9,-1.05),V(-1.1,1.9,-1.05),{fov:34}],[5,10,V(0,2.2,3.0),V(0,2.15,2.6),V(0,1.95,-1),V(0,2.0,-1),{fov:40}],[10,15,V(-.6,2.0,1.0),V(-.8,1.98,.85),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:32}]])}},
+ {key:'playbook',name:'The shield',set:'caf',look:'gold',music:'drive',dur:20,
+  d:'The Risk Playbook: six rule bricks drop onto the table and lock into a shield. The board fills in. The class claps.',
+  lines:[[0.5,'So his friend taught him the Risk Playbook.','فصاحبه علّمه دليل المخاطر.'],[5.0,'Six rules. Six bricks.','ست قواعد. ست طوبات.'],[9.0,'Five percent. Know it. Exit first.','خمسة في المية. افهم. حدد خروجك.'],[13.0,'Keep cash. Own less. Never borrow.','خلّي كاش. امتلك أقل. ومتستلفش.'],[16.6,'Together, they make a shield.','مع بعض بيعملوا درع.']],
+  setup(){classScene();V3.shield.visible=true;V3.shield.scale.setScalar(1);V3.shield.position.set(0,1.08,-.15);V3.shield.rotation.set(0,0,0)},
+  update(t){classAct(t);shieldBuild(t-5,1.15);drawBoard(Math.max(0,(t-9)/9));if(t>16.6)once('app',()=>SFX.applause())},
+  shot(t){if(t<6){orbit(t,0,6,V(.3,0,.5),5.0,.5,-.25,3.1,2.6,V(.1,1.6,-.3),40);return}
+    shotList(t,[[6,13,V(.9,1.95,1.4),V(.6,1.85,1.1),V(0,1.35,-.15),V(0,1.35,-.15),{fov:36}],[13,20,V(0,3.0,1.0),V(0,3.15,-4.4),V(0,2.9,-6),V(0,3.15,-9),{fov:40}]])}},
+ {key:'setup',name:'WalletLens',set:'ins',look:'insert',music:'drive',dur:16.5,
+  d:'WalletLens: crypto, stocks, gold and cash in one place, flags anything over 5%, holds the exit.',
+  lines:[[0.5,'Then he set up WalletLens.','وبعدين نزّل والت لينز.'],[3.8,'Crypto, stocks, gold and cash. All in one place.','كريبتو، أسهم، دهب وكاش. كله في مكان واحد.'],[8.0,'It flags anything over five percent.','بينبّهك لو أي حاجة عدّت خمسة في المية.'],[11.6,'And it holds his exit. Even at 3 AM.','وبيمسكله الخروج. حتى الساعة ٣ الفجر.']],
+  setup(){insertHolo()},
+  update(t){drawHolo('wlapp',t/12,t)},
+  shot(t){insertShot(t,16.5)}},
+ {key:'week',name:'One week later',set:'press',look:'pressNight',music:'tense',dur:21,
+  d:'A week later, 3:07 AM: “200% TARIFFS!!!” He sleeps, phone face down. The shark bonks the shield. Trump: “…Hello?”',
+  lines:[[0.5,'One week later. 3:07 AM.','بعدها بأسبوع. ٣:٠٧ الفجر.'],[5.2,'<em class="r">“200% TARIFFS!!!”</em>','<em class="r">"جمارك ٢٠٠٪!!!"</em>'],[8.4,'This time, he was asleep.','المرة دي، كان نايم.'],[11.2,'Phone face down. Plan on.','الموبايل على وشه. والخطة شغالة.'],[13.6,'The shark hit the shield. <em>Bonk.</em>','القرش خبط في الدرع. <em>طاخ.</em>'],[16.0,'Trump waited for the panic.','ترامب استنى الذعر.'],[18.6,'<em>“…Hello?”</em>','<em>"…ألو؟"</em>']],
+  setup(){place(chars.trump,0,13.75);bedScene('kid');phoneOnStand('down');V3.shield.visible=true;V3.shield.scale.setScalar(1.6);V3.shield.position.set(BX+2.7,0,-.4);V3.shield.rotation.set(0,-.5,0);shieldBuild(99,1);V3.flood.visible=true;floodLevel(.22);V3.shark.visible=true;V3.turtle.visible=true;V3.turtle.position.set(BX+2.0,.25,.35);V3.turtle.rotation.y=.3},
+  update(t){weekAct(t)},
+  shot(t){if(t<8)shotList(t,[[0,5,V(.45,2.5,15.6),V(.3,2.45,15.2),V(0,2.38,13.75),V(0,2.38,13.75),{fov:34}],[5,8,V(.0,3.2,16.4),V(0,3.2,16.0),V(0,3.2,14.6),V(0,3.2,14.6),{fov:40}]]);
+    else if(t<16)shotList(t,[[8,12,V(BX+1.0,2.9,3.4),V(BX+1.0,2.65,2.8),V(BX+.8,.9,-1.6),V(BX+.8,1.0,-1.6),{fov:42}],[12,16,V(BX+4.1,2.4,3.6),V(BX+3.9,2.3,3.2),V(BX+2.3,.8,-.6),V(BX+2.3,.85,-.6),{fov:44}]]);
+    else shotList(t,[[16,21,V(-.6,2.35,16.4),V(-.4,2.35,15.6),V(0,2.25,13.75),V(0,2.3,13.75),{fov:34}]])}},
+ {key:'outro',name:'WalletLens',set:'none',look:'insert',music:'outro',dur:10,
+  d:'Black screen, the WalletLens app icon builds itself, “All Assets Tracker & Investment Manager”, “Don’t forget to follow us”.',
+  lines:[[1.7,'WalletLens. All assets tracker and investment manager.','والت لينز. تتبّع كل أصولك وإدارة استثماراتك.'],[6.0,'Don’t forget to follow us.','ومتنساش تتابعنا.']],silentCaps:true,
+  setup(){},update(){},shot(){camera.position.set(0,2.4,6);camera.lookAt(0,2,0)}}
 ];
-const EXTRA=[
- ['2:00','his 30 coins','He shows off 30 random coins on his phone. his friend asks him to explain just one. He can’t.','the kid scrolls an endless coin list, sweating.','5 · Own less, know more'],
- ['2:30','his friend’s notebook','his friend’s biggest position is the one with the thickest notebook.','Notebook pages flip; position bars grow with research.','2 · Conviction sets size'],
- ['4:00','The stop','his friend’s exit triggers automatically at −10%. He doesn’t even look.','Phone buzzes: “Sold at your exit price.”','3 · Exit first'],
- ['6:30','The dip','While everyone panics, his friend buys a little with his spare cash.','The hologram fills a green cart; the class stares.','4 · Spare cash']
-];
+// captions come from the narration lines (English or Egyptian Arabic)
+let _acc=0;SCENES.forEach(s=>{s.tc=`${Math.floor(_acc/60)}:${String(Math.floor(_acc%60)).padStart(2,'0')}`;_acc+=s.dur;
+  s.caps=s.silentCaps?[[0,'']]:[[0,''],...s.lines.map(l=>[l[0],l[1]])];s.capsAr=s.silentCaps?[[0,'']]:[[0,''],...s.lines.map(l=>[l[0],l[2]])];
+  s.vo=s.lines.map(l=>l[1]).filter(Boolean).join(' ').replace(/<[^>]+>/g,'');s.rule=s.chapter?s.chapter[1]:'';});
+const EXTRA=[];
+
 
 if(AR)SCENES.forEach(x=>{if(x.capsAr)x.caps=x.capsAr;if(x.chapterAr)x.chapter=x.chapterAr;if(x.titleAr)x.title=x.titleAr});
 // ── page bits that don't need WebGL ──────────────────────────────────────
@@ -371,7 +495,7 @@ $('script').innerHTML=rows.map(r=>`<tr class="${r.full?'full':''}"><td class="t"
 const BRICK_YELLOW='#f2cd37';
 const SHIRT_COL={rex:'#c11f25',ollie:'#1a8a5d',pink:'#f5a9c8',plaid:'#5a5248',blue:'#7fb2ff',floral:'#c8242c',suit:'#1a1a1d',potus:'#1c2541'};
 const screen=$('screen');
-if(AR){screen.classList.add('ar');$('rulesK').textContent='القواعد اللي اتعلمها';$('rw').querySelector('b').textContent='◀◀ ترجيع';$('rw').querySelector('span').textContent='قبلها بـ ٣ أيام'}
+if(AR){screen.classList.add('ar');$('rulesK').textContent='دليل المخاطر';$('rw').querySelector('b').textContent='◀◀ ترجيع';$('rw').querySelector('span').textContent='قبلها بـ ٣ أيام'}
 let ok=!!window.THREE;
 let renderer;
 try{ if(ok){renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});} }catch(e){ok=false}
@@ -490,7 +614,7 @@ void main(){vec2 uv=vUv;
    pendant=new THREE.SpotLight('#ffc98a',0,11,.62,.75,1.2);pendant.position.set(0,4.72,-.55);pendant.target.position.set(0,1,-.7);scene.add(pendant);scene.add(pendant.target);
    const ht=canvasTex(128,128,(g)=>{const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,214,150,.9)');gr.addColorStop(.35,'rgba(255,190,110,.25)');gr.addColorStop(1,'rgba(255,170,90,0)');g.fillStyle=gr;g.fillRect(0,0,128,128)});
    halo=new THREE.Sprite(new THREE.SpriteMaterial({map:ht.t,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));halo.scale.set(2.6,2.6,1);halo.position.set(0,4.6,-.55);scene.add(halo)}
-  candleR=makeCandle('#e0262b','#5a0b0d','evil');candleG=makeCandle('#22c55e','#0b3d1f','happy');
+  buildV3();
 
   // press room for the real-world cutaways: backdrop, podium, flags, its own lights
   {const bd=bricks('#1f3b7a','#183064');bd.repeat.set(6,3);const back=new THREE.Mesh(new THREE.BoxGeometry(9,5.2,.3),new THREE.MeshStandardMaterial({map:bd,roughness:.5}));back.position.set(0,2.6,12.4);scene.add(back);
@@ -534,7 +658,7 @@ void main(){vec2 uv=vUv;
   chars.k3=makeChar({skin:'#b9764c',shirt:'blue',pants:'#ffffff',hair:'long',hairColor:'#0e0c0c'});
   chars.k4=makeChar({skin:'#9b6440',shirt:'floral',pants:'#e9e9e9',hair:'cap',hairColor:'#0e0b09'});
   chars.teach=makeChar({skin:'#a8713f',shirt:'suit',pants:'#141414',hair:'long',hairColor:'#4a2e1c'});
-  chars.trump=makeChar({shirt:'potus',pants:'#1c2541',hair:'swoop',hairColor:'#c9861c'});
+  chars.trump=makeChar({realSkin:'#f2b27c',shirt:'potus',pants:'#1c2541',hair:'swoop',hairColor:'#c9861c'});
   {const ph=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(.14,.26,.025),plastic('#111318'));const sc=new THREE.Mesh(new THREE.PlaneGeometry(.12,.22),new THREE.MeshBasicMaterial({color:'#bcd7ff'}));sc.position.z=.014;ph.add(b,sc);ph.position.set(.18,-.92,.16);ph.rotation.set(-1.0,0,0);chars.trump.armR.add(ph);chars.trump.phone=ph}
 }
 
@@ -555,6 +679,15 @@ function drawFace(g,skin,ex){
     case 'shock':{g.fillStyle='#fff';g.strokeStyle=K;g.lineWidth=5;[[88,100],[168,100]].forEach(([x,y])=>{g.beginPath();g.arc(x,y,24,0,7);g.fill();g.stroke()});g.fillStyle=K;eye(88,102,9,9);eye(168,102,9,9);mouthOpen(128,178,18,22,false,false,false);break}
     case 'happy':{g.strokeStyle=K;g.lineWidth=8;g.beginPath();g.moveTo(66,108);g.quadraticCurveTo(88,80,110,108);g.moveTo(146,108);g.quadraticCurveTo(168,80,190,108);g.stroke();g.save();g.beginPath();g.moveTo(74,150);g.quadraticCurveTo(128,222,182,150);g.closePath();g.fillStyle='#3a0d10';g.fill();g.clip();g.fillStyle='#fff';g.fillRect(70,144,120,18);g.restore();g.lineWidth=6;g.beginPath();g.moveTo(74,150);g.quadraticCurveTo(128,222,182,150);g.closePath();g.stroke();break}
     case 'pout':{g.fillStyle=K;g.beginPath();g.ellipse(90,108,16,7,0,0,7);g.ellipse(166,108,16,7,0,0,7);g.fill();g.strokeStyle=K;g.lineWidth=8;g.lineCap='round';g.beginPath();g.moveTo(64,86);g.lineTo(112,80);g.moveTo(192,86);g.lineTo(144,80);g.stroke();g.fillStyle='#3a0d10';g.beginPath();g.ellipse(128,178,16,13,0,0,7);g.fill();g.lineWidth=5;g.beginPath();g.ellipse(128,178,22,18,0,0,7);g.stroke();break}
+    case 'sleep':{g.strokeStyle=K;g.lineWidth=7;g.lineCap='round';g.beginPath();g.moveTo(68,108);g.quadraticCurveTo(88,120,108,108);g.moveTo(148,108);g.quadraticCurveTo(168,120,188,108);g.stroke();g.beginPath();g.ellipse(128,170,10,7,0,0,7);g.fillStyle=K;g.fill();break}
+    case 'tpout':case 'tshout':case 'tsmug':case 'tconfused':{g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.ellipse(70,150,22,14,0,0,7);g.ellipse(186,150,22,14,0,0,7);g.fill();
+      g.fillStyle=K;const sq=ex==='tconfused'?9:6;g.beginPath();g.ellipse(88,106,15,sq,0,0,7);g.ellipse(168,106,15,sq,0,0,7);g.fill();
+      g.strokeStyle='#c8902e';g.lineWidth=11;g.lineCap='round';g.beginPath();if(ex==='tconfused'){g.moveTo(62,78);g.lineTo(112,70);g.moveTo(144,82);g.lineTo(196,76)}else{g.moveTo(60,90);g.lineTo(112,80);g.moveTo(196,90);g.lineTo(144,80)}g.stroke();
+      g.strokeStyle='rgba(120,60,20,.35)';g.lineWidth=3;g.beginPath();g.moveTo(98,140);g.lineTo(104,128);g.moveTo(158,140);g.lineTo(152,128);g.stroke();
+      if(ex==='tpout'){g.fillStyle='#4a1a14';g.beginPath();g.ellipse(128,182,15,12,0,0,7);g.fill();g.strokeStyle='#b5584a';g.lineWidth=6;g.beginPath();g.ellipse(128,182,21,17,0,0,7);g.stroke()}
+      if(ex==='tshout'){g.fillStyle='#4a1a14';g.beginPath();g.ellipse(128,186,34,28,0,0,7);g.fill();g.fillStyle='#fff';g.fillRect(100,163,56,10)}
+      if(ex==='tsmug'){g.strokeStyle=K;g.lineWidth=7;g.beginPath();g.moveTo(98,182);g.quadraticCurveTo(140,196,166,170);g.stroke()}
+      if(ex==='tconfused'){g.strokeStyle=K;g.lineWidth=7;g.beginPath();g.moveTo(104,184);g.lineTo(150,178);g.stroke()}break}
     case 'calm':{g.fillStyle=K;eye(90,106,10,15);eye(166,106,10,15);hl(87,100);hl(163,100);g.strokeStyle=K;g.lineWidth=7;g.beginPath();g.moveTo(98,168);g.quadraticCurveTo(128,186,158,166);g.stroke();break}
     default:{g.fillStyle=K;eye(88,102,12,20);eye(168,102,12,20);hl(84,94);hl(164,94);g.strokeStyle=K;g.lineWidth=8;g.beginPath();g.moveTo(84,160);g.quadraticCurveTo(128,204,172,160);g.stroke()}
   }
@@ -576,7 +709,7 @@ function faceWrap(g,skin,ex,blink){g.fillStyle=skin;g.fillRect(0,0,512,256);g.sa
   if(blink){g.fillStyle=skin;g.fillRect(56,64,148,74);g.strokeStyle='#141012';g.lineWidth=8;g.lineCap='round';g.beginPath();g.moveTo(70,104);g.quadraticCurveTo(88,116,108,104);g.moveTo(148,104);g.quadraticCurveTo(168,116,188,104);g.stroke()}g.restore()}
 function makeChar(o){
   const root=new THREE.Group(),body=new THREE.Group();root.add(body);
-  const skin=BRICK_YELLOW,skinM=plastic(skin),shirtM=plastic(SHIRT_COL[o.shirt]),pantsM=plastic(o.pants),hipM=plastic(o.pants);
+  const skin=o.realSkin||BRICK_YELLOW,skinM=plastic(skin),shirtM=plastic(SHIRT_COL[o.shirt]),pantsM=plastic(o.pants),hipM=plastic(o.pants);
   const decal=canvasTex(256,256,shirtDecal(o.shirt));
   // tapered torso
   const tg=new THREE.BoxGeometry(1,1,.52);const pa=tg.attributes.position;for(let i=0;i<pa.count;i++)if(pa.getY(i)>0)pa.setX(i,pa.getX(i)*.76);tg.computeVertexNormals();
@@ -617,7 +750,7 @@ function makeChar(o){
     ph:RNG()*3,blinking:false,blink(b){if(b===this.blinking)return;this.blinking=b;faceWrap(face.g,skin,this.expr,b);face.t.needsUpdate=true}};
   return c;
 }
-function resetChar(c){if(c.sweat)c.sweat.forEach(d=>d.visible=false);c.root.visible=false;c.root.position.set(0,0,0);c.root.rotation.set(0,0,0);c.body.position.set(0,0,0);c.body.rotation.set(0,0,0);[c.armL,c.armR,c.legL,c.legR,c.neck].forEach(p=>p.rotation.set(0,0,0));c.hat.visible=false;c.setFace('smile')}
+function resetChar(c){c.seated=false;if(c.sweat)c.sweat.forEach(d=>d.visible=false);c.root.visible=false;c.root.position.set(0,0,0);c.root.rotation.set(0,0,0);c.body.position.set(0,0,0);c.body.rotation.set(0,0,0);[c.armL,c.armR,c.legL,c.legR,c.neck].forEach(p=>p.rotation.set(0,0,0));c.hat.visible=false;c.setFace('smile')}
 const SIT_Y=-.4;
 function sit(c){c.legL.rotation.x=c.legR.rotation.x=-Math.PI/2;c.body.position.y=SIT_Y}
 function place(c,x,z,ry=0){c.root.visible=true;c.root.position.set(x,0,z);c.root.rotation.y=ry}
@@ -634,14 +767,15 @@ function holoFrame(g,col){g.clearRect(0,0,512,512);g.save();rr(g,16,16,480,480,3
   g.globalAlpha=.08;g.fillStyle='#fff';for(let y=30;y<490;y+=8)g.fillRect(20,y,472,2);g.globalAlpha=1}
 function holoChart(g,pts,col,p,x0=50,y0=170,w=412,h=250){const n=pts.length,lim=Math.max(2,Math.floor(n*p));g.strokeStyle=col;g.lineWidth=10;g.lineJoin='round';g.lineCap='round';g.shadowColor=col;g.shadowBlur=18;g.beginPath();for(let i=0;i<lim;i++){const x=x0+i/(n-1)*w,y=y0+h-pts[i]*h;i?g.lineTo(x,y):g.moveTo(x,y)}g.stroke();g.shadowBlur=0;const i=lim-1;g.fillStyle=col;g.beginPath();g.arc(x0+i/(n-1)*w,y0+h-pts[i]*h,13,0,7);g.fill()}
 function htxt(g,t,x,y,size,col,font='Montserrat'){const ar=/[\u0600-\u06FF]/.test(t);g.font=`900 ${ar?size*.92:size}px ${ar?'Cairo':font},Arial Black,sans-serif`;g.direction=ar?'rtl':'ltr';g.textAlign='center';g.fillStyle=col;g.shadowColor=col;g.shadowBlur=14;g.fillText(t,x,y);g.shadowBlur=0}
+function trumpAvatar(g,x,y,r){g.save();g.translate(x,y);g.fillStyle='#f2b27c';g.beginPath();g.arc(0,0,r,0,7);g.fill();g.fillStyle='#d99a2b';g.beginPath();g.ellipse(-r*.05,-r*.62,r*1.05,r*.42,-.15,0,7);g.fill();g.beginPath();g.ellipse(r*.35,-r*.5,r*.55,r*.28,.3,0,7);g.fill();
+  g.fillStyle='#111';g.beginPath();g.ellipse(-r*.35,-r*.05,r*.16,r*.07,0,0,7);g.ellipse(r*.35,-r*.05,r*.16,r*.07,0,0,7);g.fill();g.fillStyle='#4a1a14';g.beginPath();g.ellipse(0,r*.45,r*.15,r*.12,0,0,7);g.fill();g.restore()}
 function drawHolo(kind,p,t){const g=holoTex.g;
 
   if(kind==='news'||kind==='kidding'){const ok2=kind==='kidding';holoFrame(g,ok2?'#3dff8a':'#ff3b3b');
     g.fillStyle=ok2?'#14b86a':'#e8343a';g.fillRect(30,40,452,58);htxt(g,TX(ok2?'UPDATE':'BREAKING NEWS',ok2?'تحديث':'خبر عاجل'),256,82,34,'#fff');
     g.font='500 22px DM Mono,monospace';g.textAlign='left';g.direction='ltr';g.fillStyle='#cbd5e1';g.fillText(ok2?'8:02 AM':'3:07 AM',40,128);
-    g.save();g.translate(110,230);g.fillStyle='#0b1220';g.beginPath();g.arc(0,-40,26,0,7);g.fill();g.fillRect(-34,-14,68,70);g.fillStyle='#334155';g.fillRect(-48,40,96,40);
-    [[-80,'#c81e1e'],[80,'#1e40af']].forEach(([x,c])=>{g.fillStyle='#94a3b8';g.fillRect(x-2,-70,4,150);g.fillStyle=c;g.fillRect(x+2,-70,40,26)});g.restore();
-    const lines=ok2?TX('TRUMP:|JUST KIDDING.|DEAL COMING 🤝','ترامب:|بهزر.|في اتفاق جاي 🤝'):TX('TRUMP:|100% TARIFFS|ON EVERYTHING!!!','ترامب:|جمارك ١٠٠٪|على كل حاجة!!!');
+    trumpAvatar(g,112,228,62);g.fillStyle='#fff';g.font='800 20px Plus Jakarta Sans,sans-serif';g.textAlign='center';g.direction='ltr';g.fillText('@realtrump',112,318);
+    const lines=ok2?TX('TRUMP:|JUST KIDDING.|DEAL COMING 🤝','ترامب:|بهزر.|في اتفاق جاي 🤝'):(V3.newsN===200?TX('TRUMP:|200% TARIFFS!!!|ON EVERYTHING','ترامب:|جمارك ٢٠٠٪!!!|على كل حاجة'):TX('TRUMP:|100% TARIFFS|ON EVERYTHING!!!','ترامب:|جمارك ١٠٠٪|على كل حاجة!!!'));
     lines.split('|').forEach((l,k)=>htxt(g,l,330,182+k*46,k?(AR?34:31):(AR?30:28),k?(ok2?'#bfffd9':'#ffd0d0'):'#ffffff'));
     holoChart(g,ok2?[.1,.12,.1,.3,.45,.62,.8,.95]:[.9,.92,.85,.6,.4,.3,.15,.08],ok2?'#3dff8a':'#ff3b3b',Math.min(1,p*1.6),50,330,412,140)}
   if(kind==='influencer'){holoFrame(g,'#5eead4');const gr=g.createLinearGradient(0,0,512,512);gr.addColorStop(0,'rgba(15,40,70,.85)');gr.addColorStop(1,'rgba(13,80,80,.75)');g.fillStyle=gr;rr(g,24,24,464,464,30);g.fill();
@@ -657,6 +791,30 @@ function drawHolo(kind,p,t){const g=holoTex.g;
     if(p>.08&&p<.17){g.fillStyle='#1f2937';rr(g,40,220,110,56,22);g.fill();for(let k=0;k<3;k++){g.fillStyle='rgba(255,255,255,'+(.4+.6*((Math.floor(t*6)+k)%3===0))+')';g.beginPath();g.arc(70+k*25,248,7,0,7);g.fill()}}
     bub(TX('probably fine 👍','غالباً تمام 👍'),220,false,p>=.17);
     if(p>=.2){htxt(g,TX('(it was not fine)','(ماكانش تمام)'),256,400,26,'#fca5a5')}}
+
+  if(kind==='notebook'){holoFrame(g,'#60a5fa');htxt(g,TX('RESEARCH','البحث'),256,72,32,'#bfdbfe');
+    g.fillStyle='#f8f5ec';rr(g,44,110,190,250,14);g.fill();g.strokeStyle='#93c5fd';g.lineWidth=2;for(let y=140;y<350;y+=16){g.beginPath();g.moveTo(56,y);g.lineTo(222,y);g.stroke()}g.fillStyle='#1e3a8a';for(let k2=0;k2<10;k2++)g.fillRect(60,132+k2*21,90+((k2*37)%70),5);
+    htxt(g,TX('40 PAGES','٤٠ صفحة'),139,404,30,'#bbf7d0');htxt(g,TX('his friend','صاحبه'),139,440,22,'#cbd5e1');
+    if(p>.65){g.fillStyle='#111827';rr(g,300,130,150,230,22);g.fill();g.fillStyle='#ef4444';g.beginPath();g.moveTo(352,212);g.lineTo(352,272);g.lineTo(402,242);g.closePath();g.fill();htxt(g,'0:07',375,330,26,'#fff');
+      htxt(g,TX('1 VIDEO','فيديو واحد'),375,404,30,'#fecaca');htxt(g,TX('him','هو'),375,440,22,'#cbd5e1')}}
+  if(kind==='coins'){holoFrame(g,'#f59e0b');htxt(g,TX('30 COINS','٣٠ عملة'),256,74,34,'#fde68a');const N=['CATCOIN','MOONPUP','FROGINU','RUGGY','404COIN','LAMBO','WAGMI','NGMI','PUMPY','BANANA','TOADZ','HODLR','GIGACHAD','MEOW2','YOLO','ROCKET'];
+    const off=(t*60)%(N.length*44);g.save();g.beginPath();g.rect(40,100,432,300);g.clip();N.concat(N).forEach((n2,k2)=>{const y=130+k2*44-off;g.fillStyle='rgba(255,255,255,.07)';rr(g,52,y-28,408,38,10);g.fill();g.font='700 24px DM Mono,monospace';g.textAlign='left';g.direction='ltr';g.fillStyle='#fff';g.fillText('$'+n2,70,y);g.textAlign='right';g.fillStyle=k2%3?'#4ade80':'#f87171';g.fillText((k2%3?'+':'−')+((k2*37)%90+3)+'%',440,y)});g.restore();
+    if(p>.45)htxt(g,TX('“explain one?”','"اشرحلي واحدة؟"'),256,440,28,'#fff');if(p>.7){g.fillStyle='rgba(8,18,44,.9)';rr(g,120,190,272,110,20);g.fill();htxt(g,TX('“…vibes.”','"…إحساس."'),256,262,46,'#fde68a')}}
+  if(kind==='cash'){holoFrame(g,'#4ade80');htxt(g,TX('CASH','الكاش'),256,72,34,'#bbf7d0');
+    for(let k2=0;k2<6;k2++){g.fillStyle='#e0a91f';g.beginPath();g.ellipse(150,330-k2*22,70,20,0,0,7);g.fill();g.strokeStyle='#8a6410';g.lineWidth=3;g.stroke()}htxt(g,'15%',150,205,52,'#4ade80');htxt(g,TX('his friend','صاحبه'),150,390,22,'#cbd5e1');
+    if(p>.55){g.strokeStyle='#64748b';g.lineWidth=4;g.setLineDash([10,8]);g.beginPath();g.ellipse(370,330,70,20,0,0,7);g.stroke();g.setLineDash([]);htxt(g,'0%',370,205,52,'#f87171');htxt(g,TX('him','هو'),370,390,22,'#cbd5e1');htxt(g,TX('(lunch money: in cat coin)','(فلوس الغدا: في عملة القطة)'),256,445,20,'#fca5a5')}}
+  if(kind==='headlines'){holoFrame(g,'#94a3b8');const H3=[[TX('TARIFF TALK HEATS UP','الجمارك بتسخن'),'#ef4444'],[TX('CAT COIN +80% 🚀','عملة القطة +٨٠٪ 🚀'),'#22c55e'],[TX('ANALYSTS: “NO IDEA”','المحللين: "مش عارفين"'),'#f59e0b']];
+    H3.forEach(([h,c],k2)=>{if(p<k2*.28)return;const y=110+k2*125;g.fillStyle='rgba(255,255,255,.08)';rr(g,40,y,432,100,16);g.fill();g.fillStyle=c;g.fillRect(40,y,12,100);htxt(g,h,262,y+62,28,'#fff')})}
+  if(kind==='sold'){holoFrame(g,'#f59e0b');g.fillStyle='rgba(255,255,255,.08)';rr(g,50,70,412,180,18);g.fill();g.fillStyle='#16181d';rr(g,80,110,130,100,12);g.fill();
+    g.font='800 26px Plus Jakarta Sans,sans-serif';g.textAlign='left';g.direction='ltr';g.fillStyle='#fff';g.fillText(TX('Game console','جهاز ألعاب'),230,140);g.fillStyle='#4ade80';g.fillText('$400',230,180);
+    g.save();g.translate(330,215);g.rotate(-.18);g.fillStyle='#e8343a';g.fillRect(-90,-30,180,52);htxt(g,TX('SOLD','اتباع'),0,10,38,'#fff');g.restore();
+    if(p>.5){htxt(g,'↓',256,310,56,'#fde68a');htxt(g,TX('ALL IN: CAT COIN 🐱','كله في: عملة القطة 🐱'),256,400,34,'#fde68a')}}
+  if(kind==='wlapp'){holoFrame(g,'#4ade80');g.font='800 30px Plus Jakarta Sans,sans-serif';g.textAlign='left';g.direction='ltr';g.fillStyle='#4ade80';g.fillText('WalletLens',44,76);
+    g.font=AR?'700 20px Cairo,sans-serif':'500 18px DM Mono,monospace';g.fillStyle='#94a3b8';g.textAlign=AR?'right':'left';g.direction=AR?'rtl':'ltr';g.fillText(TX('NET WORTH · ALL ASSETS','صافي الثروة · كل الأصول'),AR?468:44,108);
+    const R2=[[TX('Crypto','كريبتو'),32,'#f59e0b'],[TX('Stocks','أسهم'),41,'#38bdf8'],[TX('Gold','دهب'),12,'#eab308'],[TX('Cash','كاش'),15,'#4ade80']];
+    R2.forEach(([n2,v,c],k2)=>{if(p<k2*.12)return;const y=150+k2*58;g.font=AR?'700 24px Cairo,sans-serif':'700 24px Plus Jakarta Sans,sans-serif';g.fillStyle='#f5f6f7';g.textAlign=AR?'right':'left';g.fillText(n2,AR?468:44,y);g.textAlign=AR?'left':'right';g.fillStyle='#cbd5e1';g.fillText(v+'%',AR?44:468,y);g.fillStyle='#2a3036';rr(g,44,y+10,424,10,5);g.fill();g.fillStyle=c;rr(g,AR?468-424*v/41:44,y+10,424*v/41,10,5);g.fill()});
+    if(p>.5){g.fillStyle='#3a1114';rr(g,44,385,200,74,14);g.fill();g.strokeStyle='#ef4444';g.lineWidth=3;g.stroke();htxt(g,TX('⚠ one coin 11%','⚠ عملة ١١٪'),144,430,22,'#fecaca')}
+    if(p>.7){g.fillStyle='#052e22';rr(g,268,385,200,74,14);g.fill();g.strokeStyle='#4ade80';g.lineWidth=3;g.stroke();htxt(g,TX('✓ exit at −10%','✓ خروج عند −١٠٪'),368,430,22,'#bbf7d0')}}
   if(kind==='crash'){holoFrame(g,'#ff3b3b');htxt(g,TX('ONE COIN','عملة واحدة'),256,90,40,'#ffb3b3');htxt(g,'−50%',256,150,72,'#ff3b3b');holoChart(g,[.9,.95,.85,.88,.7,.6,.65,.4,.3,.35,.15,.1],'#ff3b3b',Math.min(1,p*1.6))}
   if(kind==='pump'){holoFrame(g,'#3dff8a');htxt(g,'+'+Math.round(80*Math.min(1,p*1.3))+'%',256,140,96,'#3dff8a');holoChart(g,[.1,.15,.12,.25,.3,.28,.45,.55,.5,.7,.82,.95],'#3dff8a',Math.min(1,p*1.3))}
   if(kind==='pie'){holoFrame(g,'#4dd2ff');htxt(g,TX('THE PLAN','الخطة'),256,80,36,'#bfeaff');const a=Math.min(1,p*1.5);g.save();g.translate(256,290);g.fillStyle='#2a6bff';g.beginPath();g.moveTo(0,0);g.arc(0,0,150,-Math.PI/2+.314,-Math.PI/2+6.283*a);g.fill();g.fillStyle='#ffd84a';g.shadowColor='#ffd84a';g.shadowBlur=30;g.beginPath();g.moveTo(0,0);g.arc(0,0,165,-Math.PI/2,-Math.PI/2+.314*Math.min(1,a*3));g.fill();g.restore();if(a>.6){htxt(g,'5%',380,180,60,'#ffd84a');htxt(g,TX('new coins','عملات جديدة'),380,214,24,'#ffe9a0')}}
@@ -669,6 +827,8 @@ function drawPhone(kind){const g=phoneTex.g,W=360,H=720;g.fillStyle='#181a20';g.
   if(kind==='red'){g.fillStyle='#0b0d12';g.fillRect(0,0,W,H);g.textAlign='center';g.direction='ltr';g.fillStyle='#fff';g.font='300 92px Plus Jakarta Sans,sans-serif';g.fillText('3:07',W/2,170);
     const card=(y,title,body,col)=>{g.fillStyle='rgba(255,255,255,.12)';rr(g,22,y,316,118,22);g.fill();g.fillStyle=col;rr(g,40,y+20,34,34,9);g.fill();g.direction=AR?'rtl':'ltr';g.textAlign=AR?'right':'left';g.fillStyle='#fff';g.font=AR?'800 21px Cairo,sans-serif':'800 19px Plus Jakarta Sans,sans-serif';g.fillText(title,AR?318:88,y+44);g.font=AR?'700 22px Cairo,sans-serif':'600 20px Plus Jakarta Sans,sans-serif';g.fillStyle=col==='#e8343a'?'#fecaca':'#e5e7eb';g.fillText(body,AR?318:40,y+90)};
     card(250,TX('BREAKING · TRUMP','عاجل · ترامب'),TX('“100% TARIFFS!!!”','"جمارك ١٠٠٪!!!"'),'#e8343a');card(390,TX('CAT COIN 🐱','عملة القطة 🐱'),TX('−50% in 1 hour 📉','−٥٠٪ في ساعة 📉'),'#e8343a');card(530,TX('Mom','ماما'),TX('why are you awake??','إنت صاحي ليه؟؟'),'#22c55e')}
+  if(kind==='alerts'){g.fillStyle='#0b0d12';g.fillRect(0,0,W,H);g.textAlign='center';g.direction='ltr';g.fillStyle='#fff';g.font='300 92px Plus Jakarta Sans,sans-serif';g.fillText('3:12',W/2,170);
+    [[TX('Exit hit −10% · sold','الخروج اتنفّذ −١٠٪ · اتباع'),'#22c55e',260],[TX('Cash bought the dip','الكاش اشترى النزلة'),'#22c55e',400]].forEach(([b,c,y])=>{g.fillStyle='rgba(255,255,255,.12)';rr(g,22,y,316,110,22);g.fill();g.fillStyle=c;rr(g,40,y+20,34,34,9);g.fill();g.direction=AR?'rtl':'ltr';g.textAlign=AR?'right':'left';g.fillStyle='#fff';g.font='800 19px Plus Jakarta Sans,sans-serif';g.fillText('WalletLens',AR?318:88,y+44);g.font=AR?'700 21px Cairo,sans-serif':'600 19px Plus Jakarta Sans,sans-serif';g.fillStyle='#d1fae5';g.fillText(b,AR?318:40,y+86)})}
   if(kind==='app'){g.font='800 34px Plus Jakarta Sans,sans-serif';g.textAlign='left';g.fillStyle='#10b981';g.fillText('WalletLens',26,64);g.font=AR?'700 20px Cairo,sans-serif':'500 18px DM Mono,monospace';g.fillStyle='#94a3b8';g.direction=AR?'rtl':'ltr';g.textAlign=AR?'right':'left';g.fillText(TX('REBALANCE','إعادة التوازن'),AR?334:26,98);
     [['BTC',38,'#f59e0b'],['ETH',24,'#6366f1'],[TX('Stocks','أسهم'),17,'#0ea5e9'],[TX('Cash','كاش'),15,'#10b981'],[TX('One new coin','عملة جديدة'),11,'#ef4444']].forEach(([n,p,c],i)=>{const y=150+i*74;g.font=AR?'700 22px Cairo,sans-serif':'700 22px Plus Jakarta Sans,sans-serif';g.fillStyle='#f5f6f7';g.textAlign=AR?'right':'left';g.fillText(n,AR?334:26,y);g.textAlign=AR?'left':'right';g.fillStyle='#cbd5e1';g.fillText(p+'%',AR?26:334,y);g.fillStyle='#2a3036';rr(g,26,y+12,308,12,6);g.fill();g.fillStyle=c;rr(g,26,y+12,Math.max(14,p*3.08*1.6),12,6);g.fill()});
     g.fillStyle='#3a1114';rr(g,20,530,320,150,20);g.fill();g.strokeStyle='#ef4444';g.lineWidth=4;g.stroke();g.textAlign=AR?'right':'left';const X=AR?320:40;g.font=AR?'700 19px Cairo,sans-serif':'500 17px DM Mono,monospace';g.fillStyle='#fca5a5';g.fillText(TX('BREAKS THE 5% RULE','بتكسر قاعدة الـ 5%'),X,568);g.font=AR?'800 24px Cairo,sans-serif':'800 24px Plus Jakarta Sans,sans-serif';g.fillStyle='#fff';g.fillText(TX('One new coin is 11%.','عملة جديدة = 11%.'),X,610);g.font=AR?'700 21px Cairo,sans-serif':'700 21px Plus Jakarta Sans,sans-serif';g.fillStyle='#fecaca';g.fillText(TX('Trim it back to 5%?','رجّعها لـ 5%؟'),X,646)}
@@ -691,145 +851,152 @@ function hideConfetti(){confetti.forEach(c=>c.m.visible=false)}
 
 
 
-// the channel's candlestick creature, rebuilt in bricks: a glossy brick body, printed eyes, wicks, a glow
-function drawCandleFace(g,col,mood){g.clearRect(0,0,256,512);g.fillStyle=col;g.fillRect(0,0,256,512);g.fillStyle='rgba(255,255,255,.12)';g.fillRect(14,0,16,512);
-  const eye=(x,y)=>{g.fillStyle='#fff';g.beginPath();g.ellipse(x,y,30,36,0,0,7);g.fill();g.fillStyle='#111';g.beginPath();g.arc(x+(mood==='evil'?-6:4),y+6,14,0,7);g.fill();g.fillStyle='#fff';g.beginPath();g.arc(x+(mood==='evil'?-10:0),y,5,0,7);g.fill()};
-  eye(88,150);eye(170,150);g.strokeStyle='#1a0505';g.lineWidth=10;g.lineCap='round';g.beginPath();
-  if(mood==='evil'){g.moveTo(54,96);g.lineTo(118,118);g.moveTo(204,96);g.lineTo(140,118);g.stroke();g.fillStyle='#1a0505';g.beginPath();g.moveTo(80,230);g.quadraticCurveTo(128,290,178,230);g.closePath();g.fill();g.fillStyle='#fff';g.fillRect(92,232,74,12)}
-  else{g.moveTo(92,236);g.quadraticCurveTo(128,268,164,236);g.stroke()}}
-function makeCandle(col,dark,mood){const g=new THREE.Group();const fc=canvasTex(256,512,(c)=>drawCandleFace(c,col,mood));
-  const bodyM=plastic(col,{emissive:col,emissiveIntensity:.18});const body=new THREE.Mesh(new THREE.BoxGeometry(.8,1.7,.55),[bodyM,bodyM,bodyM,bodyM,plastic('#ffffff',{map:fc.t,emissive:col,emissiveIntensity:.12}),bodyM]);body.castShadow=true;g.add(body);
-  [-.2,.2].forEach(x=>{const st=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.08,16),bodyM);st.position.set(x,.89,0);g.add(st)});
-  const wm=plastic(dark);const wt=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.6,8),wm);wt.position.y=1.15;g.add(wt);const wb=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.5,8),wm);wb.position.y=-1.1;g.add(wb);
-  [-1,1].forEach(s2=>{const a=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.6,8),bodyM);a.position.set(s2*.52,-.05,0);a.rotation.z=s2*.7;g.add(a)});
-  const L=new THREE.PointLight(col,1.4,5,1.5);L.position.set(0,0,.6);g.add(L);
-  const ht=canvasTex(128,128,(c)=>{const gr=c.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,col+'88');gr.addColorStop(1,col+'00');c.fillStyle=gr;c.fillRect(0,0,128,128)});
-  const hs=new THREE.Sprite(new THREE.SpriteMaterial({map:ht.t,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));hs.scale.set(3.2,3.6,1);hs.position.z=-.3;g.add(hs);
-  g.visible=false;scene.add(g);return g}
-function realWorld(key,t){const T=chars.trump;if(!T||!T.root.visible)return;
-  pressSpot.intensity=0;phoneGlow.intensity=0;T.phone.visible=false;
-  if(key==='hook'){T.phone.visible=true;T.armR.rotation.x=-1.25;T.armL.rotation.x=-1.0;T.armL.rotation.z=.35;T.neck.rotation.x=.28;T.setFace(t<.9?'smug':'pout');
-    const tap=Math.sin(NOW()/70)*.05;T.armL.rotation.x+=tap;phoneGlow.intensity=t<1.5?2.4:0;pressSpot.intensity=t<1.5?.35:0}
-  if(key==='end'){T.setFace(t<1.2?'pout':'smug');T.armR.rotation.z=2.3+Math.sin(NOW()/180)*.12;T.armR.rotation.x=-.3;T.armL.rotation.x=-.5;pressSpot.intensity=t<2.5?1.5:0}}
-function creatures(key,t,ta){const R=candleR,G=candleG;if(!R)return;R.visible=G.visible=false;const now=NOW()/1000;
-  if(key==='hook'&&t>=1.7){const tc=Math.min(t,6.8);R.visible=true;const sc=1+Math.min(1,(tc-1.7)/4)*.55;R.scale.setScalar(sc);R.position.set(1.55,.75+Math.sin(tc*2.2)*.08+sc*.4,-2.2);R.rotation.set(0,-.35,Math.sin(tc*1.6)*.06-.08)}
-  if(key==='lev'&&ta>2.55){R.visible=true;const q=Math.min(1,(t-2.55)/1.65),sc=1+q*1.15;R.scale.setScalar(sc);R.position.set(1.15,.7+sc*.55+Math.sin(now*3)*.06,-2.7);R.rotation.set(0,-.3,Math.sin(now*5)*.05)}
-  if(key==='plan'){G.visible=true;G.scale.setScalar(.42);G.position.set(1.6,1.62+Math.abs(Math.sin(now*3.2))*.12,-.4);G.rotation.y=-.4}
-  if(key==='end'){G.visible=true;G.scale.setScalar(.55);G.position.set(2.0,1.0+Math.abs(Math.sin(now*3))*.15,1.6);G.rotation.y=-.6}
-  if(key==='cta'){G.visible=true;G.scale.setScalar(.42);G.position.set(1.75,1.62+Math.abs(Math.sin(now*3.2))*.12,-.45);G.rotation.y=-.3}}
-// his chart-check counter, as in the channel's films
-function checks(key,t){const f=Math.floor;switch(key){case 'hook':return 41+f(Math.min(t,6.8)*1.0);case 'party':return 3+f(t*.6);case 'ollie':return 12+f(t*.5);
-  case 'lev':return t<2.55?25:Math.min(112,25+f((t-2.55)*16));case 'plan':return 112;case 'end':return 3;case 'cta':return 0;default:return 0}}
-// ── direction: time warps (slow motion, freeze, rewind), shot lists, lighting moods ──
-const WARP={
- hook:t=>t<6.8?t:(t<9.8?6.8:Math.max(1.0,6.8-(t-9.8)*5.5)),
- lev:t=>t<2.55?t:(t<4.2?2.55+(t-2.55)*.35:3.1275+(t-4.2))};
+// ── sets, creatures and props for the 5-minute story ──
+function buildV3(){
+  const brickTex=(col,mortar,rx,ry)=>{const c=canvasTex(512,256,(g)=>{g.fillStyle=mortar;g.fillRect(0,0,512,256);for(let r=0;r<8;r++)for(let k=-1;k<9;k++){const x=k*64+(r%2?32:0),y=r*32;g.fillStyle=col;g.fillRect(x+1.5,y+1.5,61,29);g.fillStyle='rgba(255,255,255,.14)';g.fillRect(x+1.5,y+1.5,61,3);g.fillStyle='rgba(0,0,0,.22)';g.fillRect(x+1.5,y+27.5,61,3)}});c.t.wrapS=c.t.wrapT=THREE.RepeatWrapping;c.t.repeat.set(rx,ry);return c.t};
+  const add=(geo,mat,x,y,z,o={})=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);if(o.rx)m.rotation.x=o.rx;if(o.ry)m.rotation.y=o.ry;if(o.rz)m.rotation.z=o.rz;m.castShadow=o.cast!==false;m.receiveShadow=true;scene.add(m);return m};
+  const B=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
+  // bedroom (its own corner of the world, x ≈ 40)
+  const wallM=new THREE.MeshStandardMaterial({map:brickTex('#27304d','#1c2339',4,2.5),roughness:.55});
+  add(new THREE.PlaneGeometry(9,8),plastic('#3a2a22',{roughness:.6,clearcoat:.2}),BX+1,0,-.5,{rx:-Math.PI/2,cast:false});
+  add(B(7.2,4.6,.3),wallM,BX+1,2.3,-3.62,{cast:false});add(B(.3,4.6,7),wallM,BX-2.6,2.3,0,{cast:false});add(B(.3,4.6,7),wallM,BX+4.6,2.3,0,{cast:false});
+  const wood=plastic('#5a3e2c'),white=plastic('#e9e6df'),blue=plastic('#2c4a8a');
+  add(B(1.9,.45,3.0),wood,BX+.8,.3,-1.85);add(B(1.8,.25,2.9),white,BX+.8,.62,-1.85);add(B(1.95,1.4,.16),wood,BX+.8,.95,-3.38);
+  V3.pillow=add(B(1.05,.2,.52),white,BX+.8,.84,-2.95);
+  V3.blanketM=blue;V3.blanket=add(B(1.85,.22,1.9),blue,BX+.8,1.18,-1.25);
+  add(B(.85,.7,.7),wood,BX-.55,.35,-2.75);
+  const clk=canvasTex(160,64,(g)=>{g.fillStyle='#120606';g.fillRect(0,0,160,64);g.fillStyle='#ff3b30';g.font='900 46px DM Mono,monospace';g.textAlign='center';g.fillText('3:07',80,50)});
+  add(B(.5,.24,.18),[plastic('#141414'),plastic('#141414'),plastic('#141414'),plastic('#141414'),new THREE.MeshBasicMaterial({map:clk.t}),plastic('#141414')],BX-.7,.82,-2.85);
+  const win=canvasTex(256,220,(g)=>{const gr=g.createLinearGradient(0,0,0,220);gr.addColorStop(0,'#0c1530');gr.addColorStop(1,'#2a2550');g.fillStyle=gr;g.fillRect(0,0,256,220);g.fillStyle='#fff8dc';g.beginPath();g.arc(186,60,26,0,7);g.fill();g.fillStyle='rgba(255,255,255,.7)';for(let i=0;i<30;i++){g.fillRect(RNG()*256,RNG()*150,2,2)}g.fillStyle='#0a0e1c';for(let i=0;i<9;i++){const h=40+RNG()*70;g.fillRect(i*30,220-h,26,h)}g.fillStyle='#ffd27a';for(let i=0;i<24;i++)g.fillRect(RNG()*256,160+RNG()*55,3,4)});
+  add(B(2.0,1.7,.08),new THREE.MeshBasicMaterial({map:win.t}),BX+3.0,2.7,-3.45,{cast:false});
+  [[0,.82],[0,-.82],[1,0]].forEach(([v,o])=>add(v?B(.1,1.8,.12):B(2.1,.1,.12),wood,BX+3.0+(v?0:0),2.7+(v?0:o),-3.42,{cast:false}));
+  const posterT=canvasTex(240,320,(g)=>{g.fillStyle='#1b1340';g.fillRect(0,0,240,320);g.fillStyle='#ffd23f';g.font='900 44px Montserrat,sans-serif';g.textAlign='center';g.fillText('TO THE',120,70);g.fillText('MOON',120,120);g.font='120px serif';g.fillText('🚀',120,250)});
+  add(new THREE.PlaneGeometry(1.1,1.45),new THREE.MeshStandardMaterial({map:posterT.t,roughness:.7}),BX-2.43,2.6,-1.2,{ry:Math.PI/2,cast:false});
+  add(B(1.6,.08,.8),wood,BX+3.4,.95,-1.4);[[-.7,-.3],[.7,-.3],[-.7,.3],[.7,.3]].forEach(([a,b])=>add(B(.08,.95,.08),wood,BX+3.4+a,.47,-1.4+b));
+  V3.consoleB=add(B(.6,.18,.42),plastic('#16181d'),BX+3.3,1.08,-1.4);
+  // red chart sea for leverage
+  const fg=new THREE.PlaneGeometry(9,8,48,40);V3.floodGeo=fg;V3.flood=add(fg,new THREE.MeshPhysicalMaterial({color:'#9b1023',emissive:'#4a0410',roughness:.12,metalness:.1,transparent:true,opacity:.86,clearcoat:1}),BX+1,0,-.5,{rx:-Math.PI/2,cast:false});V3.flood.visible=false;
+  const fp=canvasTex(256,256,(g)=>{g.fillStyle='rgba(255,90,90,.0)';g.fillRect(0,0,256,256);g.strokeStyle='rgba(255,140,140,.55)';g.lineWidth=5;g.beginPath();for(let x=0;x<256;x+=8)g.lineTo(x,128+Math.sin(x*.05)*40-x*.3);g.stroke()});
+  // floating pillow for "this is fine"
+  V3.pillowF=add(B(1.1,.22,.6),white,BX+1.2,.6,-.55);V3.pillowF.visible=false;
+  // the liquidation shark, in bricks
+  {const g=new THREE.Group(),grey=plastic('#71829a'),belly=plastic('#e8ecf2'),dark=plastic('#2a313d');
+   const body=new THREE.Mesh(new THREE.SphereGeometry(.5,24,16),grey);body.scale.set(1.5,.5,.55);g.add(body);
+   const bel=new THREE.Mesh(new THREE.SphereGeometry(.47,20,12),belly);bel.scale.set(1.35,.36,.48);bel.position.y=-.08;g.add(bel);
+   const fin=new THREE.Mesh(new THREE.ConeGeometry(.22,.62,4),grey);fin.scale.set(1,1,.35);fin.position.set(-.05,.42,0);fin.rotation.z=-.25;g.add(fin);
+   const tail=new THREE.Mesh(new THREE.ConeGeometry(.24,.55,4),grey);tail.scale.set(1,1,.3);tail.position.set(-.85,.08,0);tail.rotation.z=Math.PI/2+.4;g.add(tail);V3.sharkTail=tail;
+   [-1,1].forEach(s2=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),new THREE.MeshBasicMaterial({color:'#ff2a2a'}));e.position.set(.55,.08,s2*.2);g.add(e);const pf=new THREE.Mesh(new THREE.ConeGeometry(.12,.38,4),grey);pf.scale.set(1,1,.3);pf.position.set(.1,-.18,s2*.28);pf.rotation.set(s2*1.1,0,-.6);g.add(pf)});
+   const jaw=new THREE.Group();jaw.position.set(.45,-.08,0);const jm=new THREE.Mesh(new THREE.BoxGeometry(.42,.08,.36),dark);jm.position.x=.18;jaw.add(jm);for(let i=0;i<5;i++){const tooth=new THREE.Mesh(new THREE.ConeGeometry(.03,.08,4),belly);tooth.position.set(.06+i*.07,.06,(i%2?.1:-.1));jaw.add(tooth)}g.add(jaw);V3.sharkJaw=jaw;
+   g.visible=false;scene.add(g);V3.shark=g}
+  // the turtle: patience, in bricks
+  {const g=new THREE.Group(),sh=canvasTex(128,128,(c)=>{c.fillStyle='#2f7d3a';c.fillRect(0,0,128,128);c.strokeStyle='#1f5a28';c.lineWidth=5;for(let y=0;y<128;y+=32)for(let x=(y/32%2)*16;x<128;x+=32){c.beginPath();for(let k=0;k<6;k++){const a=k/6*Math.PI*2;c.lineTo(x+Math.cos(a)*15,y+Math.sin(a)*15)}c.closePath();c.stroke()}});
+   const shell=new THREE.Mesh(new THREE.SphereGeometry(.34,24,12,0,Math.PI*2,0,Math.PI/2),plastic('#ffffff',{map:sh.t}));shell.scale.y=.75;g.add(shell);
+   const skin=plastic('#8fd18a');const head=new THREE.Group();head.position.set(0,.1,.36);const hm=new THREE.Mesh(new THREE.SphereGeometry(.12,16,12),skin);head.add(hm);
+   [-1,1].forEach(s2=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.025,8,6),new THREE.MeshBasicMaterial({color:'#111'}));e.position.set(s2*.05,.04,.1);head.add(e)});g.add(head);V3.turtleHead=head;
+   [[-.22,.18],[.22,.18],[-.22,-.18],[.22,-.18]].forEach(([x,z])=>{const l=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.12,10),skin);l.position.set(x,-.02,z);g.add(l)});
+   g.visible=false;scene.add(g);V3.turtle=g}
+  // the six rule bricks that become a shield
+  {const g=new THREE.Group();V3.shieldBricks=[];
+   for(let i=0;i<6;i++){const pt=canvasTex(128,80,(c)=>{c.fillStyle='#1fa34a';c.fillRect(0,0,128,80);c.fillStyle='#ffffff';c.font='900 52px Montserrat,sans-serif';c.textAlign='center';c.fillText(String(i+1),64,60)});
+     const gm=plastic('#22b04f');const b=new THREE.Mesh(new THREE.BoxGeometry(.6,.36,.3),[gm,gm,gm,gm,plastic('#ffffff',{map:pt.t}),gm]);b.castShadow=true;
+     [-.15,.15].forEach(x=>{const s2=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.06,14),gm);s2.position.set(x,.21,0);b.add(s2)});
+     b.userData.home=new THREE.Vector3((i%3-1)*.62,.18+Math.floor(i/3)*.37,0);b.position.copy(b.userData.home);g.add(b);V3.shieldBricks.push(b)}
+   g.visible=false;scene.add(g);V3.shield=g}
+  // console with a SOLD tag on the cafeteria table
+  {const g=new THREE.Group();const c=new THREE.Mesh(new THREE.BoxGeometry(.62,.16,.42),plastic('#16181d'));c.castShadow=true;g.add(c);
+   const tag=canvasTex(128,64,(x)=>{x.fillStyle='#e8343a';x.fillRect(0,0,128,64);x.fillStyle='#fff';x.font='900 40px Montserrat,sans-serif';x.textAlign='center';x.fillText('SOLD',64,48)});
+   const tg=new THREE.Mesh(new THREE.PlaneGeometry(.36,.18),new THREE.MeshBasicMaterial({map:tag.t,side:THREE.DoubleSide}));tg.position.set(.2,.2,.18);tg.rotation.set(-.4,0,-.2);g.add(tg);
+   g.position.set(0,1.17,-.25);g.visible=false;scene.add(g);V3.console=g}
+  // bonk star
+  {const st=canvasTex(128,128,(g)=>{g.fillStyle='#ffd23f';g.beginPath();for(let k=0;k<10;k++){const a=k/10*Math.PI*2-Math.PI/2,r=k%2?26:60;g.lineTo(64+Math.cos(a)*r,64+Math.sin(a)*r)}g.closePath();g.fill()});
+   V3.star=new THREE.Sprite(new THREE.SpriteMaterial({map:st.t,transparent:true,depthWrite:false}));V3.star.scale.set(.8,.8,1);V3.star.visible=false;scene.add(V3.star)}
+  // bedroom lights
+  V3.moon=new THREE.DirectionalLight('#9fb4ff',0);V3.moon.position.set(BX+3,5,-6);V3.moon.target.position.set(BX+.8,0,-1);scene.add(V3.moon);scene.add(V3.moon.target);
+  V3.dawn=new THREE.DirectionalLight('#ffb36b',0);V3.dawn.position.set(BX+5,4,-6);V3.dawn.target.position.set(BX,0,-1);scene.add(V3.dawn);scene.add(V3.dawn.target);
+  V3.redL=new THREE.PointLight('#ff2a2a',0,9);V3.redL.position.set(BX+1,3,0);scene.add(V3.redL);
+  V3.glowB=new THREE.PointLight('#9cc4ff',0,3.2,1.6);V3.glowB.position.set(BX-.45,1.2,-2.4);scene.add(V3.glowB);
+  V3.insL=new THREE.PointLight('#bcd2ff',0,8);V3.insL.position.set(INS.x,INS.y+1,INS.z+2);scene.add(V3.insL);
+}
+// ── acting helpers ──
+function once(k,fn){if(!sfxFlags[k]){sfxFlags[k]=1;fn()}}
+function seat(c,x,z){place(c,x,z);c.seated=true}
+function sitKid(x){seat(chars.rex,x,-1.05)}
+function duo(){seat(chars.ollie,1.0,-1.05);seat(chars.rex,-1.1,-1.05)}
+function cafHolo(x,y,z,ry){holo.visible=true;holo.position.set(x,y,z);holo.rotation.set(0,ry,0)}
+function bedHolo(){holo.visible=true;holo.position.set(BX+2.1,2.35,-1.4);holo.rotation.set(0,-.35,0)}
+function insertHolo(){holo.visible=true;holo.position.set(INS.x,INS.y,INS.z);holo.rotation.set(0,0,0)}
+function insertShot(t,dur){const p=ease(Math.min(1,t/dur));camera.fov=40;camera.updateProjectionMatrix();camera.position.set(INS.x+Math.sin(t*.3)*.04,INS.y,INS.z+2.3-.28*p);camera.lookAt(INS.x,INS.y,INS.z)}
+function dolly(t,t0,t1,face){const p=ease((t-t0)/(t1-t0)),fov=22+40*p,d=4.4*Math.tan(11*Math.PI/180)/Math.tan(fov/2*Math.PI/180);camera.fov=fov;camera.updateProjectionMatrix();camera.position.set(face.x+(Math.random()-.5)*camShake,face.y+.02+(Math.random()-.5)*camShake,face.z+d);camera.lookAt(face);camera.rotateZ(.05*p)}
+function trumpType(t,face){const T=chars.trump;T.phone.visible=true;T.armR.rotation.x=-1.25;T.armL.rotation.x=-1.0+Math.sin(NOW()/70)*.05;T.armL.rotation.z=.35;T.neck.rotation.x=.28;T.setFace(face)}
+function lieAt(c){place(c,BX+.8,-.45);c.root.position.y=.98;c.root.rotation.x=-Math.PI/2;c.seated=false}
+function sitBed(c){c.root.visible=true;c.root.position.set(BX+.8,.18,-2.3);c.root.rotation.set(0,0,0);c.seated=true}
+function bedScene(who,sitting){const c=who==='friend'?chars.ollie:chars.rex;V3.blanketM.color.set(who==='friend'?'#2f7d4a':'#2c4a8a');
+  if(sitting){sitBed(c);V3.blanket.position.set(BX+.8,.84,-1.15);V3.blanket.scale.set(1,1,.9)}else{lieAt(c);V3.blanket.position.set(BX+.8,1.2,-1.25);V3.blanket.scale.set(1,1,1)}
+  V3.flood.visible=false;V3.shark.visible=false;V3.pillowF.visible=false;V3.pillow.visible=true;holo.visible=false;phone3d.visible=false}
+function phoneOnStand(kind){phone3d.visible=true;phone3d.scale.set(1,1,1);phone3d.position.set(BX-.4,.73,-2.55);phone3d.rotation.set(kind==='down'?Math.PI/2:-Math.PI/2,0,.35);if(kind!=='down')drawPhone(kind)}
+function wake(ta){const k=chars.rex;const q=ease(Math.min(1,Math.max(0,(ta-2.5)/1.0)));
+  const lie=V(BX+.8,.98,-.45),up=V(BX+.8,.18,-2.3);k.root.visible=true;k.root.position.copy(lie.clone().lerp(up,q));k.root.rotation.set(-Math.PI/2*(1-q),0,0);k.seated=q>.5;if(k.seated)sit(k);
+  V3.blanket.position.set(BX+.8,1.2-.36*q,-1.25+.1*q);
+  if(ta<2.5){k.setFace('sleep');phone3d.position.set(BX-.4,.73,-2.55);phone3d.rotation.set(-Math.PI/2,0,.35+Math.sin(NOW()/25)*.06*(ta>.5?1:0));if(ta>.5)once('buzz',()=>SFX.buzz())}
+  else{phone3d.position.set(BX+1.05,1.55,-1.75);phone3d.rotation.set(-.5,0,0);k.armR.rotation.x=-1.3;k.armL.rotation.x=-1.1;
+    if(ta<6){k.setFace('shock')}else{scream(k,ta);k.setFace('scream');camShake=.03;once('scr',()=>SFX.alarm())}}}
+function partyScene(){seat(chars.rex,0,-1.05);chars.rex.hat.visible=true;[['k1',-1.6,-2.3],['k2',.4,-2.8],['k3',1.9,-2.1],['k4',-2.6,-1.3]].forEach(([k,x,z])=>{place(chars[k],x,z);chars[k].hat.visible=true});cafHolo(1.25,2.7,-.6,-.3)}
+function partyAct(t,dt){const r=chars.rex;cheer(r,t);r.setFace('grin');['k1','k2','k3','k4'].forEach((k,i)=>{const c=chars[k];cheer(c,t,i*1.3);c.setFace(i%2?'grin':'happy')});if(t<dt*1.5+.001)confettiBurst(V(0,0,-1.5));confettiStep(dt)}
+function classScene(){place(chars.ollie,1.0,1.9,-.5);place(chars.rex,-.2,2.2,.9);place(chars.teach,0,-8.2,Math.PI);[['k1',-2.6,-.6],['k2',-1.2,-1.2],['k3',1.6,-1.0],['k4',2.9,-.3]].forEach(([k,x,z])=>place(chars[k],x,z));holo.visible=false}
+function classAct(t){const f=chars.ollie,r=chars.rex,tc=chars.teach;idle(f,t);f.setFace('happy');point(f,.6);idle(r,t,1);r.setFace(t<5?'smile':'happy');
+  ['k1','k2','k3','k4'].forEach((k,i)=>{if(t>16.6)clap(chars[k],t,i);else idle(chars[k],t,i);chars[k].setFace(i%2?'happy':'grin');chars[k].root.lookAt(0,0,-.2)});tc.armR.rotation.x=-2.6+Math.sin(t*8)*.15;tc.armR.rotation.z=.2}
+function shieldBuild(tt,drop){V3.shieldBricks.forEach((b,i)=>{const t0=i*1.2,q=Math.min(1,Math.max(0,(tt-t0)/.45));b.visible=tt>t0;b.position.copy(b.userData.home);b.position.y+=(1-ease(q))*drop*2.2;if(q>=1&&tt<40)once('brick'+i,()=>SFX.pop())})}
+function floodLevel(y){V3.flood.position.y=y;V3.floodY=y}
+function sharkCircle(tt,vis){const S=V3.shark;S.visible=vis;if(!vis)return;const a=tt*.85;S.position.set(BX+.8+Math.cos(a)*2.5,(V3.floodY||.4)-.12,-1.5+Math.sin(a)*1.6);S.rotation.set(0,-a-Math.PI/2,0);V3.sharkTail.rotation.y=Math.sin(NOW()/120)*.35;V3.sharkJaw.rotation.z=-.05}
+function turtleAct(t,mode){const h=V3.turtleHead;h.position.set(0,.1,mode==='sleep'?.3:.36+Math.sin(t*1.5)*.02);h.rotation.x=mode==='sleep'?.35:(mode==='offended'?-.35:Math.sin(t*1.1)*.1)}
+function crashAct(ta,t){const k=chars.rex,S=V3.shark;sitBed(k);floodLevel(.55+Math.sin(t*1.3)*.02);
+  if(t<4.4){scream(k,ta);k.setFace('scream');camShake=.04;sharkCircle(ta*.6,true)}
+  else if(t<6.2){const q=(t-4.4)/1.8;S.visible=true;S.position.set(BX+3.6-5.2*q,.5+Math.sin(q*Math.PI)*1.7,-.2-2.4*q);S.rotation.set(0,Math.atan2(2.4,5.2)+Math.PI,-Math.cos(q*Math.PI)*.8);V3.sharkJaw.rotation.z=q<.5?-.7:-.05;
+    if(q>.45){k.root.position.set(BX+1.2,.48,-.55);k.setFace('shock');V3.pillowF.visible=true;V3.pillow.visible=false}else{scream(k,ta);k.setFace('scream')}camShake=.06;if(q>.45)once('chomp',()=>SFX.chomp())}
+  else{k.root.position.set(BX+1.2,.5+Math.sin(t*1.6)*.04,-.55);V3.pillowF.visible=true;V3.pillowF.position.set(BX+1.2,.6+Math.sin(t*1.6)*.04,-.55);V3.pillow.visible=false;k.setFace(t<9?'cry':'smile');idle(k,t);sharkCircle(t*.7,true)}
+  holo.visible=t>6.2;if(holo.visible)drawHolo('lev',.9,t)}
+function weekAct(t){const T=chars.trump,k=chars.rex,S=V3.shark;k.setFace('sleep');turtleAct(t,'sleep');V3.star.visible=false;
+  if(t<8){trumpType(t,t<4.4?'tsmug':'tshout');if(t>=4.4){holo.visible=true;holo.position.set(0,3.2,14.6);holo.rotation.set(0,0,0);V3.newsN=200;drawHolo('news',(t-4.4)/2,t);once('ping',()=>SFX.ping())}else holo.visible=false}
+  else{holo.visible=false;T.phone.visible=false}
+  if(t>=8&&t<16){if(t<13.2)sharkCircle(t*.9,true);else{const q=Math.min(1,(t-13.2)/.5);S.visible=true;S.position.set(BX+3.8-1.0*q,.12,-.6);S.rotation.set(0,Math.PI,0);if(t>13.6){V3.star.visible=t<14.6;V3.star.position.set(BX+3.1,1.3,-.4);S.position.x=BX+2.8+(t-13.6)*1.6;S.rotation.set(0,0,Math.sin(t*20)*.2);once('bonk',()=>SFX.bonk())}}}
+  if(t>=16){T.setFace('tconfused');T.neck.rotation.y=Math.sin((t-16)*2.2)*.5;T.armR.rotation.x=-.4;T.armL.rotation.x=-.4;T.phone.visible=true}}
+// ── engine glue: maps from the scene list, lighting presets ──
+const SETUP={},UPDATE={},SHOT={},WARP={};
+SCENES.forEach(s=>{SETUP[s.key]=()=>s.setup&&s.setup();UPDATE[s.key]=(ta,dt)=>{Object.values(chars).forEach(c=>{if(c.root.visible&&c.seated)sit(c)});s.update&&s.update(ta,t,dt||0)};SHOT[s.key]=x=>s.shot&&s.shot(x);if(s.warp)WARP[s.key]=s.warp});
 function shotList(t,list){for(const sh of list){if(t>=sh[0]&&t<sh[1]){const p=ease((t-sh[0])/(sh[1]-sh[0])),o=sh[6]||{};const pos=sh[2].clone().lerp(sh[3],p),look=sh[4].clone().lerp(sh[5],p);
   camera.fov=o.fovB!==undefined?o.fov+(o.fovB-o.fov)*p:(o.fov||40);camera.updateProjectionMatrix();
   if(camShake>0){pos.x+=(Math.random()-.5)*camShake;pos.y+=(Math.random()-.5)*camShake}
   camera.position.copy(pos);camera.lookAt(look);const roll=o.rollB!==undefined?(o.roll||0)+(o.rollB-(o.roll||0))*p:(o.roll||0);if(roll)camera.rotateZ(roll);return}}}
 function orbit(t,t0,t1,c,r,a0,a1,y0,y1,look,fov=40){const p=ease((t-t0)/(t1-t0)),a=a0+(a1-a0)*p;camera.fov=fov;camera.updateProjectionMatrix();camera.position.set(c.x+Math.sin(a)*r,y0+(y1-y0)*p,c.z+Math.cos(a)*r);camera.lookAt(look)}
-const FACE_REX=V(0,1.95,-1.05);
-const SHOT={
- hook(t){shotList(Math.min(t,6.79),[
-  [0,1.4,V(.7,2.45,17.2),V(.5,2.42,16.5),V(0,2.25,13.75),V(0,2.3,13.75),{fov:36,roll:-.04}],
-  [1.4,2.9,V(.66,1.66,.42),V(.57,1.52,.2),V(.5,1.1,-.25),V(.5,1.1,-.25),{fov:38}],
-  [2.9,4.4,V(0,2.0,1.3),V(0,1.98,1.02),FACE_REX,FACE_REX,{fov:34}],
-  [4.4,6.8,V(2.8,2.7,3.6),V(2.35,2.55,3.1),V(0,1.7,-1),V(0,1.75,-1),{fov:40,roll:.1,rollB:.14}]])},
- party(t){shotList(t,[
-  [0,2.6,V(0,4.8,5.4),V(0,3.0,3.9),V(0,1.5,-1.6),V(0,1.9,-1.6),{fov:42}],
-  [2.6,5.0,V(.55,2.05,1.3),V(.25,2.0,1.0),FACE_REX,V(0,2.0,-1.05),{fov:36,roll:-.05}],
-  [5.0,7.5,V(-1.7,1.0,2.3),V(-1.2,1.05,2.0),V(-.6,2.3,-2),V(-.4,2.45,-2),{fov:46}]])},
- ollie(t){shotList(t,[
-  [0,2.2,V(-2.0,2.2,1.0),V(-1.8,2.17,.75),V(1.0,2.05,-1.05),V(1.0,2.05,-1.05),{fov:36}],
-  [2.2,4.2,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34,roll:.05}],
-  [4.2,7,V(1.35,2.0,1.1),V(1.2,1.98,.9),V(1.0,1.95,-1.05),V(1.0,1.95,-1.05),{fov:32}]])},
- lev(t){if(t>=2.55&&t<4.2){const p=ease((t-2.55)/1.65),fov=22+40*p,d=4.4*Math.tan(11*Math.PI/180)/Math.tan(fov/2*Math.PI/180);
-   camera.fov=fov;camera.updateProjectionMatrix();camera.position.set((Math.random()-.5)*camShake,1.97+(Math.random()-.5)*camShake,-1.05+d);camera.lookAt(FACE_REX);camera.rotateZ(.05*p);return}
-  shotList(t,[
-  [0,2.3,V(-.95,2.0,2.5),V(-.6,2.0,2.05),V(.3,2.1,-.8),V(.3,2.1,-.8),{fov:38}],
-  [2.3,2.55,V(.9,2.6,.62),V(.9,2.6,.5),V(.9,2.6,-.4),V(.9,2.6,-.4),{fov:40}],
-  [4.2,5.4,V(.25,2.0,1.7),V(.1,1.6,2.0),V(0,1.6,-1.05),V(0,1.2,-1.4),{fov:42,roll:.12}],
-  [5.4,6.9,V(0,6.2,-.9),V(0,5.6,-1.3),V(0,0,-2.5),V(0,0,-2.7),{fov:46}],
-  [6.9,8.5,V(2.6,2.3,2.8),V(2.95,2.45,3.3),V(0,1.0,-1.8),V(0,1.1,-1.8),{fov:40,roll:-.06}]])},
- plan(t){if(t<3.2){shotList(t,[[0,3.2,V(1.25,1.45,1.75),V(1.0,1.5,1.4),V(.45,2.15,-.95),V(.4,2.2,-.95),{fov:44}]]);return}
-  orbit(t,3.2,7.5,V(.6,0,-1.05),2.7,-.65,.45,2.15,2.05,V(.4,2.1,-1.0),38)},
- end(t){if(t<2.4){shotList(t,[[0,2.4,V(-.7,2.3,17.6),V(-.35,2.3,16.7),V(0,2.0,13.75),V(0,2.1,13.75),{fov:36}]]);return}
-  if(t<5){orbit(t,2.4,5,V(.3,0,1.2),5.4,.45,-.3,3.2,2.6,V(.2,1.7,.8),40);return}
-  shotList(t,[[5,8,V(0,3.0,1.0),V(0,3.15,-4.4),V(0,2.9,-6),V(0,3.15,-9),{fov:40}]])},
- cta(t){shotList(t,[
-  [0,5.0,V(-.2,1.95,3.6),V(-.3,1.95,3.2),V(-.1,1.9,0),V(-.2,1.9,0),{fov:40}],
-  [5.0,6.5,V(-.3,1.95,3.2),V(-.33,1.86,1.62),V(-.2,1.9,0),V(-.35,1.85,1.1),{fov:40,fovB:30}]])}
-};
 const H=(x)=>{const s=Math.sin(x*127.1)*43758.5453;return s-Math.floor(s)};
-function mood(key,t,dt){
-  let hem=.5,sun=.95,rim=.7,lamp=.35,lampE=1.6,party=0,win=0,shaft=0,alarmI=null;
+function mood(key,t,dt){const s=SCENES[cur],L=s.look;
+  let hem=.5,sun=.95,rim=.7,lamp=.35,lampE=1.6,party=0,win=0,shaft=0,pend=2.6;
+  let moon=0,dawn=0,red=0,glow=0,ins=0,press=0,pglow=0;
   Object.assign(FX,{sat:1.0,con:1.08,vig:.45,ab:.0015,warm:.18,flash:0,rw:0,bars:0});
-  if(key==='hook'){hem=.32;sun=.55;rim=1.1;lamp=.18;Object.assign(FX,{sat:.95,warm:-.6,vig:.45,bars:t<6.8?1:0});
-    if(t>=6.8&&t<9.8){FX.sat=.12;FX.con=1.18;FX.flash=Math.max(0,.6-(t-6.8)*2.4);if(!sfxFlags.frz){sfxFlags.frz=1;SFX.scratch()}}
-    if(t>=9.8){FX.rw=1;FX.sat=.7;FX.ab=.004;if(!sfxFlags.rw){sfxFlags.rw=1;SFX.rewind()}}
-    $('rw').hidden=!(t>=9.8)}
-  else $('rw').hidden=true;
-  if(key==='party'){hem=.6;sun=.8;lamp=.2;lampE=.9;party=1;Object.assign(FX,{sat:1.12,con:1.08,warm:.3})}
-  if(key==='ollie'){win=.5;shaft=.06;FX.warm=.3}
-  if(key==='lev'){if(t<2.55){hem=.42;sun=.8;FX.warm=-.1}
-    else{const fl=t<3.3?(H(Math.floor(t*22))>.45?1:.05):.0;lamp=.35*fl;lampE=1.6*fl+.05;hem=t<3.3?.42*fl+.08:.1;sun=t<3.3?.8*fl+.1:.18;rim=.4;
-      Object.assign(FX,{sat:1.12,con:1.12,warm:-.25,vig:.55,bars:1,ab:t<4.2?.0045:.002});if(!sfxFlags.slo){sfxFlags.slo=1;SFX.slowmo()}}}
-  flames.forEach(({g,ph})=>{g.visible=key==='lev'&&t>6.25;if(g.visible){const s2=1+.25*Math.sin(NOW()/90+ph);g.scale.set(1/s2*1.1,s2,1/s2*1.1)}});
-  if(key==='plan'){hem=.42;sun=.45;win=1.7;shaft=.17;lamp=.2;Object.assign(FX,{warm:.75,sat:1.16,con:1.07})}
-  if(key==='end'){win=1.0;shaft=.11;Object.assign(FX,{warm:.45,sat:1.16})}
-  if(key==='cta'){FX.warm=.1}
-  const pend=(key==='party'||key==='outro')?0:(key==='lev'&&t>=2.55?(t<3.3?(H(Math.floor(t*22))>.45?2.6:0):0):2.6);
+  if(L==='party'){hem=.6;sun=.8;lamp=.2;lampE=.9;party=1;pend=0;Object.assign(FX,{sat:1.12,warm:.3})}
+  if(L==='gold'){win=1.2;shaft=.13;Object.assign(FX,{warm:.5,sat:1.12})}
+  if(L==='pressNight'){hem=.25;sun=.2;press=.35;pglow=chars.trump&&chars.trump.phone&&chars.trump.phone.visible?2.4:0;pend=0;Object.assign(FX,{warm:-.3,vig:.55})}
+  if(L==='pressDay'){hem=.6;sun=.6;press=1.5;pend=0;Object.assign(FX,{warm:.35})}
+  if(L==='insert'){hem=.2;sun=.1;ins=1.2;pend=0;Object.assign(FX,{vig:.5,warm:0})}
+  if(L==='bedNight'||L==='bedRed'){hem=.25;sun=.15;moon=.7;pend=0;glow=phone3d.visible?1.6:0;Object.assign(FX,{warm:-.35,vig:.55})}
+  if(L==='bedRed'){red=1.6+Math.sin(NOW()/160)*1.0;Object.assign(FX,{sat:1.1,warm:-.2,ab:.0025,bars:1})}
+  if(L==='bedDawn'){hem=.45;sun=.3;dawn=1.4;moon=.2;pend=0;glow=.5;Object.assign(FX,{warm:.6,sat:1.08})}
+  if(s.set==='press'&&key==='week'){if(t>=8&&t<16){hem=.25;sun=.15;moon=.7;press=0;pglow=0;glow=0}else{press=t<16?.35:1.2;pglow=t<8?2.4:0}}
+  if(key==='week'&&t>=8&&t<16)FX.warm=-.35;
+  if(s.fx)s.fx(t);
   pendant.intensity=pend;halo.material.opacity=pend/2.6;hem*=.5;sun*=.42;lamp*=.55;
-  creatures(key,t,(WARP[key]||(x=>x))(t));realWorld(key,t);
-  {const n=checks(key,t),el=$('chk'),txt=TX('Chart checks today · ','فتح الشارت النهارده · ');if(el.dataset.n!==String(n)){el.dataset.n=n;el.innerHTML=txt+'<b>'+n+'</b>';el.classList.toggle('hot',n>=60)}el.hidden=key==='outro'}
   hemiL.intensity=hem;sunL.intensity=sun;rimL.intensity=rim;lampLights.forEach(l=>l.intensity=lamp);lampMat.emissiveIntensity=lampE;winL.intensity=win;
+  V3.moon.intensity=moon;V3.dawn.intensity=dawn;V3.redL.intensity=red;V3.glowB.intensity=glow;V3.insL.intensity=ins;pressSpot.intensity=press;phoneGlow.intensity=pglow;
+  if(V3.flood.visible){const pa=V3.floodGeo.attributes.position,tt=NOW()/1000;for(let i=0;i<pa.count;i++){const x=pa.getX(i),y=pa.getY(i);pa.setZ(i,Math.sin(x*1.6+tt*2.2)*.05+Math.cos(y*1.9+tt*1.7)*.04)}pa.needsUpdate=true;V3.floodGeo.computeVertexNormals()}
   shafts.forEach((b,i)=>b.material.opacity=shaft*(.85+.15*Math.sin(NOW()/700+i)));
-  partyL.forEach(({L,b,ph})=>{L.intensity=party*2.2;b.material.opacity=party*.11;const a=NOW()/1000*1.6+ph;L.target.position.set(Math.sin(a)*3,0,-1.4+Math.cos(a*1.3)*2);b.lookAt(L.target.position)});
+  partyL.forEach(({L:Lt,b,ph})=>{Lt.intensity=party*2.2;b.material.opacity=party*.11;const a=NOW()/1000*1.6+ph;Lt.target.position.set(Math.sin(a)*3,0,-1.4+Math.cos(a*1.3)*2);b.lookAt(Lt.target.position)});
+  $('rw').hidden=!(FX.rw>0);
   FX.barsCur+=(FX.bars-FX.barsCur)*Math.min(1,dt*7);const bh=(FX.barsCur*10.5).toFixed(2)+'%';$('lbt').style.height=bh;$('lbb').style.height=bh;
+  // narration cues for the soundtrack
+  s.lines.forEach((l,i)=>{if(t>=l[0]&&!sfxFlags['vo'+i]){sfxFlags['vo'+i]=1;const next=i+1<s.lines.length?s.lines[i+1][0]:s.dur;const txt=(AR?l[2]:l[1]).replace(/<[^>]+>/g,'');if(txt)SFX.vo(txt,+(next-l[0]-.25).toFixed(2))}});
   if(gradePass){const u=gradePass.uniforms;u.uTime.value=NOW()/1000;u.uSat.value=FX.sat;u.uCon.value=FX.con;u.uVig.value=FX.vig;u.uAb.value=FX.ab;u.uWarm.value=FX.warm;u.uFlash.value=FX.flash;u.uRw.value=FX.rw}
 }
-const SETUP={
- hook(){place(chars.trump,0,13.75);place(chars.rex,0,-1.05);holo.visible=true;holo.position.set(1.15,2.55,-.7);holo.rotation.y=-.35;phone3d.visible=true;phone3d.position.set(.5,1.1,-.25);phone3d.rotation.set(-Math.PI/2,0,.4);drawPhone('red')},
- party(){place(chars.rex,0,-1.05);chars.rex.hat.visible=true;
-   [['k1',-1.6,-2.3],['k2',.4,-2.8],['k3',1.9,-2.1],['k4',-2.6,-1.3]].forEach(([k,x,z])=>{place(chars[k],x,z);chars[k].hat.visible=true});
-   holo.visible=true;holo.position.set(1.25,2.7,-.6);holo.rotation.y=-.3;phone3d.visible=false},
- ollie(){place(chars.ollie,1.0,-1.05);place(chars.rex,-1.1,-1.05);holo.visible=true;holo.position.set(1.0,2.75,-.5);holo.rotation.y=-.15;phone3d.visible=false},
- lev(){place(chars.rex,0,-1.05);holo.visible=true;holo.position.set(.9,2.6,-.4);holo.rotation.y=-.3;phone3d.visible=false},
- plan(){place(chars.ollie,.6,-1.05);place(chars.rex,-1.8,-2.6,.6);holo.visible=true;holo.position.set(-.4,2.65,-.4);holo.rotation.y=.25;phone3d.visible=false},
- end(){place(chars.trump,0,13.75);holo.visible=true;holo.position.set(.3,3.55,.4);holo.rotation.y=0;place(chars.ollie,1.0,1.9,-.5);place(chars.rex,-.2,2.2,.9);place(chars.teach,0,-8.2,Math.PI);[['k1',-2.6,-.6],['k2',-1.2,-1.2],['k3',1.6,-1.0],['k4',2.9,-.3]].forEach(([k,x,z])=>{place(chars[k],x,z)});phone3d.visible=false;drawBoard(0)},
- outro(){holo.visible=false;phone3d.visible=false},
- cta(){place(chars.ollie,.9,-1.05);holo.visible=false;phone3d.visible=true;phone3d.position.set(-.35,1.85,1.1);phone3d.rotation.set(0,.18,0);phone3d.scale.set(2.4,2.4,2.4);drawPhone('app')}
-};
-const UPDATE={
- hook(t,dt){const r=chars.rex;sit(r);scream(r,t);r.setFace('scream');drawHolo('news',t/3,t);alarm.intensity=1.4+Math.sin(t*7)*1.2;
-   camMove(t,6.5,V(0,2.05,isV()?3.6:4.2),V(0,2.15,isV()?2.4:3.1),V(0,2.0,-1),V(0,2.15,-1))},
- party(t,dt){const r=chars.rex;sit(r);cheer(r,t);r.setFace('grin');['k1','k2','k3','k4'].forEach((k,i)=>{const c=chars[k];c.body.position.y=0;cheer(c,t,i*1.3);c.setFace(i%2?'grin':'happy')});
-   drawHolo('influencer',t/4,t);if(t<dt*1.5)confettiBurst(V(0,0,-1.5));confettiStep(dt);
-   camMove(t,7,V(.2,1.9,isV()?4.4:5.2),V(-.2,2.0,isV()?3.5:4.2),V(0,1.9,-1.6),V(0,2.0,-1.6))},
- ollie(t,dt){const o=chars.ollie,r=chars.rex;sit(o);sit(r);idle(o,t);o.setFace('calm');point(o,Math.min(1,t/1.2)*.5);
-   if(t>2.2&&t<4.2){laugh(r,t);r.setFace('smug')}else if(t>=4.2){idle(r,t,1);r.setFace('shock');o.setFace('smug')}else{idle(r,t,1);r.setFace('smile')}drawHolo('pie',t/3,t);
-   camMove(t,7,V(1.4,2.0,isV()?3.8:4.4),V(.4,2.05,isV()?3.3:4.2),V(.5,2.0,-1),V(.1,2.0,-1))},
- lev(t,dt){const r=chars.rex;sit(r);const p=t/7.5;drawHolo('lev',p,t);r.sweat.forEach((d,i)=>{d.visible=t<2.55;d.position.y=.55-((t*.45+i*.5)%1)*.3});
-   if(p<.34){point(r,1);r.setFace('grin');alarm.intensity=0}
-   else if(t<4.6){scream(r,t);r.setFace('scream');alarm.intensity=2+Math.sin(t*12)*1.6;camShake=.05;camRoll=Math.min(.12,(t-2.55)*.08);if(!sfxFlags.alarm){sfxFlags.alarm=1;SFX.alarm()}}
-   else{const q=Math.min(1,(t-4.6)/.6);r.setFace('shock');r.legL.rotation.x=r.legR.rotation.x=-Math.PI/2+q*1.0;r.body.rotation.x=-q*1.45;r.body.position.y=SIT_Y*(1-q)+q*.12;r.body.position.z=-q*.75;r.armL.rotation.z=-q*2.2;r.armR.rotation.z=q*2.2;alarm.intensity=2+Math.sin(t*12)*1.6;camShake=.03}
-   camMove(t,7.5,V(.3,2.1,isV()?3.4:4.0),V(0,1.9,isV()?2.9:3.6),V(.2,2.0,-1),V(0,1.6,-1.2))},
- plan(t,dt){const o=chars.ollie,r=chars.rex;sit(o);idle(o,t);o.setFace(t>4.5?'happy':'calm');point(o,.45);
-   r.body.rotation.x=-1.5;r.body.position.y=.25;r.body.position.z=-.5;r.armL.rotation.z=-2.4+Math.sin(t*6)*.3;r.armR.rotation.z=2.4-Math.sin(t*6)*.3;r.setFace('cry');
-   drawHolo('plan',t/5.5,t);
-   camMove(t,7.5,V(-.2,2.0,isV()?3.6:4.4),V(.4,2.05,isV()?3.0:3.9),V(.0,2.1,-1),V(.3,2.0,-1))},
- end(t,dt){const o=chars.ollie,r=chars.rex,tc=chars.teach;idle(o,t);o.setFace('happy');point(o,.8);
-   const up=Math.min(1,Math.max(0,(t-.8)/1.8));r.body.rotation.x=-1.45*(1-up);r.body.position.y=.22*(1-up);r.armR.rotation.x=-1.0*up;r.setFace(up<1?'shock':(t<4.2?'cry':'happy'));holo.visible=t<4.6;if(t<4.6)drawHolo('kidding',(t-.4)/2.5,t);
-   ['k1','k2','k3','k4'].forEach((k,i)=>{clap(chars[k],t,i);chars[k].setFace(i%2?'happy':'grin');chars[k].root.lookAt(r.root.position.x,0,r.root.position.z)});
-   tc.armR.rotation.x=-2.6+Math.sin(t*8)*.15;tc.armR.rotation.z=.2;drawBoard(Math.max(0,(t-2.2)/4.5));
-   camMove(t,7.5,V(1.4,3.0,isV()?6.6:8.4),V(.4,2.9,isV()?5.8:7.4),V(.3,1.7,1.2),V(0,2.2,-2))},
- outro(t,dt){camera.position.set(0,2.4,6);camera.lookAt(0,2,0)},
- cta(t,dt){const o=chars.ollie;if(t>5.2&&!sfxFlags.zoom){sfxFlags.zoom=1;SFX.whoosh(.9)}sit(o);o.setFace('happy');o.armR.rotation.z=2.5+Math.sin(t*8)*.35;o.armL.rotation.z=-.1;phone3d.rotation.y=.18+Math.sin(t*1.2)*.06;phone3d.position.y=1.85+Math.sin(t*1.6)*.04;
-   camMove(t,6.5,V(-.2,1.95,isV()?3.9:3.6),V(-.3,1.95,isV()?3.4:3.2),V(-.1,1.9,0),V(-.2,1.9,0))}
-};
-
-
+const FACE_REX=V(0,1.95,-1.05);
 function updateRules(){const on=new Set();SCENES.forEach((s,j)=>{(s.collect||[]).forEach(([r,at])=>{if(j<cur||(j===cur&&t>=at))on.add(r)})});
   const key=[...on].sort().join('');if(key===rulesShown)return;const prev=rulesShown;rulesShown=key;
   $('rules').querySelectorAll('i').forEach((el,k)=>{const r=k+1,is=on.has(r);el.classList.toggle('on',is);if(is&&!prev.includes(String(r))&&prev!==null){el.classList.remove('new');void el.offsetWidth;el.classList.add('new');if(cur===SCENES.findIndex(s=>(s.collect||[]).some(c=>c[0]===r)))SFX.ding()}})}
@@ -840,7 +1007,7 @@ function outroHTML(){
 }
 const OLICON=`<svg viewBox="5 5 54 54" aria-hidden="true"><defs><linearGradient id="wlo" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ade80"/><stop offset=".5" stop-color="#22c55e"/><stop offset="1" stop-color="#15803d"/></linearGradient></defs><g fill="none" transform="translate(32 32) scale(0.8) translate(-25 -30.5)"><circle class="ring" cx="27" cy="25" r="19" stroke="url(#wlo)" stroke-width="5.5"/><circle class="dot" cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/><rect class="bar" x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="url(#wlo)"/><rect class="bar" x="21.5" y="21" width="5" height="13" rx="1.2" fill="url(#wlo)"/><rect class="bar" x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="url(#wlo)"/><line class="hdl" x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wlo)" stroke-width="5.5" stroke-linecap="round"/></g></svg>`;
 // ── sound (synthesised, starts only after the viewer turns it on) ──
-const SFX=(()=>{let ac=null,on=false;const env=(g,a,d,v)=>{const n=ac.currentTime;g.gain.setValueAtTime(0,n);g.gain.linearRampToValueAtTime(v,n+a);g.gain.exponentialRampToValueAtTime(.0001,n+a+d)};
+const SFX0=(()=>{let ac=null,on=false;const env=(g,a,d,v)=>{const n=ac.currentTime;g.gain.setValueAtTime(0,n);g.gain.linearRampToValueAtTime(v,n+a);g.gain.exponentialRampToValueAtTime(.0001,n+a+d)};
   const noise=()=>{const b=ac.createBuffer(1,ac.sampleRate*1.2,ac.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;const s=ac.createBufferSource();s.buffer=b;return s};
   const tone=(f,type,a,d,v,f2)=>{if(!on)return;const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,ac.currentTime);if(f2)o.frequency.exponentialRampToValueAtTime(f2,ac.currentTime+a+d);o.connect(g).connect(ac.destination);env(g,a,d,v);o.start();o.stop(ac.currentTime+a+d+.05)};
   return{toggle(){if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return false}}on=!on;if(on)ac.resume();return on},
@@ -852,13 +1019,14 @@ const SFX=(()=>{let ac=null,on=false;const env=(g,a,d,v)=>{const n=ac.currentTim
    rewind(){if(!on)return;const o=ac.createOscillator(),g=ac.createGain();o.type='sawtooth';o.frequency.setValueAtTime(900,ac.currentTime);o.frequency.exponentialRampToValueAtTime(120,ac.currentTime+.9);o.connect(g).connect(ac.destination);env(g,.05,.9,.06);o.start();o.stop(ac.currentTime+1)},
    slowmo(){tone(110,'sine',.05,1.8,.3,40)},
    chime(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,'sine',.02,1.4,.16),i*150+300))}}})();
+const SFX=new Proxy(SFX0,{get(o,k){return o[k]||(()=>{})}});
 // ── player ───────────────────────────────────────────────────────────────
 let cur=0,t=0,playing=true,last=performance.now(),capIdx=-1,format='h';
 const isV=()=>format==='v';
 let sfxFlags={},rulesShown='';
 function show(i){
   cur=(i+SCENES.length)%SCENES.length;t=0;capIdx=-1;const s=SCENES[cur];sfxFlags={};camRoll=0;
-  screen.classList.remove('whip');void screen.offsetWidth;screen.classList.add('whip');SFX.whoosh();
+  screen.classList.remove('whip');void screen.offsetWidth;screen.classList.add('whip');SFX.whoosh();SFX.scene(s.key,s.dur,s.music||'none');
   const ch=$('chapter');ch.classList.remove('on');if(s.chapter){ch.querySelector('.n').textContent=s.chapter[0];ch.querySelector('.h').textContent=s.chapter[1];void ch.offsetWidth;ch.classList.add('on')}
   const out=$('outro');out.classList.toggle('on',s.key==='outro');out.innerHTML=s.key==='outro'?outroHTML():'';if(s.key==='outro')SFX.chime();
   $('logo').hidden=$('rules').hidden=s.key==='outro';
@@ -878,9 +1046,9 @@ function resize(){if(!ok)return;const r=screen.getBoundingClientRect();renderer.
 function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;
   if(playing){t+=dt;if(t>=SCENES[cur].dur)show(cur+1)}
   if(ok){camShake*=.9;resetPose();const key=SCENES[cur].key,ta=(WARP[key]||(x=>x))(t);UPDATE[key](ta,playing?dt:0);if(SHOT[key])SHOT[key](t);mood(key,t,dt);
-    Object.values(chars).forEach(c=>{if(c.root.visible&&['smile','calm','grin','smug'].includes(c.expr))c.blink(((performance.now()/1000+c.ph)%3.4)<.13)});
-    const ct=performance.now()/1000*(SCENES[cur].key==='lev'?40:1);clockM.rotation.z=-ct*.1;clockH.rotation.z=-ct*.1/12-1;
-    if(dust){dust.rotation.y+=dt*.02;dust.position.y=Math.sin(performance.now()/4000)*.15}
+    Object.values(chars).forEach(c=>{if(c.root.visible&&['smile','calm','grin','smug'].includes(c.expr))c.blink(((NOW()/1000+c.ph)%3.4)<.13)});
+    const ct=NOW()/1000*(SCENES[cur].key==='crash'?40:1);clockM.rotation.z=-ct*.1;clockH.rotation.z=-ct*.1/12-1;
+    if(dust){dust.rotation.y+=dt*.02;dust.position.y=Math.sin(NOW()/4000)*.15}
     if(SCENES[cur].key!=='outro')(composer||renderer).render(composer?undefined:scene,composer?undefined:camera)}
   updateCap();requestAnimationFrame(frame)}
 function resetPose(){Object.values(chars).forEach(c=>{if(!c.root.visible)return;c.body.position.set(0,0,0);c.body.rotation.set(0,0,0);c.torso.scale.y=1;[c.armL,c.armR,c.legL,c.legR,c.neck].forEach(p=>p.rotation.set(0,0,0))})}
@@ -892,7 +1060,7 @@ $('scenes').onclick=e=>{const b=e.target.closest('button');if(b)show(+b.dataset.
 
 if(window.ResizeObserver)new ResizeObserver(resize).observe(screen);
 if(matchMedia('(prefers-reduced-motion: reduce)').matches){playing=false;$('play').textContent='▶ Play'}
-let start=0;const hm=location.hash.match(/^#s(\d)/);if(hm)start=+hm[1];
+let start=0;const hm=location.hash.match(/^#s(\d+)/);if(hm)start=+hm[1];
 {const c=document.createElement('canvas');c.width=c.height=160;const g=c.getContext('2d'),im=g.createImageData(160,160);for(let i=0;i<im.data.length;i+=4){const v=Math.random()*255;im.data[i]=im.data[i+1]=im.data[i+2]=v;im.data[i+3]=255}g.putImageData(im,0,0);$('grain').style.backgroundImage=`url(${c.toDataURL()})`}
 resize();show(start);requestAnimationFrame(frame);
 (document.fonts?Promise.all(['900 54px Montserrat','800 34px "Plus Jakarta Sans"','900 50px Cairo','700 24px Cairo'].map(f=>document.fonts.load(f,'Aع'))).then(()=>document.fonts.ready):Promise.resolve()).then(()=>{REDRAW.forEach(f=>f());drawPhone&&phoneTex&&drawPhone('app');if(ok){drawBoard(0);show(cur)}makeThumbs()});
@@ -900,9 +1068,9 @@ resize();show(start);requestAnimationFrame(frame);
 // ── thumbnails rendered from the scene ───────────────────────────────────
 function makeThumbs(){
   const defs=[
-   {id:'A',key:'hook',time:2.4,pick:true,cam:[V(-.15,2.1,2.25),V(0,2.15,-1)],title:'Trump Posted at 3 AM… He Lost Half 😭',why:'The scream face, one number and two words. It’s the same face as the video’s opening shot.',text:[['ALL IN',60,150,150,'#ffd84a',-4],['−50%',820,620,170,'#ff3b3b',4]]},
-   {id:'B',key:'lev',time:6.2,cam:[V(-2.2,2.9,.6),V(.1,.6,-2.4)],title:'He Borrowed 10x… Then THIS Happened 😱',why:'Mid-fall, red alarm light. A curiosity gap that only the video closes.',text:[['10x…',60,150,150,'#ffd84a',-4],['GONE',1220,640,170,'#ff3b3b',4]]},
-   {id:'C',key:'plan',time:6.6,cam:[V(-.4,2.2,3.2),V(.0,2.1,-1)],title:'Everyone Laughed At His 5% Plan… Until',why:'Calm his friend against crying the kid: the story’s turn in one picture.',text:[['5% PLAN',60,140,130,'#3dff8a',-3],['WON',1000,620,150,'#ffd84a',5]]}
+   {id:'A',key:'c_trump',time:7,pick:true,cam:[V(.35,2.48,15.4),V(0,2.38,13.75)],title:'Trump Posted at 3 AM… He Lost Half 😭',why:'The brick caricature mid-post at 3 AM: a face everyone recognises, a curiosity gap.',text:[['3:07 AM',60,150,140,'#ffd84a',-4]]},
+   {id:'B',key:'flood',time:9,cam:[V(BX+3.4,1.0,1.0),V(BX+.8,.9,-1.6)],title:'He Borrowed 10x… Then the Shark Came 🦈',why:'The red flood and the shark fin circling his bed. Absurd, instantly readable.',text:[['10x?!',60,150,150,'#ff3b3b',-4]]},
+   {id:'C',key:'week',time:13.8,cam:[V(BX+4.2,1.3,1.8),V(BX+2.4,.8,-.4)],title:'200% Tariffs at 3 AM… and He Slept Through It',why:'The shark bonks the brick shield while he sleeps: the payoff in one picture.',text:[['BONK.',60,150,150,'#ffd84a',-4]]}
   ];
   const host=$('thumbs');
   host.innerHTML=defs.map(d=>`<article class="tcard"><div class="ph" id="th${d.id}"></div><div class="lbl"><b>OPTION ${d.id}</b>${d.pick?'<span class="pick">My pick</span>':''}</div><div class="pair">${d.title}</div><p>${d.why}</p></article>`).join('');

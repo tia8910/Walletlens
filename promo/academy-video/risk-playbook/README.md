@@ -1,24 +1,36 @@
-# The Risk Playbook: Academy long video
+# The Risk Playbook: Academy film (5 minutes)
 
-A 64-second, 16:9 cinematic story in a 3D toy-brick style (minifigure-style characters on a studded baseplate), rendered with bloom, film grading, letterbox moments, a freeze-frame and VHS rewind, and a slow-motion dolly zoom. Story: at 3 a.m. Trump posts "100% TARIFFS" (named, appearing as a Lego caricature in a press-room set) and the boy's cat coin crashes. Three days earlier an influencer said "to the moon", the boy called his friend a boomer and asked an AI about 10x leverage ("probably fine"). His friend follows the Risk Playbook. The next morning he posts "just kidding, deal coming". The film covers four of the six rules on screen, and the teacher's board completes all six.
+A 16:9 comedy in a 3D toy-brick style, about 4 min 52 s long, in English and Egyptian Arabic. It's set at night in the channel's look: dark navy, warm practical light, and understated captions.
+
+**Story.** At 3:07 a.m., Trump (a brick caricature in his own press room) posts "100% TARIFFS ON EVERYTHING". Across town, a boy's cat coin drops 50%. Freeze frame, then a rewind to three days earlier:
+
+- An influencer goes live: "to the moon, not financial advice".
+- The boy sells his game console and goes all in.
+- He calls his friend a boomer (the friend is fifteen).
+- His research is one seven-second video.
+- He holds thirty coins he can't explain ("…vibes").
+- He calls exits "for quitters".
+- His lunch money is in the coin too.
+
+Then an AI chatbot tells him 10x leverage is "probably fine". The bedroom floods into a red chart sea, the Liquidation Shark circles, and the post lands: chomp, liquidated, "this is fine". His friend sleeps through it while his exit and cash do the work, and the turtle snores. The next morning Trump posts "just kidding, deal coming". The friend teaches him the Risk Playbook, and six rule bricks lock into a shield. A week later the post says "200% TARIFFS". The boy sleeps, the shark bonks the shield, and Trump asks "…hello?". It ends with the WalletLens logo and "All Assets Tracker & Investment Manager".
+
+The main characters have no names. The only real person is Trump, and his jokes follow his actual public posts.
 
 | File | What it is |
 |---|---|
-| `page.html` | The browsable animatic: Three.js scene, captions, rule tracker, WalletLens logo and ending, thumbnails and script. Open it in a browser to preview. |
-| `build_page.py` | Turns `page.html` into `video.html`, the render version: local libraries and fonts, a 1920×1080 screen, and a virtual clock driven by `window.__step()` (time warps for slow motion, freeze and rewind run on it). |
-| `render.js` | Drives `video.html` frame by frame in headless Chromium and saves `frames/00000.jpg …`. It also logs every UI sound cue to `events.json`. |
-| `soundtrack.py` | Builds `soundtrack.wav`: Kokoro narration fitted to each scene, a synthesised music bed that ducks under the voice, story sound effects, and the logged UI cues. |
+| `page.html` | The browsable animatic: Three.js scenes, sets (cafeteria, bedroom, press room), the shark, the turtle, the rule bricks, captions, the WalletLens logo and ending. `#ar` shows the Egyptian Arabic version. |
+| `build_page.py` | Turns `page.html` into `video.html`, the render version: local libraries and fonts, a 1920×1080 screen, and a virtual clock driven by `window.__step()`. |
+| `render.js` | Captures frames in headless Chromium and logs every cue (scenes, narration lines, sound effects) to `frames_<lang>-events.json`. |
+| `events_only.js` | Steps the film without drawing to get the cue log quickly, which is useful for working on sound. |
+| `soundtrack.py` | Builds the score, sound effects and narration from the cue log. The narration is Kokoro TTS for English, or recorded lines. |
 | `vo.py` | A small wrapper around `kokoro-onnx` for this model export. |
-| `setup.sh` / `make.sh` | One-time setup, then the full build: `walletlens-risk-playbook-en.mp4` (narrator am_michael) and `walletlens-risk-playbook-ar.mp4` (Egyptian Arabic captions and on-screen text). Night brick set in the channel's style (dark navy, warm pendant light, understated captions, "Chart checks today" counter, the red/green candle creatures rebuilt in bricks); ending tagline "All Assets Tracker & Investment Manager". |
-| `vo_script_ar.md` | The Egyptian Arabic voice-over script with timings, for recording. `./make.sh ar <folder>` mixes the recordings in. |
+| `vo_script_ar.md` | The Egyptian Arabic voice-over script with timings, generated from the scenes. |
+| `setup.sh` / `make.sh` | One-time setup, then the full build. |
 
 ```bash
-./setup.sh          # npm + pip deps, three.js, fonts, Kokoro voice
+./setup.sh
 ./make.sh            # → walletlens-risk-playbook-en.mp4 and -ar.mp4
-./make.sh en af_heart
 ./make.sh ar recordings/
 ```
 
-To change the story, edit `SCENES`, `SETUP` and `UPDATE` in `page.html` and the narration `LINES` in `soundtrack.py`, keeping the scene durations in step between the two. Then run `make.sh` again.
-
-The page language follows the URL hash: `page.html#ar` shows the Egyptian Arabic version. The voice model is Kokoro-82M (Apache-2.0), which has no Arabic voice, so the Arabic narration needs a recording. Don't use the LEGO name or logo in titles, tags or thumbnails. All music and sound effects are synthesised in `soundtrack.py`, so nothing needs a licence.
+Each scene in `page.html` holds its own lines, setup, acting and camera, so editing the story is one place. The voice model is Kokoro-82M (Apache-2.0). All music and sound effects are synthesised. Don't use the LEGO name or logo in titles, tags or thumbnails.
