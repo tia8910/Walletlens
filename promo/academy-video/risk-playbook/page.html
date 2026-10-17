@@ -325,26 +325,26 @@ const AR=/(^#|-)ar(-|$)/.test(location.hash);const TX=(en,ar)=>AR?ar:en;const RE
 // ── scenes data (used even if WebGL is unavailable) ──────────────────────
 // ── the 5-minute story: each scene carries its own lines (EN/AR), setup, acting and camera ──
 // set: caf | bed | press | ins (an empty dark space for full-screen screens). look: lighting preset.
-// lines: [time, English, Egyptian Arabic] — shown as captions and spoken by the narrator.
+// lines: [time, English, Egyptian Arabic, speaker] — shown as captions and voiced. speaker: n narrator, h him, f his friend, t Trump, i influencer, a AI, r reporters, b news anchor.
 const V3={};
 const BX=40, INS={x:-40,y:2.1,z:0};
 const KF=()=>V(0,1.95,-1.05), FF=()=>V(1.0,1.95,-1.05), KB=()=>V(BX+.8,2.1,-2.3);
 const SCENES=[
  {key:'c_trump',name:'3:07 AM',set:'press',look:'pressNight',music:'tense',dur:10,
-  d:'Trump, in bricks, can’t sleep. He picks up his phone in the dark press room.',
-  lines:[[0.6,'3:07 AM.','٣:٠٧ الفجر.'],[2.6,'Somewhere, a world leader can’t sleep.','في مكان ما، رئيس دولة مش جايله نوم.'],[6.2,'He opens his phone.','فتح موبايله.']],
+  d:'3:07 AM in the White House. Trump, in bricks, can’t sleep, brags about it, and picks up his phone.',
+  lines:[[0.6, "3:07 AM. The White House.", "الساعة ٣:٠٧ الفجر. البيت الأبيض.", "n"], [3.2, "Trump can’t sleep.", "ترامب مش جايله نوم.", "n"], [5.0, "“Nobody sleeps like me. I don’t sleep. Tremendous.”", "\"محدش بينام زيي. أنا مش بنام أصلاً. فظيع.\"", "t"], [8.3, "“Let’s post something.”", "\"يلا نكتب بوست.\"", "t"]],
   setup(){place(chars.trump,0,13.75)},
   update(t){trumpType(t,t<4?'tsmug':'tpout');if(t>6.2)once('typ',()=>SFX.typing())},
   shot(t){shotList(t,[[0,5,V(1.7,2.7,18.8),V(1.0,2.55,17.5),V(0,2.1,13.75),V(0,2.15,13.75),{fov:36}],[5,10,V(.55,2.6,16.1),V(.4,2.55,15.65),V(0,2.42,13.75),V(0,2.42,13.75),{fov:34,roll:-.03}]])}},
  {key:'c_post',name:'The post',set:'ins',look:'insert',music:'tense',dur:7,
   d:'Full-screen post with his brick face: “100% TARIFFS ON EVERYTHING.”',
-  lines:[[0.4,'And posts four words:','وكتب أربع كلمات:'],[2.7,'<em class="r">“100% TARIFFS ON EVERYTHING.”</em>','<em class="r">"جمارك ١٠٠٪ على كل حاجة."</em>']],
+  lines:[[0.3, "<em class=\"r\">“Tariffs! One hundred percent! On everything!”</em>", "<em class=\"r\">\"جمارك! مية في المية! على كل حاجة!\"</em>", "t"], [3.7, "Posted. 3:08 AM.", "اتنشر. ٣:٠٨ الفجر.", "n"], [5.3, "The markets heard him.", "والأسواق سمعته.", "n"]],
   setup(){insertHolo()},
   update(t){V3.newsN=100;drawHolo('news',Math.max(0,(t-2.4)/2.5),t);if(t>2.6)once('ping',()=>SFX.ping())},
   shot(t){insertShot(t,7)}},
  {key:'c_wake',name:'Across town',set:'bed',look:'bedNight',music:'tense',dur:13.5,warp:t=>Math.min(t,9),
   d:'His phone buzzes on the nightstand. He wakes, reads −50% and screams. Freeze frame.',
-  lines:[[0.8,'Across town, his phone lights up.','على الناحية التانية، موبايله نوّر.'],[3.4,'His cat coin: <em class="r">−50%</em>.','عملة القطة بتاعته: <em class="r">−٥٠٪</em>.'],[6.2,'At 3 AM. On a school night.','الساعة ٣ الفجر. وعنده مدرسة الصبح.'],[9.3,'Yep. That’s him.','أيوه. ده هو.'],[10.9,'You’re probably wondering how he got here.','أكيد بتسأل نفسك وصل لكده إزاي.']],
+  lines:[[0.8, "Across town, his phone lights up.", "على الناحية التانية، موبايله نوّر.", "n"], [3.3, "His cat coin: <em class=\"r\">−50%</em>.", "عملة القطة بتاعته: <em class=\"r\">−٥٠٪</em>.", "n"], [6.0, "“NOOO! I have work at nine!”", "\"لأأأأ! ورايا شغل الساعة تسعة!\"", "h"], [9.3, "Yep. That’s him.", "أيوه. ده هو.", "n"], [10.9, "You’re probably wondering how he got here.", "أكيد بتسأل نفسك وصل لكده إزاي.", "n"]],
   setup(){bedScene('kid');phoneOnStand('red')},
   update(t){wake(t)},
   shot(t){const tc=Math.min(t,8.99);shotList(tc,[[0,2.5,V(BX+.9,2.7,3.6),V(BX+.9,2.45,2.9),V(BX+.6,.9,-1.8),V(BX+.6,1.0,-1.8),{fov:40}],[2.5,6,V(BX+2.1,1.95,.7),V(BX+1.8,1.9,.35),V(BX+.8,1.65,-2.3),V(BX+.8,1.75,-2.3),{fov:38}],[6,9,V(BX+.8,1.95,-.85),V(BX+.8,1.92,-1.1),KB(),KB(),{fov:34}]])},
@@ -357,77 +357,77 @@ const SCENES=[
   shot(t){shotList(t,[[0,3.5,V(BX+.8,1.92,-1.1),V(BX+.9,2.45,2.9),KB(),V(BX+.6,1.0,-1.8),{fov:36}]])},
   fx(t){FX.rw=1;FX.sat=.7;FX.ab=.004;once('rw',()=>SFX.rewind())}},
  {key:'hype',name:'To the moon',set:'caf',look:'party',music:'trap',dur:17,title:'3 DAYS EARLIER…',titleAr:'قبلها بـ ٣ أيام…',
-  d:'Party in the cafeteria. An influencer’s live stream: “Cat coin to the moon 🚀, not financial advice 😉.”',
-  lines:[[1.8,'Three days earlier, an influencer went live.','قبلها بتلات أيام، إنفلونسر عمل لايف.'],[5.0,'<em>“Cat coin to the moon 🚀.”</em>','<em>"عملة القطة على القمر 🚀."</em>'],[8.2,'<em>“Not financial advice 😉.”</em>','<em>"مش نصيحة مالية 😉."</em>'],[11.4,'The whole class believed him.','الفصل كله صدّقه.'],[14.2,'He believed him the most.','وهو أكتر واحد صدّق.']],
+  d:'Office party. An influencer’s live stream: “Cat coin to the moon 🚀, not financial advice 😉.” He goes all in.',
+  lines:[[1.0, "Three days earlier. The office party.", "قبلها بتلات أيام. حفلة الشغل.", "n"], [3.6, "<em>“Yo fam! Cat coin is going to the moon! 🚀”</em>", "<em>\"يا جماعة! عملة القطة طالعة على القمر! 🚀\"</em>", "i"], [7.4, "<em>“Not financial advice. 😉”</em>", "<em>\"مش نصيحة مالية. 😉\"</em>", "i"], [9.8, "The whole office believed him.", "المكتب كله صدّقه.", "n"], [12.2, "“Bro, I’m going all in!”", "\"يا عم أنا داخل بكل فلوسي!\"", "h"], [14.8, "He believed him the most.", "وهو أكتر واحد صدّق.", "n"]],
   setup(){partyScene()},
   update(t,ta,dt){partyAct(t,dt);drawHolo('influencer',t/4,t)},
   shot(t){shotList(t,[[0,3,V(0,4.8,5.4),V(0,3.0,3.9),V(0,1.5,-1.6),V(0,1.9,-1.6),{fov:42}],[3,8,V(1.95,2.78,1.25),V(1.62,2.74,.82),V(1.25,2.7,-.6),V(1.25,2.7,-.6),{fov:38}],[8,12,V(.55,2.05,1.3),V(.25,2.0,1.0),KF(),KF(),{fov:36,roll:-.05}],[12,17,V(-1.7,1.0,2.3),V(-1.2,1.05,2.0),V(-.6,2.3,-2),V(-.4,2.45,-2),{fov:46}]])}},
  {key:'console',name:'Sold',set:'caf',look:'day',music:'trap',dur:9,
   d:'His game console gets a SOLD tag. A listing: $400 → cat coin.',
-  lines:[[0.4,'That night, he sold his game console.','بالليل، باع جهاز الألعاب.'],[4.4,'And put every last dollar into one coin.','وحط آخر جنيه معاه في عملة واحدة.']],
+  lines:[[0.4, "That night, he sold his gaming console.", "بالليل، باع جهاز الألعاب.", "n"], [3.2, "“Sorry, buddy. It’s for the moon.”", "\"معلش يا صاحبي. ده عشان القمر.\"", "h"], [5.6, "Every last dollar. One coin.", "آخر جنيه معاه. في عملة واحدة.", "n"]],
   setup(){sitKid(0);V3.console.visible=true;holo.visible=false},
   update(t){const k=chars.rex;idle(k,t);k.setFace(t<4?'grin':'smug');if(t>=4){insertHolo();drawHolo('sold',(t-4)/2,t);once('cash',()=>SFX.cash())}else holo.visible=false},
   shot(t){if(t<4)shotList(t,[[0,4,V(.75,1.75,1.15),V(.5,1.68,.92),V(0,1.25,-.25),V(0,1.25,-.25),{fov:38}]]);else insertShot(t-4,5)}},
  {key:'boomer',name:'Ok boomer',set:'caf',look:'day',music:'soft',dur:13,chapter:['RULE 1 OF 6','THE 5% RULE'],chapterAr:['القاعدة ١ من ٦','قاعدة الـ ٥٪'],collect:[[1,6]],
-  d:'His friend: “5% max.” Him: “Ok boomer.” The friend is fifteen. The turtle looks offended.',
-  lines:[[0.5,'His friend had one rule for new coins:','صاحبه كان عنده قاعدة واحدة للعملات الجديدة:'],[3.1,'<em>Five percent. Max.</em>','<em>خمسة في المية. بالكتير.</em>'],[5.8,'“Ok boomer.”','"ماشي يا حاج."'],[8.8,'His friend is fifteen.','صاحبه عنده ١٥ سنة.'],[11.0,'Even the turtle looked offended.','حتى السلحفاة اتضايقت.']],
+  d:'His friend: “5% max.” Him: “Okay, boomer.” The friend is 26. The office turtle looks offended.',
+  lines:[[0.5, "His friend had one rule for risky coins:", "صاحبه كان عنده قاعدة واحدة للعملات الخطرة:", "n"], [2.9, "<em>“Five percent. Max. Never more.”</em>", "<em>\"خمسة في المية. بالكتير. مش أكتر.\"</em>", "f"], [5.8, "“Okay, boomer.”", "\"ماشي يا حاج.\"", "h"], [8.8, "“I’m twenty-six.”", "\"أنا عندي ٢٦ سنة.\"", "f"], [10.8, "Even the office turtle looked offended.", "حتى سلحفاة المكتب اتضايقت.", "n"]],
   setup(){duo();V3.turtle.visible=true;V3.turtle.position.set(1.75,1.12,-.45);V3.turtle.rotation.y=-.6;cafHolo(1.0,2.75,-.5,-.15)},
   update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace(t<8.8?'calm':'smug');point(f,Math.min(1,t/1.2)*.5);
     if(t>5.6&&t<8.8){laugh(k,t);k.setFace('smug')}else{idle(k,t,1);k.setFace(t>=8.8?'shock':'smile')}drawHolo('pie',t/3,t);turtleAct(t,t>11?'offended':'idle')},
   shot(t){shotList(t,[[0,5.6,V(-2.0,2.2,1.0),V(-1.8,2.17,.75),FF(),FF(),{fov:36}],[5.6,8.8,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34,roll:.05}],[8.8,13,V(1.75,1.95,1.25),V(1.55,1.92,1.0),V(1.25,1.6,-.8),V(1.3,1.55,-.7),{fov:34}]])}},
  {key:'notebook',name:'Research',set:'caf',look:'day',music:'soft',dur:16,chapter:['RULE 2 OF 6','SIZE BY WHAT YOU KNOW'],chapterAr:['القاعدة ٢ من ٦','الحجم على قد ما تعرف'],collect:[[2,10]],
   d:'Forty pages of notes vs one seven-second video.',
-  lines:[[0.5,'Before buying, his friend reads. A lot.','صاحبه قبل ما يشتري، بيقرا. كتير.'],[4.0,'Forty pages of notes.','أربعين صفحة ملاحظات.'],[6.6,'His research: <em>one video. Seven seconds.</em>','بحثه هو: <em>فيديو واحد. سبع ثواني.</em>'],[10.0,'Rule two: bet big only on what you really know.','القاعدة التانية: الرهان الكبير بس على اللي فاهمه.'],[13.6,'He knew the music was catchy.','هو كان فاهم إن المزيكا حلوة.']],
+  lines:[[0.5, "Before buying anything, his friend reads.", "صاحبه قبل ما يشتري أي حاجة، بيقرا.", "n"], [3.4, "“Forty pages of notes. The team. The risks.”", "\"أربعين صفحة ملاحظات. الفريق. المخاطر.\"", "f"], [7.6, "“I watched a TikTok. Seven seconds.”", "\"أنا شفت تيك توك. سبع ثواني.\"", "h"], [10.4, "Rule two: bet big only on what you really know.", "القاعدة التانية: الرهان الكبير بس على اللي فاهمه.", "n"], [13.8, "“The song was catchy, though.”", "\"بس الأغنية كانت حلوة.\"", "h"]],
   setup(){duo();cafHolo(0,2.78,-.6,0)},
   update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace('calm');idle(k,t,1);k.setFace(t<13.6?'smile':'grin');drawHolo('notebook',t/8,t)},
   shot(t){shotList(t,[[0,6,V(0,2.3,3.3),V(0,2.25,2.9),V(0,2.2,-.8),V(0,2.25,-.8),{fov:40}],[6,11,V(0,2.78,1.6),V(0,2.78,1.25),V(0,2.78,-.6),V(0,2.78,-.6),{fov:40}],[11,16,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34}]])}},
  {key:'thirty',name:'Thirty coins',set:'caf',look:'day',music:'soft',dur:13,chapter:['RULE 5 OF 6','OWN LESS, KNOW MORE'],chapterAr:['القاعدة ٥ من ٦','امتلك أقل واعرف أكتر'],collect:[[5,9]],
   d:'Thirty coins he can’t explain. “…Vibes.”',
-  lines:[[0.4,'Then he showed off his other coins.','بعدين ورّاه باقي العملات.'],[3.2,'Thirty of them.','تلاتين عملة.'],[5.4,'“Explain one.”','"اشرحلي واحدة."'],[7.4,'“…Vibes.”','"…إحساس."'],[9.6,'Rule five: own less, know more.','القاعدة الخامسة: امتلك أقل، واعرف أكتر.']],
+  lines:[[0.4, "Then he showed off his portfolio.", "بعدين ورّاه محفظته.", "n"], [2.8, "“Thirty coins, baby! Diversified!”", "\"تلاتين عملة يا معلم! متنوّعة!\"", "h"], [5.4, "“Explain one.”", "\"اشرحلي واحدة.\"", "f"], [7.4, "“…Vibes.”", "\"…إحساس.\"", "h"], [9.6, "Rule five: own less, know more.", "القاعدة الخامسة: امتلك أقل، واعرف أكتر.", "n"]],
   setup(){duo();cafHolo(-.6,2.75,-.5,.15)},
   update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace(t>5.2&&t<7.4?'smug':'calm');k.setFace(t<7.4?'grin':'smile');if(t<5)point(k,.8);else idle(k,t,1);drawHolo('coins',t/9,t)},
   shot(t){shotList(t,[[0,5,V(-1.9,2.1,1.6),V(-1.6,2.05,1.2),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:38}],[5,9,V(-.6,2.75,1.55),V(-.6,2.75,1.2),V(-.6,2.75,-.5),V(-.6,2.75,-.5),{fov:40}],[9,13,V(-.05,2.2,2.6),V(-.05,2.15,2.2),V(-.05,1.9,-1.05),V(-.05,1.95,-1.05),{fov:40}]])}},
  {key:'exit',name:'Exit first',set:'caf',look:'day',music:'soft',dur:15,chapter:['RULE 3 OF 6','EXIT FIRST'],chapterAr:['القاعدة ٣ من ٦','حدد خروجك الأول'],collect:[[3,9.5]],
   d:'His friend draws his exit line at −10%. Him: “Exits are for quitters.”',
-  lines:[[0.5,'His friend decides his exit before he buys.','صاحبه بيحدد هيخرج إمتى قبل ما يشتري.'],[4.5,'Down ten percent? Out. No drama.','نزلت عشرة في المية؟ برا. من غير دراما.'],[8.0,'Rule three: exit first.','القاعدة التالتة: حدد خروجك الأول.'],[10.8,'“Exits are for quitters.”','"الخروج ده للي بيستسلموا."'],[13.2,'He said. Confidently.','قالها. بثقة.']],
+  lines:[[0.5, "His friend picks his exit before he buys.", "صاحبه بيحدد هيخرج إمتى قبل ما يشتري.", "n"], [3.8, "“Down ten percent? I’m out. No drama.”", "\"نزلت عشرة في المية؟ أنا برا. من غير دراما.\"", "f"], [7.6, "Rule three: exit first.", "القاعدة التالتة: حدد خروجك الأول.", "n"], [10.6, "“Exits are for quitters!”", "\"الخروج ده للي بيستسلموا!\"", "h"], [13.0, "He said. Confidently.", "قالها. بثقة.", "n"]],
   setup(){duo();cafHolo(1.0,2.75,-.5,-.15)},
   update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace('calm');point(f,.45);if(t>10.6){laugh(k,t);k.setFace('smug')}else{idle(k,t,1);k.setFace('smile')}drawHolo('plan',Math.min(.55,t/9),t)},
   shot(t){shotList(t,[[0,6,V(1.6,2.0,1.15),V(1.4,1.98,.92),FF(),FF(),{fov:34}],[6,10.5,V(1.0,2.75,1.6),V(1.0,2.75,1.25),V(1.0,2.75,-.5),V(1.0,2.75,-.5),{fov:40}],[10.5,15,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34,roll:.04}]])}},
  {key:'cash',name:'Keep cash',set:'caf',look:'day',music:'soft',dur:13,chapter:['RULE 4 OF 6','KEEP CASH'],chapterAr:['القاعدة ٤ من ٦','خلّي كاش'],collect:[[4,8]],
-  d:'15% cash, ready for a sale. His lunch money is in cat coin too. Lunch is air.',
-  lines:[[0.4,'His friend always keeps some cash.','صاحبه دايماً شايل شوية كاش.'],[3.4,'Fifteen percent. Ready for a sale.','خمستاشر في المية. جاهز لأي أوكازيون.'],[6.4,'Rule four: keep cash for the dip.','القاعدة الرابعة: خلّي كاش للنزلة.'],[9.2,'His lunch money? Also in cat coin.','فلوس الغدا بتاعته؟ برضه في عملة القطة.'],[11.6,'Lunch was air.','الغدا كان هوا.']],
+  d:'15% cash, ready for a sale. His rent money is in cat coin too.',
+  lines:[[0.4, "“I always keep fifteen percent in cash.”", "\"أنا دايماً سايب خمستاشر في المية كاش.\"", "f"], [3.6, "“When everything crashes, I go shopping.”", "\"لما كل حاجة تقع، أنزل أشتري.\"", "f"], [6.4, "Rule four: keep cash for the dip.", "القاعدة الرابعة: خلّي كاش للنزلة.", "n"], [8.8, "His rent money? Also in cat coin.", "فلوس الإيجار بتاعته؟ برضه في عملة القطة.", "n"], [11.0, "“Rent is… a social construct.”", "\"الإيجار ده… اختراع.\"", "h"]],
   setup(){duo();cafHolo(0,2.78,-.6,0)},
   update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace('happy');k.setFace(t>9?'cry':'smile');if(t>10.5){k.armR.rotation.x=-2.3+Math.sin(t*8)*.15;k.neck.rotation.x=Math.sin(t*8)*.05}else idle(k,t,1);drawHolo('cash',t/6,t)},
   shot(t){shotList(t,[[0,5,V(0,2.25,3.1),V(0,2.2,2.7),V(0,2.0,-1),V(0,2.05,-1),{fov:40}],[5,9,V(0,2.78,1.6),V(0,2.78,1.25),V(0,2.78,-.6),V(0,2.78,-.6),{fov:40}],[9,13,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34}]])}},
  {key:'newsmix',name:'Louder',set:'ins',look:'insert',music:'tense',dur:10,
   d:'Headlines stack up: tariff talk, cat coin +80%, analysts have no idea.',
-  lines:[[0.4,'Meanwhile, the news kept getting louder.','وفي نفس الوقت، الأخبار صوتها بيعلى.'],[4.4,'Tariff talk. Rumors. Hype.','كلام عن الجمارك. إشاعات. هيصة.'],[7.4,'Nobody had a plan. Except one kid.','محدش كان عنده خطة. غير ولد واحد.']],
+  lines:[[0.3, "<em>“Breaking: tariff fears shake global markets.”</em>", "<em>\"عاجل: مخاوف الجمارك بتهز الأسواق العالمية.\"</em>", "b"], [3.8, "Tariff talk. Rumors. Hype.", "كلام عن الجمارك. إشاعات. هيصة.", "n"], [6.6, "Nobody had a plan. Except one guy.", "محدش كان عنده خطة. غير واحد بس.", "n"]],
   setup(){insertHolo()},
   update(t){drawHolo('headlines',t/6,t)},
   shot(t){insertShot(t,10)}},
  {key:'ai',name:'Ask the AI',set:'bed',look:'bedNight',music:'dark',dur:13,
   d:'Night. He asks an AI chatbot about 10x leverage. “Probably fine 👍.”',
-  lines:[[0.4,'That night, he had an idea.','بالليل، جاتله فكرة.'],[3.4,'He asked an AI chatbot:','سأل شات بوت ذكاء اصطناعي:'],[6.0,'<em>“Should I use 10x leverage?”</em>','<em>"أستخدم رافعة عشر أضعاف؟"</em>'],[8.8,'<em>“Probably fine 👍.”</em>','<em>"غالباً تمام 👍."</em>'],[11.2,'It was not fine.','ماكانش تمام.']],
+  lines:[[0.4, "That night, he had an idea.", "بالليل، جاتله فكرة.", "n"], [3.0, "<em>“Hey AI, should I use ten-x leverage?”</em>", "<em>\"يا ذكاء اصطناعي، أستخدم رافعة عشر أضعاف؟\"</em>", "h"], [7.6, "<em>“Great question! Probably fine. 👍”</em>", "<em>\"سؤال ممتاز! غالباً تمام. 👍\"</em>", "a"], [11.0, "It was not fine.", "ماكانش تمام.", "n"]],
   setup(){bedScene('kid',true);bedHolo()},
   update(t){const k=chars.rex;sitBed(k);k.armR.rotation.x=-1.2;k.armL.rotation.x=-1.0;k.neck.rotation.x=.18;k.setFace(t<8.8?'smile':'grin');drawHolo('ai',(t-5.6)/7.5,t)},
   shot(t){shotList(t,[[0,6,V(BX+2.4,2.2,1.2),V(BX+2.1,2.15,.8),V(BX+1.4,2.0,-2.0),V(BX+1.4,2.05,-2.0),{fov:40}],[6,13,V(BX+2.1,2.35,.4),V(BX+2.1,2.35,.15),V(BX+2.1,2.35,-1.4),V(BX+2.1,2.35,-1.4),{fov:40}]])}},
  {key:'flood',name:'The shark',set:'bed',look:'bedRed',music:'dark',dur:11,
   d:'He presses 10x. The floor floods into a red chart sea, and a brick shark starts circling.',
-  lines:[[0.4,'He pressed it.','داس عليها.'],[2.8,'Ten times the money. Borrowed.','عشر أضعاف الفلوس. سلف.'],[5.6,'And something started circling.','وفي حاجة بدأت تلف حواليه.'],[8.4,'The liquidation shark.','قرش التصفية.']],
+  lines:[[0.3, "“Ten-x. Let’s go!”", "\"عشر أضعاف. يلا بينا!\"", "h"], [2.8, "Ten times the money. Borrowed.", "عشر أضعاف الفلوس. سلف.", "n"], [5.6, "And something started circling.", "وفي حاجة بدأت تلف حواليه.", "n"], [8.4, "“Is that… a shark?”", "\"هو ده… قرش؟\"", "h"]],
   setup(){bedScene('kid',true);bedHolo();V3.flood.visible=true;V3.shark.visible=true},
   update(t){const k=chars.rex;sitBed(k);if(t<2.4){point(k,1);k.setFace('grin')}else{k.setFace(t<7?'smile':'shock');idle(k,t)}
     drawHolo('lev',Math.min(.33,.2+t/20),t);if(t>2.2)holo.visible=t<3.2;floodLevel(Math.min(.55,Math.max(0,(t-2.6)/6)*.55));sharkCircle(t-3,t>3);if(t>2.4)once('spl',()=>SFX.splash())},
   shot(t){shotList(t,[[0,3,V(BX+2.1,2.35,.5),V(BX+2.1,2.35,.25),V(BX+2.1,2.35,-1.4),V(BX+2.1,2.35,-1.4),{fov:40}],[3,7,V(BX+.9,3.2,3.4),V(BX+.9,2.9,2.9),V(BX+.8,.6,-1.6),V(BX+.8,.7,-1.6),{fov:42}],[7,11,V(BX+3.6,1.05,1.4),V(BX+3.2,1.0,1.1),V(BX+.8,1.45,-1.8),V(BX+.8,1.5,-1.8),{fov:46}]])}},
  {key:'post2',name:'Back to 3:07',set:'press',look:'pressNight',music:'tense',dur:8,
   d:'Back in the press room. The post goes out.',
-  lines:[[0.4,'And then… 3:07 AM.','وبعدين… ٣:٠٧ الفجر.'],[3.6,'Now you know how he got here.','دلوقتي عرفت وصل لكده إزاي.']],
+  lines:[[0.3, "And then… 3:07 AM.", "وبعدين… ٣:٠٧ الفجر.", "n"], [2.6, "<em class=\"r\">“Tariffs! One hundred percent! Tremendous!”</em>", "<em class=\"r\">\"جمارك! مية في المية! حاجة عظيمة!\"</em>", "t"], [5.6, "Now you know how he got here.", "دلوقتي عرفت وصل لكده إزاي.", "n"]],
   setup(){place(chars.trump,0,13.75)},
   update(t){trumpType(t,t<3?'tpout':'tshout');if(t>3)once('ping',()=>SFX.ping())},
   shot(t){shotList(t,[[0,3.5,V(-1.2,2.45,16.4),V(-.8,2.42,15.9),V(0,2.3,13.75),V(0,2.3,13.75),{fov:36,roll:.04}],[3.5,8,V(.4,2.55,15.9),V(.3,2.5,15.5),V(0,2.42,13.75),V(0,2.42,13.75),{fov:32}]])}},
  {key:'crash',name:'Chomp',set:'bed',look:'bedRed',music:'crash',dur:15,chapter:['RULE 6 OF 6','NEVER BORROW'],chapterAr:['القاعدة ٦ من ٦','متستلفش أبداً'],collect:[[6,9]],
   warp:t=>t<1.5?t:(t<4?1.5+(t-1.5)*.35:2.375+(t-4)),
   d:'Slow-motion dolly zoom on his face, the shark leaps over the bed: chomp. Liquidated. “This is fine” on a floating pillow.',
-  lines:[[0.3,'Fifty percent down. On ten times leverage.','نازل خمسين في المية. برافعة عشر أضعاف.'],[4.7,'<em class="r">CHOMP.</em>','<em class="r">هَمّ.</em>'],[6.6,'<em class="r">Liquidated.</em>','<em class="r">اتصفّى.</em>'],[9.0,'Rule six: never borrow to bet.','القاعدة السادسة: عمرك ما تستلف عشان تراهن.'],[12.2,'“This is fine.”','"كله تمام."']],
+  lines:[[0.3, "Fifty percent down. On ten-x leverage.", "نازل خمسين في المية. برافعة عشر أضعاف.", "n"], [4.7, "<em class=\"r\">CHOMP.</em>", "<em class=\"r\">هَمّ.</em>", "n"], [6.6, "<em class=\"r\">Liquidated.</em>", "<em class=\"r\">اتصفّى.</em>", "n"], [9.0, "Rule six: never borrow to bet.", "القاعدة السادسة: عمرك ما تستلف عشان تراهن.", "n"], [12.2, "“This is fine.”", "\"كله تمام.\"", "h"]],
   setup(){bedScene('kid',true);bedHolo();V3.flood.visible=true;V3.shark.visible=true;floodLevel(.55)},
   update(ta,t){crashAct(ta,t)},
   shot(t){if(t>=1.5&&t<4){dolly(t,1.5,4,KB());return}
@@ -435,38 +435,38 @@ const SCENES=[
   fx(t){if(t>=1.5&&t<4){FX.ab=.0045;once('slo',()=>SFX.slowmo())}}},
  {key:'friendsleep',name:'Meanwhile',set:'bed',look:'bedDawn',music:'gold',dur:12,
   d:'His friend sleeps. WalletLens quietly sells at −10% and buys the dip. The turtle snores.',
-  lines:[[0.5,'Meanwhile, his friend slept.','وفي نفس الوقت، صاحبه كان نايم.'],[3.6,'His exit sold at minus ten. Automatically.','الخروج باع عند سالب عشرة. لوحده.'],[7.2,'His cash bought the dip.','والكاش اشترى النزلة.'],[9.8,'The turtle snored.','والسلحفاة كانت بتشخّر.']],
+  lines:[[0.5, "Meanwhile, his friend slept.", "وفي نفس الوقت، صاحبه كان نايم.", "n"], [3.4, "His exit sold at minus ten. Automatically.", "الخروج باع عند سالب عشرة. لوحده.", "n"], [7.0, "His cash bought the dip.", "والكاش اشترى النزلة.", "n"], [9.8, "The turtle snored.", "والسلحفاة كانت بتشخّر.", "n"]],
   setup(){bedScene('friend');phoneOnStand('alerts');V3.turtle.visible=true;V3.turtle.position.set(BX-.35,.72,-2.85);V3.turtle.rotation.y=.4},
   update(t){chars.ollie.setFace('sleep');turtleAct(t,'sleep');if(t>9.6)once('snore',()=>SFX.snore())},
   shot(t){shotList(t,[[0,6,V(BX+1.0,2.9,3.4),V(BX+.9,2.6,2.6),V(BX+.6,.9,-1.8),V(BX+.6,1.0,-1.9),{fov:40}],[6,12,V(BX+.3,1.25,-1.3),V(BX+.15,1.2,-1.55),V(BX-.45,.85,-2.7),V(BX-.45,.85,-2.7),{fov:38}]])}},
  {key:'kidding',name:'Just kidding',set:'press',look:'pressDay',music:'gold',dur:11,
   d:'Next morning at the podium: “Just kidding. Deal coming 🤝.” The market bounces.',
-  lines:[[0.5,'Next morning, Trump posted again:','تاني يوم الصبح، ترامب كتب تاني:'],[3.4,'<em>“Just kidding. Deal coming 🤝.”</em>','<em>"بهزر. في اتفاق جاي 🤝."</em>'],[7.0,'And the market bounced right back.','والسوق رجع طلع على طول.']],
+  lines:[[0.3, "“Mr. President! Mr. President!”", "\"سيادة الرئيس! سيادة الرئيس!\"", "r"], [2.4, "<em>“Just kidding. Deal coming. Very soon. Maybe.”</em>", "<em>\"بهزر. في اتفاق جاي. قريب جداً. يمكن.\"</em>", "t"], [6.4, "And the market bounced right back.", "والسوق رجع طلع على طول.", "n"], [8.8, "“You’re welcome.”", "\"العفو.\"", "t"]],
   setup(){place(chars.trump,0,13.75)},
   update(t){const T=chars.trump;T.setFace(t<1.6?'tpout':'tsmug');T.armR.rotation.z=2.3+Math.sin(t*5)*.12;T.armR.rotation.x=-.3;T.armL.rotation.x=-.5;if(t>=6){insertHolo();drawHolo('kidding',(t-6)/2.5,t)}else holo.visible=false},
   shot(t){if(t<6)shotList(t,[[0,6,V(-.7,2.3,17.6),V(-.35,2.3,16.7),V(0,2.0,13.75),V(0,2.1,13.75),{fov:36}]]);else insertShot(t-6,5)}},
  {key:'realize',name:'The bottom',set:'caf',look:'day',music:'soft',dur:15,
   d:'He sold the exact bottom. His friend is up, and rested. “…Can you teach me?”',
-  lines:[[0.5,'He had already been liquidated.','هو كان اتصفّى خلاص.'],[3.6,'He sold the bottom. Perfectly.','باع في القاع. بالظبط.'],[7.4,'His friend was up. And well rested.','صاحبه كسبان. ونايم كويس.'],[11.0,'“…Can you teach me?”','"…ممكن تعلّمني؟"']],
+  lines:[[0.5, "He had already been liquidated.", "هو كان اتصفّى خلاص.", "n"], [3.4, "“I sold the bottom. The exact bottom.”", "\"أنا بعت في القاع. القاع بالظبط.\"", "h"], [7.2, "“I’m up. And I slept eight hours.”", "\"أنا كسبان. ونمت تمن ساعات.\"", "f"], [11.0, "“…Can you teach me?”", "\"…ممكن تعلّمني؟\"", "h"], [13.2, "“Thought you’d never ask.”", "\"كنت مستنيك تقولها.\"", "f"]],
   setup(){duo();cafHolo(0,2.78,-.6,0)},
   update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace('happy');k.setFace(t<10.8?'cry':'smile');k.neck.rotation.x=t<10.8?.25:0;drawHolo('kidding',1,t)},
   shot(t){shotList(t,[[0,5,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.9,-1.05),V(-1.1,1.9,-1.05),{fov:34}],[5,10,V(0,2.2,3.0),V(0,2.15,2.6),V(0,1.95,-1),V(0,2.0,-1),{fov:40}],[10,15,V(-.6,2.0,1.0),V(-.8,1.98,.85),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:32}]])}},
  {key:'playbook',name:'The shield',set:'caf',look:'gold',music:'drive',dur:20,
-  d:'The Risk Playbook: six rule bricks drop onto the table and lock into a shield. The board fills in. The class claps.',
-  lines:[[0.5,'So his friend taught him the Risk Playbook.','فصاحبه علّمه دليل المخاطر.'],[5.0,'Six rules. Six bricks.','ست قواعد. ست طوبات.'],[9.0,'Five percent. Know it. Exit first.','خمسة في المية. افهم. حدد خروجك.'],[13.0,'Keep cash. Own less. Never borrow.','خلّي كاش. امتلك أقل. ومتستلفش.'],[16.6,'Together, they make a shield.','مع بعض بيعملوا درع.']],
+  d:'The Risk Playbook: six rule bricks drop onto the table and lock into a shield. The wall screen fills in. The office claps.',
+  lines:[[0.5, "“Okay. The Risk Playbook.”", "\"تمام. دليل المخاطر.\"", "f"], [3.4, "Six rules. Six bricks.", "ست قواعد. ست طوبات.", "n"], [6.4, "“Five percent. Know it. Exit first.”", "\"خمسة في المية. افهم. حدد خروجك.\"", "f"], [10.4, "“Keep cash. Own less. Never borrow.”", "\"خلّي كاش. امتلك أقل. ومتستلفش.\"", "f"], [14.4, "Together, they make a shield.", "مع بعض بيعملوا درع.", "n"], [16.8, "“That’s… actually genius.”", "\"ده… عبقري فعلاً.\"", "h"]],
   setup(){classScene();V3.shield.visible=true;V3.shield.scale.setScalar(1);V3.shield.position.set(0,1.08,-.15);V3.shield.rotation.set(0,0,0)},
   update(t){classAct(t);shieldBuild(t-5,1.15);drawBoard(Math.max(0,(t-9)/9));if(t>16.6)once('app',()=>SFX.applause())},
   shot(t){if(t<6){orbit(t,0,6,V(.3,0,.5),5.0,.5,-.25,3.1,2.6,V(.1,1.6,-.3),40);return}
     shotList(t,[[6,13,V(.9,1.95,1.4),V(.6,1.85,1.1),V(0,1.35,-.15),V(0,1.35,-.15),{fov:36}],[13,20,V(0,3.0,1.0),V(0,3.15,-4.4),V(0,2.9,-6),V(0,3.15,-9),{fov:40}]])}},
  {key:'setup',name:'WalletLens',set:'ins',look:'insert',music:'drive',dur:16.5,
   d:'WalletLens: crypto, stocks, gold and cash in one place, flags anything over 5%, holds the exit.',
-  lines:[[0.5,'Then he set up WalletLens.','وبعدين نزّل والت لينز.'],[3.8,'Crypto, stocks, gold and cash. All in one place.','كريبتو، أسهم، دهب وكاش. كله في مكان واحد.'],[8.0,'It flags anything over five percent.','بينبّهك لو أي حاجة عدّت خمسة في المية.'],[11.6,'And it holds his exit. Even at 3 AM.','وبيمسكله الخروج. حتى الساعة ٣ الفجر.']],
+  lines:[[0.5, "Then he set up WalletLens.", "وبعدين نزّل والت لينز.", "n"], [3.6, "Crypto, stocks, gold and cash. All in one place.", "كريبتو، أسهم، دهب وكاش. كله في مكان واحد.", "n"], [7.8, "It flags anything over five percent.", "بينبّهك لو أي حاجة عدّت خمسة في المية.", "n"], [11.2, "And it holds your exit. Even at 3 AM.", "وبيمسكلك الخروج. حتى الساعة ٣ الفجر.", "n"], [14.4, "“Finally. Sleep.”", "\"أخيراً. نوم.\"", "h"]],
   setup(){insertHolo()},
   update(t){drawHolo('wlapp',t/12,t)},
   shot(t){insertShot(t,16.5)}},
  {key:'week',name:'One week later',set:'press',look:'pressNight',music:'tense',dur:21,
   d:'A week later, 3:07 AM: “200% TARIFFS!!!” He sleeps, phone face down. The shark bonks the shield. Trump: “…Hello?”',
-  lines:[[0.5,'One week later. 3:07 AM.','بعدها بأسبوع. ٣:٠٧ الفجر.'],[5.2,'<em class="r">“200% TARIFFS!!!”</em>','<em class="r">"جمارك ٢٠٠٪!!!"</em>'],[8.4,'This time, he was asleep.','المرة دي، كان نايم.'],[11.2,'Phone face down. Plan on.','الموبايل على وشه. والخطة شغالة.'],[13.6,'The shark hit the shield. <em>Bonk.</em>','القرش خبط في الدرع. <em>طاخ.</em>'],[16.0,'Trump waited for the panic.','ترامب استنى الذعر.'],[18.6,'<em>“…Hello?”</em>','<em>"…ألو؟"</em>']],
+  lines:[[0.5, "One week later. 3:07 AM.", "بعدها بأسبوع. ٣:٠٧ الفجر.", "n"], [3.0, "<em class=\"r\">“Two hundred percent! On everything! Even the moon!”</em>", "<em class=\"r\">\"ميتين في المية! على كل حاجة! حتى القمر!\"</em>", "t"], [8.4, "This time, he was asleep.", "المرة دي، كان نايم.", "n"], [11.0, "Phone face down. Plan on.", "الموبايل على وشه. والخطة شغالة.", "n"], [13.6, "The shark hit the shield. <em>Bonk.</em>", "القرش خبط في الدرع. <em>طاخ.</em>", "n"], [16.0, "<em>“Where’s the panic? …Hello?”</em>", "<em>\"فين الذعر؟ …ألو؟\"</em>", "t"], [18.9, "Nobody panicked.", "محدش اتخض.", "n"]],
   setup(){place(chars.trump,0,13.75);bedScene('kid');phoneOnStand('down');V3.shield.visible=true;V3.shield.scale.setScalar(1.6);V3.shield.position.set(BX+2.7,0,-.4);V3.shield.rotation.set(0,-.5,0);shieldBuild(99,1);V3.flood.visible=true;floodLevel(.22);V3.shark.visible=true;V3.turtle.visible=true;V3.turtle.position.set(BX+2.0,.25,.35);V3.turtle.rotation.y=.3},
   update(t){weekAct(t)},
   shot(t){if(t<8)shotList(t,[[0,5,V(.45,2.5,15.6),V(.3,2.45,15.2),V(0,2.38,13.75),V(0,2.38,13.75),{fov:34}],[5,8,V(.0,3.2,16.4),V(0,3.2,16.0),V(0,3.2,14.6),V(0,3.2,14.6),{fov:40}]]);
@@ -545,22 +545,22 @@ if(ok){
   box(30,.3,30,M.ceil,0,6.6,0,false);
   [[-4,-5],[4,-5],[-4,0],[4,0],[0,-2.5],[0,3]].forEach(([x,z])=>{box(3,.08,.4,M.lamp,x,6.42,z,false);const p=new THREE.PointLight('#ffd9a8',.35,9);p.position.set(x,6,z);scene.add(p);lampLights.push(p)});
 
-  // set dressing: lockers, posters, clock, exit sign, counter, trays, backpacks, plants, dust
-  {const vent=canvasTex(128,256,(g)=>{g.fillStyle='#2f3b5c';g.fillRect(0,0,128,256);g.fillStyle='rgba(0,0,0,.35)';for(let y=20;y<70;y+=10)g.fillRect(24,y,80,4);g.fillStyle='#c9d4ea';g.fillRect(96,120,10,34);g.strokeStyle='rgba(0,0,0,.4)';g.lineWidth=3;g.strokeRect(4,4,120,248)});
+  // set dressing (an office canteen): filing cabinets, posters, clock, exit sign, counter, trays, laptop bags, plants, dust
+  {const vent=canvasTex(128,256,(g)=>{g.fillStyle='#3a4258';g.fillRect(0,0,128,256);g.strokeStyle='rgba(0,0,0,.45)';g.lineWidth=4;for(let k=0;k<4;k++){g.strokeRect(8,8+k*62,112,56);g.fillStyle='#c9d4ea';g.fillRect(44,30+k*62,40,8);g.fillStyle='#e8e4d6';g.fillRect(52,16+k*62,24,10)}});
    const lm=new THREE.MeshStandardMaterial({map:vent.t,roughness:.45,metalness:.35}),ls=new THREE.MeshStandardMaterial({color:'#28324e',roughness:.5,metalness:.3});
    for(let k=0;k<12;k++){const L=new THREE.Mesh(new THREE.BoxGeometry(.6,2.3,.9),[lm,ls,ls,ls,ls,ls]);L.position.set(-9.5,1.15,-7.5+k*1.0);L.castShadow=true;L.receiveShadow=true;scene.add(L)}}
   const poster=(txt,sub,bg,fg,x,y,z,ry,w=1.6,h=2.1)=>{const draw=(g)=>{const ar=/[\u0600-\u06FF]/.test(txt);g.direction=ar?'rtl':'ltr';g.fillStyle=bg;g.fillRect(0,0,320,420);g.fillStyle=fg;g.font=ar?'900 50px Cairo,sans-serif':'900 54px Montserrat,Arial Black,sans-serif';g.textAlign='center';txt.split('|').forEach((l,i)=>g.fillText(l,160,120+i*62));g.font=ar?'700 24px Cairo,sans-serif':'700 24px Plus Jakarta Sans,sans-serif';g.fillText(sub,160,370);g.strokeStyle=fg;g.lineWidth=6;g.strokeRect(14,14,292,392)};const pt=canvasTex(320,420,draw);REDRAW.push(()=>{draw(pt.g);pt.t.needsUpdate=true});
     const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:pt.t,roughness:.8}));m.position.set(x,y,z);m.rotation.y=ry;scene.add(m)};
-  poster(TX('THINK|LONG|TERM','فكّر|على|المدى البعيد'),TX('Investing Club · Thu','نادي الاستثمار · الخميس'),'#16a34a','#ffffff',-6.2,3.3,-9.03,0);
-  poster(TX('SCIENCE|FAIR','معرض|العلوم'),TX('Gym · Friday','الملعب · الجمعة'),'#f59e0b','#1b1b1b',6.2,3.3,-9.03,0);
-  poster(TX('READ|THE|PLAN','اقرا|الخطة'),TX('Library','المكتبة'),'#7c3aed','#ffffff',-9.83,3.6,4.2,Math.PI/2,1.4,1.8);
+  poster(TX('THINK|LONG|TERM','فكّر|على|المدى البعيد'),TX('Finance team · Thu','فريق الماليات · الخميس'),'#16a34a','#ffffff',-6.2,3.3,-9.03,0);
+  poster(TX('Q3|TARGETS','أهداف|الربع|التالت'),TX('All-hands · Friday','اجتماع الكل · الجمعة'),'#f59e0b','#1b1b1b',6.2,3.3,-9.03,0);
+  poster(TX('READ|THE|PLAN','اقرا|الخطة'),TX('Meeting room B','أوضة الاجتماعات ب'),'#7c3aed','#ffffff',-9.83,3.6,4.2,Math.PI/2,1.4,1.8);
   {const face=new THREE.Mesh(new THREE.CylinderGeometry(.45,.45,.06,40),[new THREE.MeshStandardMaterial({color:'#222'}),new THREE.MeshStandardMaterial({color:'#f5f5f0'}),new THREE.MeshStandardMaterial({color:'#222'})]);face.rotation.x=Math.PI/2;face.position.set(0,5.25,-9.02);scene.add(face);
    const hm=new THREE.MeshBasicMaterial({color:'#111'});clockH=new THREE.Group();clockM=new THREE.Group();[[clockH,.22,.05],[clockM,.36,.03]].forEach(([g,l,w])=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,l,.02),hm);b.position.y=l/2;g.add(b);g.position.set(0,5.25,-8.97);scene.add(g)})}
   {const et=canvasTex(256,96,(g)=>{g.fillStyle='#0b3d1c';g.fillRect(0,0,256,96);g.fillStyle='#4ade80';g.font='900 60px Montserrat,Arial Black,sans-serif';g.textAlign='center';g.fillText('EXIT',128,70)});const e=new THREE.Mesh(new THREE.BoxGeometry(.9,.34,.1),new THREE.MeshStandardMaterial({map:et.t,emissive:'#4ade80',emissiveIntensity:.35,emissiveMap:et.t}));e.position.set(9.8,5.4,5.5);e.rotation.y=-Math.PI/2;scene.add(e);
    const door=new THREE.Mesh(new THREE.BoxGeometry(.1,3,1.8),new THREE.MeshStandardMaterial({color:'#3b4256',roughness:.5}));door.position.set(9.84,1.5,5.5);scene.add(door)}
   box(1.0,1.05,7,new THREE.MeshStandardMaterial({color:'#5b6378',roughness:.6}),8.6,.52,1.5);box(1.1,.06,7.1,new THREE.MeshStandardMaterial({color:'#d9dee8',roughness:.15,metalness:.8}),8.6,1.07,1.5);
   for(let k=0;k<5;k++)box(.5,.03,.36,new THREE.MeshStandardMaterial({color:['#f97316','#3b82f6','#ef4444','#22c55e','#eab308'][k]}),8.55,1.12+k*.035,-1.2);
-  const tray=(x,z,c)=>{box(.55,.03,.38,new THREE.MeshStandardMaterial({color:c,roughness:.4}),x,1.1,z);const milk=canvasTex(64,96,(g)=>{g.fillStyle='#fff';g.fillRect(0,0,64,96);g.fillStyle='#2563eb';g.fillRect(0,40,64,30);g.fillStyle='#fff';g.font='900 18px Montserrat,sans-serif';g.fillText('MILK',8,62)});
+  const tray=(x,z,c)=>{box(.55,.03,.38,new THREE.MeshStandardMaterial({color:c,roughness:.4}),x,1.1,z);const milk=canvasTex(64,96,(g)=>{g.fillStyle='#f4efe6';g.fillRect(0,0,64,96);g.fillStyle='#6b3f22';g.fillRect(0,36,64,34);g.fillStyle='#f4efe6';g.font='900 15px Montserrat,sans-serif';g.fillText('COFFEE',3,60)});
     const mk=new THREE.Mesh(new THREE.BoxGeometry(.1,.17,.1),new THREE.MeshStandardMaterial({map:milk.t}));mk.position.set(x+.15,1.2,z-.05);mk.castShadow=true;scene.add(mk);
     const ap=new THREE.Mesh(new THREE.SphereGeometry(.07,16,12),new THREE.MeshStandardMaterial({color:'#dc2626',roughness:.35}));ap.position.set(x-.12,1.18,z);ap.castShadow=true;scene.add(ap)};
   tray(-.9,-.35,'#f97316');tray(1.5,-.3,'#3b82f6');tray(-5.4,-4.2,'#22c55e');tray(5.0,.3,'#eab308');
@@ -705,7 +705,9 @@ function shirtDecal(kind){const W=256;return (g)=>{const fill=c=>{g.fillStyle=c;
   }}}
 function plastic(c,extra){return new THREE.MeshPhysicalMaterial(Object.assign({color:c,roughness:.32,metalness:0,clearcoat:.6,clearcoatRoughness:.25},extra||{}))}
 // printed face on a cylinder head: the face sits in the middle half of a 512×256 wrap
-function faceWrap(g,skin,ex,blink){g.fillStyle=skin;g.fillRect(0,0,512,256);g.save();g.translate(128+28,22);g.scale(.78,.82);drawFace(g,skin,ex);
+function faceWrap(g,skin,ex,blink,mouth){g.fillStyle=skin;g.fillRect(0,0,512,256);g.save();g.translate(128+28,22);g.scale(.78,.82);drawFace(g,skin,ex);
+  if(mouth>.05){const tr=ex[0]==='t';g.fillStyle=skin;g.fillRect(58,146,140,84);if(tr){g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.ellipse(70,150,22,14,0,0,7);g.ellipse(186,150,22,14,0,0,7);g.fill()}
+    const rx=22+10*mouth,ry=5+24*mouth,cy=180;g.save();g.beginPath();g.ellipse(128,cy,rx,ry,0,0,7);g.fillStyle=tr?'#4a1a14':'#3a0d10';g.fill();g.clip();g.fillStyle='#fff';g.fillRect(128-rx,cy-ry,rx*2,ry*.38);g.fillStyle='#e0525c';g.beginPath();g.ellipse(128,cy+ry*.8,rx*.6,ry*.45,0,0,7);g.fill();g.restore();g.strokeStyle=tr?'#b5584a':'#141012';g.lineWidth=tr?6:5;g.beginPath();g.ellipse(128,cy,rx,ry,0,0,7);g.stroke()}
   if(blink){g.fillStyle=skin;g.fillRect(56,64,148,74);g.strokeStyle='#141012';g.lineWidth=8;g.lineCap='round';g.beginPath();g.moveTo(70,104);g.quadraticCurveTo(88,116,108,104);g.moveTo(148,104);g.quadraticCurveTo(168,116,188,104);g.stroke()}g.restore()}
 function makeChar(o){
   const root=new THREE.Group(),body=new THREE.Group();root.add(body);
@@ -746,8 +748,9 @@ function makeChar(o){
   const hat=new THREE.Mesh(new THREE.ConeGeometry(.22,.52,24),plastic('#ffffff',{map:hatTex.t}));hat.position.y=1.08;hat.rotation.z=.15;hat.visible=false;neck.add(hat);
   scene.add(root);
   const c={root,body,torso,armL,armR,legL,legR,neck,head,hat,face,skin,expr:'',
-    setFace(ex){if(ex===this.expr)return;this.expr=ex;this.blinking=false;faceWrap(face.g,skin,ex);face.t.needsUpdate=true},
-    ph:RNG()*3,blinking:false,blink(b){if(b===this.blinking)return;this.blinking=b;faceWrap(face.g,skin,this.expr,b);face.t.needsUpdate=true}};
+    setFace(ex){if(ex===this.expr)return;this.expr=ex;this.blinking=false;this.mouth=0;faceWrap(face.g,skin,ex);face.t.needsUpdate=true},
+    ph:RNG()*3,blinking:false,mouth:0,blink(b){if(b===this.blinking)return;this.blinking=b;faceWrap(face.g,skin,this.expr,b,this.mouth);face.t.needsUpdate=true},
+    talk(m){const q=Math.round(Math.min(1,m)*4)/4;if(q===this.mouth)return;this.mouth=q;faceWrap(face.g,skin,this.expr,this.blinking,q);face.t.needsUpdate=true}};
   return c;
 }
 function resetChar(c){c.seated=false;if(c.sweat)c.sweat.forEach(d=>d.visible=false);c.root.visible=false;c.root.position.set(0,0,0);c.root.rotation.set(0,0,0);c.body.position.set(0,0,0);c.body.rotation.set(0,0,0);[c.armL,c.armR,c.legL,c.legR,c.neck].forEach(p=>p.rotation.set(0,0,0));c.hat.visible=false;c.setFace('smile')}
@@ -802,7 +805,7 @@ function drawHolo(kind,p,t){const g=holoTex.g;
     if(p>.45)htxt(g,TX('“explain one?”','"اشرحلي واحدة؟"'),256,440,28,'#fff');if(p>.7){g.fillStyle='rgba(8,18,44,.9)';rr(g,120,190,272,110,20);g.fill();htxt(g,TX('“…vibes.”','"…إحساس."'),256,262,46,'#fde68a')}}
   if(kind==='cash'){holoFrame(g,'#4ade80');htxt(g,TX('CASH','الكاش'),256,72,34,'#bbf7d0');
     for(let k2=0;k2<6;k2++){g.fillStyle='#e0a91f';g.beginPath();g.ellipse(150,330-k2*22,70,20,0,0,7);g.fill();g.strokeStyle='#8a6410';g.lineWidth=3;g.stroke()}htxt(g,'15%',150,205,52,'#4ade80');htxt(g,TX('his friend','صاحبه'),150,390,22,'#cbd5e1');
-    if(p>.55){g.strokeStyle='#64748b';g.lineWidth=4;g.setLineDash([10,8]);g.beginPath();g.ellipse(370,330,70,20,0,0,7);g.stroke();g.setLineDash([]);htxt(g,'0%',370,205,52,'#f87171');htxt(g,TX('him','هو'),370,390,22,'#cbd5e1');htxt(g,TX('(lunch money: in cat coin)','(فلوس الغدا: في عملة القطة)'),256,445,20,'#fca5a5')}}
+    if(p>.55){g.strokeStyle='#64748b';g.lineWidth=4;g.setLineDash([10,8]);g.beginPath();g.ellipse(370,330,70,20,0,0,7);g.stroke();g.setLineDash([]);htxt(g,'0%',370,205,52,'#f87171');htxt(g,TX('him','هو'),370,390,22,'#cbd5e1');htxt(g,TX('(rent money: in cat coin)','(فلوس الإيجار: في عملة القطة)'),256,445,20,'#fca5a5')}}
   if(kind==='headlines'){holoFrame(g,'#94a3b8');const H3=[[TX('TARIFF TALK HEATS UP','الجمارك بتسخن'),'#ef4444'],[TX('CAT COIN +80% 🚀','عملة القطة +٨٠٪ 🚀'),'#22c55e'],[TX('ANALYSTS: “NO IDEA”','المحللين: "مش عارفين"'),'#f59e0b']];
     H3.forEach(([h,c],k2)=>{if(p<k2*.28)return;const y=110+k2*125;g.fillStyle='rgba(255,255,255,.08)';rr(g,40,y,432,100,16);g.fill();g.fillStyle=c;g.fillRect(40,y,12,100);htxt(g,h,262,y+62,28,'#fff')})}
   if(kind==='sold'){holoFrame(g,'#f59e0b');g.fillStyle='rgba(255,255,255,.08)';rr(g,50,70,412,180,18);g.fill();g.fillStyle='#16181d';rr(g,80,110,130,100,12);g.fill();
@@ -902,7 +905,7 @@ function buildV3(){
      [-.15,.15].forEach(x=>{const s2=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.06,14),gm);s2.position.set(x,.21,0);b.add(s2)});
      b.userData.home=new THREE.Vector3((i%3-1)*.62,.18+Math.floor(i/3)*.37,0);b.position.copy(b.userData.home);g.add(b);V3.shieldBricks.push(b)}
    g.visible=false;scene.add(g);V3.shield=g}
-  // console with a SOLD tag on the cafeteria table
+  // console with a SOLD tag on the canteen table
   {const g=new THREE.Group();const c=new THREE.Mesh(new THREE.BoxGeometry(.62,.16,.42),plastic('#16181d'));c.castShadow=true;g.add(c);
    const tag=canvasTex(128,64,(x)=>{x.fillStyle='#e8343a';x.fillRect(0,0,128,64);x.fillStyle='#fff';x.font='900 40px Montserrat,sans-serif';x.textAlign='center';x.fillText('SOLD',64,48)});
    const tg=new THREE.Mesh(new THREE.PlaneGeometry(.36,.18),new THREE.MeshBasicMaterial({map:tag.t,side:THREE.DoubleSide}));tg.position.set(.2,.2,.18);tg.rotation.set(-.4,0,-.2);g.add(tg);
@@ -996,10 +999,18 @@ function mood(key,t,dt){const s=SCENES[cur],L=s.look;
   $('rw').hidden=!(FX.rw>0);
   FX.barsCur+=(FX.bars-FX.barsCur)*Math.min(1,dt*7);const bh=(FX.barsCur*10.5).toFixed(2)+'%';$('lbt').style.height=bh;$('lbb').style.height=bh;
   // narration cues for the soundtrack
-  s.lines.forEach((l,i)=>{if(t>=l[0]&&!sfxFlags['vo'+i]){sfxFlags['vo'+i]=1;const next=i+1<s.lines.length?s.lines[i+1][0]:s.dur;const txt=(AR?l[2]:l[1]).replace(/<[^>]+>/g,'');if(txt)SFX.vo(txt,+(next-l[0]-.25).toFixed(2))}});
+  s.lines.forEach((l,i)=>{if(t>=l[0]&&!sfxFlags['vo'+i]){sfxFlags['vo'+i]=1;const next=i+1<s.lines.length?s.lines[i+1][0]:s.dur;const txt=(AR?l[2]:l[1]).replace(/<[^>]+>/g,'');if(txt)SFX.vo(txt,+(next-l[0]-.25).toFixed(2),l[3]||'n',s.key,i)}});
+  lipStep(s,t);
   if(gradePass){const u=gradePass.uniforms;u.uTime.value=NOW()/1000;u.uSat.value=FX.sat;u.uCon.value=FX.con;u.uVig.value=FX.vig;u.uAb.value=FX.ab;u.uWarm.value=FX.warm;u.uFlash.value=FX.flash;u.uRw.value=FX.rw}
 }
 const FACE_REX=V(0,1.95,-1.05);
+// talking: the speaking character's mouth follows the voice (lips.js from the voice pass), or a simple flap without it
+const TALKERS={h:'rex',f:'ollie',t:'trump'};
+function lipStep(s,t){if(!ok)return;const busy={};
+  s.lines.forEach((l,i)=>{const who=TALKERS[l[3]];if(!who||t<l[0])return;const env=window.LIPS&&window.LIPS[s.key+':'+i];
+    const next=i+1<s.lines.length?s.lines[i+1][0]:s.dur,d=env?env.length/30:Math.min(next-l[0]-.3,l[1].replace(/<[^>]+>/g,'').length*.065),u=t-l[0];if(u>=d)return;
+    busy[who]=env?env[Math.min(env.length-1,Math.floor(u*30))]:Math.max(0,Math.sin(u*21)*.5+.5)*(.55+.45*Math.sin(u*6.3))});
+  Object.values(TALKERS).forEach(w=>{const c=chars[w];if(!c||!c.root.visible||['scream','sleep','shock','cry'].includes(c.expr)&&!busy[w])return;if(['scream','sleep'].includes(c.expr))return;c.talk(busy[w]||0)})}
 function updateRules(){const on=new Set();SCENES.forEach((s,j)=>{(s.collect||[]).forEach(([r,at])=>{if(j<cur||(j===cur&&t>=at))on.add(r)})});
   const key=[...on].sort().join('');if(key===rulesShown)return;const prev=rulesShown;rulesShown=key;
   $('rules').querySelectorAll('i').forEach((el,k)=>{const r=k+1,is=on.has(r);el.classList.toggle('on',is);if(is&&!prev.includes(String(r))&&prev!==null){el.classList.remove('new');void el.offsetWidth;el.classList.add('new');if(cur===SCENES.findIndex(s=>(s.collect||[]).some(c=>c[0]===r)))SFX.ding()}})}
@@ -1029,7 +1040,7 @@ const isV=()=>format==='v';
 let sfxFlags={},rulesShown='';
 function show(i){
   cur=(i+SCENES.length)%SCENES.length;t=0;capIdx=-1;const s=SCENES[cur];sfxFlags={};camRoll=0;
-  screen.classList.remove('whip');void screen.offsetWidth;screen.classList.add('whip');SFX.whoosh();SFX.scene(s.key,s.dur,s.music||'none');
+  screen.classList.remove('whip');void screen.offsetWidth;screen.classList.add('whip');SFX.whoosh();SFX.scene(s.key,s.dur,s.music||'none',s.set);
   const ch=$('chapter');ch.classList.remove('on');if(s.chapter){ch.querySelector('.n').textContent=s.chapter[0];ch.querySelector('.h').textContent=s.chapter[1];void ch.offsetWidth;ch.classList.add('on')}
   const out=$('outro');out.classList.toggle('on',s.key==='outro');out.innerHTML=s.key==='outro'?outroHTML():'';if(s.key==='outro')SFX.chime();
   $('logo').hidden=$('rules').hidden=s.key==='outro';

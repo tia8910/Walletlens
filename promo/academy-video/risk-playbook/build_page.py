@@ -4,7 +4,7 @@ def rep(a,b,cnt=1):
     global s
     assert s.count(a)==cnt,(s.count(a),a[:90]); s=s.replace(a,b)
 # local libs + fonts
-rep('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>','<script src="three.min.js"></script>')
+rep('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>','<script src="three.min.js"></script><script src="lips.js"></script>')
 s=re.sub(r'<link rel="preconnect"[^>]*>\s*<link rel="stylesheet" href="https://fonts.googleapis.com[^>]*>','<link rel="stylesheet" href="fonts/fonts.css">',s,count=1)
 # render-only layout: just the 1920x1080 screen
 rep('</style>','''body.render{margin:0;background:#000;overflow:hidden}

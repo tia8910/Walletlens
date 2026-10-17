@@ -1,24 +1,29 @@
-# Builds soundtrack3_<lang>.wav for the 5-minute Risk Playbook film, entirely from the cues the renderer
-# logged (frames*-events.json): scene starts with their music style, narration lines with their slot,
-# and sound effects (pings, typing, splash, chomp, bonk, applause, ...). Everything is synthesised or
-# generated locally (Kokoro TTS for English narration), so nothing needs a licence.
-#   python3 soundtrack3.py <voice|none|recordings-folder> <events.json> <en|ar>
+# Builds soundtrack_<lang>.wav for the 5-minute Risk Playbook film from the cues the renderer logged
+# (frames*-events.json): scene starts with their music style and set, the spoken lines, and sound effects.
+# Layers: score that never drops out (except the gags that need silence), an ambience bed per location
+# (press-room crowd and shutters, office murmur, night city, dawn birds), political sounds (rally chant,
+# breaking-news sting, opening bell, reporters) and the cast's voices from voices.py.
+# Everything is synthesised or generated locally (Kokoro TTS), so nothing needs a licence.
+#   python3 soundtrack.py <cast|none|recordings-folder> <events.json> <en|ar>
+#   cast = the per-line files voices.py wrote (vo_<lang>/, falling back to vo_en/)
 import json, os, sys, wave
 import numpy as np
 from scipy.signal import butter, sosfilt, fftconvolve, resample_poly
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-VOICE = sys.argv[1] if len(sys.argv) > 1 else 'am_michael'
+VOICE = sys.argv[1] if len(sys.argv) > 1 else 'cast'
 EVENTS = sys.argv[2] if len(sys.argv) > 2 else 'events.json'
 LANG = sys.argv[3] if len(sys.argv) > 3 else 'en'
 SR = 48000
 ev = json.load(open(EVENTS))
 scenes = [(e[0], e[2], e[3], e[4]) for e in ev if e[1] == 'scene']
+sets = {e[2]: (e[5] if len(e) > 5 else '') for e in ev if e[1] == 'scene'}
+start = {e[2]: e[0] for e in ev if e[1] == 'scene'}
 TOTAL = scenes[-1][0] + scenes[-1][2]
 N = int(TOTAL * SR) + SR
 rng = np.random.default_rng(5)
-music = np.zeros((N, 2)); sfx = np.zeros((N, 2)); vo = np.zeros((N, 2))
+music = np.zeros((N, 2)); sfx = np.zeros((N, 2)); vo = np.zeros((N, 2)); amb = np.zeros((N, 2))
 
 def tt(d): return np.arange(int(d * SR)) / SR
 def midi(n): return 440.0 * 2 ** ((n - 69) / 12)
@@ -118,6 +123,7 @@ def score(t0, d, style):
         put(music, t0 + .15, impact(.55), .32); put(music, t0 + .15, saw([48, 55, 60, 64, 67, 72], d - .2, 2800), .2); put(music, t0 + .15, b808(36, 4), .28)
 for t0, key, d, style in scenes:
     if style != 'none': score(t0, d, style)
+    else: put(music, t0, saw([33, 40], d, 400), .16)
     put(music, t0 - .8, rev_cym(.8), .22)
 
 # ── sound effects ──
@@ -169,30 +175,124 @@ sc = [e[0] for e in ev if e[1] == 'scratch']; rw = [e[0] for e in ev if e[1] == 
 if sc and rw:
     a, b = int(sc[0] * SR), int(rw[0] * SR); f = int(.03 * SR); music[a:a + f] *= np.linspace(1, 0, f)[:, None]; music[a + f:b] = 0
 
-# ── narration ──
-lines = [(e[0], e[2], e[3]) for e in ev if e[1] == 'vo']
-if VOICE != 'none':
-    if os.path.isdir(VOICE):
-        for i, (t0, text, room) in enumerate(lines):
-            p = os.path.join(VOICE, f'{i + 1:02d}.wav')
-            if not os.path.exists(p): continue
-            w = wave.open(p); sr = w.getframerate(); ch = w.getnchannels(); a = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768
-            a = a.reshape(-1, ch).mean(1) if ch > 1 else a; a = filt(resample_poly(a, SR, sr), 'high', 90); put(vo, t0, verb(a / (np.abs(a).max() + 1e-9) * .9, .06), 1.0)
-    else:
-        from vo import Voice
-        k = Voice(os.path.join(HERE, 'tts', 'model_q8.onnx'), os.path.join(HERE, 'tts', 'voices.npz'))
-        for t0, text, room in lines:
-            speed = 1.05; a, sr = k.create(text, voice=VOICE, speed=speed, lang='en-us')
-            if len(a) / sr > room: speed = min(1.3, speed * (len(a) / sr) / max(.5, room)); a, sr = k.create(text, voice=VOICE, speed=speed, lang='en-us')
-            a = filt(resample_poly(a, SR, sr), 'high', 90); put(vo, t0, verb(a / (np.abs(a).max() + 1e-9) * .9, .06), 1.0)
-            print(f'  VO @{t0:6.1f}s {len(a)/SR:4.1f}s/{room:4.1f}s x{speed:.2f}  {text[:48]}')
+# ── voices ──
+def load(p):
+    w = wave.open(p); sr = w.getframerate(); ch = w.getnchannels(); a = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768
+    a = a.reshape(-1, ch).mean(1) if ch > 1 else a; return resample_poly(a, SR, sr) if sr != SR else a
+lines = [(e[0], e[2], e[3], e[4] if len(e) > 4 else 'n') for e in ev if e[1] == 'vo']
+PAN = {'h': -.18, 'f': .18, 't': 0, 'i': .1, 'a': -.1, 'r': 0, 'b': 0, 'n': 0}
+if VOICE == 'cast':
+    mf = os.path.join(HERE, f'vo_{LANG}.json'); mf = mf if os.path.exists(mf) else os.path.join(HERE, 'vo_en.json')
+    vd = os.path.join(HERE, os.path.basename(mf)[:-5])
+    for t0, fn, who in json.load(open(mf)): put(vo, t0, load(os.path.join(vd, fn)), .62 if who == 'r' else 1.0, PAN.get(who, 0))
+elif VOICE != 'none' and os.path.isdir(VOICE):
+    for i, (t0, text, room, who) in enumerate(lines):
+        p = os.path.join(VOICE, f'{i + 1:02d}.wav')
+        if os.path.exists(p): a = filt(load(p), 'high', 90); put(vo, t0, verb(a / (np.abs(a).max() + 1e-9) * .9, .06), 1.0, PAN.get(who, 0))
+
+# ── ambience beds and the politics ──
+from vo import Voice
+K = Voice(os.path.join(HERE, 'tts', 'model_q8.onnx'), os.path.join(HERE, 'tts', 'voices.npz'))
+def tts(text, v, sp=1.0): a, sr = K.create(text, voice=v, speed=sp, lang='en-us'); return resample_poly(a, SR, sr)
+BAB = os.path.join(HERE, 'babble.npy')
+if os.path.exists(BAB): babble = np.load(BAB)
+else:  # a room full of people talking: many voices, overlapped, blurred
+    talk = ['So what did the market do today', 'I told him that already, twice', 'Did you see the numbers this morning', 'No way, are you serious',
+            'We should get lunch after this', 'The meeting got moved to three', 'Honestly I have no idea what happens next', 'Can you send me that file',
+            'He said the deal is basically done', 'Wait, who posted that', 'I need more coffee', 'That is a lot of money']
+    vs = ['am_adam', 'af_nicole', 'bm_lewis', 'af_bella', 'am_liam', 'bf_emma', 'am_echo', 'af_kore', 'bm_daniel', 'af_river']
+    babble = np.zeros(int(16 * SR))
+    for j in range(34):
+        a = tts(talk[j % len(talk)], vs[j % len(vs)], rng.uniform(.95, 1.15)) * rng.uniform(.4, 1); i0 = int(rng.uniform(0, 16) * SR)
+        a = np.concatenate([a, np.zeros(1)]); seg = np.zeros(len(babble)); n = min(len(a), len(babble)); seg[:n] = a[:n]; babble += np.roll(seg, i0)
+    babble = filt(filt(babble, 'low', 3200), 'high', 160); babble = verb(babble / (np.abs(babble).max() + 1e-9), .5); np.save(BAB, babble)
+def bed(sig, t0, d, g, fade=.6):
+    n = int(d * SR); x = np.tile(sig, int(np.ceil(n / len(sig))) + 1)[:n] if len(sig) < n else sig[:n]
+    put(amb, t0, x * env(n, fade, fade), g)
+def hum(d, f0=55): t = tt(d); return filt(noise(d), 'low', 260) * .5 + np.sin(2 * np.pi * f0 * t) * .08 + np.sin(2 * np.pi * f0 * 2 * t) * .04
+def traffic(d): t = tt(d); return filt(noise(d), 'low', 500) * (.6 + .4 * np.sin(2 * np.pi * t / 7.3)) * .7
+def shutter():
+    t = tt(.09); c = filt(noise(.09), 'band', [1200, 7000]) * np.exp(-t * 90); c2 = np.zeros(len(t)); j = int(.045 * SR); c2[j:] = c[: len(t) - j] * .7; return c + c2
+def shutters(d, rate=3.0):
+    out = np.zeros(int(d * SR)); tcur = 0
+    while tcur < d - .3:
+        for b in range(int(rng.integers(1, 5))):  # bursts, like a motor drive
+            j = int((tcur + b * .11) * SR); s2 = shutter() * rng.uniform(.4, 1)
+            if j + len(s2) < len(out): out[j:j + len(s2)] += s2
+        tcur += rng.exponential(1 / rate) + .25
+    return out
+def birds(d):
+    out = np.zeros(int(d * SR)); tcur = .3
+    while tcur < d - .5:
+        for c in range(int(rng.integers(2, 5))):
+            dd = rng.uniform(.06, .14); t = tt(dd); f = rng.uniform(2800, 4200) * (1 + .35 * np.sin(np.pi * t / dd)); ch = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.sin(np.pi * t / dd) ** 2
+            j = int((tcur + c * .17) * SR); out[j:j + len(ch)] += ch[: len(out) - j] * .5
+        tcur += rng.uniform(.8, 2.2)
+    return verb(out, .3)
+def crickets(d):
+    t = tt(d); return filt(np.sin(2 * np.pi * 4300 * t) * ((np.sin(2 * np.pi * 28 * t) > .2) * (np.sin(2 * np.pi * .9 * t) > .3)), 'band', [3000, 6000]) * .5
+def keys(d):
+    out = np.zeros(int(d * SR)); i = 0
+    while i < len(out) - 3000:
+        if rng.random() < .82: c = filt(noise(.025), 'band', [2000, 7000]) * np.exp(-tt(.025) * 200) * rng.uniform(.2, .6); out[i:i + len(c)] += c
+        i += int(rng.uniform(.08, .5) * SR)
+    return out
+def water(d): t = tt(d); return filt(noise(d), 'band', [200, 1400]) * (.55 + .45 * np.sin(2 * np.pi * t * .7) * np.sin(2 * np.pi * t * 1.9)) * .6
+def chant(reps=3, period=1.45):  # rally crowd: "U! S! A!"
+    out = np.zeros(int((reps * period + 2) * SR)); vs = ['am_adam', 'am_onyx', 'af_nicole', 'bm_lewis', 'am_liam', 'af_sarah', 'am_fenrir', 'bf_emma', 'am_echo', 'af_bella']
+    syl = {v: [tts(x, v, 1.2) for x in ('You!', 'Ess!', 'Ay!')] for v in vs}
+    for r in range(reps):
+        for si in range(3):
+            for v in vs:
+                a = syl[v][si][: int(.45 * SR)] * rng.uniform(.5, 1); j = int((r * period + si * .34 + rng.normal(0, .02)) * SR)
+                if 0 <= j < len(out) - len(a): out[j:j + len(a)] += a
+    return verb(filt(out, 'high', 140), .6) * env(len(out), .1, .8)
+def sting():  # breaking-news hit: brass stab, timpani, whoosh
+    t = tt(1.6); stab = saw([50, 57, 62, 65], 1.6, 3000) * np.exp(-t * 2.2) * 2.5
+    tim = np.sin(2 * np.pi * np.cumsum(70 + 40 * np.exp(-t * 9)) / SR) * np.exp(-t * 3)
+    return verb(np.tanh((stab + tim * .9) * 1.2), .35)
+def opening_bell(d=2.2):
+    out = np.zeros(int(d * SR))
+    for j in range(int(d * 14)):
+        b = bell(83, .5) * .6; i = int(j / 14 * SR); out[i:i + len(b)] += b[: len(out) - i]
+    return out * env(len(out), .01, .5)
+def cheer(d=3.0):
+    t = tt(d); return (filt(noise(d), 'band', [600, 3500]) * .5 + filt(babble[: len(t)] if len(babble) >= len(t) else np.resize(babble, len(t)), 'high', 400)) * np.sin(np.pi * t / d) ** .6
+def phones(d=2.5):
+    out = np.zeros(int(d * SR))
+    for j in range(16):
+        p = tone(rng.choice([1318, 1568, 1760, 2093]), .25, 9) * rng.uniform(.3, .8); i = int(rng.uniform(0, d - .3) * SR); out[i:i + len(p)] += p
+        b = buzz()[: int(.35 * SR)] * .25; i = int(rng.uniform(0, d - .4) * SR); out[i:i + len(b)] += b
+    return out
+for t0, key, d, style in scenes:
+    st = sets.get(key, '')
+    if st == 'press':
+        bed(hum(d, 60), t0, d, .14)
+        if key == 'kidding': bed(babble, t0, d, .42); put(amb, t0 + .2, shutters(d - .4, 4.0), .55, .3); put(amb, t0 + .3, shutters(d - .6, 3.0), .45, -.3)
+        else: bed(traffic(d), t0, d, .1)
+    elif st == 'bed':
+        bed(hum(d, 50), t0, d, .12); bed(traffic(d), t0, d, .1)
+        if key in ('flood', 'crash'): bed(water(d), t0, d, .35)
+        if key == 'friendsleep': bed(birds(d), t0, d, .3)
+    elif st == 'caf':
+        bed(babble, t0, d, .5 if key == 'hype' else .22); put(amb, t0, keys(d), .1, .5) if key != 'hype' else put(amb, t0 + .2, cheer(3.5), .5)
+    elif st == 'ins':
+        t = tt(d); bed(np.sin(2 * np.pi * 110 * t) * .05 + filt(noise(d), 'band', [2000, 6000]) * .04, t0, d, .5)
+if 'c_post' in start: t0 = start['c_post']; put(sfx, t0 + 2.5, sting(), .55); put(amb, t0 + 3.6, phones(3.0), .4); put(amb, t0 + 3.4, chant(2), .38)
+if 'newsmix' in start: t0 = start['newsmix']; put(sfx, t0, sting(), .6); put(amb, t0 + 3.6, chant(3), .45); put(amb, t0 + 1.0, shutters(8, 3), .35)
+if 'kidding' in start: t0 = start['kidding']; put(sfx, t0 + 6.3, opening_bell(), .4); put(amb, t0 + 6.6, cheer(3), .45)
+if 'playbook' in start: t0 = start['playbook']; bed(babble, t0, 20, .18)
+if 'week' in start:  # the gag: everyone is asleep, so the panic never comes — the score cuts to crickets for "…Hello?"
+    t0 = start['week']; a, b = int((t0 + 15.8) * SR), int((t0 + 19.6) * SR); f = int(.25 * SR)
+    music[a:a + f] *= np.linspace(1, 0, f)[:, None]; music[a + f:b] = 0; music[b:b + f] *= np.linspace(0, 1, f)[:, None]
+    put(amb, t0 + 15.9, crickets(3.6), .28)
 
 # ── mix ──
 ve = np.abs(vo[:, 0]) + 1e-12; win = int(.12 * SR); ve = np.convolve(ve, np.ones(win) / win, 'same'); ve = ve / (ve.max() + 1e-9)
 d = np.clip(ve * 4, 0, 1)
-mix = music * (1 - .55 * d)[:, None] * .8 + sfx * (1 - .25 * d)[:, None] + vo * 1.05
+mix = music * (1 - .4 * d)[:, None] * 1.05 + amb * (1 - .45 * d)[:, None] + sfx * (1 - .2 * d)[:, None] + vo * 1.1
 mix = mix[: int(TOTAL * SR)]; fade = int(2 * SR); mix[-fade:] *= np.linspace(1, 0, fade)[:, None]
 mix = mix / (np.percentile(np.abs(mix), 99.9) + 1e-9) * .7; mix = np.tanh(mix * 1.3) / np.tanh(1.3) * .92
 with wave.open(os.path.join(HERE, f'soundtrack_{LANG}.wav'), 'wb') as w:
     w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes((np.clip(mix, -1, 1) * 32767).astype(np.int16).tobytes())
-print(f'soundtrack_{LANG}.wav {TOTAL:.1f}s · {len(scenes)} scenes · {len(lines)} lines · voice {VOICE}')
+print(f'soundtrack_{LANG}.wav {TOTAL:.1f}s · {len(scenes)} scenes · {len(lines)} lines · voices: {VOICE}')

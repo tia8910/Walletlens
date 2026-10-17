@@ -11,3 +11,7 @@ soundtrack.wav
 frames_*/
 *-events.json
 soundtrack_*.wav
+vo_*/
+vo_*.json
+lips.js
+babble.npy
