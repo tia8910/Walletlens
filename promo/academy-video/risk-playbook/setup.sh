@@ -10,15 +10,15 @@ cp node_modules/three/examples/js/shaders/{CopyShader,LuminosityHighPassShader}.
 cp node_modules/three/examples/js/postprocessing/{EffectComposer,RenderPass,ShaderPass,UnrealBloomPass}.js pp/postprocessing/
 pip install --quiet kokoro-onnx==0.4.9 scipy numpy
 
-# Fonts used by the captions and the logo (Latin subset only)
+# Fonts used by the captions and the logo (Latin + Arabic subsets)
 mkdir -p fonts
 UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
-curl -sS -A "$UA" "https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" -o fonts/g.css
+curl -sS -A "$UA" "https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&family=Cairo:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" -o fonts/g.css
 python3 - <<'PY'
 import re, subprocess, os
 css = open('fonts/g.css').read(); out = []
 for sub, block in re.findall(r'/\* (\S+) \*/\s*(@font-face\s*{[^}]*})', css):
-    if sub != 'latin': continue
+    if sub not in ('latin', 'arabic'): continue
     url = re.search(r'url\((https://[^)]+)\)', block).group(1); name = url.split('/')[-1]
     if not os.path.exists('fonts/' + name): subprocess.run(['curl', '-sS', '-o', 'fonts/' + name, url], check=True)
     out.append(block.replace(url, name))

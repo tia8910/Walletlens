@@ -1,6 +1,6 @@
 # The Risk Playbook: Academy long video
 
-A 64-second, 16:9 cinematic story in a blocky 3D style, rendered with bloom, film grading, letterbox moments, a freeze-frame and VHS rewind, and a slow-motion dolly zoom. Rex puts his whole savings into one coin and loses half. Ollie follows the Risk Playbook. The film covers four of the six rules on screen, and the teacher's board completes all six.
+A 64-second, 16:9 cinematic story in a 3D toy-brick style (minifigure-style characters on a studded baseplate), rendered with bloom, film grading, letterbox moments, a freeze-frame and VHS rewind, and a slow-motion dolly zoom. Rex puts his whole savings into one coin and loses half. Ollie follows the Risk Playbook. The film covers four of the six rules on screen, and the teacher's board completes all six.
 
 | File | What it is |
 |---|---|
@@ -9,14 +9,16 @@ A 64-second, 16:9 cinematic story in a blocky 3D style, rendered with bloom, fil
 | `render.js` | Drives `video.html` frame by frame in headless Chromium and saves `frames/00000.jpg …`. It also logs every UI sound cue to `events.json`. |
 | `soundtrack.py` | Builds `soundtrack.wav`: Kokoro narration fitted to each scene, a synthesised music bed that ducks under the voice, story sound effects, and the logged UI cues. |
 | `vo.py` | A small wrapper around `kokoro-onnx` for this model export. |
-| `setup.sh` / `make.sh` | One-time setup, then the full build to `risk-playbook.mp4`. |
+| `setup.sh` / `make.sh` | One-time setup, then the full build: `walletlens-risk-playbook-en.mp4` (narrator am_michael) and `walletlens-risk-playbook-ar.mp4` (Egyptian Arabic captions and on-screen text). |
+| `vo_script_ar.md` | The Egyptian Arabic voice-over script with timings, for recording. `./make.sh ar <folder>` mixes the recordings in. |
 
 ```bash
 ./setup.sh          # npm + pip deps, three.js, fonts, Kokoro voice
-./make.sh           # → risk-playbook.mp4 (narrator af_heart)
-./make.sh am_michael
+./make.sh            # → walletlens-risk-playbook-en.mp4 and -ar.mp4
+./make.sh en af_heart
+./make.sh ar recordings/
 ```
 
 To change the story, edit `SCENES`, `SETUP` and `UPDATE` in `page.html` and the narration `LINES` in `soundtrack.py`, keeping the scene durations in step between the two. Then run `make.sh` again.
 
-The voice model is Kokoro-82M (Apache-2.0). All music and sound effects are synthesised in `soundtrack.py`, so nothing needs a licence.
+The page language follows the URL hash: `page.html#ar` shows the Egyptian Arabic version. The voice model is Kokoro-82M (Apache-2.0), which has no Arabic voice, so the Arabic narration needs a recording. Don't use the LEGO name or logo in titles, tags or thumbnails. All music and sound effects are synthesised in `soundtrack.py`, so nothing needs a licence.

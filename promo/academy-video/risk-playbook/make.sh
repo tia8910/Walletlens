@@ -1,14 +1,24 @@
 #!/usr/bin/env bash
-# Builds risk-playbook.mp4 (1920x1080, 30 fps, AAC) from page.html.
-#   ./make.sh [voice]     voice defaults to af_heart (try am_michael)
-# Set CHROME to a Chromium binary if it is not at the Playwright default below.
+# Builds the video in English and/or Egyptian Arabic (1920x1080, 30 fps, AAC).
+#   ./make.sh                 both languages; English narrator am_michael
+#   ./make.sh en [voice]      English only (voice: am_michael | af_heart | ...)
+#   ./make.sh ar [vo_dir]     Arabic only; vo_dir = folder of recorded lines 01.wav ... 11.wav (see vo_script_ar.md),
+#                             otherwise music and sound effects only
+# Set CHROME to a Chromium binary if it is not at the Playwright default.
 set -euo pipefail
 cd "$(dirname "$0")"
-python3 build_page.py
-rm -rf frames events.json
-node render.js 0 99999            # ~1-1.5 s per frame with software WebGL
-python3 soundtrack.py "${1:-af_heart}"
-ffmpeg -y -loglevel error -framerate 30 -i frames/%05d.jpg -i soundtrack.wav \
-  -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -profile:v high -movflags +faststart \
-  -c:a aac -b:a 192k -shortest risk-playbook.mp4
-echo "risk-playbook.mp4 ready"
+python3 build_page.py video.html
+build() {  # lang hash voice
+  rm -rf "frames_$1"
+  PAGE=video.html OUT="frames_$1" HASH="$2" node render.js 0 99999     # ~1.6 s per frame with software WebGL
+  python3 soundtrack.py "$3" "frames_$1-events.json" "$1"
+  ffmpeg -y -loglevel error -framerate 30 -i "frames_$1/%05d.jpg" -i "soundtrack_$1.wav" \
+    -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -profile:v high -movflags +faststart \
+    -c:a aac -b:a 192k -shortest "walletlens-risk-playbook-$1.mp4"
+  echo "walletlens-risk-playbook-$1.mp4 ready"
+}
+case "${1:-all}" in
+  en) build en '#render' "${2:-am_michael}" ;;
+  ar) build ar '#render-ar' "${2:-none}" ;;
+  *)  build en '#render' am_michael; build ar '#render-ar' none ;;
+esac

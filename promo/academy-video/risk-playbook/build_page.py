@@ -36,8 +36,8 @@ if(RENDER){window.__starts=new Map();window.__total=SCENES.reduce((a,x)=>a+x.dur
   window.__sync=()=>{document.getAnimations().forEach(a=>{if(!window.__starts.has(a))window.__starts.set(a,vNow);a.pause();a.currentTime=Math.max(0,(vNow-window.__starts.get(a))*1000)})};
   window.__step=(dt,draw=true)=>{DRAW=draw;vNow+=dt;frameCore(dt);window.__sync();return vNow};
 }else{show(start);requestAnimationFrame(frame)}""")
-rep("(document.fonts?document.fonts.ready:Promise.resolve()).then(()=>{if(ok){drawBoard(0);show(cur)}makeThumbs()});",
-    "(document.fonts?document.fonts.ready:Promise.resolve()).then(()=>{if(RENDER){if(ok)drawBoard(0);window.__ready=true;return}if(ok){drawBoard(0);show(cur)}makeThumbs()});")
+rep("drawPhone('app');if(ok){drawBoard(0);show(cur)}makeThumbs()});",
+    "drawPhone('app');if(RENDER){if(ok)drawBoard(0);window.__ready=true;return}if(ok){drawBoard(0);show(cur)}makeThumbs()});")
 import sys
 open(sys.argv[1] if len(sys.argv)>1 else 'video.html','w').write(s)
 print('built')

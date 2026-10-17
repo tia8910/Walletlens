@@ -8,3 +8,6 @@ video.html
 events.json
 soundtrack.wav
 *.mp4
+frames_*/
+*-events.json
+soundtrack_*.wav

@@ -4,7 +4,9 @@
 #   + story sound effects (phone buzz, record scratch, party horn, crowd, power-up, slide whistle,
 #     cash register, applause, chalk, logo shimmer) and the UI sounds the renderer logged in events.json.
 # Everything is synthesised or generated locally, so there is nothing to license.
-#   python3 soundtrack.py [voice]      voice: af_heart (default) | am_michael | ...
+#   python3 soundtrack.py [voice] [events.json] [lang]
+#     voice: am_michael (default) | af_heart | ... | none | a folder of recorded lines (01.wav, 02.wav, ...)
+#     lang:  en (default) | ar  (Egyptian Arabic script; Kokoro has no Arabic voice, so use 'none' or recordings)
 import json, sys, wave
 import numpy as np
 from scipy.signal import butter, sosfilt, fftconvolve, resample_poly
@@ -13,7 +15,8 @@ import os
 TTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tts')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 SR = 48000
-VOICE = sys.argv[1] if len(sys.argv) > 1 else 'af_heart'
+VOICE = sys.argv[1] if len(sys.argv) > 1 else 'am_michael'
+LANG = sys.argv[3] if len(sys.argv) > 3 else 'en'
 SCENES = [('hook', 10.8), ('party', 7.5), ('ollie', 7), ('lev', 8.5), ('plan', 7.5), ('end', 8), ('cta', 6.5), ('outro', 8)]
 FREEZE, REWIND = 6.8, 9.8          # hook: freeze frame, then VHS rewind into the party
 CRASH, SLOW_END, FALL, LAND = 2.55, 4.2, 5.67, 6.27   # lev, real seconds
@@ -262,20 +265,42 @@ for e in events:
 # ── narration ──
 from vo import Voice
 LINES = [   # (scene, offset s, text, max length s)
- ('hook', 0.25, "He put his whole savings into one coin... and lost half of it, in a day.", 4.1),
- ('hook', 4.5, "His friend Ollie didn't. Stay for rule six.", 2.2),
- ('hook', 7.05, "Yep. That's Rex. You're probably wondering how he got here.", 2.7),
+ ('hook', 0.2, "He put his whole savings into one coin... and lost half of it in a day.", 4.25),
+ ('hook', 4.5, "Ollie didn't. Stay for rule six.", 2.25),
+ ('hook', 7.05, "Yep, that's Rex. Wondering how he got here?", 2.7),
  ('party', 1.6, "Three days earlier, everyone was cheering for Rex. They said he was a genius.", 5.7),
  ('ollie', 0.4, "Ollie only put five percent into new coins. And Rex laughed at him.", 6.2),
  ('lev', 0.35, "Then Rex borrowed ten times more.", 2.1),
- ('lev', 6.85, "One bad hour. Liquidated.", 1.6),
+ ('lev', 6.55, "One bad hour... liquidated.", 1.9),
  ('plan', 0.4, "But Ollie had a plan. An exit at minus ten percent, and cash ready for the dip.", 6.8),
  ('end', 0.9, "That's when Rex asked: can you teach me the playbook?", 6.5),
  ('cta', 0.3, "Check your own portfolio before Rex does. WalletLens flags anything over five percent.", 5.9),
  ('outro', 1.7, "WalletLens. Check less, live more. And don't forget to follow us.", 6.0),
 ]
-k = Voice(os.path.join(TTS, 'model_q8.onnx'), os.path.join(TTS, 'voices.npz'))
-for key, off, text, room in LINES:
+LINES_AR = [   # Egyptian Arabic, same slots
+ ('hook', 0.25, "حط كل فلوسه في عملة واحدة... وخسر نصها في يوم.", 4.1),
+ ('hook', 4.5, "صاحبه أولي لأ. استنى القاعدة رقم ستة.", 2.2),
+ ('hook', 7.05, "أيوه... ده ريكس. أكيد بتسأل نفسك وصل لكده إزاي.", 2.7),
+ ('party', 1.6, "قبلها بتلات أيام، الكل كان بيهيّص لريكس. كانوا بيقولوا عليه عبقري.", 5.7),
+ ('ollie', 0.4, "أولي حط خمسة في المية بس في العملات الجديدة. وريكس ضحك عليه.", 6.2),
+ ('lev', 0.35, "وبعدين ريكس استلف عشر أضعاف.", 2.1),
+ ('lev', 6.85, "ساعة وحشة... واتصفّى.", 1.6),
+ ('plan', 0.4, "بس أولي كان عنده خطة. خروج عند سالب عشرة في المية، وكاش جاهز للنزلة.", 6.8),
+ ('end', 0.9, "وساعتها ريكس سأله: تعلّمني الخطة دي؟", 6.5),
+ ('cta', 0.3, "شوف محفظتك قبل ما تبقى زي ريكس. والت لينز بينبّهك لو أي حاجة عدّت خمسة في المية.", 5.9),
+ ('outro', 1.7, "والت لينز. شيّك أقل، عيش أكتر. ومتنساش تتابعنا.", 6.0),
+]
+if LANG == 'ar': LINES = LINES_AR
+k = Voice(os.path.join(TTS, 'model_q8.onnx'), os.path.join(TTS, 'voices.npz')) if VOICE != 'none' and not os.path.isdir(VOICE) else None
+def recorded(i):
+    w = wave.open(os.path.join(VOICE, f'{i + 1:02d}.wav')); sr = w.getframerate(); ch = w.getnchannels()
+    a = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768
+    return (a.reshape(-1, ch).mean(1) if ch > 1 else a), sr
+for i, (key, off, text, room) in enumerate(LINES):
+    if VOICE == 'none': continue
+    if os.path.isdir(VOICE):
+        a, sr = recorded(i); a = filt(resample_poly(a, SR, sr), 'high', 90); a = a / (np.max(np.abs(a)) + 1e-9) * 0.9
+        put(vo, S[key] + off, verb(a, 0.06), 1.0, 0); print(f'  VO {key:6s} @{off:4.1f}s recorded {len(a)/SR:4.1f}s'); continue
     speed = 1.05
     a, sr = k.create(text, voice=VOICE, speed=speed, lang='en-us')
     if len(a) / sr > room:
@@ -286,7 +311,7 @@ for key, off, text, room in LINES:
     print(f'  VO {key:6s} @{off:4.1f}s {len(a)/SR:4.1f}s of {room:.1f}s  speed {speed:.2f}')
 
 # ── mix: duck music under the voice, glue, limit ──
-ve = np.abs(vo[:, 0]); win = int(0.12 * SR)
+ve = np.abs(vo[:, 0]) + 1e-12; win = int(0.12 * SR)
 ve = np.convolve(ve, np.ones(win) / win, 'same'); ve = ve / (ve.max() + 1e-9)
 duck = 1 - 0.55 * np.clip(ve * 4, 0, 1)
 mix = music * duck[:, None] * 0.8 + sfx * (1 - 0.25 * np.clip(ve * 4, 0, 1))[:, None] + vo * 1.05
@@ -294,6 +319,6 @@ fade = int(2.0 * SR); mix[-fade:] *= np.linspace(1, 0, fade)[:, None]
 mix = mix / (np.percentile(np.abs(mix), 99.9) + 1e-9) * 0.7
 mix = np.tanh(mix * 1.3) / np.tanh(1.3) * 0.92
 pcm = (np.clip(mix, -1, 1) * 32767).astype(np.int16)
-with wave.open('soundtrack.wav', 'wb') as w:
+with wave.open(f'soundtrack_{LANG}.wav', 'wb') as w:
     w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes(pcm.tobytes())
-print('soundtrack.wav', TOTAL, 's', len(events), 'events, voice', VOICE)
+print('soundtrack.wav', TOTAL, 's', len(events), 'events, voice', VOICE, 'lang', LANG)
