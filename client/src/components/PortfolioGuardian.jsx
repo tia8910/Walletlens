@@ -4,7 +4,6 @@ import Icon from './Icon'
 import { track } from '../analytics'
 import { loadSnapshots } from '../snapshots'
 import { api } from '../api'
-import { makeQr } from '../utils/qrBackup'
 import { useLanguage } from '../LanguageContext'
 import { VOICE_API } from '../apiHosts.js'
 
@@ -105,6 +104,10 @@ function getPortfolioSnapshot() {
 async function buildGuardianQr() {
   try {
     const url = await api.exportQrDeepLink()
+    // Lazy-loaded: pulls in jsqr + qrcode (~40-50 KB parsed JS), needed only
+    // when a check-in actually builds the QR attachment, not just on mount of
+    // the Guardian screen or its auto check-in import in App.jsx.
+    const { makeQr } = await import('../utils/qrBackup')
     const dataUrl = await makeQr(url)
     if (!dataUrl) return null
     const b64 = dataUrl.split(',')[1] || ''
