@@ -328,23 +328,25 @@ const AR=/(^#|-)ar(-|$)/.test(location.hash);const TX=(en,ar)=>AR?ar:en;const RE
 // lines: [time, English, Egyptian Arabic, speaker] — shown as captions and voiced. speaker: n narrator, h him, f his friend, t Trump, i influencer, a AI, r reporters, b news anchor.
 const V3={};
 const BX=40, INS={x:-40,y:2.1,z:0};
+const CZ={x:-40,z:22};
+const KF2=()=>V(-1.1,1.95,-1.05),TT=()=>V(.25,1.3,-.45);
 const KF=()=>V(0,1.95,-1.05), FF=()=>V(1.0,1.95,-1.05), KB=()=>V(BX+.8,2.1,-2.3);
 const SCENES=[
  {key:'c_trump',name:'3:07 AM',set:'press',look:'pressNight',music:'tense',dur:10,
-  d:'3:07 AM in the White House. Trump, in bricks, can’t sleep, brags about it, and picks up his phone.',
-  lines:[[0.6, "3:07 AM. The White House.", "الساعة ٣:٠٧ الفجر. البيت الأبيض.", "n"], [3.2, "Trump can’t sleep.", "ترامب مش جايله نوم.", "n"], [5.0, "“Nobody sleeps like me. I don’t sleep. Tremendous.”", "\"محدش بينام زيي. أنا مش بنام أصلاً. فظيع.\"", "t"], [8.3, "“Let’s post something.”", "\"يلا نكتب بوست.\"", "t"]],
+  d:'3:07 AM in the White House. Trump, in bricks, brags that nobody sleeps less, and picks up his phone.',
+  lines:[[0.6, "3:07 AM. The White House.", "", "n"], [2.6, "The President can’t sleep.", "", "n"], [4.2, "<em>“Nobody sleeps less than me. Tremendous.”</em>", "", "t"], [8.0, "<em>“Time for a post.”</em>", "", "t"]],
   setup(){place(chars.trump,0,13.75)},
   update(t){trumpType(t,t<4?'tsmug':'tpout');if(t>6.2)once('typ',()=>SFX.typing())},
   shot(t){shotList(t,[[0,5,V(1.7,2.7,18.8),V(1.0,2.55,17.5),V(0,2.1,13.75),V(0,2.15,13.75),{fov:36}],[5,10,V(.55,2.6,16.1),V(.4,2.55,15.65),V(0,2.42,13.75),V(0,2.42,13.75),{fov:34,roll:-.03}]])}},
  {key:'c_post',name:'The post',set:'ins',look:'insert',music:'tense',dur:7,
   d:'Full-screen post with his brick face: “100% TARIFFS ON EVERYTHING.”',
-  lines:[[0.3, "<em class=\"r\">“Tariffs! One hundred percent! On everything!”</em>", "<em class=\"r\">\"جمارك! مية في المية! على كل حاجة!\"</em>", "t"], [3.7, "Posted. 3:08 AM.", "اتنشر. ٣:٠٨ الفجر.", "n"], [5.3, "The markets heard him.", "والأسواق سمعته.", "n"]],
+  lines:[[0.2, "<em class=\"r\">“Tariffs. A hundred percent. On everything. Believe me!”</em>", "", "t"], [3.7, "Posted. 3:08 AM.", "", "n"], [5.3, "The markets heard him.", "", "n"]],
   setup(){insertHolo()},
   update(t){V3.newsN=100;drawHolo('news',Math.max(0,(t-2.4)/2.5),t);if(t>2.6)once('ping',()=>SFX.ping())},
   shot(t){insertShot(t,7)}},
  {key:'c_wake',name:'Across town',set:'bed',look:'bedNight',music:'tense',dur:13.5,warp:t=>Math.min(t,9),
   d:'His phone buzzes on the nightstand. He wakes, reads −50% and screams. Freeze frame.',
-  lines:[[0.8, "Across town, his phone lights up.", "على الناحية التانية، موبايله نوّر.", "n"], [3.3, "His cat coin: <em class=\"r\">−50%</em>.", "عملة القطة بتاعته: <em class=\"r\">−٥٠٪</em>.", "n"], [6.0, "“NOOO! I have work at nine!”", "\"لأأأأ! ورايا شغل الساعة تسعة!\"", "h"], [9.3, "Yep. That’s him.", "أيوه. ده هو.", "n"], [10.9, "You’re probably wondering how he got here.", "أكيد بتسأل نفسك وصل لكده إزاي.", "n"]],
+  lines:[[0.8, "Across town, a serious investor’s phone lights up.", "", "n"], [3.3, "His portfolio: <em class=\"r\">−50%</em>.", "", "n"], [6.0, "“NOOO! I have a SYSTEM!”", "", "h"], [9.3, "Yep. That’s him.", "", "n"], [10.9, "How does a serious investor end up here?", "", "n"]],
   setup(){bedScene('kid');phoneOnStand('red')},
   update(t){wake(t)},
   shot(t){const tc=Math.min(t,8.99);shotList(tc,[[0,2.5,V(BX+.9,2.7,3.6),V(BX+.9,2.45,2.9),V(BX+.6,.9,-1.8),V(BX+.6,1.0,-1.8),{fov:40}],[2.5,6,V(BX+2.1,1.95,.7),V(BX+1.8,1.9,.35),V(BX+.8,1.65,-2.3),V(BX+.8,1.75,-2.3),{fov:38}],[6,9,V(BX+.8,1.95,-.85),V(BX+.8,1.92,-1.1),KB(),KB(),{fov:34}]])},
@@ -356,117 +358,122 @@ const SCENES=[
   update(ta){wake(ta)},
   shot(t){shotList(t,[[0,3.5,V(BX+.8,1.92,-1.1),V(BX+.9,2.45,2.9),KB(),V(BX+.6,1.0,-1.8),{fov:36}]])},
   fx(t){FX.rw=1;FX.sat=.7;FX.ab=.004;once('rw',()=>SFX.rewind())}},
- {key:'hype',name:'To the moon',set:'caf',look:'party',music:'trap',dur:17,title:'3 DAYS EARLIER…',titleAr:'قبلها بـ ٣ أيام…',
-  d:'Office party. An influencer’s live stream: “Cat coin to the moon 🚀, not financial advice 😉.” He goes all in.',
-  lines:[[1.0, "Three days earlier. The office party.", "قبلها بتلات أيام. حفلة الشغل.", "n"], [3.6, "<em>“Yo fam! Cat coin is going to the moon! 🚀”</em>", "<em>\"يا جماعة! عملة القطة طالعة على القمر! 🚀\"</em>", "i"], [7.4, "<em>“Not financial advice. 😉”</em>", "<em>\"مش نصيحة مالية. 😉\"</em>", "i"], [9.8, "The whole office believed him.", "المكتب كله صدّقه.", "n"], [12.2, "“Bro, I’m going all in!”", "\"يا عم أنا داخل بكل فلوسي!\"", "h"], [14.8, "He believed him the most.", "وهو أكتر واحد صدّق.", "n"]],
-  setup(){partyScene()},
-  update(t,ta,dt){partyAct(t,dt);drawHolo('influencer',t/4,t)},
+ {key:'hype',name:'To the moon',set:'caf',look:'day',music:'trap',dur:17,title:'3 DAYS EARLIER…',titleAr:'قبلها بـ ٣ أيام…',
+  d:'Lunch, alone. An influencer’s live stream: “Cat coin to the moon 🚀, not financial advice, smash that like.” He lasts eleven seconds.',
+  lines:[[1.0, "Three days earlier. Lunch. Alone, as always.", "", "n"], [3.6, "<em>“YO YO YO, what’s up fam! Cat coin is going to the MOON! 🚀”</em>", "", "i"], [7.4, "<em>“Not financial advice! Smash that like!”</em>", "", "i"], [10.2, "“I’m a serious investor. I don’t chase hype.”", "", "h"], [13.2, "He lasted eleven seconds.", "", "n"], [15.0, "“…Okay. A small position.”", "", "h"]],
+  setup(){seat(chars.rex,0,-1.05);cafHolo(1.25,2.7,-.6,-.3)},
+  update(t){const k=chars.rex;idle(k,t,1);drawHolo('influencer',t/4,t);k.setFace(t<10?'grin':t<13.2?'smug':t<15?'shock':'grin');if(t>15)point(k,.6)},
   shot(t){shotList(t,[[0,3,V(0,4.8,5.4),V(0,3.0,3.9),V(0,1.5,-1.6),V(0,1.9,-1.6),{fov:42}],[3,8,V(1.95,2.78,1.25),V(1.62,2.74,.82),V(1.25,2.7,-.6),V(1.25,2.7,-.6),{fov:38}],[8,12,V(.55,2.05,1.3),V(.25,2.0,1.0),KF(),KF(),{fov:36,roll:-.05}],[12,17,V(-1.7,1.0,2.3),V(-1.2,1.05,2.0),V(-.6,2.3,-2),V(-.4,2.45,-2),{fov:46}]])}},
  {key:'console',name:'Sold',set:'caf',look:'day',music:'trap',dur:9,
   d:'His game console gets a SOLD tag. A listing: $400 → cat coin.',
-  lines:[[0.4, "That night, he sold his gaming console.", "بالليل، باع جهاز الألعاب.", "n"], [3.2, "“Sorry, buddy. It’s for the moon.”", "\"معلش يا صاحبي. ده عشان القمر.\"", "h"], [5.6, "Every last dollar. One coin.", "آخر جنيه معاه. في عملة واحدة.", "n"]],
+  lines:[[0.4, "The small position grew.", "", "n"], [2.6, "“Sorry, buddy. You’re funding the moon.”", "", "h"], [5.6, "Emergency fund? Also in. Every dollar. One coin.", "", "n"]],
   setup(){sitKid(0);V3.console.visible=true;holo.visible=false},
   update(t){const k=chars.rex;idle(k,t);k.setFace(t<4?'grin':'smug');if(t>=4){insertHolo();drawHolo('sold',(t-4)/2,t);once('cash',()=>SFX.cash())}else holo.visible=false},
   shot(t){if(t<4)shotList(t,[[0,4,V(.75,1.75,1.15),V(.5,1.68,.92),V(0,1.25,-.25),V(0,1.25,-.25),{fov:38}]]);else insertShot(t-4,5)}},
  {key:'boomer',name:'Ok boomer',set:'caf',look:'day',music:'soft',dur:13,chapter:['RULE 1 OF 6','THE 5% RULE'],chapterAr:['القاعدة ١ من ٦','قاعدة الـ ٥٪'],collect:[[1,6]],
-  d:'His friend: “5% max.” Him: “Okay, boomer.” The friend is 26. The office turtle looks offended.',
-  lines:[[0.5, "His friend had one rule for risky coins:", "صاحبه كان عنده قاعدة واحدة للعملات الخطرة:", "n"], [2.9, "<em>“Five percent. Max. Never more.”</em>", "<em>\"خمسة في المية. بالكتير. مش أكتر.\"</em>", "f"], [5.8, "“Okay, boomer.”", "\"ماشي يا حاج.\"", "h"], [8.8, "“I’m twenty-six.”", "\"أنا عندي ٢٦ سنة.\"", "f"], [10.8, "Even the office turtle looked offended.", "حتى سلحفاة المكتب اتضايقت.", "n"]],
-  setup(){duo();V3.turtle.visible=true;V3.turtle.position.set(1.75,1.12,-.45);V3.turtle.rotation.y=-.6;cafHolo(1.0,2.75,-.5,-.15)},
-  update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace(t<8.8?'calm':'smug');point(f,Math.min(1,t/1.2)*.5);
-    if(t>5.6&&t<8.8){laugh(k,t);k.setFace('smug')}else{idle(k,t,1);k.setFace(t>=8.8?'shock':'smile')}drawHolo('pie',t/3,t);turtleAct(t,t>11?'offended':'idle')},
-  shot(t){shotList(t,[[0,5.6,V(-2.0,2.2,1.0),V(-1.8,2.17,.75),FF(),FF(),{fov:36}],[5.6,8.8,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34,roll:.05}],[8.8,13,V(1.75,1.95,1.25),V(1.55,1.92,1.0),V(1.25,1.6,-.8),V(1.3,1.55,-.7),{fov:34}]])}},
+  d:'His own notebook says 5% max. His cat coin is 80%. “Rules are more like guidelines.” The turtle is disappointed.',
+  lines:[[0.5, "His own rule, in his own notebook:", "", "n"], [3.0, "<em>“Five percent. Max. On anything risky.”</em>", "", "h"], [5.8, "His cat coin: <em class=\"r\">eighty percent</em>.", "", "n"], [8.6, "“Rules are more like… guidelines.”", "", "h"], [11.0, "Even his turtle looked disappointed.", "", "n"]],
+  setup(){solo()},
+  update(t){const k=chars.rex;idle(k,t,1);k.setFace(t<5.8?'calm':t<8.6?'shock':'smug');if(t>3&&t<5.6)point(k,.6);drawHolo('pie',t/3,t);turtleAct(t,t>10.8?'offended':'idle')},
+  shot(t){shotList(t,[[0,5.6,V(-.55,2.0,1.15),V(-.75,1.98,.95),KF2(),KF2(),{fov:34,roll:0}],[5.6,8.6,V(.55,2.75,1.6),V(.55,2.75,1.25),V(.55,2.75,-.5),V(.55,2.75,-.5),{fov:40}],[8.6,10.8,V(-.55,2.0,1.15),V(-.75,1.98,.95),KF2(),KF2(),{fov:34,roll:0.04}],[10.8,13,V(1.15,1.62,.8),V(1.0,1.57,.62),TT(),TT(),{fov:32}]])}},
  {key:'notebook',name:'Research',set:'caf',look:'day',music:'soft',dur:16,chapter:['RULE 2 OF 6','SIZE BY WHAT YOU KNOW'],chapterAr:['القاعدة ٢ من ٦','الحجم على قد ما تعرف'],collect:[[2,10]],
-  d:'Forty pages of notes vs one seven-second video.',
-  lines:[[0.5, "Before buying anything, his friend reads.", "صاحبه قبل ما يشتري أي حاجة، بيقرا.", "n"], [3.4, "“Forty pages of notes. The team. The risks.”", "\"أربعين صفحة ملاحظات. الفريق. المخاطر.\"", "f"], [7.6, "“I watched a TikTok. Seven seconds.”", "\"أنا شفت تيك توك. سبع ثواني.\"", "h"], [10.4, "Rule two: bet big only on what you really know.", "القاعدة التانية: الرهان الكبير بس على اللي فاهمه.", "n"], [13.8, "“The song was catchy, though.”", "\"بس الأغنية كانت حلوة.\"", "h"]],
-  setup(){duo();cafHolo(0,2.78,-.6,0)},
-  update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace('calm');idle(k,t,1);k.setFace(t<13.6?'smile':'grin');drawHolo('notebook',t/8,t)},
-  shot(t){shotList(t,[[0,6,V(0,2.3,3.3),V(0,2.25,2.9),V(0,2.2,-.8),V(0,2.25,-.8),{fov:40}],[6,11,V(0,2.78,1.6),V(0,2.78,1.25),V(0,2.78,-.6),V(0,2.78,-.6),{fov:40}],[11,16,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34}]])}},
+  d:'Usually forty pages of research. This time one seven-second TikTok.',
+  lines:[[0.5, "Normally, he researches. Forty pages, minimum.", "", "n"], [4.2, "“This time I watched a TikTok. Seven seconds. Very thorough.”", "", "h"], [8.8, "Rule two: bet big only on what you really know.", "", "n"], [12.4, "“The song was catchy, though.”", "", "h"]],
+  setup(){solo()},
+  update(t){const k=chars.rex;idle(k,t,1);k.setFace(t<4.2?'calm':t<12.4?'smile':'grin');drawHolo('notebook',t/8,t);turtleAct(t,'idle')},
+  shot(t){shotList(t,[[0,4.2,V(.6,2.3,2.7),V(.45,2.25,2.3),V(-.5,1.95,-.9),V(-.45,2.0,-.9),{fov:40}],[4.2,8.8,V(.55,2.75,1.6),V(.55,2.75,1.25),V(.55,2.75,-.5),V(.55,2.75,-.5),{fov:40}],[8.8,16,V(-.55,2.0,1.15),V(-.75,1.98,.95),KF2(),KF2(),{fov:34,roll:0}]])}},
  {key:'thirty',name:'Thirty coins',set:'caf',look:'day',music:'soft',dur:13,chapter:['RULE 5 OF 6','OWN LESS, KNOW MORE'],chapterAr:['القاعدة ٥ من ٦','امتلك أقل واعرف أكتر'],collect:[[5,9]],
   d:'Thirty coins he can’t explain. “…Vibes.”',
-  lines:[[0.4, "Then he showed off his portfolio.", "بعدين ورّاه محفظته.", "n"], [2.8, "“Thirty coins, baby! Diversified!”", "\"تلاتين عملة يا معلم! متنوّعة!\"", "h"], [5.4, "“Explain one.”", "\"اشرحلي واحدة.\"", "f"], [7.4, "“…Vibes.”", "\"…إحساس.\"", "h"], [9.6, "Rule five: own less, know more.", "القاعدة الخامسة: امتلك أقل، واعرف أكتر.", "n"]],
-  setup(){duo();cafHolo(-.6,2.75,-.5,.15)},
-  update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace(t>5.2&&t<7.4?'smug':'calm');k.setFace(t<7.4?'grin':'smile');if(t<5)point(k,.8);else idle(k,t,1);drawHolo('coins',t/9,t)},
-  shot(t){shotList(t,[[0,5,V(-1.9,2.1,1.6),V(-1.6,2.05,1.2),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:38}],[5,9,V(-.6,2.75,1.55),V(-.6,2.75,1.2),V(-.6,2.75,-.5),V(-.6,2.75,-.5),{fov:40}],[9,13,V(-.05,2.2,2.6),V(-.05,2.15,2.2),V(-.05,1.9,-1.05),V(-.05,1.95,-1.05),{fov:40}]])}},
+  lines:[[0.4, "Then he got “diversified.”", "", "n"], [2.8, "“Thirty coins! I’m basically a hedge fund!”", "", "h"], [6.0, "Can he explain even one?", "", "n"], [8.0, "“…Vibes.”", "", "h"], [9.8, "Rule five: own less, know more.", "", "n"]],
+  setup(){solo()},
+  update(t){const k=chars.rex;if(t<6)point(k,.8);else idle(k,t,1);k.setFace(t<8?'grin':t<9.8?'smug':'smile');drawHolo('coins',t/9,t);turtleAct(t,'idle')},
+  shot(t){shotList(t,[[0,6,V(-.55,2.0,1.15),V(-.75,1.98,.95),KF2(),KF2(),{fov:34,roll:0}],[6,9.8,V(.55,2.75,1.6),V(.55,2.75,1.25),V(.55,2.75,-.5),V(.55,2.75,-.5),{fov:40}],[9.8,13,V(.6,2.3,2.7),V(.45,2.25,2.3),V(-.5,1.95,-.9),V(-.45,2.0,-.9),{fov:40}]])}},
  {key:'exit',name:'Exit first',set:'caf',look:'day',music:'soft',dur:15,chapter:['RULE 3 OF 6','EXIT FIRST'],chapterAr:['القاعدة ٣ من ٦','حدد خروجك الأول'],collect:[[3,9.5]],
-  d:'His friend draws his exit line at −10%. Him: “Exits are for quitters.”',
-  lines:[[0.5, "His friend picks his exit before he buys.", "صاحبه بيحدد هيخرج إمتى قبل ما يشتري.", "n"], [3.8, "“Down ten percent? I’m out. No drama.”", "\"نزلت عشرة في المية؟ أنا برا. من غير دراما.\"", "f"], [7.6, "Rule three: exit first.", "القاعدة التالتة: حدد خروجك الأول.", "n"], [10.6, "“Exits are for quitters!”", "\"الخروج ده للي بيستسلموا!\"", "h"], [13.0, "He said. Confidently.", "قالها. بثقة.", "n"]],
-  setup(){duo();cafHolo(1.0,2.75,-.5,-.15)},
-  update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace('calm');point(f,.45);if(t>10.6){laugh(k,t);k.setFace('smug')}else{idle(k,t,1);k.setFace('smile')}drawHolo('plan',Math.min(.55,t/9),t)},
-  shot(t){shotList(t,[[0,6,V(1.6,2.0,1.15),V(1.4,1.98,.92),FF(),FF(),{fov:34}],[6,10.5,V(1.0,2.75,1.6),V(1.0,2.75,1.25),V(1.0,2.75,-.5),V(1.0,2.75,-.5),{fov:40}],[10.5,15,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34,roll:.04}]])}},
+  d:'He sets his exit at −10%, then deletes it. “Exits are for quitters.”',
+  lines:[[0.5, "A serious investor sets an exit before buying.", "", "n"], [4.0, "“Down ten percent? I’m out. No drama.”", "", "h"], [7.4, "He set it. Then he deleted it.", "", "n"], [10.6, "“Exits are for quitters!”", "", "h"], [13.0, "Rule three: exit first.", "", "n"]],
+  setup(){solo()},
+  update(t){const k=chars.rex;if(t>10.4&&t<13){laugh(k,t);k.setFace('smug')}else{idle(k,t,1);k.setFace(t<7.4?'calm':'smile')}drawHolo('plan',Math.min(.55,t/9),t);turtleAct(t,t>13?'offended':'idle')},
+  shot(t){shotList(t,[[0,4,V(-.55,2.0,1.15),V(-.75,1.98,.95),KF2(),KF2(),{fov:34,roll:0}],[4,10.4,V(.55,2.75,1.6),V(.55,2.75,1.25),V(.55,2.75,-.5),V(.55,2.75,-.5),{fov:40}],[10.4,15,V(-.55,2.0,1.15),V(-.75,1.98,.95),KF2(),KF2(),{fov:34,roll:0.04}]])}},
  {key:'cash',name:'Keep cash',set:'caf',look:'day',music:'soft',dur:13,chapter:['RULE 4 OF 6','KEEP CASH'],chapterAr:['القاعدة ٤ من ٦','خلّي كاش'],collect:[[4,8]],
-  d:'15% cash, ready for a sale. His rent money is in cat coin too.',
-  lines:[[0.4, "“I always keep fifteen percent in cash.”", "\"أنا دايماً سايب خمستاشر في المية كاش.\"", "f"], [3.6, "“When everything crashes, I go shopping.”", "\"لما كل حاجة تقع، أنزل أشتري.\"", "f"], [6.4, "Rule four: keep cash for the dip.", "القاعدة الرابعة: خلّي كاش للنزلة.", "n"], [8.8, "His rent money? Also in cat coin.", "فلوس الإيجار بتاعته؟ برضه في عملة القطة.", "n"], [11.0, "“Rent is… a social construct.”", "\"الإيجار ده… اختراع.\"", "h"]],
-  setup(){duo();cafHolo(0,2.78,-.6,0)},
-  update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace('happy');k.setFace(t>9?'cry':'smile');if(t>10.5){k.armR.rotation.x=-2.3+Math.sin(t*8)*.15;k.neck.rotation.x=Math.sin(t*8)*.05}else idle(k,t,1);drawHolo('cash',t/6,t)},
-  shot(t){shotList(t,[[0,5,V(0,2.25,3.1),V(0,2.2,2.7),V(0,2.0,-1),V(0,2.05,-1),{fov:40}],[5,9,V(0,2.78,1.6),V(0,2.78,1.25),V(0,2.78,-.6),V(0,2.78,-.6),{fov:40}],[9,13,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34}]])}},
+  d:'He used to keep 15% cash. Now his rent money is in cat coin.',
+  lines:[[0.4, "He used to keep fifteen percent in cash.", "", "n"], [3.6, "Rule four: keep cash for the dip.", "", "n"], [6.4, "Now? His rent money is in cat coin.", "", "n"], [9.2, "“Rent is… a social construct.”", "", "h"], [11.4, "His landlord disagreed.", "", "n"]],
+  setup(){solo()},
+  update(t){const k=chars.rex;k.setFace(t<6.4?'happy':t<9.2?'shock':'cry');if(t>11.4){k.armR.rotation.x=-2.3+Math.sin(t*8)*.15;k.neck.rotation.x=Math.sin(t*8)*.05}else idle(k,t,1);drawHolo('cash',t/6,t);turtleAct(t,'idle')},
+  shot(t){shotList(t,[[0,3.6,V(.6,2.3,2.7),V(.45,2.25,2.3),V(-.5,1.95,-.9),V(-.45,2.0,-.9),{fov:40}],[3.6,9.2,V(.55,2.75,1.6),V(.55,2.75,1.25),V(.55,2.75,-.5),V(.55,2.75,-.5),{fov:40}],[9.2,13,V(-.55,2.0,1.15),V(-.75,1.98,.95),KF2(),KF2(),{fov:34,roll:0}]])}},
  {key:'newsmix',name:'Louder',set:'ins',look:'insert',music:'tense',dur:10,
   d:'Headlines stack up: tariff talk, cat coin +80%, analysts have no idea.',
-  lines:[[0.3, "<em>“Breaking: tariff fears shake global markets.”</em>", "<em>\"عاجل: مخاوف الجمارك بتهز الأسواق العالمية.\"</em>", "b"], [3.8, "Tariff talk. Rumors. Hype.", "كلام عن الجمارك. إشاعات. هيصة.", "n"], [6.6, "Nobody had a plan. Except one guy.", "محدش كان عنده خطة. غير واحد بس.", "n"]],
+  lines:[[0.3, "<em>“Breaking: tariff fears shake global markets.”</em>", "", "b"], [3.8, "Tariff talk. Rumors. Panic.", "", "n"], [6.6, "And then, a crypto legend posted.", "", "n"]],
   setup(){insertHolo()},
   update(t){drawHolo('headlines',t/6,t)},
   shot(t){insertShot(t,10)}},
+ {key:'cz1',name:'4',set:'cz',look:'cz',music:'dark',dur:12,
+  d:'CZ, in bricks, in a dark studio with a yellow neon 4, posts one character: “4.” He reads it as a buy signal.',
+  lines:[[0.5, "CZ. Crypto’s most famous founder.", "", "n"], [3.4, "He posted one character.", "", "n"], [6.0, "<em>“4.”</em>", "", "c"], [8.0, "Translation: ignore the noise.", "", "n"], [10.0, "“Translation: buy more!”", "", "h"]],
+  setup(){place(chars.cz,CZ.x,CZ.z);czHolo()},
+  update(t){czAct(t,5.8);drawHolo('cz4',(t-5.8)/1.0,t);if(t>5.9)once('ping',()=>SFX.ping())},
+  shot(t){shotList(t,[[0,5.8,V(CZ.x+1.2,2.5,CZ.z+4.0),V(CZ.x+.7,2.45,CZ.z+3.1),V(CZ.x,2.15,CZ.z),V(CZ.x,2.2,CZ.z),{fov:36}],[5.8,9.8,V(CZ.x+1.0,2.75,CZ.z+2.4),V(CZ.x+1.1,2.75,CZ.z+2.0),V(CZ.x+1.35,2.7,CZ.z+.3),V(CZ.x+1.35,2.7,CZ.z+.3),{fov:40}],[9.8,12,V(CZ.x-.35,2.35,CZ.z+1.7),V(CZ.x-.25,2.35,CZ.z+1.45),V(CZ.x,2.3,CZ.z),V(CZ.x,2.3,CZ.z),{fov:32,roll:-.03}]])}},
  {key:'ai',name:'Ask the AI',set:'bed',look:'bedNight',music:'dark',dur:13,
   d:'Night. He asks an AI chatbot about 10x leverage. “Probably fine 👍.”',
-  lines:[[0.4, "That night, he had an idea.", "بالليل، جاتله فكرة.", "n"], [3.0, "<em>“Hey AI, should I use ten-x leverage?”</em>", "<em>\"يا ذكاء اصطناعي، أستخدم رافعة عشر أضعاف؟\"</em>", "h"], [7.6, "<em>“Great question! Probably fine. 👍”</em>", "<em>\"سؤال ممتاز! غالباً تمام. 👍\"</em>", "a"], [11.0, "It was not fine.", "ماكانش تمام.", "n"]],
+  lines:[[0.4, "That night, he wanted a second opinion.", "", "n"], [3.0, "<em>“Hey AI, should I use ten-x leverage?”</em>", "", "h"], [7.4, "<em>“Great question! You’re so smart! Probably fine! 👍”</em>", "", "a"], [11.0, "It was not fine.", "", "n"]],
   setup(){bedScene('kid',true);bedHolo()},
   update(t){const k=chars.rex;sitBed(k);k.armR.rotation.x=-1.2;k.armL.rotation.x=-1.0;k.neck.rotation.x=.18;k.setFace(t<8.8?'smile':'grin');drawHolo('ai',(t-5.6)/7.5,t)},
   shot(t){shotList(t,[[0,6,V(BX+2.4,2.2,1.2),V(BX+2.1,2.15,.8),V(BX+1.4,2.0,-2.0),V(BX+1.4,2.05,-2.0),{fov:40}],[6,13,V(BX+2.1,2.35,.4),V(BX+2.1,2.35,.15),V(BX+2.1,2.35,-1.4),V(BX+2.1,2.35,-1.4),{fov:40}]])}},
  {key:'flood',name:'The shark',set:'bed',look:'bedRed',music:'dark',dur:11,
   d:'He presses 10x. The floor floods into a red chart sea, and a brick shark starts circling.',
-  lines:[[0.3, "“Ten-x. Let’s go!”", "\"عشر أضعاف. يلا بينا!\"", "h"], [2.8, "Ten times the money. Borrowed.", "عشر أضعاف الفلوس. سلف.", "n"], [5.6, "And something started circling.", "وفي حاجة بدأت تلف حواليه.", "n"], [8.4, "“Is that… a shark?”", "\"هو ده… قرش؟\"", "h"]],
+  lines:[[0.3, "“Ten-x. Let’s go!”", "", "h"], [2.8, "Ten times the money. Borrowed.", "", "n"], [5.6, "And something started circling.", "", "n"], [8.4, "“Is that… a shark?”", "", "h"]],
   setup(){bedScene('kid',true);bedHolo();V3.flood.visible=true;V3.shark.visible=true},
   update(t){const k=chars.rex;sitBed(k);if(t<2.4){point(k,1);k.setFace('grin')}else{k.setFace(t<7?'smile':'shock');idle(k,t)}
     drawHolo('lev',Math.min(.33,.2+t/20),t);if(t>2.2)holo.visible=t<3.2;floodLevel(Math.min(.55,Math.max(0,(t-2.6)/6)*.55));sharkCircle(t-3,t>3);if(t>2.4)once('spl',()=>SFX.splash())},
   shot(t){shotList(t,[[0,3,V(BX+2.1,2.35,.5),V(BX+2.1,2.35,.25),V(BX+2.1,2.35,-1.4),V(BX+2.1,2.35,-1.4),{fov:40}],[3,7,V(BX+.9,3.2,3.4),V(BX+.9,2.9,2.9),V(BX+.8,.6,-1.6),V(BX+.8,.7,-1.6),{fov:42}],[7,11,V(BX+3.6,1.05,1.4),V(BX+3.2,1.0,1.1),V(BX+.8,1.45,-1.8),V(BX+.8,1.5,-1.8),{fov:46}]])}},
  {key:'post2',name:'Back to 3:07',set:'press',look:'pressNight',music:'tense',dur:8,
   d:'Back in the press room. The post goes out.',
-  lines:[[0.3, "And then… 3:07 AM.", "وبعدين… ٣:٠٧ الفجر.", "n"], [2.6, "<em class=\"r\">“Tariffs! One hundred percent! Tremendous!”</em>", "<em class=\"r\">\"جمارك! مية في المية! حاجة عظيمة!\"</em>", "t"], [5.6, "Now you know how he got here.", "دلوقتي عرفت وصل لكده إزاي.", "n"]],
+  lines:[[0.3, "And then… 3:07 AM.", "", "n"], [2.4, "<em class=\"r\">“Tariffs! A hundred percent! Like nobody’s ever seen!”</em>", "", "t"], [5.6, "Now you know how he got here.", "", "n"]],
   setup(){place(chars.trump,0,13.75)},
   update(t){trumpType(t,t<3?'tpout':'tshout');if(t>3)once('ping',()=>SFX.ping())},
   shot(t){shotList(t,[[0,3.5,V(-1.2,2.45,16.4),V(-.8,2.42,15.9),V(0,2.3,13.75),V(0,2.3,13.75),{fov:36,roll:.04}],[3.5,8,V(.4,2.55,15.9),V(.3,2.5,15.5),V(0,2.42,13.75),V(0,2.42,13.75),{fov:32}]])}},
  {key:'crash',name:'Chomp',set:'bed',look:'bedRed',music:'crash',dur:15,chapter:['RULE 6 OF 6','NEVER BORROW'],chapterAr:['القاعدة ٦ من ٦','متستلفش أبداً'],collect:[[6,9]],
   warp:t=>t<1.5?t:(t<4?1.5+(t-1.5)*.35:2.375+(t-4)),
   d:'Slow-motion dolly zoom on his face, the shark leaps over the bed: chomp. Liquidated. “This is fine” on a floating pillow.',
-  lines:[[0.3, "Fifty percent down. On ten-x leverage.", "نازل خمسين في المية. برافعة عشر أضعاف.", "n"], [4.7, "<em class=\"r\">CHOMP.</em>", "<em class=\"r\">هَمّ.</em>", "n"], [6.6, "<em class=\"r\">Liquidated.</em>", "<em class=\"r\">اتصفّى.</em>", "n"], [9.0, "Rule six: never borrow to bet.", "القاعدة السادسة: عمرك ما تستلف عشان تراهن.", "n"], [12.2, "“This is fine.”", "\"كله تمام.\"", "h"]],
+  lines:[[0.3, "Fifty percent down. On ten-x leverage.", "", "n"], [4.7, "<em class=\"r\">CHOMP.</em>", "", "n"], [6.6, "<em class=\"r\">Liquidated.</em>", "", "n"], [9.0, "Rule six: never borrow to bet.", "", "n"], [12.2, "“This is fine.”", "", "h"]],
   setup(){bedScene('kid',true);bedHolo();V3.flood.visible=true;V3.shark.visible=true;floodLevel(.55)},
   update(ta,t){crashAct(ta,t)},
   shot(t){if(t>=1.5&&t<4){dolly(t,1.5,4,KB());return}
     shotList(t,[[0,1.5,V(BX+1.9,1.95,.6),V(BX+1.7,1.9,.4),KB(),KB(),{fov:38}],[4,6.2,V(BX-1.5,2.3,2.6),V(BX-1.2,2.2,2.3),V(BX+1.2,1.5,-1.4),V(BX+1.1,1.5,-1.4),{fov:46,roll:.08}],[6.2,10.5,V(BX+1.9,1.5,1.4),V(BX+1.6,1.45,1.1),V(BX+1.0,1.05,-.6),V(BX+1.0,1.1,-.6),{fov:40}],[10.5,15,V(BX+1.2,1.6,1.6),V(BX+1.1,3.4,4.4),V(BX+1.0,1.0,-.6),V(BX+.9,.8,-1.0),{fov:42}]])},
   fx(t){if(t>=1.5&&t<4){FX.ab=.0045;once('slo',()=>SFX.slowmo())}}},
- {key:'friendsleep',name:'Meanwhile',set:'bed',look:'bedDawn',music:'gold',dur:12,
-  d:'His friend sleeps. WalletLens quietly sells at −10% and buys the dip. The turtle snores.',
-  lines:[[0.5, "Meanwhile, his friend slept.", "وفي نفس الوقت، صاحبه كان نايم.", "n"], [3.4, "His exit sold at minus ten. Automatically.", "الخروج باع عند سالب عشرة. لوحده.", "n"], [7.0, "His cash bought the dip.", "والكاش اشترى النزلة.", "n"], [9.8, "The turtle snored.", "والسلحفاة كانت بتشخّر.", "n"]],
-  setup(){bedScene('friend');phoneOnStand('alerts');V3.turtle.visible=true;V3.turtle.position.set(BX-.35,.72,-2.85);V3.turtle.rotation.y=.4},
-  update(t){chars.ollie.setFace('sleep');turtleAct(t,'sleep');if(t>9.6)once('snore',()=>SFX.snore())},
-  shot(t){shotList(t,[[0,6,V(BX+1.0,2.9,3.4),V(BX+.9,2.6,2.6),V(BX+.6,.9,-1.8),V(BX+.6,1.0,-1.9),{fov:40}],[6,12,V(BX+.3,1.25,-1.3),V(BX+.15,1.2,-1.55),V(BX-.45,.85,-2.7),V(BX-.45,.85,-2.7),{fov:38}]])}},
+ {key:'cz2',name:'SAFU',set:'cz',look:'cz',music:'dark',dur:10,
+  d:'CZ again: “Funds are SAFU.” His were not.',
+  lines:[[0.5, "Meanwhile, CZ posted again:", "", "n"], [3.0, "<em>“Funds are SAFU.”</em>", "", "c"], [5.6, "“…Are mine SAFU?”", "", "h"], [7.8, "His were not.", "", "n"]],
+  setup(){place(chars.cz,CZ.x,CZ.z);czHolo()},
+  update(t){czAct(t,2.8);drawHolo('safu',(t-2.8)/1.0,t);if(t>2.9)once('ping',()=>SFX.ping())},
+  shot(t){shotList(t,[[0,2.8,V(CZ.x-.9,2.4,CZ.z+3.2),V(CZ.x-.5,2.4,CZ.z+2.6),V(CZ.x,2.2,CZ.z),V(CZ.x,2.25,CZ.z),{fov:36}],[2.8,7.6,V(CZ.x+1.0,2.75,CZ.z+2.4),V(CZ.x+1.1,2.75,CZ.z+2.0),V(CZ.x+1.35,2.7,CZ.z+.3),V(CZ.x+1.35,2.7,CZ.z+.3),{fov:40}],[7.6,10,V(CZ.x+.3,2.35,CZ.z+1.6),V(CZ.x+.2,2.35,CZ.z+1.4),V(CZ.x,2.3,CZ.z),V(CZ.x,2.3,CZ.z),{fov:32}]])}},
  {key:'kidding',name:'Just kidding',set:'press',look:'pressDay',music:'gold',dur:11,
   d:'Next morning at the podium: “Just kidding. Deal coming 🤝.” The market bounces.',
-  lines:[[0.3, "“Mr. President! Mr. President!”", "\"سيادة الرئيس! سيادة الرئيس!\"", "r"], [2.4, "<em>“Just kidding. Deal coming. Very soon. Maybe.”</em>", "<em>\"بهزر. في اتفاق جاي. قريب جداً. يمكن.\"</em>", "t"], [6.4, "And the market bounced right back.", "والسوق رجع طلع على طول.", "n"], [8.8, "“You’re welcome.”", "\"العفو.\"", "t"]],
+  lines:[[0.3, "“Mr. President! Mr. President!”", "", "r"], [2.4, "<em>“Just kidding. Deal coming. Very soon. Maybe. Beautiful deal.”</em>", "", "t"], [6.6, "And the market bounced right back.", "", "n"], [8.9, "<em>“You’re welcome.”</em>", "", "t"]],
   setup(){place(chars.trump,0,13.75)},
   update(t){const T=chars.trump;T.setFace(t<1.6?'tpout':'tsmug');T.armR.rotation.z=2.3+Math.sin(t*5)*.12;T.armR.rotation.x=-.3;T.armL.rotation.x=-.5;if(t>=6){insertHolo();drawHolo('kidding',(t-6)/2.5,t)}else holo.visible=false},
   shot(t){if(t<6)shotList(t,[[0,6,V(-.7,2.3,17.6),V(-.35,2.3,16.7),V(0,2.0,13.75),V(0,2.1,13.75),{fov:36}]]);else insertShot(t-6,5)}},
  {key:'realize',name:'The bottom',set:'caf',look:'day',music:'soft',dur:15,
-  d:'He sold the exact bottom. His friend is up, and rested. “…Can you teach me?”',
-  lines:[[0.5, "He had already been liquidated.", "هو كان اتصفّى خلاص.", "n"], [3.4, "“I sold the bottom. The exact bottom.”", "\"أنا بعت في القاع. القاع بالظبط.\"", "h"], [7.2, "“I’m up. And I slept eight hours.”", "\"أنا كسبان. ونمت تمن ساعات.\"", "f"], [11.0, "“…Can you teach me?”", "\"…ممكن تعلّمني؟\"", "h"], [13.2, "“Thought you’d never ask.”", "\"كنت مستنيك تقولها.\"", "f"]],
-  setup(){duo();cafHolo(0,2.78,-.6,0)},
-  update(t){const f=chars.ollie,k=chars.rex;idle(f,t);f.setFace('happy');k.setFace(t<10.8?'cry':'smile');k.neck.rotation.x=t<10.8?.25:0;drawHolo('kidding',1,t)},
-  shot(t){shotList(t,[[0,5,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.9,-1.05),V(-1.1,1.9,-1.05),{fov:34}],[5,10,V(0,2.2,3.0),V(0,2.15,2.6),V(0,1.95,-1),V(0,2.0,-1),{fov:40}],[10,15,V(-.6,2.0,1.0),V(-.8,1.98,.85),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:32}]])}},
+  d:'He sold the exact bottom. His turtle stares. “I’m a serious investor… right?”',
+  lines:[[0.5, "He had already been liquidated.", "", "n"], [3.4, "“I sold the bottom. The exact bottom.”", "", "h"], [7.2, "His turtle just stared.", "", "n"], [9.4, "“I’m a serious investor… right?”", "", "h"], [12.4, "Serious investors have a playbook.", "", "n"]],
+  setup(){solo()},
+  update(t){const k=chars.rex;idle(k,t,1);k.setFace(t<7.2?'cry':t<9.4?'shock':t<12.4?'smile':'calm');k.neck.rotation.x=t<7.2?.25:0;turtleAct(t,t>7&&t<9.4?'offended':'idle');drawHolo('kidding',1,t)},
+  shot(t){shotList(t,[[0,7.2,V(-.55,2.0,1.15),V(-.75,1.98,.95),KF2(),KF2(),{fov:34,roll:0}],[7.2,9.4,V(1.15,1.62,.8),V(1.0,1.57,.62),TT(),TT(),{fov:32}],[9.4,12.4,V(-.55,2.0,1.15),V(-.75,1.98,.95),KF2(),KF2(),{fov:34,roll:0}],[12.4,15,V(.6,2.3,2.7),V(.45,2.25,2.3),V(-.5,1.95,-.9),V(-.45,2.0,-.9),{fov:40}]])}},
  {key:'playbook',name:'The shield',set:'caf',look:'gold',music:'drive',dur:20,
-  d:'The Risk Playbook: six rule bricks drop onto the table and lock into a shield. The wall screen fills in. The office claps.',
-  lines:[[0.5, "“Okay. The Risk Playbook.”", "\"تمام. دليل المخاطر.\"", "f"], [3.4, "Six rules. Six bricks.", "ست قواعد. ست طوبات.", "n"], [6.4, "“Five percent. Know it. Exit first.”", "\"خمسة في المية. افهم. حدد خروجك.\"", "f"], [10.4, "“Keep cash. Own less. Never borrow.”", "\"خلّي كاش. امتلك أقل. ومتستلفش.\"", "f"], [14.4, "Together, they make a shield.", "مع بعض بيعملوا درع.", "n"], [16.8, "“That’s… actually genius.”", "\"ده… عبقري فعلاً.\"", "h"]],
+  d:'Alone, he writes a real Risk Playbook: six rule bricks drop onto the table and lock into a shield. The wall screen fills in.',
+  lines:[[0.5, "“Okay. A real Risk Playbook. For real this time.”", "", "h"], [4.4, "Six rules. Six bricks.", "", "n"], [6.8, "“Five percent. Know it. Exit first.”", "", "h"], [10.6, "“Keep cash. Own less. Never borrow.”", "", "h"], [14.4, "Together, they make a shield.", "", "n"], [16.8, "“Wow. I’m a genius.”", "", "h"]],
   setup(){classScene();V3.shield.visible=true;V3.shield.scale.setScalar(1);V3.shield.position.set(0,1.08,-.15);V3.shield.rotation.set(0,0,0)},
-  update(t){classAct(t);shieldBuild(t-5,1.15);drawBoard(Math.max(0,(t-9)/9));if(t>16.6)once('app',()=>SFX.applause())},
+  update(t){classAct(t);shieldBuild(t-5,1.15);drawBoard(Math.max(0,(t-9)/9));if(t>16.8)once('app',()=>SFX.cash())},
   shot(t){if(t<6){orbit(t,0,6,V(.3,0,.5),5.0,.5,-.25,3.1,2.6,V(.1,1.6,-.3),40);return}
     shotList(t,[[6,13,V(.9,1.95,1.4),V(.6,1.85,1.1),V(0,1.35,-.15),V(0,1.35,-.15),{fov:36}],[13,20,V(0,3.0,1.0),V(0,3.15,-4.4),V(0,2.9,-6),V(0,3.15,-9),{fov:40}]])}},
  {key:'setup',name:'WalletLens',set:'ins',look:'insert',music:'drive',dur:16.5,
   d:'WalletLens: crypto, stocks, gold and cash in one place, flags anything over 5%, holds the exit.',
-  lines:[[0.5, "Then he set up WalletLens.", "وبعدين نزّل والت لينز.", "n"], [3.6, "Crypto, stocks, gold and cash. All in one place.", "كريبتو، أسهم، دهب وكاش. كله في مكان واحد.", "n"], [7.8, "It flags anything over five percent.", "بينبّهك لو أي حاجة عدّت خمسة في المية.", "n"], [11.2, "And it holds your exit. Even at 3 AM.", "وبيمسكلك الخروج. حتى الساعة ٣ الفجر.", "n"], [14.4, "“Finally. Sleep.”", "\"أخيراً. نوم.\"", "h"]],
+  lines:[[0.5, "Then he set up WalletLens.", "", "n"], [3.6, "Crypto, stocks, gold and cash. All in one place.", "", "n"], [7.8, "It flags anything over five percent.", "", "n"], [11.2, "And it holds your exit. Even at 3 AM.", "", "n"], [14.4, "“Finally. Sleep.”", "", "h"]],
   setup(){insertHolo()},
   update(t){drawHolo('wlapp',t/12,t)},
   shot(t){insertShot(t,16.5)}},
  {key:'week',name:'One week later',set:'press',look:'pressNight',music:'tense',dur:21,
   d:'A week later, 3:07 AM: “200% TARIFFS!!!” He sleeps, phone face down. The shark bonks the shield. Trump: “…Hello?”',
-  lines:[[0.5, "One week later. 3:07 AM.", "بعدها بأسبوع. ٣:٠٧ الفجر.", "n"], [3.0, "<em class=\"r\">“Two hundred percent! On everything! Even the moon!”</em>", "<em class=\"r\">\"ميتين في المية! على كل حاجة! حتى القمر!\"</em>", "t"], [8.4, "This time, he was asleep.", "المرة دي، كان نايم.", "n"], [11.0, "Phone face down. Plan on.", "الموبايل على وشه. والخطة شغالة.", "n"], [13.6, "The shark hit the shield. <em>Bonk.</em>", "القرش خبط في الدرع. <em>طاخ.</em>", "n"], [16.0, "<em>“Where’s the panic? …Hello?”</em>", "<em>\"فين الذعر؟ …ألو؟\"</em>", "t"], [18.9, "Nobody panicked.", "محدش اتخض.", "n"]],
+  lines:[[0.5, "One week later. 3:07 AM.", "", "n"], [3.0, "<em class=\"r\">“Two hundred percent! On everything! Even the moon!”</em>", "", "t"], [8.4, "This time, he was asleep.", "", "n"], [11.0, "Phone face down. Plan on.", "", "n"], [13.6, "The shark hit the shield. <em>Bonk.</em>", "", "n"], [16.0, "<em>“Where’s the panic? …Hello?”</em>", "", "t"], [18.9, "Nobody panicked.", "", "n"]],
   setup(){place(chars.trump,0,13.75);bedScene('kid');phoneOnStand('down');V3.shield.visible=true;V3.shield.scale.setScalar(1.6);V3.shield.position.set(BX+2.7,0,-.4);V3.shield.rotation.set(0,-.5,0);shieldBuild(99,1);V3.flood.visible=true;floodLevel(.22);V3.shark.visible=true;V3.turtle.visible=true;V3.turtle.position.set(BX+2.0,.25,.35);V3.turtle.rotation.y=.3},
   update(t){weekAct(t)},
   shot(t){if(t<8)shotList(t,[[0,5,V(.45,2.5,15.6),V(.3,2.45,15.2),V(0,2.38,13.75),V(0,2.38,13.75),{fov:34}],[5,8,V(.0,3.2,16.4),V(0,3.2,16.0),V(0,3.2,14.6),V(0,3.2,14.6),{fov:40}]]);
@@ -493,7 +500,7 @@ $('script').innerHTML=rows.map(r=>`<tr class="${r.full?'full':''}"><td class="t"
 
 // ── 3D ───────────────────────────────────────────────────────────────────
 const BRICK_YELLOW='#f2cd37';
-const SHIRT_COL={rex:'#c11f25',ollie:'#1a8a5d',pink:'#f5a9c8',plaid:'#5a5248',blue:'#7fb2ff',floral:'#c8242c',suit:'#1a1a1d',potus:'#1c2541'};
+const SHIRT_COL={investor:'#24324f',cz:'#08080a',rex:'#c11f25',ollie:'#1a8a5d',pink:'#f5a9c8',plaid:'#5a5248',blue:'#7fb2ff',floral:'#c8242c',suit:'#1a1a1d',potus:'#1c2541'};
 const screen=$('screen');
 if(AR){screen.classList.add('ar');$('rulesK').textContent='دليل المخاطر';$('rw').querySelector('b').textContent='◀◀ ترجيع';$('rw').querySelector('span').textContent='قبلها بـ ٣ أيام'}
 let ok=!!window.THREE;
@@ -614,7 +621,7 @@ void main(){vec2 uv=vUv;
    pendant=new THREE.SpotLight('#ffc98a',0,11,.62,.75,1.2);pendant.position.set(0,4.72,-.55);pendant.target.position.set(0,1,-.7);scene.add(pendant);scene.add(pendant.target);
    const ht=canvasTex(128,128,(g)=>{const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,214,150,.9)');gr.addColorStop(.35,'rgba(255,190,110,.25)');gr.addColorStop(1,'rgba(255,170,90,0)');g.fillStyle=gr;g.fillRect(0,0,128,128)});
    halo=new THREE.Sprite(new THREE.SpriteMaterial({map:ht.t,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));halo.scale.set(2.6,2.6,1);halo.position.set(0,4.6,-.55);scene.add(halo)}
-  buildV3();
+  buildV3();buildCZ(bricks);
 
   // press room for the real-world cutaways: backdrop, podium, flags, its own lights
   {const bd=bricks('#1f3b7a','#183064');bd.repeat.set(6,3);const back=new THREE.Mesh(new THREE.BoxGeometry(9,5.2,.3),new THREE.MeshStandardMaterial({map:bd,roughness:.5}));back.position.set(0,2.6,12.4);scene.add(back);
@@ -650,7 +657,7 @@ void main(){vec2 uv=vUv;
   for(let k=0;k<160;k++){const m=new THREE.Mesh(new THREE.BoxGeometry(.1,.04,.1),new THREE.MeshStandardMaterial({color:cc[k%6],roughness:.35}));m.visible=false;scene.add(m);confetti.push({m,v:new THREE.Vector3(),r:new THREE.Vector3()})}
 
   // cast
-  chars.rex=makeChar({skin:'#c58a5a',shirt:'rex',pants:'#1c1f26',hair:'spiky',hairColor:'#15100c'});
+  chars.rex=makeChar({skin:'#c58a5a',shirt:'investor',pants:'#1c1f26',hair:'neat',hairColor:'#15100c',glasses:true});
   {const sm=new THREE.MeshStandardMaterial({color:'#9fe0ff',roughness:.1,metalness:.1,emissive:'#3aa0d8',emissiveIntensity:.3});chars.rex.sweat=[-.36,.36].map(x=>{const d=new THREE.Mesh(new THREE.SphereGeometry(.045,12,10),sm);d.scale.y=1.4;d.position.set(x*.92,.55,.2);d.visible=false;chars.rex.neck.add(d);return d})}
   chars.ollie=makeChar({skin:'#8a5634',shirt:'ollie',pants:'#2f5fb0',hair:'cap',hairColor:'#2a1a10',glasses:true});
   chars.k1=makeChar({skin:'#e8b48a',shirt:'pink',pants:'#f2f2f2',hair:'long',hairColor:'#f3d3a3'});
@@ -658,6 +665,8 @@ void main(){vec2 uv=vUv;
   chars.k3=makeChar({skin:'#b9764c',shirt:'blue',pants:'#ffffff',hair:'long',hairColor:'#0e0c0c'});
   chars.k4=makeChar({skin:'#9b6440',shirt:'floral',pants:'#e9e9e9',hair:'cap',hairColor:'#0e0b09'});
   chars.teach=makeChar({skin:'#a8713f',shirt:'suit',pants:'#141414',hair:'long',hairColor:'#4a2e1c'});
+  chars.cz=makeChar({realSkin:'#f4d2ae',shirt:'cz',pants:'#16161a',hair:'crew',hairColor:'#050505',glasses:'thin'});
+  {const ph=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(.14,.26,.025),plastic('#111318'));const sc=new THREE.Mesh(new THREE.PlaneGeometry(.12,.22),new THREE.MeshBasicMaterial({color:'#ffe08a'}));sc.position.z=.014;ph.add(b,sc);ph.position.set(.18,-.92,.16);ph.rotation.set(-1.0,0,0);chars.cz.armR.add(ph);chars.cz.phone=ph}
   chars.trump=makeChar({realSkin:'#f2b27c',shirt:'potus',pants:'#1c2541',hair:'swoop',hairColor:'#c9861c'});
   {const ph=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(.14,.26,.025),plastic('#111318'));const sc=new THREE.Mesh(new THREE.PlaneGeometry(.12,.22),new THREE.MeshBasicMaterial({color:'#bcd7ff'}));sc.position.z=.014;ph.add(b,sc);ph.position.set(.18,-.92,.16);ph.rotation.set(-1.0,0,0);chars.trump.armR.add(ph);chars.trump.phone=ph}
 }
@@ -688,6 +697,11 @@ function drawFace(g,skin,ex){
       if(ex==='tshout'){g.fillStyle='#4a1a14';g.beginPath();g.ellipse(128,186,34,28,0,0,7);g.fill();g.fillStyle='#fff';g.fillRect(100,163,56,10)}
       if(ex==='tsmug'){g.strokeStyle=K;g.lineWidth=7;g.beginPath();g.moveTo(98,182);g.quadraticCurveTo(140,196,166,170);g.stroke()}
       if(ex==='tconfused'){g.strokeStyle=K;g.lineWidth=7;g.beginPath();g.moveTo(104,184);g.lineTo(150,178);g.stroke()}break}
+    case 'czcalm':case 'czsmile':{g.strokeStyle=K;g.lineWidth=12;g.lineCap='round';g.beginPath();g.moveTo(58,74);g.quadraticCurveTo(86,62,112,74);g.moveTo(144,74);g.quadraticCurveTo(170,62,198,74);g.stroke();
+      g.fillStyle='#fff';g.beginPath();g.ellipse(86,104,20,9,0,0,7);g.ellipse(170,104,20,9,0,0,7);g.fill();g.fillStyle='#3a2a1c';g.beginPath();g.arc(86,106,7,0,7);g.arc(170,106,7,0,7);g.fill();g.strokeStyle=K;g.lineWidth=5;g.beginPath();g.moveTo(64,98);g.lineTo(108,98);g.moveTo(148,98);g.lineTo(192,98);g.stroke();
+      g.strokeStyle='rgba(120,70,40,.45)';g.lineWidth=4;g.beginPath();g.moveTo(128,112);g.lineTo(122,146);g.lineTo(134,148);g.stroke();
+      if(ex==='czsmile'){g.save();g.beginPath();g.moveTo(80,170);g.quadraticCurveTo(128,214,176,170);g.quadraticCurveTo(128,184,80,170);g.fillStyle='#3a0d10';g.fill();g.clip();g.fillStyle='#fff';g.fillRect(70,168,116,26);g.restore();g.strokeStyle='#9a5a52';g.lineWidth=6;g.beginPath();g.moveTo(80,170);g.quadraticCurveTo(128,214,176,170);g.stroke()}
+      else{g.strokeStyle='#9a5a52';g.lineWidth=6;g.beginPath();g.moveTo(96,176);g.quadraticCurveTo(128,186,160,176);g.stroke()}break}
     case 'calm':{g.fillStyle=K;eye(90,106,10,15);eye(166,106,10,15);hl(87,100);hl(163,100);g.strokeStyle=K;g.lineWidth=7;g.beginPath();g.moveTo(98,168);g.quadraticCurveTo(128,186,158,166);g.stroke();break}
     default:{g.fillStyle=K;eye(88,102,12,20);eye(168,102,12,20);hl(84,94);hl(164,94);g.strokeStyle=K;g.lineWidth=8;g.beginPath();g.moveTo(84,160);g.quadraticCurveTo(128,204,172,160);g.stroke()}
   }
@@ -700,6 +714,8 @@ function shirtDecal(kind){const W=256;return (g)=>{const fill=c=>{g.fillStyle=c;
     case 'plaid':fill('#5a5248');g.globalAlpha=.55;for(let i=0;i<W;i+=40){g.fillStyle='#c9b48a';g.fillRect(i,0,16,W);g.fillRect(0,i,W,16)}g.globalAlpha=1;g.fillStyle='#f4f4f4';g.fillRect(100,0,56,W);break;
     case 'blue':fill('#7fb2ff');g.fillStyle='#fff';g.fillRect(0,170,W,86);break;
     case 'floral':fill('#c8242c');for(let i=0;i<22;i++){g.fillStyle=i%2?'#fff':'#ffd0d0';const x=RNG()*W,y=RNG()*W;for(let p=0;p<5;p++){g.beginPath();g.arc(x+Math.cos(p*1.26)*10,y+Math.sin(p*1.26)*10,8,0,7);g.fill()}}g.fillStyle='#fff';g.fillRect(112,0,32,W);break;
+    case 'investor':fill('#24324f');g.fillStyle='#f4f4f4';g.beginPath();g.moveTo(96,0);g.lineTo(160,0);g.lineTo(128,150);g.closePath();g.fill();g.fillStyle='#2a6bd8';g.beginPath();g.moveTo(120,12);g.lineTo(136,12);g.lineTo(142,190);g.lineTo(128,204);g.lineTo(114,190);g.closePath();g.fill();g.strokeStyle='rgba(255,255,255,.2)';g.lineWidth=5;g.beginPath();g.moveTo(96,0);g.lineTo(124,160);g.moveTo(160,0);g.lineTo(132,160);g.stroke();g.fillStyle='#f4f4f4';g.fillRect(176,46,34,8);break;
+    case 'cz':fill('#151518');g.strokeStyle='#2a2a30';g.lineWidth=10;g.beginPath();g.arc(128,0,60,0,Math.PI);g.stroke();g.strokeStyle='#d8d8d8';g.lineWidth=4;g.beginPath();g.moveTo(104,40);g.lineTo(100,110);g.moveTo(152,40);g.lineTo(156,110);g.stroke();g.fillStyle='#f0b90b';g.font='900 120px Montserrat,Arial Black,sans-serif';g.textAlign='center';g.fillText('4',128,220);break;
     case 'potus':fill('#1c2541');g.fillStyle='#f4f4f4';g.beginPath();g.moveTo(92,0);g.lineTo(164,0);g.lineTo(128,120);g.closePath();g.fill();g.fillStyle='#d0141c';g.beginPath();g.moveTo(118,14);g.lineTo(138,14);g.lineTo(146,236);g.lineTo(128,252);g.lineTo(110,236);g.closePath();g.fill();g.strokeStyle='rgba(255,255,255,.18)';g.lineWidth=5;g.beginPath();g.moveTo(92,0);g.lineTo(122,130);g.moveTo(164,0);g.lineTo(134,130);g.stroke();g.fillStyle='#d0b44a';g.beginPath();g.arc(70,70,7,0,7);g.fill();break;
     case 'suit':fill('#1a1a1d');g.fillStyle='#f2f2f2';g.beginPath();g.moveTo(96,0);g.lineTo(160,0);g.lineTo(140,200);g.lineTo(116,200);g.closePath();g.fill();g.strokeStyle='#cfcfcf';g.lineWidth=4;for(let y=20;y<190;y+=22){g.beginPath();g.arc(128,y,14,0,Math.PI);g.stroke()}break;
   }}}
@@ -738,12 +754,15 @@ function makeChar(o){
   const hm=plastic(o.hairColor,{roughness:.4});
   const dome=(y=.62,sy=.62)=>{const d=new THREE.Mesh(new THREE.SphereGeometry(.37,32,16,0,Math.PI*2,0,Math.PI/2),hm);d.scale.y=sy;d.position.y=y;d.castShadow=true;neck.add(d);return d};
   const slab=(w,h,d,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),hm);m.position.set(x,y,z);m.castShadow=true;neck.add(m);return m};
+  if(o.hair==='crew'){dome(.6,.5);slab(.62,.22,.14,0,.47,-.29)}
+  if(o.hair==='neat'){dome(.6,.53);slab(.62,.3,.14,0,.49,-.29);slab(.52,.1,.13,-.05,.66,.25)}
   if(o.hair==='cap'){dome(.6,.55);slab(.62,.36,.14,0,.47,-.29);slab(.58,.1,.1,0,.63,.27)}
   if(o.hair==='spiky'){dome(.6,.5);for(let i=0;i<7;i++){const c=new THREE.Mesh(new THREE.ConeGeometry(.11,.34,6),hm);const a=i/7*Math.PI*2;c.position.set(Math.sin(a)*.2,.86,Math.cos(a)*.2-.04);c.rotation.set(Math.cos(a)*.5,0,-Math.sin(a)*.5);neck.add(c)}slab(.6,.3,.14,0,.5,-.29)}
   if(o.hair==='long'){dome(.6,.6);const b=new THREE.Mesh(new THREE.CylinderGeometry(.37,.4,.9,24,1,true,Math.PI*.55,Math.PI*.9),hm);b.position.set(0,.2,0);b.material.side=THREE.DoubleSide;neck.add(b);slab(.56,.12,.12,0,.62,.28)}
   if(o.hair==='swoop'){dome(.62,.55);const sw=new THREE.Mesh(new THREE.SphereGeometry(.38,32,16),hm);sw.scale.set(1.04,.42,.9);sw.position.set(.03,.74,.08);sw.rotation.set(-.22,0,.1);sw.castShadow=true;neck.add(sw);const fr=new THREE.Mesh(new THREE.SphereGeometry(.2,24,12),hm);fr.scale.set(1.6,.55,.8);fr.position.set(.06,.72,.3);fr.rotation.z=.15;neck.add(fr);slab(.64,.3,.14,0,.5,-.29);slab(.08,.22,.34,-.345,.52,-.08);slab(.08,.22,.34,.345,.52,-.08)}
   if(o.hair==='locs'){dome(.6,.5);for(let i=0;i<10;i++){const a=Math.PI*.35+i/9*Math.PI*1.3;const m=new THREE.Mesh(new THREE.CylinderGeometry(.045,.04,.5,8),hm);m.position.set(Math.sin(a)*.34,.38,Math.cos(a)*.34);neck.add(m)}}
-  if(o.glasses){const gm=plastic('#111111');[-.13,.13].forEach(x=>{const r=new THREE.Mesh(new THREE.TorusGeometry(.085,.016,8,24),gm);r.position.set(x,.43,.33);neck.add(r)});const br=new THREE.Mesh(new THREE.BoxGeometry(.09,.02,.02),gm);br.position.set(0,.44,.335);neck.add(br)}
+  if(o.glasses==='thin'){const gm=plastic('#b8c0c8',{metalness:.6});[-.14,.14].forEach(x=>{const r=new THREE.Mesh(new THREE.TorusGeometry(.1,.008,6,24),gm);r.scale.y=.62;r.position.set(x,.43,.335);neck.add(r)});const br=new THREE.Mesh(new THREE.BoxGeometry(.08,.012,.012),gm);br.position.set(0,.44,.338);neck.add(br)}
+  else if(o.glasses){const gm=plastic('#111111');[-.13,.13].forEach(x=>{const r=new THREE.Mesh(new THREE.TorusGeometry(.085,.016,8,24),gm);r.position.set(x,.43,.33);neck.add(r)});const br=new THREE.Mesh(new THREE.BoxGeometry(.09,.02,.02),gm);br.position.set(0,.44,.335);neck.add(br)}
   const hatTex=canvasTex(128,128,(g)=>{g.fillStyle='#e0a91f';g.fillRect(0,0,128,128);g.fillStyle='#fff6dc';for(let y=8;y<128;y+=22)for(let x=(y/22%2)*11+6;x<128;x+=22){g.beginPath();g.arc(x,y,4,0,7);g.fill()}});
   const hat=new THREE.Mesh(new THREE.ConeGeometry(.22,.52,24),plastic('#ffffff',{map:hatTex.t}));hat.position.y=1.08;hat.rotation.z=.15;hat.visible=false;neck.add(hat);
   scene.add(root);
@@ -773,6 +792,8 @@ function htxt(g,t,x,y,size,col,font='Montserrat'){const ar=/[\u0600-\u06FF]/.tes
 function trumpAvatar(g,x,y,r){g.save();g.translate(x,y);g.fillStyle='#f2b27c';g.beginPath();g.arc(0,0,r,0,7);g.fill();g.fillStyle='#d99a2b';g.beginPath();g.ellipse(-r*.05,-r*.62,r*1.05,r*.42,-.15,0,7);g.fill();g.beginPath();g.ellipse(r*.35,-r*.5,r*.55,r*.28,.3,0,7);g.fill();
   g.fillStyle='#111';g.beginPath();g.ellipse(-r*.35,-r*.05,r*.16,r*.07,0,0,7);g.ellipse(r*.35,-r*.05,r*.16,r*.07,0,0,7);g.fill();g.fillStyle='#4a1a14';g.beginPath();g.ellipse(0,r*.45,r*.15,r*.12,0,0,7);g.fill();g.restore()}
 function drawHolo(kind,p,t){const g=holoTex.g;
+  if(kind==='cz4'||kind==='safu'){holoFrame(g,'#f0b90b');g.fillStyle='#f0b90b';g.fillRect(30,40,452,58);htxt(g,'CZ  ✓',256,82,32,'#141414');
+    const q=Math.min(1,Math.max(0,p));if(q>0){g.globalAlpha=q;if(kind==='cz4')htxt(g,'4',256,400,Math.round(300*(.7+.3*q)),'#f0b90b');else{htxt(g,'Funds are',256,240,50,'#ffffff');htxt(g,'SAFU.',256,350,Math.round(110*(.7+.3*q)),'#f0b90b');htxt(g,'🛡️',256,440,56,'#ffffff')}g.globalAlpha=1}}
 
   if(kind==='news'||kind==='kidding'){const ok2=kind==='kidding';holoFrame(g,ok2?'#3dff8a':'#ff3b3b');
     g.fillStyle=ok2?'#14b86a':'#e8343a';g.fillRect(30,40,452,58);htxt(g,TX(ok2?'UPDATE':'BREAKING NEWS',ok2?'تحديث':'خبر عاجل'),256,82,34,'#fff');
@@ -797,14 +818,14 @@ function drawHolo(kind,p,t){const g=holoTex.g;
 
   if(kind==='notebook'){holoFrame(g,'#60a5fa');htxt(g,TX('RESEARCH','البحث'),256,72,32,'#bfdbfe');
     g.fillStyle='#f8f5ec';rr(g,44,110,190,250,14);g.fill();g.strokeStyle='#93c5fd';g.lineWidth=2;for(let y=140;y<350;y+=16){g.beginPath();g.moveTo(56,y);g.lineTo(222,y);g.stroke()}g.fillStyle='#1e3a8a';for(let k2=0;k2<10;k2++)g.fillRect(60,132+k2*21,90+((k2*37)%70),5);
-    htxt(g,TX('40 PAGES','٤٠ صفحة'),139,404,30,'#bbf7d0');htxt(g,TX('his friend','صاحبه'),139,440,22,'#cbd5e1');
+    htxt(g,TX('40 PAGES','٤٠ صفحة'),139,404,30,'#bbf7d0');htxt(g,TX('usually','عادةً'),139,440,22,'#cbd5e1');
     if(p>.65){g.fillStyle='#111827';rr(g,300,130,150,230,22);g.fill();g.fillStyle='#ef4444';g.beginPath();g.moveTo(352,212);g.lineTo(352,272);g.lineTo(402,242);g.closePath();g.fill();htxt(g,'0:07',375,330,26,'#fff');
       htxt(g,TX('1 VIDEO','فيديو واحد'),375,404,30,'#fecaca');htxt(g,TX('him','هو'),375,440,22,'#cbd5e1')}}
   if(kind==='coins'){holoFrame(g,'#f59e0b');htxt(g,TX('30 COINS','٣٠ عملة'),256,74,34,'#fde68a');const N=['CATCOIN','MOONPUP','FROGINU','RUGGY','404COIN','LAMBO','WAGMI','NGMI','PUMPY','BANANA','TOADZ','HODLR','GIGACHAD','MEOW2','YOLO','ROCKET'];
     const off=(t*60)%(N.length*44);g.save();g.beginPath();g.rect(40,100,432,300);g.clip();N.concat(N).forEach((n2,k2)=>{const y=130+k2*44-off;g.fillStyle='rgba(255,255,255,.07)';rr(g,52,y-28,408,38,10);g.fill();g.font='700 24px DM Mono,monospace';g.textAlign='left';g.direction='ltr';g.fillStyle='#fff';g.fillText('$'+n2,70,y);g.textAlign='right';g.fillStyle=k2%3?'#4ade80':'#f87171';g.fillText((k2%3?'+':'−')+((k2*37)%90+3)+'%',440,y)});g.restore();
     if(p>.45)htxt(g,TX('“explain one?”','"اشرحلي واحدة؟"'),256,440,28,'#fff');if(p>.7){g.fillStyle='rgba(8,18,44,.9)';rr(g,120,190,272,110,20);g.fill();htxt(g,TX('“…vibes.”','"…إحساس."'),256,262,46,'#fde68a')}}
   if(kind==='cash'){holoFrame(g,'#4ade80');htxt(g,TX('CASH','الكاش'),256,72,34,'#bbf7d0');
-    for(let k2=0;k2<6;k2++){g.fillStyle='#e0a91f';g.beginPath();g.ellipse(150,330-k2*22,70,20,0,0,7);g.fill();g.strokeStyle='#8a6410';g.lineWidth=3;g.stroke()}htxt(g,'15%',150,205,52,'#4ade80');htxt(g,TX('his friend','صاحبه'),150,390,22,'#cbd5e1');
+    for(let k2=0;k2<6;k2++){g.fillStyle='#e0a91f';g.beginPath();g.ellipse(150,330-k2*22,70,20,0,0,7);g.fill();g.strokeStyle='#8a6410';g.lineWidth=3;g.stroke()}htxt(g,'15%',150,205,52,'#4ade80');htxt(g,TX('his rule','قاعدته'),150,390,22,'#cbd5e1');
     if(p>.55){g.strokeStyle='#64748b';g.lineWidth=4;g.setLineDash([10,8]);g.beginPath();g.ellipse(370,330,70,20,0,0,7);g.stroke();g.setLineDash([]);htxt(g,'0%',370,205,52,'#f87171');htxt(g,TX('him','هو'),370,390,22,'#cbd5e1');htxt(g,TX('(rent money: in cat coin)','(فلوس الإيجار: في عملة القطة)'),256,445,20,'#fca5a5')}}
   if(kind==='headlines'){holoFrame(g,'#94a3b8');const H3=[[TX('TARIFF TALK HEATS UP','الجمارك بتسخن'),'#ef4444'],[TX('CAT COIN +80% 🚀','عملة القطة +٨٠٪ 🚀'),'#22c55e'],[TX('ANALYSTS: “NO IDEA”','المحللين: "مش عارفين"'),'#f59e0b']];
     H3.forEach(([h,c],k2)=>{if(p<k2*.28)return;const y=110+k2*125;g.fillStyle='rgba(255,255,255,.08)';rr(g,40,y,432,100,16);g.fill();g.fillStyle=c;g.fillRect(40,y,12,100);htxt(g,h,262,y+62,28,'#fff')})}
@@ -855,6 +876,18 @@ function hideConfetti(){confetti.forEach(c=>c.m.visible=false)}
 
 
 // ── sets, creatures and props for the 5-minute story ──
+// CZ's studio: dark brick wall, yellow neon "4", desk with a glowing laptop, its own key and rim lights
+function buildCZ(bricks){const X=CZ.x,Z=CZ.z;
+  const bd=bricks('#f2c230','#d9a514');bd.repeat.set(6,3);const back=new THREE.Mesh(new THREE.BoxGeometry(8,5.2,.3),new THREE.MeshStandardMaterial({map:bd,roughness:.6}));back.position.set(X,2.6,Z-1.7);scene.add(back);
+  const fl=new THREE.Mesh(new THREE.BoxGeometry(10,.1,8),plastic('#111116'));fl.position.set(X,-.05,Z+1.5);fl.receiveShadow=true;scene.add(fl);
+  const strip=new THREE.Mesh(new THREE.BoxGeometry(8,.14,.08),plastic('#141414'));strip.position.set(X,1.2,Z-1.52);scene.add(strip);
+  const nt=canvasTex(256,256,(g)=>{g.clearRect(0,0,256,256);g.fillStyle='#141414';g.font='900 220px Montserrat,Arial Black,sans-serif';g.textAlign='center';g.fillText('4',128,212)});
+  const n4=new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.6),new THREE.MeshBasicMaterial({map:nt.t,transparent:true}));n4.position.set(X-1.9,3.1,Z-1.53);scene.add(n4);
+  const desk=new THREE.Mesh(new THREE.BoxGeometry(1.9,1.0,.75),plastic('#24242c'));desk.position.set(X,.5,Z+.85);desk.castShadow=true;scene.add(desk);
+  const lb=new THREE.Mesh(new THREE.BoxGeometry(.6,.03,.4),plastic('#9aa0aa'));lb.position.set(X-.45,1.02,Z+.85);scene.add(lb);
+  const ls=new THREE.Mesh(new THREE.BoxGeometry(.6,.38,.02),new THREE.MeshStandardMaterial({color:'#222',emissive:'#ffd76a',emissiveIntensity:.6}));ls.position.set(X-.45,1.2,Z+.66);ls.rotation.x=-.25;scene.add(ls);
+  V3.czKey=new THREE.SpotLight('#fff1dc',0,12,.5,.6,1.1);V3.czKey.position.set(X+1.6,4.4,Z+4.2);V3.czKey.target.position.set(X,1.9,Z);scene.add(V3.czKey);scene.add(V3.czKey.target);
+  V3.czRim=new THREE.PointLight('#ffd76a',0,6,1.6);V3.czRim.position.set(X-1.2,2.8,Z-1.1);scene.add(V3.czRim)}
 function buildV3(){
   const brickTex=(col,mortar,rx,ry)=>{const c=canvasTex(512,256,(g)=>{g.fillStyle=mortar;g.fillRect(0,0,512,256);for(let r=0;r<8;r++)for(let k=-1;k<9;k++){const x=k*64+(r%2?32:0),y=r*32;g.fillStyle=col;g.fillRect(x+1.5,y+1.5,61,29);g.fillStyle='rgba(255,255,255,.14)';g.fillRect(x+1.5,y+1.5,61,3);g.fillStyle='rgba(0,0,0,.22)';g.fillRect(x+1.5,y+27.5,61,3)}});c.t.wrapS=c.t.wrapT=THREE.RepeatWrapping;c.t.repeat.set(rx,ry);return c.t};
   const add=(geo,mat,x,y,z,o={})=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);if(o.rx)m.rotation.x=o.rx;if(o.ry)m.rotation.y=o.ry;if(o.rz)m.rotation.z=o.rz;m.castShadow=o.cast!==false;m.receiveShadow=true;scene.add(m);return m};
@@ -924,7 +957,9 @@ function buildV3(){
 function once(k,fn){if(!sfxFlags[k]){sfxFlags[k]=1;fn()}}
 function seat(c,x,z){place(c,x,z);c.seated=true}
 function sitKid(x){seat(chars.rex,x,-1.05)}
-function duo(){seat(chars.ollie,1.0,-1.05);seat(chars.rex,-1.1,-1.05)}
+function solo(){seat(chars.rex,-1.1,-1.05);V3.turtle.visible=true;V3.turtle.position.set(.25,1.12,-.45);V3.turtle.rotation.y=-.6;cafHolo(.55,2.75,-.5,-.15)}
+function czHolo(){holo.visible=true;holo.position.set(CZ.x+1.35,2.7,CZ.z+.3);holo.rotation.set(0,-.35,0)}
+function czAct(t,post){const c=chars.cz;c.phone.visible=true;idle(c,t);if(t<post){c.armR.rotation.x=-1.25;c.armL.rotation.x=-1.0+Math.sin(NOW()/70)*.05;c.armL.rotation.z=.35;c.neck.rotation.x=.25;c.setFace('czcalm')}else{c.armR.rotation.x=-.5;c.setFace('czsmile')}}
 function cafHolo(x,y,z,ry){holo.visible=true;holo.position.set(x,y,z);holo.rotation.set(0,ry,0)}
 function bedHolo(){holo.visible=true;holo.position.set(BX+2.1,2.35,-1.4);holo.rotation.set(0,-.35,0)}
 function insertHolo(){holo.visible=true;holo.position.set(INS.x,INS.y,INS.z);holo.rotation.set(0,0,0)}
@@ -945,9 +980,8 @@ function wake(ta){const k=chars.rex;const q=ease(Math.min(1,Math.max(0,(ta-2.5)/
     if(ta<6){k.setFace('shock')}else{scream(k,ta);k.setFace('scream');camShake=.03;once('scr',()=>SFX.alarm())}}}
 function partyScene(){seat(chars.rex,0,-1.05);chars.rex.hat.visible=true;[['k1',-1.6,-2.3],['k2',.4,-2.8],['k3',1.9,-2.1],['k4',-2.6,-1.3]].forEach(([k,x,z])=>{place(chars[k],x,z);chars[k].hat.visible=true});cafHolo(1.25,2.7,-.6,-.3)}
 function partyAct(t,dt){const r=chars.rex;cheer(r,t);r.setFace('grin');['k1','k2','k3','k4'].forEach((k,i)=>{const c=chars[k];cheer(c,t,i*1.3);c.setFace(i%2?'grin':'happy')});if(t<dt*1.5+.001)confettiBurst(V(0,0,-1.5));confettiStep(dt)}
-function classScene(){place(chars.ollie,1.0,1.9,-.5);place(chars.rex,-.2,2.2,.9);place(chars.teach,0,-8.2,Math.PI);[['k1',-2.6,-.6],['k2',-1.2,-1.2],['k3',1.6,-1.0],['k4',2.9,-.3]].forEach(([k,x,z])=>place(chars[k],x,z));holo.visible=false}
-function classAct(t){const f=chars.ollie,r=chars.rex,tc=chars.teach;idle(f,t);f.setFace('happy');point(f,.6);idle(r,t,1);r.setFace(t<5?'smile':'happy');
-  ['k1','k2','k3','k4'].forEach((k,i)=>{if(t>16.6)clap(chars[k],t,i);else idle(chars[k],t,i);chars[k].setFace(i%2?'happy':'grin');chars[k].root.lookAt(0,0,-.2)});tc.armR.rotation.x=-2.6+Math.sin(t*8)*.15;tc.armR.rotation.z=.2}
+function classScene(){place(chars.rex,-.2,2.2,.9);V3.turtle.visible=true;V3.turtle.position.set(1.15,1.12,.25);V3.turtle.rotation.y=-.9;holo.visible=false}
+function classAct(t){const r=chars.rex;idle(r,t,1);r.setFace(t<5?'smile':'happy');if(t>6.6&&t<14.2)point(r,.6);if(t>16.8)cheer(r,t);turtleAct(t,'idle')}
 function shieldBuild(tt,drop){V3.shieldBricks.forEach((b,i)=>{const t0=i*1.2,q=Math.min(1,Math.max(0,(tt-t0)/.45));b.visible=tt>t0;b.position.copy(b.userData.home);b.position.y+=(1-ease(q))*drop*2.2;if(q>=1&&tt<40)once('brick'+i,()=>SFX.pop())})}
 function floodLevel(y){V3.flood.position.y=y;V3.floodY=y}
 function sharkCircle(tt,vis){const S=V3.shark;S.visible=vis;if(!vis)return;const a=tt*.85;S.position.set(BX+.8+Math.cos(a)*2.5,(V3.floodY||.4)-.12,-1.5+Math.sin(a)*1.6);S.rotation.set(0,-a-Math.PI/2,0);V3.sharkTail.rotation.y=Math.sin(NOW()/120)*.35;V3.sharkJaw.rotation.z=-.05}
@@ -974,12 +1008,13 @@ function orbit(t,t0,t1,c,r,a0,a1,y0,y1,look,fov=40){const p=ease((t-t0)/(t1-t0))
 const H=(x)=>{const s=Math.sin(x*127.1)*43758.5453;return s-Math.floor(s)};
 function mood(key,t,dt){const s=SCENES[cur],L=s.look;
   let hem=.5,sun=.95,rim=.7,lamp=.35,lampE=1.6,party=0,win=0,shaft=0,pend=2.6;
-  let moon=0,dawn=0,red=0,glow=0,ins=0,press=0,pglow=0;
+  let moon=0,dawn=0,red=0,glow=0,ins=0,press=0,pglow=0,czk=0;
   Object.assign(FX,{sat:1.0,con:1.08,vig:.45,ab:.0015,warm:.18,flash:0,rw:0,bars:0});
   if(L==='party'){hem=.6;sun=.8;lamp=.2;lampE=.9;party=1;pend=0;Object.assign(FX,{sat:1.12,warm:.3})}
   if(L==='gold'){win=1.2;shaft=.13;Object.assign(FX,{warm:.5,sat:1.12})}
   if(L==='pressNight'){hem=.25;sun=.2;press=.35;pglow=chars.trump&&chars.trump.phone&&chars.trump.phone.visible?2.4:0;pend=0;Object.assign(FX,{warm:-.3,vig:.55})}
   if(L==='pressDay'){hem=.6;sun=.6;press=1.5;pend=0;Object.assign(FX,{warm:.35})}
+  if(L==='cz'){hem=.22;sun=.08;pend=0;czk=1;Object.assign(FX,{warm:.12,vig:.58,sat:1.06})}
   if(L==='insert'){hem=.2;sun=.1;ins=1.2;pend=0;Object.assign(FX,{vig:.5,warm:0})}
   if(L==='bedNight'||L==='bedRed'){hem=.25;sun=.15;moon=.7;pend=0;glow=phone3d.visible?1.6:0;Object.assign(FX,{warm:-.35,vig:.55})}
   if(L==='bedRed'){red=1.6+Math.sin(NOW()/160)*1.0;Object.assign(FX,{sat:1.1,warm:-.2,ab:.0025,bars:1})}
@@ -989,10 +1024,10 @@ function mood(key,t,dt){const s=SCENES[cur],L=s.look;
   if(s.fx)s.fx(t);
   pendant.intensity=pend;halo.material.opacity=pend/2.6;hem*=.5;sun*=.42;lamp*=.55;
   hemiL.intensity=hem;sunL.intensity=sun;rimL.intensity=rim;lampLights.forEach(l=>l.intensity=lamp);lampMat.emissiveIntensity=lampE;winL.intensity=win;
-  V3.moon.intensity=moon;V3.dawn.intensity=dawn;V3.redL.intensity=red;V3.glowB.intensity=glow;V3.insL.intensity=ins;pressSpot.intensity=press;phoneGlow.intensity=pglow;
+  V3.moon.intensity=moon;V3.dawn.intensity=dawn;V3.redL.intensity=red;V3.glowB.intensity=glow;V3.insL.intensity=ins;pressSpot.intensity=press;phoneGlow.intensity=pglow;V3.czKey.intensity=czk*2.4;V3.czRim.intensity=czk*1.8;
   sunL.castShadow=s.set==='caf';renderer.shadowMap.autoUpdate=s.set==='caf';
   // dark lights are taken out of the shader entirely (every light costs per pixel, even at zero)
-  [hemiL,rimL,winL,pendant,pressSpot,phoneGlow,alarm,V3.moon,V3.dawn,V3.redL,V3.glowB,V3.insL,...lampLights,...partyL.map(x=>x.L)].forEach(l=>{if(l)l.visible=l.intensity>.001});
+  [hemiL,rimL,winL,pendant,pressSpot,phoneGlow,alarm,V3.czKey,V3.czRim,V3.moon,V3.dawn,V3.redL,V3.glowB,V3.insL,...lampLights,...partyL.map(x=>x.L)].forEach(l=>{if(l)l.visible=l.intensity>.001});
   if(V3.flood.visible){const pa=V3.floodGeo.attributes.position,tt=NOW()/1000;for(let i=0;i<pa.count;i++){const x=pa.getX(i),y=pa.getY(i);pa.setZ(i,Math.sin(x*1.6+tt*2.2)*.05+Math.cos(y*1.9+tt*1.7)*.04)}pa.needsUpdate=true;V3.floodGeo.computeVertexNormals()}
   shafts.forEach((b,i)=>b.material.opacity=shaft*(.85+.15*Math.sin(NOW()/700+i)));
   partyL.forEach(({L:Lt,b,ph})=>{Lt.intensity=party*2.2;b.material.opacity=party*.11;const a=NOW()/1000*1.6+ph;Lt.target.position.set(Math.sin(a)*3,0,-1.4+Math.cos(a*1.3)*2);b.lookAt(Lt.target.position)});
@@ -1005,7 +1040,7 @@ function mood(key,t,dt){const s=SCENES[cur],L=s.look;
 }
 const FACE_REX=V(0,1.95,-1.05);
 // talking: the speaking character's mouth follows the voice (lips.js from the voice pass), or a simple flap without it
-const TALKERS={h:'rex',f:'ollie',t:'trump'};
+const TALKERS={h:'rex',t:'trump',c:'cz'};
 function lipStep(s,t){if(!ok)return;const busy={};
   s.lines.forEach((l,i)=>{const who=TALKERS[l[3]];if(!who||t<l[0])return;const env=window.LIPS&&window.LIPS[s.key+':'+i];
     const next=i+1<s.lines.length?s.lines[i+1][0]:s.dur,d=env?env.length/30:Math.min(next-l[0]-.3,l[1].replace(/<[^>]+>/g,'').length*.065),u=t-l[0];if(u>=d)return;

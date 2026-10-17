@@ -2,7 +2,7 @@
 # Writes vo_<lang>/<scene>_<i>.wav, vo_<lang>.json (start times) and lips.js (mouth levels at 30 fps
 # taken from the finished audio, so the on-screen mouths follow the real voice).
 #   python3 voices.py <events.json> [lang]
-# Trump is a parody character voice, not a clone of the real one.
+# Trump and CZ are parody character voices, not clones of the real ones.
 import json, os, re, sys, wave
 import numpy as np
 from scipy.signal import butter, sosfilt, fftconvolve, resample_poly
@@ -24,8 +24,9 @@ def clean(t):
     t = re.sub(r'<[^>]+>', '', t).replace('−', 'minus ').replace('ten-x', 'ten x').replace('…', '... ')
     return re.sub(r'[“”"😉🚀👍🤝]', '', t).strip()
 # speaker: (voice, base speed, pitch factor, chain)
-CAST = {'n': ('am_michael', 1.05, 1.0, 'narr'), 'h': ('am_puck', 1.1, 1.0, 'room'), 'f': ('am_eric', 1.02, 1.0, 'room'),
-        't': ('am_onyx', .96, 1.07, 'potus'), 'i': ('am_echo', 1.18, 1.0, 'phone'), 'a': ('af_sky', 1.05, 1.0, 'robot'),
+# pitch factor > 1 = slower and lower (Trump's heavy, drawn-out podium delivery); < 1 = faster and higher (the influencer)
+CAST = {'n': ('am_michael', 1.05, 1.0, 'narr'), 'h': ('am_puck', 1.1, 1.0, 'room'), 'c': ('am_liam', .98, 1.0, 'room'),
+        't': ('am_onyx', .92, 1.08, 'potus'), 'i': ('am_echo', 1.12, .8, 'phone'), 'a': ('af_sky', 1.08, 1.0, 'robot'),
         'b': ('af_sarah', 1.1, 1.0, 'tv')}
 def chain(a, kind):
     a = filt(a, 'high', 90)
@@ -53,14 +54,14 @@ for e in EV:
         voice, sp, pf, kind = CAST[who]; txt = clean(text)
         a = say(txt, voice, sp); need = len(a) / SR * pf
         if need > room: sp = min(1.38, sp * need / max(.4, room)); a = say(txt, voice, sp)
-        if pf != 1.0: a = resample_poly(a, int(pf * 100), 100)  # slower and lower
+        if pf != 1.0: a = resample_poly(a, int(pf * 100), 100)  # changes pitch and pace together
         a = chain(a, kind)
     a = a / (np.abs(a).max() + 1e-9) * .9
     fn = f'{key}_{i}.wav'
     with wave.open(os.path.join(OUT, fn), 'wb') as w: w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR); w.writeframes((a * 32767).astype(np.int16).tobytes())
     man.append([t0, fn, who]); flag = '  ⚠ over' if len(a) / SR > room + .3 else ''
     print(f'{t0:6.1f}s {who} {len(a)/SR:4.1f}/{room:4.1f}s x{sp:.2f}  {text[:50]}{flag}')
-    if who in 'hft':
+    if who in 'htc':
         hop = SR // 30; r = np.array([np.sqrt(np.mean(a[j:j + hop] ** 2)) for j in range(0, len(a) - hop, hop)])
         r = np.clip((r / (np.percentile(r, 92) + 1e-9)) ** .75, 0, 1); r[r < .14] = 0
         lips[f'{key}:{i}'] = [round(float(x), 2) for x in r]

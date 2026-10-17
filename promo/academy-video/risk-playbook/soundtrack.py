@@ -275,13 +275,18 @@ for t0, key, d, style in scenes:
         if key in ('flood', 'crash'): bed(water(d), t0, d, .35)
         if key == 'friendsleep': bed(birds(d), t0, d, .3)
     elif st == 'caf':
-        bed(babble, t0, d, .5 if key == 'hype' else .22); put(amb, t0, keys(d), .1, .5) if key != 'hype' else put(amb, t0 + .2, cheer(3.5), .5)
+        bed(babble, t0, d, .16); put(amb, t0, keys(d), .08, .5)
     elif st == 'ins':
         t = tt(d); bed(np.sin(2 * np.pi * 110 * t) * .05 + filt(noise(d), 'band', [2000, 6000]) * .04, t0, d, .5)
 if 'c_post' in start: t0 = start['c_post']; put(sfx, t0 + 2.5, sting(), .55); put(amb, t0 + 3.6, phones(3.0), .4); put(amb, t0 + 3.4, chant(2), .38)
 if 'newsmix' in start: t0 = start['newsmix']; put(sfx, t0, sting(), .6); put(amb, t0 + 3.6, chant(3), .45); put(amb, t0 + 1.0, shutters(8, 3), .35)
 if 'kidding' in start: t0 = start['kidding']; put(sfx, t0 + 6.3, opening_bell(), .4); put(amb, t0 + 6.6, cheer(3), .45)
-if 'playbook' in start: t0 = start['playbook']; bed(babble, t0, 20, .18)
+def airhorn(d=.9):
+    t = tt(d); x = sum(2 * ((t * f) % 1) - 1 for f in (440, 554, 660)); return np.tanh(filt(x, 'band', [300, 3500]) * 2) * env(len(t), .01, .15) * ((t % .3) < .24)
+def drop(d=1.6): t = tt(d); return np.tanh(3 * np.sin(2 * np.pi * np.cumsum(120 * np.exp(-t * 2.2) + 35) / SR)) * env(len(t), .005, .6)
+if 'hype' in start: t0 = start['hype']; put(sfx, t0 + 3.3, airhorn(), .32); put(sfx, t0 + 6.4, airhorn(), .3); put(sfx, t0 + 7.0, drop(), .45)
+for k2 in ('cz1', 'cz2'):
+    if k2 in start: t0 = start[k2]; put(amb, t0, filt(noise(sum(d for _, kk, d, _ in scenes if kk == k2)), 'low', 300) * .5, .2)
 if 'week' in start:  # the gag: everyone is asleep, so the panic never comes — the score cuts to crickets for "…Hello?"
     t0 = start['week']; a, b = int((t0 + 15.8) * SR), int((t0 + 19.6) * SR); f = int(.25 * SR)
     music[a:a + f] *= np.linspace(1, 0, f)[:, None]; music[a + f:b] = 0; music[b:b + f] *= np.linspace(0, 1, f)[:, None]
@@ -290,7 +295,7 @@ if 'week' in start:  # the gag: everyone is asleep, so the panic never comes —
 # ── mix ──
 ve = np.abs(vo[:, 0]) + 1e-12; win = int(.12 * SR); ve = np.convolve(ve, np.ones(win) / win, 'same'); ve = ve / (ve.max() + 1e-9)
 d = np.clip(ve * 4, 0, 1)
-mix = music * (1 - .4 * d)[:, None] * 1.05 + amb * (1 - .45 * d)[:, None] + sfx * (1 - .2 * d)[:, None] + vo * 1.1
+mix = music * (1 - .3 * d)[:, None] * 1.55 + amb * (1 - .45 * d)[:, None] + sfx * (1 - .2 * d)[:, None] + vo * 1.1
 mix = mix[: int(TOTAL * SR)]; fade = int(2 * SR); mix[-fade:] *= np.linspace(1, 0, fade)[:, None]
 mix = mix / (np.percentile(np.abs(mix), 99.9) + 1e-9) * .7; mix = np.tanh(mix * 1.3) / np.tanh(1.3) * .92
 with wave.open(os.path.join(HERE, f'soundtrack_{LANG}.wav'), 'wb') as w:

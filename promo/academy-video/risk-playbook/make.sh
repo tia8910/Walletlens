@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the 5-minute film in English and/or Egyptian Arabic (1920x1080, 24 fps, AAC).
-#   ./make.sh                 both languages
+#   ./make.sh                 English (default)
 #   ./make.sh en              English only
 #   ./make.sh ar [vo_dir]     Arabic captions; vo_dir = folder of recorded lines 01.wav … (see vo_script_ar.md),
 #                             otherwise the English cast is kept under the Arabic captions
@@ -13,7 +13,7 @@ python3 build_page.py video.html
 PAGE=video.html OUT=cues_en node events_only.js
 python3 voices.py cues_en-events.json en      # vo_en/, vo_en.json, lips.js
 render() {  # out hash
-  for c in "0 2340" "2340 4680" "4680 999999"; do PAGE=video.html OUT="$1" HASH="$2" node render.js $c 24 "$1" & done; wait
+  for c in "0 2420" "2420 4840" "4840 999999"; do PAGE=video.html OUT="$1" HASH="$2" node render.js $c 24 "$1" & done; wait
 }
 encode() {  # lang
   ffmpeg -y -loglevel error -framerate 24 -i "frames_$1/%05d.jpg" -i "soundtrack_$1.wav" \
@@ -27,5 +27,5 @@ ar() { PAGE=video.html OUT=cues_ar HASH='#render-ar' node events_only.js; render
 case "${1:-all}" in
   en) en ;;
   ar) ar "${2:-cast}" ;;
-  *)  en; ar cast ;;
+  *)  en ;;
 esac
