@@ -1,6 +1,6 @@
 # The Risk Playbook: Academy long video
 
-A 64-second, 16:9 cinematic story in a 3D toy-brick style (minifigure-style characters on a studded baseplate), rendered with bloom, film grading, letterbox moments, a freeze-frame and VHS rewind, and a slow-motion dolly zoom. Rex puts his whole savings into one coin and loses half. Ollie follows the Risk Playbook. The film covers four of the six rules on screen, and the teacher's board completes all six.
+A 64-second, 16:9 cinematic story in a 3D toy-brick style (minifigure-style characters on a studded baseplate), rendered with bloom, film grading, letterbox moments, a freeze-frame and VHS rewind, and a slow-motion dolly zoom. Story: at 3 a.m. a world leader posts "100% TARIFFS" and Rex's cat coin crashes. Three days earlier an influencer said "to the moon", Rex called Ollie a boomer and asked an AI about 10x leverage ("probably fine"). Ollie follows the Risk Playbook. The next morning the leader posts "just kidding". The politics stays generic, with no real names or likenesses. The film covers four of the six rules on screen, and the teacher's board completes all six.
 
 | File | What it is |
 |---|---|
@@ -9,7 +9,7 @@ A 64-second, 16:9 cinematic story in a 3D toy-brick style (minifigure-style char
 | `render.js` | Drives `video.html` frame by frame in headless Chromium and saves `frames/00000.jpg …`. It also logs every UI sound cue to `events.json`. |
 | `soundtrack.py` | Builds `soundtrack.wav`: Kokoro narration fitted to each scene, a synthesised music bed that ducks under the voice, story sound effects, and the logged UI cues. |
 | `vo.py` | A small wrapper around `kokoro-onnx` for this model export. |
-| `setup.sh` / `make.sh` | One-time setup, then the full build: `walletlens-risk-playbook-en.mp4` (narrator am_michael) and `walletlens-risk-playbook-ar.mp4` (Egyptian Arabic captions and on-screen text). |
+| `setup.sh` / `make.sh` | One-time setup, then the full build: `walletlens-risk-playbook-en.mp4` (narrator am_michael) and `walletlens-risk-playbook-ar.mp4` (Egyptian Arabic captions and on-screen text). Candy-pastel brick set; ending tagline "All Assets Tracker & Investment Manager". |
 | `vo_script_ar.md` | The Egyptian Arabic voice-over script with timings, for recording. `./make.sh ar <folder>` mixes the recordings in. |
 
 ```bash

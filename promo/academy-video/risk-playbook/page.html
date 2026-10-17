@@ -217,7 +217,7 @@ tr:last-child td{border-bottom:0}
 <div class="wrap">
   <header>
     <div class="eyebrow">WalletLens Academy · Risk course · Long video · 10:30 · 16:9</div>
-    <h1>He Put His WHOLE Savings Into One Coin… 😱</h1>
+    <h1>He Bought a Politician’s Cat Coin… 😭</h1>
     <p class="lede">The premium cut of the Risk Playbook long video, in the 3D brick character style you shared. The WalletLens logo sits top left all the way through. A rule tracker at the top right fills up as the story unlocks each rule, the hook promises a payoff at the end, and the film closes on a branded WalletLens ending. Turn the sound on for whooshes, chimes and the alarm. Rex goes all in; Ollie follows the playbook. This animatic is real 3D running in your browser: press play.</p>
   </header>
 
@@ -302,29 +302,36 @@ tr:last-child td{border-bottom:0}
 const AR=/(^#|-)ar(-|$)/.test(location.hash);const TX=(en,ar)=>AR?ar:en;const REDRAW=[];
 // ── scenes data (used even if WebGL is unavailable) ──────────────────────
 const SCENES=[
- {key:'hook',capsAr:[[0.3,'حط <em>كل</em> فلوسه'],[1.7,'في عملة <em>واحدة</em>'],[2.9,'وخسر نصها <em class="r">في يوم</em>'],[4.5,'صاحبه أولي <em>لأ</em>…'],[5.7,'استنى <em>القاعدة ٦</em>'],[6.8,''],[7.1,'أيوه… ده ريكس.'],[8.1,'أكيد بتسأل نفسك'],[9.0,'وصل لكده إزاي'],[9.8,'']],tc:'0:00',name:'The scream',d:'Rex screams at his phone in the empty cafeteria. The hologram reads −50%. Freeze frame, then a VHS rewind.',dur:10.8,
-  caps:[[0.3,'he put his <em>WHOLE</em> savings'],[1.7,'into <em>ONE</em> coin'],[2.9,'and lost half <em class="r">in a day</em>'],[4.5,'his friend Ollie <em>didn\u2019t</em>…'],[5.7,'stay for <em>rule 6</em>'],[6.8,''],[7.1,'yep. that\u2019s Rex.'],[8.1,'you\u2019re probably wondering'],[9.0,'how he got here'],[9.8,'']],rule:'Why survival wins (open loop: rule 6)',
-  vo:'He put his whole savings into one coin. And lost half of it in a single day. His friend Ollie didn\u2019t. Stay for rule six, it\u2019s the one that saved him.'},
- {key:'party',capsAr:[[0,''],[1.7,'الكل كان'],[2.9,'بيهيّص لريكس'],[4.4,'"ده <em>عبقري</em>"']],tc:'0:20',name:'3 days earlier',d:'The class in party hats cheers as Rex’s coin pumps +80%. Confetti everywhere.',dur:7.5,title:'3 DAYS EARLIER…',titleAr:'قبلها بـ ٣ أيام…',
-  caps:[[0,''],[1.7,'everyone was'],[2.9,'cheering for Rex'],[4.4,'“he\u2019s a <em>genius</em>”']],rule:'Why survival wins',
-  vo:'Three days earlier, everyone thought he was a genius.'},
- {key:'ollie',capsAr:[[0.4,'أولي حط بس'],[1.9,'<em>٥٪</em> في عملات جديدة'],[3.6,'وريكس <em>ضحك عليه</em>']],chapterAr:['القاعدة ١ من ٦','قاعدة الـ ٥٪'],tc:'1:00',name:'Ollie’s 5%',d:'Ollie calmly shows his plan: only 5% in new coins. Rex laughs at him.',dur:7,chapter:['RULE 1 OF 6','THE 5% RULE'],collect:[[1,2.4]],
-  caps:[[0.4,'Ollie only put'],[1.9,'<em>5%</em> in new coins'],[3.6,'and Rex <em>laughed</em>']],rule:'1 · The 5% rule',
-  vo:'Ollie only put five percent into new coins. Rex laughed at him.'},
- {key:'lev',capsAr:[[0.4,'وبعدين ريكس استلف'],[1.4,'<em>١٠ أضعاف</em>'],[2.5,''],[6.9,'<em class="r">اتصفّى</em>']],chapterAr:['القاعدة ٦ من ٦','متستلفش أبداً'],tc:'3:00',name:'10x',d:'Rex slams the 10x button. The chart crashes, alarms flash red, and he falls off the bench in slow motion.',dur:8.5,chapter:['RULE 6 OF 6','NEVER BORROW'],collect:[[6,6.4]],
-  caps:[[0.4,'then Rex borrowed'],[1.4,'<em>10 times</em> more'],[2.5,''],[6.9,'<em class="r">LIQUIDATED</em>']],rule:'6 · No leverage',
-  vo:'Then Rex borrowed ten times more. One bad hour. Liquidated.'},
- {key:'plan',capsAr:[[0.4,'بس أولي كان عنده خطة'],[1.8,'خروج عند <em>−١٠٪</em>'],[3.4,'وكاش جاهز <em>للنزلة</em>']],chapterAr:['القاعدتين ٣ + ٤','حدد خروجك · خلّي كاش'],tc:'5:00',name:'The plan',d:'Ollie’s hologram: exit at −10%, sold. 15% cash ready, he buys the dip. Rex cries on the floor.',dur:7.5,chapter:['RULES 3 + 4','EXIT FIRST · KEEP CASH'],collect:[[3,2.4],[4,4.6]],
-  caps:[[0.4,'but Ollie had'],[1.8,'an exit at <em>−10%</em>'],[3.4,'and cash for <em>the dip</em>']],rule:'3 · Exit first + 4 · Spare cash',
-  vo:'But Ollie had a plan. An exit at minus ten percent, and cash ready for the dip.'},
- {key:'end',capsAr:[[0.9,'وساعتها ريكس سأله'],[2.3,'<em>"تعلّمني</em>'],[3.4,'<em>الخطة دي؟"</em>']],tc:'8:40',name:'Teach me',d:'Ollie helps Rex up. The class claps. The teacher writes THE RISK PLAYBOOK on the board.',dur:8,collect:[[2,4.6],[5,5.4]],
-  caps:[[0.9,'that\u2019s when Rex asked'],[2.3,'<em>“can you teach me</em>'],[3.4,'<em>the playbook?”</em>']],rule:'All six',
-  vo:'That’s when Rex asked: can you teach me the playbook?'},
- {key:'cta',capsAr:[[0.3,'شوف محفظتك'],[1.5,'قبل ما تبقى'],[2.6,'زي ريكس 😅']],tc:'10:10',name:'The playbook',d:'A giant phone shows WalletLens flagging a coin that breaks the 5% rule. Ollie waves.',dur:6.5,
-  caps:[[0.3,'check your own'],[1.5,'portfolio before'],[2.6,'Rex does 😅']],rule:'Try it',
-  vo:'Check your own portfolio before Rex does. WalletLens flags anything that breaks the five percent rule.'},
- {key:'outro',capsAr:[[0,'']],tc:'10:20',name:'WalletLens ending',d:'Black screen, the WalletLens app icon builds itself, then \u201cCheck less. Live more.\u201d and \u201cDon\u2019t forget to follow us\u201d.',dur:8,caps:[[0,'']],rule:'Brand ending',
-  vo:'WalletLens. Check less. Live more. Don\u2019t forget to follow us.'}
+ {key:'hook',tc:'0:00',name:'The 3 AM post',d:'3:07 AM. A world leader posts “100% TARIFFS”. Rex’s cat coin crashes −50% and he screams. Freeze frame, then a VHS rewind.',dur:10.8,
+  caps:[[0.3,'3:07 AM. a world leader posts'],[1.7,'<em>“100% TARIFFS!!!”</em>'],[2.9,'Rex’s coin: <em class="r">−50%</em>'],[4.5,'Ollie <em>slept fine</em>'],[5.7,'stay for <em>rule 6</em>'],[6.8,''],[7.1,'yep. that’s Rex.'],[8.1,'he bought a coin named'],[9.0,'after a politician’s <em>cat</em>'],[9.8,'']],
+  capsAr:[[0.3,'٣ الفجر، رئيس دولة كتب'],[1.7,'<em>"جمارك ١٠٠٪!!!"</em>'],[2.9,'عملة ريكس: <em class="r">−٥٠٪</em>'],[4.5,'أولي <em>كان نايم</em>'],[5.7,'استنى <em>القاعدة ٦</em>'],[6.8,''],[7.1,'أيوه… ده ريكس.'],[8.1,'اشترى عملة على اسم'],[9.0,'<em>قطة</em> واحد سياسي'],[9.8,'']],
+  rule:'Why survival wins (open loop: rule 6)',vo:'3 a.m. A world leader posts two words: one hundred percent tariffs. Ollie slept fine. Stay for rule six. Yep, that’s Rex. He bought a politician’s cat coin.'},
+ {key:'party',tc:'0:20',name:'To the moon',d:'An influencer on the big screen: “Cat coin to the moon, not financial advice 😉”. Rex sells his console and goes all in while the class parties.',dur:7.5,title:'3 DAYS EARLIER…',titleAr:'قبلها بـ ٣ أيام…',
+  caps:[[0,''],[1.7,'an influencer said'],[2.9,'<em>“TO THE MOON 🚀”</em>'],[4.4,'Rex sold his <em>console</em>'],[5.8,'and went <em>ALL IN</em>']],
+  capsAr:[[0,''],[1.7,'إنفلونسر قال'],[2.9,'<em>"على القمر 🚀"</em>'],[4.4,'ريكس باع <em>جهاز الألعاب</em>'],[5.8,'ودخل <em>بكل فلوسه</em>']],
+  rule:'Why survival wins',vo:'Three days earlier, an influencer said: to the moon. Rex sold his console and went all in.'},
+ {key:'ollie',tc:'1:00',name:'OK boomer',d:'Ollie: “5% max in new coins.” Rex: “OK boomer.” Ollie: “I’m fifteen.”',dur:7,chapter:['RULE 1 OF 6','THE 5% RULE'],chapterAr:['القاعدة ١ من ٦','قاعدة الـ ٥٪'],collect:[[1,2.4]],
+  caps:[[0.4,'Ollie: <em>“5% max.”</em>'],[2.2,'Rex: “ok <em>boomer</em>”'],[4.2,'Ollie: “I’m <em>fifteen</em>”']],
+  capsAr:[[0.4,'أولي: <em>"٥٪ بالكتير"</em>'],[2.2,'ريكس: "ماشي يا <em>حاج</em>"'],[4.2,'أولي: "أنا عندي <em>١٥ سنة</em>"']],
+  rule:'1 · The 5% rule',vo:'Ollie said: five percent, max. Rex said: okay boomer. Ollie is fifteen.'},
+ {key:'lev',tc:'3:00',name:'Ask the AI',d:'Rex asks an AI chatbot “10x leverage?” — “Probably fine 👍”. He slams 10x, the 3 AM post hits, slow-motion crash, fall, “this is fine” 🔥.',dur:8.5,chapter:['RULE 6 OF 6','NEVER BORROW'],chapterAr:['القاعدة ٦ من ٦','متستلفش أبداً'],collect:[[6,6.4]],
+  caps:[[0.4,'he asked an AI chatbot'],[1.4,'<em>“10x? probably fine 👍”</em>'],[2.5,''],[6.9,'<em class="r">LIQUIDATED</em>'],[7.7,'“this is fine” 🔥']],
+  capsAr:[[0.4,'سأل شات بوت ذكاء اصطناعي'],[1.4,'<em>"١٠ أضعاف؟ غالباً تمام 👍"</em>'],[2.5,''],[6.9,'<em class="r">اتصفّى</em>'],[7.7,'"كله تمام" 🔥']],
+  rule:'6 · No leverage',vo:'He asked an AI. It said: probably fine. Liquidated. This is fine.'},
+ {key:'plan',tc:'5:00',name:'Ollie during the crash',d:'Ollie calm in golden light: his exit auto-sold at −10%, then his cash bought the dip. Rex on the floor, crying.',dur:7.5,chapter:['RULES 3 + 4','EXIT FIRST · KEEP CASH'],chapterAr:['القاعدتين ٣ + ٤','حدد خروجك · خلّي كاش'],collect:[[3,2.4],[4,4.6]],
+  caps:[[0.4,'Ollie during the crash: 😌'],[2.0,'auto-sold at <em>−10%</em>'],[3.6,'bought the dip with <em>cash</em>']],
+  capsAr:[[0.4,'أولي وقت الكراش: 😌'],[2.0,'باع أوتوماتيك عند <em>−١٠٪</em>'],[3.6,'واشترى النزلة <em>بالكاش</em>']],
+  rule:'3 · Exit first + 4 · Spare cash',vo:'Ollie during the crash? Chill. His exit sold at minus ten, and his cash bought the dip.'},
+ {key:'end',tc:'8:40',name:'Just kidding',d:'Next morning the leader posts “JUST KIDDING, deal coming 🤝” and the market bounces. Rex is already out. “Teach me the playbook.” The board fills in.',dur:8,collect:[[2,4.6],[5,5.4]],
+  caps:[[0.6,'next morning: <em>“JUST KIDDING 🤝”</em>'],[2.6,'the market <em>bounced</em>'],[4.2,'Rex: “teach me <em>the playbook</em>”']],
+  capsAr:[[0.6,'تاني يوم: <em>"بهزر 🤝"</em>'],[2.6,'السوق <em>رجع طلع</em>'],[4.2,'ريكس: "علّمني <em>الخطة</em>"']],
+  rule:'All six',vo:'Next morning: just kidding, deal coming. The market bounced. Rex: teach me the playbook.'},
+ {key:'cta',tc:'10:10',name:'Before the next post',d:'A giant phone shows WalletLens flagging a coin that breaks the 5% rule. Ollie waves.',dur:6.5,
+  caps:[[0.3,'before the next'],[1.4,'<em>3 AM post</em>'],[2.6,'check your portfolio']],
+  capsAr:[[0.3,'قبل البوست الجاي'],[1.4,'<em>الساعة ٣ الفجر</em>'],[2.6,'شوف محفظتك']],
+  rule:'Try it',vo:'Before the next 3 a.m. post, check your portfolio. WalletLens flags anything over five percent.'},
+ {key:'outro',tc:'10:20',name:'WalletLens ending',d:'Black screen, the WalletLens app icon builds itself, then “All Assets Tracker & Investment Manager” and “Don’t forget to follow us”.',dur:8,caps:[[0,'']],capsAr:[[0,'']],rule:'Brand ending',
+  vo:'WalletLens. All assets tracker and investment manager. Don’t forget to follow us.'}
 ];
 const EXTRA=[
  ['2:00','Rex’s 30 coins','He shows off 30 random coins on his phone. Ollie asks him to explain just one. He can’t.','Rex scrolls an endless coin list, sweating.','5 · Own less, know more'],
@@ -353,7 +360,7 @@ if(!ok){screen.insertAdjacentHTML('afterbegin','<div class="err">This preview ne
 const RNG=(()=>{let s=7;return()=>{s=(s*16807)%2147483647;return s/2147483647}})();
 function canvasTex(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');draw&&draw(g,w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=8;return {c,g,t}}
 
-let clockH,clockM,dust,camRoll=0,hemiL,rimL,sunL,lampMat,winL,composer,bloomPass,gradePass,partyL=[],beams=[],shafts=[];
+let flames=[];let clockH,clockM,dust,camRoll=0,hemiL,rimL,sunL,lampMat,winL,composer,bloomPass,gradePass,partyL=[],beams=[],shafts=[];
 const FX={sat:1,con:1.05,vig:.25,ab:.0015,warm:0,flash:0,rw:0,bars:0,barsCur:0};
 let scene,camera,chars={},holo,holoTex,boardTex,phone3d,phoneTex,confetti=[],alarm,lampLights=[],tableTop;
 if(ok){
@@ -361,7 +368,7 @@ if(ok){
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;
   screen.insertBefore(renderer.domElement,screen.firstChild);
-  scene=new THREE.Scene();scene.background=new THREE.Color('#0d1638');
+  scene=new THREE.Scene();scene.background=new THREE.Color('#123a40');
   camera=new THREE.PerspectiveCamera(60,9/16,.1,100);
 
   // lights
@@ -377,11 +384,11 @@ if(ok){
   marble.t.wrapS=marble.t.wrapT=THREE.RepeatWrapping;marble.t.repeat.set(5,5);
   const wood=canvasTex(512,128,(g,w,h)=>{g.fillStyle='#c9a46d';g.fillRect(0,0,w,h);for(let k=0;k<90;k++){g.strokeStyle=`rgba(${110+RNG()*40|0},${75+RNG()*30|0},${40+RNG()*20|0},${.25+RNG()*.4})`;g.lineWidth=.6+RNG()*2;const y=RNG()*h;g.beginPath();g.moveTo(0,y);for(let x=0;x<=w;x+=32)g.lineTo(x,y+Math.sin(x*.02+k)*3);g.stroke()}});
   const bricks=(col,mortar)=>{const c=canvasTex(512,256,(g)=>{g.fillStyle=mortar;g.fillRect(0,0,512,256);const bw=64,bh=32;for(let r=0;r<8;r++)for(let k=-1;k<9;k++){const x=k*bw+(r%2?bw/2:0),y=r*bh;const v=.92+RNG()*.12;g.fillStyle=col;g.globalAlpha=1;g.fillRect(x+1.5,y+1.5,bw-3,bh-3);g.fillStyle=`rgba(${v>1?255:0},${v>1?255:0},${v>1?255:0},${Math.abs(v-1)*.9})`;g.fillRect(x+1.5,y+1.5,bw-3,bh-3);g.fillStyle='rgba(255,255,255,.18)';g.fillRect(x+1.5,y+1.5,bw-3,3);g.fillStyle='rgba(0,0,0,.22)';g.fillRect(x+1.5,y+bh-4.5,bw-3,3)}});c.t.wrapS=c.t.wrapT=THREE.RepeatWrapping;return c.t};
-  const wallT=bricks('#1f4fb0','#163d8c');wallT.repeat.set(10,4);const wallLowT=bricks('#eef0f4','#c9ced8');wallLowT.repeat.set(10,1);
-  const M={floor:plastic('#8a9097',{roughness:.42,clearcoat:.25}),
+  const wallT=bricks('#5ccfb0','#3fae92');wallT.repeat.set(10,4);const wallLowT=bricks('#fff1d6','#e6cfa6');wallLowT.repeat.set(10,1);
+  const M={floor:plastic('#d9b98a',{roughness:.42,clearcoat:.25}),
     wall:new THREE.MeshStandardMaterial({map:wallT,roughness:.5}),wallLow:new THREE.MeshStandardMaterial({map:wallLowT,roughness:.5}),
-    ceil:new THREE.MeshStandardMaterial({color:'#1b2a6e',roughness:.9}),lamp:new THREE.MeshStandardMaterial({color:'#ffffff',emissive:'#ffffff',emissiveIntensity:1.6}),
-    wood:plastic('#a0603a'),bench:plastic('#e4cd9e'),metal:plastic('#3b3f46',{roughness:.4}),
+    ceil:new THREE.MeshStandardMaterial({color:'#20494f',roughness:.9}),lamp:new THREE.MeshStandardMaterial({color:'#ffffff',emissive:'#ffffff',emissiveIntensity:1.6}),
+    wood:plastic('#ff7a6b'),bench:plastic('#f2b632'),metal:plastic('#3b3f46',{roughness:.4}),
     glass:new THREE.MeshStandardMaterial({color:'#9fc6ff',emissive:'#6c9bff',emissiveIntensity:.55,roughness:.1}),frame:new THREE.MeshStandardMaterial({color:'#20263a',roughness:.5})};
   const box=(w,h,d,m,x,y,z,sh=true)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=sh;o.receiveShadow=true;scene.add(o);return o};
 
@@ -395,8 +402,8 @@ if(ok){
   [[-4,-5],[4,-5],[-4,0],[4,0],[0,-2.5],[0,3]].forEach(([x,z])=>{box(3,.08,.4,M.lamp,x,6.42,z,false);const p=new THREE.PointLight('#e8eeff',.35,9);p.position.set(x,6,z);scene.add(p);lampLights.push(p)});
 
   // set dressing: lockers, posters, clock, exit sign, counter, trays, backpacks, plants, dust
-  {const vent=canvasTex(128,256,(g)=>{g.fillStyle='#2b59d1';g.fillRect(0,0,128,256);g.fillStyle='rgba(0,0,0,.35)';for(let y=20;y<70;y+=10)g.fillRect(24,y,80,4);g.fillStyle='#c9d4ea';g.fillRect(96,120,10,34);g.strokeStyle='rgba(0,0,0,.4)';g.lineWidth=3;g.strokeRect(4,4,120,248)});
-   const lm=new THREE.MeshStandardMaterial({map:vent.t,roughness:.45,metalness:.35}),ls=new THREE.MeshStandardMaterial({color:'#2348b5',roughness:.5,metalness:.3});
+  {const vent=canvasTex(128,256,(g)=>{g.fillStyle='#a78bfa';g.fillRect(0,0,128,256);g.fillStyle='rgba(0,0,0,.35)';for(let y=20;y<70;y+=10)g.fillRect(24,y,80,4);g.fillStyle='#c9d4ea';g.fillRect(96,120,10,34);g.strokeStyle='rgba(0,0,0,.4)';g.lineWidth=3;g.strokeRect(4,4,120,248)});
+   const lm=new THREE.MeshStandardMaterial({map:vent.t,roughness:.45,metalness:.35}),ls=new THREE.MeshStandardMaterial({color:'#8b6ff0',roughness:.5,metalness:.3});
    for(let k=0;k<12;k++){const L=new THREE.Mesh(new THREE.BoxGeometry(.6,2.3,.9),[lm,ls,ls,ls,ls,ls]);L.position.set(-9.5,1.15,-7.5+k*1.0);L.castShadow=true;L.receiveShadow=true;scene.add(L)}}
   const poster=(txt,sub,bg,fg,x,y,z,ry,w=1.6,h=2.1)=>{const draw=(g)=>{const ar=/[\u0600-\u06FF]/.test(txt);g.direction=ar?'rtl':'ltr';g.fillStyle=bg;g.fillRect(0,0,320,420);g.fillStyle=fg;g.font=ar?'900 50px Cairo,sans-serif':'900 54px Montserrat,Arial Black,sans-serif';g.textAlign='center';txt.split('|').forEach((l,i)=>g.fillText(l,160,120+i*62));g.font=ar?'700 24px Cairo,sans-serif':'700 24px Plus Jakarta Sans,sans-serif';g.fillText(sub,160,370);g.strokeStyle=fg;g.lineWidth=6;g.strokeRect(14,14,292,392)};const pt=canvasTex(320,420,draw);REDRAW.push(()=>{draw(pt.g);pt.t.needsUpdate=true});
     const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:pt.t,roughness:.8}));m.position.set(x,y,z);m.rotation.y=ry;scene.add(m)};
@@ -451,7 +458,10 @@ void main(){vec2 uv=vUv;
   {const sg=new THREE.CylinderGeometry(.13,.13,.07,16);const field=(m,pts)=>{const im=new THREE.InstancedMesh(sg,m,pts.length);const o=new THREE.Object3D();pts.forEach((p,i)=>{o.position.set(p[0],p[1],p[2]);o.updateMatrix();im.setMatrixAt(i,o.matrix)});im.castShadow=true;im.receiveShadow=true;scene.add(im)};
    const fl=[];for(let x=-11;x<=11;x+=.5)for(let z=-8.5;z<=7;z+=.5)fl.push([x,.035,z]);field(M.floor,fl);
    const tops=[],bench=[];[[-5.2,-4],[5.2,-4],[0,-4.4],[-5.2,.2],[5.2,.2],[0,0]].forEach(([tx,tz])=>{for(let x=-1.6;x<=1.61;x+=.4)for(let z=-.4;z<=.41;z+=.4)tops.push([tx+x,1.115,tz+z]);[-1.05,1.05].forEach(b=>{for(let x=-1.6;x<=1.61;x+=.4)bench.push([tx+x,.665,tz+b])})});
-   field(M.wood,tops);field(plastic('#e4cd9e'),bench)}
+   field(M.wood,tops);field(M.bench,bench)}
+  // "this is fine" flames around Rex after the crash
+  {const fm=new THREE.MeshBasicMaterial({color:'#ff7a1a',transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false});const fi=new THREE.MeshBasicMaterial({color:'#ffd23f',transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false});
+   [[-1.3,-2.1],[1.2,-2.4],[-.9,-3.3],[1.0,-3.4],[-1.8,-2.9],[1.8,-2.9],[0,-3.9]].forEach(([x,z],k)=>{const g=new THREE.Group();const o=new THREE.Mesh(new THREE.ConeGeometry(.28,.95,10),fm);o.position.y=.47;const n=new THREE.Mesh(new THREE.ConeGeometry(.15,.55,8),fi);n.position.y=.3;g.add(o,n);g.position.set(x,0,z);g.visible=false;scene.add(g);flames.push({g,ph:k*1.7})})}
   // blackboard
   boardTex=canvasTex(1024,360);drawBoard(0);
   const board=new THREE.Mesh(new THREE.PlaneGeometry(7,2.45),new THREE.MeshStandardMaterial({map:boardTex.t,roughness:.9}));board.position.set(0,3.2,-9.02);scene.add(board);
@@ -579,16 +589,40 @@ function holoFrame(g,col){g.clearRect(0,0,512,512);g.save();rr(g,16,16,480,480,3
 function holoChart(g,pts,col,p,x0=50,y0=170,w=412,h=250){const n=pts.length,lim=Math.max(2,Math.floor(n*p));g.strokeStyle=col;g.lineWidth=10;g.lineJoin='round';g.lineCap='round';g.shadowColor=col;g.shadowBlur=18;g.beginPath();for(let i=0;i<lim;i++){const x=x0+i/(n-1)*w,y=y0+h-pts[i]*h;i?g.lineTo(x,y):g.moveTo(x,y)}g.stroke();g.shadowBlur=0;const i=lim-1;g.fillStyle=col;g.beginPath();g.arc(x0+i/(n-1)*w,y0+h-pts[i]*h,13,0,7);g.fill()}
 function htxt(g,t,x,y,size,col,font='Montserrat'){const ar=/[\u0600-\u06FF]/.test(t);g.font=`900 ${ar?size*.92:size}px ${ar?'Cairo':font},Arial Black,sans-serif`;g.direction=ar?'rtl':'ltr';g.textAlign='center';g.fillStyle=col;g.shadowColor=col;g.shadowBlur=14;g.fillText(t,x,y);g.shadowBlur=0}
 function drawHolo(kind,p,t){const g=holoTex.g;
+
+  if(kind==='news'||kind==='kidding'){const ok2=kind==='kidding';holoFrame(g,ok2?'#3dff8a':'#ff3b3b');
+    g.fillStyle=ok2?'#14b86a':'#e8343a';g.fillRect(30,40,452,58);htxt(g,TX(ok2?'UPDATE':'BREAKING NEWS',ok2?'تحديث':'خبر عاجل'),256,82,34,'#fff');
+    g.font='500 22px DM Mono,monospace';g.textAlign='left';g.direction='ltr';g.fillStyle='#cbd5e1';g.fillText(ok2?'8:02 AM':'3:07 AM',40,128);
+    g.save();g.translate(110,230);g.fillStyle='#0b1220';g.beginPath();g.arc(0,-40,26,0,7);g.fill();g.fillRect(-34,-14,68,70);g.fillStyle='#334155';g.fillRect(-48,40,96,40);
+    [[-80,'#c81e1e'],[80,'#1e40af']].forEach(([x,c])=>{g.fillStyle='#94a3b8';g.fillRect(x-2,-70,4,150);g.fillStyle=c;g.fillRect(x+2,-70,40,26)});g.restore();
+    const lines=ok2?TX('JUST KIDDING.|DEAL COMING 🤝','بهزر.|في اتفاق جاي 🤝'):TX('100% TARIFFS|ON EVERYTHING!!!','جمارك ١٠٠٪|على كل حاجة!!!');
+    lines.split('|').forEach((l,k)=>htxt(g,l,330,205+k*52,AR?38:36,ok2?'#bfffd9':'#ffd0d0'));
+    holoChart(g,ok2?[.1,.12,.1,.3,.45,.62,.8,.95]:[.9,.92,.85,.6,.4,.3,.15,.08],ok2?'#3dff8a':'#ff3b3b',Math.min(1,p*1.6),50,330,412,140)}
+  if(kind==='influencer'){holoFrame(g,'#c084fc');const gr=g.createLinearGradient(0,0,512,512);gr.addColorStop(0,'rgba(124,58,237,.55)');gr.addColorStop(1,'rgba(236,72,153,.45)');g.fillStyle=gr;rr(g,24,24,464,464,30);g.fill();
+    g.fillStyle='#f2cd37';g.beginPath();g.arc(256,200,82,0,7);g.fill();g.fillStyle='#111';rr(g,186,170,64,34,10);g.fill();rr(g,262,170,64,34,10);g.fill();g.fillRect(246,180,20,8);
+    g.strokeStyle='#111';g.lineWidth=7;g.beginPath();g.arc(256,226,30,.2,Math.PI-.2);g.stroke();g.fillStyle='#fbbf24';g.beginPath();g.arc(256,300,40,Math.PI,0);g.fill();
+    g.strokeStyle='#fff';g.lineWidth=5;g.beginPath();g.arc(256,200,120+Math.sin(t*6)*4,0,7);g.stroke();
+    htxt(g,TX('CAT COIN 🚀','عملة القطة 🚀'),256,372,46,'#fff');htxt(g,TX('TO THE MOON','على القمر'),256,420,34,'#fde68a');
+    g.font=AR?'700 18px Cairo,sans-serif':'500 17px DM Mono,monospace';g.direction=AR?'rtl':'ltr';g.textAlign='center';g.fillStyle='rgba(255,255,255,.75)';g.fillText(TX('not financial advice 😉','مش نصيحة مالية 😉'),256,462);
+    g.fillStyle='#ef4444';rr(g,40,44,92,34,8);g.fill();htxt(g,'LIVE',86,70,22,'#fff')}
+  if(kind==='ai'){holoFrame(g,'#60a5fa');htxt(g,TX('🤖 AI CHAT','🤖 شات ذكاء اصطناعي'),256,78,30,'#bfdbfe');
+    const bub=(txt,y,me,show)=>{if(!show)return;g.font=AR?'700 26px Cairo,sans-serif':'700 26px Plus Jakarta Sans,sans-serif';g.direction=AR?'rtl':'ltr';const w=Math.min(400,g.measureText(txt).width+44);const x=me?472-w:40;g.fillStyle=me?'#2563eb':'#1f2937';rr(g,x,y,w,62,22);g.fill();g.fillStyle='#fff';g.textAlign='center';g.fillText(txt,x+w/2,y+41)};
+    bub(TX('should I use 10x?','أستخدم ١٠ أضعاف؟'),130,true,p>.0);
+    if(p>.08&&p<.17){g.fillStyle='#1f2937';rr(g,40,220,110,56,22);g.fill();for(let k=0;k<3;k++){g.fillStyle='rgba(255,255,255,'+(.4+.6*((Math.floor(t*6)+k)%3===0))+')';g.beginPath();g.arc(70+k*25,248,7,0,7);g.fill()}}
+    bub(TX('probably fine 👍','غالباً تمام 👍'),220,false,p>=.17);
+    if(p>=.2){htxt(g,TX('(it was not fine)','(ماكانش تمام)'),256,400,26,'#fca5a5')}}
   if(kind==='crash'){holoFrame(g,'#ff3b3b');htxt(g,TX('ONE COIN','عملة واحدة'),256,90,40,'#ffb3b3');htxt(g,'−50%',256,150,72,'#ff3b3b');holoChart(g,[.9,.95,.85,.88,.7,.6,.65,.4,.3,.35,.15,.1],'#ff3b3b',Math.min(1,p*1.6))}
   if(kind==='pump'){holoFrame(g,'#3dff8a');htxt(g,'+'+Math.round(80*Math.min(1,p*1.3))+'%',256,140,96,'#3dff8a');holoChart(g,[.1,.15,.12,.25,.3,.28,.45,.55,.5,.7,.82,.95],'#3dff8a',Math.min(1,p*1.3))}
   if(kind==='pie'){holoFrame(g,'#4dd2ff');htxt(g,TX('OLLIE’S PLAN','خطة أولي'),256,80,36,'#bfeaff');const a=Math.min(1,p*1.5);g.save();g.translate(256,290);g.fillStyle='#2a6bff';g.beginPath();g.moveTo(0,0);g.arc(0,0,150,-Math.PI/2+.314,-Math.PI/2+6.283*a);g.fill();g.fillStyle='#ffd84a';g.shadowColor='#ffd84a';g.shadowBlur=30;g.beginPath();g.moveTo(0,0);g.arc(0,0,165,-Math.PI/2,-Math.PI/2+.314*Math.min(1,a*3));g.fill();g.restore();if(a>.6){htxt(g,'5%',380,180,60,'#ffd84a');htxt(g,TX('new coins','عملات جديدة'),380,214,24,'#ffe9a0')}}
-  if(kind==='lev'){if(p<.34){holoFrame(g,'#ff9a3d');htxt(g,TX('BORROW?','تستلف؟'),256,110,52,'#ffd2a8');g.save();const s=1+Math.sin(t*10)*.04;g.translate(256,300);g.scale(s,s);g.fillStyle='#e8343a';g.shadowColor='#ff3b3b';g.shadowBlur=40;g.beginPath();g.arc(0,0,120,0,7);g.fill();g.restore();htxt(g,'10x',256,328,90,'#fff')}
+  if(kind==='lev'){if(p<.307){drawHolo('ai',p,t);return}if(p<.34){holoFrame(g,'#ff9a3d');htxt(g,TX('10x?','١٠ أضعاف؟'),256,110,52,'#ffd2a8');g.save();const s=1+Math.sin(t*10)*.04;g.translate(256,300);g.scale(s,s);g.fillStyle='#e8343a';g.shadowColor='#ff3b3b';g.shadowBlur=40;g.beginPath();g.arc(0,0,120,0,7);g.fill();g.restore();htxt(g,'10x',256,328,90,'#fff')}
     else{holoFrame(g,'#ff3b3b');const q=(p-.34)/.66;holoChart(g,[.85,.9,.8,.6,.35,.15,.02],'#ff3b3b',Math.min(1,q*2));if(q>.45){g.save();g.translate(256,250);g.rotate(-.12);g.fillStyle='#e8343a';g.fillRect(-230,-55,460,110);htxt(g,TX('LIQUIDATED','اتصفّى!'),0,22,64,'#fff');g.restore()}}}
   if(kind==='plan'){holoFrame(g,'#3dff8a');const pts=[.8,.85,.78,.7,.62,.5,.4,.35,.45,.6,.75,.9];holoChart(g,pts,p<.5?'#ff9a3d':'#3dff8a',Math.min(1,p*1.1));g.setLineDash([18,14]);g.strokeStyle='#ff3b3b';g.lineWidth=6;g.beginPath();g.moveTo(50,170+250-.6*250);g.lineTo(462,170+250-.6*250);g.stroke();g.setLineDash([]);
     if(p>.3){g.fillStyle='#e8343a';rr(g,60,60,220,64,14);g.fill();htxt(g,TX('SOLD −10%','بيع عند −10%'),170,104,34,'#fff')}if(p>.62){g.fillStyle='#14b86a';rr(g,250,130,220,64,14);g.fill();htxt(g,TX('BUY THE DIP','اشتري النزلة'),360,174,32,'#fff');htxt(g,TX('cash 15%','كاش 15%'),360,230,26,'#bfffd9')}}
   holoTex.t.needsUpdate=true}
 function drawPhone(kind){const g=phoneTex.g,W=360,H=720;g.fillStyle='#181a20';g.fillRect(0,0,W,H);
-  if(kind==='red'){g.fillStyle='#2a0b0e';g.fillRect(0,0,W,H);htxt(g,'−50%',W/2,260,96,'#ff3b3b','Montserrat');g.strokeStyle='#ff3b3b';g.lineWidth=10;g.beginPath();g.moveTo(30,330);[[80,320],[130,360],[180,350],[230,450],[280,470],[330,560]].forEach(([x,y])=>g.lineTo(x,y));g.stroke()}
+  if(kind==='red'){g.fillStyle='#0b0d12';g.fillRect(0,0,W,H);g.textAlign='center';g.direction='ltr';g.fillStyle='#fff';g.font='300 92px Plus Jakarta Sans,sans-serif';g.fillText('3:07',W/2,170);
+    const card=(y,title,body,col)=>{g.fillStyle='rgba(255,255,255,.12)';rr(g,22,y,316,118,22);g.fill();g.fillStyle=col;rr(g,40,y+20,34,34,9);g.fill();g.direction=AR?'rtl':'ltr';g.textAlign=AR?'right':'left';g.fillStyle='#fff';g.font=AR?'800 21px Cairo,sans-serif':'800 19px Plus Jakarta Sans,sans-serif';g.fillText(title,AR?318:88,y+44);g.font=AR?'700 22px Cairo,sans-serif':'600 20px Plus Jakarta Sans,sans-serif';g.fillStyle=col==='#e8343a'?'#fecaca':'#e5e7eb';g.fillText(body,AR?318:40,y+90)};
+    card(250,TX('BREAKING','عاجل'),TX('“100% TARIFFS!!!”','"جمارك ١٠٠٪!!!"'),'#e8343a');card(390,TX('CAT COIN 🐱','عملة القطة 🐱'),TX('−50% in 1 hour 📉','−٥٠٪ في ساعة 📉'),'#e8343a');card(530,TX('Mom','ماما'),TX('why are you awake??','إنت صاحي ليه؟؟'),'#22c55e')}
   if(kind==='app'){g.font='800 34px Plus Jakarta Sans,sans-serif';g.textAlign='left';g.fillStyle='#10b981';g.fillText('WalletLens',26,64);g.font=AR?'700 20px Cairo,sans-serif':'500 18px DM Mono,monospace';g.fillStyle='#94a3b8';g.direction=AR?'rtl':'ltr';g.textAlign=AR?'right':'left';g.fillText(TX('REBALANCE','إعادة التوازن'),AR?334:26,98);
     [['BTC',38,'#f59e0b'],['ETH',24,'#6366f1'],[TX('Stocks','أسهم'),17,'#0ea5e9'],[TX('Cash','كاش'),15,'#10b981'],[TX('One new coin','عملة جديدة'),11,'#ef4444']].forEach(([n,p,c],i)=>{const y=150+i*74;g.font=AR?'700 22px Cairo,sans-serif':'700 22px Plus Jakarta Sans,sans-serif';g.fillStyle='#f5f6f7';g.textAlign=AR?'right':'left';g.fillText(n,AR?334:26,y);g.textAlign=AR?'left':'right';g.fillStyle='#cbd5e1';g.fillText(p+'%',AR?26:334,y);g.fillStyle='#2a3036';rr(g,26,y+12,308,12,6);g.fill();g.fillStyle=c;rr(g,26,y+12,Math.max(14,p*3.08*1.6),12,6);g.fill()});
     g.fillStyle='#3a1114';rr(g,20,530,320,150,20);g.fill();g.strokeStyle='#ef4444';g.lineWidth=4;g.stroke();g.textAlign=AR?'right':'left';const X=AR?320:40;g.font=AR?'700 19px Cairo,sans-serif':'500 17px DM Mono,monospace';g.fillStyle='#fca5a5';g.fillText(TX('BREAKS THE 5% RULE','بتكسر قاعدة الـ 5%'),X,568);g.font=AR?'800 24px Cairo,sans-serif':'800 24px Plus Jakarta Sans,sans-serif';g.fillStyle='#fff';g.fillText(TX('One new coin is 11%.','عملة جديدة = 11%.'),X,610);g.font=AR?'700 21px Cairo,sans-serif':'700 21px Plus Jakarta Sans,sans-serif';g.fillStyle='#fecaca';g.fillText(TX('Trim it back to 5%?','رجّعها لـ 5%؟'),X,646)}
@@ -630,8 +664,9 @@ const SHOT={
   [2.6,5.0,V(.55,2.05,1.3),V(.25,2.0,1.0),FACE_REX,V(0,2.0,-1.05),{fov:36,roll:-.05}],
   [5.0,7.5,V(-1.7,1.0,2.3),V(-1.2,1.05,2.0),V(-.6,2.3,-2),V(-.4,2.45,-2),{fov:46}]])},
  ollie(t){shotList(t,[
-  [0,3.6,V(-2.0,2.2,1.0),V(-1.7,2.15,.65),V(1.0,2.05,-1.05),V(1.0,2.05,-1.05),{fov:36}],
-  [3.6,7,V(-.55,2.0,1.15),V(-.8,1.98,.9),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34,roll:.04}]])},
+  [0,2.2,V(-2.0,2.2,1.0),V(-1.8,2.17,.75),V(1.0,2.05,-1.05),V(1.0,2.05,-1.05),{fov:36}],
+  [2.2,4.2,V(-.55,2.0,1.15),V(-.75,1.98,.95),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34,roll:.05}],
+  [4.2,7,V(1.35,2.0,1.1),V(1.2,1.98,.9),V(1.0,1.95,-1.05),V(1.0,1.95,-1.05),{fov:32}]])},
  lev(t){if(t>=2.55&&t<4.2){const p=ease((t-2.55)/1.65),fov=22+40*p,d=4.4*Math.tan(11*Math.PI/180)/Math.tan(fov/2*Math.PI/180);
    camera.fov=fov;camera.updateProjectionMatrix();camera.position.set((Math.random()-.5)*camShake,1.97+(Math.random()-.5)*camShake,-1.05+d);camera.lookAt(FACE_REX);camera.rotateZ(.05*p);return}
   shotList(t,[
@@ -662,6 +697,7 @@ function mood(key,t,dt){
   if(key==='lev'){if(t<2.55){hem=.42;sun=.8;FX.warm=-.1}
     else{const fl=t<3.3?(H(Math.floor(t*22))>.45?1:.05):.0;lamp=.35*fl;lampE=1.6*fl+.05;hem=t<3.3?.42*fl+.08:.1;sun=t<3.3?.8*fl+.1:.18;rim=.4;
       Object.assign(FX,{sat:1.12,con:1.12,warm:-.25,vig:.55,bars:1,ab:t<4.2?.0045:.002});if(!sfxFlags.slo){sfxFlags.slo=1;SFX.slowmo()}}}
+  flames.forEach(({g,ph})=>{g.visible=key==='lev'&&t>6.25;if(g.visible){const s2=1+.25*Math.sin(NOW()/90+ph);g.scale.set(1/s2*1.1,s2,1/s2*1.1)}});
   if(key==='plan'){hem=.42;sun=.45;win=1.7;shaft=.17;lamp=.2;Object.assign(FX,{warm:.75,sat:1.16,con:1.07})}
   if(key==='end'){win=1.0;shaft=.11;Object.assign(FX,{warm:.45,sat:1.16})}
   if(key==='cta'){FX.warm=.1}
@@ -679,18 +715,18 @@ const SETUP={
  ollie(){place(chars.ollie,1.0,-1.05);place(chars.rex,-1.1,-1.05);holo.visible=true;holo.position.set(1.0,2.75,-.5);holo.rotation.y=-.15;phone3d.visible=false},
  lev(){place(chars.rex,0,-1.05);holo.visible=true;holo.position.set(.9,2.6,-.4);holo.rotation.y=-.3;phone3d.visible=false},
  plan(){place(chars.ollie,.6,-1.05);place(chars.rex,-1.8,-2.6,.6);holo.visible=true;holo.position.set(-.4,2.65,-.4);holo.rotation.y=.25;phone3d.visible=false},
- end(){place(chars.ollie,1.0,1.9,-.5);place(chars.rex,-.2,2.2,.9);place(chars.teach,0,-8.2,Math.PI);[['k1',-2.6,-.6],['k2',-1.2,-1.2],['k3',1.6,-1.0],['k4',2.9,-.3]].forEach(([k,x,z])=>{place(chars[k],x,z)});holo.visible=false;phone3d.visible=false;drawBoard(0)},
+ end(){holo.visible=true;holo.position.set(.3,3.55,.4);holo.rotation.y=0;place(chars.ollie,1.0,1.9,-.5);place(chars.rex,-.2,2.2,.9);place(chars.teach,0,-8.2,Math.PI);[['k1',-2.6,-.6],['k2',-1.2,-1.2],['k3',1.6,-1.0],['k4',2.9,-.3]].forEach(([k,x,z])=>{place(chars[k],x,z)});phone3d.visible=false;drawBoard(0)},
  outro(){holo.visible=false;phone3d.visible=false},
  cta(){place(chars.ollie,.9,-1.05);holo.visible=false;phone3d.visible=true;phone3d.position.set(-.35,1.85,1.1);phone3d.rotation.set(0,.18,0);phone3d.scale.set(2.4,2.4,2.4);drawPhone('app')}
 };
 const UPDATE={
- hook(t,dt){const r=chars.rex;sit(r);scream(r,t);r.setFace('scream');drawHolo('crash',t/3,t);alarm.intensity=1.4+Math.sin(t*7)*1.2;
+ hook(t,dt){const r=chars.rex;sit(r);scream(r,t);r.setFace('scream');drawHolo('news',t/3,t);alarm.intensity=1.4+Math.sin(t*7)*1.2;
    camMove(t,6.5,V(0,2.05,isV()?3.6:4.2),V(0,2.15,isV()?2.4:3.1),V(0,2.0,-1),V(0,2.15,-1))},
  party(t,dt){const r=chars.rex;sit(r);cheer(r,t);r.setFace('grin');['k1','k2','k3','k4'].forEach((k,i)=>{const c=chars[k];c.body.position.y=0;cheer(c,t,i*1.3);c.setFace(i%2?'grin':'happy')});
-   drawHolo('pump',t/4,t);if(t<dt*1.5)confettiBurst(V(0,0,-1.5));confettiStep(dt);
+   drawHolo('influencer',t/4,t);if(t<dt*1.5)confettiBurst(V(0,0,-1.5));confettiStep(dt);
    camMove(t,7,V(.2,1.9,isV()?4.4:5.2),V(-.2,2.0,isV()?3.5:4.2),V(0,1.9,-1.6),V(0,2.0,-1.6))},
  ollie(t,dt){const o=chars.ollie,r=chars.rex;sit(o);sit(r);idle(o,t);o.setFace('calm');point(o,Math.min(1,t/1.2)*.5);
-   if(t>3){laugh(r,t);r.setFace('smug')}else{idle(r,t,1);r.setFace('smile')}drawHolo('pie',t/3,t);
+   if(t>2.2&&t<4.2){laugh(r,t);r.setFace('smug')}else if(t>=4.2){idle(r,t,1);r.setFace('shock');o.setFace('smug')}else{idle(r,t,1);r.setFace('smile')}drawHolo('pie',t/3,t);
    camMove(t,7,V(1.4,2.0,isV()?3.8:4.4),V(.4,2.05,isV()?3.3:4.2),V(.5,2.0,-1),V(.1,2.0,-1))},
  lev(t,dt){const r=chars.rex;sit(r);const p=t/7.5;drawHolo('lev',p,t);r.sweat.forEach((d,i)=>{d.visible=t<2.55;d.position.y=.55-((t*.45+i*.5)%1)*.3});
    if(p<.34){point(r,1);r.setFace('grin');alarm.intensity=0}
@@ -702,7 +738,7 @@ const UPDATE={
    drawHolo('plan',t/5.5,t);
    camMove(t,7.5,V(-.2,2.0,isV()?3.6:4.4),V(.4,2.05,isV()?3.0:3.9),V(.0,2.1,-1),V(.3,2.0,-1))},
  end(t,dt){const o=chars.ollie,r=chars.rex,tc=chars.teach;idle(o,t);o.setFace('happy');point(o,.8);
-   const up=Math.min(1,Math.max(0,(t-.8)/1.8));r.body.rotation.x=-1.45*(1-up);r.body.position.y=.22*(1-up);r.armR.rotation.x=-1.0*up;r.setFace(up<1?'shock':'happy');
+   const up=Math.min(1,Math.max(0,(t-.8)/1.8));r.body.rotation.x=-1.45*(1-up);r.body.position.y=.22*(1-up);r.armR.rotation.x=-1.0*up;r.setFace(up<1?'shock':(t<4.2?'cry':'happy'));holo.visible=t<4.6;if(t<4.6)drawHolo('kidding',(t-.4)/2.5,t);
    ['k1','k2','k3','k4'].forEach((k,i)=>{clap(chars[k],t,i);chars[k].setFace(i%2?'happy':'grin');chars[k].root.lookAt(r.root.position.x,0,r.root.position.z)});
    tc.armR.rotation.x=-2.6+Math.sin(t*8)*.15;tc.armR.rotation.z=.2;drawBoard(Math.max(0,(t-2.2)/4.5));
    camMove(t,7.5,V(1.4,3.0,isV()?6.6:8.4),V(.4,2.9,isV()?5.8:7.4),V(.3,1.7,1.2),V(0,2.2,-2))},
@@ -718,7 +754,7 @@ function updateRules(){const on=new Set();SCENES.forEach((s,j)=>{(s.collect||[])
 const LOGO_UNUSED=`<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="wlg2" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ade80"/><stop offset=".5" stop-color="#16a34a"/><stop offset="1" stop-color="#14532d"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="#071a0c"/><g fill="none" transform="translate(32 32) scale(0.8) translate(-25 -30.5)"><circle cx="27" cy="25" r="19" stroke="url(#wlg2)" stroke-width="5.5"/><circle cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/><rect x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="url(#wlg2)"/><rect x="21.5" y="21" width="5" height="13" rx="1.2" fill="url(#wlg2)"/><rect x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="url(#wlg2)"/><line x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wlg2)" stroke-width="5.5" stroke-linecap="round"/></g></svg>`;
 function outroHTML(){
   const st=Array.from({length:60},(_,i)=>`<i class="ol-star" style="left:${(i*37.7)%100}%;top:${(i*61.3)%100}%;opacity:${.08+(i%5)*.04}"></i>`).join('');
-  return `${st}<div class="ol-glow"></div><div class="ol-c"><div class="ol-tile">${OLICON}</div><div class="ol-word">WalletLens</div><div class="ol-tag">${TX('Check less. Live more.','شيّك أقل. عيش أكتر.')}</div><div class="ol-follow">${TX('Don\u2019t forget to follow us','متنساش تتابعنا')}</div></div>`;
+  return `${st}<div class="ol-glow"></div><div class="ol-c"><div class="ol-tile">${OLICON}</div><div class="ol-word">WalletLens</div><div class="ol-tag">${TX('All Assets Tracker &amp; Investment Manager','تتبّع كل أصولك وإدارة استثماراتك')}</div><div class="ol-follow">${TX('Don\u2019t forget to follow us','متنساش تتابعنا')}</div></div>`;
 }
 const OLICON=`<svg viewBox="5 5 54 54" aria-hidden="true"><defs><linearGradient id="wlo" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ade80"/><stop offset=".5" stop-color="#22c55e"/><stop offset="1" stop-color="#15803d"/></linearGradient></defs><g fill="none" transform="translate(32 32) scale(0.8) translate(-25 -30.5)"><circle class="ring" cx="27" cy="25" r="19" stroke="url(#wlo)" stroke-width="5.5"/><circle class="dot" cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/><rect class="bar" x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="url(#wlo)"/><rect class="bar" x="21.5" y="21" width="5" height="13" rx="1.2" fill="url(#wlo)"/><rect class="bar" x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="url(#wlo)"/><line class="hdl" x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wlo)" stroke-width="5.5" stroke-linecap="round"/></g></svg>`;
 // ── sound (synthesised, starts only after the viewer turns it on) ──
@@ -782,7 +818,7 @@ resize();show(start);requestAnimationFrame(frame);
 // ── thumbnails rendered from the scene ───────────────────────────────────
 function makeThumbs(){
   const defs=[
-   {id:'A',key:'hook',time:2.4,pick:true,cam:[V(-.15,2.1,2.25),V(0,2.15,-1)],title:'He Put His WHOLE Savings Into One Coin…',why:'The scream face, one number and two words. It’s the same face as the video’s opening shot.',text:[['ALL IN',60,150,150,'#ffd84a',-4],['−50%',820,620,170,'#ff3b3b',4]]},
+   {id:'A',key:'hook',time:2.4,pick:true,cam:[V(-.15,2.1,2.25),V(0,2.15,-1)],title:'He Bought a Politician’s Cat Coin… 😭',why:'The scream face, one number and two words. It’s the same face as the video’s opening shot.',text:[['ALL IN',60,150,150,'#ffd84a',-4],['−50%',820,620,170,'#ff3b3b',4]]},
    {id:'B',key:'lev',time:6.2,cam:[V(-2.2,2.9,.6),V(.1,.6,-2.4)],title:'He Borrowed 10x… Then THIS Happened 😱',why:'Mid-fall, red alarm light. A curiosity gap that only the video closes.',text:[['10x…',60,150,150,'#ffd84a',-4],['GONE',1220,640,170,'#ff3b3b',4]]},
    {id:'C',key:'plan',time:6.6,cam:[V(-.4,2.2,3.2),V(.0,2.1,-1)],title:'Everyone Laughed At His 5% Plan… Until',why:'Calm Ollie against crying Rex: the story’s turn in one picture.',text:[['5% PLAN',60,140,130,'#3dff8a',-3],['WON',1000,620,150,'#ffd84a',5]]}
   ];
