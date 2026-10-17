@@ -1,0 +1,9 @@
+node_modules/
+three.min.js
+fonts/
+tts/
+frames/
+video.html
+events.json
+soundtrack.wav
+*.mp4
