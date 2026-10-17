@@ -17,7 +17,11 @@ const dash = readFileSync(join(here, 'pages/Dashboard.jsx'), 'utf8')
 
 describe('a holding reports one trend', () => {
   it('derives the pill from the same reading as the chevron and the row', () => {
-    expect(dash).toMatch(/const holdingTrend = trendFor\(\{ pct24h: h\.pct24h, pct7d: sevenDay\[h\.coin_id\] \}\)/)
+    // The reading is computed once per holding in a memoized map (so the
+    // per-row animation loop doesn't recompute — and hand a fresh object to
+    // TrendArrow's memo() — on every render) and looked up from there.
+    expect(dash).toMatch(/map\.set\(h\.coin_id, trendFor\(\{ pct24h: h\.pct24h, pct7d: sevenDay\[h\.coin_id\] \}\)\)/)
+    expect(dash).toMatch(/const holdingTrend = holdingTrendMap\.get\(h\.coin_id\)/)
     expect(dash).toMatch(/const trendStatus = holdingTrend\.dir/)
   })
 
