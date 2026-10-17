@@ -168,13 +168,14 @@ function findAnchors(tokens, cat) {
   }
   tokens.forEach((t, i) => {
     if (used.has(i)) return
-    const pair = t.text.match(/^([A-Z0-9]{2,10})[/-](USDT|USDC|USD|BUSD|EUR|BTC|ETH)$/)
+    const pair = t.text.match(/^([A-Z0-9]{2,10})[/-](USDT|USDC|FDUSD|USD|BUSD|DAI|EUR|TRY|BTC|ETH|BNB)$/)
     const sym = (pair ? pair[1] : t.text).replace(/[^A-Z0-9]/g, '')
     if (!/^[A-Z][A-Z0-9]{1,9}$/.test(t.text.replace(/[/-].*$/, '')) || NOT_ANCHORS.has(sym)) return
     const entry = cat.bySymbol.get(sym)
     if (!entry) return
     used.add(i)
-    anchors.push({ entry, kind: 'ticker', idx: [i], ...box([t]) })
+    // "SEI/USDT": the trade was against USDT, which the import books too.
+    anchors.push({ entry, kind: 'ticker', idx: [i], quote: pair ? pair[2] : '', ...box([t]) })
   })
   return anchors
 }
@@ -355,6 +356,7 @@ export function parseHoldingsFromWords(words, catalogue) {
       price: solved.price > 0 ? +solved.price.toPrecision(10) : 0,
       type,
       ...(date ? { date } : {}),
+      ...(g.members.find(m => m.quote) ? { quote: g.members.find(m => m.quote).quote } : {}),
     })
   })
   return rows

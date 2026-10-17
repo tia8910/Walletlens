@@ -975,6 +975,7 @@ export default {
     siSymbol: 'Simbolo',
     siName: 'Nome',
     siPriceUsd: 'Prezzo (USD)',
+    siQuote: 'Regolato in',
     siClear: 'Svuota',
     // ── Rebalance panel ─────────────────────────────────────────
     rbRebalance: 'Ribilancia',

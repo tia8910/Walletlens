@@ -153,9 +153,9 @@ describe('layouts with no fixture', () => {
     ]
     for (const prices of [true, false]) {
       expect(parseHoldingsFromWords(w, catalogue(prices))).toEqual([
-        { symbol: 'SOL', name: 'Solana', amount: 1500.5, price: 150.25, type: 'sell', date: '2026-10-17' },
-        { symbol: 'ETH', name: 'Ethereum', amount: 2, price: 2600.1, type: 'buy', date: '2026-10-16' },
-        { symbol: 'ETH', name: 'Ethereum', amount: 2, price: 2580, type: 'buy', date: '2026-10-15' },
+        { symbol: 'SOL', name: 'Solana', amount: 1500.5, price: 150.25, type: 'sell', date: '2026-10-17', quote: 'USDT' },
+        { symbol: 'ETH', name: 'Ethereum', amount: 2, price: 2600.1, type: 'buy', date: '2026-10-16', quote: 'USDT' },
+        { symbol: 'ETH', name: 'Ethereum', amount: 2, price: 2580, type: 'buy', date: '2026-10-15', quote: 'USDT' },
       ])
     }
   })

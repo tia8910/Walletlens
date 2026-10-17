@@ -210,7 +210,7 @@ async function fiatLeg(T) {
   return { coin_id: `${FIAT_PREFIX}${lower}`, symbol: T, name: currencyName(T), category: 'fiat', pricePerUnit: usd }
 }
 
-async function buildReceiveLeg(target, proceedsUsd) {
+export async function buildReceiveLeg(target, proceedsUsd) {
   const T = (target || '').toUpperCase()
   if (!T) return null
   if (T === 'USD')  return { coin_id: `${FIAT_PREFIX}usd`, symbol: 'USD',  name: 'US Dollar', category: 'fiat',   amount: proceedsUsd, pricePerUnit: 1 }
@@ -241,7 +241,7 @@ async function buildReceiveLeg(target, proceedsUsd) {
   return { coin_id: `other:${lower}`, symbol: T, name: T, category: 'other', amount: proceedsUsd, pricePerUnit: 1 }
 }
 
-async function buildSpendLeg(source, costUsd) {
+export async function buildSpendLeg(source, costUsd) {
   const T = (source || '').toUpperCase()
   if (!T || T === 'NONE') return null
   if (T === 'USD')  return { coin_id: `${FIAT_PREFIX}usd`, symbol: 'USD',  name: 'US Dollar', category: 'fiat',   amount: costUsd, pricePerUnit: 1 }

@@ -100,6 +100,9 @@ async function snapshotFile(f) {
   }
 }
 
+// Quotes worth a dollar each: a SEI/USDT price is already a USD price.
+const STABLE_QUOTES = new Set(['USDT', 'USDC', 'FDUSD', 'USD', 'BUSD', 'DAI'])
+
 // ── Which asset a row is ──────────────────────────────────────────────────────
 // A screenshot or sheet gives a ticker. The row used to be saved as a crypto
 // under that ticker lowercased, so USDT became "usdt" beside the "tether" the
@@ -282,6 +285,8 @@ function ThumbStrip({ previews }) {
 
 function ReviewTable({ rows, onChange, onRemove }) {
   const { t } = useLanguage()
+  // Only a trade history has a settle-in column; a holdings list does not.
+  const withQuote = rows.some(r => r.quote)
   return (
     <div className="si-table-wrap">
       <table className="si-table">
@@ -292,6 +297,7 @@ function ReviewTable({ rows, onChange, onRemove }) {
             <th>{t('txAmount')}</th>
             <th>{t('siPriceUsd')}</th>
             <th>{t('vsType')}</th>
+            {withQuote && <th>{t('siQuote')}</th>}
             <th>{t('txDate')}</th>
             <th></th>
           </tr>
@@ -309,6 +315,7 @@ function ReviewTable({ rows, onChange, onRemove }) {
                   <option value="sell">{t('sell')}</option>
                 </select>
               </td>
+              {withQuote && <td><input className="si-cell-input" value={r.quote || ''} placeholder="—" onChange={e => onChange(i,'quote',e.target.value.toUpperCase())} /></td>}
               <td><input className="si-cell-input" type="date" value={r.date} onChange={e => onChange(i,'date',e.target.value)} /></td>
               <td><button className="si-remove-btn" onClick={() => onRemove(i)}>✕</button></td>
             </tr>
@@ -406,6 +413,8 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
         }
 
         const newRows = extracted.map(r => ({
+          // What the trade was settled in ("USDT" for SEI/USDT); empty for a holding.
+          quote:  (r.quote || '').toUpperCase(),
           symbol: (r.symbol || '').toUpperCase(),
           name:   r.name || r.symbol || '',
           amount: Number(r.amount) || 0,
@@ -566,18 +575,45 @@ export default function SmartImport({ wallets, onImported, defaultMode = 'excel'
     clearMsg()
     try {
       const pick = await importAssetPicker()
+      // The other side of a trade read off an order history ("SEI/USDT"),
+      // booked the way the trade ticket books "Pay with" and "Sell for": a buy
+      // spends the quote, a sell receives it. Loaded only when a row has one.
+      const legs = valid.some(r => r.quote) ? await import('./TradeSheet') : null
       for (const r of valid) {
         const asset = pick(r.symbol, r.name)
+        const amount = parseFloat(r.amount)
+        let price = parseFloat(r.price) || 0
+        const exchange = mode === 'screenshot' ? 'Screenshot Import' : 'Spreadsheet Import'
+        const quote = String(r.quote || '').trim().toUpperCase()
+        const settle = legs && quote && price > 0 && quote !== String(asset.coin_symbol || '').toUpperCase()
+        // A pair against BTC, ETH or EUR is priced in that, not in dollars:
+        // the card's price is converted at the quote's own price.
+        if (settle && !STABLE_QUOTES.has(quote)) {
+          const probe = await legs.buildReceiveLeg(quote, 1)
+          price = probe?.pricePerUnit > 0 ? price * probe.pricePerUnit : 0
+        }
         await api.addTransaction({
           wallet_id:      walletId,
           type:           r.type,
           ...asset,
-          amount:         parseFloat(r.amount),
-          price_per_unit: parseFloat(r.price) || 0,
-          exchange:       mode === 'screenshot' ? 'Screenshot Import' : 'Spreadsheet Import',
+          amount,
+          price_per_unit: price,
+          exchange,
           notes:          '',
           date:           r.date || today,
         })
+        if (settle && price > 0) {
+          const isBuy = r.type !== 'sell'
+          const leg = isBuy ? await legs.buildSpendLeg(quote, amount * price) : await legs.buildReceiveLeg(quote, amount * price)
+          if (leg) await api.addTransaction({
+            wallet_id: walletId, type: isBuy ? 'sell' : 'buy',
+            category: leg.category, coin_id: leg.coin_id,
+            coin_symbol: leg.symbol, coin_name: leg.name, coin_image: '',
+            amount: leg.amount, price_per_unit: leg.pricePerUnit,
+            exchange, date: r.date || today,
+            notes: isBuy ? `Spent on buying ${r.symbol}` : `Proceeds from selling ${r.symbol}`,
+          })
+        }
       }
       trackProfileCreated({
         method: mode === 'screenshot' ? 'screenshot' : 'spreadsheet',

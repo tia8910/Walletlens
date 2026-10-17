@@ -1015,6 +1015,7 @@ export default {
     siSymbol: 'Symbole',
     siName: 'Nom',
     siPriceUsd: 'Prix (USD)',
+    siQuote: 'Réglé en',
     siClear: 'Effacer',
     // ── Rebalance panel ─────────────────────────────────────────
     rbRebalance: 'Rééquilibrer',

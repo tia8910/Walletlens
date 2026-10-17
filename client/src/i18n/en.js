@@ -1036,6 +1036,7 @@ export default {
     siSymbol: 'Symbol',
     siName: 'Name',
     siPriceUsd: 'Price (USD)',
+    siQuote: 'Settled in',
     siClear: 'Clear',
     // ── Rebalance panel ─────────────────────────────────────────
     rbRebalance: 'Rebalance',
