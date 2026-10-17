@@ -5,6 +5,9 @@ set -euo pipefail
 cd "$(dirname "$0")"
 npm install --no-save --silent playwright-core@1.56.0 three@0.128.0
 cp node_modules/three/build/three.min.js .
+mkdir -p pp/shaders pp/postprocessing
+cp node_modules/three/examples/js/shaders/{CopyShader,LuminosityHighPassShader}.js pp/shaders/
+cp node_modules/three/examples/js/postprocessing/{EffectComposer,RenderPass,ShaderPass,UnrealBloomPass}.js pp/postprocessing/
 pip install --quiet kokoro-onnx==0.4.9 scipy numpy
 
 # Fonts used by the captions and the logo (Latin subset only)

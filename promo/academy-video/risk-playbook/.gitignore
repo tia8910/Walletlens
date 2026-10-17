@@ -1,5 +1,6 @@
 node_modules/
 three.min.js
+pp/
 fonts/
 tts/
 frames/

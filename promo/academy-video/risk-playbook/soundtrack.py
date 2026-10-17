@@ -14,7 +14,9 @@ TTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tts')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 SR = 48000
 VOICE = sys.argv[1] if len(sys.argv) > 1 else 'af_heart'
-SCENES = [('hook', 8.5), ('party', 7), ('ollie', 7), ('lev', 7.5), ('plan', 7.5), ('end', 8), ('cta', 6.5), ('outro', 8)]
+SCENES = [('hook', 10.8), ('party', 7.5), ('ollie', 7), ('lev', 8.5), ('plan', 7.5), ('end', 8), ('cta', 6.5), ('outro', 8)]
+FREEZE, REWIND = 6.8, 9.8          # hook: freeze frame, then VHS rewind into the party
+CRASH, SLOW_END, FALL, LAND = 2.55, 4.2, 5.67, 6.27   # lev, real seconds
 TOTAL = sum(d for _, d in SCENES)
 N = int(TOTAL * SR)
 S = {}; acc = 0
@@ -126,11 +128,14 @@ Am, F, C, G, Dm, E = [57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62], [50
 
 # ── music ──
 # hook: dark drone + heartbeat, impact on frame 1
-put(music, 0, supersaw([45, 52, 57, 60], S['party'] + .3, 700), 0.22)
+drone = supersaw([45, 52, 57, 60], FREEZE + .05, 700); drone[-int(.04 * SR):] *= np.linspace(1, 0, int(.04 * SR))
+put(music, 0, drone, 0.22)
 put(music, 0.0, impact(1.0), 0.55)
-for i in range(int(8.0 / 0.8)):
+for i in range(int((FREEZE - 0.5) / 0.8)):
     put(music, 0.5 + i * 0.8, kick(.9), 0.42); put(music, 0.5 + i * 0.8 + 0.2, kick(.6), 0.26)
-put(music, S['party'] - 1.2, reverse_cymbal(1.2), 0.35)
+put(music, FREEZE - 0.9, riser(0.9), 0.2)
+put(music, S['party'] - 1.0, reverse_cymbal(1.0), 0.4)
+put(music, S['party'], impact(.8), 0.5)
 # party: bright trap with a drop on the time jump
 section('party', [C, G, Am, F], 140, 'trap', 3600)
 # ollie: chill
@@ -140,8 +145,9 @@ lv = S['lev']
 put(music, lv, supersaw([50, 57, 62], 2.6, 1400), 0.18)
 for i in range(16): put(music, lv + i * 0.16, snare(), 0.10 + i * 0.016)
 put(music, lv + 0.3, riser(2.25), 0.35)
-put(music, lv + 2.55, impact(1.3), 0.95); put(music, lv + 2.55, braam(4.6), 0.55)
-for i in range(6): put(music, lv + 2.55 + i * 0.75, kick(1.1), 0.35)
+put(music, lv + CRASH, impact(1.4), 1.0); put(music, lv + CRASH, braam(5.5), 0.6)
+for i in range(3): put(music, lv + CRASH + 0.3 + i * 0.55, kick(1.2), 0.5)          # slow heartbeat in slow motion
+for i in range(6): put(music, lv + SLOW_END + i * 0.5, kick(1.0), 0.35)
 # plan: rebuild
 section('plan', [Am, F, C, G], 96, 'soft', 1900, gain=.95)
 put(music, S['end'] - 1.0, reverse_cymbal(1.0), 0.35)
@@ -195,7 +201,7 @@ def ka_ching():
 def chalk(d=4.4):
     out = np.zeros(int(d * SR)); i = 0
     while i < len(out):
-        L = int(rng.uniform(.08, .22) * SR); s = filt(noise(L / SR), 'band', [2500, 7000]) * env(L, 0.01, 0.03) * rng.uniform(.3, .8)
+        n = noise(rng.uniform(.08, .22)); L = len(n); s = filt(n, 'band', [2500, 7000]) * env(L, 0.01, 0.03) * rng.uniform(.3, .8)
         out[i:i + L] += s[: len(out) - i]; i += L + int(rng.uniform(.02, .12) * SR)
     return out
 def click(): t = tt(0.05); return filt(noise(0.05), 'band', [1500, 5000]) * np.exp(-t * 120)
@@ -206,12 +212,11 @@ def shimmer(d=2.2):
     return out
 
 for i in range(3): put(sfx, 0.35 + i * 0.45, phone_buzz(), 0.45, 0.3)
-put(sfx, S['party'] - 0.15, record_scratch(), 0.5)
 put(sfx, S['party'] + 0.2, party_horn(), 0.35, -0.5); put(sfx, S['party'] + 0.6, party_horn(), 0.3, 0.5)
 put(sfx, S['party'] + 0.1, crowd(4.5), 0.55)
 for i in range(10): put(sfx, S['party'] + 0.1 + rng.uniform(0, 1.2), pop(), 0.18, rng.uniform(-.8, .8))
-put(sfx, lv + 0.35, click(), 0.6); put(sfx, lv + 0.4, power_up(2.1), 0.3)
-put(sfx, lv + 4.55, slide_whistle(), 0.35); put(sfx, lv + 5.2, thud(), 0.6)
+put(sfx, lv + 0.3, power_up(2.15), 0.3); put(sfx, lv + 2.42, click(), 0.7)
+put(sfx, lv + FALL - 0.1, slide_whistle(), 0.35); put(sfx, lv + LAND, thud(), 0.65)
 put(sfx, S['plan'] + 1.6, click(), 0.4); put(sfx, S['plan'] + 3.4, ka_ching(), 0.35, 0.2)
 put(sfx, S['end'] + 0.6, applause(5.5), 0.55)
 put(sfx, S['end'] + 2.2, chalk(4.4), 0.12, -0.2)
@@ -219,6 +224,15 @@ put(sfx, S['cta'] + 0.3, pop(), 0.3)
 put(sfx, o + 0.25, shimmer(), 0.4)
 for i in range(3): put(sfx, o + 1.1 + i * 0.1, click(), 0.3)
 
+def rewind_fx(d=1.0):
+    t = tt(d); out = np.zeros(len(t))
+    for k in range(7):
+        f0 = rng.uniform(1500, 3200); seg = np.sin(2 * np.pi * np.cumsum(f0 * (0.35 ** (t / d)) * (1 + .3 * np.sin(2 * np.pi * 40 * t))) / SR)
+        out += seg * np.exp(-((t - k * d / 7) % (d / 7)) * 18) * 0.25
+    return filt(out + sweep_bp(noise(d), 4000, 600) * 0.5, 'band', [300, 6000]) * env(len(t), 0.02, 0.1)
+def slowmo_drop(d=2.4):
+    t = tt(d); f = 160 * (0.25 ** (t / d)); x = np.tanh(2 * np.sin(2 * np.pi * np.cumsum(f) / SR))
+    return verb(x * env(len(t), 0.01, 0.6), 0.5)
 # UI sounds logged by the renderer
 def tone(f, d, dec=6, tri=False):
     t = tt(d); w = (2 / np.pi) * np.arcsin(np.sin(2 * np.pi * f * t)) if tri else np.sin(2 * np.pi * f * t)
@@ -232,7 +246,7 @@ def alarm():
         t = tt(0.32); f = 640 - 220 * t / 0.32; s = filt(2 * ((np.cumsum(f) / SR) % 1) - 1, 'low', 2500) * env(len(t), 0.02, 0.08)
         j = int(i * 0.36 * SR); out[j:j + len(s)] += s
     return out
-events = json.load(open('events.json'))
+events = json.load(open(sys.argv[2] if len(sys.argv) > 2 else 'events.json'))
 for e in events:
     t0, k = e[0], e[1]
     if k == 'whoosh': put(sfx, t0 - 0.12, whoosh(e[2] if len(e) > 2 else 0.6), 0.5)
@@ -241,30 +255,35 @@ for e in events:
         put(sfx, t0, verb(tone(988, .7, 4, True), .3), 0.3); put(sfx, t0 + 0.1, verb(tone(1480, .9, 4, True), .3), 0.26)
     elif k == 'alarm': put(sfx, t0, alarm(), 0.14)
     elif k == 'chime': pass
+    elif k == 'scratch': put(sfx, t0 - 0.05, record_scratch(), 0.55)
+    elif k == 'rewind': put(sfx, t0, rewind_fx(1.0), 0.45)
+    elif k == 'slowmo': put(sfx, t0, slowmo_drop(), 0.5)
 
 # ── narration ──
 from vo import Voice
-LINES = {
- 'hook': ("He put his whole savings into one coin, and lost half of it in a day. His friend Ollie didn't. Stay for rule six.", 0.25),
- 'party': ("Three days earlier, everyone was cheering for Rex. They said he was a genius.", 0.55),
- 'ollie': ("Ollie only put five percent into new coins. And Rex laughed at him.", 0.5),
- 'lev': ("Then Rex borrowed ten times more. One bad hour... liquidated.", 0.5),
- 'plan': ("But Ollie had a plan. An exit at minus ten percent, and cash ready for the dip.", 0.5),
- 'end': ("That's when Rex asked: can you teach me the playbook?", 0.9),
- 'cta': ("Check your own portfolio before Rex does. WalletLens flags anything over five percent.", 0.3),
- 'outro': ("WalletLens. Check less, live more. And don't forget to follow us.", 1.7),
-}
+LINES = [   # (scene, offset s, text, max length s)
+ ('hook', 0.25, "He put his whole savings into one coin... and lost half of it, in a day.", 4.1),
+ ('hook', 4.5, "His friend Ollie didn't. Stay for rule six.", 2.2),
+ ('hook', 7.05, "Yep. That's Rex. You're probably wondering how he got here.", 2.7),
+ ('party', 1.6, "Three days earlier, everyone was cheering for Rex. They said he was a genius.", 5.7),
+ ('ollie', 0.4, "Ollie only put five percent into new coins. And Rex laughed at him.", 6.2),
+ ('lev', 0.35, "Then Rex borrowed ten times more.", 2.1),
+ ('lev', 6.85, "One bad hour. Liquidated.", 1.6),
+ ('plan', 0.4, "But Ollie had a plan. An exit at minus ten percent, and cash ready for the dip.", 6.8),
+ ('end', 0.9, "That's when Rex asked: can you teach me the playbook?", 6.5),
+ ('cta', 0.3, "Check your own portfolio before Rex does. WalletLens flags anything over five percent.", 5.9),
+ ('outro', 1.7, "WalletLens. Check less, live more. And don't forget to follow us.", 6.0),
+]
 k = Voice(os.path.join(TTS, 'model_q8.onnx'), os.path.join(TTS, 'voices.npz'))
-for key, (text, off) in LINES.items():
-    room = dict(SCENES)[key] - off - 0.35
+for key, off, text, room in LINES:
     speed = 1.05
     a, sr = k.create(text, voice=VOICE, speed=speed, lang='en-us')
     if len(a) / sr > room:
-        speed = min(1.4, speed * (len(a) / sr) / room); a, sr = k.create(text, voice=VOICE, speed=speed, lang='en-us')
+        speed = min(1.45, speed * (len(a) / sr) / room); a, sr = k.create(text, voice=VOICE, speed=speed, lang='en-us')
     a = resample_poly(a, SR, sr)
     a = filt(a, 'high', 90); a = a / (np.max(np.abs(a)) + 1e-9) * 0.9
     put(vo, S[key] + off, verb(a, 0.06), 1.0, 0)
-    print(f'  VO {key:6s} {len(a)/SR:4.1f}s of {room+0.35:.1f}s  speed {speed:.2f}')
+    print(f'  VO {key:6s} @{off:4.1f}s {len(a)/SR:4.1f}s of {room:.1f}s  speed {speed:.2f}')
 
 # ── mix: duck music under the voice, glue, limit ──
 ve = np.abs(vo[:, 0]); win = int(0.12 * SR)

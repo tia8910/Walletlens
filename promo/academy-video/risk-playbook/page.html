@@ -98,9 +98,9 @@ tr:last-child td{border-bottom:0}
 .note{background:var(--accent-soft);border-radius:12px;padding:14px 16px;font-size:14px}
 
 /* premium overlay */
-.screen canvas{filter:contrast(1.06) saturate(1.12)}
+.screen canvas{filter:none}
 .screen.whip canvas{animation:whip .5s ease}
-@keyframes whip{0%{filter:blur(16px) brightness(1.9) contrast(1.06) saturate(1.12);transform:scale(1.04)}100%{filter:contrast(1.06) saturate(1.12);transform:none}}
+@keyframes whip{0%{filter:blur(16px) brightness(1.9);transform:scale(1.04)}100%{filter:none;transform:none}}
 .logo-wm{position:absolute;left:2.2%;top:3%;display:flex;align-items:center;gap:.7cqw;padding:.45cqw 1.3cqw .45cqw .5cqw;border-radius:1.3cqw;background:rgba(4,14,8,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.16);pointer-events:none;z-index:7;box-shadow:0 .4cqw 1.6cqw rgba(0,0,0,.25)}
 .logo-wm svg{width:3.3cqw;height:3.3cqw;display:block;border-radius:.7cqw}
 .logo-wm b{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.85cqw;color:#fff;letter-spacing:-.01em}
@@ -119,7 +119,7 @@ tr:last-child td{border-bottom:0}
 .chapter.on .ln{animation:lnw 1s .3s ease forwards}
 @keyframes lnw{to{width:100%}}
 @keyframes chap{0%{opacity:0;transform:translateX(-30%);filter:blur(6px)}12%{opacity:1;transform:none;filter:none}85%{opacity:1}100%{opacity:0;transform:translateX(-6%)}}
-.grain{position:absolute;inset:-60%;pointer-events:none;opacity:.08;z-index:5;animation:grain .45s steps(5) infinite;mix-blend-mode:overlay}
+.grain{position:absolute;inset:-60%;pointer-events:none;opacity:.035;z-index:5;animation:grain .45s steps(5) infinite;mix-blend-mode:overlay}
 @keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-8%,4%)}40%{transform:translate(5%,-7%)}60%{transform:translate(-3%,9%)}80%{transform:translate(9%,-2%)}100%{transform:translate(0,0)}}
 .vig3{position:absolute;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse at 50% 48%,transparent 55%,rgba(0,0,0,.5) 100%)}
 .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:6}
@@ -194,6 +194,13 @@ tr:last-child td{border-bottom:0}
 .ol-follow{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:1.85cqw;color:#f1f2f4;margin-top:3cqw;opacity:0;animation:up .6s 3s ease forwards}
 @keyframes olTile{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
 @keyframes olFade{to{opacity:1}}
+
+.lb{position:absolute;left:0;right:0;height:0;background:#000;z-index:5;pointer-events:none}
+.lb.t{top:0}.lb.b{bottom:0}
+.rw{position:absolute;inset:0;z-index:6;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.06) 0 2px,transparent 2px 5px)}
+.rw b{position:absolute;right:4%;top:14%;font-family:var(--mono);font-weight:500;font-size:4cqw;color:#fff;text-shadow:0 0 1cqw rgba(255,255,255,.7);letter-spacing:.1em;animation:blink 1s steps(2) infinite}
+.rw span{position:absolute;left:4%;bottom:7%;font-family:var(--mono);font-size:2cqw;color:#fff;opacity:.85}
+@keyframes blink{50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){.cap.pop{animation:none}.grain,.o-rays{animation:none}}
 </style>
 
@@ -207,7 +214,7 @@ tr:last-child td{border-bottom:0}
   <section class="stage h" id="stage">
     <div class="player">
       <div class="screen" id="screen">
-        <div class="logo-wm" id="logo"><svg viewBox="5 5 54 54" aria-hidden="true"><defs><linearGradient id="wlw" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ade80"/><stop offset=".5" stop-color="#22c55e"/><stop offset="1" stop-color="#15803d"/></linearGradient></defs><g fill="none" transform="translate(32 32) scale(0.8) translate(-25 -30.5)"><circle class="ring" cx="27" cy="25" r="19" stroke="url(#wlw)" stroke-width="5.5"/><circle class="dot" cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/><rect class="bar" x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="url(#wlw)"/><rect class="bar" x="21.5" y="21" width="5" height="13" rx="1.2" fill="url(#wlw)"/><rect class="bar" x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="url(#wlw)"/><line class="hdl" x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wlw)" stroke-width="5.5" stroke-linecap="round"/></g></svg><b>WalletLens</b></div><div class="rules" id="rules"><span class="k">RULES</span><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i></div><div class="chapter" id="chapter"><div class="n"></div><div class="h"></div><div class="ln"></div></div><div class="vig3"></div><div class="grain" id="grain"></div><div class="flash" id="flash"></div><div class="outro" id="outro"></div>
+        <div class="logo-wm" id="logo"><svg viewBox="5 5 54 54" aria-hidden="true"><defs><linearGradient id="wlw" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ade80"/><stop offset=".5" stop-color="#22c55e"/><stop offset="1" stop-color="#15803d"/></linearGradient></defs><g fill="none" transform="translate(32 32) scale(0.8) translate(-25 -30.5)"><circle class="ring" cx="27" cy="25" r="19" stroke="url(#wlw)" stroke-width="5.5"/><circle class="dot" cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/><rect class="bar" x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="url(#wlw)"/><rect class="bar" x="21.5" y="21" width="5" height="13" rx="1.2" fill="url(#wlw)"/><rect class="bar" x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="url(#wlw)"/><line class="hdl" x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wlw)" stroke-width="5.5" stroke-linecap="round"/></g></svg><b>WalletLens</b></div><div class="rules" id="rules"><span class="k">RULES</span><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i></div><div class="chapter" id="chapter"><div class="n"></div><div class="h"></div><div class="ln"></div></div><div class="lb t" id="lbt"></div><div class="lb b" id="lbb"></div><div class="rw" id="rw" hidden><b>◀◀ REWIND</b><span>SP · 3 DAYS EARLIER</span></div><div class="vig3"></div><div class="grain" id="grain"></div><div class="flash" id="flash"></div><div class="outro" id="outro"></div>
         <div class="title-card" id="tcard"></div>
         <div class="cap" id="cap"></div>
       </div>
@@ -273,31 +280,38 @@ tr:last-child td{border-bottom:0}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
 <script>
 // ── scenes data (used even if WebGL is unavailable) ──────────────────────
 const SCENES=[
- {key:'hook',tc:'0:00',name:'The scream',d:'Rex screams at his phone in the empty cafeteria. The hologram reads −50%.',dur:8.5,
-  caps:['he put his <em>WHOLE</em> savings','into <em>ONE</em> coin','and lost half <em class="r">in a day</em>','his friend Ollie <em>didn\u2019t</em>…','stay for <em>rule 6</em>'],rule:'Why survival wins (open loop: rule 6)',
+ {key:'hook',tc:'0:00',name:'The scream',d:'Rex screams at his phone in the empty cafeteria. The hologram reads −50%. Freeze frame, then a VHS rewind.',dur:10.8,
+  caps:[[0.3,'he put his <em>WHOLE</em> savings'],[1.7,'into <em>ONE</em> coin'],[2.9,'and lost half <em class="r">in a day</em>'],[4.5,'his friend Ollie <em>didn\u2019t</em>…'],[5.7,'stay for <em>rule 6</em>'],[6.8,''],[7.1,'yep. that\u2019s Rex.'],[8.1,'you\u2019re probably wondering'],[9.0,'how he got here'],[9.8,'']],rule:'Why survival wins (open loop: rule 6)',
   vo:'He put his whole savings into one coin. And lost half of it in a single day. His friend Ollie didn\u2019t. Stay for rule six, it\u2019s the one that saved him.'},
- {key:'party',tc:'0:20',name:'3 days earlier',d:'The class in party hats cheers as Rex’s coin pumps +80%. Confetti everywhere.',dur:7,title:'3 DAYS EARLIER…',
-  caps:['everyone was','cheering for Rex','“he\u2019s a <em>genius</em>”'],rule:'Why survival wins',
+ {key:'party',tc:'0:20',name:'3 days earlier',d:'The class in party hats cheers as Rex’s coin pumps +80%. Confetti everywhere.',dur:7.5,title:'3 DAYS EARLIER…',
+  caps:[[0,''],[1.7,'everyone was'],[2.9,'cheering for Rex'],[4.4,'“he\u2019s a <em>genius</em>”']],rule:'Why survival wins',
   vo:'Three days earlier, everyone thought he was a genius.'},
  {key:'ollie',tc:'1:00',name:'Ollie’s 5%',d:'Ollie calmly shows his plan: only 5% in new coins. Rex laughs at him.',dur:7,chapter:['RULE 1 OF 6','THE 5% RULE'],collect:[[1,2.4]],
-  caps:['Ollie only put','<em>5%</em> in new coins','and Rex <em>laughed</em>'],rule:'1 · The 5% rule',
+  caps:[[0.4,'Ollie only put'],[1.9,'<em>5%</em> in new coins'],[3.6,'and Rex <em>laughed</em>']],rule:'1 · The 5% rule',
   vo:'Ollie only put five percent into new coins. Rex laughed at him.'},
- {key:'lev',tc:'3:00',name:'10x',d:'Rex slams the 10x button. The chart crashes, alarms flash red, and he falls off the bench.',dur:7.5,chapter:['RULE 6 OF 6','NEVER BORROW'],collect:[[6,5.2]],
-  caps:['then Rex borrowed','<em>10 times</em> more','<em class="r">LIQUIDATED</em>'],rule:'6 · No leverage',
+ {key:'lev',tc:'3:00',name:'10x',d:'Rex slams the 10x button. The chart crashes, alarms flash red, and he falls off the bench in slow motion.',dur:8.5,chapter:['RULE 6 OF 6','NEVER BORROW'],collect:[[6,6.4]],
+  caps:[[0.4,'then Rex borrowed'],[1.4,'<em>10 times</em> more'],[2.5,''],[6.9,'<em class="r">LIQUIDATED</em>']],rule:'6 · No leverage',
   vo:'Then Rex borrowed ten times more. One bad hour. Liquidated.'},
  {key:'plan',tc:'5:00',name:'The plan',d:'Ollie’s hologram: exit at −10%, sold. 15% cash ready, he buys the dip. Rex cries on the floor.',dur:7.5,chapter:['RULES 3 + 4','EXIT FIRST · KEEP CASH'],collect:[[3,2.4],[4,4.6]],
-  caps:['but Ollie had','an exit at <em>−10%</em>','and cash for <em>the dip</em>'],rule:'3 · Exit first + 4 · Spare cash',
+  caps:[[0.4,'but Ollie had'],[1.8,'an exit at <em>−10%</em>'],[3.4,'and cash for <em>the dip</em>']],rule:'3 · Exit first + 4 · Spare cash',
   vo:'But Ollie had a plan. An exit at minus ten percent, and cash ready for the dip.'},
  {key:'end',tc:'8:40',name:'Teach me',d:'Ollie helps Rex up. The class claps. The teacher writes THE RISK PLAYBOOK on the board.',dur:8,collect:[[2,4.6],[5,5.4]],
-  caps:['that’s when Rex asked','<em>“can you teach me</em>','<em>the playbook?”</em>'],rule:'All six',
+  caps:[[0.9,'that\u2019s when Rex asked'],[2.3,'<em>“can you teach me</em>'],[3.4,'<em>the playbook?”</em>']],rule:'All six',
   vo:'That’s when Rex asked: can you teach me the playbook?'},
  {key:'cta',tc:'10:10',name:'The playbook',d:'A giant phone shows WalletLens flagging a coin that breaks the 5% rule. Ollie waves.',dur:6.5,
-  caps:['check your own','portfolio before','Rex does 😅'],rule:'Try it',
+  caps:[[0.3,'check your own'],[1.5,'portfolio before'],[2.6,'Rex does 😅']],rule:'Try it',
   vo:'Check your own portfolio before Rex does. WalletLens flags anything that breaks the five percent rule.'},
- {key:'outro',tc:'10:20',name:'WalletLens ending',d:'Black screen, the WalletLens app icon builds itself, then \u201cCheck less. Live more.\u201d and \u201cDon\u2019t forget to follow us\u201d.',dur:8,caps:[''],rule:'Brand ending',
+ {key:'outro',tc:'10:20',name:'WalletLens ending',d:'Black screen, the WalletLens app icon builds itself, then \u201cCheck less. Live more.\u201d and \u201cDon\u2019t forget to follow us\u201d.',dur:8,caps:[[0,'']],rule:'Brand ending',
   vo:'WalletLens. Check less. Live more. Don\u2019t forget to follow us.'}
 ];
 const EXTRA=[
@@ -324,7 +338,8 @@ if(!ok){screen.insertAdjacentHTML('afterbegin','<div class="err">This preview ne
 const RNG=(()=>{let s=7;return()=>{s=(s*16807)%2147483647;return s/2147483647}})();
 function canvasTex(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');draw&&draw(g,w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=8;return {c,g,t}}
 
-let clockH,clockM,dust,camRoll=0;
+let clockH,clockM,dust,camRoll=0,hemiL,rimL,sunL,lampMat,winL,composer,bloomPass,gradePass,partyL=[],beams=[],shafts=[];
+const FX={sat:1,con:1.05,vig:.25,ab:.0015,warm:0,flash:0,rw:0,bars:0,barsCur:0};
 let scene,camera,chars={},holo,holoTex,boardTex,phone3d,phoneTex,confetti=[],alarm,lampLights=[],tableTop;
 if(ok){
   renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
@@ -335,9 +350,9 @@ if(ok){
   camera=new THREE.PerspectiveCamera(60,9/16,.1,100);
 
   // lights
-  scene.add(new THREE.HemisphereLight('#8ea2ff','#2a2a38',.5));
-  const rim=new THREE.DirectionalLight('#7da2ff',.7);rim.position.set(-4,6,-9);scene.add(rim);
-  const sun=new THREE.DirectionalLight('#fff1df',.95);sun.position.set(4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+  hemiL=new THREE.HemisphereLight('#8ea2ff','#2a2a38',.5);scene.add(hemiL);
+  const rim=rimL=new THREE.DirectionalLight('#7da2ff',.7);rim.position.set(-4,6,-9);scene.add(rim);
+  const sun=sunL=new THREE.DirectionalLight('#fff1df',.95);sun.position.set(4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
   Object.assign(sun.shadow.camera,{left:-9,right:9,top:9,bottom:-9,near:1,far:30});sun.shadow.bias=-.0006;sun.shadow.radius=4;scene.add(sun);
   alarm=new THREE.PointLight('#ff2a2a',0,14);alarm.position.set(0,4,1);scene.add(alarm);
 
@@ -386,6 +401,34 @@ if(ok){
   {const n=260,pos=new Float32Array(n*3);for(let i=0;i<n;i++){pos[i*3]=(RNG()-.5)*14;pos[i*3+1]=RNG()*6;pos[i*3+2]=(RNG()-.5)*12}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
    const dt=canvasTex(32,32,(g)=>{const gr=g.createRadialGradient(16,16,0,16,16,16);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,32,32)});
    dust=new THREE.Points(geo,new THREE.PointsMaterial({size:.05,map:dt.t,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending,color:'#dfe8ff'}));scene.add(dust)}
+
+  // cinematic lighting rigs: party spots with visible beams, golden window light with shafts
+  lampMat=M.lamp;
+  const beamGeo=(r,h)=>{const g=new THREE.ConeGeometry(r,h,28,1,true);g.translate(0,-h/2,0);g.rotateX(-Math.PI/2);return g};
+  ['#ff3fd1','#3fd8ff','#ffd23f'].forEach((c,i)=>{const L=new THREE.SpotLight(c,0,16,.38,.6,1.2);L.position.set([-3.2,3.2,0][i],6.3,[-1.5,-1.5,1.2][i]);scene.add(L);scene.add(L.target);
+    const b=new THREE.Mesh(beamGeo(1.15,6.4),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));b.position.copy(L.position);scene.add(b);partyL.push({L,b,ph:i*2.1})});
+  winL=new THREE.DirectionalLight('#ffb766',0);winL.position.set(14,8,-1);winL.target.position.set(0,0,-1);scene.add(winL);scene.add(winL.target);
+  [-3.6,-.2,3.2].forEach(z=>{const b=new THREE.Mesh(beamGeo(1.7,9.5),new THREE.MeshBasicMaterial({color:'#ffcf8a',transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));b.position.set(9.7,3.6,z);b.lookAt(2.5,-.5,z-.8);scene.add(b);shafts.push(b)});
+  // post: bloom + film grade (tone mapping happens in the materials; the grade pass does sRGB, colour and lens effects)
+  if(THREE.EffectComposer){
+    composer=new THREE.EffectComposer(renderer);composer.addPass(new THREE.RenderPass(scene,camera));
+    bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(1920,1080),.6,.5,.84);composer.addPass(bloomPass);
+    gradePass=new THREE.ShaderPass({uniforms:{tDiffuse:{value:null},uTime:{value:0},uSat:{value:1},uCon:{value:1.05},uVig:{value:.25},uAb:{value:.0015},uWarm:{value:0},uFlash:{value:0},uRw:{value:0},uRes:{value:new THREE.Vector2(1920,1080)}},
+      vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+      fragmentShader:`uniform sampler2D tDiffuse;uniform float uTime,uSat,uCon,uVig,uAb,uWarm,uFlash,uRw;uniform vec2 uRes;varying vec2 vUv;
+float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
+vec3 toS(vec3 c){c=max(c,0.);return mix(c*12.92,1.055*pow(c,vec3(1./2.4))-.055,step(.0031308,c));}
+void main(){vec2 uv=vUv;
+ if(uRw>0.){float band=step(.97,fract(uv.y*2.5+uTime*1.7));uv.x+=(sin(uv.y*140.+uTime*40.)*.003+band*.04)*uRw;}
+ vec2 d=uv-.5;float r=dot(d,d);vec2 o=d*(uAb+uRw*.006)*(1.+r*4.);
+ vec3 c=toS(vec3(texture2D(tDiffuse,uv+o).r,texture2D(tDiffuse,uv).g,texture2D(tDiffuse,uv-o).b));
+ float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,uSat);c=(c-.5)*uCon+.5;
+ float hi=smoothstep(.45,1.,l),lo=1.-smoothstep(0.,.45,l);
+ c+=max(uWarm,0.)*(hi*vec3(.08,.035,-.05)+lo*vec3(-.03,.005,.04))+max(-uWarm,0.)*(hi*vec3(-.03,.02,.05)+lo*vec3(-.03,.02,.07));
+ c*=1.-uVig*r*1.8;c+=(h(uv*uRes+fract(uTime)*91.)-.5)*.035;
+ if(uRw>0.)c+=uRw*(.05*sin(uv.y*900.)+.04);
+ gl_FragColor=vec4(clamp(c+uFlash,0.,1.),1.);}`});
+    composer.addPass(gradePass)}
   // blackboard
   boardTex=canvasTex(1024,360);drawBoard(0);
   const board=new THREE.Mesh(new THREE.PlaneGeometry(7,2.45),new THREE.MeshStandardMaterial({map:boardTex.t,roughness:.9}));board.position.set(0,3.2,-9.02);scene.add(board);
@@ -410,6 +453,7 @@ if(ok){
 
   // cast
   chars.rex=makeChar({skin:'#c58a5a',shirt:'rex',pants:'#1c1f26',hair:'spiky',hairColor:'#15100c'});
+  {const sm=new THREE.MeshStandardMaterial({color:'#9fe0ff',roughness:.1,metalness:.1,emissive:'#3aa0d8',emissiveIntensity:.3});chars.rex.sweat=[-.36,.36].map(x=>{const d=new THREE.Mesh(new THREE.SphereGeometry(.045,12,10),sm);d.scale.y=1.4;d.position.set(x,.5,.18);d.visible=false;chars.rex.neck.add(d);return d})}
   chars.ollie=makeChar({skin:'#8a5634',shirt:'ollie',pants:'#2f5fb0',hair:'cap',hairColor:'#2a1a10',glasses:true});
   chars.k1=makeChar({skin:'#e8b48a',shirt:'pink',pants:'#f2f2f2',hair:'long',hairColor:'#f3d3a3'});
   chars.k2=makeChar({skin:'#8f5a36',shirt:'plaid',pants:'#2a2a2a',hair:'locs',hairColor:'#120d0a'});
@@ -475,7 +519,7 @@ function makeChar(o){
     ph:RNG()*3,blinking:false,blink(b){if(b===this.blinking)return;this.blinking=b;drawFace(face.g,o.skin,this.expr);if(b){const g=face.g;g.fillStyle=o.skin;g.fillRect(60,70,140,66);g.strokeStyle='#141012';g.lineWidth=7;g.lineCap='round';g.beginPath();g.moveTo(72,104);g.quadraticCurveTo(88,114,106,104);g.moveTo(150,104);g.quadraticCurveTo(166,114,184,104);g.stroke()}face.t.needsUpdate=true}};
   return c;
 }
-function resetChar(c){c.root.visible=false;c.root.position.set(0,0,0);c.root.rotation.set(0,0,0);c.body.position.set(0,0,0);c.body.rotation.set(0,0,0);[c.armL,c.armR,c.legL,c.legR,c.neck].forEach(p=>p.rotation.set(0,0,0));c.hat.visible=false;c.setFace('smile')}
+function resetChar(c){if(c.sweat)c.sweat.forEach(d=>d.visible=false);c.root.visible=false;c.root.position.set(0,0,0);c.root.rotation.set(0,0,0);c.body.position.set(0,0,0);c.body.rotation.set(0,0,0);[c.armL,c.armR,c.legL,c.legR,c.neck].forEach(p=>p.rotation.set(0,0,0));c.hat.visible=false;c.setFace('smile')}
 const SIT_Y=-.4;
 function sit(c){c.legL.rotation.x=c.legR.rotation.x=-Math.PI/2;c.body.position.y=SIT_Y}
 function place(c,x,z,ry=0){c.root.visible=true;c.root.position.set(x,0,z);c.root.rotation.y=ry}
@@ -523,6 +567,68 @@ function confettiBurst(origin){confetti.forEach(c=>{c.m.visible=true;c.m.positio
 function confettiStep(dt){confetti.forEach(c=>{if(!c.m.visible)return;c.m.position.addScaledVector(c.v,dt);c.m.rotation.x+=c.r.x*dt;c.m.rotation.y+=c.r.y*dt;if(c.m.position.y<.02){c.m.position.y=.02;c.v.set(0,0,0);c.r.set(0,0,0);c.m.rotation.x=-Math.PI/2}})}
 function hideConfetti(){confetti.forEach(c=>c.m.visible=false)}
 
+
+// ── direction: time warps (slow motion, freeze, rewind), shot lists, lighting moods ──
+const WARP={
+ hook:t=>t<6.8?t:(t<9.8?6.8:Math.max(1.0,6.8-(t-9.8)*5.5)),
+ lev:t=>t<2.55?t:(t<4.2?2.55+(t-2.55)*.35:3.1275+(t-4.2))};
+function shotList(t,list){for(const sh of list){if(t>=sh[0]&&t<sh[1]){const p=ease((t-sh[0])/(sh[1]-sh[0])),o=sh[6]||{};const pos=sh[2].clone().lerp(sh[3],p),look=sh[4].clone().lerp(sh[5],p);
+  camera.fov=o.fovB!==undefined?o.fov+(o.fovB-o.fov)*p:(o.fov||40);camera.updateProjectionMatrix();
+  if(camShake>0){pos.x+=(Math.random()-.5)*camShake;pos.y+=(Math.random()-.5)*camShake}
+  camera.position.copy(pos);camera.lookAt(look);const roll=o.rollB!==undefined?(o.roll||0)+(o.rollB-(o.roll||0))*p:(o.roll||0);if(roll)camera.rotateZ(roll);return}}}
+function orbit(t,t0,t1,c,r,a0,a1,y0,y1,look,fov=40){const p=ease((t-t0)/(t1-t0)),a=a0+(a1-a0)*p;camera.fov=fov;camera.updateProjectionMatrix();camera.position.set(c.x+Math.sin(a)*r,y0+(y1-y0)*p,c.z+Math.cos(a)*r);camera.lookAt(look)}
+const FACE_REX=V(0,1.95,-1.05);
+const SHOT={
+ hook(t){shotList(Math.min(t,6.79),[
+  [0,1.7,V(.66,1.66,.42),V(.57,1.52,.2),V(.5,1.1,-.25),V(.5,1.1,-.25),{fov:38}],
+  [1.7,4.4,V(0,2.0,1.45),V(0,1.98,1.02),FACE_REX,FACE_REX,{fov:34}],
+  [4.4,6.8,V(2.8,2.7,3.6),V(2.35,2.55,3.1),V(0,1.7,-1),V(0,1.75,-1),{fov:40,roll:.1,rollB:.14}]])},
+ party(t){shotList(t,[
+  [0,2.6,V(0,4.8,5.4),V(0,3.0,3.9),V(0,1.5,-1.6),V(0,1.9,-1.6),{fov:42}],
+  [2.6,5.0,V(.55,2.05,1.3),V(.25,2.0,1.0),FACE_REX,V(0,2.0,-1.05),{fov:36,roll:-.05}],
+  [5.0,7.5,V(-1.7,1.0,2.3),V(-1.2,1.05,2.0),V(-.6,2.3,-2),V(-.4,2.45,-2),{fov:46}]])},
+ ollie(t){shotList(t,[
+  [0,3.6,V(-2.0,2.2,1.0),V(-1.7,2.15,.65),V(1.0,2.05,-1.05),V(1.0,2.05,-1.05),{fov:36}],
+  [3.6,7,V(-.55,2.0,1.15),V(-.8,1.98,.9),V(-1.1,1.95,-1.05),V(-1.1,1.95,-1.05),{fov:34,roll:.04}]])},
+ lev(t){if(t>=2.55&&t<4.2){const p=ease((t-2.55)/1.65),fov=22+40*p,d=4.4*Math.tan(11*Math.PI/180)/Math.tan(fov/2*Math.PI/180);
+   camera.fov=fov;camera.updateProjectionMatrix();camera.position.set((Math.random()-.5)*camShake,1.97+(Math.random()-.5)*camShake,-1.05+d);camera.lookAt(FACE_REX);camera.rotateZ(.05*p);return}
+  shotList(t,[
+  [0,2.3,V(-.95,2.0,2.5),V(-.6,2.0,2.05),V(.3,2.1,-.8),V(.3,2.1,-.8),{fov:38}],
+  [2.3,2.55,V(.9,2.6,.62),V(.9,2.6,.5),V(.9,2.6,-.4),V(.9,2.6,-.4),{fov:40}],
+  [4.2,5.4,V(.25,2.0,1.7),V(.1,1.6,2.0),V(0,1.6,-1.05),V(0,1.2,-1.4),{fov:42,roll:.12}],
+  [5.4,6.9,V(0,6.2,-.9),V(0,5.6,-1.3),V(0,0,-2.5),V(0,0,-2.7),{fov:46}],
+  [6.9,8.5,V(2.6,2.3,2.8),V(2.95,2.45,3.3),V(0,1.0,-1.8),V(0,1.1,-1.8),{fov:40,roll:-.06}]])},
+ plan(t){if(t<3.2){shotList(t,[[0,3.2,V(1.25,1.45,1.75),V(1.0,1.5,1.4),V(.45,2.15,-.95),V(.4,2.2,-.95),{fov:44}]]);return}
+  orbit(t,3.2,7.5,V(.6,0,-1.05),2.7,-.65,.45,2.15,2.05,V(.4,2.1,-1.0),38)},
+ end(t){if(t<5){orbit(t,0,5,V(.3,0,1.2),5.4,.55,-.3,3.3,2.6,V(.2,1.7,.8),40);return}
+  shotList(t,[[5,8,V(0,3.0,1.0),V(0,3.15,-4.4),V(0,2.9,-6),V(0,3.15,-9),{fov:40}]])},
+ cta(t){shotList(t,[
+  [0,5.0,V(-.2,1.95,3.6),V(-.3,1.95,3.2),V(-.1,1.9,0),V(-.2,1.9,0),{fov:40}],
+  [5.0,6.5,V(-.3,1.95,3.2),V(-.33,1.86,1.62),V(-.2,1.9,0),V(-.35,1.85,1.1),{fov:40,fovB:30}]])}
+};
+const H=(x)=>{const s=Math.sin(x*127.1)*43758.5453;return s-Math.floor(s)};
+function mood(key,t,dt){
+  let hem=.5,sun=.95,rim=.7,lamp=.35,lampE=1.6,party=0,win=0,shaft=0,alarmI=null;
+  Object.assign(FX,{sat:1.08,con:1.06,vig:.25,ab:.0015,warm:.15,flash:0,rw:0,bars:0});
+  if(key==='hook'){hem=.32;sun=.55;rim=1.1;lamp=.18;Object.assign(FX,{sat:.95,warm:-.6,vig:.45,bars:t<6.8?1:0});
+    if(t>=6.8&&t<9.8){FX.sat=.12;FX.con=1.18;FX.flash=Math.max(0,.6-(t-6.8)*2.4);if(!sfxFlags.frz){sfxFlags.frz=1;SFX.scratch()}}
+    if(t>=9.8){FX.rw=1;FX.sat=.7;FX.ab=.004;if(!sfxFlags.rw){sfxFlags.rw=1;SFX.rewind()}}
+    $('rw').hidden=!(t>=9.8)}
+  else $('rw').hidden=true;
+  if(key==='party'){hem=.42;sun=.6;lamp=.12;lampE=.9;party=1;Object.assign(FX,{sat:1.28,con:1.08,warm:.3})}
+  if(key==='ollie'){win=.5;shaft=.06;FX.warm=.3}
+  if(key==='lev'){if(t<2.55){hem=.42;sun=.8;FX.warm=-.1}
+    else{const fl=t<3.3?(H(Math.floor(t*22))>.45?1:.05):.0;lamp=.35*fl;lampE=1.6*fl+.05;hem=t<3.3?.42*fl+.08:.1;sun=t<3.3?.8*fl+.1:.18;rim=.4;
+      Object.assign(FX,{sat:1.12,con:1.12,warm:-.25,vig:.55,bars:1,ab:t<4.2?.0045:.002});if(!sfxFlags.slo){sfxFlags.slo=1;SFX.slowmo()}}}
+  if(key==='plan'){hem=.42;sun=.45;win=1.7;shaft=.17;lamp=.2;Object.assign(FX,{warm:.75,sat:1.16,con:1.07})}
+  if(key==='end'){win=1.0;shaft=.11;Object.assign(FX,{warm:.45,sat:1.16})}
+  if(key==='cta'){FX.warm=.1}
+  hemiL.intensity=hem;sunL.intensity=sun;rimL.intensity=rim;lampLights.forEach(l=>l.intensity=lamp);lampMat.emissiveIntensity=lampE;winL.intensity=win;
+  shafts.forEach((b,i)=>b.material.opacity=shaft*(.85+.15*Math.sin(NOW()/700+i)));
+  partyL.forEach(({L,b,ph})=>{L.intensity=party*2.2;b.material.opacity=party*.11;const a=NOW()/1000*1.6+ph;L.target.position.set(Math.sin(a)*3,0,-1.4+Math.cos(a*1.3)*2);b.lookAt(L.target.position)});
+  FX.barsCur+=(FX.bars-FX.barsCur)*Math.min(1,dt*7);const bh=(FX.barsCur*10.5).toFixed(2)+'%';$('lbt').style.height=bh;$('lbb').style.height=bh;
+  if(gradePass){const u=gradePass.uniforms;u.uTime.value=NOW()/1000;u.uSat.value=FX.sat;u.uCon.value=FX.con;u.uVig.value=FX.vig;u.uAb.value=FX.ab;u.uWarm.value=FX.warm;u.uFlash.value=FX.flash;u.uRw.value=FX.rw}
+}
 const SETUP={
  hook(){place(chars.rex,0,-1.05);holo.visible=true;holo.position.set(1.15,2.55,-.7);holo.rotation.y=-.35;phone3d.visible=true;phone3d.position.set(.5,1.1,-.25);phone3d.rotation.set(-Math.PI/2,0,.4);drawPhone('red')},
  party(){place(chars.rex,0,-1.05);chars.rex.hat.visible=true;
@@ -544,7 +650,7 @@ const UPDATE={
  ollie(t,dt){const o=chars.ollie,r=chars.rex;sit(o);sit(r);idle(o,t);o.setFace('calm');point(o,Math.min(1,t/1.2)*.5);
    if(t>3){laugh(r,t);r.setFace('smug')}else{idle(r,t,1);r.setFace('smile')}drawHolo('pie',t/3,t);
    camMove(t,7,V(1.4,2.0,isV()?3.8:4.4),V(.4,2.05,isV()?3.3:4.2),V(.5,2.0,-1),V(.1,2.0,-1))},
- lev(t,dt){const r=chars.rex;sit(r);const p=t/7.5;drawHolo('lev',p,t);
+ lev(t,dt){const r=chars.rex;sit(r);const p=t/7.5;drawHolo('lev',p,t);r.sweat.forEach((d,i)=>{d.visible=t<2.55;d.position.y=.5-((t*.45+i*.5)%1)*.35});
    if(p<.34){point(r,1);r.setFace('grin');alarm.intensity=0}
    else if(t<4.6){scream(r,t);r.setFace('scream');alarm.intensity=2+Math.sin(t*12)*1.6;camShake=.05;camRoll=Math.min(.12,(t-2.55)*.08);if(!sfxFlags.alarm){sfxFlags.alarm=1;SFX.alarm()}}
    else{const q=Math.min(1,(t-4.6)/.6);r.setFace('shock');r.legL.rotation.x=r.legR.rotation.x=-Math.PI/2+q*1.0;r.body.rotation.x=-q*1.45;r.body.position.y=SIT_Y*(1-q)+q*.12;r.body.position.z=-q*.75;r.armL.rotation.z=-q*2.2;r.armR.rotation.z=q*2.2;alarm.intensity=2+Math.sin(t*12)*1.6;camShake=.03}
@@ -582,6 +688,9 @@ const SFX=(()=>{let ac=null,on=false;const env=(g,a,d,v)=>{const n=ac.currentTim
    tick(){tone(1400,'sine',.005,.06,.05)},
    ding(){tone(880,'triangle',.01,.5,.22);setTimeout(()=>tone(1320,'triangle',.01,.6,.18),110)},
    alarm(){if(!on)return;for(let i=0;i<4;i++)setTimeout(()=>tone(620,'sawtooth',.02,.28,.07,420),i*360)},
+   scratch(){if(!on)return;const s=noise(),f=ac.createBiquadFilter(),g=ac.createGain();f.type='bandpass';f.Q.value=3;[0,.08,.16].forEach((d,i)=>f.frequency.setValueAtTime(i%2?2400:700,ac.currentTime+d));s.connect(f).connect(g).connect(ac.destination);env(g,.01,.3,.5);s.start();s.stop(ac.currentTime+.4)},
+   rewind(){if(!on)return;const o=ac.createOscillator(),g=ac.createGain();o.type='sawtooth';o.frequency.setValueAtTime(900,ac.currentTime);o.frequency.exponentialRampToValueAtTime(120,ac.currentTime+.9);o.connect(g).connect(ac.destination);env(g,.05,.9,.06);o.start();o.stop(ac.currentTime+1)},
+   slowmo(){tone(110,'sine',.05,1.8,.3,40)},
    chime(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,'sine',.02,1.4,.16),i*150+300))}}})();
 // ── player ───────────────────────────────────────────────────────────────
 let cur=0,t=0,playing=true,last=performance.now(),capIdx=-1,format='h';
@@ -599,19 +708,20 @@ function show(i){
   document.querySelectorAll('#scenes button').forEach((b,j)=>b.setAttribute('aria-current',String(j===cur)));
   updateCap();
 }
-function updateCap(){const s=SCENES[cur];const span=(s.dur-.4)/s.caps.length;const k=Math.min(s.caps.length-1,Math.floor(Math.max(0,t-.2)/span));
-  if(k!==capIdx){if(capIdx>=0)SFX.tick();capIdx=k;const el=$('cap');el.innerHTML=s.caps[k];el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop')}
+function updateCap(){const s=SCENES[cur];const timed=Array.isArray(s.caps[0]);let k;
+  if(timed){k=0;s.caps.forEach((c,i)=>{if(t>=c[0])k=i})}else{const span=(s.dur-.4)/s.caps.length;k=Math.min(s.caps.length-1,Math.floor(Math.max(0,t-.2)/span))}
+  if(k!==capIdx){const html=timed?s.caps[k][1]:s.caps[k];if(capIdx>=0&&html)SFX.tick();capIdx=k;const el=$('cap');el.innerHTML=html;el.style.visibility=html?'visible':'hidden';el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop')}
   if(s.title&&t>1.6)$('tcard').classList.remove('on');
   updateRules();
   const total=SCENES.reduce((a,x)=>a+x.dur,0),done=SCENES.slice(0,cur).reduce((a,x)=>a+x.dur,0)+t;$('ytp').style.width=(done/total*100)+'%'}
-function resize(){if(!ok)return;const r=screen.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.fov=isV()?62:40;camera.updateProjectionMatrix()}
+function resize(){if(!ok)return;const r=screen.getBoundingClientRect();renderer.setSize(r.width,r.height,false);if(composer){composer.setSize(r.width,r.height);gradePass.uniforms.uRes.value.set(r.width,r.height)}camera.aspect=r.width/r.height;camera.fov=isV()?62:40;camera.updateProjectionMatrix()}
 function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;
   if(playing){t+=dt;if(t>=SCENES[cur].dur)show(cur+1)}
-  if(ok){camShake*=.9;resetPose();UPDATE[SCENES[cur].key](t,playing?dt:0);
+  if(ok){camShake*=.9;resetPose();const key=SCENES[cur].key,ta=(WARP[key]||(x=>x))(t);UPDATE[key](ta,playing?dt:0);if(SHOT[key])SHOT[key](t);mood(key,t,dt);
     Object.values(chars).forEach(c=>{if(c.root.visible&&['smile','calm','grin','smug'].includes(c.expr))c.blink(((performance.now()/1000+c.ph)%3.4)<.13)});
     const ct=performance.now()/1000*(SCENES[cur].key==='lev'?40:1);clockM.rotation.z=-ct*.1;clockH.rotation.z=-ct*.1/12-1;
     if(dust){dust.rotation.y+=dt*.02;dust.position.y=Math.sin(performance.now()/4000)*.15}
-    if(SCENES[cur].key!=='outro')renderer.render(scene,camera)}
+    if(SCENES[cur].key!=='outro')(composer||renderer).render(composer?undefined:scene,composer?undefined:camera)}
   updateCap();requestAnimationFrame(frame)}
 function resetPose(){Object.values(chars).forEach(c=>{if(!c.root.visible)return;c.body.position.set(0,0,0);c.body.rotation.set(0,0,0);c.torso.scale.y=1;[c.armL,c.armR,c.legL,c.legR,c.neck].forEach(p=>p.rotation.set(0,0,0))})}
 $('play').onclick=()=>{playing=!playing;$('play').textContent=playing?'❚❚ Pause':'▶ Play'};
