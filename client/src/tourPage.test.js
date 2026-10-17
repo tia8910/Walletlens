@@ -58,12 +58,13 @@ describe('the tour page', () => {
     expect(html).toContain('data-cta="film_msstore"')
   })
 
-  it('puts Google Play, Microsoft and the Chrome extension in the top bar', () => {
+  it('puts Google Play, Microsoft, the Chrome extension and YouTube in the top bar', () => {
     const bar = markup.match(/<nav class="stores" aria-label="Get the apps">([\s\S]*?)<\/nav>/)[1]
     expect(bar).toContain('href="https://play.google.com/store/apps/details?id=live.walletlens.twa" data-cta="nav_play"')
     expect(bar).toContain('href="https://apps.microsoft.com/detail/9pkvkn0p9dx2" data-cta="nav_msstore"')
     expect(bar).toContain('href="/chrome-extension/" data-cta="nav_chrome"')
-    expect(bar.match(/aria-label="/g)).toHaveLength(3)
+    expect(bar).toContain('href="/youtube/" data-cta="nav_youtube"')
+    expect(bar.match(/aria-label="/g)).toHaveLength(4)
   })
 
   it('loads only what the site CSP allows: self-hosted fonts, no font CDN', () => {
