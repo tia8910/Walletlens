@@ -178,6 +178,15 @@ export default {
       "youtube": "PLnBgt3oV6I",
       "added": "2026-10-16",
       "wide": true
+    },
+    {
+      "key": "yt-YUWY19qzh44",
+      "kind": "story",
+      "name": "how your portfolio is split?",
+      "emoji": "🎬",
+      "lang": "en",
+      "youtube": "YUWY19qzh44",
+      "added": "2026-10-17"
     }
   ]
 }
