@@ -145,7 +145,9 @@ export function tidyImportRows(rows, marketPrice = () => 0) {
   const name = (r) => String(r.name || '').toLowerCase().replace(/[^a-z0-9]/g, '')
   const out = []
   for (const r of rows) {
-    const dup = out.find(o => sig(o.amount) === sig(r.amount) && o.type === r.type &&
+    // Same day too: two real trades of the same size on different days, read
+    // off a trade history, are two trades.
+    const dup = out.find(o => sig(o.amount) === sig(r.amount) && o.type === r.type && (o.date || '') === (r.date || '') &&
       (o.symbol === r.symbol || (name(o) && name(o) === name(r))))
     if (dup) {
       // Keep the fuller reading of the two.

@@ -135,6 +135,35 @@ describe('layouts with no fixture', () => {
     expect(brief(parseHoldingsFromWords(w, catalogue(false)))).toEqual([['ETH', 10, 2609.6], ['BTC', 0.5, 67237]])
   })
 
+  it('an exchange order history: each card is a trade, with its side, filled amount, price and day', () => {
+    // Bybit's layout: pair and date on top, Limit / Side, then labelled lines
+    // reading "filled / total", OCR gluing the halves ("1,500.5/1,500.5", "250/").
+    const card = (y, pair, date, side, amt, px) => [
+      ...line(y, [0, pair], [700, date], [860, '12:30:00']),
+      ...line(y + 60, [0, 'Limit'], [70, '/'], [90, side]),
+      ...line(y + 140, [0, 'Amount'], [600, amt]),
+      ...line(y + 200, [0, 'Price'], [600, px]),
+      ...line(y + 260, [0, 'Status'], [700, 'Filled']),
+    ]
+    const w = [
+      ...line(0, [0, 'Open'], [60, 'Orders'], [200, 'Order'], [270, 'History'], [420, 'Trade'], [490, 'History']),
+      ...card(100, 'SOL/USDT', '2026-10-17', 'Sell', '1,500.5/1,500.5', '150.25/150.25'),
+      ...card(500, 'ETH/USDT', '2026-10-16', 'Buy', '2/', '2,600.10'),
+      ...card(900, 'ETH/USDT', '2026-10-15', 'Buy', '2/2', '2,580.00/2,580.00'),
+    ]
+    for (const prices of [true, false]) {
+      expect(parseHoldingsFromWords(w, catalogue(prices))).toEqual([
+        { symbol: 'SOL', name: 'Solana', amount: 1500.5, price: 150.25, type: 'sell', date: '2026-10-17' },
+        { symbol: 'ETH', name: 'Ethereum', amount: 2, price: 2600.1, type: 'buy', date: '2026-10-16' },
+        { symbol: 'ETH', name: 'Ethereum', amount: 2, price: 2580, type: 'buy', date: '2026-10-15' },
+      ])
+    }
+  })
+
+  it('"7/7" is a page counter, not a figure', () => {
+    expect(parseHoldingsFromWords(line(0, [0, 'Arweave'], [200, '7/7']), catalogue(false))).toEqual([])
+  })
+
   it('nothing readable gives nothing', () => {
     expect(parseHoldingsFromWords([], catalogue())).toEqual([])
     expect(parseHoldingsFromWords(line(0, [0, 'Hello'], [100, 'world']), catalogue())).toEqual([])
