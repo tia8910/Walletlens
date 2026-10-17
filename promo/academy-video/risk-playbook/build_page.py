@@ -14,7 +14,7 @@ body.render .stage{display:block}
 body.render .screen{width:1920px!important;max-width:none!important;height:1080px;aspect-ratio:auto;border-radius:0;box-shadow:none}
 </style>''',1)
 # virtual clock
-rep("let clockH,clockM,dust,camRoll=0","const RENDER=/render/.test(location.hash);let vNow=0;const NOW=()=>RENDER?vNow*1000:performance.now();window.__events=[];\nif(RENDER)document.body.classList.add('render');\nlet clockH,clockM,dust,camRoll=0")
+rep("let clockH,clockM,dust,camRoll=0","const RENDER=/render/.test(location.hash);let vNow=0;NOW=()=>RENDER?vNow*1000:performance.now();window.__events=[];\nif(RENDER)document.body.classList.add('render');\nlet clockH,clockM,dust,camRoll=0")
 s=s.replace("(performance.now()/1000+c.ph)","(NOW()/1000+c.ph)").replace("const ct=performance.now()/1000*","const ct=NOW()/1000*").replace("Math.sin(performance.now()/4000)","Math.sin(NOW()/4000)")
 assert 'performance.now()/' not in s.split('// ── player')[1].split('function resetPose')[0] or True
 # frame core

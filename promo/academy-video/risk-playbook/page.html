@@ -114,7 +114,7 @@ tr:last-child td{border-bottom:0}
 .chapter{position:absolute;left:2.2%;top:13%;text-align:left;opacity:0;pointer-events:none;z-index:6;white-space:nowrap;padding:1.1cqw 2cqw 1.2cqw;border-radius:1.2cqw;background:linear-gradient(90deg,rgba(3,12,7,.82),rgba(3,12,7,.35));border-left:.5cqw solid #4ade80}
 .chapter.on{animation:chap 2.8s ease forwards}
 .chapter .n{font-family:var(--mono);font-size:1.5cqw;letter-spacing:.35em;color:#86efac;text-shadow:0 0 1cqw rgba(0,0,0,.8)}
-.chapter .h{font-family:var(--cap);font-weight:900;font-size:3cqw;color:#fff;line-height:1.05;margin-top:.3cqw}
+.chapter .h{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:2.4cqw;color:#fff;line-height:1.05;margin-top:.3cqw}
 .chapter .ln{height:.3cqw;background:linear-gradient(90deg,#4ade80,transparent);margin-top:.7cqw;width:0}
 .chapter.on .ln{animation:lnw 1s .3s ease forwards}
 @keyframes lnw{to{width:100%}}
@@ -211,22 +211,41 @@ tr:last-child td{border-bottom:0}
 .screen.ar .title-card{direction:rtl}
 .screen.ar .ol-tag,.screen.ar .ol-follow{direction:rtl}
 .screen.ar .rw b,.screen.ar .rw span{font-family:'Cairo',var(--mono)}
+
+/* channel style: understated captions over a soft floor band, counter pills under the logo */
+.band{position:absolute;left:0;right:0;bottom:0;height:24%;background:linear-gradient(transparent,rgba(6,8,14,.78));z-index:4;pointer-events:none}
+.cap{top:auto!important;bottom:6.5%;font-family:'Plus Jakarta Sans',sans-serif!important;font-weight:600!important;font-size:2.55cqw!important;line-height:1.3!important;color:#f1f3f7!important;-webkit-text-stroke:0!important;text-shadow:0 .2cqw .9cqw rgba(0,0,0,.7)!important;letter-spacing:.005em!important}
+.cap::first-letter{text-transform:uppercase}
+.cap em{color:#4ade80!important}.cap em.r{color:#f87171!important}
+.cap.pop{animation:capIn .45s ease!important}
+@keyframes capIn{from{opacity:0;transform:translateY(.6cqw)}to{opacity:1;transform:none}}
+.screen.ar .cap{font-family:'Cairo',sans-serif!important;font-weight:700!important;font-size:2.9cqw!important}
+.title-card{font-family:'Plus Jakarta Sans',sans-serif!important;font-weight:600!important;font-size:2.6cqw!important;letter-spacing:.32em;-webkit-text-stroke:0!important;color:#e6e9f0!important;top:44%!important;text-shadow:0 0 1.4cqw rgba(0,0,0,.8)}
+.screen.ar .title-card{font-family:'Cairo',sans-serif!important;letter-spacing:0}
+.pill{position:absolute;left:2.2%;z-index:7;pointer-events:none;font-family:'Plus Jakarta Sans',sans-serif;font-weight:500;font-size:1.3cqw;color:#d9dee8;padding:.42cqw 1.1cqw;border-radius:99px;background:rgba(10,13,20,.6);border:1px solid rgba(255,255,255,.16);white-space:nowrap}
+.pill b{font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.pill.hot b{color:#f87171}
+.screen.ar .pill{font-family:'Cairo',sans-serif;direction:rtl}
+#chk{top:9.6%}
+.rules{left:2.2%!important;right:auto!important;top:14.4%!important;border-radius:99px!important;padding:.38cqw 1cqw!important;background:rgba(10,13,20,.6)!important;border:1px solid rgba(255,255,255,.16)!important;gap:.4cqw!important;box-shadow:none!important}
+.rules .k{font-family:'Plus Jakarta Sans',sans-serif!important;letter-spacing:0!important;font-size:1.3cqw!important;color:#d9dee8!important;text-transform:none}
+.rules i{width:1.55cqw!important;height:1.55cqw!important;font-size:.9cqw!important;border-radius:.4cqw!important}
 @media (prefers-reduced-motion:reduce){.cap.pop{animation:none}.grain,.o-rays{animation:none}}
 </style>
 
 <div class="wrap">
   <header>
     <div class="eyebrow">WalletLens Academy · Risk course · Long video · 10:30 · 16:9</div>
-    <h1>He Bought a Politician’s Cat Coin… 😭</h1>
+    <h1>Trump Posted at 3 AM… He Lost Half 😭</h1>
     <p class="lede">The premium cut of the Risk Playbook long video, in the 3D brick character style you shared. The WalletLens logo sits top left all the way through. A rule tracker at the top right fills up as the story unlocks each rule, the hook promises a payoff at the end, and the film closes on a branded WalletLens ending. Turn the sound on for whooshes, chimes and the alarm. Rex goes all in; Ollie follows the playbook. This animatic is real 3D running in your browser: press play.</p>
   </header>
 
   <section class="stage h" id="stage">
     <div class="player">
       <div class="screen" id="screen">
-        <div class="logo-wm" id="logo"><svg viewBox="5 5 54 54" aria-hidden="true"><defs><linearGradient id="wlw" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ade80"/><stop offset=".5" stop-color="#22c55e"/><stop offset="1" stop-color="#15803d"/></linearGradient></defs><g fill="none" transform="translate(32 32) scale(0.8) translate(-25 -30.5)"><circle class="ring" cx="27" cy="25" r="19" stroke="url(#wlw)" stroke-width="5.5"/><circle class="dot" cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/><rect class="bar" x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="url(#wlw)"/><rect class="bar" x="21.5" y="21" width="5" height="13" rx="1.2" fill="url(#wlw)"/><rect class="bar" x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="url(#wlw)"/><line class="hdl" x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wlw)" stroke-width="5.5" stroke-linecap="round"/></g></svg><b>WalletLens</b></div><div class="rules" id="rules"><span class="k" id="rulesK">RULES</span><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i></div><div class="chapter" id="chapter"><div class="n"></div><div class="h"></div><div class="ln"></div></div><div class="lb t" id="lbt"></div><div class="lb b" id="lbb"></div><div class="rw" id="rw" hidden><b>◀◀ REWIND</b><span>SP · 3 DAYS EARLIER</span></div><div class="vig3"></div><div class="grain" id="grain"></div><div class="flash" id="flash"></div><div class="outro" id="outro"></div>
+        <div class="logo-wm" id="logo"><svg viewBox="5 5 54 54" aria-hidden="true"><defs><linearGradient id="wlw" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ade80"/><stop offset=".5" stop-color="#22c55e"/><stop offset="1" stop-color="#15803d"/></linearGradient></defs><g fill="none" transform="translate(32 32) scale(0.8) translate(-25 -30.5)"><circle class="ring" cx="27" cy="25" r="19" stroke="url(#wlw)" stroke-width="5.5"/><circle class="dot" cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/><rect class="bar" x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="url(#wlw)"/><rect class="bar" x="21.5" y="21" width="5" height="13" rx="1.2" fill="url(#wlw)"/><rect class="bar" x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="url(#wlw)"/><line class="hdl" x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wlw)" stroke-width="5.5" stroke-linecap="round"/></g></svg><b>WalletLens</b></div><div class="rules" id="rules"><span class="k" id="rulesK">Rules learned</span><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i></div><div class="chapter" id="chapter"><div class="n"></div><div class="h"></div><div class="ln"></div></div><div class="lb t" id="lbt"></div><div class="lb b" id="lbb"></div><div class="rw" id="rw" hidden><b>◀◀ REWIND</b><span>SP · 3 DAYS EARLIER</span></div><div class="vig3"></div><div class="grain" id="grain"></div><div class="flash" id="flash"></div><div class="outro" id="outro"></div>
         <div class="title-card" id="tcard"></div>
-        <div class="cap" id="cap"></div>
+        <div class="band"></div><div class="pill" id="chk"></div><div class="cap" id="cap"></div>
       </div>
       <div class="controls">
         <button class="btn" id="prev" aria-label="Previous scene">◀</button>
@@ -299,13 +318,14 @@ tr:last-child td{border-bottom:0}
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
 <script>
+let NOW=()=>performance.now();
 const AR=/(^#|-)ar(-|$)/.test(location.hash);const TX=(en,ar)=>AR?ar:en;const REDRAW=[];
 // ── scenes data (used even if WebGL is unavailable) ──────────────────────
 const SCENES=[
- {key:'hook',tc:'0:00',name:'The 3 AM post',d:'3:07 AM. A world leader posts “100% TARIFFS”. Rex’s cat coin crashes −50% and he screams. Freeze frame, then a VHS rewind.',dur:10.8,
-  caps:[[0.3,'3:07 AM. a world leader posts'],[1.7,'<em>“100% TARIFFS!!!”</em>'],[2.9,'Rex’s coin: <em class="r">−50%</em>'],[4.5,'Ollie <em>slept fine</em>'],[5.7,'stay for <em>rule 6</em>'],[6.8,''],[7.1,'yep. that’s Rex.'],[8.1,'he bought a coin named'],[9.0,'after a politician’s <em>cat</em>'],[9.8,'']],
-  capsAr:[[0.3,'٣ الفجر، رئيس دولة كتب'],[1.7,'<em>"جمارك ١٠٠٪!!!"</em>'],[2.9,'عملة ريكس: <em class="r">−٥٠٪</em>'],[4.5,'أولي <em>كان نايم</em>'],[5.7,'استنى <em>القاعدة ٦</em>'],[6.8,''],[7.1,'أيوه… ده ريكس.'],[8.1,'اشترى عملة على اسم'],[9.0,'<em>قطة</em> واحد سياسي'],[9.8,'']],
-  rule:'Why survival wins (open loop: rule 6)',vo:'3 a.m. A world leader posts two words: one hundred percent tariffs. Ollie slept fine. Stay for rule six. Yep, that’s Rex. He bought a politician’s cat coin.'},
+ {key:'hook',tc:'0:00',name:'The 3 AM post',d:'3:07 AM. Trump posts “100% TARIFFS”. Rex’s cat coin crashes −50% and he screams. Freeze frame, then a VHS rewind.',dur:10.8,
+  caps:[[0.3,'3:07 AM. Trump posts'],[1.7,'<em>“100% TARIFFS!!!”</em>'],[2.9,'Rex’s coin: <em class="r">−50%</em>'],[4.5,'Ollie <em>slept fine</em>'],[5.7,'stay for <em>rule 6</em>'],[6.8,''],[7.1,'yep. that’s Rex.'],[8.1,'he bought a cat coin'],[9.0,'because <em>an influencer</em> said so'],[9.8,'']],
+  capsAr:[[0.3,'٣ الفجر، ترامب كتب'],[1.7,'<em>"جمارك ١٠٠٪!!!"</em>'],[2.9,'عملة ريكس: <em class="r">−٥٠٪</em>'],[4.5,'أولي <em>كان نايم</em>'],[5.7,'استنى <em>القاعدة ٦</em>'],[6.8,''],[7.1,'أيوه… ده ريكس.'],[8.1,'اشترى عملة قطة'],[9.0,'عشان <em>إنفلونسر</em> قال كده'],[9.8,'']],
+  rule:'Why survival wins (open loop: rule 6)',vo:'3 a.m. Trump posts: one hundred percent tariffs. Ollie slept fine. Wait for rule six. That’s Rex. He bought an influencer’s cat coin.'},
  {key:'party',tc:'0:20',name:'To the moon',d:'An influencer on the big screen: “Cat coin to the moon, not financial advice 😉”. Rex sells his console and goes all in while the class parties.',dur:7.5,title:'3 DAYS EARLIER…',titleAr:'قبلها بـ ٣ أيام…',
   caps:[[0,''],[1.7,'an influencer said'],[2.9,'<em>“TO THE MOON 🚀”</em>'],[4.4,'Rex sold his <em>console</em>'],[5.8,'and went <em>ALL IN</em>']],
   capsAr:[[0,''],[1.7,'إنفلونسر قال'],[2.9,'<em>"على القمر 🚀"</em>'],[4.4,'ريكس باع <em>جهاز الألعاب</em>'],[5.8,'ودخل <em>بكل فلوسه</em>']],
@@ -322,10 +342,10 @@ const SCENES=[
   caps:[[0.4,'Ollie during the crash: 😌'],[2.0,'auto-sold at <em>−10%</em>'],[3.6,'bought the dip with <em>cash</em>']],
   capsAr:[[0.4,'أولي وقت الكراش: 😌'],[2.0,'باع أوتوماتيك عند <em>−١٠٪</em>'],[3.6,'واشترى النزلة <em>بالكاش</em>']],
   rule:'3 · Exit first + 4 · Spare cash',vo:'Ollie during the crash? Chill. His exit sold at minus ten, and his cash bought the dip.'},
- {key:'end',tc:'8:40',name:'Just kidding',d:'Next morning the leader posts “JUST KIDDING, deal coming 🤝” and the market bounces. Rex is already out. “Teach me the playbook.” The board fills in.',dur:8,collect:[[2,4.6],[5,5.4]],
+ {key:'end',tc:'8:40',name:'Just kidding',d:'Next morning Trump posts “JUST KIDDING, deal coming 🤝” and the market bounces. Rex is already out. “Teach me the playbook.” The board fills in.',dur:8,collect:[[2,4.6],[5,5.4]],
   caps:[[0.6,'next morning: <em>“JUST KIDDING 🤝”</em>'],[2.6,'the market <em>bounced</em>'],[4.2,'Rex: “teach me <em>the playbook</em>”']],
   capsAr:[[0.6,'تاني يوم: <em>"بهزر 🤝"</em>'],[2.6,'السوق <em>رجع طلع</em>'],[4.2,'ريكس: "علّمني <em>الخطة</em>"']],
-  rule:'All six',vo:'Next morning: just kidding, deal coming. The market bounced. Rex: teach me the playbook.'},
+  rule:'All six',vo:'Next morning, Trump: just kidding, deal coming. The market bounced. Rex: teach me the playbook.'},
  {key:'cta',tc:'10:10',name:'Before the next post',d:'A giant phone shows WalletLens flagging a coin that breaks the 5% rule. Ollie waves.',dur:6.5,
   caps:[[0.3,'before the next'],[1.4,'<em>3 AM post</em>'],[2.6,'check your portfolio']],
   capsAr:[[0.3,'قبل البوست الجاي'],[1.4,'<em>الساعة ٣ الفجر</em>'],[2.6,'شوف محفظتك']],
@@ -351,7 +371,7 @@ $('script').innerHTML=rows.map(r=>`<tr class="${r.full?'full':''}"><td class="t"
 const BRICK_YELLOW='#f2cd37';
 const SHIRT_COL={rex:'#c11f25',ollie:'#1a8a5d',pink:'#f5a9c8',plaid:'#5a5248',blue:'#7fb2ff',floral:'#c8242c',suit:'#1a1a1d'};
 const screen=$('screen');
-if(AR){screen.classList.add('ar');$('rulesK').textContent='القواعد';$('rw').querySelector('b').textContent='◀◀ ترجيع';$('rw').querySelector('span').textContent='قبلها بـ ٣ أيام'}
+if(AR){screen.classList.add('ar');$('rulesK').textContent='القواعد اللي اتعلمها';$('rw').querySelector('b').textContent='◀◀ ترجيع';$('rw').querySelector('span').textContent='قبلها بـ ٣ أيام'}
 let ok=!!window.THREE;
 let renderer;
 try{ if(ok){renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});} }catch(e){ok=false}
@@ -360,7 +380,7 @@ if(!ok){screen.insertAdjacentHTML('afterbegin','<div class="err">This preview ne
 const RNG=(()=>{let s=7;return()=>{s=(s*16807)%2147483647;return s/2147483647}})();
 function canvasTex(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');draw&&draw(g,w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=8;return {c,g,t}}
 
-let flames=[];let clockH,clockM,dust,camRoll=0,hemiL,rimL,sunL,lampMat,winL,composer,bloomPass,gradePass,partyL=[],beams=[],shafts=[];
+let flames=[],pendant,halo,candleR,candleG;let clockH,clockM,dust,camRoll=0,hemiL,rimL,sunL,lampMat,winL,composer,bloomPass,gradePass,partyL=[],beams=[],shafts=[];
 const FX={sat:1,con:1.05,vig:.25,ab:.0015,warm:0,flash:0,rw:0,bars:0,barsCur:0};
 let scene,camera,chars={},holo,holoTex,boardTex,phone3d,phoneTex,confetti=[],alarm,lampLights=[],tableTop;
 if(ok){
@@ -368,13 +388,13 @@ if(ok){
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;
   screen.insertBefore(renderer.domElement,screen.firstChild);
-  scene=new THREE.Scene();scene.background=new THREE.Color('#123a40');
+  scene=new THREE.Scene();scene.background=new THREE.Color('#0b0f18');
   camera=new THREE.PerspectiveCamera(60,9/16,.1,100);
 
   // lights
-  hemiL=new THREE.HemisphereLight('#8ea2ff','#2a2a38',.5);scene.add(hemiL);
+  hemiL=new THREE.HemisphereLight('#7f8fc4','#151925',.5);scene.add(hemiL);
   const rim=rimL=new THREE.DirectionalLight('#7da2ff',.7);rim.position.set(-4,6,-9);scene.add(rim);
-  const sun=sunL=new THREE.DirectionalLight('#fff1df',.95);sun.position.set(4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+  const sun=sunL=new THREE.DirectionalLight('#aebfff',.95);sun.position.set(4,9,6);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
   Object.assign(sun.shadow.camera,{left:-9,right:9,top:9,bottom:-9,near:1,far:30});sun.shadow.bias=-.0006;sun.shadow.radius=4;scene.add(sun);
   alarm=new THREE.PointLight('#ff2a2a',0,14);alarm.position.set(0,4,1);scene.add(alarm);
 
@@ -384,11 +404,11 @@ if(ok){
   marble.t.wrapS=marble.t.wrapT=THREE.RepeatWrapping;marble.t.repeat.set(5,5);
   const wood=canvasTex(512,128,(g,w,h)=>{g.fillStyle='#c9a46d';g.fillRect(0,0,w,h);for(let k=0;k<90;k++){g.strokeStyle=`rgba(${110+RNG()*40|0},${75+RNG()*30|0},${40+RNG()*20|0},${.25+RNG()*.4})`;g.lineWidth=.6+RNG()*2;const y=RNG()*h;g.beginPath();g.moveTo(0,y);for(let x=0;x<=w;x+=32)g.lineTo(x,y+Math.sin(x*.02+k)*3);g.stroke()}});
   const bricks=(col,mortar)=>{const c=canvasTex(512,256,(g)=>{g.fillStyle=mortar;g.fillRect(0,0,512,256);const bw=64,bh=32;for(let r=0;r<8;r++)for(let k=-1;k<9;k++){const x=k*bw+(r%2?bw/2:0),y=r*bh;const v=.92+RNG()*.12;g.fillStyle=col;g.globalAlpha=1;g.fillRect(x+1.5,y+1.5,bw-3,bh-3);g.fillStyle=`rgba(${v>1?255:0},${v>1?255:0},${v>1?255:0},${Math.abs(v-1)*.9})`;g.fillRect(x+1.5,y+1.5,bw-3,bh-3);g.fillStyle='rgba(255,255,255,.18)';g.fillRect(x+1.5,y+1.5,bw-3,3);g.fillStyle='rgba(0,0,0,.22)';g.fillRect(x+1.5,y+bh-4.5,bw-3,3)}});c.t.wrapS=c.t.wrapT=THREE.RepeatWrapping;return c.t};
-  const wallT=bricks('#5ccfb0','#3fae92');wallT.repeat.set(10,4);const wallLowT=bricks('#fff1d6','#e6cfa6');wallLowT.repeat.set(10,1);
-  const M={floor:plastic('#d9b98a',{roughness:.42,clearcoat:.25}),
+  const wallT=bricks('#222c47','#181f34');wallT.repeat.set(10,4);const wallLowT=bricks('#2a3350','#1e2539');wallLowT.repeat.set(10,1);
+  const M={floor:plastic('#1d2333',{roughness:.45,clearcoat:.3}),
     wall:new THREE.MeshStandardMaterial({map:wallT,roughness:.5}),wallLow:new THREE.MeshStandardMaterial({map:wallLowT,roughness:.5}),
-    ceil:new THREE.MeshStandardMaterial({color:'#20494f',roughness:.9}),lamp:new THREE.MeshStandardMaterial({color:'#ffffff',emissive:'#ffffff',emissiveIntensity:1.6}),
-    wood:plastic('#ff7a6b'),bench:plastic('#f2b632'),metal:plastic('#3b3f46',{roughness:.4}),
+    ceil:new THREE.MeshStandardMaterial({color:'#0c101b',roughness:.9}),lamp:new THREE.MeshStandardMaterial({color:'#fff1d6',emissive:'#ffe2b0',emissiveIntensity:1.6}),
+    wood:plastic('#5a3e2c'),bench:plastic('#323b52'),metal:plastic('#3b3f46',{roughness:.4}),
     glass:new THREE.MeshStandardMaterial({color:'#9fc6ff',emissive:'#6c9bff',emissiveIntensity:.55,roughness:.1}),frame:new THREE.MeshStandardMaterial({color:'#20263a',roughness:.5})};
   const box=(w,h,d,m,x,y,z,sh=true)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=sh;o.receiveShadow=true;scene.add(o);return o};
 
@@ -399,11 +419,11 @@ if(ok){
   box(.3,8,30,M.wall,10,4,0,false);
   for(let k=0;k<4;k++){box(.12,2.6,2.4,M.glass,9.82,3.4,-7+k*3.4,false);box(.16,2.8,.12,M.frame,9.8,3.4,-8.25+k*3.4,false)}
   box(30,.3,30,M.ceil,0,6.6,0,false);
-  [[-4,-5],[4,-5],[-4,0],[4,0],[0,-2.5],[0,3]].forEach(([x,z])=>{box(3,.08,.4,M.lamp,x,6.42,z,false);const p=new THREE.PointLight('#e8eeff',.35,9);p.position.set(x,6,z);scene.add(p);lampLights.push(p)});
+  [[-4,-5],[4,-5],[-4,0],[4,0],[0,-2.5],[0,3]].forEach(([x,z])=>{box(3,.08,.4,M.lamp,x,6.42,z,false);const p=new THREE.PointLight('#ffd9a8',.35,9);p.position.set(x,6,z);scene.add(p);lampLights.push(p)});
 
   // set dressing: lockers, posters, clock, exit sign, counter, trays, backpacks, plants, dust
-  {const vent=canvasTex(128,256,(g)=>{g.fillStyle='#a78bfa';g.fillRect(0,0,128,256);g.fillStyle='rgba(0,0,0,.35)';for(let y=20;y<70;y+=10)g.fillRect(24,y,80,4);g.fillStyle='#c9d4ea';g.fillRect(96,120,10,34);g.strokeStyle='rgba(0,0,0,.4)';g.lineWidth=3;g.strokeRect(4,4,120,248)});
-   const lm=new THREE.MeshStandardMaterial({map:vent.t,roughness:.45,metalness:.35}),ls=new THREE.MeshStandardMaterial({color:'#8b6ff0',roughness:.5,metalness:.3});
+  {const vent=canvasTex(128,256,(g)=>{g.fillStyle='#2f3b5c';g.fillRect(0,0,128,256);g.fillStyle='rgba(0,0,0,.35)';for(let y=20;y<70;y+=10)g.fillRect(24,y,80,4);g.fillStyle='#c9d4ea';g.fillRect(96,120,10,34);g.strokeStyle='rgba(0,0,0,.4)';g.lineWidth=3;g.strokeRect(4,4,120,248)});
+   const lm=new THREE.MeshStandardMaterial({map:vent.t,roughness:.45,metalness:.35}),ls=new THREE.MeshStandardMaterial({color:'#28324e',roughness:.5,metalness:.3});
    for(let k=0;k<12;k++){const L=new THREE.Mesh(new THREE.BoxGeometry(.6,2.3,.9),[lm,ls,ls,ls,ls,ls]);L.position.set(-9.5,1.15,-7.5+k*1.0);L.castShadow=true;L.receiveShadow=true;scene.add(L)}}
   const poster=(txt,sub,bg,fg,x,y,z,ry,w=1.6,h=2.1)=>{const draw=(g)=>{const ar=/[\u0600-\u06FF]/.test(txt);g.direction=ar?'rtl':'ltr';g.fillStyle=bg;g.fillRect(0,0,320,420);g.fillStyle=fg;g.font=ar?'900 50px Cairo,sans-serif':'900 54px Montserrat,Arial Black,sans-serif';g.textAlign='center';txt.split('|').forEach((l,i)=>g.fillText(l,160,120+i*62));g.font=ar?'700 24px Cairo,sans-serif':'700 24px Plus Jakarta Sans,sans-serif';g.fillText(sub,160,370);g.strokeStyle=fg;g.lineWidth=6;g.strokeRect(14,14,292,392)};const pt=canvasTex(320,420,draw);REDRAW.push(()=>{draw(pt.g);pt.t.needsUpdate=true});
     const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:pt.t,roughness:.8}));m.position.set(x,y,z);m.rotation.y=ry;scene.add(m)};
@@ -462,6 +482,15 @@ void main(){vec2 uv=vUv;
   // "this is fine" flames around Rex after the crash
   {const fm=new THREE.MeshBasicMaterial({color:'#ff7a1a',transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false});const fi=new THREE.MeshBasicMaterial({color:'#ffd23f',transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false});
    [[-1.3,-2.1],[1.2,-2.4],[-.9,-3.3],[1.0,-3.4],[-1.8,-2.9],[1.8,-2.9],[0,-3.9]].forEach(([x,z],k)=>{const g=new THREE.Group();const o=new THREE.Mesh(new THREE.ConeGeometry(.28,.95,10),fm);o.position.y=.47;const n=new THREE.Mesh(new THREE.ConeGeometry(.15,.55,8),fi);n.position.y=.3;g.add(o,n);g.position.set(x,0,z);g.visible=false;scene.add(g);flames.push({g,ph:k*1.7})})}
+
+  // warm pendant over the main table: the pool of light the channel's films are built around
+  {const shade=new THREE.Mesh(new THREE.ConeGeometry(.45,.38,32,1,true),plastic('#1b2030'));shade.material.side=THREE.DoubleSide;shade.position.set(0,4.85,-.55);scene.add(shade);
+   const cord=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,1.6,6),plastic('#0d0f16'));cord.position.set(0,5.85,-.55);scene.add(cord);
+   const bulb=new THREE.Mesh(new THREE.SphereGeometry(.12,16,12),new THREE.MeshBasicMaterial({color:'#ffe3b0'}));bulb.position.set(0,4.7,-.55);scene.add(bulb);
+   pendant=new THREE.SpotLight('#ffc98a',0,11,.62,.75,1.2);pendant.position.set(0,4.72,-.55);pendant.target.position.set(0,1,-.7);scene.add(pendant);scene.add(pendant.target);
+   const ht=canvasTex(128,128,(g)=>{const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,214,150,.9)');gr.addColorStop(.35,'rgba(255,190,110,.25)');gr.addColorStop(1,'rgba(255,170,90,0)');g.fillStyle=gr;g.fillRect(0,0,128,128)});
+   halo=new THREE.Sprite(new THREE.SpriteMaterial({map:ht.t,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));halo.scale.set(2.6,2.6,1);halo.position.set(0,4.6,-.55);scene.add(halo)}
+  candleR=makeCandle('#e0262b','#5a0b0d','evil');candleG=makeCandle('#22c55e','#0b3d1f','happy');
   // blackboard
   boardTex=canvasTex(1024,360);drawBoard(0);
   const board=new THREE.Mesh(new THREE.PlaneGeometry(7,2.45),new THREE.MeshStandardMaterial({map:boardTex.t,roughness:.9}));board.position.set(0,3.2,-9.02);scene.add(board);
@@ -595,8 +624,8 @@ function drawHolo(kind,p,t){const g=holoTex.g;
     g.font='500 22px DM Mono,monospace';g.textAlign='left';g.direction='ltr';g.fillStyle='#cbd5e1';g.fillText(ok2?'8:02 AM':'3:07 AM',40,128);
     g.save();g.translate(110,230);g.fillStyle='#0b1220';g.beginPath();g.arc(0,-40,26,0,7);g.fill();g.fillRect(-34,-14,68,70);g.fillStyle='#334155';g.fillRect(-48,40,96,40);
     [[-80,'#c81e1e'],[80,'#1e40af']].forEach(([x,c])=>{g.fillStyle='#94a3b8';g.fillRect(x-2,-70,4,150);g.fillStyle=c;g.fillRect(x+2,-70,40,26)});g.restore();
-    const lines=ok2?TX('JUST KIDDING.|DEAL COMING 🤝','بهزر.|في اتفاق جاي 🤝'):TX('100% TARIFFS|ON EVERYTHING!!!','جمارك ١٠٠٪|على كل حاجة!!!');
-    lines.split('|').forEach((l,k)=>htxt(g,l,330,205+k*52,AR?38:36,ok2?'#bfffd9':'#ffd0d0'));
+    const lines=ok2?TX('TRUMP:|JUST KIDDING.|DEAL COMING 🤝','ترامب:|بهزر.|في اتفاق جاي 🤝'):TX('TRUMP:|100% TARIFFS|ON EVERYTHING!!!','ترامب:|جمارك ١٠٠٪|على كل حاجة!!!');
+    lines.split('|').forEach((l,k)=>htxt(g,l,330,182+k*46,k?(AR?34:31):(AR?30:28),k?(ok2?'#bfffd9':'#ffd0d0'):'#ffffff'));
     holoChart(g,ok2?[.1,.12,.1,.3,.45,.62,.8,.95]:[.9,.92,.85,.6,.4,.3,.15,.08],ok2?'#3dff8a':'#ff3b3b',Math.min(1,p*1.6),50,330,412,140)}
   if(kind==='influencer'){holoFrame(g,'#5eead4');const gr=g.createLinearGradient(0,0,512,512);gr.addColorStop(0,'rgba(15,40,70,.85)');gr.addColorStop(1,'rgba(13,80,80,.75)');g.fillStyle=gr;rr(g,24,24,464,464,30);g.fill();
     g.fillStyle='#f2cd37';g.beginPath();g.arc(256,200,82,0,7);g.fill();g.fillStyle='#111';rr(g,186,170,64,34,10);g.fill();rr(g,262,170,64,34,10);g.fill();g.fillRect(246,180,20,8);
@@ -622,7 +651,7 @@ function drawHolo(kind,p,t){const g=holoTex.g;
 function drawPhone(kind){const g=phoneTex.g,W=360,H=720;g.fillStyle='#181a20';g.fillRect(0,0,W,H);
   if(kind==='red'){g.fillStyle='#0b0d12';g.fillRect(0,0,W,H);g.textAlign='center';g.direction='ltr';g.fillStyle='#fff';g.font='300 92px Plus Jakarta Sans,sans-serif';g.fillText('3:07',W/2,170);
     const card=(y,title,body,col)=>{g.fillStyle='rgba(255,255,255,.12)';rr(g,22,y,316,118,22);g.fill();g.fillStyle=col;rr(g,40,y+20,34,34,9);g.fill();g.direction=AR?'rtl':'ltr';g.textAlign=AR?'right':'left';g.fillStyle='#fff';g.font=AR?'800 21px Cairo,sans-serif':'800 19px Plus Jakarta Sans,sans-serif';g.fillText(title,AR?318:88,y+44);g.font=AR?'700 22px Cairo,sans-serif':'600 20px Plus Jakarta Sans,sans-serif';g.fillStyle=col==='#e8343a'?'#fecaca':'#e5e7eb';g.fillText(body,AR?318:40,y+90)};
-    card(250,TX('BREAKING','عاجل'),TX('“100% TARIFFS!!!”','"جمارك ١٠٠٪!!!"'),'#e8343a');card(390,TX('CAT COIN 🐱','عملة القطة 🐱'),TX('−50% in 1 hour 📉','−٥٠٪ في ساعة 📉'),'#e8343a');card(530,TX('Mom','ماما'),TX('why are you awake??','إنت صاحي ليه؟؟'),'#22c55e')}
+    card(250,TX('BREAKING · TRUMP','عاجل · ترامب'),TX('“100% TARIFFS!!!”','"جمارك ١٠٠٪!!!"'),'#e8343a');card(390,TX('CAT COIN 🐱','عملة القطة 🐱'),TX('−50% in 1 hour 📉','−٥٠٪ في ساعة 📉'),'#e8343a');card(530,TX('Mom','ماما'),TX('why are you awake??','إنت صاحي ليه؟؟'),'#22c55e')}
   if(kind==='app'){g.font='800 34px Plus Jakarta Sans,sans-serif';g.textAlign='left';g.fillStyle='#10b981';g.fillText('WalletLens',26,64);g.font=AR?'700 20px Cairo,sans-serif':'500 18px DM Mono,monospace';g.fillStyle='#94a3b8';g.direction=AR?'rtl':'ltr';g.textAlign=AR?'right':'left';g.fillText(TX('REBALANCE','إعادة التوازن'),AR?334:26,98);
     [['BTC',38,'#f59e0b'],['ETH',24,'#6366f1'],[TX('Stocks','أسهم'),17,'#0ea5e9'],[TX('Cash','كاش'),15,'#10b981'],[TX('One new coin','عملة جديدة'),11,'#ef4444']].forEach(([n,p,c],i)=>{const y=150+i*74;g.font=AR?'700 22px Cairo,sans-serif':'700 22px Plus Jakarta Sans,sans-serif';g.fillStyle='#f5f6f7';g.textAlign=AR?'right':'left';g.fillText(n,AR?334:26,y);g.textAlign=AR?'left':'right';g.fillStyle='#cbd5e1';g.fillText(p+'%',AR?26:334,y);g.fillStyle='#2a3036';rr(g,26,y+12,308,12,6);g.fill();g.fillStyle=c;rr(g,26,y+12,Math.max(14,p*3.08*1.6),12,6);g.fill()});
     g.fillStyle='#3a1114';rr(g,20,530,320,150,20);g.fill();g.strokeStyle='#ef4444';g.lineWidth=4;g.stroke();g.textAlign=AR?'right':'left';const X=AR?320:40;g.font=AR?'700 19px Cairo,sans-serif':'500 17px DM Mono,monospace';g.fillStyle='#fca5a5';g.fillText(TX('BREAKS THE 5% RULE','بتكسر قاعدة الـ 5%'),X,568);g.font=AR?'800 24px Cairo,sans-serif':'800 24px Plus Jakarta Sans,sans-serif';g.fillStyle='#fff';g.fillText(TX('One new coin is 11%.','عملة جديدة = 11%.'),X,610);g.font=AR?'700 21px Cairo,sans-serif':'700 21px Plus Jakarta Sans,sans-serif';g.fillStyle='#fecaca';g.fillText(TX('Trim it back to 5%?','رجّعها لـ 5%؟'),X,646)}
@@ -644,6 +673,31 @@ function confettiStep(dt){confetti.forEach(c=>{if(!c.m.visible)return;c.m.positi
 function hideConfetti(){confetti.forEach(c=>c.m.visible=false)}
 
 
+
+// the channel's candlestick creature, rebuilt in bricks: a glossy brick body, printed eyes, wicks, a glow
+function drawCandleFace(g,col,mood){g.clearRect(0,0,256,512);g.fillStyle=col;g.fillRect(0,0,256,512);g.fillStyle='rgba(255,255,255,.12)';g.fillRect(14,0,16,512);
+  const eye=(x,y)=>{g.fillStyle='#fff';g.beginPath();g.ellipse(x,y,30,36,0,0,7);g.fill();g.fillStyle='#111';g.beginPath();g.arc(x+(mood==='evil'?-6:4),y+6,14,0,7);g.fill();g.fillStyle='#fff';g.beginPath();g.arc(x+(mood==='evil'?-10:0),y,5,0,7);g.fill()};
+  eye(88,150);eye(170,150);g.strokeStyle='#1a0505';g.lineWidth=10;g.lineCap='round';g.beginPath();
+  if(mood==='evil'){g.moveTo(54,96);g.lineTo(118,118);g.moveTo(204,96);g.lineTo(140,118);g.stroke();g.fillStyle='#1a0505';g.beginPath();g.moveTo(80,230);g.quadraticCurveTo(128,290,178,230);g.closePath();g.fill();g.fillStyle='#fff';g.fillRect(92,232,74,12)}
+  else{g.moveTo(92,236);g.quadraticCurveTo(128,268,164,236);g.stroke()}}
+function makeCandle(col,dark,mood){const g=new THREE.Group();const fc=canvasTex(256,512,(c)=>drawCandleFace(c,col,mood));
+  const bodyM=plastic(col,{emissive:col,emissiveIntensity:.18});const body=new THREE.Mesh(new THREE.BoxGeometry(.8,1.7,.55),[bodyM,bodyM,bodyM,bodyM,plastic('#ffffff',{map:fc.t,emissive:col,emissiveIntensity:.12}),bodyM]);body.castShadow=true;g.add(body);
+  [-.2,.2].forEach(x=>{const st=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.08,16),bodyM);st.position.set(x,.89,0);g.add(st)});
+  const wm=plastic(dark);const wt=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.6,8),wm);wt.position.y=1.15;g.add(wt);const wb=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.5,8),wm);wb.position.y=-1.1;g.add(wb);
+  [-1,1].forEach(s2=>{const a=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.6,8),bodyM);a.position.set(s2*.52,-.05,0);a.rotation.z=s2*.7;g.add(a)});
+  const L=new THREE.PointLight(col,1.4,5,1.5);L.position.set(0,0,.6);g.add(L);
+  const ht=canvasTex(128,128,(c)=>{const gr=c.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,col+'88');gr.addColorStop(1,col+'00');c.fillStyle=gr;c.fillRect(0,0,128,128)});
+  const hs=new THREE.Sprite(new THREE.SpriteMaterial({map:ht.t,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));hs.scale.set(3.2,3.6,1);hs.position.z=-.3;g.add(hs);
+  g.visible=false;scene.add(g);return g}
+function creatures(key,t,ta){const R=candleR,G=candleG;if(!R)return;R.visible=G.visible=false;const now=NOW()/1000;
+  if(key==='hook'&&t>=1.7){const tc=Math.min(t,6.8);R.visible=true;const sc=1+Math.min(1,(tc-1.7)/4)*.55;R.scale.setScalar(sc);R.position.set(1.55,.75+Math.sin(tc*2.2)*.08+sc*.4,-2.2);R.rotation.set(0,-.35,Math.sin(tc*1.6)*.06-.08)}
+  if(key==='lev'&&ta>2.55){R.visible=true;const q=Math.min(1,(t-2.55)/1.65),sc=1+q*1.15;R.scale.setScalar(sc);R.position.set(1.15,.7+sc*.55+Math.sin(now*3)*.06,-2.7);R.rotation.set(0,-.3,Math.sin(now*5)*.05)}
+  if(key==='plan'){G.visible=true;G.scale.setScalar(.42);G.position.set(1.6,1.62+Math.abs(Math.sin(now*3.2))*.12,-.4);G.rotation.y=-.4}
+  if(key==='end'){G.visible=true;G.scale.setScalar(.55);G.position.set(2.0,1.0+Math.abs(Math.sin(now*3))*.15,1.6);G.rotation.y=-.6}
+  if(key==='cta'){G.visible=true;G.scale.setScalar(.42);G.position.set(1.75,1.62+Math.abs(Math.sin(now*3.2))*.12,-.45);G.rotation.y=-.3}}
+// Rex's chart-check counter, as in the channel's films
+function checks(key,t){const f=Math.floor;switch(key){case 'hook':return 41+f(Math.min(t,6.8)*1.0);case 'party':return 3+f(t*.6);case 'ollie':return 12+f(t*.5);
+  case 'lev':return t<2.55?25:Math.min(112,25+f((t-2.55)*16));case 'plan':return 112;case 'end':return 3;case 'cta':return 0;default:return 0}}
 // ── direction: time warps (slow motion, freeze, rewind), shot lists, lighting moods ──
 const WARP={
  hook:t=>t<6.8?t:(t<9.8?6.8:Math.max(1.0,6.8-(t-9.8)*5.5)),
@@ -686,13 +740,13 @@ const SHOT={
 const H=(x)=>{const s=Math.sin(x*127.1)*43758.5453;return s-Math.floor(s)};
 function mood(key,t,dt){
   let hem=.5,sun=.95,rim=.7,lamp=.35,lampE=1.6,party=0,win=0,shaft=0,alarmI=null;
-  Object.assign(FX,{sat:1.08,con:1.06,vig:.25,ab:.0015,warm:.15,flash:0,rw:0,bars:0});
+  Object.assign(FX,{sat:1.0,con:1.08,vig:.45,ab:.0015,warm:.18,flash:0,rw:0,bars:0});
   if(key==='hook'){hem=.32;sun=.55;rim=1.1;lamp=.18;Object.assign(FX,{sat:.95,warm:-.6,vig:.45,bars:t<6.8?1:0});
     if(t>=6.8&&t<9.8){FX.sat=.12;FX.con=1.18;FX.flash=Math.max(0,.6-(t-6.8)*2.4);if(!sfxFlags.frz){sfxFlags.frz=1;SFX.scratch()}}
     if(t>=9.8){FX.rw=1;FX.sat=.7;FX.ab=.004;if(!sfxFlags.rw){sfxFlags.rw=1;SFX.rewind()}}
     $('rw').hidden=!(t>=9.8)}
   else $('rw').hidden=true;
-  if(key==='party'){hem=.42;sun=.6;lamp=.12;lampE=.9;party=1;Object.assign(FX,{sat:1.28,con:1.08,warm:.3})}
+  if(key==='party'){hem=.6;sun=.8;lamp=.2;lampE=.9;party=1;Object.assign(FX,{sat:1.12,con:1.08,warm:.3})}
   if(key==='ollie'){win=.5;shaft=.06;FX.warm=.3}
   if(key==='lev'){if(t<2.55){hem=.42;sun=.8;FX.warm=-.1}
     else{const fl=t<3.3?(H(Math.floor(t*22))>.45?1:.05):.0;lamp=.35*fl;lampE=1.6*fl+.05;hem=t<3.3?.42*fl+.08:.1;sun=t<3.3?.8*fl+.1:.18;rim=.4;
@@ -701,6 +755,10 @@ function mood(key,t,dt){
   if(key==='plan'){hem=.42;sun=.45;win=1.7;shaft=.17;lamp=.2;Object.assign(FX,{warm:.75,sat:1.16,con:1.07})}
   if(key==='end'){win=1.0;shaft=.11;Object.assign(FX,{warm:.45,sat:1.16})}
   if(key==='cta'){FX.warm=.1}
+  const pend=(key==='party'||key==='outro')?0:(key==='lev'&&t>=2.55?(t<3.3?(H(Math.floor(t*22))>.45?2.6:0):0):2.6);
+  pendant.intensity=pend;halo.material.opacity=pend/2.6;hem*=.5;sun*=.42;lamp*=.55;
+  creatures(key,t,(WARP[key]||(x=>x))(t));
+  {const n=checks(key,t),el=$('chk'),txt=TX('Rex · Chart checks today · ','ريكس · فتح الشارت النهارده · ');if(el.dataset.n!==String(n)){el.dataset.n=n;el.innerHTML=txt+'<b>'+n+'</b>';el.classList.toggle('hot',n>=60)}el.hidden=key==='outro'}
   hemiL.intensity=hem;sunL.intensity=sun;rimL.intensity=rim;lampLights.forEach(l=>l.intensity=lamp);lampMat.emissiveIntensity=lampE;winL.intensity=win;
   shafts.forEach((b,i)=>b.material.opacity=shaft*(.85+.15*Math.sin(NOW()/700+i)));
   partyL.forEach(({L,b,ph})=>{L.intensity=party*2.2;b.material.opacity=party*.11;const a=NOW()/1000*1.6+ph;L.target.position.set(Math.sin(a)*3,0,-1.4+Math.cos(a*1.3)*2);b.lookAt(L.target.position)});
@@ -818,7 +876,7 @@ resize();show(start);requestAnimationFrame(frame);
 // ── thumbnails rendered from the scene ───────────────────────────────────
 function makeThumbs(){
   const defs=[
-   {id:'A',key:'hook',time:2.4,pick:true,cam:[V(-.15,2.1,2.25),V(0,2.15,-1)],title:'He Bought a Politician’s Cat Coin… 😭',why:'The scream face, one number and two words. It’s the same face as the video’s opening shot.',text:[['ALL IN',60,150,150,'#ffd84a',-4],['−50%',820,620,170,'#ff3b3b',4]]},
+   {id:'A',key:'hook',time:2.4,pick:true,cam:[V(-.15,2.1,2.25),V(0,2.15,-1)],title:'Trump Posted at 3 AM… He Lost Half 😭',why:'The scream face, one number and two words. It’s the same face as the video’s opening shot.',text:[['ALL IN',60,150,150,'#ffd84a',-4],['−50%',820,620,170,'#ff3b3b',4]]},
    {id:'B',key:'lev',time:6.2,cam:[V(-2.2,2.9,.6),V(.1,.6,-2.4)],title:'He Borrowed 10x… Then THIS Happened 😱',why:'Mid-fall, red alarm light. A curiosity gap that only the video closes.',text:[['10x…',60,150,150,'#ffd84a',-4],['GONE',1220,640,170,'#ff3b3b',4]]},
    {id:'C',key:'plan',time:6.6,cam:[V(-.4,2.2,3.2),V(.0,2.1,-1)],title:'Everyone Laughed At His 5% Plan… Until',why:'Calm Ollie against crying Rex: the story’s turn in one picture.',text:[['5% PLAN',60,140,130,'#3dff8a',-3],['WON',1000,620,150,'#ffd84a',5]]}
   ];

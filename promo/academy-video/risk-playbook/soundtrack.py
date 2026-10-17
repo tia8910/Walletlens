@@ -265,9 +265,9 @@ for e in events:
 # ── narration ──
 from vo import Voice
 LINES = [   # (scene, offset s, text, max length s)
- ('hook', 0.2, "3 a.m. A world leader posts: one hundred percent tariffs.", 4.25),
+ ('hook', 0.2, "3 a.m. Trump posts: one hundred percent tariffs.", 4.25),
  ('hook', 4.4, "Ollie slept fine. Wait for rule six.", 2.4),
- ('hook', 7.05, "That's Rex. He bought a politician's cat coin.", 2.7),
+ ('hook', 7.05, "That's Rex. He bought an influencer's cat coin.", 2.7),
  ('party', 1.6, "Three days earlier, an influencer said: to the moon. Rex sold his console and went all in.", 5.8),
  ('ollie', 0.4, "Ollie: five percent, max.", 1.8),
  ('ollie', 2.2, "Rex said: okay boomer.", 1.9),
@@ -275,14 +275,14 @@ LINES = [   # (scene, offset s, text, max length s)
  ('lev', 0.3, "He asked an AI: probably fine.", 2.2),
  ('lev', 6.55, "Liquidated. This is fine.", 1.9),
  ('plan', 0.4, "Ollie during the crash? Chill. His exit sold at minus ten, and his cash bought the dip.", 6.8),
- ('end', 0.6, "Next morning: just kidding, deal coming. The market bounced. Rex: teach me the playbook.", 7.0),
+ ('end', 0.6, "Next morning, Trump: just kidding, deal coming. The market bounced. Rex: teach me the playbook.", 7.0),
  ('cta', 0.3, "Before the next 3 a.m. post, check your portfolio in WalletLens.", 5.9),
  ('outro', 1.7, "WalletLens. All assets tracker and investment manager. Don't forget to follow us.", 6.0),
 ]
 LINES_AR = [   # Egyptian Arabic, same slots
- ('hook', 0.2, "الساعة تلاتة الفجر، رئيس دولة كتب كلمتين: جمارك مية في المية.", 4.25),
+ ('hook', 0.2, "الساعة تلاتة الفجر، ترامب كتب: جمارك مية في المية.", 4.25),
  ('hook', 4.5, "أولي كان نايم. استنى القاعدة رقم ستة.", 2.25),
- ('hook', 7.05, "أيوه، ده ريكس. اشترى عملة على اسم قطة واحد سياسي.", 2.7),
+ ('hook', 7.05, "أيوه، ده ريكس. اشترى عملة قطة عشان إنفلونسر قال كده.", 2.7),
  ('party', 1.6, "قبلها بتلات أيام، إنفلونسر قال: على القمر. ريكس باع جهاز الألعاب ودخل بكل فلوسه.", 5.8),
  ('ollie', 0.4, "أولي قال: خمسة في المية بالكتير.", 1.8),
  ('ollie', 2.2, "ريكس قاله: ماشي يا حاج.", 1.9),
@@ -290,7 +290,7 @@ LINES_AR = [   # Egyptian Arabic, same slots
  ('lev', 0.35, "سأل ذكاء اصطناعي، قاله: غالباً تمام.", 2.15),
  ('lev', 6.55, "اتصفّى. كله تمام.", 1.9),
  ('plan', 0.4, "أولي وقت الكراش؟ رايق. الخروج باع عند سالب عشرة، والكاش اشترى النزلة.", 6.8),
- ('end', 0.6, "تاني يوم الصبح: بهزر، في اتفاق جاي. السوق رجع طلع. ريكس: علّمني الخطة.", 7.0),
+ ('end', 0.6, "تاني يوم الصبح ترامب كتب: بهزر، في اتفاق جاي. السوق رجع طلع. ريكس: علّمني الخطة.", 7.0),
  ('cta', 0.3, "قبل البوست الجاي الساعة تلاتة الفجر، شوف محفظتك. والت لينز بينبّهك لو أي حاجة عدّت خمسة في المية.", 5.9),
  ('outro', 1.7, "والت لينز. تتبّع كل أصولك وإدارة استثماراتك. ومتنساش تتابعنا.", 6.0),
 ]
