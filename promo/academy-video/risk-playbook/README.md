@@ -34,7 +34,7 @@ The main characters have no names. The only real person is Trump, and his jokes 
 | `events_only.js` | Steps the film without drawing to get the cue log quickly, which is useful for working on sound. |
 | `soundtrack.py` | Builds the score, ambience beds, political sounds, sound effects and the cast's voices (or recorded lines) from the cue log. |
 | `vo.py` | A small wrapper around `kokoro-onnx` for this model export. |
-| `thumb.js` / `thumbnail.jpg` | The YouTube thumbnail, staged in the 3D set: Trump ("100% TARIFFS!") vs CZ ("4") with the investor screaming at −50%. Run `node thumb.js` after `make.sh` builds `video.html`. |
+| `thumb.js` / `thumbnail.jpg` | The YouTube thumbnail, staged in the 3D set: Trump and CZ as giant puppeteers pulling the strings of the tiny investor, "WHO'S PULLING YOUR STRINGS?". Run `node thumb.js` after `make.sh` builds `video.html`. |
 | `setup.sh` / `make.sh` | One-time setup, then the full build. |
 
 ```bash
