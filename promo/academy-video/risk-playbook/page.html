@@ -580,7 +580,7 @@ if(ok){
   // post: bloom + film grade (tone mapping happens in the materials; the grade pass does sRGB, colour and lens effects)
   if(THREE.EffectComposer){
     composer=new THREE.EffectComposer(renderer);composer.addPass(new THREE.RenderPass(scene,camera));
-    bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(1920,1080),.45,.45,.88);composer.addPass(bloomPass);
+    bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(960,540),.45,.45,.88);composer.addPass(bloomPass);
     gradePass=new THREE.ShaderPass({uniforms:{tDiffuse:{value:null},uTime:{value:0},uSat:{value:1},uCon:{value:1.05},uVig:{value:.25},uAb:{value:.0015},uWarm:{value:0},uFlash:{value:0},uRw:{value:0},uRes:{value:new THREE.Vector2(1920,1080)}},
       vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
       fragmentShader:`uniform sampler2D tDiffuse;uniform float uTime,uSat,uCon,uVig,uAb,uWarm,uFlash,uRw;uniform vec2 uRes;varying vec2 vUv;
@@ -987,6 +987,9 @@ function mood(key,t,dt){const s=SCENES[cur],L=s.look;
   pendant.intensity=pend;halo.material.opacity=pend/2.6;hem*=.5;sun*=.42;lamp*=.55;
   hemiL.intensity=hem;sunL.intensity=sun;rimL.intensity=rim;lampLights.forEach(l=>l.intensity=lamp);lampMat.emissiveIntensity=lampE;winL.intensity=win;
   V3.moon.intensity=moon;V3.dawn.intensity=dawn;V3.redL.intensity=red;V3.glowB.intensity=glow;V3.insL.intensity=ins;pressSpot.intensity=press;phoneGlow.intensity=pglow;
+  sunL.castShadow=s.set==='caf';renderer.shadowMap.autoUpdate=s.set==='caf';
+  // dark lights are taken out of the shader entirely (every light costs per pixel, even at zero)
+  [hemiL,rimL,winL,pendant,pressSpot,phoneGlow,alarm,V3.moon,V3.dawn,V3.redL,V3.glowB,V3.insL,...lampLights,...partyL.map(x=>x.L)].forEach(l=>{if(l)l.visible=l.intensity>.001});
   if(V3.flood.visible){const pa=V3.floodGeo.attributes.position,tt=NOW()/1000;for(let i=0;i<pa.count;i++){const x=pa.getX(i),y=pa.getY(i);pa.setZ(i,Math.sin(x*1.6+tt*2.2)*.05+Math.cos(y*1.9+tt*1.7)*.04)}pa.needsUpdate=true;V3.floodGeo.computeVertexNormals()}
   shafts.forEach((b,i)=>b.material.opacity=shaft*(.85+.15*Math.sin(NOW()/700+i)));
   partyL.forEach(({L:Lt,b,ph})=>{Lt.intensity=party*2.2;b.material.opacity=party*.11;const a=NOW()/1000*1.6+ph;Lt.target.position.set(Math.sin(a)*3,0,-1.4+Math.cos(a*1.3)*2);b.lookAt(Lt.target.position)});
@@ -1042,7 +1045,7 @@ function updateCap(){const s=SCENES[cur];const timed=Array.isArray(s.caps[0]);le
   if(s.title&&t>1.6)$('tcard').classList.remove('on');
   updateRules();
   const total=SCENES.reduce((a,x)=>a+x.dur,0),done=SCENES.slice(0,cur).reduce((a,x)=>a+x.dur,0)+t;$('ytp').style.width=(done/total*100)+'%'}
-function resize(){if(!ok)return;const r=screen.getBoundingClientRect();renderer.setSize(r.width,r.height,false);if(composer){composer.setSize(r.width,r.height);gradePass.uniforms.uRes.value.set(r.width,r.height)}camera.aspect=r.width/r.height;camera.fov=isV()?62:40;camera.updateProjectionMatrix()}
+function resize(){if(!ok)return;const r=screen.getBoundingClientRect();renderer.setSize(r.width,r.height,false);if(composer){composer.setSize(r.width,r.height);bloomPass.setSize(r.width/2,r.height/2);gradePass.uniforms.uRes.value.set(r.width,r.height)}camera.aspect=r.width/r.height;camera.fov=isV()?62:40;camera.updateProjectionMatrix()}
 function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;
   if(playing){t+=dt;if(t>=SCENES[cur].dur)show(cur+1)}
   if(ok){camShake*=.9;resetPose();const key=SCENES[cur].key,ta=(WARP[key]||(x=>x))(t);UPDATE[key](ta,playing?dt:0);if(SHOT[key])SHOT[key](t);mood(key,t,dt);
