@@ -187,6 +187,25 @@ export default {
       "lang": "en",
       "youtube": "YUWY19qzh44",
       "added": "2026-10-17"
+    },
+    {
+      "key": "yt-KeUeWct-bTA",
+      "kind": "story",
+      "name": "He lost $6,000 in ONE Night 💀",
+      "emoji": "🎬",
+      "lang": "en",
+      "youtube": "KeUeWct-bTA",
+      "added": "2026-10-18"
+    },
+    {
+      "key": "yt-ggiVpbzmC_U",
+      "kind": "original",
+      "name": "\"Not Financial Advice\" Cost Me Everything",
+      "emoji": "🎬",
+      "lang": "en",
+      "youtube": "ggiVpbzmC_U",
+      "added": "2026-10-18",
+      "wide": true
     }
   ]
 }
