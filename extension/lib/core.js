@@ -172,6 +172,23 @@ export async function stockQuotes(symbols) {
   return out
 }
 
+/** Stocks by holding id: our own stock-prices.json first, Stooq for the rest. */
+async function stockPrices(ids) {
+  if (!ids.length) return {}
+  const j = await fetchFirst([`${SITE}/stock-prices.json?t=${Math.floor(Date.now() / 1800e3)}`], r => r.json(), 6000)
+  const out = {}
+  for (const id of ids) {
+    const p = j?.prices?.[id.toLowerCase()]
+    if (p?.usd > 0) out[id] = { usd: p.usd, chg: p.usd_24h_change ?? null }
+  }
+  const rest = ids.filter(id => !out[id])
+  if (rest.length) {
+    const sq = await stockQuotes(rest.map(id => id.slice(6).toLowerCase() + '.us'))
+    for (const id of rest) { const q = sq[id.slice(6).toLowerCase() + '.us']; if (q) out[id] = q }
+  }
+  return out
+}
+
 const METAL_CODE = { 'metal:xau': 'XAU', 'metal:xag': 'XAG', 'metal:xcu': 'XCU', 'metal:xpt': 'XPT' }
 export async function metalPrice(code) {
   const j = await fetchFirst(both(`https://api.gold-api.com/price/${code}`), r => r.json(), 6000)
@@ -196,12 +213,12 @@ export async function priceAll(map) {
   const fiats = ids.filter(id => id.startsWith('fiat:'))
   const [cp, sq, rates, ...mp] = await Promise.all([
     cryptoPrices([...new Set([...crypto, 'bitcoin', 'ethereum'])]),
-    stockQuotes(stocks.map(id => id.slice(6).toLowerCase() + '.us')),
+    stockPrices(stocks),
     fiats.length ? fxRates() : Promise.resolve({}),
     ...metals.map(id => metalPrice(METAL_CODE[id])),
   ])
   const out = { ...cp }
-  stocks.forEach(id => { const q = sq[id.slice(6).toLowerCase() + '.us']; if (q) out[id] = q })
+  stocks.forEach(id => { if (sq[id]) out[id] = sq[id] })
   metals.forEach((id, i) => { if (mp[i]) out[id] = { usd: mp[i], chg: null } })
   fiats.forEach(id => { const r = rates[id.slice(5).toUpperCase()]; if (r > 0) out[id] = { usd: 1 / r, chg: 0 } })
   // Bonds, property and anything without a market are valued at cost, so they
