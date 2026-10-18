@@ -60,6 +60,13 @@ async function fetchFirst(urls, parse = r => r.json(), timeout = 8000) {
 }
 const both = u => [u, PROXY(u)]
 
+/** Every url at once; the first good answer wins. */
+async function fetchAny(urls, parse = r => r.json(), timeout = 8000) {
+  try {
+    return await Promise.any(urls.map(u => fetchFirst([u], parse, timeout).then(v => v ?? Promise.reject(new Error('empty')))))
+  } catch { return null }
+}
+
 // ── Holdings ─────────────────────────────────────────────────────────────────
 
 export const NON_CRYPTO_RE = /^(stock|metal|fiat|bond|other|real|cash):/
@@ -106,26 +113,49 @@ export function computeHoldings(transactions, walletId = 'all') {
 async function cryptoPrices(ids) {
   if (!ids.length) return {}
   const key = ids.slice().sort().join(',')
-  try {
-    const c = await get(PRICE_CACHE_KEY)
-    if (c && c.key === key && Date.now() - c.at < PRICE_TTL) return c.prices
-  } catch {}
+  let cache = null
+  try { cache = await get(PRICE_CACHE_KEY) } catch {}
+  if (cache && cache.key === key && Date.now() - cache.at < PRICE_TTL) return cache.prices
+  // Our own snapshot is asked for alongside CoinGecko. The free tier often
+  // rate limits a browser, and some networks block it outright; without this
+  // every coin fell back to its cost.
+  const snapshot = marketSnapshot()
   // One call: price, 24h change, logo and a 7 day sparkline for every coin.
   const url = `${CG}/coins/markets?vs_currency=usd&ids=${encodeURIComponent(key)}&per_page=250&page=1&sparkline=true&price_change_percentage=24h`
-  const list = await fetchFirst(both(url), async r => { const j = await r.json(); return Array.isArray(j) && j.length ? j : null })
+  const list = await fetchAny(both(url), async r => { const j = await r.json(); return Array.isArray(j) && j.length ? j : null })
   const prices = {}
-  if (list) {
-    for (const c of list) {
-      if (!c?.id) continue
-      const spark = c.sparkline_in_7d?.price
-      prices[c.id] = { usd: c.current_price, chg: c.price_change_percentage_24h_in_currency ?? c.price_change_percentage_24h ?? 0, image: c.image || '', spark: Array.isArray(spark) ? thin(spark, 28) : null }
-    }
-  } else {
-    const simple = await fetchFirst(both(`${CG}/simple/price?ids=${encodeURIComponent(key)}&vs_currencies=usd&include_24hr_change=true`))
-    for (const [id, v] of Object.entries(simple || {})) prices[id] = { usd: v.usd, chg: v.usd_24h_change ?? 0 }
+  for (const c of list || []) {
+    if (!c?.id) continue
+    const spark = c.sparkline_in_7d?.price
+    prices[c.id] = { usd: c.current_price, chg: c.price_change_percentage_24h_in_currency ?? c.price_change_percentage_24h ?? 0, image: c.image || '', spark: Array.isArray(spark) ? thin(spark, 28) : null }
   }
+  let missing = ids.filter(id => !(prices[id]?.usd > 0))
+  if (missing.length) {
+    const snap = await snapshot
+    for (const id of missing) {
+      const c = snap[id]
+      if (c?.current_price > 0) prices[id] = { usd: c.current_price, chg: c.price_change_percentage_24h_in_currency ?? c.price_change_percentage_24h ?? 0, image: c.image || '', spark: cache?.prices?.[id]?.spark || null }
+    }
+    missing = missing.filter(id => !(prices[id]?.usd > 0))
+  }
+  // Coins outside the top 250 are not in the snapshot.
+  if (missing.length && !list) {
+    const simple = await fetchAny(both(`${CG}/simple/price?ids=${encodeURIComponent(missing.join(','))}&vs_currencies=usd&include_24hr_change=true`))
+    for (const [id, v] of Object.entries(simple || {})) if (v?.usd > 0) prices[id] = { usd: v.usd, chg: v.usd_24h_change ?? 0 }
+    missing = missing.filter(id => !(prices[id]?.usd > 0))
+  }
+  // Still nothing: the last price we had beats the cost.
+  for (const id of missing) if (cache?.prices?.[id]?.usd > 0) prices[id] = cache.prices[id]
   if (Object.keys(prices).length) await set(PRICE_CACHE_KEY, { key, prices, at: Date.now() })
   return prices
+}
+
+/** Top 250 coins by id from walletlens.live/market.json, refreshed every 30 min. */
+async function marketSnapshot() {
+  const j = await fetchFirst([`${SITE}/market.json?t=${Math.floor(Date.now() / 1800e3)}`], r => r.json(), 6000)
+  const out = {}
+  for (const c of Array.isArray(j?.coins) ? j.coins : []) if (c?.id) out[c.id] = c
+  return out
 }
 const thin = (arr, n) => arr.length <= n ? arr : Array.from({ length: n }, (_, i) => arr[Math.round(i * (arr.length - 1) / (n - 1))])
 
