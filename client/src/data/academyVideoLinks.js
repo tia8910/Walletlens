@@ -215,6 +215,15 @@ export default {
       "lang": "en",
       "youtube": "F0EDLDjqMYU",
       "added": "2026-10-18"
+    },
+    {
+      "key": "yt-A2f3s4dd9SI",
+      "kind": "story",
+      "name": "check less",
+      "emoji": "🎬",
+      "lang": "en",
+      "youtube": "A2f3s4dd9SI",
+      "added": "2026-10-18"
     }
   ]
 }
