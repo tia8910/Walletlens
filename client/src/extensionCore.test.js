@@ -74,7 +74,7 @@ describe('extension package and listing', () => {
   const BRANDS = /binance|coinbase|kraken|robinhood|metamask|bybit|okx|ledger|trezor|etoro/i
 
   it('is version 2 with a name and summary inside the store limits', () => {
-    expect(manifest.version).toBe('2.0.1')
+    expect(manifest.version).toBe('2.0.2')
     expect(manifest.name.length).toBeLessThanOrEqual(75)
     expect(manifest.description.length).toBeLessThanOrEqual(132)
     expect(manifest.background).toEqual({ service_worker: 'background.js', type: 'module' })

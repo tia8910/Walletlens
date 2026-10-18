@@ -865,6 +865,18 @@ export default function Landing() {
         <InstallExtension variant="badge" source="landing_footer" />
       </section>
 
+      {/* Directory badge, as TakeAI issues it; their verifier looks for it here. */}
+      <section style={{ display:'flex', justifyContent:'center', padding:'1.25rem 1rem 0' }}>
+        <a href="https://www.takeai.org" target="_blank" rel="noopener" title="Featured on TakeAI" aria-label="Featured on TakeAI"
+          style={{ display:'inline-flex', alignItems:'center', gap:10, padding:'10px 14px', border:'1px solid rgba(17,24,39,.14)', borderRadius:999, color:'#111827', textDecoration:'none', font:"700 14px system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background:'linear-gradient(180deg,#ffffff 0%,#f8fafc 100%)', boxShadow:'0 8px 24px rgba(15,23,42,.10)' }}>
+          <span style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:24, height:24, borderRadius:999, background:'#111827', color:'#fff', fontSize:13, lineHeight:1 }}>T</span>
+          <span style={{ display:'inline-flex', flexDirection:'column', gap:1 }}>
+            <span style={{ fontSize:12, lineHeight:1, color:'#6b7280', fontWeight:600 }}>Featured on</span>
+            <span style={{ fontSize:15, lineHeight:1.15, color:'#111827', fontWeight:800 }}>TakeAI</span>
+          </span>
+        </a>
+      </section>
+
       <footer className="lp-footer">
         <div className="lp-footer-products">
           <span className="lp-footer-products-label">Get WalletLens</span>
