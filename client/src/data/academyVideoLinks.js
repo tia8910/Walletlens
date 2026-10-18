@@ -206,6 +206,15 @@ export default {
       "youtube": "ggiVpbzmC_U",
       "added": "2026-10-18",
       "wide": true
+    },
+    {
+      "key": "yt-F0EDLDjqMYU",
+      "kind": "story",
+      "name": "Check Less live more",
+      "emoji": "🎬",
+      "lang": "en",
+      "youtube": "F0EDLDjqMYU",
+      "added": "2026-10-18"
     }
   ]
 }
