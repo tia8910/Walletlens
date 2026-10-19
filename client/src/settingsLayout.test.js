@@ -41,9 +41,12 @@ describe('a settings label cannot collapse to vertical text', () => {
 })
 
 describe('the language row', () => {
-  it('is stacked, so the chips never squeeze the label', () => {
-    const row = settings.slice(settings.indexOf("t('setLanguage')") - 400)
-    expect(row.slice(0, 400)).toMatch(/settings-row settings-row-stack/)
+  it('never puts the chips beside the label', () => {
+    // The redesigned row shows only the current language and opens a sheet
+    // with the full list, so the six chips never compete with the label.
+    const row = settings.slice(settings.indexOf("key: 'lang'"), settings.indexOf("key: 'lang'") + 600)
+    expect(row).toMatch(/setLangOpen\(true\)/)
+    expect(row).not.toMatch(/LANGUAGES\.map\(l => \(\s*<button/)
   })
 
   it('defines the stack with both classes so it beats .settings-row', () => {
