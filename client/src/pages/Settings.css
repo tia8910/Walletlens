@@ -120,7 +120,7 @@
 .sx-mini-h b { font-size: 20px; font-weight: 800; }
 .sx-mini-r { display: flex; align-items: center; gap: 9px; padding: 8px 12px; font-size: 12.5px; font-weight: 700; }
 .sx-mini-r + .sx-mini-r { border-top: 1px solid var(--sx-line); }
-.sx-mini-r i { width: 22px; height: 22px; border-radius: 7px; }
+.sx-mini-r i, .sx-mini-r img { width: 22px; height: 22px; border-radius: 7px; object-fit: cover; flex: none; }
 .sx-mini-r span { margin-inline-start: auto; color: var(--nl-up, #16a874); }
 .sx-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px; }
 .sx-tile {
@@ -158,3 +158,60 @@
 .sx-ticks { display: flex; justify-content: space-between; padding: 16px 14px 0 18px; font-size: 11.5px; font-weight: 600; color: var(--sx-sub); }
 .sx-ticks .on { color: var(--sx-acc); }
 .sx-sample { margin: 12px 0 0; padding: 12px; border-radius: 14px; background: var(--sx-soft); font-size: 14px; line-height: 1.45; }
+
+/* ── Backup & restore page ── */
+.bk .sx-top { margin-bottom: 16px; }
+.bk-status {
+  display: flex; gap: 12px; align-items: center; padding: 14px 16px; margin-bottom: 18px; border-radius: 18px;
+  background: linear-gradient(135deg, #3b2a0a, #23190a); color: #fde68a;
+}
+.bk-status.ok { background: linear-gradient(135deg, #0b3a2a, #0d2b3e); color: #a7f3d0; }
+.bk-status-ic { width: 40px; height: 40px; flex: none; border-radius: 12px; display: grid; place-items: center; background: rgba(255, 255, 255, .1); }
+.bk-status-ic svg { width: 22px; height: 22px; }
+.bk-status b { display: block; font-size: 15px; color: #fff; }
+.bk-status small { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.4; opacity: .85; }
+.bk-card {
+  background: var(--sx-card); border-radius: 18px; margin-bottom: 18px; overflow: hidden;
+  box-shadow: var(--nl-shadow, 0 2px 12px rgba(15, 29, 43, .06)); border: 1px solid var(--sx-line);
+}
+.bk-head { display: flex; align-items: center; gap: 12px; padding: 14px 14px 0; }
+.bk-head .sx-lb { flex: 1; min-width: 0; }
+.bk-body { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px; }
+.bk-pair .bk-card { margin-bottom: 12px; }
+.bk-pair { margin-bottom: 6px; }
+@media (min-width: 560px) { .bk-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .bk-pair .bk-card { margin: 0; } }
+.bk-drive-ic { background: #fff; }
+.bk-drive-ic svg { width: 22px !important; height: 22px !important; }
+.bk-pill { flex: none; font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 99px; color: #16a874; background: color-mix(in srgb, #16a874 14%, transparent); }
+.bk-drive-body { padding-top: 4px; }
+.bk-drive-body > * { margin: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; padding: 0 !important; }
+.bk-drive-body h3, .bk-drive-body .settings-section-title { display: none; }
+/* DriveBackup's embedded mode prints its own "Google Drive" label; the card header already says it. */
+.bk-drive-body > div > div:first-child { display: none; }
+.bk-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 14px;
+  border-radius: 12px; border: 1px solid var(--sx-line); background: var(--sx-soft); color: var(--sx-ink);
+  font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.bk-btn svg { width: 17px; height: 17px; }
+.bk-btn.bk-pri { background: var(--sx-acc); border-color: transparent; color: #fff; }
+.bk-btn:disabled { opacity: .55; cursor: default; }
+.bk-code {
+  font-family: ui-monospace, Menlo, monospace; font-size: 12px; line-height: 1.5; word-break: break-all;
+  max-height: 110px; overflow: auto; padding: 10px 12px; border-radius: 12px; background: var(--sx-soft);
+}
+.bk-qrs { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.bk-qr { margin: 0; padding: 10px; border-radius: 14px; background: #fff; text-align: center; }
+.bk-qr img { display: block; width: 200px; max-width: 100%; }
+.bk-qr figcaption { margin-top: 4px; font-size: 12px; font-weight: 700; color: #0f1d2b; }
+.bk-note { margin: 0; font-size: 12.5px; color: var(--sx-sub); text-align: center; }
+.bk-ok { color: var(--nl-up, #16a874); display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 700; }
+.bk-ok svg { width: 16px; height: 16px; }
+.bk-paste {
+  width: 100%; box-sizing: border-box; resize: vertical; min-height: 84px; padding: 10px 12px; border-radius: 12px;
+  border: 1px solid var(--sx-line); background: var(--sx-soft); color: var(--sx-ink); font: 13px ui-monospace, Menlo, monospace;
+}
+.bk-preview { border-radius: 12px; background: var(--sx-soft); padding: 4px 12px; }
+.bk-preview div { display: flex; justify-content: space-between; padding: 7px 0; font-size: 13.5px; }
+.bk-preview div + div { border-top: 1px solid var(--sx-line); }
+.bk-msg { margin: 0 4px 16px; padding: 10px 12px; border-radius: 12px; font-size: 13px; color: #ef4444; background: color-mix(in srgb, #ef4444 10%, transparent); }

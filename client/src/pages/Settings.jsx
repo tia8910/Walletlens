@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, createContext, useContext } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { track } from '../analytics'
 import { BiometricToggle } from '../components/BiometricLock'
 import { applySettings as _applySettings } from '../settingsUtils'
@@ -11,7 +11,9 @@ import PushToggle from '../components/PushToggle'
 import { ZakatSettings } from '../components/ZakatSwitch'
 import LandingLink from '../components/LandingLink'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
-import DriveBackup from '../components/DriveBackup'
+import BackupView from './BackupView'
+import { PlayMark, PLAY_STORE_URL } from '../components/StoreBadges'
+import { isMsStore } from '../msStore'
 import DeviceVault from '../components/DeviceVault'
 import { isAndroidTWA } from '../nativeBridge'
 import { requestReviewNow, reviewStatusLine } from '../reviewPrompt'
@@ -29,6 +31,7 @@ import './Settings.css'
 // Android by user-agent, OR the app told us so. Gating Android-only panels on
 // the UA alone hid them on a UA with no Android token, which is also what
 // makes isAndroidTWA() give up.
+const MS_STORE_URL = 'https://apps.microsoft.com/detail/9pkvkn0p9dx2'
 const isAndroid = (typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || ''))
   || isAndroidTWA()
 
@@ -69,6 +72,7 @@ const ICONS = {
   spark: <svg viewBox="0 0 24 24" {...P}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/></svg>,
   sound: <svg viewBox="0 0 24 24" {...P}><path d="M11 5L6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7"/></svg>,
   shield: <svg viewBox="0 0 24 24" {...P}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  windows: <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2h9.5v9.5H2z" fill="#f25022"/><path d="M12.5 2H22v9.5h-9.5z" fill="#7fba00"/><path d="M2 12.5h9.5V22H2z" fill="#00a4ef"/><path d="M12.5 12.5H22V22h-9.5z" fill="#ffb900"/></svg>,
   chrome: <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 24 4.95 13A22 22 0 0 1 43.05 13z" fill="#db4437"/><path d="M24 24 43.05 13A22 22 0 0 1 24 46z" fill="#ffcd40"/><path d="M24 24 24 46A22 22 0 0 1 4.95 13z" fill="#0f9d58"/><circle cx="24" cy="24" r="10" fill="#fff"/><circle cx="24" cy="24" r="8" fill="#4285f4"/></svg>,
   puzzle: <svg viewBox="0 0 24 24" {...P}><path d="M10 4a2 2 0 1 1 4 0v2h4v4h-2a2 2 0 1 0 0 4h2v4h-4v-2a2 2 0 1 0-4 0v2H6v-4H4a2 2 0 1 1 0-4h2V6h4z"/></svg>,
   star: <svg viewBox="0 0 24 24" fill="#fff"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>,
@@ -158,8 +162,8 @@ function Appearance({ fontSize, setFontSize, onBack }) {
       <div className="sx-preview">
         <div className="sx-mini">
           <div className="sx-mini-h"><small>{t('sxNetWorth')}</small><b>$41,280.55</b></div>
-          <div className="sx-mini-r"><i style={{ background: '#f7931a' }} />Bitcoin<span>+2.1%</span></div>
-          <div className="sx-mini-r"><i style={{ background: '#e6b422' }} />{t('catGold')}<span>+0.4%</span></div>
+          <div className="sx-mini-r"><img src={COLOR_THEMES.find(x => x.id === 'bitcoin').logo} alt="" />Bitcoin<span>+2.1%</span></div>
+          <div className="sx-mini-r"><img src={COLOR_THEMES.find(x => x.id === 'gold').logo} alt="" />{t('catGold')}<span>+0.4%</span></div>
         </div>
         <p>{t('sxPreview')}</p>
       </div>
@@ -217,6 +221,8 @@ function Appearance({ fontSize, setFontSize, onBack }) {
 export default function Settings() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
+  const location = useLocation()
+  const msStore = isMsStore()
   const [settings, setSettings] = useState(loadSettings)
   const { theme: colorTheme, modePref } = useTheme()
   const { lang, setLang, t } = useLanguage()
@@ -236,10 +242,10 @@ export default function Settings() {
   const [fx, setFx] = useState(() => effectSettings())
   const [q, setQ] = useState('')
   const [langOpen, setLangOpen] = useState(false)
-  const [open, setOpen] = useState({ weekly: false, backup: false })
+  const [open, setOpen] = useState({ weekly: false })
   const flip = (k) => setOpen(o => ({ ...o, [k]: !o[k] }))
 
-  const drive = useMemo(() => driveState(), [open.backup]) // eslint-disable-line react-hooks/exhaustive-deps
+  const drive = useMemo(() => driveState(), [])
   const backedAt = previouslyConnected(drive) ? latestBackupAt(drive) : 0
   const guardianOn = (() => { try { return !!JSON.parse(localStorage.getItem('wl_guardian') || 'null')?.email } catch { return false } })()
   const rate = isAndroid ? reviewStatusLine() : { code: 'off' }
@@ -247,6 +253,12 @@ export default function Settings() {
   const themeName = t('themeNames')?.[colorTheme] || COLOR_THEMES.find(x => x.id === colorTheme)?.name || ''
   const modeName = t({ light: 'modeLight', dark: 'modeDark', auto: 'modeAuto' }[modePref] || 'modeLight')
   const curTheme = COLOR_THEMES.find(x => x.id === colorTheme) || COLOR_THEMES[0]
+
+  // Google sign-in returns to /settings with { driveConnected }: land on the
+  // backup page, where DriveBackup finishes the connect.
+  if (params.get('view') === 'backup' || location.state?.driveConnected) {
+    return <BackupView relTime={relTime} onBack={() => (params.get('view') ? navigate(-1) : navigate('/settings', { replace: true }))} />
+  }
 
   if (params.get('view') === 'appearance') {
     return <Appearance fontSize={fontSize} setFontSize={(v) => update('fontSize', v)} onBack={() => navigate(-1)} />
@@ -281,12 +293,11 @@ export default function Settings() {
         { key: 'hide', terms: [t('setHideValues'), t('setHideValuesHint')], node:
           <Row icon={ICONS.eyeOff} color="#64748b" title={t('setHideValues')} hint={t('setHideValuesHint')}
             right={<Toggle on={hideValues} label={t('setHideValues')} onClick={() => update('hideValues', !hideValues)} />} /> },
-        drive.configured && { key: 'backup', terms: [t('sxBackup'), t('sxBackupHint'), 'Google Drive'], node: <>
-          <Row icon={ICONS.cloud} color="#16a34a" title={t('sxBackup')} chevron onClick={() => flip('backup')}
-            hint={backedAt ? t('sxBackedUp')(relTime(backedAt, lang)) : t('sxBackupHint')}
-            right={backedAt ? <span className="sx-badge">{t('commonOn')}</span> : null} />
-          {open.backup && <div className="sx-panel"><DriveBackup embedded /></div>}
-        </> },
+        { key: 'backup', terms: [t('sxBackup'), t('sxBackupHint'), t('bkCodeT'), t('bkQrT'), 'Google Drive', 'QR'], node:
+          <Row icon={ICONS.cloud} color="#16a34a" title={t('sxBackup')} chevron
+            onClick={() => { setParams({ view: 'backup' }); track('settings_open_backup') }}
+            hint={backedAt ? t('sxBackedUp')(relTime(backedAt, lang)) : (drive.configured ? t('sxBackupHint') : t('bkCodeHint'))}
+            right={backedAt ? <span className="sx-badge">{t('commonOn')}</span> : null} /> },
       ],
     },
     {
@@ -338,7 +349,13 @@ export default function Settings() {
     {
       title: t('sxMore'),
       items: [
-        { key: 'ext', terms: [t('sxExt'), t('sxExtHint'), 'chrome'], node:
+        !msStore && !isAndroidTWA() && { key: 'play', terms: ['Google Play', 'android', t('sxPlayHint')], node:
+          <Row icon={<span className="sx-chrome"><PlayMark size={22} /></span>} color="#fff" title="Google Play" hint={t('sxPlayHint')} chevron
+            onClick={() => { track('store_click', { store: 'play', source: 'settings' }); window.open(PLAY_STORE_URL, '_blank', 'noopener') }} /> },
+        !msStore && !isAndroidTWA() && { key: 'msstore', terms: ['Microsoft Store', 'windows', t('sxMsHint')], node:
+          <Row icon={<span className="sx-chrome">{ICONS.windows}</span>} color="#fff" title="Microsoft Store" hint={t('sxMsHint')} chevron
+            onClick={() => { track('store_click', { store: 'msstore', source: 'settings' }); window.open(MS_STORE_URL, '_blank', 'noopener') }} /> },
+        !msStore && { key: 'ext', terms: [t('sxExt'), t('sxExtHint'), 'chrome'], node:
           <Row icon={<span className="sx-chrome">{ICONS.chrome}</span>} color="#fff" title={t('sxExt')} hint={t('sxExtHint')} chevron
             onClick={() => { track('extension_click', { source: 'settings' }); window.open(EXTENSION_URL, '_blank', 'noopener') }} /> },
         rate.code !== 'off' && { key: 'rate', terms: [t('setRate'), t('setRateDesc')], node:
