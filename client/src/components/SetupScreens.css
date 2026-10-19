@@ -257,6 +257,13 @@ html[dir='rtl'] .su-nw-val { text-align: end; }
   font-size: 13px; font-weight: 700;
 }
 .su-tab.on { background: var(--su-accent); border-color: var(--su-accent); color: #04120b; }
+.su-markets { display: flex; gap: 6px; padding: 0 18px 10px; overflow-x: auto; scrollbar-width: none; }
+.su-markets::-webkit-scrollbar { display: none; }
+.su-market {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 10px; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.04); color: var(--su-dim); font-size: 12px; font-weight: 700;
+}
+.su-market.on { border-color: #0ea5e9; background: rgba(14, 165, 233, 0.16); color: var(--su-text); }
 .su-search {
   display: flex; align-items: center; gap: 8px; margin: 0 18px 8px; padding: 10px 12px; border-radius: 12px;
   background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.08); color: var(--su-faint);

@@ -163,11 +163,17 @@ function applyTheme(id, mode) {
   document.dispatchEvent(new CustomEvent('wl-theme'))
 }
 
-const ThemeContext = createContext({ theme: 'emerald', mode: 'light', setTheme: () => {}, setMode: () => {} })
+const ThemeContext = createContext({ theme: 'emerald', mode: 'light', modePref: 'light', setTheme: () => {}, setMode: () => {} })
+
+// 'auto' follows the phone. Everything else reads `mode`, which is always the
+// effective 'light' or 'dark', so no consumer has to know auto exists.
+const systemDark = () => { try { return window.matchMedia('(prefers-color-scheme: dark)').matches } catch { return false } }
+const effectiveMode = (pref) => pref === 'auto' ? (systemDark() ? 'dark' : 'light') : pref
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => localStorage.getItem('wl_theme') || 'emerald')
-  const [mode, setModeState]   = useState(() => localStorage.getItem('wl_mode')  || 'light')
+  const [modePref, setModePref] = useState(() => localStorage.getItem('wl_mode')  || 'light')
+  const [mode, setModeState]   = useState(() => effectiveMode(localStorage.getItem('wl_mode') || 'light'))
 
   // Refs hold the current state values so the stable callbacks below can read
   // them without closing over a stale value — avoids recreating setTheme/setMode
@@ -185,14 +191,26 @@ export function ThemeProvider({ children }) {
   }, []) // stable — never recreated
 
   const setMode = useCallback((m) => {
-    setModeState(m)
+    const eff = effectiveMode(m)
+    setModePref(m)
+    setModeState(eff)
     localStorage.setItem('wl_mode', m)
-    applyTheme(themeRef.current, m)
+    applyTheme(themeRef.current, eff)
   }, []) // stable — never recreated
 
   useEffect(() => { applyTheme(theme, mode) }, []) // eslint-disable-line
 
-  const value = useMemo(() => ({ theme, mode, setTheme, setMode }), [theme, mode, setTheme, setMode])
+  // On auto, follow the phone when it switches between light and dark.
+  useEffect(() => {
+    if (modePref !== 'auto') return undefined
+    let mq
+    try { mq = window.matchMedia('(prefers-color-scheme: dark)') } catch { return undefined }
+    const on = () => { const eff = mq.matches ? 'dark' : 'light'; setModeState(eff); applyTheme(themeRef.current, eff) }
+    mq.addEventListener?.('change', on)
+    return () => mq.removeEventListener?.('change', on)
+  }, [modePref])
+
+  const value = useMemo(() => ({ theme, mode, modePref, setTheme, setMode }), [theme, mode, modePref, setTheme, setMode])
 
   return (
     <ThemeContext.Provider value={value}>

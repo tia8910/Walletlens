@@ -30,10 +30,11 @@ describe('the toggle is somewhere a person can reach it', () => {
     expect(zakatSwitch).toMatch(/\{on && <ZakatNotifyToggle \/>\}/)
   })
 
-  it('has its own section with the crescent icon', () => {
-    const section = settings.match(/<h3 className="settings-section-title"[^>]*>.*?setZakat.*?<\/h3>\s*<ZakatSettings \/>/s)
+  it('has its own section', () => {
+    // Settings is a list of groups now: { title, items }. Zakat gets a group
+    // of its own, and nothing else is declared between its title and the toggle.
+    const section = settings.match(/title: t\('setZakat'\),\s*items: \[(?:(?!title:)[\s\S])*?<ZakatSettings \/>/)
     expect(section, 'a Zakat section wrapping the toggle').not.toBeNull()
-    expect(section[0]).toMatch(/name="crescent"/)
   })
 
   it('does not depend on the channel list to be reachable', () => {
