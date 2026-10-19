@@ -5,9 +5,8 @@ import { fileURLToPath } from 'node:url'
 import { isNewLook, setNewLook, applyLookParam } from './newLook'
 import { moodOf } from './components/HomeTop.jsx'
 
-// The light card redesign is previewed behind a switch. These pin what makes
-// it safe: it is on by default, can be switched back, it scopes itself, and it moves
-// features rather than removing them.
+// The light card redesign is the app's look. These pin that it is always on,
+// that it scopes itself, and that it moves features rather than removing them.
 
 const here = dirname(fileURLToPath(import.meta.url))
 const read = (p) => readFileSync(join(here, p), 'utf8')
@@ -15,7 +14,14 @@ const read = (p) => readFileSync(join(here, p), 'utf8')
 describe('the new-look switch', () => {
   beforeEach(() => localStorage.clear())
 
-  it('is on by default and follows Settings or a ?look= link', () => {
+  it('is the only look: no Settings switch, and an old classic choice is ignored', () => {
+    const LOOK_KEY = 'wl_look'
+    localStorage.setItem(LOOK_KEY, 'classic')
+    expect(isNewLook()).toBe(true)
+    expect(read('pages/Settings.jsx')).not.toMatch(/NewLookToggle/)
+  })
+
+  it('still follows a one-off ?look= link', () => {
     expect(isNewLook()).toBe(true)
     setNewLook(false); expect(isNewLook()).toBe(false)
     applyLookParam('?look=new'); expect(isNewLook()).toBe(true)

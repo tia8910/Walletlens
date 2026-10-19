@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import Icon from './Icon'
-import CoinLogo from './CoinLogo'
-import { api } from '../api'
+import CoinLogo, { FlagImg } from './CoinLogo'
+import { api, detectCountry } from '../api'
+import { MARKETS, MARKET_BY_CODE, marketForCountry, intlStockName, tickerSuffix } from '../data/markets'
 import sfx from '../sfx'
 import { POPULAR_FIAT, POPULAR_TICKERS, GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID, STOCK_PREFIX, FIAT_PREFIX } from '../data/assets'
 import { THEMES } from '../ThemeContext'
@@ -25,8 +26,18 @@ const GOLD_LOGO = THEMES.find(t => t.id === 'gold')?.logo || ''
 const SILVER_LOGO = THEMES.find(t => t.id === 'silver')?.logo || ''
 
 // Tabs of the picker, in order, with the colour each takes in the net-worth bar.
-export const SETUP_CATS = ['cash', 'stable', 'metal', 'crypto', 'stock', 'other']
-const CAT_COLOR = { cash: '#34d399', stable: '#26a17b', metal: '#e6b422', crypto: '#f7931a', stock: '#60a5fa', other: '#a78bfa' }
+export const SETUP_CATS = ['cash', 'stable', 'metal', 'crypto', 'stock', 'local', 'other']
+const CAT_COLOR = { cash: '#34d399', stable: '#26a17b', metal: '#e6b422', crypto: '#f7931a', stock: '#60a5fa', local: '#0ea5e9', other: '#a78bfa' }
+
+// Markets outside the US, for the Local markets tab.
+const LOCAL_MARKETS = MARKETS.filter(m => m.code !== 'US' && m.stocks?.length)
+/** The user's own market, from the country cached by detectCountry; Saudi Arabia when it is the US or unknown. */
+export function homeLocalMarket() {
+  try {
+    const m = marketForCountry(JSON.parse(localStorage.getItem('wl_country') || 'null')?.c)
+    return MARKET_BY_CODE[m]?.stocks?.length && m !== 'US' ? m : null
+  } catch { return null }
+}
 
 const STABLES = [
   ['tether', 'USDT', 'Tether'], ['usd-coin', 'USDC', 'USD Coin'], ['dai', 'DAI', 'Dai'], ['first-digital-usd', 'FDUSD', 'First Digital USD'],
@@ -75,6 +86,13 @@ export function setupAsset(kind, key, t = (k) => k) {
       const tk = String(key).toUpperCase()
       return { cat: 'stock', id: `${STOCK_PREFIX}${tk.toLowerCase()}`, sym: tk, name: stockName(tk), label: stockName(tk), category: 'stock', logo: true, unit: tk }
     }
+    case 'local': {
+      // A listing outside the US by its exchange ticker (COMI.CA, 2222.SR). The
+      // id keeps the suffix, so prices come from that market, in USD.
+      const tk = String(key).toUpperCase()
+      const name = intlStockName(tk) || tk
+      return { cat: 'local', id: `${STOCK_PREFIX}${tk.toLowerCase()}`, sym: tk, name, label: name, category: 'stock', logo: true, unit: tk }
+    }
     case 'other': {
       const O = {
         'real-estate': ['other:real-estate', 'PROPERTY', t('catRealEstate'), 'other', '⌂', '#fbbf24'],
@@ -94,13 +112,14 @@ export function setupAsset(kind, key, t = (k) => k) {
 }
 
 /** What each tab lists before anything is typed. */
-function catalogue(cat, t) {
+function catalogue(cat, t, market = 'SA') {
   switch (cat) {
     case 'cash': return POPULAR_FIAT.map(f => setupAsset('cash', f.code, t))
     case 'stable': return STABLES.map(s => setupAsset('stable', s[0], t))
     case 'metal': return ['gold-oz', 'gold-g', 'silver-oz', 'silver-g', 'platinum-oz', 'copper-lb'].map(k => setupAsset('metal', k, t))
     case 'crypto': return COINS.map(c => setupAsset('crypto', c[0], t))
     case 'stock': return STOCKS.map(k => setupAsset('stock', k, t))
+    case 'local': return (MARKET_BY_CODE[market]?.stocks || []).map(x => setupAsset('local', x.ticker, t))
     case 'other': return ['real-estate', 'bonds', 'vehicle', 'business'].map(k => setupAsset('other', k, t))
     default: return []
   }
@@ -124,6 +143,7 @@ export function initialRows(interests, currency, t = (k) => k) {
   if (!any || has('crypto')) add('crypto', setupAsset('crypto', 'bitcoin', t))
   if (!any || has('stocks')) add('stock', null)
   if (has('etfs')) add('stock', setupAsset('stock', 'VOO', t))
+  if ((!any || has('stocks')) && homeLocalMarket()) add('local', null)
   if (has('realestate')) add('other', setupAsset('other', 'real-estate', t))
   if (has('bonds')) add('other', setupAsset('other', 'bonds', t))
   if (!any) add('other', null)
@@ -150,7 +170,7 @@ function readInterests() {
 }
 
 const usd = (v) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const catLabel = (cat, t) => ({ cash: t('catCash'), stable: t('wsCatStable'), metal: t('wsCatMetals'), crypto: t('catCrypto'), stock: t('catStocks'), other: t('wsCatOther') })[cat]
+const catLabel = (cat, t) => ({ cash: t('catCash'), stable: t('wsCatStable'), metal: t('wsCatMetals'), crypto: t('catCrypto'), stock: t('catStocks'), local: t('catLocalMarkets'), other: t('wsCatOther') })[cat]
 
 function Mark({ asset }) {
   if (!asset) return <span className="su-mark empty" aria-hidden="true">＋</span>
@@ -164,8 +184,11 @@ const Caret = () => (
 )
 
 function AssetSheet({ cat: startCat, current, prices, onPrices, onPick, onClose }) {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const [cat, setCat] = useState(startCat)
+  // The market the Local markets tab shows: the user's own unless they pick another.
+  const [market, setMarket] = useState(() => homeLocalMarket() || 'SA')
+  const marketPicked = useRef(false)
   const [q, setQ] = useState('')
   const [found, setFound] = useState([])
   const timer = useRef(null)
@@ -176,11 +199,25 @@ function AssetSheet({ cat: startCat, current, prices, onPrices, onPick, onClose 
     tabsRef.current?.querySelector('.su-tab.on')?.scrollIntoView?.({ inline: 'center', block: 'nearest' })
   }, [cat])
 
+  // Which market is the user's: detected once, opened unless they chose another.
+  useEffect(() => {
+    let alive = true
+    detectCountry().then(c => {
+      const m = marketForCountry(c)
+      if (alive && !marketPicked.current && m !== 'US' && MARKET_BY_CODE[m]?.stocks?.length) setMarket(m)
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [])
+
   // Prices for what the tab shows, so the list reads like a market.
   useEffect(() => {
-    const ids = catalogue(cat, t).filter(a => !a.valued).map(a => a.id)
+    const ids = catalogue(cat, t, market).filter(a => !a.valued).map(a => a.id)
     if (ids.length) api.getPrices([...new Set(ids)].join(',')).then(onPrices).catch(() => {})
-  }, [cat]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cat, market]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const regionName = (code) => {
+    try { return new Intl.DisplayNames([lang || 'en'], { type: 'region' }).of(code) } catch { return code }
+  }
 
   // Any coin at all, beyond the ones listed.
   useEffect(() => {
@@ -200,7 +237,7 @@ function AssetSheet({ cat: startCat, current, prices, onPrices, onPick, onClose 
 
   const list = useMemo(() => {
     const s = q.trim().toLowerCase()
-    const base = catalogue(cat, t)
+    const base = catalogue(cat, t, market)
     const local = s ? base.filter(a => a.sym.toLowerCase().includes(s) || a.label.toLowerCase().includes(s)) : base
     if (cat === 'crypto' && found.length) {
       const seen = new Set(local.map(a => a.id))
@@ -209,9 +246,13 @@ function AssetSheet({ cat: startCat, current, prices, onPrices, onPick, onClose 
     if (cat === 'stock' && s && /^[a-z]{1,5}([.-][a-z])?$/.test(s) && !local.some(a => a.sym.toLowerCase() === s)) {
       return [...local, setupAsset('stock', s.toUpperCase(), t)]
     }
+    // Any listing by its exchange ticker, beyond the best known names (ETEL.CA, 4190.SR).
+    if (cat === 'local' && s && tickerSuffix(s) && !local.some(a => a.sym.toLowerCase() === s)) {
+      return [...local, setupAsset('local', s.toUpperCase(), t)]
+    }
     if (cat === 'other' && q.trim()) return [...local, { ...setupAsset('other', q.trim(), t), custom: true }]
     return local
-  }, [cat, q, found]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cat, q, found, market]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
@@ -225,6 +266,16 @@ function AssetSheet({ cat: startCat, current, prices, onPrices, onPick, onClose 
               onClick={() => { setCat(c); setQ('') }}>{catLabel(c, t)}</button>
           ))}
         </div>
+        {cat === 'local' && (
+          <div className="su-markets" role="tablist" aria-label={t('catLocalMarkets')}>
+            {LOCAL_MARKETS.map(m => (
+              <button key={m.code} role="tab" aria-selected={m.code === market} className={`su-market${m.code === market ? ' on' : ''}`}
+                onClick={() => { marketPicked.current = true; setMarket(m.code); setQ('') }}>
+                <FlagImg cc={m.flag} size={16} /><span>{regionName(m.code)}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <label className="su-search">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
           <input value={q} onChange={e => setQ(e.target.value)} placeholder={t('wsSearch')} aria-label={t('wsSearch')} autoComplete="off" spellCheck={false} />

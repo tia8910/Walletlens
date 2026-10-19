@@ -11,7 +11,6 @@ import InterestPicker from '../components/InterestPicker'
 import PushToggle from '../components/PushToggle'
 import { ZakatSettings } from '../components/ZakatSwitch'
 import LandingLink from '../components/LandingLink'
-import NewLookToggle from '../components/NewLookToggle'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import DriveBackup from '../components/DriveBackup'
 import DeviceVault from '../components/DeviceVault'
@@ -88,7 +87,7 @@ export default function Settings() {
     track('settings_change', { key, val })
   }
 
-  const fontSize = settings.fontSize || 'md'
+  const fontSize = settings.fontSize || 'sm'
   const hideValues  = settings.hideValues  ?? false
   const [editInterests, setEditInterests] = useState(false)
   const [fx, setFx] = useState(() => effectSettings())
@@ -112,7 +111,6 @@ export default function Settings() {
       {/* ── Appearance ── */}
       <div className="settings-section glass-card">
         <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="sliders" size={16} />{t('setAppearance')}</h3>
-        <NewLookToggle />
 
         {/* Color Theme */}
         <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.6rem' }}>

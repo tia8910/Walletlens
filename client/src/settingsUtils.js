@@ -26,7 +26,8 @@ export function applySettings() {
   try {
     const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')
     const root = document.documentElement
-    const font   = FONT_SIZES.find(f => f.id === s.fontSize) || FONT_SIZES[1]
+    // Small is the default: the app reads best at 14px on a phone.
+    const font   = FONT_SIZES.find(f => f.id === s.fontSize) || FONT_SIZES[0]
     // NOTE: theme colour, accent and background are owned entirely by
     // ThemeContext (applyTheme). This legacy helper used to also set --bg,
     // --card-bg and --accent from a separate accent picker, which fought

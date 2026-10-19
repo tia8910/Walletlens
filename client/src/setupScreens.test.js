@@ -55,7 +55,12 @@ describe('what each row is worth', () => {
 
 describe('the picker', () => {
   it('has a tab for every kind of asset', () => {
-    expect(SETUP_CATS).toEqual(['cash', 'stable', 'metal', 'crypto', 'stock', 'other'])
+    expect(SETUP_CATS).toEqual(['cash', 'stable', 'metal', 'crypto', 'stock', 'local', 'other'])
+  })
+
+  it('files local market stocks under their exchange ticker', () => {
+    expect(setupAsset('local', 'comi.ca')).toMatchObject({ id: 'stock:comi.ca', sym: 'COMI.CA', name: 'Commercial International Bank', category: 'stock', cat: 'local' })
+    expect(setupAsset('local', '2222.SR')).toMatchObject({ id: 'stock:2222.sr', name: 'Saudi Aramco' })
   })
 
   it('files stocks and bonds under the ids the rest of the app reads', () => {
