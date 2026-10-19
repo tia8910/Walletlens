@@ -224,6 +224,34 @@ export default {
       "lang": "en",
       "youtube": "A2f3s4dd9SI",
       "added": "2026-10-18"
+    },
+    {
+      "key": "yt-QBOTD9tsjLM",
+      "kind": "story",
+      "name": "Check less Live more",
+      "emoji": "🎬",
+      "lang": "en",
+      "youtube": "QBOTD9tsjLM",
+      "added": "2026-10-19"
+    },
+    {
+      "key": "yt-EIJujlDtwIs",
+      "kind": "story",
+      "name": "قبل ما تستثمر جنيه… اتفرج على الـ 10 غلطات دول",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "EIJujlDtwIs",
+      "added": "2026-10-19"
+    },
+    {
+      "key": "yt-KyA6vMsm0Vw",
+      "kind": "original",
+      "name": "10 غلطات قاتلة في الاستثمار",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "KyA6vMsm0Vw",
+      "added": "2026-10-19",
+      "wide": true
     }
   ]
 }
