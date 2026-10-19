@@ -59,7 +59,6 @@ export { applySettings } from '../settingsUtils'
 // ── icons ──────────────────────────────────────────────────────────────────
 const P = { fill: 'none', stroke: '#fff', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }
 const ICONS = {
-  theme: <svg viewBox="0 0 24 24" {...P}><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="#fff"/></svg>,
   text: <svg viewBox="0 0 24 24" {...P}><path d="M4 18L9 6l5 12M5.6 14h6.8M15 18l3-7.5 3 7.5M16 16h4"/></svg>,
   globe: <svg viewBox="0 0 24 24" {...P}><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>,
   list: <svg viewBox="0 0 24 24" {...P}><path d="M4 7h16M4 12h16M4 17h10"/></svg>,
@@ -70,12 +69,24 @@ const ICONS = {
   spark: <svg viewBox="0 0 24 24" {...P}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/></svg>,
   sound: <svg viewBox="0 0 24 24" {...P}><path d="M11 5L6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7"/></svg>,
   shield: <svg viewBox="0 0 24 24" {...P}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  chrome: <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 24 4.95 13A22 22 0 0 1 43.05 13z" fill="#db4437"/><path d="M24 24 43.05 13A22 22 0 0 1 24 46z" fill="#ffcd40"/><path d="M24 24 24 46A22 22 0 0 1 4.95 13z" fill="#0f9d58"/><circle cx="24" cy="24" r="10" fill="#fff"/><circle cx="24" cy="24" r="8" fill="#4285f4"/></svg>,
   puzzle: <svg viewBox="0 0 24 24" {...P}><path d="M10 4a2 2 0 1 1 4 0v2h4v4h-2a2 2 0 1 0 0 4h2v4h-4v-2a2 2 0 1 0-4 0v2H6v-4H4a2 2 0 1 1 0-4h2V6h4z"/></svg>,
   star: <svg viewBox="0 0 24 24" fill="#fff"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>,
   help: <svg viewBox="0 0 24 24" {...P}><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01"/></svg>,
 }
 const Chev = () => <svg className="sx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>
 const LOGO = <svg viewBox="0 0 64 64" fill="none"><circle cx="27" cy="25" r="19" stroke="#4ade80" strokeWidth="5.5"/><rect x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="#4ade80"/><rect x="21.5" y="21" width="5" height="13" rx="1.2" fill="#4ade80"/><rect x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="#4ade80"/><line x1="13.5" y1="39" x2="4" y2="55" stroke="#4ade80" strokeWidth="5.5" strokeLinecap="round"/><circle cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/></svg>
+
+// A theme's own mark: its logo, or a cut gem for Emerald, which has none.
+function ThemeMark({ th, className }) {
+  return (
+    <span className={className} style={{ background: `radial-gradient(circle at 35% 30%, ${th.light}, ${th.swatch})` }} aria-hidden="true">
+      {th.logo
+        ? <img src={th.logo} alt="" loading="lazy" decoding="async" />
+        : <svg viewBox="0 0 40 40"><path d="M20 7l11 9-11 18L9 16z" fill="#047857" opacity=".85"/><path d="M9 16h22M15 16l5-9 5 9-5 18z" fill="none" stroke="#d1fae5" strokeWidth="1.6" strokeLinejoin="round"/></svg>}
+    </span>
+  )
+}
 
 // ── building blocks ─────────────────────────────────────────────────────────
 const SearchCtx = createContext('')
@@ -159,9 +170,7 @@ function Appearance({ fontSize, setFontSize, onBack }) {
           {COLOR_THEMES.map(th => (
             <button key={th.id} className={`sx-tile${theme === th.id ? ' on' : ''}`} aria-pressed={theme === th.id}
               onClick={() => { setTheme(th.id); track('theme_changed', { theme: th.id, source: 'settings' }) }}>
-              <span className="sx-dot" style={{ background: `radial-gradient(circle at 35% 30%, ${th.light}, ${th.swatch})` }}>
-                {th.logo && <img src={th.logo} alt="" loading="lazy" decoding="async" />}
-              </span>
+              <ThemeMark th={th} className="sx-dot" />
               {t('themeNames')?.[th.id] || th.name}
             </button>
           ))}
@@ -249,9 +258,9 @@ export default function Settings() {
       title: t('setAppearance'),
       items: [
         { key: 'theme', terms: [t('sxTheme'), t('setColorTheme'), t('setMode'), themeName], node:
-          <Row icon={ICONS.theme} color="#10b981" title={t('sxTheme')} chevron
+          <Row icon={<ThemeMark th={curTheme} className="sx-thm" />} color="transparent" title={t('sxTheme')} chevron
             onClick={() => { setParams({ view: 'appearance' }); track('settings_open_appearance') }}
-            right={<span className="sx-val"><span className="sx-sw" style={{ background: `radial-gradient(circle at 35% 30%, ${curTheme.light}, ${curTheme.swatch})` }} />{themeName} · {modeName}</span>} /> },
+            right={<span className="sx-val">{themeName} · {modeName}</span>} /> },
         { key: 'size', terms: [t('setFontSize'), t('setFontSizeHint')], node:
           <Row icon={ICONS.text} color="#6366f1" title={t('setFontSize')}
             right={<div className="sx-seg" role="radiogroup" aria-label={t('setFontSize')}>{FONT_SIZES.map(f => (
@@ -330,7 +339,7 @@ export default function Settings() {
       title: t('sxMore'),
       items: [
         { key: 'ext', terms: [t('sxExt'), t('sxExtHint'), 'chrome'], node:
-          <Row icon={ICONS.puzzle} color="#4285f4" title={t('sxExt')} hint={t('sxExtHint')} chevron
+          <Row icon={<span className="sx-chrome">{ICONS.chrome}</span>} color="#fff" title={t('sxExt')} hint={t('sxExtHint')} chevron
             onClick={() => { track('extension_click', { source: 'settings' }); window.open(EXTENSION_URL, '_blank', 'noopener') }} /> },
         rate.code !== 'off' && { key: 'rate', terms: [t('setRate'), t('setRateDesc')], node:
           <Row icon={ICONS.star} color="#eab308" title={t('setRate')} chevron
