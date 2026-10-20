@@ -252,6 +252,16 @@ export default {
       "youtube": "KyA6vMsm0Vw",
       "added": "2026-10-19",
       "wide": true
+    },
+    {
+      "key": "yt-4SC5Vt8mN1g",
+      "kind": "original",
+      "name": "لو حد قالك «عائد مضمون  اتفرج على ده الأول",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "4SC5Vt8mN1g",
+      "added": "2026-10-20",
+      "wide": true
     }
   ]
 }
