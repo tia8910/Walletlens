@@ -45,7 +45,6 @@ import {
   runSchemaMigrations,
 } from './data/storage';
 import { foldBalances as _foldBalancesPure, diffHoldings } from './data/portfolio';
-import { analyzeTechnicals } from './technicals';
 import { isIntlTicker, toMajorUnit, countryFromDevice } from './data/markets';
 import { dataUrl, voiceProxy } from './apiHosts.js'
 
@@ -2998,6 +2997,9 @@ export const api = {
           if (closes.length < 20) { out[id] = null; cache[id] = { t: now, v: null }; return; }
           // Pass OHLCV data for advanced indicators when available
           const ohlcv = out[id + ':ohlcv'] || null
+          // Loaded on demand: the indicator maths is only needed once a
+          // technicals request actually runs, not on every page's first load.
+          const { analyzeTechnicals } = await import('./technicals')
           const ta = analyzeTechnicals(closes, closes[closes.length - 1], ohlcv)
           // Attach raw OHLCV to ta so synthesis functions can derive fundamentals for non-crypto
           if (ohlcv && ohlcv.length > 0) ta.ohlcv = ohlcv
