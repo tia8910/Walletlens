@@ -262,6 +262,15 @@ export default {
       "youtube": "4SC5Vt8mN1g",
       "added": "2026-10-20",
       "wide": true
+    },
+    {
+      "key": "yt-x905AGMygFY",
+      "kind": "story",
+      "name": "Cash is king",
+      "emoji": "🎬",
+      "lang": "en",
+      "youtube": "x905AGMygFY",
+      "added": "2026-10-20"
     }
   ]
 }
