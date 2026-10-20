@@ -98,3 +98,8 @@
 
 /*.woff2
   Cache-Control: public, max-age=31536000, immutable
+
+# On-device OCR engine and model (wasm, traineddata). Filenames are not
+# hashed, so long-lived but revalidated rather than immutable.
+/ocr/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
