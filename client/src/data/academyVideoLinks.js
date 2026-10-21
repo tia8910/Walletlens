@@ -271,6 +271,16 @@ export default {
       "lang": "en",
       "youtube": "x905AGMygFY",
       "added": "2026-10-20"
+    },
+    {
+      "key": "yt-aYvi3NlpYaM",
+      "kind": "original",
+      "name": "الشارت بيحكي ١ | النماذج الفنية زي ما محدش شرحهالك: الرأس والكتفين، القمة المزدو",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "aYvi3NlpYaM",
+      "added": "2026-10-21",
+      "wide": true
     }
   ]
 }
