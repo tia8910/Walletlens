@@ -281,6 +281,16 @@ export default {
       "youtube": "aYvi3NlpYaM",
       "added": "2026-10-21",
       "wide": true
+    },
+    {
+      "key": "yt-l02PfHJVZ3c",
+      "kind": "original",
+      "name": "إزاي تعرف السوق طالع ولا نازل؟ الترند والدعم والمقاومة ببساطة",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "l02PfHJVZ3c",
+      "added": "2026-10-22",
+      "wide": true
     }
   ]
 }
