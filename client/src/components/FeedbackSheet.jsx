@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 import { REPORT_ENDPOINT, REPORT_EMAIL, buildReport } from './AiReport'
+import '../pages/Settings.css'
 
 // "Send feedback" from Settings: a direct line to us, so a problem can be told
 // to the people who can fix it rather than left as a one-star rating nobody
@@ -11,9 +13,10 @@ import { REPORT_ENDPOINT, REPORT_EMAIL, buildReport } from './AiReport'
 // What leaves the device: the topic, the message, the email if they chose to
 // give one, the app language and the platform. Never the portfolio.
 //
-// This is not a step before the Play rating card and must never become one:
-// Play forbids asking how someone feels before showing the card. It is only
-// ever opened by the person, from Settings.
+// It is opened by the person, from Settings or from the Home rate card's own
+// "Report a problem" button. It is never a step before the Play rating card:
+// Play forbids asking how someone feels first, so the rate card offers both
+// side by side and asks nothing.
 
 export const TOPICS = ['idea', 'bug', 'price', 'other']
 const TOPIC_KEY = { idea: 'fbIdea', bug: 'fbBug', price: 'fbPrice', other: 'fbOther' }
@@ -37,9 +40,9 @@ export function feedbackReport({ topic, message, email, lang, where = platform()
   })
 }
 
-export default function FeedbackSheet({ onClose }) {
+export default function FeedbackSheet({ onClose, initialTopic = 'idea', source = 'settings' }) {
   const { t, lang } = useLanguage()
-  const [topic, setTopic] = useState('idea')
+  const [topic, setTopic] = useState(TOPICS.includes(initialTopic) ? initialTopic : 'idea')
   const [message, setMessage] = useState('')
   const [email, setEmail] = useState('')
   const [state, setState] = useState('idle') // idle | sending | sent | failed
@@ -59,15 +62,17 @@ export default function FeedbackSheet({ onClose }) {
       })
       if (!r.ok) throw new Error(String(r.status))
       setState('sent')
-      track('feedback_sent', { topic })
+      track('feedback_sent', { topic, source })
     } catch {
       setState('failed')
-      track('feedback_failed', { topic })
+      track('feedback_failed', { topic, source })
     }
   }
 
-  return (
-    <>
+  // Portalled inside an .sx layer so the sheet carries the Settings tokens
+  // wherever it is opened from.
+  return createPortal(
+    <div className="sx sx-layer">
       <div className="sx-scrim" onClick={onClose} />
       <div className="sx-sheet fb" role="dialog" aria-modal="true" aria-label={t('fbTitle')}>
         <div className="sx-grab" />
@@ -98,6 +103,7 @@ export default function FeedbackSheet({ onClose }) {
           </>
         )}
       </div>
-    </>
+    </div>,
+    document.body,
   )
 }

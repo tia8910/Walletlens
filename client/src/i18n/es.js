@@ -2214,6 +2214,8 @@ export default {
     rcSub: "Tu valoración ayuda a más personas a encontrar la app.",
     rcRate: "Valorar",
     rcLater: "Ahora no",
+    rcReport: "¿Tienes un problema?",
+    rcReportHint: "Cuéntanos y lo arreglamos rápido.",
     tkMoreCurrencies: "Monedas",
     tkEntrySignal: "Señal de entrada",
     tkExitSignal: "Señal de salida",

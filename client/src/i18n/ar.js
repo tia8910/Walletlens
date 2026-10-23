@@ -2240,6 +2240,8 @@ export default {
     rcSub: "تقييمك يساعد المزيد من الناس على اكتشاف التطبيق.",
     rcRate: "قيّم الآن",
     rcLater: "ليس الآن",
+    rcReport: "في مشكلة؟",
+    rcReportHint: "قولنا وهنحلها بسرعة.",
     tkMoreCurrencies: "عملات",
     tkEntrySignal: "إشارة الدخول",
     tkExitSignal: "إشارة الخروج",

@@ -2235,6 +2235,8 @@ export default {
     rcSub: "Your rating helps more people find the app.",
     rcRate: "Rate",
     rcLater: "Not now",
+    rcReport: "Facing a problem?",
+    rcReportHint: "Tell us and we'll fix it fast.",
     tkMoreCurrencies: "Currencies",
     tkEntrySignal: "Entry signal",
     tkExitSignal: "Exit signal",

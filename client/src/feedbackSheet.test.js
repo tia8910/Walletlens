@@ -38,3 +38,18 @@ describe('where feedback lives', () => {
     expect(src).toMatch(/noteMoment\('import_success'\)/)
   })
 })
+
+describe('the Home rate card', () => {
+  const card = read('components/RateCard.jsx')
+  it('offers Report a problem beside Rate, opening the feedback sheet on bugs', () => {
+    expect(card).toMatch(/className="nl-rate-go"/)
+    expect(card).toMatch(/<FeedbackSheet initialTopic="bug"/)
+  })
+  it('does not put the report in front of the rating', () => {
+    // Rate goes straight to the review flow; reporting neither hides nor
+    // snoozes the card.
+    const rate = card.slice(card.indexOf('const rate = () =>'), card.indexOf('const later'))
+    expect(rate).toMatch(/requestReviewNow\('home_card'\)/)
+    expect(rate).not.toMatch(/FeedbackSheet|setReport/)
+  })
+})
