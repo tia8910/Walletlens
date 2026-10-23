@@ -4,6 +4,7 @@ import { api } from '../api'
 import { noteFeatureUse } from '../featureUse'
 import { track, trackImport, importCompleted } from '../analytics'
 import { driveState, previouslyConnected, latestBackupAt } from '../driveSync'
+import { noteMoment } from '../reviewPrompt'
 
 // Backup & restore, on a page of its own: Google Drive first (automatic), then
 // the backup code, the QR code for another phone, and restoring from a code.
@@ -58,7 +59,7 @@ export default function BackupView({ onBack, relTime }) {
       try { localStorage.setItem('wl_exported_at', String(Date.now())) } catch { /* private mode */ }
       noteFeatureUse('exportdata')
       const result = await api.exportCode().catch(() => null)
-      if (result) { setCode(result); track('backup_code_made', { source: 'settings' }) }
+      if (result) { setCode(result); track('backup_code_made', { source: 'settings' }); noteMoment('backup_saved') }
       else setMsg(t('errExportFailed'))
     } finally { setBusy('') }
   }
@@ -78,7 +79,7 @@ export default function BackupView({ onBack, relTime }) {
       const parts = url ? await makeQrParts(url) : []
       setQrParts(parts); setShowQr(parts.length > 0)
       if (!parts.length) setMsg(t('errQrFailed'))
-      else track('backup_qr_made', { source: 'settings', parts: parts.length })
+      else { track('backup_qr_made', { source: 'settings', parts: parts.length }); noteMoment('backup_saved') }
     } finally { setBusy('') }
   }
 
@@ -99,6 +100,7 @@ export default function BackupView({ onBack, relTime }) {
     if (result?.success === false) { setMsg(t('errImportFailedPrefix') + (result.error || 'unknown error')); return }
     trackImport({ method: 'backup', step: 'saved' })
     importCompleted({ method: 'backup' })
+    noteMoment('import_success')
     setPaste(''); setPreview(null); setDone(true)
     setTimeout(() => { window.location.href = '/dashboard' }, 900)
   }
