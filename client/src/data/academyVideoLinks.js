@@ -291,6 +291,15 @@ export default {
       "youtube": "l02PfHJVZ3c",
       "added": "2026-10-22",
       "wide": true
+    },
+    {
+      "key": "yt-eZu-b04uraU",
+      "kind": "story",
+      "name": "الدعم والمقاومة: إمتى السقف يبقى أرضية؟",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "eZu-b04uraU",
+      "added": "2026-10-23"
     }
   ]
 }
