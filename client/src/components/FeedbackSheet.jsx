@@ -18,8 +18,10 @@ import '../pages/Settings.css'
 // Play forbids asking how someone feels first, so the rate card offers both
 // side by side and asks nothing.
 
-export const TOPICS = ['idea', 'bug', 'price', 'other']
-const TOPIC_KEY = { idea: 'fbIdea', bug: 'fbBug', price: 'fbPrice', other: 'fbOther' }
+// 'ai' keeps what the old top bar sheet offered: an AI answer can be flagged
+// from any screen, not only under the answer (store policy).
+export const TOPICS = ['idea', 'bug', 'price', 'ai', 'other']
+const TOPIC_KEY = { idea: 'fbIdea', bug: 'fbBug', price: 'fbPrice', ai: 'fbAi', other: 'fbOther' }
 
 const platform = () => {
   try {
@@ -29,25 +31,25 @@ const platform = () => {
 }
 
 /** The report this sheet sends, kept pure for the test. */
-export function feedbackReport({ topic, message, email, lang, where = platform() }) {
+export function feedbackReport({ topic, message, email, lang, page, where = platform() }) {
   const contact = String(email || '').trim()
   return buildReport({
     surface: `feedback:${TOPICS.includes(topic) ? topic : 'other'}`,
     reason: 'feedback',
-    note: [`platform: ${where}`, contact && `reply to: ${contact}`].filter(Boolean).join('\n'),
+    note: [`platform: ${where}`, page && `page: ${String(page).slice(0, 120)}`, contact && `reply to: ${contact}`].filter(Boolean).join('\n'),
     output: String(message || '').trim(),
     lang,
   })
 }
 
-export default function FeedbackSheet({ onClose, initialTopic = 'idea', source = 'settings' }) {
+export default function FeedbackSheet({ onClose, initialTopic = 'idea', source = 'settings', page }) {
   const { t, lang } = useLanguage()
   const [topic, setTopic] = useState(TOPICS.includes(initialTopic) ? initialTopic : 'idea')
   const [message, setMessage] = useState('')
   const [email, setEmail] = useState('')
   const [state, setState] = useState('idle') // idle | sending | sent | failed
 
-  const report = feedbackReport({ topic, message, email, lang })
+  const report = feedbackReport({ topic, message, email, lang, page })
   const mailto = `mailto:${REPORT_EMAIL}?subject=${encodeURIComponent('WalletLens feedback')}&body=${encodeURIComponent(`${t(TOPIC_KEY[topic])}\n\n${report.output}`)}`
 
   async function send() {

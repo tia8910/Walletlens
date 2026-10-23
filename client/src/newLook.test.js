@@ -177,8 +177,9 @@ describe('the top of the new look', () => {
     expect(sheet).toContain('useSmartFlows(')
     expect(read('components/PriceTicker.jsx')).toMatch(/className="nl-ticker-all" onClick=\{\(\) => setSheet\(true\)\}/)
   })
-  it('puts Report an issue in the top bar, sending the page instead of an answer', () => {
-    expect(app).toMatch(/<AiReport surface="topbar" general output=\{\(\) => `Reported from \$\{location\.pathname\}`\}/)
+  it('puts feedback in the top bar, sending the page it came from', () => {
+    expect(app).toMatch(/<FeedbackSheet source="topbar" page=\{location\.pathname\}/)
+    expect(app).toMatch(/className="wl-topbar-x wl-topbar-report" onClick=\{\(\) => \{ setFeedbackOpen\(true\)/)
   })
   it('draws each theme by its own mark on More', () => {
     expect(read('pages/More.jsx')).toMatch(/th\.logo \? <img src=\{th\.logo\}/)

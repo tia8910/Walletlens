@@ -463,6 +463,7 @@ export default {
     fbIdea: "Idée",
     fbBug: "Quelque chose ne marche pas",
     fbPrice: "Prix erroné",
+    fbAi: "Réponse de l'IA",
     fbOther: "Autre",
     fbPlaceholder: "Dites-nous ce qui s'est passé ou ce que vous aimeriez voir…",
     fbEmail: "Votre e-mail (facultatif, pour une réponse)",

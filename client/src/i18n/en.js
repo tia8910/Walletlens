@@ -484,6 +484,7 @@ export default {
     fbIdea: "Idea",
     fbBug: "Something's broken",
     fbPrice: "Wrong price",
+    fbAi: "AI answer",
     fbOther: "Other",
     fbPlaceholder: "Tell us what happened or what you'd like to see…",
     fbEmail: "Your email (optional, if you'd like a reply)",

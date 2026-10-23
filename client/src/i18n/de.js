@@ -484,6 +484,7 @@ export default {
     fbIdea: "Idee",
     fbBug: "Etwas funktioniert nicht",
     fbPrice: "Falscher Preis",
+    fbAi: "KI-Antwort",
     fbOther: "Sonstiges",
     fbPlaceholder: "Erzähl uns, was passiert ist oder was du dir wünschst…",
     fbEmail: "Deine E-Mail (optional, falls du eine Antwort möchtest)",
