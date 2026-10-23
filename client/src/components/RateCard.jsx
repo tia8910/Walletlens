@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { useLanguage } from '../LanguageContext'
 import { isAndroidApp } from '../nativeBridge'
 import { requestReviewNow } from '../reviewPrompt'
 import { track } from '../analytics'
+
+const FeedbackSheet = lazy(() => import('./FeedbackSheet'))
 
 // A plain "Rate WalletLens on Google Play" card on Home, for the Android app.
 //
@@ -15,6 +17,10 @@ import { track } from '../analytics'
 //
 // Shown as soon as there is a portfolio, from the first day. "Not now" waits
 // three weeks; "Rate" ends it on this device.
+//
+// "Report a problem" sits beside Rate as an equal choice, not a step before
+// it: someone with a problem can tell us directly, and rating stays one tap
+// away for everyone. Reporting does not hide or snooze the card.
 
 const KEY = 'wl_rate_card'
 const SNOOZE_MS = 21 * 24 * 60 * 60 * 1000
@@ -32,6 +38,7 @@ export function rateCardDue({ android = isAndroidApp(), holdings = 0, now = Date
 export default function RateCard({ holdings = 0 }) {
   const { t } = useLanguage()
   const [shown, setShown] = useState(() => rateCardDue({ holdings }))
+  const [report, setReport] = useState(false)
   if (!shown || !rateCardDue({ holdings })) return null
   const rate = () => {
     track('rate_tap', { source: 'home_card' })
@@ -45,6 +52,7 @@ export default function RateCard({ holdings = 0 }) {
     setShown(false)
   }
   return (
+    <>
     <section className="nl-rate-card" aria-label={t('rcTitle')}>
       <div className="nl-rate-stars" aria-hidden="true">★★★★★</div>
       <div className="nl-rate-txt">
@@ -55,6 +63,12 @@ export default function RateCard({ holdings = 0 }) {
         <button type="button" className="nl-rate-go" onClick={rate}>{t('rcRate')}</button>
         <button type="button" className="nl-rate-later" onClick={later}>{t('rcLater')}</button>
       </div>
+      <button type="button" className="nl-rate-report" onClick={() => { setReport(true); track('feedback_open', { source: 'home_card' }) }}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4m0 0h11l-2 4 2 4H5" /></svg>
+        <span><b>{t('rcReport')}</b> {t('rcReportHint')}</span>
+      </button>
     </section>
+    {report && <Suspense fallback={null}><FeedbackSheet initialTopic="bug" source="home_card" onClose={() => setReport(false)} /></Suspense>}
+    </>
   )
 }

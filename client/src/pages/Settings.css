@@ -215,3 +215,21 @@
 .bk-preview div { display: flex; justify-content: space-between; padding: 7px 0; font-size: 13.5px; }
 .bk-preview div + div { border-top: 1px solid var(--sx-line); }
 .bk-msg { margin: 0 4px 16px; padding: 10px 12px; border-radius: 12px; font-size: 13px; color: #ef4444; background: color-mix(in srgb, #ef4444 10%, transparent); }
+
+/* ── Send feedback ── */
+.fb { padding: 0 20px calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 10px; }
+.fb .sx-sheet-t { margin: 0 0 4px; }
+.fb-topics { display: flex; flex-wrap: wrap; gap: 8px; }
+.fb-topics button {
+  padding: 8px 14px; border-radius: 99px; border: 1px solid var(--sx-line); background: var(--sx-soft);
+  color: var(--sx-ink); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
+}
+.fb-topics button.on { background: var(--sx-acc); border-color: transparent; color: #fff; }
+.fb-msg { font-family: inherit; font-size: 15px; min-height: 120px; }
+.fb-email { font-family: inherit; font-size: 15px; min-height: 0; resize: none; }
+.fb-note { margin: 0; font-size: 12px; color: var(--sx-sub); }
+.fb-mail { text-align: center; font-size: 12.5px; color: var(--sx-sub); text-decoration: none; padding: 4px 0; }
+.fb-done { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 8px 4px; text-align: center; }
+.fb-done span { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-size: 26px; color: #fff; background: var(--nl-up, #16a874); }
+.fb-done p { margin: 0 0 6px; font-size: 15px; font-weight: 600; }
+.sx.sx-layer { padding: 0; margin: 0; max-width: none; }

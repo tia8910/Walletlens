@@ -12,6 +12,7 @@ import { ZakatSettings } from '../components/ZakatSwitch'
 import LandingLink from '../components/LandingLink'
 import WeeklyEmailSignup from '../components/WeeklyEmailSignup'
 import BackupView from './BackupView'
+import FeedbackSheet from '../components/FeedbackSheet'
 import { PlayMark, PLAY_STORE_URL } from '../components/StoreBadges'
 import { isMsStore } from '../msStore'
 import DeviceVault from '../components/DeviceVault'
@@ -72,6 +73,7 @@ const ICONS = {
   spark: <svg viewBox="0 0 24 24" {...P}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/></svg>,
   sound: <svg viewBox="0 0 24 24" {...P}><path d="M11 5L6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7"/></svg>,
   shield: <svg viewBox="0 0 24 24" {...P}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  chat: <svg viewBox="0 0 24 24" {...P}><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14h4"/></svg>,
   windows: <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2h9.5v9.5H2z" fill="#f25022"/><path d="M12.5 2H22v9.5h-9.5z" fill="#7fba00"/><path d="M2 12.5h9.5V22H2z" fill="#00a4ef"/><path d="M12.5 12.5H22V22h-9.5z" fill="#ffb900"/></svg>,
   chrome: <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 24 4.95 13A22 22 0 0 1 43.05 13z" fill="#db4437"/><path d="M24 24 43.05 13A22 22 0 0 1 24 46z" fill="#ffcd40"/><path d="M24 24 24 46A22 22 0 0 1 4.95 13z" fill="#0f9d58"/><circle cx="24" cy="24" r="10" fill="#fff"/><circle cx="24" cy="24" r="8" fill="#4285f4"/></svg>,
   puzzle: <svg viewBox="0 0 24 24" {...P}><path d="M10 4a2 2 0 1 1 4 0v2h4v4h-2a2 2 0 1 0 0 4h2v4h-4v-2a2 2 0 1 0-4 0v2H6v-4H4a2 2 0 1 1 0-4h2V6h4z"/></svg>,
@@ -242,6 +244,7 @@ export default function Settings() {
   const [fx, setFx] = useState(() => effectSettings())
   const [q, setQ] = useState('')
   const [langOpen, setLangOpen] = useState(false)
+  const [fbOpen, setFbOpen] = useState(false)
   const [open, setOpen] = useState({ weekly: false })
   const flip = (k) => setOpen(o => ({ ...o, [k]: !o[k] }))
 
@@ -362,6 +365,9 @@ export default function Settings() {
           <Row icon={ICONS.star} color="#eab308" title={t('setRate')} chevron
             hint={RATE_STATUS_KEY[rate.code] ? t(RATE_STATUS_KEY[rate.code]).replace('{n}', rate.n) : t('setRateDesc')}
             onClick={() => { track('rate_tap', { source: 'settings', status: rate.code }); requestReviewNow('settings') }} /> },
+        { key: 'feedback', terms: [t('fbTitle'), t('fbHint'), 'support', 'contact', 'bug'], node:
+          <Row icon={ICONS.chat} color="#10b981" title={t('fbTitle')} hint={t('fbHint')} chevron
+            onClick={() => { setFbOpen(true); track('feedback_open', { source: 'settings' }) }} /> },
         { key: 'help', terms: [t('sxHelp'), 'faq', 'privacy'], node:
           <Row icon={ICONS.help} color="#94a3b8" title={t('sxHelp')} chevron onClick={() => { window.location.href = '/faq/' }} /> },
       ],
@@ -402,6 +408,7 @@ export default function Settings() {
         {isAndroid && looksEmpty() && <DeviceVault />}
         {!needle && <p className="sx-foot">WalletLens · {t('sxFree')}</p>}
 
+        {fbOpen && <FeedbackSheet onClose={() => setFbOpen(false)} />}
         {langOpen && (
           <>
             <div className="sx-scrim" onClick={() => setLangOpen(false)} />
