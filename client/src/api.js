@@ -695,6 +695,37 @@ const METAL_CACHE_DURATION = 5 * 60_000;   // 5 min — metals update slowly
 const STOCK_CACHE_DURATION = 2 * 60_000;   // 2 min
 const FIAT_CACHE_DURATION = 15 * 60_000;   // 15 min — FX moves slowly
 
+// Percent move since the previous daily close for a Yahoo futures symbol
+// (GC=F, SI=F, …), or null. Yahoo sends no CORS headers, so the proxy is
+// raced with the direct call as for Binance.
+export async function metalDayChange(sym) {
+  if (!sym) return null;
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`;
+    const res = await fetchFirstOk([url, DENO_PROXY(url)], 5000);
+    if (!res || !res.ok) return null;
+    const r = (await res.json())?.chart?.result?.[0];
+    const closes = (r?.indicators?.quote?.[0]?.close || []).filter(v => typeof v === 'number' && v > 0);
+    const last = r?.meta?.regularMarketPrice;
+    const prev = closes.length >= 2 ? closes[closes.length - 2] : null;
+    if (!(last > 0) || !(prev > 0)) return null;
+    const pct = (last / prev - 1) * 100;
+    return isFinite(pct) && Math.abs(pct) < 25 ? pct : null;
+  } catch { return null; }
+}
+
+// The last day of hourly closes for a Yahoo futures symbol, oldest first.
+export async function metalDayLine(sym) {
+  if (!sym) return [];
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1h&range=1d`;
+    const res = await fetchFirstOk([url, DENO_PROXY(url)], 6000);
+    if (!res || !res.ok) return [];
+    const closes = (await res.json())?.chart?.result?.[0]?.indicators?.quote?.[0]?.close || [];
+    return closes.filter(v => typeof v === 'number' && v > 0);
+  } catch { return []; }
+}
+
 // ─── Real-time metal prices (gold / silver) ───
 // Tries gold-api.com first (CORS-enabled, no key), falls back to CoinGecko's
 // pax-gold token for gold (tracks physical gold ~1:1).
@@ -737,6 +768,14 @@ async function fetchMetalsLive() {
       }
     }
   } catch (err) { /* fall through */ }
+
+  // gold-api.com gives a spot price and nothing else, so every metal read
+  // +0.00% all day. The day's move comes from the futures' daily closes:
+  // today's last price against yesterday's close.
+  await Promise.all(Object.keys(out).map(async (id) => {
+    const chg = await metalDayChange(yahooTickerFor(id));
+    if (chg != null) out[id].usd_24h_change = chg;
+  }));
 
   // Fallback for gold: CoinGecko pax-gold (PAXG tracks 1 oz gold)
   if (!out[GOLD_ID]) {
@@ -2567,6 +2606,12 @@ export const api = {
           if (v.length > 12 && (!(livePrice > 0) || Math.abs(last / livePrice - 1) < 0.03)) return keep(v);
         }
       } catch {}
+    }
+    // Metals: the daily series is two or three points, too few to draw, so
+    // the day comes from the futures contract's hourly closes instead.
+    if ([GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID].includes(id)) {
+      const v = await metalDayLine(yahooTickerFor(id));
+      if (v.length > 3) return keep(v);
     }
     try {
       const pts = await api.getChartData(id, 1);
