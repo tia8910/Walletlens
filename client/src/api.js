@@ -555,6 +555,54 @@ async function searchCatalogue(query) {
 // Persists to localStorage on success so subsequent loads are instant.
 const MARKET_CACHE_KEY = 'crypto_tracker_market_cache_v1';
 const MARKET_TTL = 60_000;
+// Binance's 24 h tickers as { SYMBOL: { usd, change } }, kept 30 s. The
+// direct call and the proxy race, as in getPrices (Binance is geo-blocked in
+// some countries).
+let _bnTickers = null;
+let _bnTickersAt = 0;
+async function binanceTickers() {
+  if (_bnTickers && Date.now() - _bnTickersAt < 30_000) return _bnTickers;
+  const url = 'https://api.binance.com/api/v3/ticker/24hr';
+  const res = await fetchFirstOk([url, DENO_PROXY(url)], 4000).catch(() => null);
+  if (!res || !res.ok) return _bnTickers || {};
+  const list = await res.json().catch(() => null);
+  if (!Array.isArray(list)) return _bnTickers || {};
+  const out = {};
+  for (const r of list) {
+    const sym = String(r.symbol || '');
+    if (!sym.endsWith('USDT')) continue;
+    const usd = parseFloat(r.lastPrice);
+    if (isFinite(usd) && usd > 0) out[sym.slice(0, -4)] = { usd, change: parseFloat(r.priceChangePercent) };
+  }
+  _bnTickers = out;
+  _bnTickersAt = Date.now();
+  return out;
+}
+
+/**
+ * Market rows with Binance's live price and day change where Binance lists the
+ * coin. A ticker more than 25% from the row's price is another token sharing
+ * the symbol and is ignored; so is anything that takes longer than 3 s.
+ */
+export async function withLivePrices(rows, tickers) {
+  if (!Array.isArray(rows) || !rows.length) return rows;
+  const live = tickers || await Promise.race([
+    binanceTickers().catch(() => ({})),
+    new Promise(r => setTimeout(() => r({}), 3000)),
+  ]);
+  return rows.map(c => {
+    const t = live[String(c.symbol || '').toUpperCase()];
+    const old = Number(c.current_price);
+    if (!t || !(old > 0) || Math.abs(t.usd / old - 1) > 0.25) return c;
+    return {
+      ...c,
+      current_price: t.usd,
+      price_change_percentage_24h: isFinite(t.change) ? t.change : c.price_change_percentage_24h,
+      price_change_percentage_24h_in_currency: isFinite(t.change) ? t.change : c.price_change_percentage_24h_in_currency,
+    };
+  });
+}
+
 const _loadMarketSnapshot = (() => {
   // In-flight cache: concurrent callers requesting the same perPage (e.g.
   // Dashboard + PriceTicker + Watchlist all mounting at once on a cold cache)
@@ -622,6 +670,8 @@ async function _loadMarketSnapshotUncached(perPage = 250) {
   ]).catch(() => null);
 
   if (first) {
+    // The snapshot can be hours old: live Binance prices go over it.
+    if (first.label === 'snapshot') first.rows = await withLivePrices(first.rows);
     store(first.rows);
     if (first.label === 'snapshot') {
       // Deliberately not awaited: the snapshot has already been returned, and
