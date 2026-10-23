@@ -20,6 +20,9 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const panel = readFileSync(join(here, 'components/DriveBackup.jsx'), 'utf8')
+// The panel's words live in the translations now; the English ones are what
+// these tests read.
+import en from './i18n/en'
 
 // The module reads both tokens out of localStorage at import time, so the
 // state has to be in place before the import, not after it.
@@ -168,8 +171,11 @@ describe('the backup card', () => {
   })
 
   it('says the device copy is safe, because that is the actual question', () => {
-    expect(panel).toContain('Your data is safe on this device')
-    expect(panel).toMatch(/Nothing on this device was changed/)
+    for (const k of ['dbErrDrive', 'dbErrRefused', 'dbErrAuth', 'dbErrNetwork']) {
+      expect(en[k], k).toContain('Your data is safe on this device')
+    }
+    expect(en.dbErrBackup).toMatch(/Nothing on this device was changed/)
+    expect(en.dbErrRestore).toMatch(/Nothing on this device was changed/)
   })
 
   it('catches the raw string even if one reaches it from somewhere else', () => {
@@ -182,8 +188,10 @@ describe('the backup card', () => {
     // The branch, not the import line that also names the constant.
     const at = panel.indexOf('if (m === NET_DRIVE_REFUSED)')
     expect(at, 'the refused branch is gone').toBeGreaterThan(-1)
-    const sentence = panel.slice(at, panel.indexOf('\n    }', at))
-    expect(sentence).not.toMatch(/check your connection/)
-    expect(sentence).toMatch(/fault on our side/)
+    const branch = panel.slice(at, panel.indexOf('\n    }', at))
+    expect(branch).toMatch(/t\('dbErrRefused'\)/)
+    expect(en.dbErrRefused).not.toMatch(/check your connection/)
+    expect(en.dbErrRefused).toMatch(/fault on our side/)
   })
 })
+

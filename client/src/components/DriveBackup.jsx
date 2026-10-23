@@ -29,13 +29,17 @@ import { NEEDS_SIGNIN, NET_DRIVE, NET_DRIVE_REFUSED, NET_AUTH } from '../googleD
 // a new device. Keeping it would put the key on the same disk as the data it
 // protects.
 
-function fmt(ts) {
+// In the app's language: "5 min ago", "منذ 5 دقائق", "il y a 5 min".
+function fmt(ts, lang) {
   if (!ts) return null
   const mins = Math.round((Date.now() - ts) / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins} min ago`
-  if (mins < 60 * 24) return `${Math.round(mins / 60)} h ago`
-  return new Date(ts).toLocaleDateString()
+  try {
+    const rtf = new Intl.RelativeTimeFormat(lang || 'en', { numeric: 'auto', style: 'short' })
+    if (mins < 1) return rtf.format(0, 'minute')
+    if (mins < 60) return rtf.format(-mins, 'minute')
+    if (mins < 60 * 24) return rtf.format(-Math.round(mins / 60), 'hour')
+  } catch { /* old engine: fall through to the date */ }
+  return new Date(ts).toLocaleDateString(lang || undefined)
 }
 
 function Dot({ on }) {
@@ -65,7 +69,7 @@ function Msg({ msg }) {
 // card that already exists — the Dashboard's Backup & Restore card. Same panel,
 // same behaviour; only the wrapper and the heading style change.
 export default function DriveBackup({ embedded = false }) {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const location = useLocation()
   const [state, setState] = useState(() => driveState())
   const [connected, setConnected] = useState(() => previouslyConnected())
@@ -109,33 +113,33 @@ export default function DriveBackup({ embedded = false }) {
     const m = e?.message || ''
     if (m === KEY_MISMATCH) {
       setPaused(true)
-      return 'Your backup was re-encrypted on another device. Enter your passphrase to keep this device in sync.'
+      return t('dbErrRekeyed')
     }
     if (m === PASS_MISMATCH) {
       setMismatch(true)
-      return 'That passphrase does not open the backup already in your Drive. Use the one you set on your other device, so both stay in sync.'
+      return t('dbErrPassMismatch')
     }
-    if (m === NEEDS_SIGNIN) return 'Your Google session expired. Tap Reconnect to sign in again.'
+    if (m === NEEDS_SIGNIN) return t('dbErrSession')
     // Two hops, two problems. Drive unreachable is usually the connection;
     // the token service unreachable has been a blocked hostname, and saying
     // which one failed is the difference between a report and a guess.
     if (m === NET_DRIVE) {
-      return 'Could not reach Google Drive. Your data is safe on this device — check your connection and try again.'
+      return t('dbErrDrive')
     }
     // Reachable, and refused. Not the person's connection, so do not send them
     // off to check it — say whose fault it is and stop there.
     if (m === NET_DRIVE_REFUSED) {
-      return 'Google Drive answered but would not accept the request. Your data is safe on this device — this is a fault on our side, not your connection.'
+      return t('dbErrRefused')
     }
     if (m === NET_AUTH) {
-      return 'Could not reach the Google sign-in service. Your data is safe on this device — try again in a moment.'
+      return t('dbErrAuth')
     }
     // A raw TypeError from somewhere that is not tagged. Every fetch in the
     // Drive path is, so this should be unreachable — and it must not name a
     // hop it cannot know, or the message becomes a false lead in exactly the
     // situation where the message is the only evidence there is.
     if (/Failed to fetch|NetworkError|Load failed/i.test(m)) {
-      return 'The request did not complete. Your data is safe on this device — check your connection and try again.'
+      return t('dbErrNetwork')
     }
     // A Drive error carries a status and Google's own English. Worth logging,
     // not worth showing.
@@ -169,7 +173,7 @@ export default function DriveBackup({ embedded = false }) {
       track('drive_disconnect')
       setConnected(false); setFound(null); setAction(null); setAutoOn(false)
       cancel(); refresh()
-      say('ok', 'Disconnected. Your backup is still in your Drive — reconnect any time to restore it.')
+      say('ok', t('dbDisconnected'))
     } finally { setBusy(false) }
   }
 
@@ -179,7 +183,7 @@ export default function DriveBackup({ embedded = false }) {
     forgetAutoBackup()
     setAutoOn(false)
     track('drive_auto_off')
-    say('ok', 'Automatic backups off. Use Back up now when you want to save.')
+    say('ok', t('dbAutoOffMsg'))
   }
 
   // After a restore or merge, straight to the portfolio it produced.
@@ -203,16 +207,16 @@ export default function DriveBackup({ embedded = false }) {
           try {
             const { restored } = await restoreNow()
             track('drive_restore', { auto: true })
-            toDashboard(`Restored ${restored} items from Drive. Opening your portfolio…`)
+            toDashboard(t('dbRestoredDrive')(restored))
             return
           } catch (e) { if (e?.message !== KEY_MISMATCH) throw e; setPaused(true) }
         }
         ask('restore')
-        say('ok', 'Backup found. Enter your passphrase to load your portfolio.')
+        say('ok', t('dbFoundEnterPass'))
       }
       else if (next === 'first-backup') {
         if (empty) {
-          say('ok', 'Connected. Add some holdings and they’ll be backed up here.')
+          say('ok', t('dbConnectedEmpty'))
         } else {
           // The same move as auto-restore above, for the same reason. Ending
           // at "no backup yet" left people believing connecting was the whole
@@ -221,7 +225,7 @@ export default function DriveBackup({ embedded = false }) {
           // passphrase-protected backup creates. So go straight to the one
           // thing missing rather than leaving it to be found.
           ask('backup')
-          say('ok', 'Connected. Set a passphrase to make your first backup — after that it updates itself.')
+          say('ok', t('dbConnectedSetPass'))
         }
       }
       else if (next === 'ask') {
@@ -231,18 +235,16 @@ export default function DriveBackup({ embedded = false }) {
           try {
             const { added } = await mergeFromDrive()
             track('drive_merge', { auto: true, added })
-            toDashboard(added
-              ? `Synced with Drive: ${added} transaction${added === 1 ? '' : 's'} added from your backup. Opening your portfolio…`
-              : 'Synced with Drive. Opening your portfolio…')
+            toDashboard(added ? t('dbSynced')(added) : t('dbSyncedNone'))
             return
           } catch (e) { if (e?.message !== KEY_MISMATCH) throw e; setPaused(true) }
         }
         ask('merge')
-        say('ok', 'Backup found. Enter your passphrase to add it to this device. Nothing here is replaced.')
+        say('ok', t('dbFoundMerge'))
       }
-      else say('ok', 'Connected. Your backup is up to date.')
+      else say('ok', t('dbUpToDate'))
     } catch (e) {
-      say('err', explain(e, 'Could not connect to Google Drive. Try again in a moment.'))
+      say('err', explain(e, t('dbErrConnect')))
     } finally { setBusy(false) }
   }
 
@@ -255,10 +257,10 @@ export default function DriveBackup({ embedded = false }) {
       const { txCount } = await backupWithStoredKey()
       track('drive_backup', { txCount, automatic: true, quick: true })
       refresh(); setFound(f => f || { id: driveState().fileId })
-      say('ok', `Backed up ${txCount} transactions.`)
+      say('ok', t('dbBackedUpN')(txCount))
     } catch (e) {
       noteFriction('sync_failed'); noteSupportFriction('sync_failed')
-      say('err', explain(e, 'Backup failed. Nothing on this device was changed.'))
+      say('err', explain(e, t('dbErrBackup')))
     } finally { setBusy(false) }
   }
 
@@ -270,12 +272,12 @@ export default function DriveBackup({ embedded = false }) {
         const { added } = await mergeFromDrive(pass)
         track('drive_merge', { auto: false, added })
         setPaused(false); setAutoOn(autoBackupEnabled()); refresh(); cancel()
-        toDashboard(`Synced with Drive: ${added} transaction${added === 1 ? '' : 's'} added from your backup. Opening your portfolio…`)
+        toDashboard(added ? t('dbSynced')(added) : t('dbSyncedNone'))
       } else if (which === 'rejoin') {
         const { txCount } = await rejoinSync(pass)
         track('drive_rejoin', { txCount })
         setPaused(false); setAutoOn(autoBackupEnabled()); refresh()
-        say('ok', `Back in sync. ${txCount} transactions from all your devices are here and in Drive.`)
+        say('ok', t('dbBackInSync')(txCount))
         cancel()
       } else if (which === 'backup') {
         const { txCount } = await backupNow(pass, { automatic: auto, replace })
@@ -283,9 +285,7 @@ export default function DriveBackup({ embedded = false }) {
         noteMoment('backup_saved')
         refresh(); setConnected(true); setAutoOn(autoBackupEnabled()); setPaused(false); setMismatch(false)
         setFound(f => f || { id: driveState().fileId })
-        say('ok', auto
-          ? `Backed up ${txCount} transactions. This now updates itself automatically.`
-          : `Backed up ${txCount} transactions. You'll be asked for your passphrase each time.`)
+        say('ok', auto ? t('dbBackedUpAuto')(txCount) : t('dbBackedUpManual')(txCount))
         cancel()
       } else {
         let restored
@@ -296,11 +296,11 @@ export default function DriveBackup({ embedded = false }) {
           // re-keyed it). Ask for the passphrase rather than failing.
           if (!keyRestore) throw e
           setKeyRestore(false)
-          say('err', 'Enter your passphrase to restore this backup.')
+          say('err', t('dbEnterPassRestore'))
           return
         }
         track('drive_restore', { quick: keyRestore })
-        say('ok', `Restored ${restored} items. Opening your portfolio…`)
+        say('ok', t('dbRestoredN')(restored))
         setTimeout(() => { window.location.href = "/dashboard" }, 400)
       }
     } catch (e) {
@@ -311,9 +311,7 @@ export default function DriveBackup({ embedded = false }) {
       // back. Losing a backup is the single worst moment to be asked.
       noteFriction(which === 'backup' ? 'sync_failed' : 'restore_failed')
       noteSupportFriction(which === 'backup' ? 'sync_failed' : 'restore_failed')
-      say('err', explain(e, which === 'backup'
-        ? 'Backup failed. Nothing on this device was changed.'
-        : 'Restore failed. Nothing on this device was changed.'))
+      say('err', explain(e, which === 'backup' ? t('dbErrBackup') : t('dbErrRestore')))
     } finally { setBusy(false) }
   }
 
@@ -321,12 +319,12 @@ export default function DriveBackup({ embedded = false }) {
   // never uploaded. Getting that wrong told someone signing in on a second
   // browser that their portfolio wasn't there, next to the button that would
   // have brought it back.
-  const backupAge = fmt(latestBackupAt(state))
+  const backupAge = fmt(latestBackupAt(state), lang)
   const statusText = !connected
-    ? 'Not connected'
+    ? t('dbNotConnected')
     : found
-      ? (backupAge ? `Connected · backup from ${backupAge}` : 'Connected · backup found')
-      : 'Connected · no backup yet'
+      ? (backupAge ? t('dbConnectedFrom')(backupAge) : t('dbConnectedFound'))
+      : t('dbConnectedNone')
   const replaces = prompt === 'restore' && (action === 'ask' || (keyRestore && !empty))
   // A device with nothing on it and a backup waiting is the case this feature
   // exists for. Say so plainly rather than leaving Restore to be guessed at.
@@ -342,17 +340,17 @@ export default function DriveBackup({ embedded = false }) {
           </span>
           <span className="settings-hint">
             {connected
-              ? 'Encrypted in your own Drive. WalletLens cannot read it.'
-              : 'Sign in to keep an encrypted copy in your own Google Drive.'}
+              ? t('dbHintOn')
+              : t('dbHintOff')}
           </span>
         </div>
         <button className="settings-chip" onClick={onDisconnect} disabled={busy}
           style={{ display: connected ? 'inline-flex' : 'none', alignItems:'center', gap:'0.35rem' }}>
-          <Icon name="x" size={14} /> Disconnect
+          <Icon name="x" size={14} /> {t('dbDisconnect')}
         </button>
         <button className="settings-chip" onClick={onConnect} disabled={busy}
           style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
-          <Icon name="link" size={14} /> {connected ? 'Reconnect' : 'Connect'}
+          <Icon name="link" size={14} /> {connected ? t('dbReconnect') : t('dbConnect')}
         </button>
       </div>
 
@@ -361,12 +359,11 @@ export default function DriveBackup({ embedded = false }) {
       {waiting && !prompt && (
         <div className="settings-row" style={{ display:'block' }}>
           <p style={{ margin:'0 0 0.6rem', fontSize:'0.9rem' }}>
-            There's a backup in your Drive and nothing on this device yet.
-            Restore it to load your portfolio here.
+            {t('dbWaiting')}
           </p>
           <button className="settings-chip" onClick={() => ask('restore')} disabled={busy}
             style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
-            <Icon name="download" size={14} /> Restore my portfolio
+            <Icon name="download" size={14} /> {t('dbRestoreMine')}
           </button>
         </div>
       )}
@@ -375,12 +372,11 @@ export default function DriveBackup({ embedded = false }) {
       {connected && paused && !prompt && (
         <div className="settings-row" style={{ display:'block' }}>
           <p style={{ margin:'0 0 0.6rem', fontSize:'0.9rem', color:'var(--r, #ef4444)', fontWeight: 600 }}>
-            Sync paused on this device. Your backup was re-encrypted on another
-            device, so this one can't read it yet.
+            {t('dbPaused')}
           </p>
           <button className="settings-chip" onClick={() => ask('rejoin')} disabled={busy}
             style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
-            <Icon name="link" size={14} /> Resume sync
+            <Icon name="link" size={14} /> {t('dbResume')}
           </button>
         </div>
       )}
@@ -389,11 +385,11 @@ export default function DriveBackup({ embedded = false }) {
       {connected && !prompt && !waiting && !paused && (
         <div className="settings-row" style={{ gap:'0.5rem', justifyContent:'flex-start' }}>
           <button className="settings-chip" onClick={() => (autoOn ? onQuickBackup() : ask('backup'))} disabled={busy}>
-            {busy && autoOn ? 'Backing up…' : 'Back up now'}
+            {busy && autoOn ? t('dbBackingUp') : t('dbBackUpNow')}
           </button>
           {found && (
             <button className="settings-chip" onClick={() => ask('restore')} disabled={busy}>
-              Restore
+              {t('dbRestore')}
             </button>
           )}
         </div>
@@ -404,16 +400,16 @@ export default function DriveBackup({ embedded = false }) {
       {connected && !prompt && (
         <div className="settings-row" style={{ paddingTop:'0.2rem' }}>
           <div className="settings-label">
-            <span>Automatic backups {autoOn ? <span style={{ color:'var(--g-ink)' }}>· on</span> : '· off'}</span>
+            <span>{t('dbAuto')} {autoOn ? <span style={{ color:'var(--g-ink)' }}>· {t('dbOn')}</span> : `· ${t('dbOff')}`}</span>
             <span className="settings-hint">
               {autoOn
-                ? 'Saved changes are backed up in the background, without asking.'
-                : 'Use Back up now and enter your passphrase to save.'}
+                ? t('dbAutoHintOn')
+                : t('dbAutoHintOff')}
             </span>
           </div>
           {autoOn
-            ? <button className="settings-chip" onClick={onToggleAuto} disabled={busy}>Turn off</button>
-            : <button className="settings-chip" onClick={() => ask('backup')} disabled={busy}>Turn on</button>}
+            ? <button className="settings-chip" onClick={onToggleAuto} disabled={busy}>{t('dbTurnOff')}</button>
+            : <button className="settings-chip" onClick={() => ask('backup')} disabled={busy}>{t('dbTurnOn')}</button>}
         </div>
       )}
 
@@ -421,19 +417,19 @@ export default function DriveBackup({ embedded = false }) {
         <div className="settings-row" style={{ display:'block' }}>
           {keyRestore ? (
             <p style={{ margin:'0 0 0.2rem', fontSize:'0.9rem' }}>
-              Load the backup from your Drive onto this device? No passphrase needed here.
+              {t('dbKeyRestoreQ')}
             </p>
           ) : (<>
           <div className="settings-label" style={{ marginBottom:'0.5rem' }}>
-            <span>{prompt === 'backup' ? 'Passphrase to encrypt this backup' : 'Passphrase for this backup'}</span>
+            <span>{prompt === 'backup' ? t('dbPassEncrypt') : t('dbPassFor')}</span>
             <span className="settings-hint">
               {prompt === 'merge'
-                ? 'The passphrase you chose when you made this backup. Your Drive backup is added to what is on this device; nothing here is replaced.'
+                ? t('dbPassMergeHint')
                 : prompt === 'rejoin'
-                ? 'The passphrase now protecting your Drive backup. This device learns its key and merges both sides.'
+                ? t('dbPassRejoinHint')
                 : prompt === 'backup'
-                ? 'At least 8 characters. Never stored or sent anywhere, so if you lose it nobody can recover the backup, including us.'
-                : 'The passphrase you chose when you made this backup.'}
+                ? t('dbPassNewHint')
+                : t('dbPassHint')}
             </span>
           </div>
           <input
@@ -458,11 +454,9 @@ export default function DriveBackup({ embedded = false }) {
                 style={{ marginTop:'0.2rem', width:18, height:18, accentColor:'var(--g)' }}
               />
               <span className="settings-label" style={{ gap:'0.15rem' }}>
-                <span>Keep this backup up to date automatically</span>
+                <span>{t('dbKeepAuto')}</span>
                 <span className="settings-hint">
-                  Saves the key that unlocks this backup on this device, so it can
-                  update itself without asking again. Your passphrase is still never
-                  stored. Leave it off to be asked every time.
+                  {t('dbKeepAutoHint')}
                 </span>
               </span>
             </label>
@@ -470,23 +464,22 @@ export default function DriveBackup({ embedded = false }) {
 
           {replaces && (
             <p className="settings-hint" style={{ margin:'0.5rem 0 0', color:'var(--r, #ef4444)' }}>
-              This device already has a portfolio. Restoring replaces it, and that
-              cannot be undone.
+              {t('dbReplaceWarn')}
             </p>
           )}
 
           <div style={{ display:'flex', gap:'0.5rem', marginTop:'0.6rem' }}>
             <button className="settings-chip" onClick={() => onSubmit()} disabled={(!keyRestore && pass.length < 8) || busy}>
-              {busy ? 'Working…' : prompt === 'merge' ? 'Add to this device' : prompt === 'rejoin' ? 'Resume sync' : prompt === 'backup' ? 'Back up' : replaces ? 'Replace this device' : 'Restore'}
+              {busy ? t('dbWorking') : prompt === 'merge' ? t('dbAddHere') : prompt === 'rejoin' ? t('dbResume') : prompt === 'backup' ? t('dbBackUp') : replaces ? t('dbReplaceDevice') : t('dbRestore')}
             </button>
             {prompt === 'backup' && mismatch && (
               // The deliberate way out for someone who no longer knows the old
               // passphrase. Other devices will then ask for the new one.
               <button className="settings-chip" onClick={() => onSubmit({ replace: true })} disabled={pass.length < 8 || busy}>
-                Replace Drive backup
+                {t('dbReplaceDrive')}
               </button>
             )}
-            <button className="settings-chip" onClick={cancel} disabled={busy}>Cancel</button>
+            <button className="settings-chip" onClick={cancel} disabled={busy}>{t('dbCancel')}</button>
           </div>
         </div>
       )}
@@ -509,7 +502,7 @@ export default function DriveBackup({ embedded = false }) {
   return (
     <div className="settings-section glass-card">
       <h3 className="settings-section-title" style={{ display:'inline-flex', alignItems:'center', gap:'0.4em' }}>
-        <Icon name="upload" size={16} />Google Drive backup
+        <Icon name="upload" size={16} />{t('dbTitle')}
       </h3>
       {body}
     </div>

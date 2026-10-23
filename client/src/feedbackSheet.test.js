@@ -19,9 +19,15 @@ describe('feedbackReport', () => {
     expect(r.note).toBe('platform: web\nreply to: me@example.com')
   })
 
+  it('records the page it was sent from', () => {
+    const r = feedbackReport({ topic: 'ai', message: 'x', page: '/coach', where: 'web' })
+    expect(r.surface).toBe('feedback:ai')
+    expect(r.note).toBe('platform: web\npage: /coach')
+  })
+
   it('files an unknown topic under other', () => {
     expect(feedbackReport({ topic: 'nope', message: 'x', where: 'web' }).surface).toBe('feedback:other')
-    expect(TOPICS).toEqual(['idea', 'bug', 'price', 'other'])
+    expect(TOPICS).toEqual(['idea', 'bug', 'price', 'ai', 'other'])
   })
 })
 
