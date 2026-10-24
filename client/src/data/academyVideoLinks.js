@@ -300,6 +300,16 @@ export default {
       "lang": "ar",
       "youtube": "eZu-b04uraU",
       "added": "2026-10-23"
+    },
+    {
+      "key": "yt-FpKaP4wllY4",
+      "kind": "original",
+      "name": "٦ غلطات بتخسّرك فلوسك (وتعمل إيه بدالها) ",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "FpKaP4wllY4",
+      "added": "2026-10-24",
+      "wide": true
     }
   ]
 }
