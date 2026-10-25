@@ -29,7 +29,8 @@ export default function PricesSheet({ items = [], onClose }) {
   const navigate = useNavigate()
   const [tab, setTab] = useState('prices')
   const [q, setQ] = useState('')
-  const [market, setMarket] = useState([])
+  // Opens on the last ranking this device saw; the fresh one replaces it.
+  const [market, setMarket] = useState(() => { try { return api.getCachedMarketData?.() || [] } catch { return [] } })
   const [cls, setCls] = useState('all')
   const [quotes, setQuotes] = useState({})
   const flows = useSmartFlows(50)
