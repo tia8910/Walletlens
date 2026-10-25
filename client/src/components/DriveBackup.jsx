@@ -5,6 +5,7 @@ import Icon from './Icon'
 import { track } from '../analytics'
 import { noteFriction, noteMoment } from '../reviewPrompt'
 import { noteSupportFriction } from '../supportNudge'
+import { openPortfolio } from '../openPortfolio'
 import {
   connect, backupNow, backupWithStoredKey, restoreNow, driveState, previouslyConnected,
   disconnectDrive, autoBackupEnabled, forgetAutoBackup,
@@ -189,7 +190,7 @@ export default function DriveBackup({ embedded = false }) {
   // After a restore or merge, straight to the portfolio it produced.
   const toDashboard = (text) => {
     say('ok', text)
-    setTimeout(() => { window.location.href = '/dashboard' }, 700)
+    setTimeout(() => { openPortfolio() }, 700)
   }
 
   async function onConnect() {
@@ -301,7 +302,7 @@ export default function DriveBackup({ embedded = false }) {
         }
         track('drive_restore', { quick: keyRestore })
         say('ok', t('dbRestoredN')(restored))
-        setTimeout(() => { window.location.href = "/dashboard" }, 400)
+        setTimeout(() => { openPortfolio() }, 400)
       }
     } catch (e) {
       // Both frictions were declared in reviewPrompt and reported by nobody,

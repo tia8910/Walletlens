@@ -5,6 +5,7 @@ import { noteFeatureUse } from '../featureUse'
 import { track, trackImport, importCompleted } from '../analytics'
 import { driveState, previouslyConnected, latestBackupAt } from '../driveSync'
 import { noteMoment } from '../reviewPrompt'
+import { openPortfolio } from '../openPortfolio'
 
 // Backup & restore, on a page of its own: Google Drive first (automatic), then
 // the backup code, the QR code for another phone, and restoring from a code.
@@ -102,7 +103,7 @@ export default function BackupView({ onBack, relTime }) {
     importCompleted({ method: 'backup' })
     noteMoment('import_success')
     setPaste(''); setPreview(null); setDone(true)
-    setTimeout(() => { window.location.href = '/dashboard' }, 900)
+    setTimeout(() => { openPortfolio() }, 900)
   }
 
   return (
