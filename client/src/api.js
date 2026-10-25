@@ -46,7 +46,7 @@ import {
 } from './data/storage';
 import { foldBalances as _foldBalancesPure, diffHoldings } from './data/portfolio';
 import { analyzeTechnicals } from './technicals';
-import { isIntlTicker, toMajorUnit, countryFromDevice } from './data/markets';
+import { isIntlTicker, toMajorUnit, countryFromDevice, sessionOpen } from './data/markets';
 import { dataUrl, voiceProxy } from './apiHosts.js'
 
 export {
@@ -743,6 +743,12 @@ let fiatRatesCacheTime = 0;
 const CACHE_DURATION = 60_000;
 const METAL_CACHE_DURATION = 5 * 60_000;   // 5 min — metals update slowly
 const STOCK_CACHE_DURATION = 2 * 60_000;   // 2 min
+// A local listing (ETEL.CA, 2222.SR) whose exchange is in session is asked for
+// again after this long, instead of the two minutes above. The free source is
+// itself delayed, so this is about not adding our own delay on top of it.
+const LIVE_INTL_MS = 20_000;
+const intlFetchedAt = {};
+const intlStale = (t, now) => isIntlTicker(t) && sessionOpen(t, now) && now - (intlFetchedAt[t] || 0) > LIVE_INTL_MS;
 const FIAT_CACHE_DURATION = 15 * 60_000;   // 15 min — FX moves slowly
 
 // Percent move since the previous daily close for a Yahoo futures symbol
@@ -1042,7 +1048,7 @@ async function fetchIntlQuotes(tickers) {
       const data = await res.json();
       for (const [sym, q] of Object.entries(data || {})) {
         if (q && q.price > 0 && q.local) {
-          out[sym.toUpperCase()] = { usd: q.price, usd_24h_change: q.change_pct || 0, name: q.name || sym, source: q.source || 'edge', local: q.local };
+          out[sym.toUpperCase()] = { usd: q.price, usd_24h_change: q.change_pct || 0, name: q.name || sym, source: q.source || 'edge', local: q.local, asOf: q.as_of || null };
         }
       }
     }
@@ -1065,7 +1071,7 @@ async function fetchIntlQuotes(tickers) {
         const change = typeof meta.regularMarketChangePercent === 'number'
           ? meta.regularMarketChangePercent
           : prev > 0 ? ((meta.regularMarketPrice - prev) / prev) * 100 : 0;
-        return { sym, q: { usd: local.price / perUsd, usd_24h_change: change, name: meta.longName || meta.shortName || sym, source: 'yahoo', local } };
+        return { sym, q: { usd: local.price / perUsd, usd_24h_change: change, name: meta.longName || meta.shortName || sym, source: 'yahoo', local, asOf: meta.regularMarketTime ? meta.regularMarketTime * 1000 : null } };
       } catch {}
     }
     return null;
@@ -1412,14 +1418,14 @@ async function fetchOneTicker(sym) {
 
 async function _refreshBatchStocks(tickers) {
   const now = Date.now();
-  const missing = tickers.filter(t => !batchStockCache[t] || now - batchStockCacheTime > STOCK_CACHE_DURATION);
+  const missing = tickers.filter(t => !batchStockCache[t] || now - batchStockCacheTime > STOCK_CACHE_DURATION || intlStale(t, now));
   if (missing.length === 0) return batchStockCache;
 
   // Foreign listings first, on their own path; the US sources cannot price them.
   const intlMissing = missing.filter(isIntlTicker);
   if (intlMissing.length > 0) {
     const intl = await fetchIntlQuotes(intlMissing);
-    for (const [sym, data] of Object.entries(intl)) batchStockCache[sym] = data;
+    for (const [sym, data] of Object.entries(intl)) { batchStockCache[sym] = data; intlFetchedAt[sym] = Date.now(); }
   }
   const usMissing = missing.filter(t => !isIntlTicker(t));
 
@@ -1462,7 +1468,7 @@ async function fetchBatchStocks(tickers) {
   // background refresh when it's gone stale. We block on the network only when
   // some ticker has never been fetched — there's nothing to show otherwise.
   if (haveAll) {
-    if (now - batchStockCacheTime > STOCK_CACHE_DURATION) _refreshBatchStocksInBackground(tickers);
+    if (now - batchStockCacheTime > STOCK_CACHE_DURATION || tickers.some(t => intlStale(t, now))) _refreshBatchStocksInBackground(tickers);
     return batchStockCache;
   }
   return _refreshBatchStocks(tickers);

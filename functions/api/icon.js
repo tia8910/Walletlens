@@ -1,7 +1,8 @@
 /**
  * Serverless function — /api/icon?sym=btc[&url=…]
  *
- * Coin icons, fetched at the edge and served from walletlens.live.
+ * Coin icons, and with ?stock=AAPL company logos, fetched at the edge and
+ * served from walletlens.live.
  *
  * WHY
  * CoinLogo walks a ladder of image sources and every one of them is somewhere
@@ -30,7 +31,15 @@ const ALLOWED_HOSTS = new Set([
   'raw.githubusercontent.com',
   'coin-images.coingecko.com',
   'assets.coingecko.com',
+  'financialmodelingprep.com',
 ])
+
+// Company logos by exchange ticker, suffix and all (AAPL, VOO, ETEL.CA,
+// 2222.SR). Only the exact ticker is asked for: dropping the suffix would find
+// some other company that happens to share the letters on another exchange.
+const stockSources = (ticker) => [
+  `https://financialmodelingprep.com/image-stock/${ticker}.png`,
+]
 
 // Tried in order. The first that answers 200 wins.
 const sources = (sym) => [
@@ -48,8 +57,10 @@ export async function onRequestGet(context) {
 
   const sym = (url.searchParams.get('sym') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24)
   const want = url.searchParams.get('url') || ''
+  const stock = (url.searchParams.get('stock') || '').toUpperCase().replace(/[^A-Z0-9.\-]/g, '').slice(0, 16)
 
   const candidates = []
+  if (stock) candidates.push(...stockSources(stock))
   if (want) {
     try {
       const u = new URL(want)
@@ -57,11 +68,11 @@ export async function onRequestGet(context) {
     } catch { /* not a URL; fall through to the symbol */ }
   }
   if (sym) candidates.push(...sources(sym))
-  if (!candidates.length) return new Response('sym or url required', { status: 400 })
+  if (!candidates.length) return new Response('sym, stock or url required', { status: 400 })
 
   // One edge cache entry per resolved request, shared by every visitor.
   const cache = caches.default
-  const cacheKey = new Request(`https://icon.cache/${sym || 'x'}?u=${encodeURIComponent(want)}`, { method: 'GET' })
+  const cacheKey = new Request(`https://icon.cache/${stock ? `stock-${stock}` : sym || 'x'}?u=${encodeURIComponent(want)}`, { method: 'GET' })
   const hit = await cache.match(cacheKey)
   if (hit) return hit
 
@@ -88,5 +99,9 @@ export async function onRequestGet(context) {
 
   // Short cache on a miss: a symbol with no icon today may have one next week,
   // and the caller falls back to its generated badge either way.
-  return new Response('no icon', { status: 404, headers: { 'Cache-Control': 'public, max-age=3600' } })
+  const miss = new Response('no icon', { status: 404, headers: { 'Cache-Control': 'public, max-age=3600' } })
+  // Cached at the edge too, so a ticker with no logo costs one lookup an
+  // hour rather than one per row per visitor.
+  context.waitUntil(cache.put(cacheKey, miss.clone()))
+  return miss
 }

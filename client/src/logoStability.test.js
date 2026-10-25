@@ -93,7 +93,13 @@ describe('the ladder does not advance past a load that never started', () => {
     // certification failed the app for "freezes at launch", Error Message N/A.
     expect(logo).toMatch(/function usePageLoaded\(\)/)
     expect(logo).toMatch(/const canFetch = usePageLoaded\(\)/)
-    expect(logo).toMatch(/if \(!canFetch\) \{/)
+    // Only our own bundled files may draw before it: same origin, a few KB,
+    // cached by the service worker, so they cannot hang the way a filtered
+    // third-party host does.
+    expect(logo).toMatch(/if \(!canFetch && !override\) \{/)
+    const overrides = logo.slice(logo.indexOf('const overrideFor'), logo.indexOf('\n', logo.indexOf('const overrideFor')))
+    expect(overrides).not.toMatch(/https?:/)
+    expect(logo).toMatch(/`\/logos\/coins\/\$\{BUNDLED_LOGOS\[coinId\]\}\.svg`/)
   })
 
   it('holds the ladder clock until then, so no stage is skipped unrequested', () => {
@@ -163,8 +169,12 @@ describe('a dark logo gets something to sit on', () => {
   })
 
   it('paints the disc behind every image stage, not just the first', () => {
+    // Every stage renders through show(), which draws <img {...withPlate}>,
+    // and show() keeps the plate over the loading badge.
     expect(logo).not.toMatch(/<img \{\.\.\.common\} src=/)
-    expect(logo.match(/<img \{\.\.\.withPlate\} src=/g).length).toBeGreaterThanOrEqual(6)
+    expect(logo).toMatch(/return <img \{\.\.\.withPlate\} style=\{style\} src=\{src\} onError=\{onError\} \/>/)
+    expect(logo).toMatch(/const style = plate \? withPlate\.style :/)
+    expect(logo.match(/return show\(/g).length).toBeGreaterThanOrEqual(6)
   })
 
   it('is a background, so a logo that fills its own circle hides it', () => {

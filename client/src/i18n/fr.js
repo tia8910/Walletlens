@@ -474,6 +474,8 @@ export default {
     fbThanks: "Merci ! Nous lisons chaque message et répondons si vous laissez un e-mail.",
     fbDone: "Terminé",
     dbTitle: "Sauvegarde Google Drive",
+    adUpdatedAt: (t) => `Mis à jour ${t} · marché ouvert`,
+    adMarketClosed: (t) => `Marché fermé · dernier échange ${t}`,
     dbErrRekeyed: "Votre sauvegarde a été rechiffrée sur un autre appareil. Saisissez votre phrase secrète pour garder cet appareil synchronisé.",
     dbErrPassMismatch: "Cette phrase secrète n'ouvre pas la sauvegarde déjà présente dans votre Drive. Utilisez celle définie sur votre autre appareil pour que les deux restent synchronisés.",
     dbErrSession: "Votre session Google a expiré. Touchez Reconnecter pour vous reconnecter.",

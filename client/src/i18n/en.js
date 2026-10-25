@@ -495,6 +495,8 @@ export default {
     fbThanks: "Thank you! We read every message, and reply when you leave an email.",
     fbDone: "Done",
     dbTitle: "Google Drive backup",
+    adUpdatedAt: (t) => `Updated ${t} · market open`,
+    adMarketClosed: (t) => `Market closed · last trade ${t}`,
     dbErrRekeyed: "Your backup was re-encrypted on another device. Enter your passphrase to keep this device in sync.",
     dbErrPassMismatch: "That passphrase does not open the backup already in your Drive. Use the one you set on your other device, so both stay in sync.",
     dbErrSession: "Your Google session expired. Tap Reconnect to sign in again.",

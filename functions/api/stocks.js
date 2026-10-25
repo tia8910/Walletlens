@@ -4,6 +4,9 @@
  * Supports ?symbols=AAPL,MSFT,NVDA (comma-separated).
  */
 
+// The trading sessions, shared with the app so both agree on when a market is open.
+import { sessionOpen } from '../../client/src/data/markets.js'
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -16,6 +19,9 @@ export async function onRequestOptions() {
 }
 
 const CACHE_SECONDS = 60
+// While a requested local market is in session, quotes are kept only this long,
+// so the price moves as soon as the free source does.
+const LIVE_CACHE_SECONDS = 15
 
 // TWO CEILINGS, AND THIS USED TO BREACH BOTH.
 //
@@ -94,14 +100,15 @@ async function fetchIntl(symbols, deadline) {
       const change = typeof meta.regularMarketChangePercent === 'number'
         ? meta.regularMarketChangePercent
         : prev > 0 ? ((meta.regularMarketPrice - prev) / prev) * 100 : 0
-      quotes[sym] = { ...toMajorUnit(meta.regularMarketPrice, meta.currency), change, name: meta.longName || meta.shortName || sym }
+      quotes[sym] = { ...toMajorUnit(meta.regularMarketPrice, meta.currency), change, name: meta.longName || meta.shortName || sym, asOf: meta.regularMarketTime ? meta.regularMarketTime * 1000 : null }
     } catch {}
   }))
   const rates = await usdRates(Object.values(quotes).map(q => q.currency))
   for (const [sym, q] of Object.entries(quotes)) {
     const fx = rates[q.currency]
     if (!fx) continue // no honest dollar figure: leave it out rather than mislabel it
-    out[sym] = { price: q.price * fx, change_pct: q.change, name: q.name, source: 'yahoo', local: { price: q.price, currency: q.currency } }
+    // as_of: when the exchange last traded, so the app can say how fresh it is.
+    out[sym] = { price: q.price * fx, change_pct: q.change, name: q.name, source: 'yahoo', local: { price: q.price, currency: q.currency }, as_of: q.asOf }
   }
   return out
 }
@@ -204,8 +211,9 @@ export async function onRequestGet(context) {
     }))
   }
 
+  const live = intl.some(sym => sessionOpen(sym))
   const response = new Response(JSON.stringify(result), {
-    headers: { ...CORS, 'Cache-Control': `public, max-age=${CACHE_SECONDS}` },
+    headers: { ...CORS, 'Cache-Control': `public, max-age=${live ? LIVE_CACHE_SECONDS : CACHE_SECONDS}` },
   })
   // Only cache a response that actually has data — caching a total outage
   // (both upstreams down) would otherwise pin every visitor to an empty
