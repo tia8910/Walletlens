@@ -71,6 +71,18 @@ function symbolToGradient(sym) {
   return [`hsl(${hue1},70%,50%)`, `hsl(${hue2},80%,35%)`]
 }
 
+/**
+ * The letter badge as a data URI, painted behind a logo that is still loading,
+ * so a slow logo shows initials until it arrives instead of an empty disc.
+ */
+function badgeUri(symbol) {
+  const sym = (symbol || '?').toString()
+  const [c1, c2] = symbolToGradient(sym.toLowerCase())
+  const label = sym.substring(0, 2).toUpperCase().replace(/[^A-Z0-9]/g, '')
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><radialGradient id="g" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></radialGradient></defs><circle cx="16" cy="16" r="16" fill="url(#g)"/><text x="16" y="16" text-anchor="middle" dominant-baseline="central" font-size="${label.length > 1 ? 12 : 14}" font-weight="800" font-family="Inter,system-ui,sans-serif" fill="rgba(255,255,255,0.92)">${label}</text></svg>`
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
+}
+
 function GeneratedIcon({ symbol, size, className, badgeStyle, fallbackChar }) {
   const sym = (symbol || '?').toString()
   const [c1, c2] = symbolToGradient(sym.toLowerCase())
@@ -274,7 +286,13 @@ function nonCryptoPictures(coinId, stockUrl) {
     const cc = flagCodeFor(coinId.slice(5))
     return cc ? [flagLocal(cc), flagUrl(cc), voiceProxy(flagUrl(cc))] : []
   }
-  if (coinId?.startsWith('stock:') && stockUrl) return [stockUrl, voiceProxy(stockUrl)]
+  if (coinId?.startsWith('stock:')) {
+    // The tokenized-stock list only covers a few US names; everything else
+    // (ETFs, Cairo, Riyadh, Dubai listings) asks our origin, which looks the
+    // ticker up at the edge and caches the answer, logo or not.
+    const own = `/api/icon?stock=${encodeURIComponent(coinId.slice(6).toUpperCase())}`
+    return stockUrl ? [stockUrl, voiceProxy(stockUrl), own] : [own]
+  }
   return []
 }
 
@@ -331,7 +349,52 @@ function NonCryptoLogo({ coinId, symbol, size = 32, className = 'coin-logo', bad
 // from our own origin and tried before anything cached, so an old logo that
 // loaded once and was remembered cannot win.
 export const LOGO_OVERRIDES = { solana: '/logos/solana.svg' }
-const overrideFor = (coinId, sym) => LOGO_OVERRIDES[coinId] || (!coinId && sym === 'sol' ? LOGO_OVERRIDES.solana : null)
+
+// The most held coins, bundled with the app (public/logos/coins, from
+// cryptocurrency-icons 0.18.1, CC0). Every other source is a request to
+// somewhere else that starts only after the page has loaded and can take
+// seconds per stage, which is why onboarding showed blank discs and initials
+// for USDT and BTC. These come from our own origin, are cached by the service
+// worker and draw in the first frame.
+//
+// Keyed by CoinGecko id, not symbol: a ticker can belong to several coins, and
+// the id is what says this is the coin the file was drawn for.
+export const BUNDLED_LOGOS = {
+  'bitcoin': 'btc',
+  'ethereum': 'eth',
+  'tether': 'usdt',
+  'binancecoin': 'bnb',
+  'ripple': 'xrp',
+  'usd-coin': 'usdc',
+  'tron': 'trx',
+  'zcash': 'zec',
+  'dogecoin': 'doge',
+  'monero': 'xmr',
+  'chainlink': 'link',
+  'leo-token': 'leo',
+  'cardano': 'ada',
+  'stellar': 'xlm',
+  'bitcoin-cash': 'bch',
+  'dai': 'dai',
+  'litecoin': 'ltc',
+  'uniswap': 'uni',
+  'avalanche-2': 'avax',
+  'quant-network': 'qnt',
+  'aave': 'aave',
+  'pax-gold': 'paxg',
+  'polkadot': 'dot',
+  'internet-computer': 'icp',
+  'ethereum-classic': 'etc',
+  'kucoin-shares': 'kcs',
+  'algorand': 'algo',
+  'cosmos': 'atom',
+  'nexo': 'nexo',
+  'filecoin': 'fil',
+  'dash': 'dash',
+  'vechain': 'vet',
+}
+const bundledFor = (coinId) => BUNDLED_LOGOS[coinId] ? `/logos/coins/${BUNDLED_LOGOS[coinId]}.svg` : null
+const overrideFor = (coinId, sym) => LOGO_OVERRIDES[coinId] || bundledFor(coinId) || (!coinId && sym === 'sol' ? LOGO_OVERRIDES.solana : null)
 
 const CryptoLogo = memo(function CryptoLogo({
   image,
@@ -403,9 +466,14 @@ const CryptoLogo = memo(function CryptoLogo({
     setStageIdx(0)
   }, [image, sym, coinId])
 
+  // Which stage the clock last armed for. "Loaded" belongs to a stage, so it is
+  // cleared when the stage moves, not every time the clock re-arms: a bundled
+  // logo drawn before the page's load event would otherwise be marked not
+  // loaded when that event arrives and timed out three seconds later.
+  const armedStageRef = useRef(-1)
   useEffect(() => {
     if (stageIdx >= STAGES.length) return
-    loadedRef.current = false
+    if (armedStageRef.current !== stageIdx) { armedStageRef.current = stageIdx; loadedRef.current = false }
     const timeout = stageIdx <= 1 ? STAGE_TIMEOUT_MS : FALLBACK_TIMEOUT_MS
     let t = null
 
@@ -470,7 +538,7 @@ const CryptoLogo = memo(function CryptoLogo({
     const tryAll = () => {
       const fresh = coinId ? getCachedCoinImage(coinId) : null
       const urls = [...new Set([
-        resolved, image, fresh,
+        override, resolved, image, fresh,
         image ? `/api/icon?url=${encodeURIComponent(image)}` : null,
         fresh && fresh !== image ? `/api/icon?url=${encodeURIComponent(fresh)}` : null,
         sym ? `/api/icon?sym=${encodeURIComponent(sym)}` : null,
@@ -498,12 +566,16 @@ const CryptoLogo = memo(function CryptoLogo({
       document.removeEventListener('visibilitychange', again)
       for (const im of imgs) { im.onload = null }
     }
-  }, [exhausted, lateSrc, canFetch, coinId, sym, image, resolved, logoKey])
+  }, [exhausted, lateSrc, canFetch, coinId, sym, image, resolved, logoKey, override])
 
+  // Which URL has actually painted. Until the current one has, the letter
+  // badge sits behind it.
+  const [painted, setPainted] = useState(null)
   const onLoad = (e) => {
     loadedRef.current = true
     const el = e?.currentTarget
     const src = el?.currentSrc || el?.src || ''
+    setPainted(el?.getAttribute?.('src') || src)
     rememberResolved(logoKey, src)
 
     const known = DARKNESS[src]
@@ -515,6 +587,7 @@ const CryptoLogo = memo(function CryptoLogo({
     setNeedsPlate(dark)
   }
   const advance  = () => setStageIdx(s => s + 1)
+  const loadingBg = { backgroundImage: badgeUri(symbol || sym), backgroundSize: 'cover', borderRadius: '50%' }
   const common   = { alt: symbol ? `${String(symbol).toUpperCase()} logo` : 'asset logo', width: size, height: size, className, referrerPolicy: 'no-referrer', decoding: 'async', onLoad }
 
   // The plate on the first frame for an icon already judged, so a known-dark
@@ -525,7 +598,13 @@ const CryptoLogo = memo(function CryptoLogo({
   const withPlate = plate
     ? { ...common, style: { ...(common.style || {}), background: '#fff' } }
     : common
-  if (!canFetch) {
+  // Behind an image that has not painted yet: the initials, not an empty disc.
+  const show = (src, onError) => {
+    const ready = painted === src
+    const style = plate ? withPlate.style : ready ? common.style : { ...(common.style || {}), ...loadingBg }
+    return <img {...withPlate} style={style} src={src} onError={onError} />
+  }
+  if (!canFetch && !override) {
     // Deliberately falls through to the letter badge below: the same thing the
     // ladder ends on, so swapping the real icon in when load fires moves
     // nothing on the page.
@@ -534,24 +613,24 @@ const CryptoLogo = memo(function CryptoLogo({
     if (lateSrc) return <img {...withPlate} src={lateSrc} />
   } else if (currentStage.startsWith('img:')) {
     const src = currentStage.slice(4)
-    return <img {...withPlate} src={src} onError={advance} />
+    return show(src, advance)
   } else if (currentStage.startsWith('origin:')) {
-    return <img {...withPlate} src={`/api/icon?sym=${encodeURIComponent(sym)}`} onError={advance} />
+    return show(`/api/icon?sym=${encodeURIComponent(sym)}`, advance)
   } else if (currentStage.startsWith('originurl:')) {
     // The URL the API gave us, fetched through our origin. On a filtered
     // network coin-images.coingecko.com is no more reachable than the rest.
-    return <img {...withPlate} src={`/api/icon?url=${encodeURIComponent(currentStage.slice(10))}`} onError={advance} />
+    return show(`/api/icon?url=${encodeURIComponent(currentStage.slice(10))}`, advance)
   } else if (currentStage.startsWith('jsdelivr:')) {
-    return <img {...withPlate} src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`} onError={advance} />
+    return show(`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`, advance)
   } else if (currentStage.startsWith('coincap:')) {
-    return <img {...withPlate} src={`https://assets.coincap.io/assets/icons/${sym}@2x.png`} onError={advance} />
+    return show(`https://assets.coincap.io/assets/icons/${sym}@2x.png`, advance)
   } else if (currentStage.startsWith('lcw:')) {
-    return <img {...withPlate} src={`https://lcw.nyc3.cdn.digitaloceanspaces.com/production/currencies/64/${sym}.webp`} onError={advance} />
+    return show(`https://lcw.nyc3.cdn.digitaloceanspaces.com/production/currencies/64/${sym}.webp`, advance)
   } else if (currentStage.startsWith('cryptoicons:')) {
-    return <img {...withPlate} src={`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym}.png`} onError={advance} />
+    return show(`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym}.png`, advance)
   } else if (currentStage.startsWith('dproxy:')) {
     const target = currentStage.slice(7)
-    return <img {...withPlate} src={voiceProxy(target)} onError={advance} />
+    return show(voiceProxy(target), advance)
   }
   return (
     <GeneratedIcon

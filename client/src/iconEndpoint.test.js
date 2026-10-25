@@ -92,7 +92,7 @@ describe('the ladder prefers our own origin', () => {
   it('routes the API-provided URL through it too', () => {
     // coin-images.coingecko.com is no more reachable than the rest on a
     // filtered network.
-    expect(logo).toMatch(/src=\{`\/api\/icon\?url=\$\{encodeURIComponent\(currentStage\.slice\(10\)\)\}`\}/)
+    expect(logo).toMatch(/show\(`\/api\/icon\?url=\$\{encodeURIComponent\(currentStage\.slice\(10\)\)\}`, advance\)/)
   })
 
   it('is dispatched by the bundled Pages worker', () => {
