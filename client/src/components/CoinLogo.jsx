@@ -75,6 +75,12 @@ function symbolToGradient(sym) {
  * The letter badge as a data URI, painted behind a logo that is still loading,
  * so a slow logo shows initials until it arrives instead of an empty disc.
  */
+// Every logo URL that has painted this session. A row that remounts or
+// re-renders (the watchlist and holdings do, on every price tick) must not put
+// the badge back behind a logo the browser already has: on a logo with
+// transparent parts the initials flashed through for a frame each time.
+const PAINTED = new Set()
+
 function badgeUri(symbol) {
   const sym = (symbol || '?').toString()
   const [c1, c2] = symbolToGradient(sym.toLowerCase())
@@ -461,7 +467,9 @@ const CryptoLogo = memo(function CryptoLogo({
     const id = `${coinId}|${sym}`
     const changedAsset = assetRef.current !== id
     assetRef.current = id
-    if (!changedAsset && !image) return
+    // A refresh that hands over another URL for a logo already on screen must
+    // not restart the ladder: that swapped one image for another and flashed.
+    if (!changedAsset && (!image || loadedRef.current)) return
     loadedRef.current = false
     setStageIdx(0)
   }, [image, sym, coinId])
@@ -575,7 +583,9 @@ const CryptoLogo = memo(function CryptoLogo({
     loadedRef.current = true
     const el = e?.currentTarget
     const src = el?.currentSrc || el?.src || ''
-    setPainted(el?.getAttribute?.('src') || src)
+    const shown = el?.getAttribute?.('src') || src
+    PAINTED.add(shown)
+    setPainted(shown)
     rememberResolved(logoKey, src)
 
     const known = DARKNESS[src]
@@ -600,7 +610,8 @@ const CryptoLogo = memo(function CryptoLogo({
     : common
   // Behind an image that has not painted yet: the initials, not an empty disc.
   const show = (src, onError) => {
-    const ready = painted === src
+    // What loaded last time on this device is in the browser cache: no badge.
+    const ready = painted === src || PAINTED.has(src) || src === resolved
     const style = plate ? withPlate.style : ready ? common.style : { ...(common.style || {}), ...loadingBg }
     return <img {...withPlate} style={style} src={src} onError={onError} />
   }
