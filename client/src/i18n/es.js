@@ -474,6 +474,8 @@ export default {
     fbThanks: "¡Gracias! Leemos cada mensaje y respondemos si dejas un correo.",
     fbDone: "Listo",
     dbTitle: "Copia en Google Drive",
+    adUpdatedAt: (t) => `Actualizado ${t} · mercado abierto`,
+    adMarketClosed: (t) => `Mercado cerrado · última operación ${t}`,
     dbErrRekeyed: "Tu copia se volvió a cifrar en otro dispositivo. Introduce tu frase de contraseña para mantener este dispositivo sincronizado.",
     dbErrPassMismatch: "Esa frase no abre la copia que ya está en tu Drive. Usa la que pusiste en tu otro dispositivo para que ambos sigan sincronizados.",
     dbErrSession: "Tu sesión de Google caducó. Toca Reconectar para volver a iniciar sesión.",

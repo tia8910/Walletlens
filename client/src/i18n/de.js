@@ -495,6 +495,8 @@ export default {
     fbThanks: "Danke! Wir lesen jede Nachricht und antworten, wenn du eine E-Mail hinterlässt.",
     fbDone: "Fertig",
     dbTitle: "Google Drive-Sicherung",
+    adUpdatedAt: (t) => `Aktualisiert ${t} · Markt offen`,
+    adMarketClosed: (t) => `Markt geschlossen · letzter Handel ${t}`,
     dbErrRekeyed: "Deine Sicherung wurde auf einem anderen Gerät neu verschlüsselt. Gib deine Passphrase ein, damit dieses Gerät synchron bleibt.",
     dbErrPassMismatch: "Diese Passphrase öffnet die Sicherung in deinem Drive nicht. Nutze die von deinem anderen Gerät, damit beide synchron bleiben.",
     dbErrSession: "Deine Google-Sitzung ist abgelaufen. Tippe auf Neu verbinden, um dich erneut anzumelden.",

@@ -958,3 +958,8 @@ html.wl-v2 .bs-v2 .tk-curpick {
   background: var(--v2-glass); border: 1px solid var(--v2-glass-border); color: var(--text);
 }
 html.wl-v2 .bs-v2 .tk-curpick svg { max-width: none; color: var(--text-sub); }
+/* When a local listing's quote is from, with a pulsing dot while its exchange is open. */
+html.wl-v2 .ac-asof { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.4rem; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); }
+html.wl-v2 .ac-live { width: 7px; height: 7px; border-radius: 50%; background: var(--sc-up, #16a874); box-shadow: 0 0 0 0 color-mix(in srgb, var(--sc-up, #16a874) 60%, transparent); animation: ac-live 1.8s ease-out infinite; }
+@keyframes ac-live { 70% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { html.wl-v2 .ac-live { animation: none; } }

@@ -495,6 +495,8 @@ export default {
     fbThanks: "Grazie! Leggiamo ogni messaggio e rispondiamo se lasci un'email.",
     fbDone: "Fatto",
     dbTitle: "Backup su Google Drive",
+    adUpdatedAt: (t) => `Aggiornato ${t} · mercato aperto`,
+    adMarketClosed: (t) => `Mercato chiuso · ultimo scambio ${t}`,
     dbErrRekeyed: "Il tuo backup è stato ricifrato su un altro dispositivo. Inserisci la passphrase per mantenere sincronizzato questo dispositivo.",
     dbErrPassMismatch: "Questa passphrase non apre il backup già presente nel tuo Drive. Usa quella impostata sull'altro dispositivo, così restano sincronizzati.",
     dbErrSession: "La sessione Google è scaduta. Tocca Riconnetti per accedere di nuovo.",

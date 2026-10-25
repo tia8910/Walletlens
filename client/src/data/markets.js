@@ -178,3 +178,34 @@ export function countryFromDevice(nav = typeof navigator !== 'undefined' ? navig
   } catch {}
   return ''
 }
+
+// Regular sessions of the local markets the app lists, in each exchange's own
+// time zone, as [weekdays (0 = Sunday), open minute, close minute]. While one is
+// open its quotes are refreshed every 20 seconds instead of
+// every two minutes. Public holidays are not listed: on one, the quote simply
+// keeps its last time, which the asset page shows. Kept in step with
+// functions/api/stocks.js.
+export const SESSIONS = {
+  CA: ['Africa/Cairo', [0, 1, 2, 3, 4], 600, 870],   // EGX, Sun to Thu 10:00 to 14:30
+  SR: ['Asia/Riyadh', [0, 1, 2, 3, 4], 600, 900],    // Tadawul, 10:00 to 15:00
+  AE: ['Asia/Dubai', [1, 2, 3, 4, 5], 600, 900],     // DFM, Mon to Fri
+  AD: ['Asia/Dubai', [1, 2, 3, 4, 5], 600, 900],     // ADX, Mon to Fri
+  QA: ['Asia/Qatar', [0, 1, 2, 3, 4], 570, 795],     // QSE, 9:30 to 13:15
+  KW: ['Asia/Kuwait', [0, 1, 2, 3, 4], 540, 760],    // Boursa Kuwait, 9:00 to 12:40
+}
+const WEEKDAY = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
+
+/** Whether the exchange a suffixed ticker (ETEL.CA) trades on is in session now. */
+export function sessionOpen(ticker, now = Date.now()) {
+  const m = String(ticker || '').toUpperCase().match(/\.([A-Z]{1,2})$/)
+  const s = m && SESSIONS[m[1]]
+  if (!s) return false
+  try {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+      timeZone: s[0], weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(new Date(now)).map(p => [p.type, p.value]))
+    const day = WEEKDAY[parts.weekday]
+    const mins = Number(parts.hour) * 60 + Number(parts.minute)
+    return s[1].includes(day) && mins >= s[2] && mins < s[3]
+  } catch { return false }
+}

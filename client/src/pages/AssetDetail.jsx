@@ -13,6 +13,7 @@ import IndicatorChart from '../components/IndicatorChart'
 import { MoneyFlowCard } from '../components/MoneyFlow'
 import { BybitCard, BybitStockCard } from '../components/BybitOffer'
 import { isStablecoin } from '../stablecoins'
+import { isIntlTicker, sessionOpen } from '../data/markets'
 
 // assetClass() is the shared id-prefix classifier (api.js); these wrap it
 // for the page's two flavours of "is it crypto" / "what category".
@@ -105,6 +106,24 @@ export default function AssetDetail() {
     return () => { alive.current = false }
   }, [coinId])
   useEffect(() => { api.getWallets().then(setWallets).catch(() => {}) }, [])
+
+  // A local listing (ETEL.CA, 2222.SR) keeps its price moving while its
+  // exchange is in session and the page is on screen.
+  const localTicker = coinId?.startsWith(STOCK_PREFIX) && isIntlTicker(coinId.slice(STOCK_PREFIX.length)) ? coinId.slice(STOCK_PREFIX.length).toUpperCase() : null
+  useEffect(() => {
+    if (!localTicker) return undefined
+    let alive = true
+    const tick = () => {
+      if (document.hidden || !sessionOpen(localTicker)) return
+      api.getPrices(coinId).then(prices => {
+        const p = prices?.[coinId]
+        if (!alive || !(p?.usd > 0)) return
+        setCoin(prev => prev ? { ...prev, price: p.usd, change24: p.usd_24h_change ?? prev.change24, asOf: p.asOf || prev.asOf } : prev)
+      }).catch(() => {})
+    }
+    const id = setInterval(tick, 20_000)
+    return () => { alive = false; clearInterval(id) }
+  }, [coinId, localTicker])
   useEffect(() => {
     if (v2) return
     const alive = { current: true }
@@ -186,6 +205,7 @@ export default function AssetDetail() {
         change24: p.usd_24h_change ?? prev?.change24 ?? 0,
         name: p.name || prev?.name,
         symbol: (p.symbol || prev?.symbol || '').toUpperCase(),
+        asOf: p.asOf || prev?.asOf || null,
       }))
     }).catch(() => {})
 
@@ -295,6 +315,14 @@ export default function AssetDetail() {
             <span className={`ac-chg ${(coin?.change24 || 0) >= 0 ? 'is-up' : 'is-dn'}`}>
               {(coin?.change24 || 0) >= 0 ? '▲' : '▼'} {Math.abs(coin?.change24 || 0).toFixed(2)}% · 24h
             </span>
+            {localTicker && coin?.asOf > 0 && (
+              <small className="ac-asof">
+                {sessionOpen(localTicker) && <i className="ac-live" aria-hidden="true" />}
+                {sessionOpen(localTicker)
+                  ? t('adUpdatedAt')(new Date(coin.asOf).toLocaleTimeString(lang || undefined, { hour: '2-digit', minute: '2-digit' }))
+                  : t('adMarketClosed')(new Date(coin.asOf).toLocaleString(lang || undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' }))}
+              </small>
+            )}
           </div>
           {holdings && (
             <div className="ac-hold"><small>{t('acYouHold')}</small><b>{parseFloat(amount.toFixed(6))} {coin?.symbol}</b><span>${fmt(amount * pNow)}</span></div>
