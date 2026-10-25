@@ -41,7 +41,19 @@ describe('a logo that loaded stays loaded', () => {
   it('does not restart the ladder just because the URL went away', () => {
     const eff = logo.slice(logo.indexOf('const assetRef = useRef'))
     const body = eff.slice(0, eff.indexOf('}, [image, sym, coinId])'))
-    expect(body).toMatch(/if \(!changedAsset && !image\) return/)
+    expect(body).toMatch(/if \(!changedAsset && \(!image \|\| loadedRef\.current\)\) return/)
+  })
+
+  it('does not restart it for a new URL while a logo is already on screen', () => {
+    // A price refresh that hands over another URL swapped one image for
+    // another, and the row flashed. Only a different asset restarts it then.
+    const eff = logo.slice(logo.indexOf('const assetRef = useRef'))
+    expect(eff.slice(0, eff.indexOf('}, [image, sym, coinId])'))).toMatch(/loadedRef\.current\)\) return/)
+  })
+
+  it('never paints the loading badge behind a logo that has already shown', () => {
+    expect(logo).toMatch(/const PAINTED = new Set\(\)/)
+    expect(logo).toMatch(/const ready = painted === src \|\| PAINTED\.has\(src\) \|\| src === resolved/)
   })
 
   it('still restarts it for a different asset', () => {

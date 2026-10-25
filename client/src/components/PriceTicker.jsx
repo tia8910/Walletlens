@@ -6,7 +6,8 @@ import {
 } from '../data/tickerPicks'
 import { INTERESTS_EVENT } from '../data/interestsEvent'
 
-const PricesSheet = lazy(() => import('./PricesSheet'))
+const loadPricesSheet = () => import('./PricesSheet')
+const PricesSheet = lazy(loadPricesSheet)
 
 const TICKER_REFRESH_MS = 60_000
 const CAL_REFRESH_MS = 30 * 60_000
@@ -310,6 +311,14 @@ function PriceTicker({ v3 = false }) {
   // items are drawn twice so the drift loops without a jump.
   const stripRef = useRef(null)
   const [sheet, setSheet] = useState(false)
+  // Fetch the price list's code once the strip is up and the main thread is
+  // idle, so the first tap on All opens it at once instead of waiting on a
+  // download with nothing on screen.
+  useEffect(() => {
+    const go = () => { loadPricesSheet().catch(() => {}) }
+    const id = typeof requestIdleCallback === 'function' ? requestIdleCallback(go, { timeout: 4000 }) : setTimeout(go, 2500)
+    return () => { typeof cancelIdleCallback === 'function' ? cancelIdleCallback(id) : clearTimeout(id) }
+  }, [])
   const pausedUntil = useRef(0)
   const pause = (ms = 4000) => { pausedUntil.current = Date.now() + ms }
   // ‹ and ›: a page either way, smoothly, with the drift held off meanwhile.
@@ -403,7 +412,7 @@ function PriceTicker({ v3 = false }) {
         <button type="button" className="nl-ticker-arrow" onClick={() => nudge(1)} aria-label="›" tabIndex={-1}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
         </button>
-        <button type="button" className="nl-ticker-all" onClick={() => setSheet(true)}>{t('nlAllPrices')}</button>
+        <button type="button" className="nl-ticker-all" onClick={() => setSheet(true)} onPointerDown={loadPricesSheet}>{t('nlAllPrices')}</button>
         {sheet && <Suspense fallback={null}><PricesSheet items={items} onClose={() => setSheet(false)} /></Suspense>}
       </div>
     )

@@ -1926,6 +1926,19 @@ export const api = {
   // Synchronous read of whatever prices are already cached (localStorage-backed
   // for stocks/xstocks/crypto). Lets the UI paint last-known prices on first
   // render, before the async getPrices() network fan-out resolves.
+  // The last market ranking this device saw, whatever its age, with any live
+  // price already in priceCache laid over it. Synchronous, so a list can open
+  // full instead of empty while getMarketData() fetches the fresh one.
+  getCachedMarketData: (perPage = 50) => {
+    let cache = {};
+    try { cache = JSON.parse(localStorage.getItem(MARKET_CACHE_KEY) || '{}'); } catch {}
+    const rows = (cache[250]?.v?.length ? cache[250].v : cache[50]?.v) || [];
+    return rows.slice(0, perPage).map(c => {
+      const p = priceCache[c.id];
+      return p?.usd > 0 ? { ...c, current_price: p.usd, price_change_percentage_24h: p.usd_24h_change ?? c.price_change_percentage_24h } : c;
+    });
+  },
+
   getCachedPrices: (ids) => {
     const out = {};
     for (const id of String(ids || '').split(',').filter(Boolean)) {
