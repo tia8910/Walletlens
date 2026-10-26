@@ -416,9 +416,27 @@ const CryptoLogo = memo(function CryptoLogo({
   // Prefer the stored image and API cache (exact coinId match = correct icon).
   // Only fall back to symbol-based CDNs as last resort — they can return
   // wrong icons when the same symbol exists for multiple coins (WLD, NS, FET…).
-  const cachedImg = coinId ? getCachedCoinImage(coinId) : null
+  // Both read once per asset (and per image prop), not on every render.
+  //
+  // They are module-level stores that onLoad itself writes to: rememberResolved
+  // records the URL that just loaded. Read live, every render rebuilt STAGES
+  // with that URL moved to the front, so the index the ladder sat on now named
+  // the other candidate, which loaded, was remembered, and moved the first one
+  // back. Once onLoad also set state (to drop the loading badge) every load
+  // re-rendered, and the logo swapped between two images many times a second.
+  const sourcesRef = useRef(null)
+  const sourcesKey = `${coinId}|${symbol}|${image || ''}`
+  if (!sourcesRef.current || sourcesRef.current.key !== sourcesKey) {
+    const k = coinId || (symbol ? `sym:${String(symbol).toLowerCase()}` : '')
+    sourcesRef.current = {
+      key: sourcesKey,
+      cached: coinId ? getCachedCoinImage(coinId) : null,
+      resolved: k ? RESOLVED[k] : null,
+    }
+  }
+  const cachedImg = sourcesRef.current.cached
   const logoKey = coinId || (sym ? `sym:${sym}` : '')
-  const resolved = logoKey ? RESOLVED[logoKey] : null
+  const resolved = sourcesRef.current.resolved
   const override = overrideFor(coinId, sym)
   const STAGES = useMemo(() => override ? [`img:${override}`] : [
     // What loaded last time, first. Everything below it is a guess by
