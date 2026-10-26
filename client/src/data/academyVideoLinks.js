@@ -310,6 +310,16 @@ export default {
       "youtube": "FpKaP4wllY4",
       "added": "2026-10-24",
       "wide": true
+    },
+    {
+      "key": "yt-41xprj5wfbg",
+      "kind": "original",
+      "name": "حتى نيوتن خسر فلوسه في البورصة! حكاية فقاعة بحر الجنوب | قصص من أسواق المال",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "41xprj5wfbg",
+      "added": "2026-10-26",
+      "wide": true
     }
   ]
 }
