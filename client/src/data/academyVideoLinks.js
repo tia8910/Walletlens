@@ -329,6 +329,15 @@ export default {
       "lang": "ar",
       "youtube": "LNG6a5t3jN8",
       "added": "2026-10-27"
+    },
+    {
+      "key": "yt-U8UDqEIoLKI",
+      "kind": "story",
+      "name": "الأزمات بتصنع الثروات… بس لمين؟ #shorts",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "U8UDqEIoLKI",
+      "added": "2026-10-27"
     }
   ]
 }
