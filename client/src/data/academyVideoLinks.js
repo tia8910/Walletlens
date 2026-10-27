@@ -320,6 +320,15 @@ export default {
       "youtube": "41xprj5wfbg",
       "added": "2026-10-26",
       "wide": true
+    },
+    {
+      "key": "yt-LNG6a5t3jN8",
+      "kind": "story",
+      "name": "حتى نيوتن خسر فلوسه في البورصة! 🍎 #shorts",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "LNG6a5t3jN8",
+      "added": "2026-10-27"
     }
   ]
 }
