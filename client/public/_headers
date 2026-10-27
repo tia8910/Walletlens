@@ -98,3 +98,9 @@
 
 /*.woff2
   Cache-Control: public, max-age=31536000, immutable
+
+# On-device OCR runtime and model (tesseract worker, wasm cores, English
+# model). Unhashed filenames, pinned by package-lock, ~10 MB in total; without
+# this they fall under /* no-cache and are revalidated on every screenshot import.
+/ocr/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
