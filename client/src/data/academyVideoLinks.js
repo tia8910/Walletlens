@@ -338,6 +338,15 @@ export default {
       "lang": "ar",
       "youtube": "U8UDqEIoLKI",
       "added": "2026-10-27"
+    },
+    {
+      "key": "yt-C8caGZm13Fo",
+      "kind": "story",
+      "name": "الغلطة اللي محدش يتوقعها | قصص من أسواق المال #shorts",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "C8caGZm13Fo",
+      "added": "2026-10-28"
     }
   ]
 }
