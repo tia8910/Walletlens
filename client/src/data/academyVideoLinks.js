@@ -347,6 +347,15 @@ export default {
       "lang": "ar",
       "youtube": "C8caGZm13Fo",
       "added": "2026-10-28"
+    },
+    {
+      "key": "yt-ezM7ozIfNh8",
+      "kind": "story",
+      "name": "أذكى راجل في أوروبا… والفلوس | قصص من أسواق المال #shorts",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "ezM7ozIfNh8",
+      "added": "2026-10-28"
     }
   ]
 }
