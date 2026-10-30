@@ -118,14 +118,14 @@ describe('the browser fallback', () => {
     const seen = []
     vi.stubGlobal('fetch', vi.fn(async (u) => {
       const url = String(u); seen.push(url)
-      if (url.startsWith('/api/candles')) return new Response(JSON.stringify({ candles: [] }))
+      if (url.includes('/api/candles')) return new Response(JSON.stringify({ candles: [] }))
       if (url.startsWith('https://query1.finance.yahoo.com/v8/finance/chart/MSFT')) return new Response(JSON.stringify(yahooBody(200)))
       return new Response('no', { status: 500 })
     }))
     const r = await api.getCandles('stock:msft', 'MSFT', '1d')
     expect(r.candles).toHaveLength(200)
     expect(r.closeOnly).toBe(false)
-    expect(seen[0]).toBe('/api/candles?symbol=MSFT&interval=1d')
+    expect(seen[0]).toMatch(/\/api\/candles\?symbol=MSFT&interval=1d$/)
   })
 })
 

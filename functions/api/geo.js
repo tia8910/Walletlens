@@ -5,6 +5,7 @@
  */
 export async function onRequestGet({ request }) {
   return new Response(JSON.stringify({ country: request.cf?.country || '' }), {
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'private, max-age=86400' },
+    // Readable from the app wherever it is served, not only on this origin.
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'private, max-age=86400', 'Access-Control-Allow-Origin': '*' },
   })
 }

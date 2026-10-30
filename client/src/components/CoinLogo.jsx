@@ -3,7 +3,7 @@ import { getCachedCoinImage, stockLogoFor, loadStockLogos } from '../api'
 // Shared with the landing page's asset-class cards so both render the same
 // metal badges. See client/src/data/assetIcons.js.
 import { ASSET_ICONS, AssetIconBadge } from '../data/assetIcons'
-import { voiceProxy } from '../apiHosts.js'
+import { voiceProxy, siteApi } from '../apiHosts.js'
 /**
  * Whether the page's load event has fired.
  *
@@ -296,7 +296,7 @@ function nonCryptoPictures(coinId, stockUrl) {
     // The tokenized-stock list only covers a few US names; everything else
     // (ETFs, Cairo, Riyadh, Dubai listings) asks our origin, which looks the
     // ticker up at the edge and caches the answer, logo or not.
-    const own = `/api/icon?stock=${encodeURIComponent(coinId.slice(6).toUpperCase())}`
+    const own = siteApi(`/api/icon?stock=${encodeURIComponent(coinId.slice(6).toUpperCase())}`)
     return stockUrl ? [stockUrl, voiceProxy(stockUrl), own] : [own]
   }
   return []
@@ -565,9 +565,9 @@ const CryptoLogo = memo(function CryptoLogo({
       const fresh = coinId ? getCachedCoinImage(coinId) : null
       const urls = [...new Set([
         override, resolved, image, fresh,
-        image ? `/api/icon?url=${encodeURIComponent(image)}` : null,
-        fresh && fresh !== image ? `/api/icon?url=${encodeURIComponent(fresh)}` : null,
-        sym ? `/api/icon?sym=${encodeURIComponent(sym)}` : null,
+        image ? siteApi(`/api/icon?url=${encodeURIComponent(image)}`) : null,
+        fresh && fresh !== image ? siteApi(`/api/icon?url=${encodeURIComponent(fresh)}`) : null,
+        sym ? siteApi(`/api/icon?sym=${encodeURIComponent(sym)}`) : null,
       ].filter(Boolean))]
       for (const url of urls) {
         const im = new Image()
@@ -644,11 +644,11 @@ const CryptoLogo = memo(function CryptoLogo({
     const src = currentStage.slice(4)
     return show(src, advance)
   } else if (currentStage.startsWith('origin:')) {
-    return show(`/api/icon?sym=${encodeURIComponent(sym)}`, advance)
+    return show(siteApi(`/api/icon?sym=${encodeURIComponent(sym)}`), advance)
   } else if (currentStage.startsWith('originurl:')) {
     // The URL the API gave us, fetched through our origin. On a filtered
     // network coin-images.coingecko.com is no more reachable than the rest.
-    return show(`/api/icon?url=${encodeURIComponent(currentStage.slice(10))}`, advance)
+    return show(siteApi(`/api/icon?url=${encodeURIComponent(currentStage.slice(10))}`), advance)
   } else if (currentStage.startsWith('jsdelivr:')) {
     return show(`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`, advance)
   } else if (currentStage.startsWith('coincap:')) {
