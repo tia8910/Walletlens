@@ -356,6 +356,43 @@ export default {
       "lang": "ar",
       "youtube": "ezM7ozIfNh8",
       "added": "2026-10-28"
+    },
+    {
+      "key": "yt-2f3R31KVuF8",
+      "kind": "story",
+      "name": "يعني إيه نظام بونزي؟ | أكبر عملية نصب في التاريخ #shorts",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "2f3R31KVuF8",
+      "added": "2026-10-30"
+    },
+    {
+      "key": "yt-Z16f2wechME",
+      "kind": "story",
+      "name": "رئيس بورصة وطلع نصّاب! | أكبر عملية نصب في التاريخ #shorts",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "Z16f2wechME",
+      "added": "2026-10-30"
+    },
+    {
+      "key": "yt-JMIZJuKZNXk",
+      "kind": "story",
+      "name": "«الموضوع كله كان كدبة» | أكبر عملية نصب في التاريخ #shorts #اكسبلور",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "JMIZJuKZNXk",
+      "added": "2026-10-30"
+    },
+    {
+      "key": "yt-8U42NxFYmec",
+      "kind": "original",
+      "name": "مكسب ثابت كل شهر من غير خسارة؟ ده كان أكبر فخ في التاريخ",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "8U42NxFYmec",
+      "added": "2026-10-30",
+      "wide": true
     }
   ]
 }
