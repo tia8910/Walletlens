@@ -393,6 +393,15 @@ export default {
       "youtube": "8U42NxFYmec",
       "added": "2026-10-30",
       "wide": true
+    },
+    {
+      "key": "yt-m066H47xbPI",
+      "kind": "story",
+      "name": "السر: مكسب ثابت كل شهر | أكبر عملية نصب في التاريخ #shorts",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "m066H47xbPI",
+      "added": "2026-10-31"
     }
   ]
 }
