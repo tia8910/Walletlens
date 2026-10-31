@@ -49,7 +49,8 @@ const LIGHT_BASE = {
   bg: '#f7f8f9', cardBg: 'rgba(255,255,255,0.96)', bg3: '#f0f1f3', bg4: '#e6e8ea',
   border: 'rgba(0,0,0,0.09)', ink: '#f0f1f3', ink2: '#e6e8ea',
   text: '#16181b', text2: 'rgba(24,24,27,0.70)',
-  textMuted: 'rgba(24,24,27,0.58)', textSub: 'rgba(24,24,27,0.42)',
+  // 0.58 and 0.42 measured 4.3:1 and 2.7:1 on white; small text needs 4.5:1.
+  textMuted: 'rgba(24,24,27,0.66)', textSub: 'rgba(24,24,27,0.60)',
   surface1: 'rgba(0,0,0,0.04)', surface2: 'rgba(0,0,0,0.06)', surface3: 'rgba(0,0,0,0.10)',
 }
 

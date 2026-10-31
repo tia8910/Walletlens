@@ -1322,7 +1322,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
           {!isPage && <div className="bs-handle" />}
 
           <div className="tk-head">
-            <button type="button" className="tk-ib" aria-label="Back"
+            <button type="button" className="tk-ib" aria-label={t('back')}
               onClick={() => (!success && v2Step === 'ticket' && !prefillCoin) ? setV2Step('asset') : closeAll()}>{IcoBack}</button>
             {!success ? (
               <div className={`tk-mode${isBuy ? '' : ' is-sell'}`} role="tablist">
@@ -1577,7 +1577,7 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
         <div className="bs-header">
           <div className="bs-header-left">
             {isPage && (
-              <button className="bs-back" onClick={onClose} aria-label="Back">{IcoBack}</button>
+              <button className="bs-back" onClick={onClose} aria-label={t('back')}>{IcoBack}</button>
             )}
             <div className="bs-type-dot" style={{ background: accent }} />
             <h3 className="bs-title" style={{ color: accent }}>{isBuy ? t('tcBuyAsset') : t('tcSellAsset')}</h3>

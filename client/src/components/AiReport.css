@@ -1,6 +1,6 @@
 .air-row { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.75rem; padding-top: 0.6rem; border-top: 1px solid var(--border, rgba(127,127,127,.18)); }
 .air-compact { margin-top: 0.4rem; padding-top: 0.35rem; }
-.air-label { flex: 1; min-width: 0; font-size: 0.72rem; font-weight: 700; color: var(--text-muted, #7b8794); }
+.air-label { flex: 1; min-width: 0; font-size: 0.72rem; font-weight: 700; color: var(--text-muted, #5f6b78); }
 .air-btn { flex: none; white-space: nowrap; margin-inline-start: auto; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.7rem; border-radius: 10px; border: 0; cursor: pointer;
   font: inherit; font-size: 0.74rem; font-weight: 800; color: #c2343a; background: rgba(229,72,77,.1); box-shadow: inset 0 0 0 1.5px rgba(229,72,77,.25); }
 .air-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
@@ -12,14 +12,14 @@
 @keyframes air-up { from { transform: translateY(40px); opacity: 0; } }
 .air-grab { width: 40px; height: 5px; border-radius: 5px; background: rgba(127,127,127,.3); margin: 0 auto 0.9rem; }
 .air-title { display: block; font-size: 1.1rem; }
-.air-sub { margin: 0.3rem 0 0.8rem; font-size: 0.85rem; color: var(--text-muted, #7b8794); }
+.air-sub { margin: 0.3rem 0 0.8rem; font-size: 0.85rem; color: var(--text-muted, #5f6b78); }
 .air-opts { display: grid; gap: 0.45rem; }
 .air-opts button { text-align: start; padding: 0.75rem 0.9rem; border-radius: 14px; border: 0; cursor: pointer; font: inherit; font-size: 0.9rem; font-weight: 700;
   color: inherit; background: transparent; box-shadow: inset 0 0 0 1.5px rgba(127,127,127,.25); }
 .air-opts button.on { box-shadow: inset 0 0 0 2px var(--accent, #16c784); background: rgba(22,199,132,.08); }
 .air-note { width: 100%; margin-top: 0.7rem; padding: 0.75rem 0.9rem; border-radius: 14px; border: 0; resize: vertical; font: inherit; font-size: 0.88rem;
   color: inherit; background: rgba(127,127,127,.1); box-sizing: border-box; }
-.air-privacy { margin: 0.55rem 0 0; font-size: 0.75rem; color: var(--text-muted, #7b8794); }
+.air-privacy { margin: 0.55rem 0 0; font-size: 0.75rem; color: var(--text-muted, #5f6b78); }
 .air-fail { margin: 0.6rem 0 0; font-size: 0.82rem; color: #c2343a; }
 .air-fail a { color: inherit; font-weight: 800; }
 .air-send { width: 100%; margin-top: 0.9rem; padding: 0.95rem; border: 0; border-radius: 16px; cursor: pointer; font: inherit; font-weight: 800; font-size: 0.95rem;
@@ -28,5 +28,5 @@
 .air-send:disabled { opacity: .6; }
 .air-done { text-align: center; padding: 0.6rem 0 0.2rem; }
 .air-done b { display: block; font-size: 1.1rem; }
-.air-done p { margin: 0.35rem 0 0; font-size: 0.88rem; color: var(--text-muted, #7b8794); }
+.air-done p { margin: 0.35rem 0 0; font-size: 0.88rem; color: var(--text-muted, #5f6b78); }
 .air-check { width: 56px; height: 56px; margin: 0 auto 0.7rem; border-radius: 50%; display: grid; place-items: center; font-size: 1.6rem; font-weight: 900; color: #fff; background: var(--accent, #16c784); }

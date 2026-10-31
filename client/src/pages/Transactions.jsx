@@ -574,7 +574,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   }
 
   const handleDelete = useCallback(async (id) => {
-    if (!window.confirm('Delete this transaction? This cannot be undone.')) return
+    if (!window.confirm(t('txDeleteConfirm'))) return
     const tx = transactionsRef.current.find(t => t.id === id)
     await api.deleteTransaction(id)
     // The deletion counterpart of trade_submitted, and it carried the same
@@ -585,7 +585,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
     })
     loadDataRef.current()
     window.dispatchEvent(new Event("wl:portfolio-updated"))
-  }, [])
+  }, [t])
 
   const totalCalc = form.amount && form.price_per_unit
     ? (parseFloat(form.amount) * parseFloat(form.price_per_unit))
@@ -636,8 +636,8 @@ export default function Transactions({ showAdd, onCloseAdd }) {
 
             {/* Buy/Sell toggle */}
             <div className="type-toggle">
-              <button className={`toggle-btn ${form.type === 'buy' ? 'active buy' : ''}`} onClick={() => handleTypeChange('buy')}>Buy</button>
-              <button className={`toggle-btn ${form.type === 'sell' ? 'active sell' : ''}`} onClick={() => handleTypeChange('sell')}>Sell</button>
+              <button className={`toggle-btn ${form.type === 'buy' ? 'active buy' : ''}`} onClick={() => handleTypeChange('buy')}>{t('buy')}</button>
+              <button className={`toggle-btn ${form.type === 'sell' ? 'active sell' : ''}`} onClick={() => handleTypeChange('sell')}>{t('sell')}</button>
             </div>
 
             <form onSubmit={handleSubmit}>
@@ -1102,6 +1102,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
 // toggling a wallet filter — none of which change any individual tx — don't
 // re-render every row in a long history.
 const TxRow = memo(function TxRow({ tx: t, onDelete }) {
+  const { t: tr, lang } = useLanguage()
   const sym = (t.coin_symbol || t.coin_id || '??').toUpperCase()
   const txType = t.type || 'buy'
   const isPositive = txType === 'buy'
@@ -1113,10 +1114,10 @@ const TxRow = memo(function TxRow({ tx: t, onDelete }) {
         <div className="tx-info">
           <div className="tx-title">
             <strong>{sym}</strong>
-            <span className={`tx-badge ${badgeClass}`}>{txType.toUpperCase()}</span>
+            <span className={`tx-badge ${badgeClass}`}>{tr(isPositive ? 'buy' : 'sell')}</span>
           </div>
           <div className="tx-meta">
-            {t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+            {t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString(lang || undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
             {t.exchange && ` · ${t.exchange}`}
             {t.notes && <span className="tx-notes"> · {t.notes}</span>}
           </div>
@@ -1129,7 +1130,7 @@ const TxRow = memo(function TxRow({ tx: t, onDelete }) {
           <span> @ ${parseFloat(t.price_per_unit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
         </div>
       </div>
-      <button className="tx-delete" onClick={() => onDelete(t.id)}>
+      <button className="tx-delete" onClick={() => onDelete(t.id)} aria-label={tr('txDeleteAria')}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       </button>
     </div>

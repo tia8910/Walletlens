@@ -47,7 +47,7 @@ import {
 import { foldBalances as _foldBalancesPure, diffHoldings } from './data/portfolio';
 import { analyzeTechnicals } from './technicals';
 import { isIntlTicker, toMajorUnit, countryFromDevice, sessionOpen } from './data/markets';
-import { dataUrl, voiceProxy } from './apiHosts.js'
+import { dataUrl, voiceProxy, siteApi } from './apiHosts.js'
 
 export {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
@@ -1043,7 +1043,7 @@ async function fetchIntlQuotes(tickers) {
   const want = [...new Set(tickers.map(t => String(t).toUpperCase()))];
   if (want.length === 0) return out;
   try {
-    const res = await fetchWithTimeout(`/api/stocks?symbols=${encodeURIComponent(want.join(','))}`, 9000);
+    const res = await fetchWithTimeout(siteApi(`/api/stocks?symbols=${encodeURIComponent(want.join(','))}`), 9000);
     if (res.ok) {
       const data = await res.json();
       for (const [sym, q] of Object.entries(data || {})) {
@@ -1306,7 +1306,7 @@ async function _fetchStocksRemote(tickers) {
     // Headroom over the function's own 4.5s budget. At 6s this raced the
     // edge and lost: the response was discarded and every fallback below is
     // a third-party host, which on a filtered device reaches nothing at all.
-    const url = `/api/stocks?symbols=${encodeURIComponent(tickers.join(','))}`;
+    const url = siteApi(`/api/stocks?symbols=${encodeURIComponent(tickers.join(','))}`);
     const res = await fetchWithTimeout(url, 9000);
     if (res.ok) {
       const data = await res.json();
@@ -1648,7 +1648,7 @@ export function detectCountry() {
   return (_countryLoad ||= (async () => {
     let c = '';
     try {
-      const res = await fetchWithTimeout('/api/geo', 3000);
+      const res = await fetchWithTimeout(siteApi('/api/geo'), 3000);
       if (res.ok) c = String((await res.json())?.country || '').toUpperCase();
     } catch {}
     if (!/^[A-Z]{2}$/.test(c) || c === 'XX' || c === 'T1') c = countryFromDevice();
@@ -1666,7 +1666,7 @@ export async function getMarketList(market) {
   const hit = _marketLists[market];
   if (hit && Date.now() - hit.t < 15 * 60 * 1000) return hit.v;
   try {
-    const res = await fetchWithTimeout(`/api/market-list?market=${encodeURIComponent(market)}`, 12000);
+    const res = await fetchWithTimeout(siteApi(`/api/market-list?market=${encodeURIComponent(market)}`), 12000);
     if (!res.ok) return null;
     const body = await res.json();
     // Rows of [t, n, p, cur, u, c] (ticker, name, local price, currency, USD, change %).
@@ -1697,7 +1697,7 @@ export async function searchStocks(query) {
     .slice(0, 12)
     .map(x => ({ symbol: String(x.symbol).toUpperCase(), name: x.shortname || x.longname || x.symbol, exchange: x.exchDisp || x.exchange || '' }));
   try {
-    const res = await fetchWithTimeout(`/api/stock-search?q=${encodeURIComponent(q)}`, 6000);
+    const res = await fetchWithTimeout(siteApi(`/api/stock-search?q=${encodeURIComponent(q)}`), 6000);
     if (res.ok) {
       const body = await res.json();
       if (Array.isArray(body?.results) && body.results.length) return body.results;
@@ -2773,7 +2773,7 @@ export const api = {
       const hit = _chartCache[cacheKey];
       if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length) return { candles: hit.v, visible: Math.min(plan.visible, hit.v.length), closeOnly: false };
       try {
-        const res = await fetchWithTimeout(`/api/candles?symbol=${encodeURIComponent(ticker)}&interval=${tf}`, 9000);
+        const res = await fetchWithTimeout(siteApi(`/api/candles?symbol=${encodeURIComponent(ticker)}&interval=${tf}`), 9000);
         if (res.ok) {
           const body = await res.json();
           let candles = (Array.isArray(body?.candles) ? body.candles : [])

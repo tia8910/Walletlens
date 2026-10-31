@@ -62,7 +62,7 @@ function Row({ label, hint, on, onToggle }) {
         <span>{label}</span>
         <span className="settings-hint">{hint}</span>
       </div>
-      <button className={`settings-toggle ${on ? 'on' : ''}`} onClick={onToggle} aria-pressed={on}>
+      <button className={`settings-toggle ${on ? 'on' : ''}`} onClick={onToggle} aria-pressed={on} aria-label={label}>
         <span className="settings-toggle-thumb" />
       </button>
     </div>
@@ -354,7 +354,7 @@ export default function PushToggle() {
           <span>{t('npTitle')} {enabled && <span style={{ color: 'var(--g-ink)' }}>· {t('commonOn')}</span>}</span>
           <span className="settings-hint">{t('npHint')}</span>
         </div>
-        <button className={`settings-toggle ${enabled ? 'on' : ''}`} onClick={toggle} disabled={busy} aria-pressed={enabled}>
+        <button className={`settings-toggle ${enabled ? 'on' : ''}`} onClick={toggle} disabled={busy} aria-pressed={enabled} aria-label={t('npTitle')}>
           <span className="settings-toggle-thumb" />
         </button>
       </div>

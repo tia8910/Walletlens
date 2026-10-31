@@ -183,7 +183,7 @@ function ScoreRing({ score }) {
   return (
     <div className="coach-ring-wrap">
       <svg width="130" height="130" viewBox="0 0 130 130">
-        <circle cx="65" cy="65" r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="10"/>
+        <circle cx="65" cy="65" r={r} fill="none" stroke="rgba(128,128,128,0.18)" strokeWidth="10"/>
         <circle cx="65" cy="65" r={r} fill="none" stroke={color} strokeWidth="10"
           strokeDasharray={`${circ * score / 100} ${circ}`} strokeLinecap="round"
           transform="rotate(-90 65 65)" style={{ transition: 'stroke-dasharray 1.2s ease' }}/>

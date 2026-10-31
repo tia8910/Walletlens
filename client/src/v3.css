@@ -15,12 +15,16 @@ html.wl-v3 {
   --nl-bg: #eef2f5;
   --nl-card: #ffffff;
   --nl-ink: #0f1d2b;
-  --nl-sub: #7b8794;
+  --nl-sub: #5f6b78;  /* 4.8:1 or better on every light surface; #7b8794 was 3.3 */
   --nl-line: #edf0f3;
   --nl-navy: #0d2b3e;
   --nl-navy2: #123a52;
-  --nl-up: #16a874;
-  --nl-down: #e5484d;
+  /* Gains and losses are the numbers people read most: 5:1 on white. The
+     brighter pair stays for the dark hero card (see .dvx-hero below). */
+  --nl-up: #0c7f55;
+  --nl-down: #c9353a;
+  --nl-up-bright: #16a874;
+  --nl-down-bright: #e5484d;
   --nl-shadow: 0 2px 12px rgba(15, 29, 43, 0.06);
   --nl-radius: 22px;
 }
@@ -32,6 +36,9 @@ html.wl-v3:not([data-wl-light]) {
   --nl-line: rgba(255, 255, 255, 0.07);
   --nl-navy: #0e2233;
   --nl-navy2: #16324a;
+  /* The bright pair reads on dark; the 5:1 light pair would not. */
+  --nl-up: #16a874;
+  --nl-down: #e5484d;
   --nl-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
 }
 
@@ -189,7 +196,7 @@ html.wl-v3 .wlc-fab { bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !im
   position: relative; z-index: 1; align-self: center; display: flex; flex-direction: column; align-items: center; gap: 0.45rem;
   padding: 0.55rem 0.4rem; border-radius: 22px; background: #fff;
 }
-.nl-stack em { font-style: normal; font-size: 0.66rem; font-weight: 800; color: #7b8794; }
+.nl-stack em { font-style: normal; font-size: 0.66rem; font-weight: 800; color: #5f6b78; }
 
 .nl-quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
 .nl-quick button {
@@ -247,10 +254,10 @@ html.wl-v3:not([data-wl-light]) .nl-wc { filter: saturate(0.9) brightness(0.96);
 /* ── More ─────────────────────────────────────────────────────────────── */
 .nl-more { max-width: 720px; margin: 0 auto; padding: 0.6rem 16px 1rem; color: var(--nl-ink, inherit); }
 .nl-more-h { display: flex; align-items: center; gap: 0.7rem; margin: 0.2rem 0.1rem 1rem; }
-.nl-more-h small { display: block; font-size: 0.75rem; color: var(--nl-sub, #7b8794); font-weight: 600; }
+.nl-more-h small { display: block; font-size: 0.75rem; color: var(--nl-sub, #5f6b78); font-weight: 600; }
 .nl-more-h h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.03em; }
 .nl-more-g { margin-bottom: 1.1rem; }
-.nl-more-g h2 { margin: 0 0.15rem 0.55rem; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--nl-sub, #7b8794); }
+.nl-more-g h2 { margin: 0 0.15rem 0.55rem; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--nl-sub, #5f6b78); }
 .nl-more-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.55rem; }
 @media (max-width: 380px) { .nl-more-grid { grid-template-columns: repeat(3, 1fr); } }
 .nl-more-tile {
@@ -265,7 +272,8 @@ html.wl-v3:not([data-wl-light]) .nl-wc { filter: saturate(0.9) brightness(0.96);
 }
 .nl-more-mode { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(var(--g-rgb), 0.1); }
 .nl-more-mode button { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 0 !important; padding: 0.38rem 0.75rem !important; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: 0.76rem; font-weight: 800; opacity: 0.65; cursor: pointer; }
-.nl-more-mode button.on { background: var(--g); color: #fff; opacity: 1; box-shadow: 0 2px 8px rgba(var(--g-rgb), 0.35); }
+/* Shaded so white text clears 4.5:1 on every theme green. */
+.nl-more-mode button.on { background: linear-gradient(rgba(0,0,0,0.18), rgba(0,0,0,0.18)), var(--g); color: #fff; opacity: 1; box-shadow: 0 2px 8px rgba(var(--g-rgb), 0.35); }
 .nl-more-themes { display: flex; gap: 0.45rem; }
 .nl-more-themes button { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: var(--c); cursor: pointer; }
 .nl-more-themes button.on { box-shadow: 0 0 0 2px var(--nl-card, #fff), 0 0 0 4px var(--c); }
@@ -284,7 +292,7 @@ html.wl-v3 .wl-logo-btn svg { width: 26px !important; height: 26px !important; }
 html.wl-v3 .wl-logo-scan-ring { display: none; }
 html.wl-v3 .wl-topbar-brand { gap: 0.7rem; }
 .nl-topbar-greet { display: flex; flex-direction: column; line-height: 1.15; }
-.nl-topbar-greet small { font-size: 0.74rem; font-weight: 600; color: var(--nl-sub, #7b8794); }
+.nl-topbar-greet small { font-size: 0.74rem; font-weight: 600; color: var(--nl-sub, #5f6b78); }
 .nl-topbar-greet b { font-size: 1.06rem; font-weight: 800; letter-spacing: -0.02em; color: var(--nl-ink, inherit); }
 html.wl-v3 .wl-topbar-x {
   width: 42px !important; height: 42px !important; border-radius: 50% !important; border: 0 !important;
@@ -378,8 +386,8 @@ html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-label button {
   border-radius: 50% !important; border: 0 !important; background: var(--nl-seg) !important; color: var(--nl-ink) !important; box-shadow: none !important;
 }
 html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-change { margin: 0.1rem 0 0.7rem !important; font-size: 1.15rem !important; font-weight: 800; color: var(--nl-ink) !important; }
-html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-change.up { color: var(--nl-up) !important; }
-html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-change.dn { color: var(--nl-down) !important; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-change.up { color: var(--nl-up-bright, var(--nl-up)) !important; }
+html.wl-v3 body:has(.nl-home, .nl-page-h) .dvx-hero .dvx-hero-change.dn { color: var(--nl-down-bright, var(--nl-down)) !important; }
 
 /* Every chooser on the card is one grey track with a white pill. */
 html.wl-v3 .dvx-currency-switcher {

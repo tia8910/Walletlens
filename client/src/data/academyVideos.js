@@ -202,7 +202,10 @@ export function lessonOrder(lang = 'en', list = VIDEOS) {
 /** The newest lesson on the channel, by the day it went live. */
 export function newestLesson(lang = 'en', list = VIDEOS) {
   const all = academyVideos(lang, list).filter(isLesson)
-  return [...all].sort((a, b) => (addedAt(b) || 0) - (addedAt(a) || 0))[0] || null
+  // Newest in the reader's own language first, then English, then any: by date
+  // alone an English reader was offered an Arabic short as "New episode".
+  const rank = (v) => (v.lang === lang || v.lang === 'all' ? 0 : v.lang === 'en' || !v.lang ? 1 : 2)
+  return [...all].sort((a, b) => rank(a) - rank(b) || (addedAt(b) || 0) - (addedAt(a) || 0))[0] || null
 }
 
 /**

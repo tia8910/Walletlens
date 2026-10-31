@@ -91,6 +91,19 @@ export function resolveSiteOrigin(loc = typeof location === 'undefined' ? null :
 
 export const SITE_ORIGIN = resolveSiteOrigin()
 
+/**
+ * One of the site's own /api routes, on an origin that actually serves it.
+ *
+ * A bare '/api/stocks' only works where the page itself is served by the Pages
+ * worker. Anywhere else, the GitHub Pages copy for one, it named a path that
+ * does not exist there, and every price, logo and search request came back 404.
+ * On walletlens.live and its previews the path stays relative, exactly as it was.
+ */
+export function siteApi(path, loc = typeof location === 'undefined' ? null : location) {
+  const origin = resolveSiteOrigin(loc)
+  return loc && loc.origin === origin ? path : `${origin}${path}`
+}
+
 // The trailing slash on one and not the other is what the call sites already
 // expected; both shapes are preserved so this change stays a pure refactor.
 // Through the site, for the same reason as everything else here: screenshot

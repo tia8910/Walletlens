@@ -71,19 +71,19 @@ function RebalanceWidget() {
             <div className="rb-row" key={r.id}>
               <input
                 className="rb-input rb-c-name"
-                placeholder="e.g. Bitcoin"
+                placeholder="e.g. Bitcoin" aria-label="Asset"
                 value={r.name}
                 onChange={e => updateRow(r.id, 'name', e.target.value)}
               />
               <input
                 className="rb-input rb-c-num"
-                type="number" min="0" step="any" placeholder="0"
+                type="number" min="0" step="any" placeholder="0" aria-label="Current value ($)"
                 value={r.value}
                 onChange={e => updateRow(r.id, 'value', e.target.value)}
               />
               <input
                 className="rb-input rb-c-num"
-                type="number" min="0" max="100" step="any" placeholder="0"
+                type="number" min="0" max="100" step="any" placeholder="0" aria-label="Target %"
                 value={r.target}
                 onChange={e => updateRow(r.id, 'target', e.target.value)}
               />

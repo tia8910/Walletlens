@@ -134,7 +134,7 @@ describe('the live path stays inside both ceilings', () => {
 
   it('keeps the function budget under the client timeout', () => {
     const budget = Number(fn.match(/const BUDGET_MS = (\d+)/)[1])
-    const clientMs = Number(api.match(/\/api\/stocks\?symbols=[^`]*`;\s*\n\s*const res = await fetchWithTimeout\(url, (\d+)\)/)[1])
+    const clientMs = Number(api.match(/\/api\/stocks\?symbols=[^`]*`\);\s*\n\s*const res = await fetchWithTimeout\(url, (\d+)\)/)[1])
     // The old pairing was 20s of upstream work against a 6s client timeout,
     // so the response was discarded even when it eventually arrived.
     expect(budget).toBeLessThan(clientMs)

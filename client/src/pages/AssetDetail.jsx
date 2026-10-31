@@ -311,10 +311,14 @@ export default function AssetDetail() {
 
         <div className="ac-price">
           <div>
-            <div className="ac-big">${fmtPrice(pNow)}</div>
-            <span className={`ac-chg ${(coin?.change24 || 0) >= 0 ? 'is-up' : 'is-dn'}`}>
-              {(coin?.change24 || 0) >= 0 ? '▲' : '▼'} {Math.abs(coin?.change24 || 0).toFixed(2)}% · 24h
-            </span>
+            {/* No price yet (or none reachable): a dash, not "$0.00" and a green
+                0.00%, which read as the asset having crashed to nothing. */}
+            <div className="ac-big">{pNow > 0 ? `$${fmtPrice(pNow)}` : '—'}</div>
+            {pNow > 0 && (
+              <span className={`ac-chg ${(coin?.change24 || 0) >= 0 ? 'is-up' : 'is-dn'}`}>
+                {(coin?.change24 || 0) >= 0 ? '▲' : '▼'} {Math.abs(coin?.change24 || 0).toFixed(2)}% · 24h
+              </span>
+            )}
             {localTicker && coin?.asOf > 0 && (
               <small className="ac-asof">
                 {sessionOpen(localTicker) && <i className="ac-live" aria-hidden="true" />}
@@ -325,7 +329,7 @@ export default function AssetDetail() {
             )}
           </div>
           {holdings && (
-            <div className="ac-hold"><small>{t('acYouHold')}</small><b>{parseFloat(amount.toFixed(6))} {coin?.symbol}</b><span>${fmt(amount * pNow)}</span></div>
+            <div className="ac-hold"><small>{t('acYouHold')}</small><b>{parseFloat(amount.toFixed(6))} {coin?.symbol}</b><span>{pNow > 0 ? `$${fmt(amount * pNow)}` : '—'}</span></div>
           )}
         </div>
 
