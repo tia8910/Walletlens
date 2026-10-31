@@ -169,6 +169,10 @@ export default function AcademyWatch({ openKey = null, onOpened, onOpenHacks, on
   const howtos = all.filter(v => v.kind === 'howto')
   const shelves = COURSES.map(course => ({ course, list: order.filter(v => v.course === course.id) })).filter(s => s.list.length)
   const loose = order.filter(v => !COURSES.some(x => x.id === v.course) && v.kind !== 'original')
+  // Full-length channel videos have no course. Kept out of "More lessons" with
+  // the shorts, they were on no shelf at all: counted in the progress total but
+  // reachable only when one happened to be the featured episode.
+  const films = order.filter(v => !COURSES.some(x => x.id === v.course) && v.kind === 'original')
   const [playing, setPlaying] = useState(null)
   const [courseId, setCourseId] = useState(null)
 
@@ -273,6 +277,13 @@ export default function AcademyWatch({ openKey = null, onOpened, onOpenHacks, on
           <div className="aw-shelf">{list.map(v => <Tile key={v.key} v={v} watched={watched} c={c} onPlay={play} />)}</div>
         </section>
       ))}
+
+      {films.length > 0 && (
+        <section className="aw-sec">
+          <h3 className="aw-h">{c.films}</h3>
+          <div className="aw-shelf">{films.map(v => <Tile key={v.key} v={v} watched={watched} c={c} onPlay={play} />)}</div>
+        </section>
+      )}
 
       {loose.length > 0 && (
         <section className="aw-sec">
