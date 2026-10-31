@@ -36,6 +36,10 @@ const fmtTag = (v) => {
   return n.toLocaleString(undefined, { maximumSignificantDigits: 4 })
 }
 
+// Tag and label sizes. Text went up from 7–7.5px, which was hard to read on a
+// phone; the boxes grow with it.
+const TAG_H = 14, LBL_H = 15, SIG_W = 36, SIG_H = 15
+
 const CROSS_LABEL = { golden: 'Golden Cross', death: 'Death Cross', 'small-golden': 'Small GC', 'small-death': 'Small DC' }
 
 /** Round tick step: 1, 2, 2.5 or 5 × a power of ten. */
@@ -110,7 +114,7 @@ export default function SignalChart({ candles, visible, calc, height = 260, clos
   const from = Math.max(0, (candles?.length || 0) - (visible || candles?.length || 0))
   const seg = useMemo(() => (candles || []).slice(from), [candles, from])
   const n = seg.length
-  const padR = 64, padT = 10
+  const padR = 70, padT = 10
   const mainH = height
   const rsiOn = !!calc?.rsi?.some?.(v => v != null)
   const rsiH = rsiOn ? 58 : 0
@@ -174,9 +178,13 @@ export default function SignalChart({ candles, visible, calc, height = 260, clos
     ...scale.pinned.map(p => ({ ...p, y: p.edge === 'top' ? plotTop : plotBot, pin: p.edge })),
     { label: '', v: lastC.c, cls: nowUp ? 'is-now-up' : 'is-now-dn', y: y(lastC.c), now: true },
   ]
-  const tagYs = spread(tagItems.map(t => t.y), 13, plotTop, plotBot)
+  const tagYs = spread(tagItems.map(t => t.y), 15, plotTop, plotBot)
   const tagged = tagItems.map((t, k) => ({ ...t, ty: tagYs[k] }))
-  const nearTag = (yy) => tagged.some(t => Math.abs(t.ty - yy) < 10)
+  const nearTag = (yy) => tagged.some(t => Math.abs(t.ty - yy) < 11)
+  // Targets the signal has already reached carry a tick, so a passed TP1 does
+  // not read like one still ahead.
+  const hitCount = last?.outcome?.hit || 0
+  const isHit = (t) => /^TP(\d+)$/.test(t.label) && Number(t.label.slice(2)) <= hitCount
 
   // ── Label placement for crosses and signals ─────────────────────────────
   const boxes = []
@@ -194,19 +202,22 @@ export default function SignalChart({ candles, visible, calc, height = 260, clos
 
   const sigs = sigOn ? calc.signals.filter(s => s.i >= from) : []
   const sigLabels = sigs.map(s => {
-    const buy = s.side === 'buy', X = x(s.i)
-    const anchor = buy ? y(candles[s.i].l) + 12 : y(candles[s.i].h) - 12
-    const Y = place(X, anchor, 30, 12, buy ? 1 : -1)
-    return { s, buy, X, Y }
+    const buy = s.side === 'buy', CX = x(s.i)
+    // Kept inside the plot: a signal on the first candle drew half its tag
+    // off the left edge ("SELL" cut in two).
+    const X = Math.min(plotW - SIG_W / 2 - 1, Math.max(SIG_W / 2 + 1, CX))
+    const anchor = buy ? y(candles[s.i].l) + 13 : y(candles[s.i].h) - 13
+    const Y = place(X, anchor, SIG_W, SIG_H, buy ? 1 : -1)
+    return { s, buy, CX, X, Y }
   })
   const crossLabels = calc?.params?.cross?.on ? calc.crosses.filter(k => k.i >= from).map(k => {
     const big = k.kind === 'golden' || k.kind === 'death'
     const bad = k.kind.endsWith('death')
     const at = big ? calc.ema.mid[k.i] : calc.ema.fast[k.i]
     const label = CROSS_LABEL[k.kind]
-    const lw = label.length * 4.6 + 10
+    const lw = label.length * 5.1 + 12
     const X = Math.min(plotW - lw / 2, Math.max(lw / 2, x(k.i)))
-    const Y = place(X, y(at) + (bad ? 16 : -16), lw, 13, bad ? 1 : -1)
+    const Y = place(X, y(at) + (bad ? 18 : -18), lw, LBL_H, bad ? 1 : -1)
     return { k, big, bad, at, label, lw, X, Y }
   }) : []
 
@@ -302,8 +313,8 @@ export default function SignalChart({ candles, visible, calc, height = 260, clos
               <g key={`${k.kind}-${k.i}`} className={`sc-cross ${big ? 'is-big' : ''} ${bad ? 'is-bad' : ''}`}>
                 <line className="sc-lead" x1={x(k.i)} x2={X} y1={y(at)} y2={Y} />
                 <circle cx={x(k.i)} cy={y(at)} r="3" />
-                <rect x={X - lw / 2} y={Y - 6.5} width={lw} height="13" rx="4" />
-                <text x={X} y={Y + 2.5} textAnchor="middle">{label}</text>
+                <rect x={X - lw / 2} y={Y - LBL_H / 2} width={lw} height={LBL_H} rx="4" />
+                <text x={X} y={Y + 3} textAnchor="middle">{label}</text>
               </g>
             ))}
           </>
@@ -311,23 +322,23 @@ export default function SignalChart({ candles, visible, calc, height = 260, clos
 
         {/* signal levels */}
         {last && sigOn && tagged.filter(t => !t.now).map(t => (
-          <g key={t.label} className={`sc-level ${t.cls}${t.pin ? ' is-pinned' : ''}${resolved ? ' is-done' : ''}`}>
+          <g key={t.label} className={`sc-level ${t.cls}${t.pin ? ' is-pinned' : ''}${resolved ? ' is-done' : ''}${isHit(t) ? ' is-hit' : ''}`}>
             {!t.pin && <line x1={x(last.i)} x2={plotW} y1={y(t.v)} y2={y(t.v)} />}
-            <rect x={plotW + 1} y={t.ty - 6} width={padR - 2} height="12" rx="3" />
+            <rect x={plotW + 1} y={t.ty - TAG_H / 2} width={padR - 2} height={TAG_H} rx="3" />
             <text x={plotW + padR / 2} y={t.ty + 3} textAnchor="middle">
               {/* Label and price as separate runs with a real gap: at 7px a
                   space is a hairline, and "TP1 82,840" read as "TP182,840". */}
-              <tspan className="sc-level-k">{t.pin ? (t.pin === 'top' ? '▲' : '▼') : ''}{t.label}</tspan>
+              <tspan className="sc-level-k">{isHit(t) ? '✓' : t.pin ? (t.pin === 'top' ? '▲' : '▼') : ''}{t.label}</tspan>
               <tspan dx="3">{fmtTag(t.v)}</tspan>
             </text>
           </g>
         ))}
 
         {/* BUY / SELL tags */}
-        {sigLabels.map(({ s, buy, X, Y }) => (
+        {sigLabels.map(({ s, buy, CX, X, Y }) => (
           <g key={`${s.side}-${s.i}`} className={`sc-sig ${buy ? 'is-buy' : 'is-sell'}${s.forming ? ' is-forming' : ''}${s !== last ? ' is-past' : ''}`}>
-            <line className="sc-lead" x1={X} x2={X} y1={buy ? y(candles[s.i].l) : y(candles[s.i].h)} y2={buy ? Y - 6 : Y + 6} />
-            <rect x={X - 15} y={Y - 6} width="30" height="12" rx="3" />
+            <line className="sc-lead" x1={CX} x2={X} y1={buy ? y(candles[s.i].l) : y(candles[s.i].h)} y2={buy ? Y - SIG_H / 2 : Y + SIG_H / 2} />
+            <rect x={X - SIG_W / 2} y={Y - SIG_H / 2} width={SIG_W} height={SIG_H} rx="3" />
             <text x={X} y={Y + 3} textAnchor="middle">{buy ? 'BUY' : 'SELL'}{s.forming ? '?' : ''}</text>
           </g>
         ))}
@@ -336,7 +347,7 @@ export default function SignalChart({ candles, visible, calc, height = 260, clos
         <line className="sc-now" x1="0" x2={plotW} y1={y(lastC.c)} y2={y(lastC.c)} />
         {tagged.filter(t => t.now).map(t => (
           <g key="now" className={`sc-nowtag ${t.cls}`}>
-            <rect x={plotW + 1} y={t.ty - 6.5} width={padR - 2} height="13" rx="3" />
+            <rect x={plotW + 1} y={t.ty - TAG_H / 2} width={padR - 2} height={TAG_H} rx="3" />
             <text x={plotW + padR / 2} y={t.ty + 3} textAnchor="middle">{fmtTag(t.v)}</text>
           </g>
         ))}
@@ -365,7 +376,7 @@ export default function SignalChart({ candles, visible, calc, height = 260, clos
           <g className="sc-hover">
             <line className="sc-cursor" x1={x(from + hoverIdx)} x2={x(from + hoverIdx)} y1={padT} y2={totalH - dateH} />
             <line className="sc-cursor" x1="0" x2={plotW} y1={y(hc.c)} y2={y(hc.c)} />
-            <rect className="sc-hover-tag" x={plotW + 1} y={y(hc.c) - 6.5} width={padR - 2} height="13" rx="3" />
+            <rect className="sc-hover-tag" x={plotW + 1} y={y(hc.c) - TAG_H / 2} width={padR - 2} height={TAG_H} rx="3" />
             <text className="sc-hover-text" x={plotW + padR / 2} y={y(hc.c) + 3} textAnchor="middle">{fmtTag(hc.c)}</text>
           </g>
         )}
