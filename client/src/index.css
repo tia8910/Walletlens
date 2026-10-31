@@ -1508,6 +1508,10 @@ body::after {
    that set their own padding inline keep it. */
 .wl-content > [class="page"],
 .wl-content > .dvx-page { padding-left: 1rem; padding-right: 1rem; }
+/* On a wide screen the plain pages stretched each row across 1300px, the
+   asset and its amount a screen apart. Same centred column as Home. */
+.wl-content > [class="page"],
+.wl-content > .dvx-page { max-width: 880px; margin-left: auto; margin-right: auto; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 .page-header h2 { margin-bottom: 0; }
 

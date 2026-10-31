@@ -207,7 +207,9 @@ export default function ScreenEffect({ effect, payload, onDone }) {
           <BurstCanvas duration={DURATION_MS[EXPLODE]} delay={0.44} originY={0.5} />
           {/* The day's move that earned the asset the explode, after the
               flash in the markup so the white-out never hides it. */}
-          {Number.isFinite(leader?.pct) && (
+          {/* Only a move worth naming: "BTC +0.0%" cheered for nothing, and it
+              is also what showed while 24h changes had not loaded yet. */}
+          {Number.isFinite(leader?.pct) && Math.abs(leader.pct) >= 0.05 && (
             <div className={`fx-champ-label ${leader.pct < 0 ? 'is-down' : ''}`} dir="ltr">
               <span className="fx-champ-sym">{leader.symbol}</span>
               <span className="fx-champ-pct">{leader.pct >= 0 ? '+' : ''}{leader.pct.toFixed(1)}%</span>
