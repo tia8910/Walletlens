@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { niceStep, fitLevels, spread } from './components/SignalChart'
 
 describe('chart layout', () => {
@@ -26,5 +29,21 @@ describe('chart layout', () => {
   it('keeps spread tags inside the chart', () => {
     const ys = spread([295, 298, 299], 13, 0, 300)
     expect(Math.max(...ys)).toBeLessThanOrEqual(300)
+  })
+})
+
+describe('chart label colours', () => {
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'v2.css'), 'utf8')
+  it('writes every label in white', () => {
+    expect(css).toMatch(/\.sc-cross text \{ fill: #fff;/)
+    expect(css).toMatch(/\.sc-sig text \{ fill: #fff;/)
+    expect(css).toMatch(/\.sc-level text \{ fill: #fff;/)
+  })
+  it('puts white text on the dark tag fills, not the light line colours', () => {
+    // White on the dark theme's line green (#34d399) is 1.9:1.
+    for (const sel of ['sc-cross rect', 'sc-sig.is-buy path, html.wl-v2 .sc-sig.is-buy rect', 'sc-level.is-tp rect', 'sc-level.is-entry rect']) {
+      const rule = css.slice(css.indexOf(`.${sel}`)).split('}')[0]
+      expect(rule).toMatch(/var\(--sc-tag-/)
+    }
   })
 })
