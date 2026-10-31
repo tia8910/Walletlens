@@ -102,7 +102,7 @@ export default {
     brandTag: 'VOYEZ VOTRE PATRIMOINE CLAIREMENT',
     heroH1a: 'Vous méritez de savoir',
     heroH1b: 'exactement où vous en êtes.',
-    heroSub: 'La boîte à outils complète pour gérer crypto et actifs numériques. Ajoutez vos positions à la voix ou depuis une capture d\'écran, réunissez crypto, actions, métaux et liquidités dans un seul portefeuille, avec analyse par IA, scan des risques et alertes de prix. Gratuit, sans compte.',
+    heroSub: 'L\'application complète de gestion d\'investissements pour crypto, actions, or et liquidités. Ajoutez vos positions à la voix ou depuis une capture d\'écran, réunissez crypto, actions, métaux et liquidités dans un seul portefeuille, avec analyse par IA, scan des risques et alertes de prix. Gratuit, sans compte.',
     ctaLaunch: 'Réveillez votre patrimoine — gratuit',
     ctaMarket: 'Explorer le marché',
     badge1: '🔒 100 % privé',
@@ -341,7 +341,7 @@ export default {
     catCommodities: 'Matières premières',
     // ── Onboarding — slides ─────────────────────────────────────
     obWelcomeEyebrow: 'BIENVENUE DANS',
-    obWelcomeDesc: 'Votre suivi de patrimoine privé. Crypto, actions, or et liquidités, tout au même endroit.',
+    obWelcomeDesc: 'Votre gestionnaire d\'investissements privé. Crypto, actions, or et liquidités dans un seul portefeuille, avec signaux et contrôle des risques.',
     obFeatPrivate: 'Privé',
     obFeatLivePnl: 'P&L en direct',
     obFeatInsights: 'Analyses',
@@ -840,7 +840,7 @@ export default {
     fsPrivacyDesc: 'Tout reste sur votre appareil. Pas de compte, pas de cloud, aucun pistage. Vos données n\'appartiennent qu\'à vous.',
     fsFreeTag: 'GRATUIT',
     fsFreeTitle: 'Gratuit pour toujours — sans piège',
-    fsFreeDesc: 'Pas d\'abonnement, pas de frais, aucun code de parrainage d\'exchange. Un pur suivi de valeur nette qui travaille pour vous.',
+    fsFreeDesc: 'Pas d\'abonnement, pas de frais, aucun code de parrainage d\'exchange. Un gestionnaire d\'investissements qui travaille pour vous, pas pour un courtier.',
 
     // ── Empty dashboard — import & first-trade prompts ──────────
     emptyHeadline: 'Enregistrez votre première transaction',

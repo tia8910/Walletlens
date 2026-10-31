@@ -17,9 +17,9 @@ const WEB = 'https://walletlens.live'
 const PLAY = 'https://play.google.com/store/apps/details?id=live.walletlens.twa'
 const CWS = 'https://chromewebstore.google.com/detail/ajmjdeobjjmabgonhaeaaehoepfafhbn'
 
-const TITLE = 'Free Net Worth Tracker, No Account, No Server | WalletLens'
-const DESC = 'Track property, stocks, gold, cash and crypto in one net worth figure. ' +
-  'Free, no account, no subscription, and your holdings stay on your device. Web, Android, Chrome.'
+const TITLE = 'WalletLens — Private Investment Management App'
+const DESC = 'Manage crypto, stocks, gold, cash and property in one private portfolio, with buy and sell signals, ' +
+  'risk scans, alerts and AI analysis. Free, no account. Web, Android, Windows, Chrome.'
 
 export default function EcosystemPage() {
   useEffect(() => {
@@ -161,7 +161,7 @@ export default function EcosystemPage() {
           <div className="sweep" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div>
           <div className="wrap">
             <p className="kicker"><span>Web</span><span>Android</span><span>Chrome extension</span></p>
-            <h1>The net worth tracker<br />that never asks<br /><em>who you are</em></h1>
+            <h1>The investment manager<br />that never asks<br /><em>who you are</em></h1>
             <p className="sub">Property, stocks, gold, cash, crypto and anything else you value, in one figure,
               on every screen you use. Your holdings are written to your own device, and nothing is uploaded
               unless you switch on a feature that needs it.</p>
@@ -296,7 +296,7 @@ export default function EcosystemPage() {
                   <li>Portfolio Guardian: your heirs&rsquo; emails and a snapshot for them</li>
                   <li>weekly email: your address and your total</li></ul>
                 <p className="lane-note">Each of these is off until you turn it on, each can be turned back off,
-                  and none of them is needed to use WalletLens as a tracker.</p>
+                  and none of them is needed to manage your investments with WalletLens.</p>
               </div>
 
               <div className="lane stop">
@@ -403,7 +403,7 @@ export default function EcosystemPage() {
               <div className="ans">Yes. No paid tier, no subscription, no holding limit and no feature behind a paywall. The expensive part of a tracker is the server that stores your portfolio, and WalletLens does not have one.</div></details>
             <details key="1"><summary><h3>Is this only for crypto?</h3>
               <svg className="arw" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></summary>
-              <div className="ans">No. WalletLens is a net worth tracker and crypto is one line in it. Property, any US stock or ETF, gold, silver and platinum by weight, cash in any currency, bonds, and anything you value yourself all sit in the same figure.</div></details>
+              <div className="ans">No. WalletLens is an investment management app and crypto is one line in it. Property, any US stock or ETF, gold, silver and platinum by weight, cash in any currency, bonds, and anything you value yourself all sit in the same figure.</div></details>
             <details key="2"><summary><h3>Does WalletLens connect to my bank or brokerage?</h3>
               <svg className="arw" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></summary>
               <div className="ans">No. There is no Plaid-style connection, no credentials are asked for and nothing is linked. You enter holdings yourself, or photograph a screen, or speak them, or paste a public wallet address.</div></details>

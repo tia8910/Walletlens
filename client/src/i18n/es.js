@@ -102,7 +102,7 @@ export default {
     brandTag: 'VE TU PATRIMONIO CON CLARIDAD',
     heroH1a: 'Mereces saber',
     heroH1b: 'exactamente dónde estás.',
-    heroSub: 'El kit completo para gestionar cripto y activos digitales. Añade posiciones por voz o desde una captura de pantalla, reúne cripto, acciones, metales y efectivo en una cartera, y suma análisis con IA, escaneo de riesgos y alertas de precio. Gratis, sin cuenta.',
+    heroSub: 'La app completa de gestión de inversiones para cripto, acciones, oro y efectivo. Añade posiciones por voz o desde una captura de pantalla, reúne cripto, acciones, metales y efectivo en una cartera, y suma análisis con IA, escaneo de riesgos y alertas de precio. Gratis, sin cuenta.',
     ctaLaunch: 'Despierta tu patrimonio — gratis',
     ctaMarket: 'Explorar el mercado',
     badge1: '🔒 100 % privado',
@@ -341,7 +341,7 @@ export default {
     catCommodities: 'Materias primas',
     // ── Onboarding — slides ─────────────────────────────────────
     obWelcomeEyebrow: 'TE DAMOS LA BIENVENIDA A',
-    obWelcomeDesc: 'Tu control de patrimonio privado. Cripto, acciones, oro y efectivo, todo en un solo lugar.',
+    obWelcomeDesc: 'Tu gestor de inversiones privado. Cripto, acciones, oro y efectivo en una sola cartera, con señales y control de riesgo.',
     obFeatPrivate: 'Privado',
     obFeatLivePnl: 'P&L en vivo',
     obFeatInsights: 'Información',
@@ -840,7 +840,7 @@ export default {
     fsPrivacyDesc: 'Todo se queda en tu dispositivo. Sin cuenta, sin nube y sin rastreo. Tus datos son solo tuyos.',
     fsFreeTag: 'GRATIS',
     fsFreeTitle: 'Gratis para siempre, sin trampa',
-    fsFreeDesc: 'Sin suscripción, sin comisiones y sin códigos de referido de exchanges. Un control de patrimonio puro que trabaja para ti.',
+    fsFreeDesc: 'Sin suscripción, sin comisiones y sin códigos de referido de exchanges. Un gestor de inversiones que trabaja para ti, no para un bróker.',
 
     // ── Empty dashboard — import & first-trade prompts ──────────
     emptyHeadline: 'Registra tu primera operación',

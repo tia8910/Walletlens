@@ -99,7 +99,7 @@ export default {
     brandTag: 'VEDI IL TUO PATRIMONIO CON CHIAREZZA',
     heroH1a: 'Meriti di sapere',
     heroH1b: 'esattamente a che punto sei.',
-    heroSub: 'Il kit completo per gestire cripto e asset digitali. Aggiungi posizioni con la voce o da uno screenshot, tieni cripto, azioni, metalli e contanti in un unico portafoglio, con analisi AI, scansione dei rischi e avvisi di prezzo. Gratis, senza account.',
+    heroSub: 'L\'app completa di gestione degli investimenti per cripto, azioni, oro e liquidità. Aggiungi posizioni con la voce o da uno screenshot, tieni cripto, azioni, metalli e contanti in un unico portafoglio, con analisi AI, scansione dei rischi e avvisi di prezzo. Gratis, senza account.',
     ctaLaunch: 'Risveglia il mio patrimonio — gratis',
     ctaMarket: 'Esplora il mercato',
     badge1: '🔒 100% privato',
@@ -362,7 +362,7 @@ export default {
     catCommodities: 'Materie prime',
     // ── Onboarding — slides ─────────────────────────────────────
     obWelcomeEyebrow: 'BENVENUTO IN',
-    obWelcomeDesc: 'Il tuo tracker patrimoniale privato. Cripto, azioni, oro e liquidità, tutto in un unico posto.',
+    obWelcomeDesc: 'Il tuo gestore di investimenti privato. Cripto, azioni, oro e liquidità in un unico portafoglio, con segnali e controllo del rischio.',
     obFeatPrivate: 'Privato',
     obFeatLivePnl: 'U/P in tempo reale',
     obFeatInsights: 'Approfondimenti',
@@ -800,7 +800,7 @@ export default {
     fsPrivacyDesc: 'Tutto resta sul tuo dispositivo. Nessun account, nessun cloud, nessun tracciamento. I tuoi dati sono solo tuoi.',
     fsFreeTag: 'GRATIS',
     fsFreeTitle: 'Gratis per sempre — senza trucchi',
-    fsFreeDesc: 'Nessun abbonamento, nessuna commissione, nessun codice di affiliazione. Un puro tracker patrimoniale che lavora per te.',
+    fsFreeDesc: 'Nessun abbonamento, nessuna commissione, nessun codice di affiliazione. Un gestore di investimenti che lavora per te, non per un broker.',
 
     // ── Empty dashboard — import & first-trade prompts ──────────
     emptyHeadline: 'Inizia la tua prima operazione',

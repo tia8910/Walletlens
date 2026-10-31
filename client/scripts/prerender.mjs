@@ -473,8 +473,8 @@ ${ecoFaq.html}
 
 write('/', buildPage({
   path: '/',
-  title: 'Free Net Worth Tracker, No Account, No Server | WalletLens',
-  description: 'Track property, stocks, gold, cash and crypto in one net worth figure. Free, no account, no subscription, and your holdings stay on your device. Web, Android, Chrome.',
+  title: 'WalletLens — Private Investment Management App',
+  description: 'Manage crypto, stocks, gold, cash and property in one private portfolio, with buy and sell signals, risk scans, alerts and AI analysis. Free, no account. Web, Android, Windows, Chrome.',
   bodyHtml: ecoBody + homeBody,
   jsonLd: [
     // WebApplication + Organization are emitted once site-wide from the global
@@ -526,7 +526,7 @@ ${compareRow('Installable app (PWA)', ['Yes', 'Yes', 'Web', 'Yes', 'No'])}
 write('/free-net-worth-tracker', buildPage({
   path: '/free-net-worth-tracker',
   title: 'Free Net Worth Tracker — All Your Investments | WalletLens',
-  description: 'A free net worth tracker to manage all your investments in one place — crypto, stocks, gold, silver, cash & FX. No account, no bank logins, data stays on your device. See how WalletLens compares to Empower, Kubera and CoinStats.',
+  description: 'A free net worth tracker and investment management app for all your investments in one place — crypto, stocks, gold, silver, cash & FX. No account, no bank logins, data stays on your device. See how WalletLens compares to Empower, Kubera and CoinStats.',
   bodyHtml: fnwtBody,
   jsonLd: [
     // WebApplication is emitted once globally from index.html — not repeated
@@ -586,7 +586,7 @@ const cryptoStockBody = `
 write('/crypto-and-stock-portfolio-tracker', buildPage({
   path: '/crypto-and-stock-portfolio-tracker',
   title: 'Crypto & Stock Portfolio Tracker in One App',
-  description: 'Track crypto and stocks together in one free dashboard — Bitcoin, Ethereum & 10,000+ coins next to Apple, Tesla, Nvidia and any US stock or ETF. One net-worth total, no account, data stays on your device.',
+  description: 'Manage crypto and stocks together in one free portfolio — Bitcoin, Ethereum & 10,000+ coins next to Apple, Tesla, Nvidia and any stock or ETF, with buy and sell signals. No account, data stays on your device.',
   bodyHtml: cryptoStockBody,
   jsonLd: [
     {
@@ -634,7 +634,7 @@ const noAccountBody = `
 write('/portfolio-tracker-no-account', buildPage({
   path: '/portfolio-tracker-no-account',
   title: 'Portfolio Tracker With No Account — No Sign-Up',
-  description: 'A free portfolio tracker with no account and no sign-up. Track crypto, stocks, gold and cash instantly — your data stays private in your browser, never uploaded to a server. No email, no password, no bank login.',
+  description: 'A free portfolio tracker and investment management app with no account and no sign-up. Crypto, stocks, gold and cash, with signals and risk tools; your data stays private on your device. No email, no bank login.',
   bodyHtml: noAccountBody,
   jsonLd: [
     {
@@ -652,6 +652,84 @@ write('/portfolio-tracker-no-account', buildPage({
         { '@type': 'Question', name: 'Is there a portfolio tracker that needs no account?', acceptedAnswer: { '@type': 'Answer', text: 'Yes — WalletLens requires no account, no sign-up and no email. Open it and start tracking immediately. Your portfolio is stored in your browser and never sent to a server.' } },
         { '@type': 'Question', name: 'Is a no-account portfolio tracker safe?', acceptedAnswer: { '@type': 'Answer', text: 'It is safer in one key way: with no account database, there is no central store of users\\u2019 net worth for attackers to breach. Your data stays on your own device.' } },
         { '@type': 'Question', name: 'Can I back up my portfolio if there is no account?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. WalletLens lets you export your whole portfolio as a single shareable backup code or an Excel/CSV file, and import it on any device — so you keep your data without an account.' } },
+      ],
+    },
+  ],
+  heroImage: true,
+}))
+
+// The page for the search the product now leads with. WalletLens is an
+// investment management app: the keyword pages above still rank for "tracker"
+// searches, this one answers "investment management app" directly.
+const investmentAppBody = `
+<h1>Investment Management App — Free, Private, Every Asset</h1>
+<p><strong>WalletLens is a free investment management app</strong> for everything you own: crypto, stocks and ETFs, gold and silver, cash and property, in one portfolio. It values it live, tells you how it is spread and where the risk is, and shows buy and sell signals with a stop and three targets on every chart. No account, no bank or exchange login, and your portfolio stays on your device.</p>
+<h2>What WalletLens does for your investments</h2>
+<ul>
+<li><strong>Build your portfolio in minutes:</strong> <a href="/import-portfolio-from-screenshot">from a screenshot</a> of any exchange or broker, <a href="/add-holdings-by-voice">by voice</a> in English or Arabic, or from Excel or CSV.</li>
+<li><strong>See everything in one place:</strong> live net worth, profit and loss, cost basis and allocation across every asset class and 15 display currencies.</li>
+<li><strong>Decide when to buy, sell or hold:</strong> buy and sell signals with an entry, a stop loss and three targets, golden and death crosses, RSI, and a decision engine for the whole portfolio.</li>
+<li><strong>Manage risk:</strong> a risk scanner, a portfolio health score from A to F, a diversification grade, a correlation matrix and price alerts.</li>
+<li><strong>Plan and grow:</strong> an investment coach, a growth projection built on your own mix, a <a href="/rebalancing-calculator">rebalancing calculator</a> and a <a href="/zakat-calculator">zakat calculator</a>.</li>
+<li><strong>Protect what you have:</strong> encrypted Google Drive backup and <a href="/portfolio-guardian/">Portfolio Guardian</a>, which hands your heirs a map of your portfolio, never your keys.</li>
+</ul>
+<h2>How it differs from wealth managers and robo-advisers</h2>
+<p>Wealth managers and robo-advisers manage money you move to them, for a fee. WalletLens manages the investments you already hold, wherever they are, without moving anything, linking anything or charging anything. You stay in control of every decision.</p>
+<h2>Who it is for</h2>
+<ul>
+<li>Investors who hold crypto <em>and</em> stocks <em>and</em> gold or cash, across several apps.</li>
+<li>Anyone who wants signals and risk checks without handing over logins or paying a subscription.</li>
+<li>People who want their portfolio private: no account, nothing stored on a server.</li>
+</ul>
+<h2>Questions</h2>
+<h3>What is an investment management app?</h3>
+<p>An investment management app keeps everything you invest in, in one place, and helps you decide what to do with it: what it is worth, how it is spread, where the risk is, and when to buy, sell or hold. WalletLens does that for crypto, stocks, gold, cash and property together.</p>
+<h3>Is WalletLens free?</h3>
+<p>Yes. Every feature is free, with no paid tier, no trial and no credit card.</p>
+<h3>Do I need to link my bank, broker or exchange?</h3>
+<p>No. WalletLens never asks for logins, API keys or wallet connections. Add holdings from a screenshot, by voice, from a spreadsheet or by hand.</p>
+<h3>Does WalletLens hold my money or place trades?</h3>
+<p>No. WalletLens is not a broker, bank or adviser. It never holds money or keys and cannot trade. Its signals and analysis are information, not financial advice.</p>
+<h3>Where is my portfolio stored?</h3>
+<p>On your device. WalletLens has no account and no database of portfolios. You can back up to your own Google Drive, encrypted, or to a backup code.</p>
+<h3>Which assets can I manage?</h3>
+<p>Crypto (10,000+ coins), US and international stocks and ETFs, gold, silver, platinum, cash in any major currency, bonds and property.</p>
+<p><strong>Related:</strong> <a href="/free-net-worth-tracker">Free net worth tracker</a> · <a href="/crypto-and-stock-portfolio-tracker">Crypto &amp; stock portfolio</a> · <a href="/portfolio-tracker-no-account">No account needed</a> · <a href="/dashboard">Open WalletLens free</a></p>
+`
+write('/investment-management-app', buildPage({
+  path: '/investment-management-app',
+  title: 'Investment Management App — Free & Private | WalletLens',
+  description: 'A free investment management app for crypto, stocks, gold, cash and property: one portfolio, buy and sell signals, risk scans, alerts and AI analysis. No account, no bank login.',
+  bodyHtml: investmentAppBody,
+  jsonLd: [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: ORIGIN + '/' },
+        { '@type': 'ListItem', position: 2, name: 'Investment Management App', item: ORIGIN + '/investment-management-app/' },
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'WalletLens',
+      applicationCategory: 'FinanceApplication',
+      applicationSubCategory: 'Investment Management',
+      operatingSystem: 'Web, Android, Windows, ChromeOS',
+      url: ORIGIN + '/investment-management-app/',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: [
+        { '@type': 'Question', name: "What is an investment management app?", acceptedAnswer: { '@type': 'Answer', text: "An investment management app keeps everything you invest in, in one place, and helps you decide what to do with it: what it is worth, how it is spread, where the risk is, and when to buy, sell or hold. WalletLens does that for crypto, stocks, gold, cash and property together." } },
+        { '@type': 'Question', name: "Is WalletLens free?", acceptedAnswer: { '@type': 'Answer', text: "Yes. Every feature is free, with no paid tier, no trial and no credit card." } },
+        { '@type': 'Question', name: "Do I need to link my bank, broker or exchange?", acceptedAnswer: { '@type': 'Answer', text: "No. WalletLens never asks for logins, API keys or wallet connections. Add holdings from a screenshot, by voice, from a spreadsheet or by hand." } },
+        { '@type': 'Question', name: "Does WalletLens hold my money or place trades?", acceptedAnswer: { '@type': 'Answer', text: "No. WalletLens is not a broker, bank or adviser. It never holds money or keys and cannot trade. Its signals and analysis are information, not financial advice." } },
+        { '@type': 'Question', name: "Where is my portfolio stored?", acceptedAnswer: { '@type': 'Answer', text: "On your device. WalletLens has no account and no database of portfolios. You can back up to your own Google Drive, encrypted, or to a backup code." } },
+        { '@type': 'Question', name: "Which assets can I manage?", acceptedAnswer: { '@type': 'Answer', text: "Crypto (10,000+ coins), US and international stocks and ETFs, gold, silver, platinum, cash in any major currency, bonds and property." } }
       ],
     },
   ],
@@ -1794,8 +1872,8 @@ const aboutFaqs = [
 ]
 write('/about', buildPage({
   path: '/about',
-  title: 'About WalletLens — Free Private Net Worth Tracker',
-  description: 'WalletLens is a free, private net worth tracker for all your investments — crypto, stocks, gold, silver, cash & FX in one dashboard. No account, no server, no data collection. Learn what it does, who it is for, and how it compares.',
+  title: 'About WalletLens — Free Private Investment Management App',
+  description: 'WalletLens is a free, private investment management app — crypto, stocks, gold, silver, cash & FX in one portfolio, with signals, risk tools and AI analysis. No account, no server, no data collection. Learn what it does, who it is for, and how it compares.',
   bodyHtml: `
 <h1>About WalletLens — The Free, Private Net Worth Tracker</h1>
 <p>WalletLens is a free net worth tracker and all-asset portfolio manager that runs entirely in your browser. Track every investment you own — crypto, US stocks, ETFs, gold, silver, fiat currencies, cash, and bonds — in one unified dashboard, with no account, no email, and no server, so your holdings never leave your device.</p>
@@ -1902,7 +1980,7 @@ const faqPageSections = [
 const allFaqPageQs = faqPageSections.flatMap(s => s.faqs)
 write('/faq', buildPage({
   path: '/faq',
-  title: 'FAQ — WalletLens Free Net Worth Tracker',
+  title: 'FAQ — WalletLens Investment Management App',
   description: 'Answers to common questions about WalletLens: is it free, where your data is stored, supported assets, live price sources, backups, the AI analysis, the Chrome extension, and troubleshooting.',
   bodyHtml: `
 <h1>Frequently Asked Questions</h1>
@@ -2428,16 +2506,16 @@ const APP_ROUTES = [
   // Not user-facing, and it 404'd on a cold navigation exactly like the rest.
   { path: '/admin/mail',   title: 'Mail — WalletLens',           description: 'Internal mail tools.' },
   { path: '/admin/reports', title: 'AI reports — WalletLens',    description: 'Internal review of reported AI answers.' },
-  { path: '/dashboard',    title: 'Dashboard — WalletLens',      description: 'Your private portfolio dashboard. Data stays on your device.' },
+  { path: '/dashboard',    title: 'Dashboard — WalletLens',      description: 'Your private investment portfolio: net worth, P&L, allocation and signals. Data stays on your device.' },
   // The v2 redesign preview, opened by typing the URL: a cold navigation.
   { path: '/v2test',       title: 'Dashboard — WalletLens',      description: 'Your private portfolio dashboard. Data stays on your device.' },
   { path: '/transactions', title: 'Trades — WalletLens',         description: 'Your transaction history. Data stays on your device.' },
   // Retired page: the route redirects to Technicals, the shell keeps old links from 404ing.
   { path: '/whales',       title: 'Analysis — WalletLens',       description: 'Technical analysis and smart money flow for your holdings.' },
-  { path: '/alpha',        title: 'Alpha — WalletLens',          description: 'Market signals and analysis tools.' },
-  { path: '/academy',      title: 'Academy — WalletLens',        description: 'Learn portfolio tracking and investing concepts.' },
+  { path: '/alpha',        title: 'Alpha — WalletLens',          description: 'Your portfolio alpha score, smart money, top gainers and hidden gems.' },
+  { path: '/academy',      title: 'Academy — WalletLens',        description: 'Short video lessons on investing mindset, risk, and buying and selling.' },
   { path: '/coach',        title: 'AI Coach — WalletLens',       description: 'AI-powered portfolio analysis, computed on your device.' },
-  { path: '/technicals',   title: 'Analysis — WalletLens',       description: 'Technical analysis for your holdings.' },
+  { path: '/technicals',   title: 'Technical Analysis — WalletLens', description: 'Buy and sell signals with entry, stop loss and three targets, plus EMA crosses and RSI, for every holding.' },
   { path: '/settings',     title: 'Settings — WalletLens',       description: 'App preferences. Data stays on your device.' },
   { path: '/more',         title: 'More — WalletLens',           description: 'Every WalletLens feature in one place.' },
   // /guardian belongs here because the Android notifications link straight to
@@ -2498,8 +2576,8 @@ console.log('Prerendered /ar redirect stub → /ar/free-net-worth-tracker.')
 write('/ecosystem', buildPage({
   path: '/ecosystem',
   canonicalOverride: '/',
-  title: 'Free Net Worth Tracker, No Account, No Server | WalletLens',
-  description: 'Track property, stocks, gold, cash and crypto in one net worth figure. Free, no account, no subscription, and your holdings stay on your device. Web, Android, Chrome.',
+  title: 'WalletLens — Private Investment Management App',
+  description: 'Manage crypto, stocks, gold, cash and property in one private portfolio, with buy and sell signals, risk scans, alerts and AI analysis. Free, no account. Web, Android, Windows, Chrome.',
   bodyHtml: ecoBody,
   jsonLd: [
     ecoFaq.jsonLd,
@@ -2530,6 +2608,7 @@ const STATIC_ROUTES = [
   { path: '/free-net-worth-tracker', changefreq: 'weekly', priority: '0.9' },
   { path: '/crypto-and-stock-portfolio-tracker', changefreq: 'weekly', priority: '0.9' },
   { path: '/portfolio-tracker-no-account', changefreq: 'weekly', priority: '0.9' },
+  { path: '/investment-management-app', changefreq: 'weekly', priority: '1.0' },
   { path: '/import-portfolio-from-screenshot', changefreq: 'monthly', priority: '0.9' },
   { path: '/add-holdings-by-voice', changefreq: 'monthly', priority: '0.9' },
   { path: '/export-portfolio-to-excel', changefreq: 'monthly', priority: '0.9' },
