@@ -477,7 +477,7 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
           <div className="sa-cfg-grid">
             <label className="sa-cfg-row">
               <span>{t('saEnabled')}</span>
-              <button className={`settings-toggle ${cfg.enabled ? 'on' : ''}`} onClick={() => setCfg(c => ({ ...c, enabled: !c.enabled }))}>
+              <button type="button" className={`settings-toggle ${cfg.enabled ? 'on' : ''}`} aria-pressed={!!cfg.enabled} aria-label={t('saEnabled')} onClick={() => setCfg(c => ({ ...c, enabled: !c.enabled }))}>
                 <span className="settings-toggle-thumb"/>
               </button>
             </label>
@@ -515,13 +515,13 @@ export default function SmartAlerts({ enriched = [], prices = {} }) {
             </label>
             <label className="sa-cfg-row">
               <span>{t('saWatchBtc')}</span>
-              <button className={`settings-toggle ${cfg.watchBtc ? 'on' : ''}`} onClick={() => setCfg(c => ({ ...c, watchBtc: !c.watchBtc }))}>
+              <button type="button" className={`settings-toggle ${cfg.watchBtc ? 'on' : ''}`} aria-pressed={!!cfg.watchBtc} aria-label={t('saWatchBtc')} onClick={() => setCfg(c => ({ ...c, watchBtc: !c.watchBtc }))}>
                 <span className="settings-toggle-thumb"/>
               </button>
             </label>
             <label className="sa-cfg-row">
               <span>{t('saWatchEth')}</span>
-              <button className={`settings-toggle ${cfg.watchEth ? 'on' : ''}`} onClick={() => setCfg(c => ({ ...c, watchEth: !c.watchEth }))}>
+              <button type="button" className={`settings-toggle ${cfg.watchEth ? 'on' : ''}`} aria-pressed={!!cfg.watchEth} aria-label={t('saWatchEth')} onClick={() => setCfg(c => ({ ...c, watchEth: !c.watchEth }))}>
                 <span className="settings-toggle-thumb"/>
               </button>
             </label>

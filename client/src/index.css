@@ -414,8 +414,10 @@ input, select, textarea {
   /* Text — solid near-black hierarchy on the light canvas (no tint) */
   --text: #16181b;
   --text2: rgba(24, 24, 27, 0.70);
-  --text-muted: rgba(24, 24, 27, 0.58);
-  --text-sub: rgba(24, 24, 27, 0.42);
+  /* Readable on every light surface: 0.58 and 0.42 measured 4.3:1 and 2.7:1,
+     under the 4.5:1 small text needs. Sub stays a step lighter than muted. */
+  --text-muted: rgba(24, 24, 27, 0.66);
+  --text-sub: rgba(24, 24, 27, 0.60);
   /* Surfaces — subtle neutral tints over the light page background */
   --surface-1: rgba(0, 0, 0, 0.04);
   --surface-2: rgba(0, 0, 0, 0.06);
@@ -1670,6 +1672,8 @@ select option { background: var(--bg3); color: var(--text); }
 }
 .positive { color: var(--g-ink); font-weight: 700; }
 .negative { color: var(--red); }
+/* #f87171 is 2.8:1 on white; the light theme's loss text gets the 5:1 red. */
+[data-wl-light] .negative { color: #c9353a; }
 .muted { color: var(--text2); }
 .wallet-list { display: flex; flex-direction: column; gap: 0.4rem; }
 .wallet-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; border-radius: 10px; background: var(--bg3); }
@@ -12854,7 +12858,8 @@ html.wl-msstore a[href*="chrome.google.com/webstore"] { display: none !important
 .wl-st-prog-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .wl-st-prog-btns button { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.6rem 0.9rem; border-radius: 12px; cursor: pointer;
   font: inherit; font-size: 0.84rem; font-weight: 800; color: var(--g-ink); background: rgba(var(--g-rgb),0.12); border: 0; }
-.wl-st-prog-btns .wl-st-prog-main { color: #fff; background: rgb(var(--g-rgb)); }
+/* Shaded 18% so white text clears 4.5:1 on every theme green (3.8 unshaded). */
+.wl-st-prog-btns .wl-st-prog-main { color: #fff; background: linear-gradient(rgba(0,0,0,0.18), rgba(0,0,0,0.18)), rgb(var(--g-rgb)); }
 [dir="rtl"] .wl-tour-next-ic { transform: scaleX(-1); }
 
 /* ── Stock markets in the Buy/Sell sheet: one chip per market, the user's own first ── */

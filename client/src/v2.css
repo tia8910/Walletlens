@@ -792,6 +792,8 @@ html.wl-v2 .tc-open {
   font: inherit; font-size: 0.75rem; font-weight: 800; cursor: pointer; padding: 0.4rem 0.8rem; border-radius: 999px;
   color: var(--g); background: rgba(var(--g-rgb),0.12); border: 1px solid rgba(var(--g-rgb),0.3);
 }
+/* Theme green on its own tint is 3:1 on the light theme; the ink colour reads. */
+html.wl-v2[data-wl-light] .tc-open { color: var(--g-ink); }
 html.wl-v2 .ac-chips { display: flex; gap: 0.35rem; overflow-x: auto; scrollbar-width: none; padding: 0 0.2rem; }
 html.wl-v2 .ac-chips::-webkit-scrollbar { display: none; }
 html.wl-v2 .ac-chip {

@@ -4,7 +4,7 @@
   --sx-bg: var(--nl-bg, #eef2f5);
   --sx-card: var(--nl-card, #fff);
   --sx-ink: var(--nl-ink, #0f1d2b);
-  --sx-sub: var(--nl-sub, #7b8794);
+  --sx-sub: var(--nl-sub, #5f6b78);
   --sx-line: var(--nl-line, #edf0f3);
   --sx-acc: var(--g, #16a874);
   --sx-soft: color-mix(in srgb, var(--sx-sub) 14%, transparent);

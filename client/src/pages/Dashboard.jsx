@@ -2454,7 +2454,7 @@ function StarterProgress({ count, onScreenshot, onAdd }) {
         <strong>{t('stProgTitle')}</strong>
         <button type="button" className="wl-st-prog-x" onClick={hide} aria-label={t('stHide')}><Icon name="x" size={14} /></button>
       </div>
-      <div className="wl-st-prog-bar" role="progressbar" aria-valuemin={0} aria-valuemax={3} aria-valuenow={count}>
+      <div className="wl-st-prog-bar" role="progressbar" aria-label={t('stProgTitle')} aria-valuemin={0} aria-valuemax={3} aria-valuenow={count}>
         {[0, 1, 2].map(i => <i key={i} className={i < count ? 'on' : ''} />)}
       </div>
       <div className="wl-st-prog-n">{t('stProgCount')(count)}</div>
