@@ -99,7 +99,7 @@ export default {
     brandTag: 'SEHEN SIE IHR VERMÖGEN KLAR',
     heroH1a: 'Sie verdienen es zu wissen,',
     heroH1b: 'wo genau Sie stehen.',
-    heroSub: 'Das komplette Toolkit für Krypto und digitale Assets. Positionen per Sprache oder direkt aus einem Screenshot erfassen, Krypto, Aktien, Metalle und Bargeld in einem Portfolio führen, dazu KI-Analyse, Risiko-Scans und Kursalarme. Kostenlos, ohne Konto.',
+    heroSub: 'Die komplette Investment-Management-App für Krypto, Aktien, Gold und Bargeld. Positionen per Sprache oder direkt aus einem Screenshot erfassen, Krypto, Aktien, Metalle und Bargeld in einem Portfolio führen, dazu KI-Analyse, Risiko-Scans und Kursalarme. Kostenlos, ohne Konto.',
     ctaLaunch: 'Vermögen aufwecken — kostenlos',
     ctaMarket: 'Markt entdecken',
     badge1: '🔒 100 % privat',
@@ -362,7 +362,7 @@ export default {
     catCommodities: 'Rohstoffe',
     // ── Onboarding — slides ─────────────────────────────────────
     obWelcomeEyebrow: 'WILLKOMMEN BEI',
-    obWelcomeDesc: 'Ihr privater Vermögenstracker. Krypto, Aktien, Gold und Bargeld an einem Ort.',
+    obWelcomeDesc: 'Ihr privater Investment-Manager. Krypto, Aktien, Gold und Bargeld in einem Portfolio, mit Signalen und Risikochecks.',
     obFeatPrivate: 'Privat',
     obFeatLivePnl: 'Gewinne live',
     obFeatInsights: 'Erkenntnisse',
@@ -800,7 +800,7 @@ export default {
     fsPrivacyDesc: 'Alles bleibt auf Ihrem Gerät. Kein Konto, keine Cloud, kein Tracking. Ihre Daten gehören allein Ihnen.',
     fsFreeTag: 'KOSTENLOS',
     fsFreeTitle: 'Für immer kostenlos — ohne Haken',
-    fsFreeDesc: 'Kein Abo, keine Gebühren, keine Empfehlungscodes von Börsen. Ein reiner Vermögens-Tracker, der für Sie arbeitet.',
+    fsFreeDesc: 'Kein Abo, keine Gebühren, keine Empfehlungscodes von Börsen. Ein Investment-Manager, der für Sie arbeitet, nicht für einen Broker.',
 
     // ── Empty dashboard — import & first-trade prompts ──────────
     emptyHeadline: 'Starten Sie Ihren ersten Trade',

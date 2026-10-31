@@ -99,7 +99,7 @@ export default {
     brandTag: 'SEE YOUR WEALTH CLEARLY',
     heroH1a: 'You deserve to know',
     heroH1b: 'exactly where you stand.',
-    heroSub: 'The complete management toolkit for crypto and digital assets. Add holdings by voice or straight from a screenshot, keep crypto, stocks, metals and cash in one portfolio, and get AI analysis, risk scans and price alerts on top. Free, no account needed.',
+    heroSub: 'The complete investment management app for crypto, stocks, gold and cash. Add holdings by voice or straight from a screenshot, keep crypto, stocks, metals and cash in one portfolio, and get AI analysis, risk scans and price alerts on top. Free, no account needed.',
     ctaLaunch: 'Wake Up My Wealth — Free',
     ctaMarket: 'Explore Market',
     badge1: '🔒 100% Private',
@@ -362,7 +362,7 @@ export default {
     catCommodities: 'Commodities',
     // ── Onboarding — slides ─────────────────────────────────────
     obWelcomeEyebrow: 'WELCOME TO',
-    obWelcomeDesc: 'Your private net worth tracker. Crypto, stocks, gold and cash, all in one place.',
+    obWelcomeDesc: 'Your private investment manager. Crypto, stocks, gold and cash in one portfolio, with signals and risk checks.',
     obFeatPrivate: 'Private',
     obFeatLivePnl: 'Live P&L',
     obFeatInsights: 'Insights',
@@ -861,7 +861,7 @@ export default {
     fsPrivacyDesc: 'Everything stays on your device. No account, no cloud, no tracking. Your data is yours alone.',
     fsFreeTag: 'FREE',
     fsFreeTitle: 'Free Forever — No Catch',
-    fsFreeDesc: 'No subscription, no fees, no exchange referral codes. A pure net worth tracker that works for you.',
+    fsFreeDesc: 'No subscription, no fees, no exchange referral codes. An investment manager that works for you, not for a broker.',
 
     // ── Empty dashboard — import & first-trade prompts ──────────
     emptyHeadline: 'Start your first trade',

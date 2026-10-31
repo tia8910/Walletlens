@@ -55,7 +55,7 @@ const CURRENT_YEAR = new Date().getFullYear()
 // Module-level Set for O(1) path lookup (vs O(n) array .includes() per render).
 const LANDING_PATH_SET = new Set([
   '/', '/tour', '/free-net-worth-tracker', '/crypto-and-stock-portfolio-tracker',
-  '/portfolio-tracker-no-account', '/import-portfolio-from-screenshot',
+  '/portfolio-tracker-no-account', '/investment-management-app', '/import-portfolio-from-screenshot',
   '/add-holdings-by-voice', '/blog', '/about', '/market-index',
   '/fear-and-greed-index', '/rebalancing-calculator', '/faq', '/privacy',
   '/zakat-calculator', '/ecosystem', '/youtube',
@@ -913,6 +913,7 @@ export default function App() {
           <Route path="/free-net-worth-tracker" element={<Landing />} />
           <Route path="/crypto-and-stock-portfolio-tracker" element={<Landing />} />
           <Route path="/portfolio-tracker-no-account" element={<Landing />} />
+          <Route path="/investment-management-app" element={<Landing />} />
           <Route path="/import-portfolio-from-screenshot" element={<Landing />} />
           <Route path="/add-holdings-by-voice" element={<Landing />} />
           <Route path="/zakat-calculator" element={<ZakatLanding />} />

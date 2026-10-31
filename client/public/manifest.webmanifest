@@ -1,8 +1,8 @@
 {
   "id": "/dashboard",
-  "name": "WalletLens — Net Worth & Portfolio Tracker",
+  "name": "WalletLens — Investment Management",
   "short_name": "WalletLens",
-  "description": "Free net worth tracker — manage all your investments in one place: crypto, US stocks, gold, silver, cash and FX. No account, private on your device.",
+  "description": "The private investment management app: crypto, stocks, gold, silver, cash, FX and property in one portfolio, with AI analysis, signals, risk scans and alerts. Free, no account, your data stays on your device.",
   "start_url": "/dashboard",
   "scope": "/",
   "lang": "en",

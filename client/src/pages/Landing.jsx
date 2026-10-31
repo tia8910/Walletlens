@@ -449,7 +449,7 @@ export default function Landing() {
           <FeatureCard delay={80} accent="52,211,153"
             icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>}
             title="⚡ Live, Not Last Refresh"
-            desc="Most trackers show you a number from whenever you last opened them. Every holding, every category total and your whole net worth reprice themselves while the tab sits open, with a ticker running across the header so the market reaches you before you go looking for it."
+            desc="Most portfolio apps show you a number from whenever you last opened them. Every holding, every category total and your whole net worth reprice themselves while the tab sits open, with a ticker running across the header so the market reaches you before you go looking for it."
           />
           <FeatureCard delay={160} accent="244,114,182"
             icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>}
@@ -563,7 +563,7 @@ export default function Landing() {
         <div className="lp-section-label">Import &amp; Export</div>
         <h2 className="lp-section-h2">Add holdings your way.<br /><span style={{ color: 'var(--g-ink)', fontWeight: 700 }}>Your data, your format.</span></h2>
         <p className="lp-section-sub" style={{ maxWidth: 600, margin: '0 auto 2rem' }}>
-          No other free tracker gives you this many ways to get data in — and out. Pick whatever fits your workflow.
+          No other free investment app gives you this many ways to get data in — and out. Pick whatever fits your workflow.
         </p>
         <div className="lp-feat-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.2rem' }}>
           <div className="lp-feat-card lp-feat-vis" style={{ border: '1px solid rgba(52,211,153,0.18)' }}>
@@ -571,7 +571,7 @@ export default function Landing() {
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
             </div>
             <h3 className="lp-feat-title">Voice Import</h3>
-            <p className="lp-feat-desc">Say "I bought 0.5 BTC at 65K" and the trade is logged. Works in English and Arabic. The only free tracker with voice input.</p>
+            <p className="lp-feat-desc">Say "I bought 0.5 BTC at 65K" and the trade is logged. Works in English and Arabic. The only free investment app with voice input.</p>
             <Link to="/add-holdings-by-voice" style={{ fontSize: '0.82rem', color: 'var(--g-ink)', marginTop: '0.5rem', display: 'inline-block' }}>Learn more →</Link>
           </div>
           <div className="lp-feat-card lp-feat-vis" style={{ border: '1px solid rgba(96,165,250,0.18)' }}>
@@ -659,7 +659,7 @@ export default function Landing() {
               </div>
             </div>
             <p className="lp-plat-desc">
-              The full tracker as a real app on your home screen — no browser tab, no address bar.
+              The full investment app on your home screen — no browser tab, no address bar.
             </p>
             <ul className="lp-plat-list">
               <li>Opens fullscreen like any native app</li>
