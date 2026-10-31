@@ -830,6 +830,15 @@ input, select, textarea {
 [data-wl-light] .rb-hint { color: var(--text-sub); }
 [data-wl-light] .rb-row { background: var(--surface-1); border-color: var(--border); }
 [data-wl-light] .rb-input { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.15); color: var(--text); }
+/* The Rebalancing Calculator box stayed dark on the light theme while its
+   inputs turned dark-on-light, so names and numbers were unreadable. */
+[data-wl-light] .rb-widget { background: var(--surface-1, #fff); border-color: rgba(var(--g-rgb),0.3); }
+[data-wl-light] .rb-row-head { background: none; border: none; }
+[data-wl-light] .rb-row-head, [data-wl-light] .rb-hold, [data-wl-light] .rb-del,
+[data-wl-light] .rb-contrib, [data-wl-light] .rb-sum-row { color: var(--text-sub); }
+[data-wl-light] .rb-sum-row strong { color: var(--text); }
+[data-wl-light] .rb-contrib input { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.15); color: var(--text); }
+[data-wl-light] .rb-input::placeholder { color: var(--text-muted); }
 
 /* ── Holdings list ── */
 [data-wl-light] .dvx-holding-meta strong { color: var(--text); }
@@ -1493,6 +1502,12 @@ body::after {
 .empty-state button { margin-top: 0.75rem; }
 
 /* ─── Page Header ─── */
+/* Pages on the plain .page shell (Transactions, Calendar, Exchanges, Intel)
+   and on .dvx-page (Technical Analysis, Analyze) had no side margin of their
+   own, so titles, search and cards ran into both edges of the screen. Pages
+   that set their own padding inline keep it. */
+.wl-content > [class="page"],
+.wl-content > .dvx-page { padding-left: 1rem; padding-right: 1rem; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 .page-header h2 { margin-bottom: 0; }
 
@@ -4217,6 +4232,10 @@ tr:last-child td { border-bottom: none; }
   pointer-events: none; z-index: 0;
 }
 .bs-sheet > * { position: relative; z-index: 1; }
+/* The rule above also caught the "Buy without spending anything?" backdrop,
+   turning it into a block laid out after the content: it dimmed only the
+   lower half and left the slide-to-buy bar live above the question. */
+.bs-sheet > .bs-confirm-overlay { position: absolute; z-index: 20; }
 .bs-sheet-open { transform: translateY(0); }
 @media (min-width: 640px) {
   .bs-sheet {
@@ -5230,7 +5249,10 @@ select.bs-input option { background: var(--bg3); }
 .rb-sum-row.rb-warn strong { color:#fbbf24; font-weight:700; }
 .rb-hint { text-align:center; color: rgba(255,255,255,0.75); font-size:0.84rem; margin-top:0.9rem; }
 @media (max-width:560px) {
-  .rb-row-head { display:none; }
+  /* Keep the two number headings: without them nothing on a phone says which
+     box is the value and which is the target. */
+  .rb-row-head { border-bottom:none; padding-bottom:0; margin-bottom:-0.2rem; }
+  .rb-row-head > .rb-c-name, .rb-row-head > .rb-c-action, .rb-row-head > .rb-c-del { display:none; }
   .rb-row { grid-template-columns: 1fr 1fr; gap:0.4rem 0.5rem; padding-bottom:0.7rem; margin-bottom:0.2rem; border-bottom:1px solid rgba(255,255,255,0.07); position:relative; }
   .rb-row > .rb-input.rb-c-name { grid-column: 1 / span 2; padding-right:1.8rem; }   /* name input: full-width top row */
   .rb-row > .rb-c-action { grid-column: 1 / span 2; text-align:left; padding-top:0.1rem; } /* action: full-width bottom row */
@@ -7975,19 +7997,21 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .sa-alert-tab:hover:not(.active) { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.75); }
 
 /* ── Risk Budget ─────────────────────────────────────────────────────── */
-.rb-summary { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem; }
-.rb-row {
+/* Scoped to .rb-wrap: the Rebalancing Calculator uses the same rb- names, and
+   these later rules squeezed its inputs to 68px on every phone. */
+.rb-wrap .rb-summary { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem; }
+.rb-wrap .rb-row {
   background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
   border-radius: 14px; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.65rem;
   transition: border-color 0.2s;
 }
-.rb-input {
+.rb-wrap .rb-input {
   width: 68px; padding: 0.35rem 0.5rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
   background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
   color: #fff; text-align: right; outline: none;
 }
-.rb-input:focus { border-color: rgba(var(--g-rgb),0.6); background: rgba(var(--g-rgb),0.08); }
-.rb-hint { font-size: 0.72rem; color: rgba(255,255,255,0.7); text-align: center; margin-top: 0.5rem; line-height: 1.5; }
+.rb-wrap .rb-input:focus { border-color: rgba(var(--g-rgb),0.6); background: rgba(var(--g-rgb),0.08); }
+.rb-wrap .rb-hint { font-size: 0.72rem; color: rgba(255,255,255,0.7); text-align: center; margin-top: 0.5rem; line-height: 1.5; }
 
 /* ── Milestone Popup ─────────────────────────────────────────────────── */
 .ms-overlay {
@@ -9537,9 +9561,12 @@ button:not(:disabled):active,
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--text-sub);
+  /* Hint under the label, not beside it: side by side, a long hint squeezed
+     "Your name" into a column one word wide on a phone. */
   display: flex;
-  align-items: center;
-  gap: 0.5em;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15em;
 }
 
 .pg-field-hint {
@@ -10441,6 +10468,7 @@ button:not(:disabled):active,
 .mki-h1 { font-size: clamp(1.7rem, 5vw, 2.6rem); font-weight: 800; letter-spacing: -0.03em; margin: 0 0 0.6rem; line-height: 1.1; }
 .mki-lede { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; max-width: 620px; margin: 0 auto; }
 .mki-loading { text-align: center; padding: 3rem; color: var(--text-muted); }
+.mki-retry { margin-left: 0.35rem; padding: 0.35rem 0.8rem; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--g-ink, var(--text)); font-weight: 700; cursor: pointer; }
 
 .mki-hero { display: flex; align-items: center; gap: 1.5rem; padding: 1.5rem; margin-bottom: 1rem; flex-wrap: wrap; justify-content: center; }
 .mki-gauge { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 150px; height: 150px; border-radius: 50%; border: 6px solid var(--mki-color, var(--g)); box-shadow: 0 0 50px -10px var(--mki-color, var(--g)); flex-shrink: 0; }

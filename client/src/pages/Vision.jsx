@@ -80,14 +80,15 @@ function DonutChart({ slices, total, cx = 80, cy = 80, r = 64, stroke = 20 }) {
   })
   return (
     <svg viewBox={`0 0 ${cx * 2} ${cy * 2}`} width={cx * 2} height={cy * 2} aria-hidden="true">
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth={stroke} />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(128,128,128,0.18)" strokeWidth={stroke} />
       {arcs.map((a, i) => a.dash > 0 && (
         <circle key={i} cx={cx} cy={cy} r={r}
           fill="none"
           stroke={a.color}
           strokeWidth={stroke}
-          strokeDasharray={`${a.dash} ${circ}`}
-          strokeDashoffset={-a.offset + circ / 4}
+          strokeDasharray={`${a.dash} ${circ - a.dash}`}
+          strokeDashoffset={-a.offset}
+          transform={`rotate(-90 ${cx} ${cy})`}
           strokeLinecap="butt"
           style={{ transition: 'stroke-dasharray .4s ease' }}
         />

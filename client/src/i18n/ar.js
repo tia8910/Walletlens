@@ -90,6 +90,8 @@ export default {
     quickActions: 'إجراءات سريعة',
     buy: 'شراء',
     sell: 'بيع',
+    txDeleteConfirm: 'حذف هذه المعاملة؟ لا يمكن التراجع عن ذلك.',
+    txDeleteAria: 'حذف المعاملة',
     wallets: 'المحافظ',
     importExport: 'استيراد / تصدير',
 
@@ -293,7 +295,7 @@ export default {
     viewAll: '← عرض الكل',
     walletsTitle: (n) => `المحافظ (${n})`,
     backupTitle: 'نسخ احتياطي واستعادة',
-    back: '→ رجوع',
+    back: 'رجوع',
     demoData: 'بيانات تجريبية',
     loadingAI: 'جارٍ تحليل AI…',
     generateBackup: 'إنشاء كود احتياطي',

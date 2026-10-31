@@ -31,9 +31,12 @@ function AlphaRing({ score, color }) {
   const dash = (score / 100) * circ
   return (
     <svg width="128" height="128" viewBox="0 0 128 128">
-      <circle cx="64" cy="64" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
+      {/* A grey that reads on light and dark. The arc is rotated to start at 12
+          o'clock: a dash offset did that by pushing most of it off the start of
+          the path, so a score of 21 drew a sliver at 3 o'clock. */}
+      <circle cx="64" cy="64" r={r} fill="none" stroke="rgba(128,128,128,0.18)" strokeWidth="8" />
       <circle cx="64" cy="64" r={r} fill="none" stroke={color} strokeWidth="8"
-        strokeDasharray={`${dash} ${circ}`} strokeDashoffset={circ * 0.25}
+        strokeDasharray={`${dash} ${circ}`} transform="rotate(-90 64 64)"
         strokeLinecap="round" style={{ transition: 'stroke-dasharray 1s ease' }} />
       <text x="64" y="60" textAnchor="middle" dominantBaseline="central"
         fontSize="24" fontWeight="900" fill={color} fontFamily="Inter,sans-serif">{score}</text>

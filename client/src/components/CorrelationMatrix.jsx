@@ -225,7 +225,7 @@ export default function CorrelationMatrix({ enriched = [] }) {
           {error && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0' }}>
               <span style={{ color: '#f87171', fontSize: '0.8rem' }}>{error}</span>
-              <button onClick={() => { setError(null); setMatrix(null); _cache = null; compute() }}
+              <button onClick={() => { setError(null); setMatrix(null); _cache = null; computeRef.current?.() }}
                 style={{ fontSize: '0.7rem', background: 'var(--surface-2)', border: 'none', color: 'var(--text-muted)', borderRadius: 6, padding: '0.2rem 0.5rem', cursor: 'pointer' }}>
                 Retry
               </button>

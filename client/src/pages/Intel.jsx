@@ -183,7 +183,7 @@ function GemsTab({ market }) {
           <Link key={c.id} to={`/asset/${c.id}`} className="gem-card">
             <div className="gem-score-ring" style={{ '--gem-score': c.gemScore }}>
               <svg viewBox="0 0 36 36" width="56" height="56">
-                <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
+                <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(128,128,128,0.18)" strokeWidth="3" />
                 <circle cx="18" cy="18" r="15" fill="none" stroke={c.gemScore >= 70 ? 'var(--g)' : c.gemScore >= 45 ? '#fbbf24' : '#60a5fa'}
                   strokeWidth="3" strokeDasharray={`${(c.gemScore/100)*94.2} 94.2`}
                   strokeLinecap="round" transform="rotate(-90 18 18)" />

@@ -97,6 +97,13 @@ describe('what to watch', () => {
     expect(newestLesson('en', list).key).toBe('patience-pays')
   })
 
+  it('features the newest lesson in the reader\'s language before a newer one in another', () => {
+    // The newest video is an Arabic short; an English reader gets the newest English one.
+    const mixed = list.map(v => v.key === 'patience-pays' ? { ...v, lang: 'ar' } : { ...v, lang: 'en' })
+    expect(newestLesson('en', mixed).key).toBe('crash-sale')
+    expect(newestLesson('ar', mixed).key).toBe('patience-pays')
+  })
+
   it('offers Home the newest lesson, then the next unwatched one, then nothing', () => {
     expect(homeLesson(new Set(), 'en', list)).toMatchObject({ video: { key: 'patience-pays' }, isNew: true })
     expect(homeLesson(new Set(['patience-pays']), 'en', list)).toMatchObject({ video: { key: 'stop-loss-skydive' }, isNew: false })

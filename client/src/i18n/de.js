@@ -90,6 +90,8 @@ export default {
     quickActions: 'Schnellaktionen',
     buy: 'Kaufen',
     sell: 'Verkaufen',
+    txDeleteConfirm: 'Diese Transaktion löschen? Das kann nicht rückgängig gemacht werden.',
+    txDeleteAria: 'Transaktion löschen',
     wallets: 'Wallets',
     importExport: 'Import / Export',
 
@@ -293,7 +295,7 @@ export default {
     viewAll: 'Alle ansehen →',
     walletsTitle: (n) => `Wallets (${n})`,
     backupTitle: 'Backup & Wiederherstellung',
-    back: '← Zurück',
+    back: 'Zurück',
     demoData: 'DEMO-DATEN',
     loadingAI: 'Analyse wird geladen…',
     generateBackup: 'Backup-Code erzeugen',

@@ -251,6 +251,14 @@ export default function MarketIndex() {
           <div className="mki-loading">Calculating the index…</div>
         )}
 
+        {/* Every source failed: say so, rather than leave a blank page under the title. */}
+        {!loading && !idx && (
+          <div className="mki-loading" role="status">
+            Market data could not be reached just now.{' '}
+            <button type="button" className="mki-retry" onClick={() => { setLoading(true); load() }}>Try again</button>
+          </div>
+        )}
+
         {idx && (
           <>
             {/* The big number */}

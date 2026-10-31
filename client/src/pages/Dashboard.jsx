@@ -476,7 +476,7 @@ function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoa
         <div className="ai-health-left">
           <div className="ai-orb" style={{ '--health': ai.health, '--grade-color': ai.gradeColor }}>
             <svg className="ai-orb-ring" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10"/>
+              <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(128,128,128,0.18)" strokeWidth="10"/>
               <circle cx="60" cy="60" r="52" fill="none" stroke={ai.gradeColor} strokeWidth="10"
                 strokeDasharray={`${2 * Math.PI * 52}`}
                 strokeDashoffset={`${2 * Math.PI * 52 * (1 - ai.health / 100)}`}
@@ -1938,7 +1938,7 @@ const RiskGauge = memo(function RiskGauge({ pct, color, label }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.45rem' }}>
       <svg viewBox="0 0 100 100" style={{ width:90, height:90 }}>
-        <circle cx={cx} cy={cy} r={R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="9"/>
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke="rgba(128,128,128,0.18)" strokeWidth="9"/>
         <circle cx={cx} cy={cy} r={R} fill="none" stroke={color} strokeWidth="9"
           strokeDasharray={`${dash} ${gap}`} strokeLinecap="round"
           transform="rotate(-90 50 50)"/>
@@ -3217,7 +3217,10 @@ export default function Dashboard() {
   useEffect(() => {
     const openBuy = () => openSheet('buy', 'add_asset_guide')
     window.addEventListener('wl:open-buy', openBuy)
-    const onPortfolioUpdated = () => { lastLoadAll = Date.now(); loadAllRef.current?.() }
+    // lastLoadAll lives in the polling effect below; touching it from here threw
+    // a ReferenceError before the reload ran, so the dashboard did not refresh
+    // after a trade, an import or a delete until the next five-minute poll.
+    const onPortfolioUpdated = () => { loadAllRef.current?.() }
     window.addEventListener('wl:portfolio-updated', onPortfolioUpdated)
     return () => { window.removeEventListener('wl:open-buy', openBuy); window.removeEventListener('wl:portfolio-updated', onPortfolioUpdated) }
   }, [openSheet])
@@ -5114,7 +5117,7 @@ export default function Dashboard() {
                         tickFormatter={v => cvN(v)} width={50}/>
                       <ReferenceLine y={0} stroke="rgba(148,163,184,0.35)" strokeWidth={1}/>
                       <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color:'var(--text)', fontWeight:700 }} cursor={false}
-                        formatter={v => [<span style={{ color: v >= 0 ? 'var(--g)' : '#f87171', fontWeight:700 }}>{cv(v)}</span>, 'P&L']}/>
+                        formatter={v => [<span key="v" style={{ color: v >= 0 ? 'var(--g)' : '#f87171', fontWeight:700 }}>{cv(v)}</span>, 'P&L']}/>
                       <Bar dataKey="pnl" radius={[6,6,0,0]} isAnimationActive animationDuration={800} animationEasing="ease-out">
                         {pnlData.map((d, i) => (
                           <Cell key={i} fill={d.pnl >= 0 ? 'url(#dvxPnlPos)' : 'url(#dvxPnlNeg)'}/>
