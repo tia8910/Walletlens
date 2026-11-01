@@ -402,6 +402,16 @@ export default {
       "lang": "ar",
       "youtube": "m066H47xbPI",
       "added": "2026-10-31"
+    },
+    {
+      "key": "yt-lwkq56y5WE8",
+      "kind": "original",
+      "name": "راجل محدش يعرفه… خسر 20 مليار في 48 ساعة ووقّع بنوك عالمية",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "lwkq56y5WE8",
+      "added": "2026-11-01",
+      "wide": true
     }
   ]
 }
