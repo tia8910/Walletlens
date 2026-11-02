@@ -412,6 +412,15 @@ export default {
       "youtube": "lwkq56y5WE8",
       "added": "2026-11-01",
       "wide": true
+    },
+    {
+      "key": "yt-mfNerHK6tf0",
+      "kind": "story",
+      "name": "«خسر 20 مليار دولار في يومين» | حكاية آركيجوس #shorts",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "mfNerHK6tf0",
+      "added": "2026-11-02"
     }
   ]
 }
