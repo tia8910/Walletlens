@@ -199,6 +199,15 @@ const BottomNav = memo(function BottomNav({ v2 = false, v3 = false }) {
           <button key={item.id} type="button" className="wl-nav-fab" aria-label={t(item.labelKey)}
             onClick={() => { track('bottomnav_click', { tab: 'add', v3: true }); navigate(home, { state: { tab: 'overview', quickAdd: true } }) }}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            {/* Asset orbit: a coin, a stock, gold and cash circling the plus, so
+                the button says "add anything you own" without a word.
+                Decoration only: it takes no taps and screen readers skip it. */}
+            <span className="wl-fab-orbit" aria-hidden="true">
+              <i className="wl-orb wl-orb-btc">₿</i>
+              <i className="wl-orb wl-orb-stk"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M1 8l3-3 2 2 3-4" /></svg></i>
+              <i className="wl-orb wl-orb-au">Au</i>
+              <i className="wl-orb wl-orb-usd">$</i>
+            </span>
           </button>
         )
         // Classic lights a tab wherever you are. v2 also has a page tab
