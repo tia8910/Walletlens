@@ -5,6 +5,9 @@ import { useLanguage } from '../LanguageContext'
 import { homePath } from '../v2Preview'
 import { LongPressMenu } from './LongPressMenu'
 
+
+// The add button's shape-shifter phases, in the order they play.
+const SS_PHASES = ['plus', 'btc', 'stk', 'au', 'usd']
 const NAV_ITEMS = [
   {
     id: 'dashboard',
@@ -198,15 +201,20 @@ const BottomNav = memo(function BottomNav({ v2 = false, v3 = false }) {
         if (item.fab) return (
           <button key={item.id} type="button" className="wl-nav-fab" aria-label={t(item.labelKey)}
             onClick={() => { track('bottomnav_click', { tab: 'add', v3: true }); navigate(home, { state: { tab: 'overview', quickAdd: true } }) }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            {/* Asset orbit: a coin, a stock, gold and cash circling the plus, so
-                the button says "add anything you own" without a word.
-                Decoration only: it takes no taps and screen readers skip it. */}
-            <span className="wl-fab-orbit" aria-hidden="true">
-              <i className="wl-orb wl-orb-btc">₿</i>
-              <i className="wl-orb wl-orb-stk"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M1 8l3-3 2 2 3-4" /></svg></i>
-              <i className="wl-orb wl-orb-au">Au</i>
-              <i className="wl-orb wl-orb-usd">$</i>
+            {/* Shape-shifter: an obsidian core whose plus dissolves into each kind
+                of asset you can add (a coin, a stock, gold, cash) and back. A fine
+                ring and the glow beneath take that asset's colour; the plus phase
+                takes the theme's. Decoration around one real control: every layer
+                is hidden from screen readers and takes no taps. */}
+            <span className="wl-ss" aria-hidden="true">
+              <span className="wl-ss-glows">{SS_PHASES.map(k => <i key={k} className={`wl-ss-glow wl-ss-${k}`} />)}</span>
+              <span className="wl-ss-rings">{SS_PHASES.map(k => <i key={k} className={`wl-ss-ring wl-ss-${k}`} />)}</span>
+              <span className="wl-ss-shine" />
+              <span className={'wl-ss-g wl-ss-plus'}><svg width="26" height="26" viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+              <span className={'wl-ss-g wl-ss-btc'}><svg width="25" height="25" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 5h6a3 3 0 0 1 0 6H8zM8 11h7a3 3 0 0 1 0 6H8zM8 5v12M10 3v2M13 3v2M10 17v2M13 17v2"/></svg></span>
+              <span className={'wl-ss-g wl-ss-stk'}><svg width="25" height="25" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 16l5-5 4 3 7-7"/><path d="M15 7h5v5"/></svg></span>
+              <span className={'wl-ss-g wl-ss-au'}><svg width="27" height="27" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinejoin="round"><path d="M7 9h10l3 7H4z"/><path d="M9.5 12.5h5" strokeLinecap="round"/></svg></span>
+              <span className={'wl-ss-g wl-ss-usd'}><svg width="25" height="25" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8.5c-.6-1.4-2-2.2-4-2.2-2.3 0-3.8 1.1-3.8 2.8 0 4 7.8 2 7.8 6 0 1.7-1.6 2.9-4 2.9-2.1 0-3.6-.9-4.2-2.4M12 4v2.3M12 17.9V20"/></svg></span>
             </span>
           </button>
         )

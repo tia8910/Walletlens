@@ -102,29 +102,63 @@ html.wl-v3 .wl-nav-fab {
   transition: transform 0.15s;
 }
 html.wl-v3 .wl-nav-fab:active { transform: scale(0.94); }
-/* Asset orbit around the add button. The ring and its four chips turn
-   slowly; each chip turns back the other way so its symbol stays upright.
-   Transform-only animation, so it runs on the compositor. */
-html.wl-v3 .wl-nav-fab { position: relative; overflow: visible; }
-html.wl-v3 .wl-fab-orbit {
-  position: absolute; inset: -12px; border-radius: 50%; pointer-events: none;
-  border: 1.2px dashed rgba(var(--g-rgb), 0.38);
-  animation: wl-orbit 14s linear infinite;
+/* Shape-shifter add button. One 12 s loop: the plus holds for about half of
+   it, then a coin, a stock, gold and cash an eighth each. Glyphs blur and
+   scale through each other; the ring and the glow cross-fade between colour
+   layers in step (layers, not an animated custom property, so it runs on
+   older Android WebViews too). Opacity, transform and a small blur only. */
+html.wl-v3 .wl-nav-fab {
+  position: relative; overflow: visible;
+  background: radial-gradient(120% 120% at 30% 20%, #1d3a32 0%, #0a1714 55%, #050d0b 100%);
+  box-shadow: 0 0 0 6px var(--nl-bg), inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -8px 16px rgba(0, 0, 0, 0.45);
 }
-html.wl-v3 .wl-orb {
-  position: absolute; width: 17px; height: 17px; margin: -8.5px 0 0 -8.5px; border-radius: 50%;
-  display: grid; place-items: center; font-style: normal; font-size: 9.5px; font-weight: 800; line-height: 1;
-  color: #fff; box-shadow: 0 0 0 2px var(--nl-bg), 0 2px 5px rgba(15, 29, 43, 0.25);
-  animation: wl-orbit 14s linear infinite reverse;
+html.wl-v3 .wl-ss, html.wl-v3 .wl-ss-glows, html.wl-v3 .wl-ss-rings { position: absolute; inset: 0; pointer-events: none; }
+html.wl-v3 .wl-ss-glow {
+  position: absolute; left: 8px; right: 8px; bottom: -10px; height: 22px; border-radius: 50%;
+  filter: blur(12px); opacity: 0;
 }
-html.wl-v3 .wl-orb-btc { top: 0; left: 50%; background: #f7931a; }
-html.wl-v3 .wl-orb-stk { top: 50%; left: 100%; background: #2563eb; border-radius: 6px; }
-html.wl-v3 .wl-orb-stk svg { stroke: #fff; filter: none; }
-html.wl-v3 .wl-orb-au { top: 100%; left: 50%; width: 19px; height: 13px; margin: -6.5px 0 0 -9.5px; border-radius: 3px; background: #d4a017; color: #4a3200; font-size: 7.5px; }
-html.wl-v3 .wl-orb-usd { top: 50%; left: 0; background: #0f766e; }
-@keyframes wl-orbit { to { transform: rotate(360deg); } }
+html.wl-v3 .wl-ss-rings { inset: -3px; animation: wl-ss-spin 4s linear infinite; }
+html.wl-v3 .wl-ss-ring {
+  position: absolute; inset: 0; border-radius: 50%; opacity: 0;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+}
+html.wl-v3 .wl-ss-shine {
+  position: absolute; left: 12px; right: 12px; top: 6px; height: 16px; border-radius: 50%;
+  background: linear-gradient(rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0));
+}
+html.wl-v3 .wl-ss-g { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; }
+html.wl-v3 .wl-ss-g svg { stroke: #fff; filter: none; }
+/* Colour per phase: the plus takes the theme, the assets their own. */
+html.wl-v3 .wl-ss-ring.wl-ss-plus { background: conic-gradient(from 0deg, transparent 0 55%, rgb(var(--g-rgb)) 80%, #fff 86%, transparent 92%); }
+html.wl-v3 .wl-ss-ring.wl-ss-btc  { background: conic-gradient(from 0deg, transparent 0 55%, #f7931a 80%, #fff 86%, transparent 92%); }
+html.wl-v3 .wl-ss-ring.wl-ss-stk  { background: conic-gradient(from 0deg, transparent 0 55%, #3b82f6 80%, #fff 86%, transparent 92%); }
+html.wl-v3 .wl-ss-ring.wl-ss-au   { background: conic-gradient(from 0deg, transparent 0 55%, #e0b341 80%, #fff 86%, transparent 92%); }
+html.wl-v3 .wl-ss-ring.wl-ss-usd  { background: conic-gradient(from 0deg, transparent 0 55%, #2dd4bf 80%, #fff 86%, transparent 92%); }
+html.wl-v3 .wl-ss-glow.wl-ss-plus { background: rgb(var(--g-rgb)); }
+html.wl-v3 .wl-ss-glow.wl-ss-btc  { background: #f7931a; }
+html.wl-v3 .wl-ss-glow.wl-ss-stk  { background: #3b82f6; }
+html.wl-v3 .wl-ss-glow.wl-ss-au   { background: #e0b341; }
+html.wl-v3 .wl-ss-glow.wl-ss-usd  { background: #2dd4bf; }
+/* Timing: the plus owns 0–50% of the loop, each asset a 1.5 s slot after it. */
+html.wl-v3 .wl-ss-ring.wl-ss-plus, html.wl-v3 .wl-ss-glow.wl-ss-plus { animation: wl-ss-plus-fade 12s cubic-bezier(.4, 0, .2, 1) infinite; }
+html.wl-v3 .wl-ss-g.wl-ss-plus { animation: wl-ss-plus-glyph 12s cubic-bezier(.4, 0, .2, 1) infinite; }
+html.wl-v3 .wl-ss-ring:not(.wl-ss-plus), html.wl-v3 .wl-ss-glow:not(.wl-ss-plus) { animation: wl-ss-asset-fade 12s cubic-bezier(.4, 0, .2, 1) infinite; }
+html.wl-v3 .wl-ss-g:not(.wl-ss-plus) { animation: wl-ss-asset-glyph 12s cubic-bezier(.4, 0, .2, 1) infinite; }
+html.wl-v3 .wl-ss .wl-ss-btc { animation-delay: 6s; }
+html.wl-v3 .wl-ss .wl-ss-stk { animation-delay: 7.5s; }
+html.wl-v3 .wl-ss .wl-ss-au  { animation-delay: 9s; }
+html.wl-v3 .wl-ss .wl-ss-usd { animation-delay: 10.5s; }
+@keyframes wl-ss-spin { to { transform: rotate(360deg); } }
+@keyframes wl-ss-plus-glyph { 0%, 46% { opacity: 1; filter: blur(0); transform: scale(1); } 50%, 96% { opacity: 0; filter: blur(6px); transform: scale(.7); } 100% { opacity: 1; filter: blur(0); transform: scale(1); } }
+@keyframes wl-ss-asset-glyph { 0% { opacity: 0; filter: blur(6px); transform: scale(.7); } 3%, 10% { opacity: 1; filter: blur(0); transform: scale(1); } 13%, 100% { opacity: 0; filter: blur(6px); transform: scale(.7); } }
+@keyframes wl-ss-plus-fade { 0%, 46% { opacity: var(--wl-ss-on, 1); } 50%, 96% { opacity: 0; } 100% { opacity: var(--wl-ss-on, 1); } }
+@keyframes wl-ss-asset-fade { 0% { opacity: 0; } 3%, 10% { opacity: var(--wl-ss-on, 1); } 13%, 100% { opacity: 0; } }
+html.wl-v3 .wl-ss-glow { --wl-ss-on: 0.55; }
 @media (prefers-reduced-motion: reduce) {
-  html.wl-v3 .wl-fab-orbit, html.wl-v3 .wl-orb { animation: none; }
+  html.wl-v3 .wl-ss-rings, html.wl-v3 .wl-ss-ring, html.wl-v3 .wl-ss-glow, html.wl-v3 .wl-ss-g { animation: none; }
+  html.wl-v3 .wl-ss-g.wl-ss-plus, html.wl-v3 .wl-ss-ring.wl-ss-plus { opacity: 1; }
+  html.wl-v3 .wl-ss-glow.wl-ss-plus { opacity: 0.55; }
 }
 /* Content and the assistant bubble clear the floating bar. */
 html.wl-v3 .wl-content { padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)) !important; }
