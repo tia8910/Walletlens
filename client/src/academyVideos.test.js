@@ -110,6 +110,20 @@ describe('what to watch', () => {
     expect(homeLesson(new Set(['patience-pays', 'stop-loss-skydive', 'crash-sale']), 'en', list)).toBe(null)
     expect(homeLesson(new Set(), 'en', BASE_VIDEOS)).toBe(null)
   })
+
+  it('puts a video announced this week on Home, whatever its language', () => {
+    // The bell announces a new Arabic short to an English reader; Home shows it too.
+    const now = Date.parse('2026-10-14T12:00:00Z')
+    const mixed = list.map(v => v.key === 'patience-pays' ? { ...v, lang: 'ar' } : { ...v, lang: 'en' })
+    expect(homeLesson(new Set(), 'en', mixed, now)).toMatchObject({ video: { key: 'patience-pays' }, isNew: true })
+    // Once it is watched, Home goes back to the usual order.
+    expect(homeLesson(new Set(['patience-pays']), 'en', mixed, now)).toMatchObject({ video: { key: 'crash-sale' }, isNew: true })
+    // Among this week's videos, the reader's own language leads.
+    const both = mixed.map(v => v.key === 'crash-sale' ? { ...v, added: '2026-10-13' } : v)
+    expect(homeLesson(new Set(), 'en', both, now)).toMatchObject({ video: { key: 'crash-sale' }, isNew: true })
+    // A week later the announcement is over and the English lesson leads again.
+    expect(homeLesson(new Set(), 'en', mixed, Date.parse('2026-10-25T12:00:00Z'))).toMatchObject({ video: { key: 'crash-sale' }, isNew: true })
+  })
 })
 
 describe('progress', () => {
