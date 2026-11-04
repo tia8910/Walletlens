@@ -209,10 +209,16 @@ export function newestLesson(lang = 'en', list = VIDEOS) {
 }
 
 /**
- * What Home offers: the newest lesson while it is unwatched, then the next
- * unwatched one in course order, and nothing once every lesson is watched.
+ * What Home offers: an unwatched video from this week's announcements, else
+ * the newest lesson while it is unwatched, then the next unwatched one in
+ * course order, and nothing once every lesson is watched.
  */
-export function homeLesson(watched = new Set(), lang = 'en', list = VIDEOS) {
+export function homeLesson(watched = new Set(), lang = 'en', list = VIDEOS, now = Date.now()) {
+  // A video the bell is announcing as new comes first, in any language, so
+  // Home and the bell never disagree. The reader's own language leads among them.
+  const rank = (v) => (v.lang === lang || v.lang === 'all' ? 0 : 1)
+  const fresh = newVideos({ now, lang, list }).filter(v => isLesson(v) && !watched.has(v.key))
+  if (fresh.length) return { video: [...fresh].sort((a, b) => rank(a) - rank(b))[0], isNew: true }
   const newest = newestLesson(lang, list)
   if (!newest) return null
   if (!watched.has(newest.key)) return { video: newest, isNew: true }
