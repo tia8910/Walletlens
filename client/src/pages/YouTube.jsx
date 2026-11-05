@@ -2,22 +2,25 @@ import { Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
-import { academyVideos, watchUrl, YT_CHANNEL, YT_SUBSCRIBE } from '../data/academyVideos'
+import { academyVideos, watchUrl, videoUrl, YT_CHANNEL, YT_SUBSCRIBE } from '../data/academyVideos'
 
 // The WalletLens channel as a page of its own, for the landing site and the
-// app alike. Videos open on YouTube; the Academy is where they play in place.
+// app alike. Each video plays in the Academy's player, with its lesson; a
+// small link beside it opens it on YouTube instead.
 const COPY = {
   en: {
     title: 'WalletLens on YouTube',
     intro: 'Short stories and tutorials about money habits, risk and getting the most out of WalletLens.',
     subscribe: 'Subscribe on YouTube', channel: 'Open the channel',
     latest: 'Latest videos', academy: 'Watch with lessons in the Academy', none: 'New videos land here as soon as they go live.',
+    onYt: 'YouTube',
   },
   ar: {
     title: 'WalletLens على يوتيوب',
     intro: 'قصص قصيرة وشروحات عن عادات المال والمخاطر وكيف تستفيد من WalletLens.',
     subscribe: 'اشترك على يوتيوب', channel: 'افتح القناة',
     latest: 'أحدث الفيديوهات', academy: 'شاهد مع الدروس في الأكاديمية', none: 'ستظهر الفيديوهات الجديدة هنا فور نشرها.',
+    onYt: 'يوتيوب',
   },
 }
 
@@ -46,9 +49,13 @@ export default function YouTube() {
           <ul>
             {videos.map(v => (
               <li key={v.key}>
-                <a href={watchUrl(v.id)} target="_blank" rel="noopener noreferrer"
-                  onClick={() => track('youtube_page_video', { video: v.key })}>
-                  {v.emoji} {v.name}
+                <Link to={videoUrl(v.key)} dir="auto" onClick={() => track('youtube_page_video', { video: v.key, where: 'app' })}>
+                  {v.name}
+                </Link>
+                {' · '}
+                <a href={watchUrl(v.id)} target="_blank" rel="noopener noreferrer" aria-label={`${v.name}, ${c.onYt}`}
+                  onClick={() => track('youtube_page_video', { video: v.key, where: 'youtube' })}>
+                  {c.onYt}
                 </a>
               </li>
             ))}

@@ -116,6 +116,24 @@ export const inLang = (table, lang) => table?.[lang] || table?.en || ''
  * The videos ready to play, for one app language: its own language first,
  * then English, then the rest. Each carries its lesson (title and takeaway).
  */
+/**
+ * A channel title as the app shows it: no hashtags (#shorts, #اكسبلور), no
+ * stray quote left by a cut title, no trailing separator, no shouting, and a
+ * capital to start. Titles are written for YouTube's search, not for a list.
+ */
+export function cleanTitle(raw) {
+  const src = String(raw || '').trim()
+  let t = src.replace(/(^|\s)#[^\s#]+/gu, ' ').replace(/\s+/g, ' ').trim()
+  t = t.replace(/[\s|·\-–—:]+$/u, '').trim()
+  for (const [o, c] of [['«', '»'], ['“', '”']]) {
+    if (t.split(o).length !== t.split(c).length) t = t.split(o).join('').split(c).join('').trim()
+  }
+  if ((t.match(/"/g) || []).length % 2) t = t.replace(/"/g, '').trim()
+  if (/[A-Z]{4}/.test(t) && t === t.toUpperCase()) t = t.charAt(0) + t.slice(1).toLowerCase()
+  t = t.replace(/^\p{Ll}/u, ch => ch.toUpperCase())
+  return t || src
+}
+
 export function academyVideos(lang = 'en', list = VIDEOS) {
   const hk = hacks(lang)
   const rank = (v) => (v.lang === lang ? 0 : v.lang === 'en' || v.lang === 'all' ? 1 : 2)
@@ -124,7 +142,7 @@ export function academyVideos(lang = 'en', list = VIDEOS) {
     .filter(v => v.id)
     // Arabic tutorials are for Arabic readers; everyone else gets English ones.
     .filter(v => v.kind !== 'howto' || v.lang === lang || (v.lang === 'en' && lang !== 'ar') || v.lang === 'all')
-    .map(v => ({ ...v, lesson: v.hack != null ? hk[v.hack] : null }))
+    .map(v => ({ ...v, name: cleanTitle(v.name), lesson: v.hack != null ? hk[v.hack] : null }))
     .sort((a, b) => rank(a) - rank(b))
 }
 
@@ -186,7 +204,7 @@ export function videoPush(list, lang = 'en') {
 
 /** The linked videos, as published at /academy-videos.json for the push worker. */
 export const publishedVideos = (list = VIDEOS) =>
-  list.filter(v => youtubeId(v.youtube)).map(({ key, kind, lang, name, emoji, hack, course, act, youtube, added, wide }) => ({ key, kind, lang, name, emoji, hack, course, act, youtube, added, ...(wide ? { wide } : {}) }))
+  list.filter(v => youtubeId(v.youtube)).map(({ key, kind, lang, name, emoji, hack, course, act, youtube, added, wide }) => ({ key, kind, lang, name: cleanTitle(name), emoji, hack, course, act, youtube, added, ...(wide ? { wide } : {}) }))
 
 // ── What to watch ───────────────────────────────────────────────────────────
 // `watched` is a set of keys (academyProgress.js keeps it on the device).

@@ -215,3 +215,22 @@ describe('the Academy has no points or games', () => {
     }
   })
 })
+
+describe('channel titles as the app shows them', () => {
+  it('drops hashtags in any script, stray quotes and shouting, and starts with a capital', async () => {
+    const { cleanTitle } = await import('./data/academyVideos')
+    expect(cleanTitle('«خسر 20 مليار دولار في يومين» | حكاية آركيجوس #shorts')).toBe('«خسر 20 مليار دولار في يومين» | حكاية آركيجوس')
+    expect(cleanTitle('الموضوع كله كان كدبة #shorts #اكسبلور')).toBe('الموضوع كله كان كدبة')
+    expect(cleanTitle('"Panic sell vs  48-hour rule')).toBe('Panic sell vs 48-hour rule')
+    expect(cleanTitle('SET YOUR STOP BEFORE YOU BUY.')).toBe('Set your stop before you buy.')
+    expect(cleanTitle('patience pays')).toBe('Patience pays')
+    expect(cleanTitle('Buy, sell or hold?')).toBe('Buy, sell or hold?')
+    expect(cleanTitle('#shorts')).toBe('#shorts')
+  })
+  it('is what every list, the bell and the push worker show', async () => {
+    const { academyVideos, publishedVideos, BASE_VIDEOS } = await import('./data/academyVideos')
+    const list = BASE_VIDEOS.slice(0, 1).map(v => ({ ...v, name: 'patience pays #shorts', youtube: 'AAAAAAAAAAA' }))
+    expect(academyVideos('en', list)[0].name).toBe('Patience pays')
+    expect(publishedVideos(list)[0].name).toBe('Patience pays')
+  })
+})
