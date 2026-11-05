@@ -164,7 +164,9 @@ export default function SentimentTicker({ holdings = [], totalValue = 0, totalPn
     : isBearish
       ? t(strength === 'slight' ? 'stLblBearSlight' : strength === 'strong' ? 'stLblBearStrong' : 'stLblBear')
       : t('stLblNeutral')
-  const accent    = isBullish ? '#10b981' : isBearish ? '#ef4444' : '#94a3b8'
+  const accent    = isBullish ? '#10b981' : isBearish ? '#ef4444' : '#64748b'
+  // The badge carries white text, so it takes deeper shades that pass 4.5:1.
+  const badgeBg   = isBullish ? '#047857' : isBearish ? '#c9353a' : '#64748b'
   const bgColor   = isBullish ? 'rgba(16,185,129,0.08)' : isBearish ? 'rgba(239,68,68,0.08)' : 'rgba(148,163,184,0.06)'
   const borderColor = isBullish ? 'rgba(16,185,129,0.25)' : isBearish ? 'rgba(239,68,68,0.25)' : 'rgba(148,163,184,0.18)'
 
@@ -181,7 +183,7 @@ export default function SentimentTicker({ holdings = [], totalValue = 0, totalPn
       {/* Sentiment badge — fixed left */}
       <div className="wl-sentiment-badge" style={{
         flexShrink: 0, display: 'flex', alignItems: 'center', gap: '0.35rem',
-        padding: '0 0.75rem', height: '36px', background: accent,
+        padding: '0 0.75rem', height: '36px', background: badgeBg,
         color: '#fff', fontWeight: 800, fontSize: '0.7rem', letterSpacing: '0.06em',
         whiteSpace: 'nowrap',
       }}>

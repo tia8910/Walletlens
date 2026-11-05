@@ -311,7 +311,7 @@ export default function Alpha() {
             </div>
           </div>
         </div>
-        <button className="alpha-refresh-btn" onClick={() => { track('alpha_refresh'); loadAll() }} disabled={loading}>
+        <button type="button" className="alpha-refresh-btn" aria-label={t('refresh')} title={t('refresh')} onClick={() => { track('alpha_refresh'); loadAll() }} disabled={loading}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
             style={{ animation: loading ? 'spin 0.8s linear infinite' : 'none' }}>
             <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
