@@ -13217,3 +13217,20 @@ html.wl-aw-open .wlc-fab { opacity: 0; pointer-events: none; }
 .lp-cta-primary:not(.lp .lp-cta-primary) {
   background: linear-gradient(135deg, color-mix(in srgb, var(--g) 70%, #000), color-mix(in srgb, var(--g) 55%, #000));
 }
+
+/* Offline notice: a pill above the floating bar and the chat button, never over a page title. */
+.wl-offline {
+  position: fixed; z-index: 140; left: 50%; transform: translateX(-50%);
+  bottom: calc(176px + env(safe-area-inset-bottom, 0px)); width: max-content; max-width: calc(100vw - 32px);
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 16px;
+  font-size: .82rem; font-weight: 700; line-height: 1.35; color: #fff;
+  background: rgba(15, 23, 42, .97); box-shadow: 0 12px 30px -12px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(255, 255, 255, .08);
+}
+.wl-offline-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 0 4px rgba(245, 158, 11, .2); }
+.wl-offline.back .wl-offline-dot { background: #10b981; box-shadow: 0 0 0 4px rgba(16, 185, 129, .2); }
+@media (prefers-reduced-motion: no-preference) { .wl-offline { animation: wl-offline-in .35s cubic-bezier(.2, 1.2, .3, 1) both; } }
+@keyframes wl-offline-in { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translateX(-50%); } }
+
+/* Continue watching: how far through the film, along the tile's foot. */
+.aw-tile-prog { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255, 255, 255, .28); pointer-events: none; }
+.aw-tile-prog i { display: block; height: 100%; background: #ef4444; }

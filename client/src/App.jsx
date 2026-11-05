@@ -47,6 +47,7 @@ import { useZakatOn } from './zakatSwitch'
 import { useNewLook, useNewLookClass, applyLookParam } from './newLook'
 import { isMsStore, msStoreSkips } from './msStore'
 import ExtensionToolbar from './components/ExtensionToolbar'
+import OfflineNotice from './components/OfflineNotice'
 import NotificationBell from './components/NotificationBell'
 import './v3.css'
 
@@ -943,6 +944,7 @@ export default function App() {
           <Route path="/admin/reports" element={<AdminReports />} />
         </Routes></Suspense></ErrorBoundary>
         <ExtensionToolbar />
+        <OfflineNotice />
       </div>
     )
   }
@@ -951,6 +953,7 @@ export default function App() {
     <div className="wl-app">
       <DynamicBackground />
       <ExtensionToolbar />
+      <OfflineNotice />
       <div className="wl-mood-aura" aria-hidden="true" />
 
       <header className="wl-topbar" ref={topbarRef}>

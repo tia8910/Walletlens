@@ -15,7 +15,7 @@ export const ACADEMY_COPY = {
     source: 'Plays from YouTube', advice: 'For learning only, not financial advice.',
     short: 'Short', film: 'Film', tutorial: 'Tutorial', course: 'Course', lesson: (n) => `Lesson ${n}`, watched: 'Watched',
     playYt: 'Play on YouTube', watchYt: 'Watch on YouTube',
-    playErr: 'This video can’t play inside the app', playNow: 'Play now', cancel: 'Cancel', speed: 'Speed', nextIn: (n) => `Next in ${n}`,
+    continueW: 'Continue watching', playErr: 'This video can’t play inside the app', playNow: 'Play now', cancel: 'Cancel', speed: 'Speed', nextIn: (n) => `Next in ${n}`,
     courseProgress: (a, b) => `${a} of ${b} watched`, continueCourse: 'Continue course',
   },
   ar: {
@@ -30,7 +30,7 @@ export const ACADEMY_COPY = {
     source: 'يعمل من يوتيوب', advice: 'للتعلم فقط، وليس نصيحة مالية.',
     short: 'قصير', film: 'فيلم', tutorial: 'شرح', course: 'دورة', lesson: (n) => `الدرس ${n}`, watched: 'تمت المشاهدة',
     playYt: 'شغّل على يوتيوب', watchYt: 'شاهد على يوتيوب',
-    playErr: 'لا يمكن تشغيل هذا الفيديو داخل التطبيق', playNow: 'شغّل الآن', cancel: 'إلغاء', speed: 'السرعة', nextIn: (n) => `التالي خلال ${n}`,
+    continueW: 'تابع المشاهدة', playErr: 'لا يمكن تشغيل هذا الفيديو داخل التطبيق', playNow: 'شغّل الآن', cancel: 'إلغاء', speed: 'السرعة', nextIn: (n) => `التالي خلال ${n}`,
     courseProgress: (a, b) => `شاهدت ${a} من ${b}`, continueCourse: 'تابع الدورة',
   },
   fr: {
@@ -45,7 +45,7 @@ export const ACADEMY_COPY = {
     source: 'Lu depuis YouTube', advice: 'Pour apprendre, pas un conseil financier.',
     short: 'Short', film: 'Film', tutorial: 'Tutoriel', course: 'Parcours', lesson: (n) => `Leçon ${n}`, watched: 'Vu',
     playYt: 'Lire sur YouTube', watchYt: 'Regarder sur YouTube',
-    playErr: 'Cette vidéo ne peut pas être lue dans l’app', playNow: 'Lire maintenant', cancel: 'Annuler', speed: 'Vitesse', nextIn: (n) => `Suivante dans ${n}`,
+    continueW: 'Reprendre', playErr: 'Cette vidéo ne peut pas être lue dans l’app', playNow: 'Lire maintenant', cancel: 'Annuler', speed: 'Vitesse', nextIn: (n) => `Suivante dans ${n}`,
     courseProgress: (a, b) => `${a} sur ${b} vues`, continueCourse: 'Continuer le parcours',
   },
   es: {
@@ -60,7 +60,7 @@ export const ACADEMY_COPY = {
     source: 'Se reproduce desde YouTube', advice: 'Solo para aprender, no es asesoría financiera.',
     short: 'Short', film: 'Película', tutorial: 'Tutorial', course: 'Curso', lesson: (n) => `Lección ${n}`, watched: 'Visto',
     playYt: 'Ver en YouTube', watchYt: 'Abrir en YouTube',
-    playErr: 'Este vídeo no se puede reproducir en la app', playNow: 'Ver ahora', cancel: 'Cancelar', speed: 'Velocidad', nextIn: (n) => `Siguiente en ${n}`,
+    continueW: 'Seguir viendo', playErr: 'Este vídeo no se puede reproducir en la app', playNow: 'Ver ahora', cancel: 'Cancelar', speed: 'Velocidad', nextIn: (n) => `Siguiente en ${n}`,
     courseProgress: (a, b) => `${a} de ${b} vistas`, continueCourse: 'Seguir el curso',
   },
   de: {
@@ -75,7 +75,7 @@ export const ACADEMY_COPY = {
     source: 'Wird von YouTube abgespielt', advice: 'Nur zum Lernen, keine Finanzberatung.',
     short: 'Short', film: 'Film', tutorial: 'Anleitung', course: 'Kurs', lesson: (n) => `Lektion ${n}`, watched: 'Gesehen',
     playYt: 'Auf YouTube abspielen', watchYt: 'Auf YouTube ansehen',
-    playErr: 'Dieses Video lässt sich in der App nicht abspielen', playNow: 'Jetzt ansehen', cancel: 'Abbrechen', speed: 'Tempo', nextIn: (n) => `Weiter in ${n}`,
+    continueW: 'Weiterschauen', playErr: 'Dieses Video lässt sich in der App nicht abspielen', playNow: 'Jetzt ansehen', cancel: 'Abbrechen', speed: 'Tempo', nextIn: (n) => `Weiter in ${n}`,
     courseProgress: (a, b) => `${a} von ${b} gesehen`, continueCourse: 'Kurs fortsetzen',
   },
   it: {
@@ -90,7 +90,7 @@ export const ACADEMY_COPY = {
     source: 'Riprodotto da YouTube', advice: 'Solo per imparare, non è una consulenza finanziaria.',
     short: 'Short', film: 'Film', tutorial: 'Tutorial', course: 'Corso', lesson: (n) => `Lezione ${n}`, watched: 'Visto',
     playYt: 'Riproduci su YouTube', watchYt: 'Guarda su YouTube',
-    playErr: 'Questo video non si può riprodurre nell’app', playNow: 'Guarda ora', cancel: 'Annulla', speed: 'Velocità', nextIn: (n) => `Il prossimo tra ${n}`,
+    continueW: 'Continua a guardare', playErr: 'Questo video non si può riprodurre nell’app', playNow: 'Guarda ora', cancel: 'Annulla', speed: 'Velocità', nextIn: (n) => `Il prossimo tra ${n}`,
     courseProgress: (a, b) => `${a} di ${b} viste`, continueCourse: 'Continua il corso',
   },
 }

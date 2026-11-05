@@ -76,3 +76,25 @@ describe('lesson player', () => {
     expect(src).toMatch(/mode === 'plain'[\s\S]*<iframe src=\{embedUrl\(video\.id\)\}/)
   })
 })
+
+describe('continue watching and the offline notice', () => {
+  beforeEach(() => localStorage.clear())
+  it('lists the films left part way, with how far through they are', async () => {
+    const { inProgress, savePosition } = await import('./components/LessonPlayer')
+    savePosition('film', 300, 1200)
+    savePosition('short', 30, 60)
+    savePosition('done', 1190, 1200)
+    expect(inProgress()).toEqual({ film: 0.25 })
+  })
+  it('puts a Continue watching row on the Academy, named in every language', () => {
+    const aw = read('components/AcademyWatch.jsx')
+    expect(aw).toMatch(/resuming\.length > 0 &&[\s\S]*c\.continueW/)
+    for (const lang of ['en', 'ar', 'fr', 'es', 'de', 'it']) expect(typeof academyCopy(lang).continueW).toBe('string')
+  })
+  it('says the device is offline, in every language, and is mounted in both shells', async () => {
+    const { OFFLINE_COPY } = await import('./components/OfflineNotice')
+    for (const lang of ['en', 'ar', 'fr', 'es', 'de', 'it']) expect(OFFLINE_COPY[lang].msg.length).toBeGreaterThan(10)
+    expect((read('App.jsx').match(/<OfflineNotice \/>/g) || []).length).toBe(2)
+    expect(read('components/OfflineNotice.jsx')).toMatch(/role="status" aria-live="polite"/)
+  })
+})

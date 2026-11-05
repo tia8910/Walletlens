@@ -7,7 +7,7 @@ import { academyVideos, lessonOrder, newestLesson, watchUrl, isLesson, COURSES, 
 import { academyCopy, posterFor } from '../data/academyCopy'
 import { readWatched, markWatched, WATCHED_EVENT } from '../academyProgress'
 import { inAppShell, shellVersion } from '../nativeShell'
-import LessonPlayer from './LessonPlayer'
+import LessonPlayer, { inProgress } from './LessonPlayer'
 
 // The Academy, built around the video lessons on the WalletLens channel:
 // the newest episode, progress through the lessons, the courses as shelves,
@@ -123,11 +123,12 @@ function Player({ video, c, lang, onNext, nextVideo, onClose, onWatched }) {
   )
 }
 
-function Tile({ v, watched, c, onPlay }) {
+function Tile({ v, watched, c, onPlay, progress }) {
   return (
     <button type="button" className="aw-tile" onClick={() => onPlay(v, 'shelf')}>
       <Poster video={v} />
       <span className="aw-tile-kind">{v.kind === 'original' ? c.film : c.short}</span>
+      {progress > 0 && <span className="aw-tile-prog" aria-hidden="true"><i style={{ width: `${Math.round(progress * 100)}%` }} /></span>}
       {watched.has(v.key) && (
         <span className="aw-tile-done" aria-label={c.watched}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>
@@ -248,6 +249,10 @@ export default function AcademyWatch({ openKey = null, onOpened, onOpenHacks, on
       onNext={() => play(nextOf(playing), 'next')} onClose={() => setPlaying(null)} />
   )
 
+  // Films left part way, read on each render, so closing the player brings
+  // the row up to date.
+  const started = playing ? {} : inProgress()
+  const resuming = all.filter(v => started[v.key] > 0)
   const course = courseId && shelves.find(s => s.course.id === courseId)
   if (course) {
     return <>
@@ -279,6 +284,13 @@ export default function AcademyWatch({ openKey = null, onOpened, onOpenHacks, on
             ? <button type="button" className="aw-link" onClick={() => play(upNext, 'up_next')}><PlayIcon />{c.upNext}: <span dir="auto">{upNext.name}</span></button>
             : <small className="muted">{c.allDone}</small>}
         </div>
+      )}
+
+      {resuming.length > 0 && (
+        <section className="aw-sec">
+          <h3 className="aw-h">{c.continueW}</h3>
+          <div className="aw-shelf">{resuming.map(v => <Tile key={v.key} v={v} watched={watched} c={c} onPlay={(x) => play(x, 'continue')} progress={started[v.key]} />)}</div>
+        </section>
       )}
 
       {shelves.map(({ course, list }) => (

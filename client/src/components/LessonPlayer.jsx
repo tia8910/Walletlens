@@ -60,6 +60,12 @@ export function savePosition(key, t, d, all = readJson(POS_KEY, {})) {
   writeJson(POS_KEY, next)
   return next
 }
+/** How far through each film someone stopped, for the films worth resuming (key → 0..1). */
+export function inProgress(all = readJson(POS_KEY, {})) {
+  const out = {}
+  for (const [key, v] of Object.entries(all || {})) if (resumeAt(key, all) > 0) out[key] = Math.min(1, v.t / v.d)
+  return out
+}
 export const readRate = () => { const r = Number(readJson(RATE_KEY, 1)); return RATES.includes(r) ? r : 1 }
 
 /** Captions on when the words are in a language other than the reader's. */
