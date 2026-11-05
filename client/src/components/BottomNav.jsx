@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useState, useEffect, useLayoutEffect, useRef } from 'react'
+import React, { memo, useMemo, useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
@@ -195,32 +195,8 @@ const BottomNav = memo(function BottomNav({ v2 = false, v3 = false }) {
   const home = homePath(v2)
   const onHome = location.pathname.replace(/\/+$/, '') === home
 
-  // Lens glide: a magnifying lens, the WalletLens mark, sits over the active
-  // tab and glides to the next one. Its place is measured from the active
-  // button, so it follows any width, language direction or label length;
-  // with no tab active (Settings, say) it fades out where it is.
-  const navRef = useRef(null)
-  useLayoutEffect(() => {
-    const nav = navRef.current
-    if (!v3 || !nav) return
-    const place = () => {
-      const btn = nav.querySelector('.wl-nav-item.active')
-      const icon = btn?.querySelector('.wl-nav-icon')
-      if (!btn || !icon) { nav.dataset.lens = 'off'; return }
-      nav.style.setProperty('--wl-lens-x', `${btn.offsetLeft + btn.offsetWidth / 2}px`)
-      nav.style.setProperty('--wl-lens-y', `${btn.offsetTop + icon.offsetTop + icon.offsetHeight / 2}px`)
-      nav.dataset.lens = 'on'
-    }
-    place()
-    // The first placement lands without gliding in from the edge.
-    const ready = requestAnimationFrame(() => nav.classList.add('wl-lens-ready'))
-    window.addEventListener('resize', place)
-    return () => { cancelAnimationFrame(ready); window.removeEventListener('resize', place) }
-  }, [v3, location.pathname, activeTab, onHome])
-
   return (
-    <nav ref={navRef} className={`wl-bottom-nav${v2 ? ' wl-bottom-nav-v2' : ''}`} role="navigation" aria-label={t('atMainNav')}>
-      {v3 && <span className="wl-lens" aria-hidden="true"><span className="wl-lens-glass"><i className="wl-lens-glint" /></span></span>}
+    <nav className={`wl-bottom-nav${v2 ? ' wl-bottom-nav-v2' : ''}`} role="navigation" aria-label={t('atMainNav')}>
       {(v3 ? V3_NAV_ITEMS : v2 ? V2_NAV_ITEMS : NAV_ITEMS).map(item => {
         if (item.fab) return (
           <button key={item.id} type="button" className="wl-nav-fab" aria-label={t(item.labelKey)}
