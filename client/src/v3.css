@@ -368,9 +368,35 @@ html.wl-v3 .ticker-strip .tick {
 html.wl-v3 .ticker-strip .tick-name { color: var(--nl-ink) !important; font-weight: 800 !important; }
 html.wl-v3 .news-ticker-label { background: transparent !important; font-size: 0.72rem !important; letter-spacing: 0.02em !important; }
 
-/* Bottom bar: the active tab is a filled icon, as in the mockup. */
-html.wl-v3 .wl-nav-item.active .wl-nav-icon { background: transparent !important; }
-html.wl-v3 .wl-nav-item.active svg { fill: currentColor; fill-opacity: 0.12; }
+/* Bottom bar: Candle rally. Every tab stands on a flat candle; the one you
+   are on rallies into a tall green candle with a wick, the way a breakout
+   candle prints, and its icon turns white inside it. CSS only: the body and
+   the wick are the icon box's own pseudo-elements. */
+html.wl-v3 .wl-nav-item .wl-nav-icon {
+  position: relative; isolation: isolate; overflow: visible !important; width: 30px !important; height: 40px !important; margin: -8px 0 1px; border-radius: 9px !important;
+  background: transparent !important; box-shadow: none !important;
+}
+html.wl-v3 .wl-nav-item .wl-nav-icon svg { position: relative; z-index: 1; }
+html.wl-v3 .wl-nav-item .wl-nav-icon::before {
+  content: ''; position: absolute; left: 6px; right: 6px; bottom: 0; height: 4px; border-radius: 9px;
+  background: currentColor; opacity: 0.2;
+  transition: height .6s cubic-bezier(.3, 1.55, .45, 1), left .4s, right .4s, opacity .3s, box-shadow .4s;
+}
+html.wl-v3 .wl-nav-item .wl-nav-icon::after {
+  content: ''; position: absolute; left: calc(50% - 1px); top: -8px; bottom: -4px; width: 2px; border-radius: 1px;
+  background: rgb(var(--g-rgb)); transform-origin: bottom; transform: scaleY(0.1); opacity: 0;
+  transition: transform .6s cubic-bezier(.3, 1.55, .45, 1), opacity .3s;
+}
+html.wl-v3 .wl-nav-item.active .wl-nav-icon { color: #fff !important; }
+html.wl-v3 .wl-nav-item.active .wl-nav-icon::before {
+  left: 0; right: 0; height: 100%; opacity: 1;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, 0.22) 100%), rgb(var(--g-rgb));
+  box-shadow: 0 10px 18px -8px rgba(var(--g-rgb), 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+html.wl-v3 .wl-nav-item.active .wl-nav-icon::after { transform: none; opacity: 1; z-index: -1; }
+@media (prefers-reduced-motion: reduce) {
+  html.wl-v3 .wl-nav-item .wl-nav-icon::before, html.wl-v3 .wl-nav-item .wl-nav-icon::after { transition: none; }
+}
 html.wl-v3 .wl-nav-item .wl-nav-label { font-size: 0.66rem !important; font-weight: 700; }
 
 /* Round header buttons: an older narrow-screen rule collapses their icons. */
