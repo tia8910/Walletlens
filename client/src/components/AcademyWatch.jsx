@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
 import { noteMoment } from '../reviewPrompt'
 import { useLanguage } from '../LanguageContext'
-import { academyVideos, lessonOrder, newestLesson, embedUrl, watchUrl, isLesson, COURSES, ACTIONS, inLang, YT_SUBSCRIBE } from '../data/academyVideos'
+import { academyVideos, lessonOrder, newestLesson, watchUrl, isLesson, COURSES, ACTIONS, inLang, YT_SUBSCRIBE } from '../data/academyVideos'
 import { academyCopy, posterFor } from '../data/academyCopy'
 import { readWatched, markWatched, WATCHED_EVENT } from '../academyProgress'
 import { inAppShell, shellVersion } from '../nativeShell'
+import LessonPlayer, { inProgress } from './LessonPlayer'
 
 // The Academy, built around the video lessons on the WalletLens channel:
 // the newest episode, progress through the lessons, the courses as shelves,
@@ -39,7 +40,7 @@ function useWatched() {
   return watched
 }
 
-function Player({ video, c, lang, onNext, nextVideo, onClose }) {
+function Player({ video, c, lang, onNext, nextVideo, onClose, onWatched }) {
   const navigate = useNavigate()
   useEffect(() => {
     const esc = (e) => { if (e.key === 'Escape') onClose() }
@@ -55,6 +56,8 @@ function Player({ video, c, lang, onNext, nextVideo, onClose }) {
   // there: the shell hands any outside address to a browser tab or YouTube.
   const openOnYoutube = (e) => {
     track('academy_open_youtube', { video: video.key, shell })
+    // The first app shell plays every lesson on YouTube itself, so opening it there counts.
+    if (shell) onWatched?.(video)
     if (!shell) return
     e?.preventDefault?.()
     try { window.location.href = watchUrl(video.id) } catch { /* nothing to open with */ }
@@ -75,9 +78,14 @@ function Player({ video, c, lang, onNext, nextVideo, onClose }) {
             <span className="aw-frame-out-btn">{YT_PLAY}{c.playYt}</span>
           </button>
         ) : (
-          <div className="aw-frame">
-            <iframe src={embedUrl(video.id)} title={video.name} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
-          </div>
+          <LessonPlayer key={video.key} video={video} lang={lang} c={c} nextVideo={nextVideo} onNext={onNext} onWatched={onWatched}
+            renderError={() => (
+              <a className="aw-frame aw-frame-out aw-frame-err" href={watchUrl(video.id)} target="_blank" rel="noopener noreferrer" onClick={openOnYoutube}>
+                <Poster video={video} />
+                <span className="aw-err-msg">{c.playErr}</span>
+                <span className="aw-frame-out-btn">{YT_PLAY}{c.playYt}</span>
+              </a>
+            )} />
         )}
         <div className="aw-after">
           <div className="aw-head">
@@ -115,11 +123,12 @@ function Player({ video, c, lang, onNext, nextVideo, onClose }) {
   )
 }
 
-function Tile({ v, watched, c, onPlay }) {
+function Tile({ v, watched, c, onPlay, progress }) {
   return (
     <button type="button" className="aw-tile" onClick={() => onPlay(v, 'shelf')}>
       <Poster video={v} />
       <span className="aw-tile-kind">{v.kind === 'original' ? c.film : c.short}</span>
+      {progress > 0 && <span className="aw-tile-prog" aria-hidden="true"><i style={{ width: `${Math.round(progress * 100)}%` }} /></span>}
       {watched.has(v.key) && (
         <span className="aw-tile-done" aria-label={c.watched}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>
@@ -178,13 +187,18 @@ export default function AcademyWatch({ openKey = null, onOpened, onOpenHacks, on
 
   const play = (v, source) => {
     setPlaying(v)
-    // Finishing the last unwatched lesson of a course is a moment worth
-    // noticing (and the one point the app may ask for a rating).
-    const shelf = shelves.find(s => s.course.id === v.course)?.list || []
-    const finishes = !watched.has(v.key) && shelf.length > 1 && shelf.every(x => x.key === v.key || watched.has(x.key))
-    markWatched(v.key)
-    if (finishes) { noteMoment('achievement'); track('academy_course_done', { course: v.course }) }
     track('academy_video_play', { video: v.key, kind: v.kind, source })
+  }
+  // The player calls this once most of a lesson has played. Finishing the
+  // last unwatched lesson of a course is a moment worth noticing (and the one
+  // point the app may ask for a rating).
+  const onWatched = (v) => {
+    const seen = readWatched()
+    const shelf = shelves.find(s => s.course.id === v.course)?.list || []
+    const finishes = !seen.has(v.key) && shelf.length > 1 && shelf.every(x => x.key === v.key || seen.has(x.key))
+    markWatched(v.key)
+    track('academy_video_watched', { video: v.key, kind: v.kind })
+    if (finishes) { noteMoment('achievement'); track('academy_course_done', { course: v.course }) }
   }
 
   // A notification, the Home card or a hack card asked for one video.
@@ -231,10 +245,14 @@ export default function AcademyWatch({ openKey = null, onOpened, onOpenHacks, on
     </a>
   )
   const player = playing && (
-    <Player video={playing} c={c} lang={lang} nextVideo={nextOf(playing)}
+    <Player video={playing} c={c} lang={lang} nextVideo={nextOf(playing)} onWatched={onWatched}
       onNext={() => play(nextOf(playing), 'next')} onClose={() => setPlaying(null)} />
   )
 
+  // Films left part way, read on each render, so closing the player brings
+  // the row up to date.
+  const started = playing ? {} : inProgress()
+  const resuming = all.filter(v => started[v.key] > 0)
   const course = courseId && shelves.find(s => s.course.id === courseId)
   if (course) {
     return <>
@@ -266,6 +284,13 @@ export default function AcademyWatch({ openKey = null, onOpened, onOpenHacks, on
             ? <button type="button" className="aw-link" onClick={() => play(upNext, 'up_next')}><PlayIcon />{c.upNext}: <span dir="auto">{upNext.name}</span></button>
             : <small className="muted">{c.allDone}</small>}
         </div>
+      )}
+
+      {resuming.length > 0 && (
+        <section className="aw-sec">
+          <h3 className="aw-h">{c.continueW}</h3>
+          <div className="aw-shelf">{resuming.map(v => <Tile key={v.key} v={v} watched={watched} c={c} onPlay={(x) => play(x, 'continue')} progress={started[v.key]} />)}</div>
+        </section>
       )}
 
       {shelves.map(({ course, list }) => (

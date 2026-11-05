@@ -758,6 +758,8 @@ html.wl-v3 .nl-sheet .nl-chips button { min-height: 0 !important; height: 32px !
 .nl-hrow { border-bottom: 1px solid var(--nl-line); }
 .nl-hrow:last-child { border-bottom: 0; }
 .nl-hold .nl-hrow .nl-row { border-bottom: 0; cursor: pointer; }
+.nl-hline { display: flex; align-items: center; gap: 0.65rem; }
+.nl-hline > .nl-row { flex: 1; min-width: 0; }
 .nl-row-more {
   flex: none; width: 30px; height: 30px; margin-inline-start: -0.2rem; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
   background: transparent; color: var(--nl-sub);

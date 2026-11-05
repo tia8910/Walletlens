@@ -97,7 +97,7 @@ export default function SmartMoneyTicker() {
   if (!show || !flows.length) return null
 
   return (
-    <div className="ticker-strip" role="list" aria-label={t('tickerSmartMoney')}>
+    <div className="ticker-strip" tabIndex={0} role="list" aria-label={t('tickerSmartMoney')}>
       {/* Self-identifying, because without it this reads as a second price
           strip that disagrees with the first: the same token can be down on
           the day and accumulated by smart money, so ETH shows red above and

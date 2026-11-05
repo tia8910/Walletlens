@@ -94,8 +94,8 @@ export default function FearAndGreedIndex() {
                   <div key={label} className="fgi-zone"
                     style={{ borderInlineStart: `4px solid ${FNG_ZONE_COLORS[j]}` }}>
                     <div className="fgi-zone-head">
-                      <span className="fgi-zone-range" style={{ color: FNG_ZONE_COLORS[j] }}>{FNG_ZONE_RANGES[j]}</span>
-                      <span className="fgi-zone-label" style={{ color: FNG_ZONE_COLORS[j] }}>{label}</span>
+                      <span className="fgi-zone-range" style={{ '--z': FNG_ZONE_COLORS[j] }}>{FNG_ZONE_RANGES[j]}</span>
+                      <span className="fgi-zone-label" style={{ '--z': FNG_ZONE_COLORS[j] }}>{label}</span>
                     </div>
                     <p className="fgi-zone-desc">{desc}</p>
                   </div>

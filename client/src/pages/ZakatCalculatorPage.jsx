@@ -347,7 +347,7 @@ export default function ZakatCalculatorPage() {
         <section className="tc-section">
           <h2>{c.h2nisab}</h2>
           <p>{c.nisabBody}</p>
-          <p style={{ opacity: 0.75, fontSize: '0.92rem' }}>
+          <p style={{ fontSize: '0.92rem' }}>
             {NISAB_GOLD_GRAMS}g / {NISAB_SILVER_GRAMS}g · {GRAMS_PER_TROY_OZ.toFixed(4)} g per troy ounce
           </p>
         </section>
@@ -369,7 +369,7 @@ export default function ZakatCalculatorPage() {
         <section className="tc-section">
           <p className="zk-lp-disclaimer">{c.disclaimer}</p>
           {spotFailed && (
-            <p className="zk-lp-disclaimer" style={{ opacity: 0.7 }}>
+            <p className="zk-lp-disclaimer">
               {isAr
                 ? 'تعذّر جلب سعر المعدن الآن — أدخله يدويًا أعلاه وستعمل الحاسبة كالمعتاد.'
                 : 'Could not reach the metal price feed just now — type a price above and the calculator works as normal.'}

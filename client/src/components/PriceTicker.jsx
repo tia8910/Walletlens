@@ -405,7 +405,7 @@ function PriceTicker({ v3 = false }) {
         <button type="button" className="nl-ticker-arrow" onClick={() => nudge(-1)} aria-label="‹" tabIndex={-1}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7" /></svg>
         </button>
-        <div className="ticker-strip nl-ticker-strip" ref={stripRef} role="list" aria-label={t('tickerPrices')}>
+        <div className="ticker-strip nl-ticker-strip" ref={stripRef} tabIndex={0} role="list" aria-label={t('tickerPrices')}>
           {chips(displayItems, 0)}
           {chips(displayItems, 1)}
         </div>
@@ -419,7 +419,7 @@ function PriceTicker({ v3 = false }) {
   }
 
   return (
-    <div className="ticker-strip" role="list" aria-label={t('tickerPrices')}>
+    <div className="ticker-strip" tabIndex={0} role="list" aria-label={t('tickerPrices')}>
       {chips(displayItems, 0)}
     </div>
   )

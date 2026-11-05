@@ -148,6 +148,10 @@ export default function NlHoldings({
             const showsDay = !(sort === 'pnl_pct' || sort === 'invested')
             return (
               <div key={h.coin_id} className="nl-hrow">
+              {/* The row and its actions button sit side by side: a button
+                  inside a role="button" row is a control within a control,
+                  which screen readers cannot reach. */}
+              <div className="nl-hline">
               <div role="button" tabIndex={0} aria-pressed={picking ? isSel : undefined} className={`nl-row${isSel ? ' sel' : ''}${picking ? ' picking' : ''}`}
                 onClick={() => (picking ? onToggleSelect(h) : onAsset(h))}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); picking ? onToggleSelect(h) : onAsset(h) } }} {...bindRow(h)}>
@@ -173,6 +177,7 @@ export default function NlHoldings({
                     ? <small className={h.pnl >= 0 ? 'up' : 'down'}>{pctTxt(h.pnlPct)}</small>
                     : <small className={ch >= 0 ? 'up' : 'down'}>{pctTxt(ch)}</small>}
                 </div>
+              </div>
                 <button type="button" className={`nl-row-more${openRow === h.coin_id ? ' on' : ''}`} aria-label={t('atAssetActions')} aria-expanded={openRow === h.coin_id}
                   onClick={e => { e.stopPropagation(); setOpenRow(r => r === h.coin_id ? null : h.coin_id) }}>
                   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" /></svg>
