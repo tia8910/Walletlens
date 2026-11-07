@@ -1,0 +1,17 @@
+node_modules/
+three.min.js
+pp/
+fonts/
+tts/
+frames/
+video.html
+events.json
+soundtrack.wav
+*.mp4
+frames_*/
+*-events.json
+soundtrack_*.wav
+vo_*/
+vo_*.json
+lips.js
+babble.npy
