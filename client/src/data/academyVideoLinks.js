@@ -421,6 +421,25 @@ export default {
       "lang": "ar",
       "youtube": "mfNerHK6tf0",
       "added": "2026-11-02"
+    },
+    {
+      "key": "yt-1N-MYXG8cLo",
+      "kind": "story",
+      "name": "كانت من أكبر 10 عملات في العالم… وماتت في 7 أيام #shorts",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "1N-MYXG8cLo",
+      "added": "2026-11-07"
+    },
+    {
+      "key": "yt-Z6pzTAKkquM",
+      "kind": "original",
+      "name": "عندما استيقظ الملايين ليجدوا أنفسهم مفلسين.. القصة المرعبة لـ لونا",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "Z6pzTAKkquM",
+      "added": "2026-11-07",
+      "wide": true
     }
   ]
 }
