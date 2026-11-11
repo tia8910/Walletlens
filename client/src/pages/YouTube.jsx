@@ -9,15 +9,15 @@ import { academyVideos, watchUrl, videoUrl, YT_CHANNEL, YT_SUBSCRIBE } from '../
 // small link beside it opens it on YouTube instead.
 const COPY = {
   en: {
-    title: 'WalletLens on YouTube',
-    intro: 'Short stories and tutorials about money habits, risk and getting the most out of WalletLens.',
+    title: 'Free investing video lessons',
+    intro: 'Short videos from the WalletLens Academy on investing mindset, risk, and buying and selling. Each one teaches a single habit. Free, no account, and they play right here or on YouTube.',
     subscribe: 'Subscribe on YouTube', channel: 'Open the channel',
     latest: 'Latest videos', academy: 'Watch with lessons in the Academy', none: 'New videos land here as soon as they go live.',
     onYt: 'YouTube',
   },
   ar: {
-    title: 'WalletLens على يوتيوب',
-    intro: 'قصص قصيرة وشروحات عن عادات المال والمخاطر وكيف تستفيد من WalletLens.',
+    title: 'دروس فيديو مجانية عن الاستثمار',
+    intro: 'فيديوهات قصيرة من أكاديمية WalletLens عن عقلية الاستثمار والمخاطر والشراء والبيع. كل فيديو يعلّم عادة واحدة. مجانية وبدون حساب، وتُشاهد هنا أو على يوتيوب.',
     subscribe: 'اشترك على يوتيوب', channel: 'افتح القناة',
     latest: 'أحدث الفيديوهات', academy: 'شاهد مع الدروس في الأكاديمية', none: 'ستظهر الفيديوهات الجديدة هنا فور نشرها.',
     onYt: 'يوتيوب',
@@ -57,6 +57,7 @@ export default function YouTube() {
                   onClick={() => track('youtube_page_video', { video: v.key, where: 'youtube' })}>
                   {c.onYt}
                 </a>
+                {v.lesson && <><br /><small><strong>{v.lesson.title}.</strong> {v.lesson.body}</small></>}
               </li>
             ))}
           </ul>

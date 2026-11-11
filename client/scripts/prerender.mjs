@@ -23,6 +23,7 @@ import { AR_FEATURES, AR_LANDING, AR_COMPARISONS, AR_VS } from '../src/data/arab
 import { AR_POSTS } from '../src/data/arabicBlog.js'
 import { buildLandings, LANDING_ROUTES } from './landings/build.mjs'
 import { publishedVideos } from '../src/data/academyVideos.js'
+import { videoHub, llmsVideoSection } from './videoSeo.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, '..', 'dist')
@@ -1217,7 +1218,7 @@ ${arFaq.html}
 // Arabic free-net-worth-tracker landing
 {
   const arFaq = faqBlock(AR_LANDING.faq)
-  const body = `${AR_LANDING.bodyHtml}\n${arFaq.html}\n<p><a href="/ar/import-portfolio-from-screenshot">الاستيراد من لقطة شاشة</a> · <a href="/ar/add-holdings-by-voice">الإضافة بالصوت</a> · <a href="/free-net-worth-tracker">English</a></p>`
+  const body = `<h1>${esc(AR_LANDING.h1)}</h1>\n${AR_LANDING.bodyHtml}\n${arFaq.html}\n<p><a href="/ar/import-portfolio-from-screenshot">الاستيراد من لقطة شاشة</a> · <a href="/ar/add-holdings-by-voice">الإضافة بالصوت</a> · <a href="/free-net-worth-tracker">English</a></p>`
   write('/ar/free-net-worth-tracker', buildPage({
     path: '/ar/free-net-worth-tracker',
     title: AR_LANDING.title,
@@ -1354,8 +1355,11 @@ for (const c of ALL_TRACK_ASSETS) {
     ? `Add ${esc(c.symbol)} with your quantity in ounces and the price you paid.`
     : `Add a ${esc(c.symbol)} trade with the amount and price you paid.`
 
+  // A name that already carries its ticker ("Vanguard S&P 500 ETF (VOO)") is
+  // not followed by "Stock (VOO)" as well.
+  const namesTicker = c.name.includes(`(${c.symbol})`)
   const pageTitle = isStock
-    ? `Track ${c.name} Stock (${c.symbol}) Free — No Account | WalletLens`
+    ? (namesTicker ? `Track ${c.name} Free — No Account | WalletLens` : `Track ${c.name} Stock (${c.symbol}) Free — No Account | WalletLens`)
     : isMetal
     ? `Track ${c.name} (${c.symbol}) Price Free — No Account | WalletLens`
     : `Track ${c.name} (${c.symbol}) Free — No Account Portfolio Tracker | WalletLens`
@@ -1899,21 +1903,18 @@ ${aboutFaqs.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
 }))
 
 // ── YouTube ────────────────────────────────────────────────
-write('/youtube', buildPage({
-  path: '/youtube',
-  title: 'WalletLens on YouTube — Stories and Tutorials',
-  description: 'Short stories and tutorials about money habits, risk and getting the most out of WalletLens, on the WalletLens YouTube channel.',
-  bodyHtml: `
-<h1>WalletLens on YouTube</h1>
-<p>Short stories and tutorials about money habits, risk and getting the most out of WalletLens.</p>
-<p><a href="https://www.youtube.com/@walletlens?sub_confirmation=1">Subscribe on YouTube</a> · <a href="https://www.youtube.com/@walletlens">Open the channel</a></p>
-<h2>Latest videos</h2>
-<ul>
-${publishedVideos().filter(v => v.lang === 'en' || v.lang === 'all').map(v => `<li><a href="https://www.youtube.com/watch?v=${esc(String(v.youtube).replace(/^.*(?:v=|youtu\.be\/|shorts\/)/, ''))}">${esc(v.name)}</a></li>`).join('\n')}
-</ul>
-<p><a href="/academy">Watch with lessons in the Academy</a> · <a href="/dashboard">Open WalletLens free</a></p>
-`,
-}))
+// The lesson index: every Academy video with the lesson it teaches in words,
+// and VideoObject data for each (see videoSeo.mjs).
+{
+  const hub = videoHub({ origin: ORIGIN })
+  write('/youtube', buildPage({
+    path: '/youtube',
+    title: 'Free Investing Video Lessons — WalletLens on YouTube',
+    description: `${hub.count} free short video lessons on investing mindset, risk, and buying and selling. Watch in WalletLens or on YouTube. No account needed.`,
+    bodyHtml: hub.bodyHtml,
+    jsonLd: hub.jsonLd,
+  }))
+}
 
 // ── FAQ ──────────────────────────────────────────────────────────────────────
 // Mirrors client/src/pages/FAQ.jsx (FAQ_SECTIONS) — keep the two in sync.
@@ -1928,7 +1929,7 @@ const faqPageSections = [
     { q: 'Can I use WalletLens on my phone?',
       a: 'Yes. WalletLens is a Progressive Web App (PWA) — install it to your home screen on iOS, Android, or desktop for a fast, app-like experience that works offline. There is also a Chrome browser extension for quick portfolio checks.' },
     { q: 'Does WalletLens support languages other than English?',
-      a: 'Yes — the interface and blog are available in Arabic with full right-to-left layout, and more languages are planned.' },
+      a: 'Yes. The app is available in six languages: English, Arabic (with full right-to-left layout), French, Spanish, German and Italian. The blog is in English and Arabic, and voice input understands English and Arabic.' },
   ]},
   { title: 'Privacy & Data', faqs: [
     { q: 'Where is my portfolio data stored?',
@@ -2621,7 +2622,7 @@ const STATIC_ROUTES = [
   { path: '/rebalancing-calculator', changefreq: 'monthly', priority: '0.85' },
   { path: '/zakat-calculator', changefreq: 'weekly', priority: '0.9' },
   { path: '/about',   changefreq: 'monthly', priority: '0.7' },
-  { path: '/youtube', changefreq: 'weekly',  priority: '0.6' },
+  { path: '/youtube', changefreq: 'weekly',  priority: '0.8' },
   { path: '/vision',  changefreq: 'monthly', priority: '0.8' },
   { path: '/faq',     changefreq: 'monthly', priority: '0.7' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.5' },
@@ -2700,10 +2701,12 @@ try {
   const articleList = POSTS.map(p => `- [${p.title}](${ORIGIN}/blog/${p.slug}/): ${p.summary}`).join('\n')
   const newSection = `## Blog articles\n\n${articleList}\n`
   // Replace from the "## Blog articles" heading up to the next "## " heading.
-  const llms = llmsTemplate.replace(
+  const llmsNoVideos = llmsTemplate.replace(
     /## Blog articles[\s\S]*?(?=\n## )/,
     newSection + '\n'
   )
+  // The video lessons, each with what it teaches, ahead of the articles.
+  const llms = llmsNoVideos.replace(/\n## Blog articles/, `\n${llmsVideoSection({ origin: ORIGIN })}\n## Blog articles`)
   writeFileSync(resolve(DIST, 'llms.txt'), llms, 'utf8')
   console.log(`Wrote llms.txt (${POSTS.length} articles).`)
 
