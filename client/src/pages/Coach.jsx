@@ -10,6 +10,7 @@ import Icon from '../components/Icon'
 import { useLanguage } from '../LanguageContext'
 import { CLASS_LABEL_KEYS, renderTip } from '../data/walletEvalTips'
 import Alpha from './Alpha'
+import './Coach.css'
 
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
 // v2 merges the dashboard's Analysis tab (AI analysis, Technicals, Risk) in here.

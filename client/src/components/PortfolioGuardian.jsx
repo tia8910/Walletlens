@@ -7,6 +7,7 @@ import { api } from '../api'
 import { makeQr } from '../utils/qrBackup'
 import { useLanguage } from '../LanguageContext'
 import { VOICE_API } from '../apiHosts.js'
+import './PortfolioGuardian.css'
 
 const ENDPOINT = VOICE_API
 const GUARDIAN_KEY = 'wl_guardian'

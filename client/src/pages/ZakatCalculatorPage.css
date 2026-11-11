@@ -1,0 +1,67 @@
+/* ZakatCalculatorPage styles. Moved out of index.css so they load with the ZakatCalculatorPage
+   chunk instead of blocking first paint on every route. Only pages/ZakatCalculatorPage.jsx uses these classes. */
+
+.zk-lp-card {
+  margin: 1.4rem auto 0; max-width: 620px; text-align: start;
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 18px; padding: 1.1rem;
+}
+
+.zk-lp-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.7rem;
+}
+
+.zk-lp-field { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+
+.zk-lp-label { font-size: 0.74rem; font-weight: 700; color: var(--text-muted); }
+
+.zk-lp-input {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 10px; padding: 0.5rem 0.7rem;
+}
+
+.zk-lp-input input {
+  flex: 1; min-width: 0; border: 0; background: none; color: var(--text);
+  font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; outline: none;
+}
+
+.zk-lp-input em { font-style: normal; font-size: 0.8rem; color: var(--text-sub); flex: 0 0 auto; }
+
+.zk-lp-opts { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+
+.zk-lp-seg {
+  display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+}
+
+.zk-lp-spot {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem;
+  margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid var(--border);
+}
+
+.zk-lp-out { margin-top: 1rem; padding-top: 0.9rem; border-top: 1px solid var(--border); }
+
+.zk-lp-out-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+  padding: 0.35rem 0; font-size: 0.88rem; color: var(--text-muted);
+}
+
+.zk-lp-out-total { border-top: 1px dashed var(--border); margin-top: 0.35rem; padding-top: 0.6rem; }
+
+.zk-lp-note { margin: 0.5rem 0 0; font-size: 0.8rem; color: var(--text-sub); }
+
+.zk-lp-ramadan { margin-top: 1rem; font-size: 0.92rem; color: var(--text-muted); }
+
+.zk-lp-defs { margin: 0.6rem 0 0; padding: 0; }
+
+.zk-lp-defs > div { padding: 0.7rem 0; border-top: 1px solid var(--border); }
+
+.zk-lp-defs dt { font-weight: 700; color: var(--text); margin: 0 0 0.25rem; }
+
+.zk-lp-defs dd { margin: 0; color: var(--text-muted); }
+
+.zk-lp-disclaimer { font-size: 0.85rem; color: var(--text-muted); }
+
+@media (max-width: 480px) {
+.zk-lp-spot { grid-template-columns: 1fr; }
+}

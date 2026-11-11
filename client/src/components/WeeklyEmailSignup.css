@@ -1,0 +1,126 @@
+/* WeeklyEmailSignup styles. Moved out of index.css so they load with the Settings
+   chunk instead of blocking first paint on every route. Only components/WeeklyEmailSignup.jsx uses these classes. */
+
+.wk-signup { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.wk-lead { margin: 0; font-size: 0.82rem; line-height: 1.5; color: var(--text-muted); }
+
+.wk-row { display: flex; gap: 0.5rem; }
+
+.wk-input {
+  flex: 1; min-width: 0; border-radius: 10px; padding: 0.6rem 0.8rem;
+  font-size: 0.85rem; background: var(--surface-1); border: 1px solid var(--border);
+  color: var(--text); outline: none;
+}
+
+.wk-input:focus { border-color: var(--g); }
+
+.wk-btn {
+  padding: 0.6rem 1.1rem; border-radius: 10px; border: none; cursor: pointer;
+  background: linear-gradient(135deg, #047857, #10b981); color: #fff;
+  font-weight: 700; font-size: 0.82rem; white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+  transition: transform 0.14s ease, box-shadow 0.2s ease;
+}
+
+.wk-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(16,185,129,0.42); }
+
+.wk-btn:disabled { opacity: 0.7; cursor: default; }
+
+.wk-err { margin: 0; font-size: 0.76rem; color: #f87171; }
+
+.wk-note { margin: 0; font-size: 0.72rem; color: var(--text-sub); }
+
+.wk-signup--done { gap: 0.5rem; }
+
+.wk-done-title {
+  margin: 0; display: inline-flex; align-items: center; gap: 0.4em;
+  font-weight: 800; font-size: 0.9rem; color: var(--g-ink);
+}
+
+.wk-done-email { color: var(--text); font-weight: 700; }
+
+.wk-done-lead { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+
+.wk-how-title {
+  margin: 0.25rem 0 0; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-sub);
+}
+
+.wk-how { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+
+.wk-how li {
+  display: flex; align-items: flex-start; gap: 0.55em;
+  font-size: 0.8rem; line-height: 1.45; color: var(--text-muted);
+}
+
+.wk-how li > svg { flex: 0 0 auto; margin-top: 0.15em; color: var(--g); }
+
+.wk-how li > span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+
+/* The overlay scrolls as a last resort. A centred flex item that outgrows a
+   fixed container overflows equally in BOTH directions, and the half above the
+   top edge cannot be reached at all — which is how the badge and the "Got it"
+   button were both sliced off on a short screen. */
+.wk-modal-overlay {
+  position: fixed; inset: 0; z-index: 4000;
+  display: flex; align-items: center; justify-content: center; padding: 1.1rem;
+  background: rgba(4,10,7,0.62); backdrop-filter: blur(6px);
+  overflow-y: auto;
+  animation: wk-modal-fade 0.18s ease-out;
+}
+
+/* Column layout so the height can be capped and given to the one part that is
+   allowed to scroll. dvh, because on mobile the browser chrome makes vh taller
+   than the space actually visible — the exact case this broke in. */
+.wk-modal {
+  width: 100%; max-width: 400px; border-radius: 20px; padding: 1.4rem 1.3rem 1.2rem;
+  background: var(--bg4, #0d1f14); border: 1px solid var(--border);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5); text-align: center;
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 2.2rem);
+  max-height: calc(100dvh - 2.2rem);
+  animation: wk-modal-pop 0.24s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.wk-modal-badge, .wk-modal-title, .wk-modal-sub, .wk-modal-btn { flex: none; }
+
+.wk-modal-badge {
+  width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 0.85rem;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 8px 20px rgba(16,185,129,0.45), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+.wk-modal-title { margin: 0 0 0.35rem; font-size: 1.15rem; font-weight: 900; color: var(--text); }
+
+.wk-modal-sub { margin: 0 0 1rem; font-size: 0.85rem; line-height: 1.5; color: var(--text-muted); }
+
+.wk-modal-how {
+  text-align: left; margin: 0 0 1.1rem;
+  overflow-y: auto; min-height: 0; overscroll-behavior: contain;
+}
+
+.wk-modal-how .wk-how-title { margin-top: 0; }
+
+.wk-modal-btn {
+  width: 100%; padding: 0.75rem 1rem; border-radius: 12px; border: none; cursor: pointer;
+  background: linear-gradient(135deg, #047857, #10b981); color: #fff;
+  font-weight: 800; font-size: 0.9rem;
+  box-shadow: 0 6px 16px rgba(16,185,129,0.4);
+  transition: transform 0.14s ease;
+}
+
+.wk-modal-btn:hover { transform: translateY(-1px); }
+
+@media (prefers-reduced-motion: reduce) {
+.wk-modal-overlay, .wk-modal { animation: none; }
+}
+
+.wk-off {
+  align-self: flex-start; margin-top: 0.35rem; background: none; border: none;
+  color: var(--text-sub); font-size: 0.76rem; text-decoration: underline;
+  cursor: pointer; padding: 0.2rem 0;
+}
+
+.wk-off:hover { color: #f87171; }

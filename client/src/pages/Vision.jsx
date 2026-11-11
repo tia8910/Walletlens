@@ -7,6 +7,7 @@ import { isStablecoin } from '../stablecoins'
 import Icon from '../components/Icon'
 import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
+import './Vision.css'
 
 const fmt = (n) => n == null ? '—' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 const fmtSmall = (n) => n == null ? '—' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n)

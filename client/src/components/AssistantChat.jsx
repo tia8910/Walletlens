@@ -8,6 +8,7 @@ import {
 } from '../assistantAi'
 import { track } from '../analytics'
 import AiReport from './AiReport'
+import './AssistantChat.css'
 
 // Floating in-app assistant. A bottom-right launcher opens a chat panel where
 // the user describes what they want to do, and the AI points them to the right

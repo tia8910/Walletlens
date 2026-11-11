@@ -1,0 +1,235 @@
+/* AssetDetail styles. Moved out of index.css so they load with the AssetDetail
+   chunk instead of blocking first paint on every route. Only pages/AssetDetail.jsx uses these classes. */
+
+[data-wl-light] .coin-note-input::placeholder { color: var(--text-sub); }
+
+[data-wl-light] .coin-note-input { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: var(--text); }
+
+.detail-hero-left { display: flex; align-items: center; gap: 0.75rem; }
+
+.detail-hero-right { text-align: right; }
+
+.detail-name { font-size: 1.3rem; font-weight: 800; margin: 0; }
+
+.detail-sub { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.1rem; flex-wrap: wrap; }
+
+.detail-price-big { font-size: 1.6rem; font-weight: 800; color: var(--text); }
+
+.detail-change { font-size: 0.85rem; font-weight: 700; }
+
+.chart-tabs {
+  display: flex; gap: 0.35rem; margin-bottom: 0.75rem;
+  background: var(--bg3); padding: 3px; border-radius: 10px;
+}
+
+.chart-tab {
+  flex: 1; padding: 0.45rem 0.5rem; border-radius: 8px;
+  border: none; background: transparent; color: var(--text2);
+  font-size: 0.78rem; font-weight: 700; cursor: pointer;
+  transition: background .15s,color .15s,border-color .15s,box-shadow .15s,transform .15s,opacity .15s,filter .15s;
+}
+
+.chart-tab:hover { color: var(--text); }
+
+.detail-stats-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.dstat-label { color: var(--text2); font-weight: 500; }
+
+.detail-holdings-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+}
+
+.dh-item { display: flex; flex-direction: column; gap: 0.15rem; }
+
+.dh-label { font-size: 0.72rem; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+
+.dh-value { font-size: 0.95rem; font-weight: 700; }
+
+.sell-plan-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.85rem;
+}
+
+.sp-add-btn:hover { background: var(--gd); }
+
+.sp-form {
+  display: flex; flex-direction: column; gap: 0.5rem;
+  background: var(--bg3); border-radius: 12px; padding: 0.75rem;
+  margin-bottom: 0.85rem; border: 1px solid var(--border);
+}
+
+.sp-save-btn {
+  background: var(--gd); color: #fff; border: none;
+  padding: 0.65rem; border-radius: 10px; font-weight: 600; cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.sp-save-btn:hover { background: var(--gd); }
+
+.sp-empty { font-size: 0.85rem; margin: 0; padding: 0.5rem 0; }
+
+.sp-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.sp-row {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 12px; padding: 0.85rem;
+}
+
+.sp-row.sp-reached { border-color: var(--gd); background: rgba(var(--gd-rgb),0.06); }
+
+.sp-row-top {
+  display: grid; grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 0.6rem; align-items: center; margin-bottom: 0.6rem;
+}
+
+.sp-price, .sp-qty, .sp-proceeds { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+
+.sp-label {
+  font-size: 0.68rem; color: var(--text2); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+
+.sp-val {
+  font-size: 0.88rem; font-weight: 700; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.sp-remove {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text2); width: 28px; height: 28px; border-radius: 8px;
+  font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 0;
+}
+
+.sp-remove:hover { background: var(--red)20; color: var(--red); border-color: var(--red); }
+
+.sp-progress { display: flex; align-items: center; gap: 0.6rem; }
+
+.sp-bar-bg {
+  flex: 1; height: 6px; background: var(--bg2);
+  border-radius: 3px; overflow: hidden;
+}
+
+.sp-bar-fill { height: 100%; transition: width 0.3s ease; }
+
+.sp-pct { font-size: 0.72rem; font-weight: 600; color: var(--text2); white-space: nowrap; }
+
+@media (max-width: 480px) {
+.sp-row-top { grid-template-columns: 1fr 1fr auto; }
+.sp-proceeds { grid-column: 1 / -1; }
+}
+
+.whale-panel-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.85rem;
+}
+
+.whale-panel-window { font-size: 0.72rem; color: var(--text2); font-weight: 600; }
+
+.whale-score-row {
+  display: flex; gap: 1rem; align-items: center;
+  margin-bottom: 1rem; padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.whale-score-circle {
+  flex-shrink: 0;
+  width: 90px; height: 90px;
+  border-radius: 50%; border: 4px solid;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+}
+
+.whale-score-num { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+
+.whale-score-lbl { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.85; margin-top: 2px; }
+
+.whale-score-info { flex: 1; min-width: 0; }
+
+.whale-score-tag {
+  display: inline-block;
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.78rem; font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+.whale-score-desc {
+  font-size: 0.78rem; color: var(--text2); margin: 0; line-height: 1.4;
+}
+
+.whale-indicators {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.85rem;
+}
+
+.wp-ind { cursor: help; }
+
+.wp-ind-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 0.3rem;
+}
+
+.wp-ind-label { font-size: 0.72rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600; }
+
+.wp-ind-value { font-size: 0.95rem; font-weight: 700; }
+
+.wp-ind-bar-bg {
+  height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden;
+}
+
+.wp-ind-bar-fill { height: 100%; transition: width 0.4s ease; }
+
+.ta-levels {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;
+  margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid var(--border);
+}
+
+.ta-levels-col { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.ta-levels-h {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.03em; margin-bottom: 0.1rem;
+}
+
+.ta-level { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+
+@media (max-width: 1280px) {
+.detail-hero { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+.detail-hero-right { text-align: left; }
+.detail-price-big { font-size: 1.3rem; }
+.detail-stats-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ─── Category Badge on holdings ─── */
+.category-badge {
+  font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 0.15rem 0.45rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.25rem;
+}
+
+.coin-note-card { margin-bottom: 1rem; }
+
+.coin-note-input {
+  width: 100%; box-sizing: border-box;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(var(--g-rgb),0.25);
+  border-radius: 10px;
+  color: white;
+  font-size: 0.9rem;
+  padding: 0.65rem 0.85rem;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.55;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.coin-note-input:focus { border-color: rgba(var(--g-rgb),0.55); }
+
+/* Consistent tactile press for any clickable that opts in via these classes
+   but doesn't already define an :active transform. */
+button:not(:disabled):active,
+.action-btn:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active { transition-duration: 0.06s; }

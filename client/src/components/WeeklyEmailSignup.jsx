@@ -3,6 +3,7 @@ import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { subscribeWeekly, unsubscribeWeekly, buildWeeklyPayload, getWeeklySub } from '../weeklyEmail'
+import './WeeklyEmailSignup.css'
 
 // The "how it works" bullets — each row is an icon + a single text span so the
 // text wraps as one block (wrapping <strong> directly in a flex row splits it

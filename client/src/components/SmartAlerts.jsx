@@ -8,6 +8,7 @@ import { useLanguage } from '../LanguageContext'
 import { renderMaybe } from '../data/walletEvalTips'
 import { showLocalNotification, requestNotifyPermission } from '../localNotify'
 import { dataUrl } from '../apiHosts.js'
+import './SmartAlerts.css'
 
 // ── Token Unlock Database is defined in data/assets.js ──────────────────────
 

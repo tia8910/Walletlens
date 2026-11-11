@@ -6,6 +6,7 @@ import { isStablecoin } from '../stablecoins'
 import CoinLogo from './CoinLogo'
 import { renderMaybe } from '../data/walletEvalTips'
 import AiReport from './AiReport'
+import './AIDecisionEngine.css'
 
 // The AI answer as plain text, for a report. Only the strings a model wrote;
 // the local engine's translation keys never reach here.

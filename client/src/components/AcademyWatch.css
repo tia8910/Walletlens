@@ -1,0 +1,169 @@
+/* AcademyWatch styles. Moved out of index.css so they load with the Academy
+   chunk instead of blocking first paint on every route. Only components/AcademyWatch.jsx uses these classes. */
+
+.aw { --aw-card: var(--nl-card, var(--card-bg, #ffffff)); --aw-ink: var(--nl-ink, var(--text, #0f1d2b)); --aw-sub: var(--nl-sub, var(--text-muted, #64748b)); --aw-line: var(--nl-line, rgba(127, 127, 127, .15)); display: flex; flex-direction: column; gap: 20px; color: var(--aw-ink); }
+
+.aw-h { margin: 0; font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; color: var(--aw-ink); }
+
+.aw-over { font-size: .68rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #22c55e; }
+
+[dir="rtl"] .aw-over { letter-spacing: 0; }
+
+.aw-sec { display: flex; flex-direction: column; gap: 10px; }
+
+.aw-sec-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+
+.aw-link { padding: 0; border: 0; background: none; cursor: pointer; font: inherit; font-size: .86rem; font-weight: 700; color: #047857; display: inline-flex; align-items: center; gap: 6px; text-align: start; }
+
+.aw-link:hover { filter: none; background: none; text-decoration: underline; }
+
+html:not([data-wl-light]) .aw-link { color: #34d399; }
+
+.aw-hero { display: flex; flex-direction: column; padding: 0; border: 0; border-radius: 26px; overflow: hidden; cursor: pointer; text-align: start; font: inherit; color: #fff; background: #0f1d2b; box-shadow: 0 24px 44px -28px rgba(15, 29, 43, .85); transition: transform .18s ease; }
+
+.aw-hero:hover { filter: none; transform: translateY(-2px); }
+
+.aw-hero-art { position: relative; display: block; }
+
+.aw-hero-tag { position: absolute; top: 14px; inset-inline-start: 14px; padding: 5px 10px; border-radius: 999px; background: #22c55e; color: #052e14; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+
+.aw-hero-play { position: absolute; bottom: 16px; inset-inline-end: 16px; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: #fff; box-shadow: 0 10px 24px -10px rgba(0, 0, 0, .6); }
+
+.aw-hero-txt { display: flex; flex-direction: column; gap: 5px; padding: 16px 18px 18px; }
+
+.aw-progress { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 20px; background: var(--aw-card); box-shadow: var(--nl-shadow, none); }
+
+.aw-progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+
+.aw-bar { height: 8px; border-radius: 4px; overflow: hidden; background: var(--aw-line); }
+
+.aw-bar i { display: block; height: 100%; border-radius: 4px; background: #16a34a; transition: width .3s ease; }
+
+.aw-shelf { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; scroll-snap-type: x proximity; }
+
+.aw-shelf::-webkit-scrollbar { display: none; }
+
+.aw-tile { position: relative; flex: none; width: 140px; height: 204px; padding: 0; border: 0; border-radius: 18px; overflow: hidden; cursor: pointer; scroll-snap-align: start; font: inherit; color: #fff; text-align: start; background: #0f1d2b; transition: transform .18s ease; }
+
+.aw-tile:hover { filter: none; transform: translateY(-2px); }
+
+.aw-tile-kind { position: absolute; top: 10px; inset-inline-start: 10px; padding: 3px 8px; border-radius: 999px; font-size: .66rem; font-weight: 700; background: rgba(15, 29, 43, .6); }
+
+.aw-tile-done { position: absolute; top: 10px; inset-inline-end: 10px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: #052e14; background: #22c55e; }
+
+.aw-tile-txt { position: absolute; inset-inline: 0; bottom: 0; display: flex; flex-direction: column; gap: 2px; padding: 28px 10px 10px; background: linear-gradient(transparent, rgba(8, 14, 24, .88)); }
+
+.aw-list { display: flex; flex-direction: column; padding: 2px 14px; border-radius: 20px; background: var(--aw-card); box-shadow: var(--nl-shadow, none); }
+
+.aw-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 0; border: 0; border-bottom: 1px solid var(--aw-line); background: none; cursor: pointer; font: inherit; text-align: start; color: var(--aw-ink); }
+
+.aw-row:last-child { border-bottom: 0; }
+
+.aw-row:hover { filter: none; background: none; }
+
+.aw-row:hover b { color: #0f9d58; }
+
+.aw-row-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.aw-row-thumb { position: relative; flex: none; width: 54px; height: 72px; border-radius: 12px; overflow: hidden; }
+
+.aw-row-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .92); }
+
+.aw-row-done { width: 26px; height: 26px; flex: none; border-radius: 50%; display: grid; place-items: center; color: #0b7a3e; background: rgba(34, 197, 94, .16); }
+
+.aw-chev { flex: none; color: var(--aw-sub); }
+
+[dir="rtl"] .aw-chev { transform: scaleX(-1); }
+
+.aw-back { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 6px 0; border: 0; background: none; cursor: pointer; font: inherit; font-size: .86rem; font-weight: 700; color: var(--aw-sub); }
+
+.aw-back:hover { filter: none; background: none; color: var(--aw-ink); }
+
+[dir="rtl"] .aw-back svg { transform: scaleX(-1); }
+
+.aw-course-hero { display: flex; flex-direction: column; gap: 8px; padding: 18px; border-radius: 24px; color: #fff; background: #0f1d2b; }
+
+.aw-course-hero p { margin: 0; font-size: .9rem; line-height: 1.5; color: #c9d3de; }
+
+.aw-cta { align-self: flex-start; margin-top: 4px; display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-size: .88rem; font-weight: 800; color: #052e14; background: #22c55e; }
+
+.aw-cta:hover { filter: brightness(1.05); }
+
+.aw-how-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+
+.aw-how { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 12px; border: 0; border-radius: 16px; cursor: pointer; font: inherit; text-align: start; color: var(--aw-ink); background: var(--aw-card); box-shadow: var(--nl-shadow, none); }
+
+.aw-how:hover { filter: none; box-shadow: inset 0 0 0 1px rgba(34, 197, 94, .45); }
+
+.aw-how-ic { width: 36px; height: 36px; flex: none; border-radius: 11px; display: grid; place-items: center; color: #0b7a3e; background: rgba(34, 197, 94, .14); }
+
+.aw-channel { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; text-decoration: none; color: var(--aw-ink); background: var(--aw-card); box-shadow: var(--nl-shadow, none); }
+
+.aw-channel:hover { box-shadow: inset 0 0 0 1px rgba(224, 0, 48, .35); }
+
+.aw-channel-ic { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: rgba(224, 0, 48, .1); }
+
+.aw-channel-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.aw-channel-sub { flex: none; padding: 7px 13px; border-radius: 999px; font-size: .78rem; font-weight: 800; color: #fff; background: #e00030; }
+
+.aw-empty { padding: 1.4rem 1.25rem; text-align: center; }
+
+.aw-empty p { margin: 6px 0 0; color: var(--aw-sub); font-size: .86rem; }
+
+.aw-player { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 12px; background: rgba(2, 6, 23, .84); backdrop-filter: blur(8px); animation: wl-bell-in .2s ease both; }
+
+.aw-player-card { position: relative; width: min(420px, 100%); max-height: calc(100vh - 24px); overflow-y: auto; border-radius: 24px; color: #e2e8f0; background: #0b1220; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .8), inset 0 0 0 1px rgba(255, 255, 255, .08); }
+
+.aw-close { position: absolute; top: 10px; inset-inline-start: 10px; z-index: 2; width: 40px; height: 40px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 50%; color: #fff; background: rgba(15, 23, 42, .7); cursor: pointer; }
+
+.aw-frame-err { text-decoration: none; }
+
+.aw-err-msg { position: absolute; left: 16px; right: 16px; top: calc(50% - 64px); text-align: center; font-weight: 800; color: #fff; text-shadow: 0 2px 10px rgba(0, 0, 0, .7); }
+
+.aw-frame-out { display: block; padding: 0; border: 0; cursor: pointer; overflow: hidden; }
+
+.aw-frame-out:hover { filter: none; }
+
+.aw-frame-out-btn { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: inline-flex; align-items: center; gap: 10px; padding: 14px 20px; border-radius: 999px; white-space: nowrap; font: inherit; font-size: .95rem; font-weight: 800; color: #0f1d2b; background: #fff; box-shadow: 0 14px 30px -12px rgba(0, 0, 0, .7); }
+
+.aw-yt { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; font-size: .84rem; font-weight: 700; color: #e2e8f0; text-decoration: none; }
+
+.aw-yt:hover { color: #fff; text-decoration: underline; }
+
+.aw-after { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+.aw-head { display: flex; flex-direction: column; gap: 4px; }
+
+.aw-name { font-weight: 800; font-size: 1.15rem; color: #fff; }
+
+.aw-takeaway { display: flex; flex-direction: column; gap: 5px; padding: 14px; border-radius: 16px; background: #131d30; }
+
+.aw-takeaway .aw-over { color: #9fb0c2; }
+
+.aw-takeaway p { margin: 0; font-size: .86rem; line-height: 1.55; color: rgba(226, 232, 240, .82); }
+
+.aw-try { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 14px; border: 0; border-radius: 16px; cursor: pointer; font: inherit; text-align: start; color: #fff; background: #0f2a1c; }
+
+.aw-try:hover { filter: none; background: #13361f; }
+
+.aw-try .aw-chev { color: #5ee08f; }
+
+.aw-try-ic { width: 38px; height: 38px; flex: none; border-radius: 12px; display: grid; place-items: center; color: #5ee08f; background: #164a2e; }
+
+[dir="rtl"] .aw-try-ic svg { transform: scaleX(-1); }
+
+.aw-try-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.aw-upnext { display: flex; align-items: center; gap: 12px; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; font: inherit; text-align: start; color: #fff; }
+
+.aw-upnext:hover { filter: none; background: none; }
+
+.aw-upnext-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.aw-foot { font-size: .68rem; color: rgba(226, 232, 240, .5); }
+
+/* Continue watching: how far through the film, along the tile's foot. */
+.aw-tile-prog { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255, 255, 255, .28); pointer-events: none; }
+
+.aw-tile-prog i { display: block; height: 100%; background: #ef4444; }

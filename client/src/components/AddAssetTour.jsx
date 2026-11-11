@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
+import './AddAssetTour.css'
 
 /**
  * AddAssetTour — an interactive, coached walkthrough that points a live animated

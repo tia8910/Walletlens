@@ -1,0 +1,107 @@
+/* QuickStatsPopup styles. Moved out of index.css so they load with the QuickStatsPopup
+   chunk instead of blocking first paint on every route. Only components/QuickStatsPopup.jsx uses these classes. */
+
+[data-wl-light] .qs-popup { background: var(--bg3); }
+
+[data-wl-light] .qs-label       { color: var(--text-sub); }
+
+[data-wl-light] .qs-value       { color: var(--text); }
+
+[data-wl-light] .qs-stat        { background: var(--surface-1); }
+
+[data-wl-light] .qs-stat-label  { color: var(--text-sub); }
+
+[data-wl-light] .qs-stat-val    { color: var(--text); }
+
+[data-wl-light] .qs-mover       { background: var(--surface-1); }
+
+[data-wl-light] .qs-mover-label { color: var(--text-muted); }
+
+[data-wl-light] .qs-mover-coin  { color: var(--text); }
+
+[data-wl-light] .qs-loading     { color: var(--text-muted); }
+
+[data-wl-light] .qs-empty       { color: var(--text-muted); }
+
+[data-wl-light] .qs-main-value  { border-bottom-color: rgba(0,0,0,0.7); }
+
+[data-wl-light] .qs-grid        { border-bottom-color: rgba(0,0,0,0.7); }
+
+.qs-popup {
+  background: #0e1a14;
+  border: 1px solid rgba(var(--g-rgb),0.25);
+  border-radius: 1.25rem;
+  width: min(360px, 100%);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7), 0 0 40px rgba(var(--g-rgb),0.08);
+  animation: qs-slide-up 0.22s cubic-bezier(0.34,1.56,0.64,1);
+  overflow: hidden;
+}
+
+.qs-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.2rem 0.75rem;
+  border-bottom: 1px solid rgba(var(--g-rgb),0.1);
+}
+
+.qs-title { font-size: 1rem; font-weight: 700; color: var(--g-ink); font-weight: 700; letter-spacing: 0.02em; }
+
+.qs-loading {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 1.5rem 1.2rem; color: rgba(255,255,255,0.8); font-size: 0.9rem;
+}
+
+.qs-empty { padding: 1.5rem 1.2rem; color: rgba(255,255,255,0.75); font-size: 0.9rem; line-height: 1.6; }
+
+.qs-body { padding: 0 1.2rem 1.2rem; }
+
+.qs-main-value { padding: 1rem 0 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
+
+.qs-label { font-size: 0.75rem; color: rgba(255,255,255,0.75); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; }
+
+.qs-value { font-size: 2rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; line-height: 1.1; }
+
+.qs-badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  margin-top: 0.45rem; font-size: 0.78rem; font-weight: 600;
+  padding: 0.2rem 0.6rem; border-radius: 20px;
+}
+
+.qs-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0.75rem; padding: 0.9rem 0 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.qs-stat { background: rgba(255,255,255,0.04); border-radius: 0.75rem; padding: 0.65rem 0.8rem; }
+
+.qs-stat-label { font-size: 0.7rem; color: rgba(255,255,255,0.75); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+
+.qs-stat-val { font-size: 0.95rem; font-weight: 700; color: #fff; }
+
+.qs-movers { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.8rem; }
+
+.qs-mover {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: rgba(255,255,255,0.04); border-radius: 0.75rem;
+  padding: 0.55rem 0.8rem;
+}
+
+.qs-mover-label { font-size: 0.72rem; color: rgba(255,255,255,0.75); flex: 1; }
+
+.qs-mover-coin { font-size: 0.85rem; font-weight: 700; color: #fff; }
+
+.qs-mover-pct { font-size: 0.82rem; font-weight: 700; min-width: 60px; text-align: right; }
+
+[data-wl-light] .qs-value       { color: var(--text); }
+
+[data-wl-light] .qs-label       { color: rgba(0,0,0,0.7); }
+
+[data-wl-light] .qs-stat-val    { color: var(--text); }
+
+[data-wl-light] .qs-stat-label  { color: rgba(0,0,0,0.7); }
+
+[data-wl-light] .qs-mover-coin  { color: var(--text); }
+
+[data-wl-light] .qs-mover-label { color: rgba(0,0,0,0.7); }
+
+[data-wl-light] .qs-empty       { color: rgba(0,0,0,0.7); }

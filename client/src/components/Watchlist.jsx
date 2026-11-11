@@ -7,6 +7,7 @@ import { track } from '../analytics'
 import { syncAlerts } from '../push'
 import { useLanguage } from '../LanguageContext'
 import { showLocalNotification, requestNotifyPermission, canNotify as notificationsAvailable } from '../localNotify'
+import './Watchlist.css'
 
 const WATCHLIST_KEY = 'wl_watchlist'
 const WL_ALERTS_KEY = 'wl_watchlist_alerts'

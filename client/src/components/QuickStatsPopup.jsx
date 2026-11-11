@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { api } from '../api'
+import './QuickStatsPopup.css'
 
 function fmt(n) {
   if (n == null || isNaN(n)) return '$0.00'

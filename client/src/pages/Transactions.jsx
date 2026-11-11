@@ -7,6 +7,7 @@ import CoinLogo from '../components/CoinLogo'
 import { track, trackProfileCreated } from '../analytics'
 import { useLanguage } from '../LanguageContext'
 import { noteFeatureUse } from '../featureUse'
+import './Transactions.css'
 
 const TradeSheet = lazy(() => import('../components/TradeSheet'))
 

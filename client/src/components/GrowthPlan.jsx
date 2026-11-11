@@ -8,6 +8,7 @@ import { loadBuckets } from '../data/visionStorage'
 import { useLanguage } from '../LanguageContext'
 import AiReport from './AiReport'
 import { CLASS_PARAMS, INFLATION, mixParams, realGrowth, simulate, monthlyFromHistory, goalCrossing } from '../growthEngine'
+import './GrowthPlan.css'
 
 
 /**

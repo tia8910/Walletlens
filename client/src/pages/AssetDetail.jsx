@@ -14,6 +14,7 @@ import { MoneyFlowCard } from '../components/MoneyFlow'
 import { BybitCard, BybitStockCard } from '../components/BybitOffer'
 import { isStablecoin } from '../stablecoins'
 import { isIntlTicker, sessionOpen } from '../data/markets'
+import './AssetDetail.css'
 
 // assetClass() is the shared id-prefix classifier (api.js); these wrap it
 // for the page's two flavours of "is it crypto" / "what category".
