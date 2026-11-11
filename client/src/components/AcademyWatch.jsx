@@ -8,6 +8,7 @@ import { academyCopy, posterFor } from '../data/academyCopy'
 import { readWatched, markWatched, WATCHED_EVENT } from '../academyProgress'
 import { inAppShell, shellVersion } from '../nativeShell'
 import LessonPlayer, { inProgress } from './LessonPlayer'
+import './AcademyWatch.css'
 
 // The Academy, built around the video lessons on the WalletLens channel:
 // the newest episode, progress through the lessons, the courses as shelves,

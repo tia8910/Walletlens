@@ -9,6 +9,7 @@ import EmailOptIn from '../components/EmailOptIn'
 import { MetalBar } from '../data/assetIcons'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
+import './Landing.css'
 
 // Prefetch the Dashboard chunk so navigation feels instant.
 // Called on hover of any CTA and automatically 3 s after mount (most Landing

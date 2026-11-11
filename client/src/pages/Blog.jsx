@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Logo from '../components/Logo'
 import { POSTS, relatedPosts } from '../data/blogPosts'
+import './Blog.css'
 
 const ORIGIN = 'https://walletlens.live'
 

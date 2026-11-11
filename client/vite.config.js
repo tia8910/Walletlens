@@ -53,6 +53,12 @@ function swVersionPlugin() {
 // If this is ever worth optimising again, the fix is to split the entry CSS
 // per route (so the dashboard blocks on dashboard CSS only), NOT to let the
 // app paint before its stylesheet.
+//
+// That split has started: rules only one lazy page or component uses live in
+// a CSS file beside it (pages/Vision.css, components/TradeSheet.css, ...).
+// Vite ships each with its chunk and awaits it before the chunk renders, so
+// the entry stylesheet shrank by a third with no unstyled frame anywhere.
+// See src/routeCss.test.js.
 
 // Which build is this?
 //

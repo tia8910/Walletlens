@@ -5,6 +5,7 @@ import { api } from '../api'
 import { track } from '../analytics'
 import { noteFeatureUse } from '../featureUse'
 import { computeIndex, band } from '../marketIndexModel'
+import './MarketIndex.css'
 
 // ── WalletLens Market Index ────────────────────────────────────────────────
 // A public, auto-updating, *citable* data page. It distills the whole crypto

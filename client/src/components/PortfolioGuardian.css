@@ -1,0 +1,530 @@
+/* PortfolioGuardian styles. Moved out of index.css so they load with the PortfolioGuardian
+   chunk instead of blocking first paint on every route. Only components/PortfolioGuardian.jsx uses these classes. */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Portfolio Guardian component
+   ══════════════════════════════════════════════════════════════════════════ */
+.pg-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* ── Intro text ── */
+.pg-intro {
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: var(--text-muted);
+  margin: 0 0 0.75rem;
+}
+
+/* ── Portfolio preview badge ── */
+.pg-portfolio-preview {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  background: rgba(var(--g-rgb), 0.07);
+  border: 1px solid rgba(var(--g-rgb), 0.18);
+  border-radius: 10px;
+  font-size: 0.78rem;
+  margin-bottom: 0.5rem;
+}
+
+.pg-portfolio-label { color: var(--g-ink); font-weight: 700; }
+
+.pg-portfolio-assets { color: var(--text-muted); }
+
+.pg-portfolio-value  { margin-left: auto; color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ── Form fields ── */
+.pg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.pg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.pg-field-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-sub);
+  /* Hint under the label, not beside it: side by side, a long hint squeezed
+     "Your name" into a column one word wide on a phone. */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15em;
+}
+
+.pg-field-hint {
+  font-size: 0.74rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.pg-field-error {
+  font-size: 0.77rem;
+  color: var(--negative);
+}
+
+/* ── Text inputs ── */
+.pg-input {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  box-sizing: border-box;
+}
+
+.pg-input:focus {
+  border-color: rgba(var(--g-rgb), 0.5);
+  box-shadow: 0 0 0 3px rgba(var(--g-rgb), 0.08);
+}
+
+.pg-textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+
+.pg-char-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: right;
+  display: block;
+  margin-top: -0.3rem;
+}
+
+.pg-heirs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.pg-heir-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.pg-heir-num {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 50%;
+  background: rgba(var(--g-rgb), 0.15);
+  color: var(--g-ink);
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.65rem;
+}
+
+.pg-heir-inputs {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+.pg-heir-inputs { grid-template-columns: 1fr; }
+}
+
+.pg-heir-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0.4rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  margin-top: 0.55rem;
+  transition: color .15s, background .15s;
+}
+
+.pg-heir-remove:hover { color: var(--negative); background: rgba(248,113,113,0.1); }
+
+.pg-add-heir {
+  background: none;
+  border: 1px dashed rgba(var(--g-rgb), 0.3);
+  border-radius: 8px;
+  color: var(--g-ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  margin-top: 0.3rem;
+  transition: background .15s, border-color .15s;
+}
+
+.pg-add-heir:hover {
+  background: rgba(var(--g-rgb), 0.08);
+  border-color: rgba(var(--g-rgb), 0.5);
+}
+
+.pg-interval-chips {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pg-interval-chip {
+  padding: 0.45rem 1rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-muted);
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+
+.pg-interval-chip:hover {
+  background: rgba(var(--g-rgb), 0.08);
+  border-color: rgba(var(--g-rgb), 0.3);
+  color: var(--g-ink);
+}
+
+.pg-interval-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0.4rem 0 0;
+  line-height: 1.5;
+}
+
+.pg-error {
+  font-size: 0.8rem;
+  color: var(--negative);
+  margin: 0;
+}
+
+.pg-submit:hover  { opacity: 0.9; transform: translateY(-1px); }
+
+/* Guardian: 'send a test email now' — secondary button so users can verify
+   the heir notification instantly instead of waiting for the interval. */
+.pg-test-btn {
+  width: 100%;
+  padding: 0.7rem;
+  margin-bottom: 0.6rem;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--g-rgb), 0.4);
+  background: rgba(var(--g-rgb), 0.08);
+  color: var(--g-ink);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, transform .15s, opacity .15s;
+}
+
+.pg-test-btn:hover  { background: rgba(var(--g-rgb), 0.14); transform: translateY(-1px); }
+
+.pg-test-btn:disabled { opacity: 0.6; cursor: default; }
+
+.pg-test-ok {
+  margin: 0 0 0.7rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--g-ink);
+}
+
+.pg-submit:active { transform: translateY(0); opacity: 0.85; }
+
+.pg-submit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+/* ── Status card ── */
+.pg-status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.pg-status-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pg-status-icon {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 10px;
+  background: rgba(var(--g-rgb), 0.12);
+  color: var(--g-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pg-status-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.pg-status-subtitle {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+
+.pg-days-badge {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+  padding: 0.3rem 0.6rem;
+  border-radius: 10px;
+  background: rgba(var(--g-rgb), 0.1);
+  border: 1px solid rgba(var(--g-rgb), 0.2);
+}
+
+.pg-days-num {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--g-ink);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pg-days-label {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  margin-top: 0.1rem;
+}
+
+.pg-deadline-banner {
+  padding: 0.6rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  font-weight: 600;
+}
+
+/* Heirs summary */
+.pg-heirs-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.pg-heirs-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pg-heirs-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.pg-heir-chip {
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  font-size: 0.76rem;
+  color: var(--text-sub);
+}
+
+.pg-status-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pg-auto-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(var(--g-rgb), 0.08);
+  border: 1px solid rgba(var(--g-rgb), 0.18);
+  color: var(--g-ink);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+/* Actions */
+.pg-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.pg-actions .pg-cancel-btn { flex: 1; text-align: center; }
+
+/* Optional manual reset — subtle link now that check-in is automatic */
+.pg-checkin-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-align: left;
+  transition: color .15s;
+}
+
+.pg-checkin-link:hover:not(:disabled) { color: var(--text-sub); }
+
+.pg-checkin-link:disabled { cursor: default; text-decoration: none; opacity: 0.75; }
+
+.pg-cancel-btn {
+  padding: 0.65rem 1rem;
+  border-radius: 11px;
+  border: 1px solid rgba(248,113,113,0.25);
+  background: rgba(248,113,113,0.06);
+  color: var(--negative);
+  font-size: 0.83rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  white-space: nowrap;
+}
+
+.pg-cancel-btn:hover { background: rgba(248,113,113,0.13); border-color: rgba(248,113,113,0.4); }
+
+.pg-cancel-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Back stays a subtle underlined link */
+.pg-back-link {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-align: left;
+  transition: color .15s;
+}
+
+.pg-back-link:hover { color: var(--text-sub); }
+
+/* "Edit heirs or settings" is a proper secondary button — the old underlined
+   link stretched full-width in the flex column and (on stale CSS) fell through
+   to the base green button skin with unreadable dark text. */
+.pg-reconfigure-link {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: rgba(var(--g-rgb), 0.10);
+  border: 1px solid rgba(var(--g-rgb), 0.30);
+  color: var(--g-ink);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.6rem 1.25rem;
+  border-radius: 11px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+
+.pg-reconfigure-link:hover {
+  background: rgba(var(--g-rgb), 0.16);
+  border-color: rgba(var(--g-rgb), 0.45);
+  color: var(--g-ink);
+  transform: translateY(-1px);
+}
+
+/* Standalone activate button (not-yet-activated state) */
+.pg-activate-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--g-rgb), 0.25);
+  background: rgba(var(--g-rgb), 0.07);
+  color: var(--g-ink);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+
+.pg-activate-btn:hover {
+  background: rgba(var(--g-rgb), 0.14);
+  border-color: rgba(var(--g-rgb), 0.4);
+  transform: translateY(-1px);
+}
+
+.pg-modal {
+  position: relative;
+  width: 100%; max-width: 420px;
+  max-height: calc(100dvh - 40px); overflow-y: auto;
+  background: linear-gradient(180deg, #1e2329, #181a20);
+  border: 1px solid rgba(var(--g-rgb), 0.22);
+  border-radius: 22px;
+  padding: 26px 24px 22px;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset;
+  animation: wlmRise .28s cubic-bezier(0.34,1.3,0.64,1);
+}
+
+[data-wl-light] .pg-modal {
+  background: #fff; border-color: rgba(0,0,0,0.08); color: #0f172a;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.18);
+}
+
+.pg-modal-title {
+  margin: 0 0 8px; font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text);
+}
+
+[data-wl-light] .pg-modal-title { color: #0f172a; }
+
+.pg-modal-text {
+  margin: 0 0 18px; font-size: 0.9rem; line-height: 1.6; color: var(--text-muted);
+}
+
+.pg-modal-cta:active { transform: scale(0.97) translateY(0); }
+
+.pg-modal-cta:disabled { opacity: 0.55; cursor: default; transform: none; }
+
+.pg-modal-icon {
+  width: 56px; height: 56px; border-radius: 16px; margin-bottom: 14px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(var(--g-rgb), 0.14); color: var(--g-ink);
+  border: 1px solid rgba(var(--g-rgb), 0.3);
+}
+
+.pg-modal-list { margin: 0 0 20px; padding-left: 18px; }
+
+.pg-modal-list li { margin: 0 0 10px; font-size: 0.86rem; line-height: 1.55; color: var(--text-sub, var(--text-muted)); }

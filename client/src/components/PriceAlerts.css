@@ -1,0 +1,144 @@
+/* PriceAlerts styles. Moved out of index.css so they load with the PriceAlerts
+   chunk instead of blocking first paint on every route. Only components/PriceAlerts.jsx uses these classes. */
+
+/* ── Price Alerts (pal-*) ── */
+[data-wl-light] .pal-title        { color: var(--text); }
+
+[data-wl-light] .pal-form-title   { color: var(--text); }
+
+[data-wl-light] .pal-label        { color: var(--text-muted); }
+
+[data-wl-light] .pal-select       { background: var(--surface-1); border-color: rgba(0,0,0,0.12); color: var(--text); }
+
+[data-wl-light] .pal-dollar       { color: var(--text-sub); }
+
+[data-wl-light] .pal-price-input  { color: var(--text); }
+
+[data-wl-light] .pal-section-label { color: var(--text-sub); }
+
+[data-wl-light] .pal-sym          { color: var(--text); }
+
+[data-wl-light] .pal-empty-title  { color: var(--text); }
+
+[data-wl-light] .pal-cond-btn     { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-muted); }
+
+/* ── Price Alerts ──────────────────────────────────────────────────────── */
+.pal-root { display: flex; flex-direction: column; gap: 1rem; padding-bottom: 2rem; position: relative; }
+
+.pal-toasts { position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+
+.pal-toast { background: rgba(var(--g-rgb),0.15); border: 1px solid rgba(var(--g-rgb),0.4); border-radius: 12px; padding: 0.75rem 1.1rem; font-size: 0.84rem; color: #fff; max-width: 340px; animation: toast-in 0.3s ease; backdrop-filter: blur(10px); }
+
+.pal-notif-icon { font-size: 1.5rem; flex-shrink: 0; }
+
+.pal-notif-btn { margin-left: auto; flex-shrink: 0; padding: 0.4rem 1rem; font-size: 0.85rem; }
+
+/* Header */
+.pal-header { display: flex; align-items: center; justify-content: space-between; }
+
+.pal-title { margin: 0; font-size: 1.2rem; color: #fff; }
+
+.pal-sub { margin: 0.2rem 0 0; font-size: 0.8rem; }
+
+.pal-add-btn { padding: 0.45rem 1rem; font-size: 0.88rem; }
+
+.pal-form-title { margin: 0 0 0.25rem; font-size: 1rem; color: #fff; }
+
+.pal-form-row { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.pal-label { font-size: 0.78rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.pal-select { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 0.6rem 0.8rem; color: #fff; font-size: 0.9rem; outline: none; }
+
+.pal-select:focus { border-color: rgba(var(--g-rgb),0.45); }
+
+.pal-select option { background: #0d1117; }
+
+.pal-cond-toggle { display: flex; gap: 0.5rem; }
+
+.pal-cond-btn { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0.55rem; font-size: 0.88rem; color: rgba(255,255,255,0.8); cursor: pointer; transition: background .15s,color .15s,border-color .15s,box-shadow .15s,transform .15s,opacity .15s,filter .15s; }
+
+.pal-price-row { display: flex; align-items: center; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; overflow: hidden; }
+
+.pal-price-row:focus-within { border-color: rgba(var(--g-rgb),0.45); }
+
+.pal-dollar { padding: 0 0.5rem 0 0.8rem; color: rgba(255,255,255,0.75); font-size: 0.9rem; }
+
+.pal-price-input { flex: 1; background: none; border: none; padding: 0.6rem 0.8rem 0.6rem 0; color: #fff; font-size: 0.9rem; outline: none; }
+
+.pal-hint { font-size: 0.78rem; margin: 0.25rem 0 0; }
+
+/* Section */
+.pal-section { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.pal-section-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; color: rgba(255,255,255,0.7); margin: 0.25rem 0 0; }
+
+.pal-card-triggered { opacity: 0.7; }
+
+.pal-card-top { display: flex; align-items: center; justify-content: space-between; }
+
+.pal-card-left { display: flex; align-items: center; gap: 0.75rem; }
+
+.pal-card-right { display: flex; align-items: center; gap: 0.6rem; }
+
+.pal-sym { font-weight: 800; font-size: 0.95rem; color: #fff; }
+
+.pal-cond-badge { font-size: 0.8rem; font-weight: 600; }
+
+.pal-cur-price { font-size: 0.8rem; }
+
+.pal-del-btn { background: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 0.15rem 0.4rem; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 0.85rem; transition: background .15s,color .15s,border-color .15s,box-shadow .15s,transform .15s,opacity .15s,filter .15s; }
+
+.pal-del-btn:hover { border-color: rgba(248,113,113,0.4); color: var(--negative); }
+
+.pal-reset-btn { background: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 0.15rem 0.6rem; color: rgba(255,255,255,0.75); cursor: pointer; font-size: 0.8rem; transition: background .15s,color .15s,border-color .15s,box-shadow .15s,transform .15s,opacity .15s,filter .15s; }
+
+.pal-reset-btn:hover { border-color: rgba(var(--g-rgb),0.3); color: var(--g-ink); font-weight: 700; }
+
+.pal-triggered-at { font-size: 0.75rem; margin: 0; }
+
+/* Progress */
+.pal-progress-wrap { display: flex; align-items: center; gap: 0.75rem; }
+
+.pal-progress-track { flex: 1; height: 5px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; }
+
+.pal-progress-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+
+.pal-progress-pct { font-size: 0.75rem; font-weight: 600; white-space: nowrap; min-width: 70px; text-align: right; }
+
+.pal-empty-icon { font-size: 2.5rem; }
+
+.pal-empty-title { margin: 0; font-size: 1.1rem; color: #fff; font-weight: 700; }
+
+.pal-empty-sub { margin: 0; font-size: 0.86rem; max-width: 320px; line-height: 1.6; }
+
+@media (max-width: 768px) {
+.pal-toasts { right: 0.5rem; left: 0.5rem; top: 0.5rem; }
+.pal-toast { max-width: 100%; }
+}
+
+/* Price alerts */
+[data-wl-light] .pal-toast       { background: rgba(var(--g-rgb),0.08); border-color: rgba(var(--g-rgb),0.25); color: var(--text); }
+
+[data-wl-light] .pal-title       { color: var(--text); }
+
+[data-wl-light] .pal-form-title  { color: var(--text); }
+
+[data-wl-light] .pal-sym         { color: var(--text); }
+
+[data-wl-light] .pal-empty-title { color: var(--text); }
+
+[data-wl-light] .pal-select      { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: var(--text); }
+
+[data-wl-light] .pal-price-input { color: var(--text); }
+
+/* Price alerts */
+[data-wl-light] .pal-label         { color: rgba(0,0,0,0.7); }
+
+[data-wl-light] .pal-dollar        { color: rgba(0,0,0,0.7); }
+
+[data-wl-light] .pal-section-label { color: rgba(0,0,0,0.7); }
+
+[data-wl-light] .pal-del-btn       { color: rgba(0,0,0,0.7); }
+
+[data-wl-light] .pal-reset-btn     { color: rgba(0,0,0,0.7); }

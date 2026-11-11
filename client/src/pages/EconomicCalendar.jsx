@@ -3,6 +3,7 @@ import { useLanguage } from '../LanguageContext'
 import { api } from '../api'
 import { track } from '../analytics'
 import { noteFeatureUse } from '../featureUse'
+import './EconomicCalendar.css'
 
 const CAL_FLAGS = {
   USD: '🇺🇸', EUR: '🇪🇺', GBP: '🇬🇧', JPY: '🇯🇵', CNY: '🇨🇳',

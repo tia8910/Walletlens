@@ -3,6 +3,7 @@ import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 import CoinLogo from './CoinLogo'
 import Icon from './Icon'
+import './RiskScanner.css'
 
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3'
 const GOPLUS_BASE    = 'https://api.gopluslabs.io/api/v1'

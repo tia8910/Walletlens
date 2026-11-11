@@ -1,0 +1,161 @@
+/* Academy styles. Moved out of index.css so they load with the Academy
+   chunk instead of blocking first paint on every route. Only pages/Academy.jsx uses these classes. */
+
+[data-wl-light] .acad-title          { color: var(--text); }
+
+[data-wl-light] .acad-hack-title     { color: rgba(0,0,0,0.85); }
+
+[data-wl-light] .acad-hack-chevron   { color: rgba(0,0,0,0.7); }
+
+[data-wl-light] .acad-hack-card      { background: rgba(0,0,0,0.025); border-color: rgba(0,0,0,0.09); }
+
+[data-wl-light] .acad-hack-card:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.15); }
+
+[data-wl-light] .acad-hack-open      { background: rgba(0,0,0,0.04); }
+
+[data-wl-light] .acad-hack-body      { color: rgba(0,0,0,0.72); border-top-color: rgba(0,0,0,0.7); }
+
+@media (max-width: 390px) {
+.acad-root { padding-bottom: 4rem; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   WalletLens Academy
+   ══════════════════════════════════════════════════════════════════════════ */
+.acad-root { display: flex; flex-direction: column; gap: 0.85rem; padding: 0 16px 5rem; max-width: 632px; margin: 0 auto; }
+
+.acad-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.25rem; }
+
+.acad-title { font-size: 1.1rem; font-weight: 800; color: #fff; letter-spacing: -0.01em; }
+
+.acad-subtitle { font-size: 0.74rem; margin-top: 0.1rem; }
+
+/* ── Academy Investment Hacks ─────────────────────────────────────────── */
+.acad-hacks-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.acad-hack-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px; padding: 1rem 1.1rem;
+  cursor: pointer; transition: border-color 0.2s, background 0.2s;
+  border-left: 3px solid var(--hack-color, #a78bfa);
+}
+
+.acad-hack-card:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); }
+
+.acad-hack-open { background: rgba(255,255,255,0.05); }
+
+.acad-hack-header { display: flex; align-items: center; gap: 0.75rem; }
+
+.acad-hack-icon { font-size: 1.4rem; flex-shrink: 0; }
+
+.acad-hack-meta { flex: 1; min-width: 0; }
+
+.acad-hack-cat { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; }
+
+.acad-hack-title { font-size: 0.88rem; font-weight: 700; color: #fff; margin-top: 0.15rem; line-height: 1.3; }
+
+.acad-hack-chevron { font-size: 0.65rem; color: rgba(255,255,255,0.7); flex-shrink: 0; }
+
+.acad-hack-body {
+  margin-top: 0.85rem; padding-top: 0.85rem;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  font-size: 0.82rem; color: rgba(255,255,255,0.85);
+  line-height: 1.65;
+  animation: fadeInUp 0.2s ease;
+}
+
+.hack-share-btn {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.78rem; font-weight: 700;
+  padding: 0.22rem 0.55rem;
+  cursor: pointer; line-height: 1;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+}
+
+.hack-share-btn:hover { background: #000; color: #fff; transform: scale(1.05); }
+
+.hack-share-btn:disabled { opacity: 0.5; cursor: default; }
+
+[data-wl-light] .hack-share-btn {
+  background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.7);
+}
+
+[data-wl-light] .hack-share-btn:hover { background: #000; color: #fff; }
+
+/* ── Academy: Articles tab ───────────────────────────────────────────────── */
+.acad-articles-wrap { display: flex; flex-direction: column; gap: 1rem; }
+
+.acad-articles-filters {
+  display: flex; flex-wrap: nowrap; gap: 0.4rem;
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+
+.acad-articles-filters::-webkit-scrollbar { display: none; }
+
+.acad-articles-filter-btn { flex-shrink: 0; }
+
+.acad-articles-filter-btn {
+  padding: 0.3rem 0.75rem; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.85);
+  font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background .15s,color .15s,border-color .15s,box-shadow .15s,transform .15s,opacity .15s,filter .15s;
+}
+
+.acad-articles-filter-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+.acad-articles-filter-active {
+  background: rgba(0,200,83,0.15) !important; border-color: var(--g) !important; color: var(--g-ink) !important; font-weight: 700;
+}
+
+.acad-articles-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.acad-article-card {
+  display: block; text-decoration: none; color: inherit;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 1rem 1.1rem; transition: background .15s,color .15s,border-color .15s,box-shadow .15s,transform .15s,opacity .15s,filter .15s;
+}
+
+.acad-article-card:hover {
+  background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15);
+  transform: translateY(-1px);
+}
+
+.acad-article-top { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+
+.acad-article-cat {
+  font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.07em; padding: 0.15rem 0.5rem; border-radius: 999px; border: 1px solid;
+}
+
+.acad-article-time { font-size: 0.72rem; margin-left: auto; }
+
+.acad-article-title {
+  font-size: 0.9rem; font-weight: 700; color: #fff; line-height: 1.35; margin-bottom: 0.35rem;
+}
+
+.acad-article-summary { font-size: 0.78rem; line-height: 1.5; margin-bottom: 0.5rem; }
+
+.acad-article-cta { font-size: 0.75rem; font-weight: 700; color: var(--g-ink); font-weight: 700; }
+
+[data-wl-light] .acad-articles-filter-btn {
+  border-color: rgba(0,0,0,0.1); background: rgba(0,0,0,0.03); color: rgba(0,0,0,0.55);
+}
+
+[data-wl-light] .acad-articles-filter-btn:hover { background: rgba(0,0,0,0.07); color: rgba(0,0,0,0.85); }
+
+[data-wl-light] .acad-articles-filter-active { background: rgba(0,150,60,0.1) !important; border-color: var(--g) !important; color: var(--g-ink) !important; font-weight: 700; }
+
+[data-wl-light] .acad-article-card { background: rgba(0,0,0,0.02); border-color: rgba(0,0,0,0.08); }
+
+[data-wl-light] .acad-article-card:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.14); }
+
+[data-wl-light] .acad-article-title { color: rgba(0,0,0,0.85); }
+
+.aw-page-head { display: flex; align-items: center; gap: 12px; }
+
+.aw-back-ic { width: 42px; height: 42px; flex: none; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer; color: var(--nl-ink, var(--text)); background: var(--nl-card, var(--card-bg, #fff)); box-shadow: var(--nl-shadow, none); }
+
+.hack-play-btn { width: 26px; height: 26px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 50%; color: #04210f; background: #4ade80; cursor: pointer; }

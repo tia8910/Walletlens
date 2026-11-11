@@ -10,6 +10,7 @@ import { hacks as academyHacks } from '../data/academyContent'
 import { videoForHack } from '../data/academyVideos'
 import { academyCopy } from '../data/academyCopy'
 import AcademyWatch from '../components/AcademyWatch'
+import './Academy.css'
 
 // The Academy: video lessons first (AcademyWatch), then the reading, the
 // investment hacks and the articles, each on a page of its own. There are no

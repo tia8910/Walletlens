@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import Icon from './Icon'
 import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
+import './RebalancePanel.css'
 
 /**
  * RebalancePanel — a simple, in-dashboard rebalance tool that works off the

@@ -9,6 +9,7 @@ import { buildCatalogue, parseHoldingsFromWords } from '../screenshotParse'
 import { track, trackImport, importCompleted, trackProfileCreated } from '../analytics'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
+import './SmartImport.css'
 
 // Column header aliases → canonical field names
 const COL_MAP = {

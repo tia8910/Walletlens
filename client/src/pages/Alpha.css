@@ -1,0 +1,144 @@
+/* Alpha styles. Moved out of index.css so they load with the Alpha
+   chunk instead of blocking first paint on every route. Only pages/Alpha.jsx uses these classes. */
+
+[data-wl-light] .alpha-title          { color: var(--text); }
+
+[data-wl-light] .alpha-refresh-btn    { background: var(--surface-1); border-color: rgba(0,0,0,0.1); color: var(--text-sub); }
+
+[data-wl-light] .alpha-refresh-btn:hover { background: var(--surface-2); color: var(--text); }
+
+[data-wl-light] .alpha-score-label    { color: var(--text-sub); }
+
+[data-wl-light] .alpha-section-title  { color: var(--text); }
+
+[data-wl-light] .alpha-signal-row     { background: var(--surface-1); border-color: rgba(0,0,0,0.08); }
+
+[data-wl-light] .alpha-signal-title   { color: var(--text); }
+
+[data-wl-light] .alpha-coin-card      { background: var(--surface-1); border-color: rgba(0,0,0,0.08); }
+
+[data-wl-light] .alpha-coin-sym       { color: var(--text); }
+
+[data-wl-light] .alpha-coin-sub       { color: var(--text-sub); }
+
+[data-wl-light] .alpha-breakdown-bar-wrap { background: rgba(0,0,0,0.08); }
+
+[data-wl-light] /* The asset-class mix under the Alpha breakdown. Wraps rather than scrolls:
+   a portfolio can hold five classes and none of them should be cut off. */
+.alpha-score-mix { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.7rem; }
+
+.alpha-mix-chip {
+  font-size: 0.66rem; font-weight: 700; letter-spacing: 0.01em;
+  padding: 0.2rem 0.5rem; border-radius: 999px;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.055);
+  border: 1px solid rgba(255,255,255,0.09);
+  white-space: nowrap;
+}
+
+[data-wl-light] .alpha-score-empty    { color: var(--text-muted); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   WalletLens Alpha
+   ══════════════════════════════════════════════════════════════════════════ */
+.alpha-root { display: flex; flex-direction: column; gap: 0.85rem; padding: 0 0 5rem; max-width: 600px; margin: 0 auto; }
+
+/* Header */
+.alpha-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.25rem; }
+
+.alpha-header-left { display: flex; align-items: center; gap: 0.85rem; }
+
+.alpha-logo { width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, rgba(167,139,250,0.3), rgba(var(--g-rgb),0.2)); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 900; color: #a78bfa; border: 1px solid rgba(167,139,250,0.25); }
+
+.alpha-title { font-size: 1.1rem; font-weight: 800; color: #fff; letter-spacing: -0.01em; }
+
+.alpha-subtitle { font-size: 0.74rem; margin-top: 0.1rem; }
+
+.alpha-refresh-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: rgba(255,255,255,0.8); cursor: pointer; padding: 0.45rem 0.65rem; display: flex; align-items: center; transition: background 0.15s, color 0.15s; }
+
+.alpha-refresh-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+.alpha-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.alpha-score-label { font-size: 0.72rem; font-weight: 700; color: rgba(255,255,255,0.75); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1.1rem; }
+
+.alpha-score-body { display: flex; align-items: center; gap: 1.5rem; }
+
+.alpha-score-meta { flex: 1; }
+
+.alpha-score-grade { font-size: 1.5rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 0.9rem; }
+
+.alpha-score-breakdown { display: flex; flex-direction: column; gap: 0.55rem; }
+
+.alpha-breakdown-row { display: grid; grid-template-columns: 90px 1fr 44px; align-items: center; gap: 0.6rem; font-size: 0.78rem; }
+
+.alpha-breakdown-bar-wrap { height: 5px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; }
+
+.alpha-breakdown-bar { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+
+.alpha-section-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.9rem; }
+
+.alpha-section-icon { font-size: 1.15rem; }
+
+.alpha-section-title { font-size: 0.92rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 0.5rem; }
+
+.alpha-section-sub { font-size: 0.74rem; margin-top: 0.1rem; }
+
+.alpha-pulse-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--pulse-color, var(--g)); box-shadow: 0 0 0 0 var(--pulse-color, var(--g)); animation: alpha-pulse 1.8s ease-in-out infinite; }
+
+/* Signal rows */
+.alpha-signal-list { display: flex; flex-direction: column; gap: 0.55rem; }
+
+.alpha-signal-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); }
+
+.alpha-signal-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+.alpha-signal-body { flex: 1; min-width: 0; }
+
+.alpha-signal-title { font-size: 0.88rem; font-weight: 700; color: #fff; }
+
+.alpha-signal-sub { font-size: 0.74rem; margin-top: 0.1rem; }
+
+.alpha-signal-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; flex-shrink: 0; }
+
+.alpha-signal-value { font-size: 0.82rem; font-weight: 700; }
+
+/* Badge */
+.alpha-badge { font-size: 0.68rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 6px; border: 1px solid; letter-spacing: 0.04em; white-space: nowrap; }
+
+.alpha-coin-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.alpha-coin-card { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.75rem; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); }
+
+.alpha-coin-left { display: flex; align-items: center; gap: 0.65rem; }
+
+.alpha-coin-sym { font-size: 0.9rem; font-weight: 800; color: #fff; }
+
+.alpha-coin-name { font-size: 0.72rem; margin-top: 0.05rem; }
+
+.alpha-coin-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem; }
+
+.alpha-coin-reason { font-size: 0.72rem; margin-top: 0.2rem; text-align: right; }
+
+.alpha-coin-sub { font-size: 0.7rem; font-weight: 600; text-align: right; }
+
+.alpha-loading-row { font-size: 0.82rem; padding: 0.5rem 0; }
+
+.alpha-disclaimer { font-size: 0.72rem; line-height: 1.5; text-align: center; padding: 0 1rem; }
+
+@media (max-width: 480px) {
+.alpha-score-body { flex-direction: column; align-items: flex-start; gap: 1rem; }
+.alpha-breakdown-row { grid-template-columns: 80px 1fr 40px; font-size: 0.74rem; }
+}
+
+@media (max-width: 360px) {
+.alpha-breakdown-row { grid-template-columns: 72px 1fr 38px; font-size: 0.72rem; gap: 0.4rem; }
+}
+
+@media (max-width: 390px) {
+.alpha-score-body { flex-direction: column; align-items: flex-start; gap: 1rem; }
+.alpha-root { padding: 0 0 4rem; }
+}
+
+/* Alpha / signal scores */
+[data-wl-light] .alpha-score-label { color: rgba(0,0,0,0.7); }

@@ -6,6 +6,7 @@ import { calcAlphaScore, assetClass } from '../alphaScore'
 import CoinLogo from '../components/CoinLogo'
 import Icon from '../components/Icon'
 import { useLanguage } from '../LanguageContext'
+import './Alpha.css'
 
 const CG = 'https://api.coingecko.com/api/v3'
 const CACHE_KEY = 'wl_alpha_cache_v1'

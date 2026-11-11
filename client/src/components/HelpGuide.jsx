@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import { track } from '../analytics'
+import './HelpGuide.css'
 
 /**
  * HelpGuide — the on-demand "How it works" guide the Help (?) button opens.

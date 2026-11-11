@@ -4,6 +4,7 @@ import { syncAlerts } from '../push'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
 import { showLocalNotification, requestNotifyPermission, canNotify } from '../localNotify'
+import './PriceAlerts.css'
 
 const STORAGE_KEY = 'walletlens_price_alerts'
 
