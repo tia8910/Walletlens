@@ -340,9 +340,13 @@ export default function EmptyVault({ onScreenshot, onVoice, onManual, onQuickAdd
           </g>
         </svg>
 
-        <div className="ev-pills" role="tablist" aria-label={t('stTitle')}>
+        {/* Each pill does what it says: Screenshot imports one, Voice listens,
+            Tap adds by hand. They only switched the scene before, so a tap on
+            the one already showing did nothing at all. */}
+        <div className="ev-pills" role="group" aria-label={t('stTitle')}>
           {SCENES.map((s, i) => (
-            <button key={s.id} type="button" role="tab" aria-selected={i === k} className={i === k ? 'on' : ''} onClick={() => pick(i)}>
+            <button key={s.id} type="button" aria-pressed={i === k} className={i === k ? 'on' : ''}
+              onClick={() => { pick(i); ctas[s.id].run?.() }}>
               <Icon name={s.icon} size={14} />{pills[s.id]}
               <i style={{ transform: `scaleX(${i === k ? (reduce ? 1 : u / LOOP) : 0})` }} />
             </button>
