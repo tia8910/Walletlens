@@ -150,10 +150,18 @@ html.wl-v3 .wl-ss .wl-ss-stk { animation-delay: 7.5s; }
 html.wl-v3 .wl-ss .wl-ss-au  { animation-delay: 9s; }
 html.wl-v3 .wl-ss .wl-ss-usd { animation-delay: 10.5s; }
 @keyframes wl-ss-spin { to { transform: rotate(360deg); } }
-@keyframes wl-ss-plus-glyph { 0%, 46% { opacity: 1; filter: blur(0); transform: scale(1); } 50%, 96% { opacity: 0; filter: blur(6px); transform: scale(.7); } 100% { opacity: 1; filter: blur(0); transform: scale(1); } }
-@keyframes wl-ss-asset-glyph { 0% { opacity: 0; filter: blur(6px); transform: scale(.7); } 3%, 10% { opacity: 1; filter: blur(0); transform: scale(1); } 13%, 100% { opacity: 0; filter: blur(6px); transform: scale(.7); } }
-@keyframes wl-ss-plus-fade { 0%, 46% { opacity: var(--wl-ss-on, 1); } 50%, 96% { opacity: 0; } 100% { opacity: var(--wl-ss-on, 1); } }
-@keyframes wl-ss-asset-fade { 0% { opacity: 0; } 3%, 10% { opacity: var(--wl-ss-on, 1); } 13%, 100% { opacity: 0; } }
+/* Cross-fades: each phase holds until the next is most of the way in, so the
+   button is never empty. (Each asset used to end at 10% of the loop while the
+   next only began at 12.5%, which left the button blank for a moment every
+   1.5 s.) The last asset hands back to the plus by the loop's end. */
+@keyframes wl-ss-plus-glyph { 0%, 51% { opacity: 1; filter: blur(0); transform: scale(1); } 53.5%, 96.5% { opacity: 0; filter: blur(6px); transform: scale(.7); } 99.5%, 100% { opacity: 1; filter: blur(0); transform: scale(1); } }
+@keyframes wl-ss-asset-glyph { 0% { opacity: 0; filter: blur(6px); transform: scale(.7); } 3%, 13.75% { opacity: 1; filter: blur(0); transform: scale(1); } 15.5%, 100% { opacity: 0; filter: blur(6px); transform: scale(.7); } }
+@keyframes wl-ss-last-glyph { 0% { opacity: 0; filter: blur(6px); transform: scale(.7); } 3%, 10.5% { opacity: 1; filter: blur(0); transform: scale(1); } 12.5%, 100% { opacity: 0; filter: blur(6px); transform: scale(.7); } }
+@keyframes wl-ss-plus-fade { 0%, 51% { opacity: var(--wl-ss-on, 1); } 53.5%, 96.5% { opacity: 0; } 99.5%, 100% { opacity: var(--wl-ss-on, 1); } }
+@keyframes wl-ss-asset-fade { 0% { opacity: 0; } 3%, 13.75% { opacity: var(--wl-ss-on, 1); } 15.5%, 100% { opacity: 0; } }
+@keyframes wl-ss-last-fade { 0% { opacity: 0; } 3%, 10.5% { opacity: var(--wl-ss-on, 1); } 12.5%, 100% { opacity: 0; } }
+html.wl-v3 .wl-ss-g.wl-ss-usd { animation-name: wl-ss-last-glyph; }
+html.wl-v3 .wl-ss-ring.wl-ss-usd, html.wl-v3 .wl-ss-glow.wl-ss-usd { animation-name: wl-ss-last-fade; }
 html.wl-v3 .wl-ss-glow { --wl-ss-on: 0.55; }
 @media (prefers-reduced-motion: reduce) {
   html.wl-v3 .wl-ss-rings, html.wl-v3 .wl-ss-ring, html.wl-v3 .wl-ss-glow, html.wl-v3 .wl-ss-g { animation: none; }
