@@ -693,6 +693,8 @@ export default {
     nlMetals: "Métaux",
     nlSearching: "Recherche…",
     nlNoMatches: "Aucun résultat",
+    nlNoPrice: "Pas encore de prix",
+    nlPricing: "Prix en cours…",
     nlTabPrices: "Prix",
     nlSmartHint: "Flux net des portefeuilles que Nansen classe comme smart money, sur 24 heures.",
     nlAccumulated: "La smart money achète",

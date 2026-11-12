@@ -19,4 +19,11 @@ describe('pickDexPair', () => {
     expect(pickDexPair(undefined, 'X')).toBeNull()
     expect(pickDexPair([pair('X', 0, 1e6)], 'X')).toBeNull()
   })
+  it('for a ticker from search, prices only when one token trades under it', () => {
+    const tok = (address, price, liq) => ({ ...pair('STONKS', price, liq), chainId: 'base', baseToken: { symbol: 'STONKS', address } })
+    expect(pickDexPair([tok('0xa', 0.002, 50000), tok('0xb', 0.9, 400000)], 'STONKS', 0, { unique: true })).toBeNull()
+    expect(pickDexPair([tok('0xA', 0.002, 50000), tok('0xa', 0.0021, 80000)], 'STONKS', 0, { unique: true })).toEqual({ usd: 0.0021, change: 0 })
+    // Without the flag, a coin already held keeps taking the deepest pool.
+    expect(pickDexPair([tok('0xa', 0.002, 50000), tok('0xb', 0.9, 400000)], 'STONKS').usd).toBe(0.9)
+  })
 })

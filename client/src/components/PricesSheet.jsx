@@ -42,9 +42,10 @@ export default function PricesSheet({ items = [], onClose }) {
   // are then priced in one batch.
   const [found, setFound] = useState([])
   const [searching, setSearching] = useState(false)
+  const [pricing, setPricing] = useState(false)
   useEffect(() => {
     const term = q.trim()
-    if (term.length < 2 || !(cls === 'all' || cls === 'crypto')) { setFound([]); setSearching(false); return }
+    if (term.length < 2 || !(cls === 'all' || cls === 'crypto')) { setFound([]); setSearching(false); setPricing(false); return }
     let alive = true
     setSearching(true)
     const timer = setTimeout(async () => {
@@ -54,7 +55,12 @@ export default function PricesSheet({ items = [], onClose }) {
       if (!Array.isArray(res)) return
       setFound(res)
       const ids = res.map(c => c.id).filter(Boolean)
-      if (ids.length) Promise.resolve(api.getPrices(ids.join(','))).then(px => { if (alive && px) setQuotes(qq => ({ ...qq, ...px })) }).catch(() => {})
+      if (!ids.length) return
+      setPricing(true)
+      Promise.resolve(api.getPrices(ids.join(',')))
+        .then(px => { if (alive && px) setQuotes(qq => ({ ...qq, ...px })) })
+        .catch(() => {})
+        .finally(() => { if (alive) setPricing(false) })
     }, 250)
     return () => { alive = false; clearTimeout(timer) }
   }, [q, cls])
@@ -102,13 +108,19 @@ export default function PricesSheet({ items = [], onClose }) {
     const f = q.trim().toLowerCase()
     if (!f) return out
     const hits = out.filter(r => r.name.toLowerCase().includes(f) || r.full?.toLowerCase().includes(f) || r.id?.includes(f))
+    const more = []
     for (const c of found) {
       if (seen.has(c.id)) continue
       seen.add(c.id)
-      hits.push({ id: c.id, image: c.large || c.thumb, name: (c.symbol || '').toUpperCase(), full: c.name, price: quotes[c.id]?.usd ?? null, change: quotes[c.id]?.usd_24h_change ?? null, cls: 'crypto' })
+      const px = Number(quotes[c.id]?.usd) > 0 ? quotes[c.id] : null
+      more.push({ id: c.id, image: c.large || c.thumb, name: (c.symbol || '').toUpperCase(), full: c.name, price: px?.usd ?? null, change: px?.usd_24h_change ?? null, cls: 'crypto', searched: true })
     }
-    return hits
-  }, [items, market, quotes, cls, q, found])
+    // Once pricing has settled, coins with a market price come first; ones no
+    // source prices (often delisted) go last, in search order. Not while the
+    // prices arrive, so rows do not jump under a finger.
+    if (!pricing) more.sort((a, b) => (a.price == null) - (b.price == null))
+    return [...hits, ...more]
+  }, [items, market, quotes, cls, q, found, pricing])
 
   const open = (id) => { if (!id) return; onClose(); navigate(`/asset/${encodeURIComponent(id)}`) }
 
@@ -173,7 +185,11 @@ export default function PricesSheet({ items = [], onClose }) {
                 <button type="button" key={r.id || r.name} className="nl-row" onClick={() => open(r.id)} disabled={!r.id}>
                   <CoinLogo coinId={r.id} symbol={r.name} image={r.image} size={34} />
                   <div className="nl-row-n"><b>{r.name}</b>{r.full && <small>{r.full}</small>}</div>
-                  <div className="nl-row-v"><b>{fmt(r.price)}</b><small className={r.change == null ? '' : r.change >= 0 ? 'up' : 'down'}>{pct(r.change)}</small></div>
+                  {r.searched && r.price == null ? (
+                    <div className="nl-row-v nl-row-np"><small>{pricing ? t('nlPricing') : t('nlNoPrice')}</small></div>
+                  ) : (
+                    <div className="nl-row-v"><b>{fmt(r.price)}</b><small className={r.change == null ? '' : r.change >= 0 ? 'up' : 'down'}>{pct(r.change)}</small></div>
+                  )}
                 </button>
               ))}
               {rows.length === 0 && <p className="nl-sheet-note">{searching ? t('nlSearching') : t('nlNoMatches')}</p>}

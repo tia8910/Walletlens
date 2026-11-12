@@ -693,6 +693,8 @@ export default {
     nlMetals: "Metales",
     nlSearching: "Buscando…",
     nlNoMatches: "Sin resultados",
+    nlNoPrice: "Sin precio aún",
+    nlPricing: "Buscando precio…",
     nlTabPrices: "Precios",
     nlSmartHint: "Flujo neto de las carteras que Nansen etiqueta como smart money, últimas 24 horas.",
     nlAccumulated: "El smart money compra",

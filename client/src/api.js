@@ -722,6 +722,11 @@ async function _loadMarketSnapshotUncached(perPage = 250) {
 // ./data/portfolio. Aliased here so existing callers keep their name.
 const _foldBalances = _foldBalancesPure;
 
+// The ticker CoinGecko's search gave each coin it returned, by id. Used only
+// by the DexScreener fallback, and there only when the symbol names a single
+// token: the exchange stages key by symbol and would price a small coin that
+// shares a ticker with a big one at the big one's price.
+const _searchSymbols = {};
 function _symbolForId(id, holdings) {
   if (BINANCE_ID_OVERRIDES[id]) return BINANCE_ID_OVERRIDES[id];
   if (priceCache[id]?.symbol) return String(priceCache[id].symbol).toUpperCase();
@@ -1094,11 +1099,14 @@ async function intlUsdFactor(ticker) {
  * within a factor of three of the last known price when there is one, and
  * the deepest of what is left. null when nothing qualifies.
  */
-export function pickDexPair(pairs, symbol, refPrice) {
+export function pickDexPair(pairs, symbol, refPrice, { unique = false } = {}) {
   const sym = String(symbol || '').toUpperCase();
   const ok = (Array.isArray(pairs) ? pairs : []).filter(p =>
     String(p?.baseToken?.symbol || '').toUpperCase() === sym &&
     Number(p?.priceUsd) > 0 && Number(p?.liquidity?.usd) >= 10000);
+  // Only a ticker for a coin, not the coin itself (a search result): any
+  // second token trading under the same ticker makes the price a guess.
+  if (unique && new Set(ok.map(p => `${p.chainId}:${String(p?.baseToken?.address || '').toLowerCase()}`)).size !== 1) return null;
   const near = refPrice > 0 ? ok.filter(p => Number(p.priceUsd) / refPrice < 3 && refPrice / Number(p.priceUsd) < 3) : ok;
   const best = near.sort((a, b) => Number(b.liquidity.usd) - Number(a.liquidity.usd))[0];
   return best ? { usd: Number(best.priceUsd), change: Number(best?.priceChange?.h24) || 0 } : null;
@@ -2227,7 +2235,10 @@ export const api = {
             ]);
             if (Array.isArray(cgData) && cgData.length > 0) {
               for (const c of cgData) {
-                if (!c?.id) continue;
+                // A listed coin CoinGecko no longer prices (current_price null)
+                // is not an answer: writing it marked the coin filled and kept
+                // every later source, DexScreener included, from trying.
+                if (!c?.id || !(Number(c.current_price) > 0)) continue;
                 priceCache[c.id] = {
                   usd: c.current_price,
                   usd_24h_change: c.price_change_percentage_24h_in_currency ?? c.price_change_percentage_24h ?? 0,
@@ -2412,15 +2423,17 @@ export const api = {
         // symbol, so the pair is chosen with care: the right symbol, real
         // liquidity, and when an earlier price is known, one near it.
         if (needsFresh) {
-          const stillNeed = unfilled().slice(0, 6);
+          const stillNeed = unfilled().slice(0, 10);
           const txs = stillNeed.length ? loadData('transactions') : [];
           await Promise.all(stillNeed.map(async id => {
-            const sym = _symbolForId(id, txs) || String(id).toUpperCase();
+            const known = _symbolForId(id, txs);
+            const hinted = !known && _searchSymbols[id];
+            const sym = known || hinted || String(id).toUpperCase();
             try {
               const url = `https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(sym)}`;
               const res = await fetchFirstOk([url, DENO_PROXY(url)], 6000);
               if (!res?.ok) return;
-              const pick = pickDexPair((await res.json())?.pairs, sym, priceCache[id]?.usd);
+              const pick = pickDexPair((await res.json())?.pairs, sym, priceCache[id]?.usd, { unique: !!hinted });
               if (!pick) return;
               priceCache[id] = { ...(priceCache[id] || {}), usd: pick.usd, usd_24h_change: pick.change, symbol: sym, source: 'dexscreener' };
             } catch {}
@@ -2548,6 +2561,7 @@ export const api = {
     // Cache image URLs immediately so CoinLogo finds them without CDN fallbacks
     let changed = false;
     for (const c of results) {
+      if (c.id && c.symbol) _searchSymbols[c.id] = String(c.symbol).toUpperCase();
       if (c.id && (c.large || c.thumb) && !coinImageCache[c.id]) {
         coinImageCache[c.id] = c.large || c.thumb;
         changed = true;
