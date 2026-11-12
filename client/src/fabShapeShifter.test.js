@@ -41,3 +41,27 @@ describe('add button shape-shifter', () => {
     expect(rm[0]).toMatch(/\.wl-ss-g\.wl-ss-plus, html\.wl-v3 \.wl-ss-ring\.wl-ss-plus \{ opacity: 1; \}/)
   })
 })
+
+describe('add button never goes blank', () => {
+  // Opacity of a keyframes block at a point of its own timeline (0..100).
+  const kf = (name) => {
+    const body = css.match(new RegExp(`@keyframes ${name} \\{([^\\n]*)\\}\\s*$`, 'm'))[1]
+    const stops = []
+    for (const [, sel, op] of body.matchAll(/([\d.%, ]+)\{ opacity: (?:var\(--wl-ss-on, )?([\d.]+)\)?;/g)) for (const p of sel.split(',')) stops.push([parseFloat(p), Number(op)])
+    stops.sort((a, b) => a[0] - b[0])
+    return (x) => { const i = stops.findIndex(s => s[0] >= x); if (i <= 0) return stops[Math.max(0, i)][1]; const [a, b] = [stops[i - 1], stops[i]]; return a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]) }
+  }
+  it('always shows one glyph at least two thirds visible, all through the loop', () => {
+    const plus = kf('wl-ss-plus-glyph'), asset = kf('wl-ss-asset-glyph'), last = kf('wl-ss-last-glyph')
+    const slots = [[6, asset], [7.5, asset], [9, asset], [10.5, last]]
+    let min = 1
+    for (let t = 0; t < 12; t += 0.02) {
+      const ops = [plus((t / 12) * 100), ...slots.map(([d, f]) => f((((t - d + 12) % 12) / 12) * 100))]
+      min = Math.min(min, Math.max(...ops))
+      // And never two at once: the last asset is gone before the plus is back in full.
+      expect(ops.filter(o => o > 0.9).length, `at ${t.toFixed(2)}s`).toBeLessThanOrEqual(1)
+    }
+    expect(min).toBeGreaterThan(0.6)
+    expect(css).toMatch(/\.wl-ss-g\.wl-ss-usd \{ animation-name: wl-ss-last-glyph; \}/)
+  })
+})

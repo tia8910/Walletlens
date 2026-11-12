@@ -306,6 +306,25 @@ export default function AssistantChat() {
     startNewChat()
   }
 
+  // The bubble floats over whatever is under it (a row's Edit link, a tile, a
+  // form field). While someone scrolls down to read it steps aside, and comes
+  // back when they scroll up or stop: the content is theirs first.
+  const [away, setAway] = useState(false)
+  useEffect(() => {
+    let last = 0, idle = null
+    const onScroll = () => {
+      // The page's own scroll only: the price ticker scrolls sideways all the time.
+      const y = window.scrollY || 0, dy = y - last
+      last = y
+      if (Math.abs(dy) < 6) return
+      setAway(dy > 0 && y > 80)
+      clearTimeout(idle)
+      idle = setTimeout(() => setAway(false), 1200)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => { clearTimeout(idle); window.removeEventListener('scroll', onScroll) }
+  }, [])
+
   const greeting = isAr
     ? 'مرحباً! أنا مساعد WalletLens. أخبرني بما تريد فعله وسأوجهك للميزة المناسبة.'
     : "Hi! I'm the WalletLens assistant. Ask me anything about the app, your portfolio, or investing."
@@ -314,7 +333,7 @@ export default function AssistantChat() {
     <>
       <button
         ref={fabRef}
-        className={`wlc-fab ${open ? 'wlc-fab-open' : ''} ${drag.current.moved ? 'wlc-fab-dragging' : ''}`}
+        className={`wlc-fab ${open ? 'wlc-fab-open' : ''} ${drag.current.moved ? 'wlc-fab-dragging' : ''} ${away && !open ? 'wlc-fab-away' : ''}`}
         style={pos ? { left: `${pos.x}px`, top: `${pos.y}px`, right: 'auto', bottom: 'auto' } : undefined}
         onPointerDown={onFabPointerDown}
         onPointerMove={onFabPointerMove}
