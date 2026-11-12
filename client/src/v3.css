@@ -739,6 +739,14 @@ html.wl-v3 .nl-ticker .nl-ticker-strip::-webkit-scrollbar { display: none; }
 .nl-seg2 button { flex: 1; height: 32px; border: 0; border-radius: 9px; cursor: pointer; background: transparent; color: var(--nl-sub); font: inherit; font-size: 0.8rem; font-weight: 800; }
 .nl-seg2 button.on { background: var(--nl-card, #fff); color: var(--nl-ink); box-shadow: 0 1px 3px rgba(15, 29, 43, 0.12); }
 .nl-sheet-list { flex: 1; min-height: 0; overflow-y: auto; margin-top: 0.4rem; overscroll-behavior: contain; }
+/* The scroll bar sat on the price column (Android draws it over the content),
+   cutting off the right edge of every price. The list keeps a lane for it,
+   and the price column never shrinks under a long name. */
+.nl-sheet-list { padding-inline-end: 0.7rem; margin-inline-end: -0.35rem; scrollbar-width: thin; scrollbar-color: rgba(var(--g-rgb, 22, 168, 116), 0.35) transparent; }
+.nl-sheet-list::-webkit-scrollbar { width: 4px; }
+.nl-sheet-list::-webkit-scrollbar-thumb { border-radius: 4px; background: rgba(var(--g-rgb, 22, 168, 116), 0.35); }
+.nl-sheet-list::-webkit-scrollbar-track { background: transparent; }
+.nl-sheet-list .nl-row-v { flex: none; max-width: 48%; padding-inline-start: 0.4rem; }
 .nl-sheet-list .nl-row:disabled { cursor: default; opacity: 1; }
 .nl-sheet .up { color: var(--nl-up, #16a874); } .nl-sheet .down { color: var(--nl-down, #e5484d); }
 .nl-sheet-note { margin: 0.6rem 0.1rem 0; font-size: 0.76rem; font-weight: 600; color: var(--nl-sub); }
