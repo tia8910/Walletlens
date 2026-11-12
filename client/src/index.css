@@ -12844,9 +12844,19 @@ html.wl-msstore a[href*="chrome.google.com/webstore"] { display: none !important
    The animated stage itself lives in components/EmptyVault.css. */
 .wl-st { display: flex; flex-direction: column; gap: 0.75rem; padding: 0.75rem 0.25rem 1.5rem; text-align: start; }
 .wl-st-label { margin-top: 0.4rem; font-size: 0.74rem; font-weight: 800; color: var(--text-sub); letter-spacing: 0.04em; }
-.wl-st-more { display: flex; flex-wrap: wrap; gap: 0.45rem; }
-.wl-st-more button { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.8rem; border-radius: 999px; cursor: pointer;
-  font: inherit; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); background: transparent; border: 1px solid rgba(var(--g-rgb),0.22); }
+.wl-st-more { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.wl-st-more button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.35rem; min-height: 64px; padding: 0.6rem 0.4rem; border-radius: 14px; cursor: pointer;
+  font: inherit; font-size: 0.78rem; font-weight: 700; line-height: 1.2; text-align: center; color: var(--text); background: var(--surface-1); border: 1px solid rgba(var(--g-rgb),0.22); }
+.wl-st-more button svg { color: var(--g-ink); flex: none; }
+/* Restore from Google Drive: the returning user's way in. */
+.wl-st-drive { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.6rem 0.75rem; padding: 0.85rem; border-radius: 16px; background: var(--surface-1); border: 1.5px solid rgba(var(--g-rgb), 0.28); }
+.wl-st-drive-ic { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: #fff; box-shadow: inset 0 0 0 1px rgba(15, 29, 43, 0.08); }
+.wl-st-drive-txt b { display: block; font-size: 0.92rem; font-weight: 800; color: var(--text); }
+.wl-st-drive-txt small { display: block; margin-top: 2px; font-size: 0.78rem; line-height: 1.4; color: var(--text-muted); }
+.wl-st-drive button { grid-column: 1 / -1; min-height: 46px; border: 0; border-radius: 12px; cursor: pointer; font: inherit; font-size: 0.9rem; font-weight: 800; color: #fff; background: color-mix(in srgb, var(--g) 55%, #000); }
+.wl-st-drive button:disabled { opacity: 0.6; cursor: wait; }
+.wl-st-drive-err { grid-column: 1 / -1; margin: 0; font-size: 0.78rem; font-weight: 700; color: #b42318; }
+html:not([data-wl-light]) .wl-st-drive-err { color: #fca5a5; }
 .wl-st-private { font-size: 0.72rem; color: var(--text-sub); text-align: center; }
 .wl-st-unlock { margin-top: 0.6rem; text-align: center; }
 .wl-st-unlock .wl-st-label { text-align: start; margin-bottom: 0.5rem; }
