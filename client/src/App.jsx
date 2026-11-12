@@ -1,4 +1,5 @@
 import { lazy, Suspense, memo, useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react'
+import { shouldRenderHomeFallback } from './homeHop'
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import useScrollTop from './useScrollTop'
 const Landing       = lazy(() => import('./pages/Landing'))
@@ -115,16 +116,9 @@ const EcosystemLanding = lazy(() => import('./pages/EcosystemPage'))
 // the React landing instead, so load the real page once. The flag, cleared by
 // the tour itself, stops a loop when "/" comes back as the app shell: the dev
 // server, or a service-worker cache from before the switch.
-const HOME_HOP = 'wl_home_hop'
+// The one-hop decision lives in homeHop.js (see there for why it is not state).
 function StaticHome() {
-  const [fallback] = useState(() => {
-    if (import.meta.env.DEV) return true
-    try {
-      if (sessionStorage.getItem(HOME_HOP)) { sessionStorage.removeItem(HOME_HOP); return true }
-      sessionStorage.setItem(HOME_HOP, '1')
-    } catch { return true }
-    return false
-  })
+  const fallback = shouldRenderHomeFallback(import.meta.env.DEV)
   useEffect(() => { if (!fallback) window.location.replace('/') }, [fallback])
   return fallback ? <EcosystemLanding /> : null
 }
