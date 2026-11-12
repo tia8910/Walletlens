@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../LanguageContext'
@@ -21,6 +21,8 @@ const CLASSES = [
 // class the trade sheet sells, filtered by the chips: the strip's own picks
 // and the crypto ranking, stocks, tokenized stocks, metals and currencies —
 // and the smart money flows that used to have a strip of their own.
+// The share of the screen a phone keyboard leaves free, when the page cannot measure it.
+const KEYBOARD_FREE = 0.56
 const fmt = (n) => n == null ? '–' : '$' + Number(n).toLocaleString('en', { maximumFractionDigits: n >= 1000 ? 0 : n >= 1 ? 2 : 4, minimumFractionDigits: n >= 1000 ? 0 : 2 })
 const pct = (v) => v == null ? '·' : `${v >= 0 ? '+' : ''}${Number(v).toFixed(2)}%`
 
@@ -110,8 +112,40 @@ export default function PricesSheet({ items = [], onClose }) {
 
   const open = (id) => { if (!id) return; onClose(); navigate(`/asset/${encodeURIComponent(id)}`) }
 
+  // Keep the sheet in the part of the screen the keyboard leaves. A sheet
+  // anchored to the bottom (or centred) sat behind the keyboard: the search
+  // field and its results could not be seen while typing.
+  //  - A browser shrinks the visual viewport for the keyboard, so the visible
+  //    area is measured and the sheet fitted to it.
+  //  - The Android app draws the keyboard over the page and tells the page
+  //    nothing, so there the sheet docks to the top of the screen for as long
+  //    as the search field has focus on a touch device.
+  const bgRef = useRef(null)
+  const typing = useRef(false)
+  const fitRef = useRef(() => {})
+  useEffect(() => {
+    const vv = window.visualViewport, el = bgRef.current
+    if (!el) return
+    const touch = window.matchMedia?.('(pointer: coarse)').matches
+    const fit = () => {
+      const full = window.innerHeight
+      const shrunk = !!vv && full - vv.height - vv.offsetTop > 120
+      const blind = !shrunk && typing.current && touch
+      el.style.setProperty('--nl-vvh', `${Math.round(shrunk ? vv.height : blind ? full * KEYBOARD_FREE : full)}px`)
+      el.style.setProperty('--nl-vvt', `${Math.round(shrunk ? vv.offsetTop : 0)}px`)
+      el.classList.toggle('nl-kb', shrunk || blind)
+    }
+    fitRef.current = fit
+    fit()
+    vv?.addEventListener('resize', fit); vv?.addEventListener('scroll', fit)
+    return () => { vv?.removeEventListener('resize', fit); vv?.removeEventListener('scroll', fit) }
+  }, [])
+  const onSearchFocus = () => { typing.current = true; fitRef.current() }
+  // Late enough that a tap on a result lands before the sheet moves back.
+  const onSearchBlur = () => { typing.current = false; setTimeout(() => fitRef.current(), 300) }
+
   return createPortal(
-    <div className="nl-sheet-bg" onClick={onClose}>
+    <div className="nl-sheet-bg" ref={bgRef} onClick={onClose}>
       <div className="nl-sheet" role="dialog" aria-modal="true" aria-label={t('tickerPrices')} onClick={e => e.stopPropagation()}>
         <i className="nl-sheet-grip" aria-hidden="true" />
         <div className="nl-sheet-h">
@@ -127,7 +161,8 @@ export default function PricesSheet({ items = [], onClose }) {
 
         {tab === 'prices' ? (
           <>
-            <input className="nl-search" type="text" value={q} onChange={e => setQ(e.target.value)} placeholder={t('phSearchAssets')} />
+            <input className="nl-search" type="search" enterKeyHint="search" value={q} onChange={e => setQ(e.target.value)} placeholder={t('phSearchAssets')}
+              onFocus={onSearchFocus} onBlur={onSearchBlur} onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} />
             <div className="nl-chips">
               {[{ key: 'all', labelKey: 'nlAllPrices' }, { key: 'crypto', labelKey: 'catCrypto' }, ...CLASSES].map(c => (
                 <button key={c.key} type="button" className={cls === c.key ? 'on' : ''} onClick={() => setCls(c.key)}>{t(c.labelKey)}</button>

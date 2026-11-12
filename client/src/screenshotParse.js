@@ -37,6 +37,11 @@ const NOT_NAMES = new Set(['total', 'value', 'balance', 'balances', 'price', 'ho
   'overview', 'assets', 'tokens', 'activity', 'stocks', 'crypto', 'market', 'markets', 'wallet', 'trade', 'signals',
   'analyze', 'track', 'grow', 'today', 'portfolio', 'holdings', 'send', 'receive', 'swap', 'buy', 'sell', 'gas', 'flow',
   'stacks', 'core', 'origin', 'story', 'sonic', 'render', 'graph', 'status', 'just', 'ever', 'safe', 'echo', 'frax'])
+// Uppercase words that follow a number on a screen and are not an asset.
+const NOT_UNITS = new Set(['HOURS', 'HOUR', 'HRS', 'DAYS', 'MONTHS', 'MONTH', 'WEEKS', 'YEARS', 'MIN', 'MINS', 'SEC', 'SECS',
+  'VOL', 'AVG', 'LOW', 'HIGH', 'PTS', 'POINTS', 'XP', 'GWEI', 'WEI', 'SATS', 'ITEMS', 'ITEM', 'NFTS', 'PCS', 'LOTS', 'LOT',
+  'LEVEL', 'RANK', 'USERS', 'NEW', 'LEFT', 'AGO', 'OFF', 'PER', 'MAX', 'KYC', 'VIP', 'PRO', 'LITE', 'BETA', 'SHARES', 'SHARE',
+  'UNITS', 'UNIT', 'COINS', 'TOKENS', 'GRAMS', 'OUNCES', 'USDT', 'USDC', 'BUSD', 'FDUSD'])
 const TOTAL_WORDS = /^(total|estimated|est\.?|net|balance|portfolio|equity|worth)$/i
 const UNIT_WORDS = /^(shares?|sh|oz|ounces?|units?|coins?|tokens?|grams?|g|lb)$/i
 const CARD_LABEL = /^(amount|qty|quantity|price|filled|executed|size|avg\.?)$/i
@@ -177,6 +182,37 @@ function findAnchors(tokens, cat) {
     // "SEI/USDT": the trade was against USDT, which the import books too.
     anchors.push({ entry, kind: 'ticker', idx: [i], quote: pair ? pair[2] : '', ...box([t]) })
   })
+
+  // ASSETS THE LISTS DO NOT KNOW. The lists hold the top coins, the popular
+  // stocks and what is already held; a smaller token ("277 GRAM",
+  // "26,339 STONKBROKER") matched nothing and its whole row was dropped. The
+  // layout still says it is a holding, in two ways:
+  //   - an uppercase word straight after a number is that number's unit;
+  //   - an uppercase word standing in the same column as the known tickers.
+  // The same column test admits a ticker OCR read in mixed case with an l for
+  // an I ("Sul" for SUI).
+  const tickerXs = anchors.filter(a => a.kind === 'ticker').map(a => a.x0)
+  const inColumn = (t) => tickerXs.filter(x => Math.abs(x - t.x0) < t.h * 0.6).length >= 2
+  const isFigure = (t) => t && Number.isFinite(parseNumber(t.text.replace(MONEY, '').replace(/^[+-]/, ''))) && !/%$/.test(t.text)
+  tokens.forEach((t, i) => {
+    if (used.has(i)) return
+    const col = inColumn(t)
+    if (col && /^[A-Z][A-Za-z]{1,5}$/.test(t.text) && /l/.test(t.text)) {
+      const fixed = t.text.replace(/l/g, 'I').toUpperCase()
+      const entry = !NOT_ANCHORS.has(fixed) && cat.bySymbol.get(fixed)
+      if (entry) { used.add(i); anchors.push({ entry, kind: 'ticker', idx: [i], quote: '', ...box([t]) }); return }
+    }
+    if (!/^[A-Z][A-Z0-9_]{2,14}$/.test(t.text) || (t.text.match(/[A-Z]/g) || []).length < 2) return
+    // GRAM is a weight ("10 GRAM" of gold) and also a token. It is the token
+    // when the screen names it too ("Gram"), or lists it among the tickers.
+    const unit = UNIT_WORDS.test(t.text) && !(t.text === 'GRAM' && (col || tokens.some(o => o.text === 'Gram')))
+    if (NOT_ANCHORS.has(t.text) || NOT_UNITS.has(t.text) || unit || FIAT_CODE.test(t.text) || cat.bySymbol.has(t.text)) return
+    const prev = tokens[i - 1]
+    const suffix = isFigure(prev) && sameLine(prev, t) && t.x0 - prev.x1 < t.h * 3 && !MONEY.test(prev.text)
+    if (!suffix && !col) return
+    used.add(i)
+    anchors.push({ entry: { symbol: t.text, name: t.text, rank: 1e6, price: 0 }, kind: 'ticker', idx: [i], quote: '', inferred: true, suffix, ...box([t]) })
+  })
   return anchors
 }
 
@@ -243,12 +279,28 @@ function solveRow(nums, symbol, market) {
     const v = money.find(n => market > 0 && !nearMarket(n) && n.label !== 'price')
     return v ? { amount: v.value / market, price: market } : null
   }
-  // A figure the screen calls the price is the price.
-  const lp = money.find(n => n.label === 'price')
-  if (lp) return { amount, price: lp.value }
+  // Figures that multiply out are right, whatever the screen calls them.
   for (const p of money) for (const v of money) {
     if (p !== v && Math.abs(amount * p.value - v.value) <= v.value * 0.015 + 0.01) return { amount, price: p.value }
   }
+  // A decimal point the reader lost: "3.15 ETH" read as "315", "$1.17" as
+  // "$117". When the figures only multiply out with the point put back, it
+  // goes back. Only a figure read with no separator at all is touched, and
+  // of the two the price first: a price is written with its cents, an amount
+  // is often a whole number.
+  const whole = (n) => n && /^\D*\d+\D*$/.test(n.tok?.text || '')
+  for (const fix of ['price', 'amount']) for (const p of money) for (const v of money) {
+    if (p === v) continue
+    for (let k = 1; k <= 6; k++) {
+      const d = 10 ** k
+      const fits = (a, px) => Math.abs(a * px - v.value) <= v.value * 0.004
+      if (fix === 'price' && whole(p) && fits(amount, p.value / d)) return { amount, price: p.value / d }
+      if (fix === 'amount' && whole(amountTok) && fits(amount / d, p.value)) return { amount: amount / d, price: p.value }
+    }
+  }
+  // A figure the screen calls the price is the price.
+  const lp = money.find(n => n.label === 'price')
+  if (lp) return { amount, price: lp.value }
   const lv = money.find(n => n.label === 'value')
   if (lv) return { amount, price: lv.value / amount }
   if (!money.length) return { amount, price: 0 }
@@ -308,7 +360,8 @@ export function parseHoldingsFromWords(words, catalogue) {
   groups.forEach((g, gi) => {
     // A headline total ("0.218 BTC" in big type under "Estimated Balance") is not a holding.
     if (g.h > rowH * 1.7) return
-    if (g.x0 > width * 0.6) return
+    // A ticker found as a number's unit ("277 GRAM") sits wherever the amount is.
+    if (g.x0 > width * 0.6 && !g.members.some(m => m.suffix)) return
     const above = tokens.filter(t => t.y1 <= g.y0 + 2 && g.y0 - t.y1 < g.h * 1.6)
     const lineOf = tokens.filter(t => sameLine(t, g))
     if ([...above, ...lineOf].some(t => TOTAL_WORDS.test(t.text))) return
@@ -349,9 +402,12 @@ export function parseHoldingsFromWords(words, catalogue) {
     // The trade's day, when the card shows one ("2026-10-17", "2026/10/17").
     const day = band.map(i => tokens[i].text.match(/^(\d{4})[-/.](\d{2})[-/.](\d{2})$/)).find(Boolean)
     const date = day && +day[2] >= 1 && +day[2] <= 12 && +day[3] >= 1 && +day[3] <= 31 ? `${day[1]}-${day[2]}-${day[3]}` : null
+    // An asset the lists do not know is named by the screen: the word in its
+    // row that spells its ticker ("StonkBroker" beside "STONKBROKER").
+    const spelled = g.members.some(m => m.inferred) && band.map(i => tokens[i].text).find(w => w !== g.symbol && /^[A-Z]/.test(w) && norm(w) === g.symbol.toLowerCase())
     rows.push({
       symbol: g.symbol,
-      name: g.entry.name,
+      name: spelled || g.entry.name,
       amount: +solved.amount.toPrecision(10),
       price: solved.price > 0 ? +solved.price.toPrecision(10) : 0,
       type,

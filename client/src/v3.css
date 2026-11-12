@@ -721,6 +721,14 @@ html.wl-v3 .nl-ticker .nl-ticker-strip::-webkit-scrollbar { display: none; }
   animation: nl-rise 0.26s cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
 @media (min-width: 700px) { .nl-sheet-bg { align-items: center; } .nl-sheet { border-radius: 26px; } }
+/* The sheet keeps one height while its list filters (it jumped as results
+   came and went), and stays inside the area the keyboard leaves: PricesSheet
+   measures that area into --nl-vvh / --nl-vvt and sets .nl-kb while the
+   keyboard is up, when the sheet fills the visible area from its top. */
+.nl-sheet-bg { top: var(--nl-vvt, 0px); bottom: auto; height: var(--nl-vvh, 100%); }
+.nl-sheet { height: min(680px, 86vh); max-height: calc(var(--nl-vvh, 100vh) - 12px); }
+.nl-sheet-bg.nl-kb { align-items: flex-start; height: 100%; padding-top: calc(var(--nl-vvt, 0px) + 8px); top: 0; }
+.nl-sheet-bg.nl-kb .nl-sheet { height: calc(var(--nl-vvh, 100vh) - 14px); max-height: none; border-radius: 22px; padding-bottom: 0.6rem; animation: none; }
 @keyframes nl-fade { from { opacity: 0; } }
 @keyframes nl-rise { from { transform: translateY(40px); opacity: 0; } }
 .nl-sheet-grip { display: block; width: 40px; height: 4px; margin: 0.35rem auto 0.6rem; border-radius: 4px; background: var(--nl-line, #e5e7eb); }
