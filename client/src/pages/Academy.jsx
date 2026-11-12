@@ -219,7 +219,7 @@ function HackCard({ hack, color, startOpen = false, video = null, onPlay }) {
             </button>
           )}
           <button className="hack-share-btn" onClick={handleShare} disabled={sharing}
-            title={t('share')}>
+            title={t('miShare')} aria-label={t('miShare')}>
             {sharing ? '⏳' : '𝕏'}
           </button>
           <span className="acad-hack-chevron">{open ? '▲' : '▼'}</span>

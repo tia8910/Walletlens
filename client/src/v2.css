@@ -797,6 +797,8 @@ html.wl-v2 .tc-open {
 }
 /* Theme green on its own tint is 3:1 on the light theme; the ink colour reads. */
 html.wl-v2[data-wl-light] .tc-open { color: var(--g-ink); }
+/* On dark, the deeper theme colours (Ethereum, Solana) were 3.6:1 on their own tint: lifted toward white. */
+html.wl-v2:not([data-wl-light]) .tc-open { color: color-mix(in srgb, var(--g) 60%, #fff); }
 html.wl-v2 .ac-chips { display: flex; gap: 0.35rem; overflow-x: auto; scrollbar-width: none; padding: 0 0.2rem; }
 html.wl-v2 .ac-chips::-webkit-scrollbar { display: none; }
 html.wl-v2 .ac-chip {

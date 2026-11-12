@@ -13211,11 +13211,11 @@ html.wl-aw-open .wlc-fab { opacity: 0; pointer-events: none; }
 /* White labels on the theme colour: a deeper shade of that colour, so the
    label passes 4.5:1 in every theme and in dark mode (#10b981 alone gave 2.5:1). */
 .sp-add-btn, .refresh-btn, .cal-filter.active, .gp-money-toggle button.on, .gp-money-toggle button.on:hover {
-  background: color-mix(in srgb, var(--g) 70%, #000);
+  background: color-mix(in srgb, var(--g) 55%, #000);
   border-color: transparent;
 }
 .lp-cta-primary:not(.lp .lp-cta-primary) {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--g) 70%, #000), color-mix(in srgb, var(--g) 55%, #000));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--g) 55%, #000), color-mix(in srgb, var(--g) 45%, #000));
 }
 
 /* Offline notice: a pill above the floating bar and the chat button, never over a page title. */

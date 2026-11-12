@@ -22,6 +22,12 @@ export function loadData(key, fallback = []) {
     const cached = parseCache.get(key)
     const value = (cached && cached.raw === raw) ? cached.value : JSON.parse(raw)
     if (!cached || cached.raw !== raw) parseCache.set(key, { raw, value })
+    // A stored value of the wrong shape (null, or an object where a list
+    // belongs, from a damaged write or a hand-edited backup) is no value: every
+    // caller of a list goes on to filter or sort it, and crashed.
+    if (Array.isArray(fallback)) return Array.isArray(value) ? value.slice() : fallback
+    // The same for a map: a list or a bare value where a map belongs is no map.
+    if (fallback && typeof fallback === 'object') return value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : fallback
     if (Array.isArray(value)) return value.slice()
     if (value && typeof value === 'object') return { ...value }
     return value

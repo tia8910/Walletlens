@@ -1715,6 +1715,18 @@ export async function searchStocks(query) {
   return [];
 }
 
+/** A finite number from whatever was stored (a number, or one saved as text), else 0. */
+const num = (v) => { const n = typeof v === 'string' ? Number(v.trim()) : Number(v); return Number.isFinite(n) ? n : 0 }
+
+/** A restored trade made whole: numbers as numbers, and a date (its own, the day it was recorded, or today). */
+export function cleanTx(t) {
+  const amount = Math.abs(num(t?.amount)), price = Math.max(0, num(t?.price_per_unit))
+  const date = /^\d{4}-\d{2}-\d{2}/.test(String(t?.date || '')) ? String(t.date).slice(0, 10)
+    : /^\d{4}-\d{2}-\d{2}/.test(String(t?.created_at || '')) ? String(t.created_at).slice(0, 10)
+    : new Date().toISOString().slice(0, 10)
+  return { ...t, amount, price_per_unit: price, total_cost: Number.isFinite(Number(t?.total_cost)) && t?.total_cost !== '' && t?.total_cost != null ? Number(t.total_cost) : amount * price, date }
+}
+
 export const api = {
   // Wallets
   getWallets: async () => loadData('wallets'),
@@ -1744,7 +1756,8 @@ export const api = {
   getTransactions: async (walletId) => {
     let txs = loadData('transactions');
     if (walletId) txs = txs.filter(t => t.wallet_id === parseInt(walletId));
-    return txs.sort((a, b) => b.date.localeCompare(a.date));
+    // A trade with no date (an old or hand-edited backup) sorts last, not crashes the list.
+    return txs.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
   },
 
   getPortfolio: async (walletId) => {
@@ -1790,6 +1803,12 @@ export const api = {
       if (tx.coin_image) holdings[cid].coin_image = tx.coin_image;
       if (tx.category) holdings[cid].category = tx.category;
 
+      // Numbers only. An import can leave an amount as text ("0.5"), and
+      // adding text to a number joins them ("00.5"), which dropped the whole
+      // holding; a cost that is not a number made every total NaN.
+      const qty = num(tx.amount);
+      if (!(qty > 0)) continue;
+      tx = { ...tx, amount: qty, total_cost: num(tx.total_cost) };
       if (tx.type === 'buy' || tx.type === 'deposit') {
         holdings[cid].amount += tx.amount;
         holdings[cid].total_invested += tx.total_cost;
@@ -1811,6 +1830,9 @@ export const api = {
 
   addTransaction: async (data) => {
     const txs = loadData('transactions');
+    // Stored as numbers whatever the caller sent: text, a missing price or a
+    // negative amount would otherwise corrupt every sum made from this trade.
+    data = { ...data, amount: Math.abs(num(data.amount)), price_per_unit: Math.max(0, num(data.price_per_unit)) };
     const totalCost = data.amount * data.price_per_unit;
     // Saved under the asset's own id and class, so nothing new is a duplicate.
     const moved = reclassifyAsset(data.coin_id, data.coin_symbol, data.category);
@@ -2577,7 +2599,7 @@ export const api = {
       const manual = loadData('manual_prices', {})[id];
       const pts = txs
         .slice()
-        .sort((a, b) => a.date.localeCompare(b.date))
+        .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")))
         .map(t => ({ date: t.date, time: t.date, price: t.price_per_unit }));
       if (manual?.usd && (pts.length === 0 || pts[pts.length - 1].price !== manual.usd)) {
         pts.push({ date: 'Now', time: 'Now', price: manual.usd });
@@ -3601,7 +3623,10 @@ export const api = {
       localStorage.setItem('crypto_tracker_pre_import_snapshot', JSON.stringify(snapshot));
     } catch {}
 
-    const { wallets, transactions, exchanges, targets, manualPrices, ids } = preview._raw;
+    const { wallets, exchanges, targets, manualPrices, ids } = preview._raw;
+    // A backup from an old version or another tool can carry text for numbers
+    // or a trade with no date; mend them once here, not on every screen.
+    const transactions = (preview._raw.transactions || []).filter(t => t && typeof t === 'object').map(cleanTx);
     saveData('wallets', wallets);
     saveData('transactions', transactions);
     saveData('exchanges', exchanges);

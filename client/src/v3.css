@@ -266,7 +266,7 @@ html.wl-v3 .wlc-fab { bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !im
 
 .nl-sec { display: flex; align-items: baseline; justify-content: space-between; margin: 0.4rem 0.15rem -0.2rem; }
 .nl-sec h3 { margin: 0; font-size: 1.02rem; letter-spacing: -0.02em; color: var(--nl-ink); }
-.nl-sec button { border: 0; background: none; padding: 0; font: inherit; font-size: 0.82rem; font-weight: 800; color: #16a874; cursor: pointer; }
+.nl-sec button { border: 0; background: none; padding: 0; font: inherit; font-size: 0.82rem; font-weight: 800; color: var(--nl-up, #0c7f55); cursor: pointer; }
 
 .nl-watch { display: flex; gap: 0.6rem; overflow-x: auto; scrollbar-width: none; margin-right: -1rem; padding-right: 1rem; }
 .nl-watch::-webkit-scrollbar { display: none; }
