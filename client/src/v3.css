@@ -297,6 +297,7 @@ html.wl-v3:not([data-wl-light]) .nl-wc { filter: saturate(0.9) brightness(0.96);
 .nl-row-n b, .nl-row-v b { display: block; font-size: 0.9rem; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nl-row-n small, .nl-row-v small { font-size: 0.75rem; font-weight: 700; color: var(--nl-sub); }
 .nl-row-v { text-align: end; font-variant-numeric: tabular-nums; }
+.nl-row-np small { font-weight: 600; white-space: nowrap; }
 .nl-row-spark { flex: none; width: 64px; height: 26px; }
 /* The day's line with the unit price under it, so every row reads
    price, move and value at a glance. */
