@@ -183,3 +183,67 @@ describe('parseNumber', () => {
     expect(parseNumber('abc')).toBeNaN()
   })
 })
+
+describe('assets the lists do not know', () => {
+  const cat = catalogue(false)
+  it('reads a token found as a number\'s unit, wherever on the row the amount sits', () => {
+    const rows = parseHoldingsFromWords([
+      ...line(100, [60, 'Bitcoin'], [700, '$15,575.98']), ...line(132, [60, '0.2543'], [150, 'BTC'], [700, '+1.48%']),
+      ...line(220, [60, 'StonkBroker'], [700, '$182.16']), ...line(252, [60, '26,339'], [150, 'STONKBROKER'], [500, '$0.00691604'], [700, '+6.82%']),
+      ...line(340, [60, 'Gram'], [700, '$324.09']), ...line(372, [700, '277'], [760, 'GRAM']),
+    ], cat)
+    expect(rows.map(r => [r.symbol, r.name, r.amount])).toEqual([['BTC', 'Bitcoin', 0.2543], ['STONKBROKER', 'StonkBroker', 26339], ['GRAM', 'Gram', 277]])
+    expect(rows[1].price).toBeCloseTo(0.00691604, 6)
+  })
+  it('reads an unknown ticker standing in the column of the known ones', () => {
+    const rows = parseHoldingsFromWords([
+      ...line(100, [60, 'BTC'], [500, '0.5'], [700, '≈'], [720, '$30,000.00']),
+      ...line(200, [60, 'ETH'], [500, '2'], [700, '≈'], [720, '$5,000.00']),
+      ...line(300, [60, 'WOJAK'], [500, '1,200'], [700, '≈'], [720, '$84.00']),
+    ], cat)
+    expect(rows.map(r => [r.symbol, r.amount])).toEqual([['BTC', 0.5], ['ETH', 2], ['WOJAK', 1200]])
+    expect(rows[2].price).toBeCloseTo(0.07, 4)
+  })
+  it('reads a ticker OCR wrote in mixed case with an l for an I, in that column', () => {
+    const rows = parseHoldingsFromWords([
+      ...line(60, [60, 'Coin'], [400, 'Amount'], [560, 'Price'], [720, 'Value']),
+      ...line(100, [60, 'BTC'], [400, '0.5'], [560, '60,000'], [720, '30,000']),
+      ...line(140, [60, 'ETH'], [400, '2'], [560, '2,500'], [720, '5,000']),
+      ...line(180, [60, 'Sul'], [400, '1,250'], [560, '0.801'], [720, '1,001.25']),
+    ], cat)
+    expect(rows.map(r => r.symbol)).toEqual(['BTC', 'ETH', 'SUI'])
+  })
+  it('does not take screen chrome for an asset', () => {
+    const rows = parseHoldingsFromWords([
+      ...line(40, [60, '24'], [100, 'HOURS'], [400, '7'], [430, 'DAYS'], [600, '12'], [640, 'ITEMS']),
+      ...line(100, [60, 'Bitcoin'], [700, '$30,000.00']), ...line(132, [60, '0.5'], [120, 'BTC']),
+      ...line(220, [60, 'Vol'], [120, '1,234'], [400, '5'], [430, 'MIN'], [600, 'Level'], [680, '3'], [700, 'VIP']),
+      ...line(300, [60, 'Gold'], [700, '$650.00']), ...line(332, [60, '10'], [100, 'GRAM']),
+    ], buildCatalogue([...COINS.map(([symbol, name, rank]) => ({ symbol, name, rank }))]))
+    expect(rows.map(r => r.symbol)).toEqual(['BTC', 'XAU'])
+  })
+})
+
+describe('a decimal point the reader lost', () => {
+  const cat = catalogue(false)
+  it('goes back into the amount when the figures only multiply out with it', () => {
+    const [r] = parseHoldingsFromWords([
+      ...line(100, [60, 'Ethereum'], [700, '$7,812.38']), ...line(132, [60, '$2,480.12'], [220, '+2.31%'], [700, '315'], [760, 'ETH']),
+    ], cat)
+    expect([r.symbol, r.amount]).toEqual(['ETH', 3.15])
+    expect(r.price).toBeCloseTo(2480.12, 2)
+  })
+  it('goes back into the price first: a price has its cents, an amount is often whole', () => {
+    const [r] = parseHoldingsFromWords([
+      ...line(100, [60, 'Toncoin'], [700, '$324.09']), ...line(132, [60, '$117'], [220, '+2.31%'], [700, '277'], [760, 'TON']),
+    ], cat)
+    expect([r.symbol, r.amount]).toEqual(['TON', 277])
+    expect(r.price).toBeCloseTo(1.17, 2)
+  })
+  it('leaves figures that already multiply out alone', () => {
+    const [r] = parseHoldingsFromWords([
+      ...line(100, [60, 'Solana'], [700, '$6,229.86']), ...line(132, [60, '$148.33'], [700, '42'], [760, 'SOL']),
+    ], cat)
+    expect([r.amount, Math.round(r.price * 100) / 100]).toEqual([42, 148.33])
+  })
+})
