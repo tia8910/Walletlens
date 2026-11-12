@@ -44,7 +44,8 @@ import { pushPortfolioToExtension } from '../utils/extensionBridge'
 import { BiometricToggle } from '../components/BiometricLock'
 import InterestPicker, { interestsDone } from '../components/InterestPicker'
 import LatestLesson from '../components/LatestLesson'
-import WelcomeStart, { hasStarted } from '../components/WelcomeStart'
+import WelcomeStart, { hasStarted, DriveMark } from '../components/WelcomeStart'
+import { isDriveConfigured } from '../googleDrive'
 import Tip from '../components/Tip'
 import { syncWidgets } from '../nativeWidgets'
 import { noteAppOpen, setReviewSnapshot, noteMoment } from '../reviewPrompt'
@@ -2408,8 +2409,19 @@ function GuardianBadge() {
 // Other import routes and the feature tour sit below.
 function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, loaded, importsSlot }) {
   const { t } = useLanguage()
+  const [driveOn] = useState(() => { try { return isDriveConfigured() } catch { return false } })
+  const [drive, setDrive] = useState('idle') // idle | busy | failed
   if (!loaded) return null
   const go = (method, fn) => (...args) => { track('starter_action', { method }); fn(...args) }
+  // The same connection the welcome screen starts: Google signs in, and the
+  // Backup panel it returns to restores a backup it finds. No second Drive
+  // panel is mounted here (two would both answer the sign-in).
+  const connectDrive = async () => {
+    track('starter_action', { method: 'drive' })
+    setDrive('busy')
+    try { await (await import('../driveSync')).connect(); setDrive('idle') }
+    catch { setDrive('failed') }
+  }
 
   return (
     <div className="wl-st">
@@ -2420,11 +2432,21 @@ function EmptyPortfolio({ onAddTrade, onImportAction, onQuickAdd, navigate, load
         onQuickAdd={go('orb', prefill => onQuickAdd(prefill))}
         quickAssets={QUICK_ADD_ASSETS} />
 
-      <div className="wl-st-label">{t('stMore')}</div>
+      {/* Someone returning (a new phone, a cleared browser) is not starting
+          over: their way in is a restore, so it gets its own place. */}
+      <div className="wl-st-label">{t('stReturning')}</div>
+      {driveOn && (
+        <div className="wl-st-drive">
+          <span className="wl-st-drive-ic" aria-hidden="true"><DriveMark /></span>
+          <span className="wl-st-drive-txt"><b>{t('stDriveTitle')}</b><small>{t('stDriveSub')}</small></span>
+          <button type="button" onClick={connectDrive} disabled={drive === 'busy'} aria-busy={drive === 'busy'}>{t('wsDriveCta')}</button>
+          {drive === 'failed' && <p className="wl-st-drive-err" role="alert">{t('stDriveFail')}</p>}
+        </div>
+      )}
       <div className="wl-st-more">
-        <button type="button" onClick={go('excel', () => onImportAction('excel'))}><Icon name="bar-chart" size={15} />{t('importExcel')}</button>
-        <button type="button" onClick={go('backup', () => onImportAction('backup'))}><Icon name="folder" size={15} />{t('importBackup')}</button>
-        <button type="button" onClick={go('guide', () => window.dispatchEvent(new Event('wl:add-asset-guide')))}><Icon name="sparkles" size={15} />{t('guideCta')}</button>
+        <button type="button" onClick={go('backup', () => onImportAction('backup'))}><Icon name="folder" size={18} />{t('importBackup')}</button>
+        <button type="button" onClick={go('excel', () => onImportAction('excel'))}><Icon name="bar-chart" size={18} />{t('importExcel')}</button>
+        <button type="button" onClick={go('guide', () => window.dispatchEvent(new Event('wl:add-asset-guide')))}><Icon name="sparkles" size={18} />{t('guideCta')}</button>
       </div>
 
       {/* Import panels (screenshot, voice, Excel, backup) open here. */}
