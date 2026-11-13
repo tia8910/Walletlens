@@ -116,6 +116,7 @@ button{font:inherit;color:inherit}
 /* ══ THE FILM ══ */
 .film{position:relative;height:100vh;min-height:660px;max-height:1000px;overflow:hidden;background:#07080a}
 .film.paused *,.film.paused *::before,.film.paused *::after{animation-play-state:paused!important}
+.answer.off *,.answer.off *::before,.answer.off *::after{animation-play-state:paused!important}
 .aura{position:absolute;inset:-20%;background:radial-gradient(40% 45% at 62% 50%,rgba(var(--acc-rgb),.22),transparent 70%);transition:background 1.2s;pointer-events:none}
 .grain{position:absolute;inset:0;pointer-events:none;opacity:.06;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");animation:grain .5s steps(4) infinite}
@@ -964,7 +965,7 @@ function enter(i) {
   fillDocks()
   $('#tName').textContent = `${s.e} ${s.name}`
 }
-function seek(i) { t = START[i] + .001; enter(i); prevLocalT = 0 }
+function seek(i) { t = START[i] + .001; enter(i); prevLocalT = 0; drawnT = -1 }
 function setPlaying(p) { playing = p; $('#film').classList.toggle('paused', !p); $('#pp').innerHTML = `<svg><use href="#i-${p ? 'pause' : 'play'}"/></svg>`; $('#pp').setAttribute('aria-label', p ? 'Pause' : 'Play') }
 $('#pp').onclick = () => setPlaying(!playing)
 $('#next').onclick = () => seek((cur + 1) % SCENES.length)
@@ -973,20 +974,29 @@ $('#chap').onclick = e => { const b = e.target.closest('button'); if (b) seek(+b
 addEventListener('keydown', e => { if (e.code === 'Space' && visible) { e.preventDefault(); setPlaying(!playing) } if (e.code === 'ArrowRight') $('#next').click(); if (e.code === 'ArrowLeft') $('#prev').click() })
 new IntersectionObserver(es => es.forEach(e => { visible = e.isIntersecting; $('#film').classList.toggle('paused', !visible || !playing) }), { threshold: .35 }).observe($('#film'))
 
+// Each frame writes only what changed. Paused, or scrolled out of view, the
+// clock stands still and a frame touches nothing, so the page stops restyling
+// and re-laying out 60 times a second while people read further down.
+const CUES = SCENES.map(cues), BARS = $$('#chap b'), barW = BARS.map(() => ''), tNow = $('#tNow')
+let drawnT = -1, clock = ''
 ;(function frame(now) {
   const dt = Math.max(0, Math.min((now - last) / 1000, .1)); last = now
-  if (playing && visible) t = (t + dt) % TOTAL
-  let i = START.findLastIndex(s => s <= t); if (i !== cur) enter(i)
-  const local = (t - START[i]) / SCENES[i].d
-  const lt = t - START[i]
-  if (typeof Sound !== 'undefined') {
-    Sound.tick(playing && visible)
-    if (lt >= prevLocalT) cues(SCENES[i]).forEach(([at, name]) => { if (at > prevLocalT - 1e-6 && at <= lt && !(at === 0 && prevLocalT > 0)) Sound.play(name) })
-    prevLocalT = lt
+  const live = playing && visible
+  if (live) t = (t + dt) % TOTAL
+  if (typeof Sound !== 'undefined') Sound.tick(live)
+  if (t !== drawnT) {
+    drawnT = t
+    let i = START.findLastIndex(s => s <= t); if (i !== cur) enter(i)
+    const local = (t - START[i]) / SCENES[i].d
+    const lt = t - START[i]
+    if (typeof Sound !== 'undefined') {
+      if (lt >= prevLocalT) CUES[i].forEach(([at, name]) => { if (at > prevLocalT - 1e-6 && at <= lt && !(at === 0 && prevLocalT > 0)) Sound.play(name) })
+      prevLocalT = lt
+    }
+    SCENES[i].tick?.(local)
+    BARS.forEach((b, k) => { const w = (k < i ? 100 : k > i ? 0 : Math.round(local * 1000) / 10) + '%'; if (w !== barW[k]) b.style.width = barW[k] = w })
+    const c = fmt(t); if (c !== clock) tNow.textContent = clock = c
   }
-  SCENES[i].tick?.(local)
-  $$('#chap b').forEach((b, k) => b.style.width = (k < i ? 100 : k > i ? 0 : local * 100) + '%')
-  $('#tNow').textContent = fmt(t)
   requestAnimationFrame(frame)
 })(performance.now())
 
@@ -1019,6 +1029,8 @@ try { const sv = localStorage.getItem('wl_landing_theme'); if (sv) { userTheme =
   const fmt = v => Math.round(v).toLocaleString('en-US')
   const count = el => { const to = +el.dataset.count, from = +(el.dataset.from || 0); if (still) { el.textContent = fmt(to); return }
     const t0 = performance.now(), dur = 1600; const step = t => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 4); el.textContent = fmt(from + (to - from) * e); if (k < 1) requestAnimationFrame(step) }; requestAnimationFrame(step) }
+  // its looping glows and floats rest while it is off screen
+  new IntersectionObserver(es => es.forEach(e => sec.classList.toggle('off', !e.isIntersecting))).observe(sec)
   new IntersectionObserver((es, io) => es.forEach(e => { if (!e.isIntersecting) return; io.disconnect(); sec.classList.add('in')
     setTimeout(() => sec.querySelectorAll('[data-count]').forEach(count), still ? 0 : 450)
     if (!still) timer = setInterval(next, 3800)
