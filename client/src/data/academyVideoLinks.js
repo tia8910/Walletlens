@@ -440,6 +440,15 @@ export default {
       "youtube": "Z6pzTAKkquM",
       "added": "2026-11-07",
       "wide": true
+    },
+    {
+      "key": "yt-RwSZ-6cQ11g",
+      "kind": "story",
+      "name": "قصة انهيار عملة لونا واحده من أكبر انهيارات سوق الكريبتو",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "RwSZ-6cQ11g",
+      "added": "2026-11-14"
     }
   ]
 }
