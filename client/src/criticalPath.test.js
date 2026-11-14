@@ -88,6 +88,15 @@ describe('the critical path stays lean', () => {
     expect(graph.packages.has('react-router-dom')).toBe(true)
   })
 
+  it('keeps recharts out of the Dashboard chunk\'s static graph', () => {
+    // The default Home (new look, overview tab) and the empty portfolio draw
+    // no chart, so the ~117 KB gzip charts chunk must not gate Home's first
+    // render. lazyRecharts.jsx loads it when a chart actually mounts.
+    const dash = staticGraph(join(src, 'pages', 'Dashboard.jsx'))
+    expect(dash.packages.has('recharts')).toBe(false)
+    expect(dash.files.has(join(src, 'lazyRecharts.jsx'))).toBe(true)
+  })
+
   it('loads the Drive auto-backup dynamically', () => {
     const app = readFileSync(join(src, 'App.jsx'), 'utf8')
     expect(app).toMatch(/import\('\.\/driveAutoBackup'\)/)

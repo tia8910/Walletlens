@@ -2,10 +2,7 @@ import { lazy, Suspense, memo, useEffect, useMemo, useRef, useState, useCallback
 import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { isV2Active } from '../v2Preview'
-import {
-  ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line,
-  PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
-} from 'recharts'
+import { useRecharts } from '../lazyRecharts'
 import { api, getCachedCoinImage } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
@@ -3060,6 +3057,11 @@ const PortfolioBrief = memo(function PortfolioBrief({ enriched, totalValue, tota
 })
 
 export default function Dashboard() {
+  // recharts arrives when the first chart mounts; see lazyRecharts.jsx.
+  const {
+    ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line,
+    PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
+  } = useRecharts()
   const newLook = useNewLook()
   const navigate = useNavigate()
   const location = useLocation()
