@@ -79,6 +79,7 @@ describe('a screenshot with a report', () => {
     const fb = read('components/FeedbackSheet.jsx')
     expect(fb).toMatch(/accept="image\/\*"/)
     expect(fb).toMatch(/shot \? \{ \.\.\.report, shot \} : report/)
+    expect(fb).toMatch(/if \(shot && r\.status === 413\) r = await post\(report, 8000\)/)
     expect(fb).toMatch(/shot \? t\('fbShotPrivacy'\) : t\('fbPrivacy'\)/)
     expect(read('pages/AdminReports.jsx')).toMatch(/\$\{ENDPOINT\}\/shot\?id=\$\{id\}/)
     expect(read('../../workers/push/schema.sql')).toMatch(/CREATE TABLE IF NOT EXISTS ai_report_shots/)

@@ -73,13 +73,17 @@ export default function FeedbackSheet({ onClose, initialTopic = 'idea', source =
     if (!report.output) return
     setState('sending')
     try {
-      const r = await fetch(REPORT_ENDPOINT, {
+      const post = (body, ms) => fetch(REPORT_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(shot ? { ...report, shot } : report),
-        // Longer with an image on a slow connection.
-        signal: AbortSignal.timeout(shot ? 30000 : 8000),
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(ms),
       })
+      // Longer with an image on a slow connection.
+      let r = await post(shot ? { ...report, shot } : report, shot ? 30000 : 8000)
+      // A report server too old to take an image refuses the whole body as
+      // too large: the words still go, without the screenshot.
+      if (shot && r.status === 413) r = await post(report, 8000)
       if (!r.ok) throw new Error(String(r.status))
       setState('sent')
       track('feedback_sent', { topic, source, shot: !!shot })
