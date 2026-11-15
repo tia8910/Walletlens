@@ -63,6 +63,7 @@ export default {
     zkSharePortionHint: 'Le azioni a lungo termine sono zakatabili sugli attivi zakatabili della società, che un flusso di prezzi non può vedere. Questa è un\u2019approssimazione: adattala alla cifra indicata dal tuo sapiente.',
     zkDisclaimer: 'Questa è una stima basata sulle ipotesi sopra indicate, non un responso religioso. Fai confermare il risultato da un sapiente qualificato prima di versare.',
     zkWhyCash: 'Contante — conteggiato per intero',
+    zkWhyBond: 'Obbligazione: denaro che ti è dovuto, conteggiato per intero',
     zkWhyMetals: 'Oro o argento — conteggiati per intero',
     zkWhyStable: 'Stablecoin — denaro, conteggiato per intero',
     zkWhyCrypto: 'Cripto — conteggiata al valore di mercato',

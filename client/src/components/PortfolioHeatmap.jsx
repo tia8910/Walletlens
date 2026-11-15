@@ -7,6 +7,7 @@ const CAT_COLORS = {
   crypto: '#00c9a7',
   metals: '#e8b825',
   stocks: '#3b82f6',
+  bonds: '#0284c7',
   realestate: '#a78bfa',
   cash:   '#64748b',
 }

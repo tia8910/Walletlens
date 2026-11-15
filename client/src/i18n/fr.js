@@ -63,6 +63,7 @@ export default {
     zkSharePortionHint: 'Les actions détenues à long terme sont imposables sur les actifs imposables de l\u2019entreprise, invisibles depuis un flux de cours. Ceci est une approximation : ajustez-la au chiffre indiqué par votre savant.',
     zkDisclaimer: 'Ceci est une estimation fondée sur les hypothèses ci-dessus, et non un avis religieux. Faites confirmer le résultat par un savant qualifié avant de verser.',
     zkWhyCash: 'Liquidités — comptées en totalité',
+    zkWhyBond: 'Obligation : argent qui vous est dû, compté en totalité',
     zkWhyMetals: 'Or ou argent — comptés en totalité',
     zkWhyStable: 'Stablecoin — monnaie, comptée en totalité',
     zkWhyCrypto: 'Crypto — comptée à sa valeur de marché',

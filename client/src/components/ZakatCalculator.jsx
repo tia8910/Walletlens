@@ -31,6 +31,7 @@ const REASON_KEY = {
   [REASONS.shareTrade]: 'zkWhyShareTrade',
   [REASONS.shareLong]: 'zkWhyShareLong',
   [REASONS.homeOrRental]: 'zkWhyHome',
+  [REASONS.bond]: 'zkWhyBond',
   [REASONS.resell]: 'zkWhyResell',
 }
 

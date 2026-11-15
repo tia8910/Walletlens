@@ -20,6 +20,7 @@ export const CLASS_PARAMS = {
   crypto_small: { mu: 0.05,  sig: 0.90, label: 'Crypto (small)' },
   stocks:       { mu: 0.075, sig: 0.16, label: 'Stocks & ETFs' },
   metals:       { mu: 0.045, sig: 0.15, label: 'Precious metals' },
+  bonds:        { mu: 0.04,  sig: 0.06, label: 'Bonds' },
   realestate:   { mu: 0.055, sig: 0.10, label: 'Real estate' },
   cash:         { mu: 0.035, sig: 0.01, label: 'Cash' },
 }
@@ -31,6 +32,7 @@ export const INFLATION = 0.03
 function corr(a, b) {
   if (a === b) return 1
   if (a === 'cash' || b === 'cash') return 0.05
+  if (a === 'bonds' || b === 'bonds') return 0.2
   const cryptoish = c => c.startsWith('crypto')
   if (cryptoish(a) && cryptoish(b)) return 0.85
   return 0.45
