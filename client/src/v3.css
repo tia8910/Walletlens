@@ -782,6 +782,18 @@ html.wl-v3 .nl-sheet .nl-chips button { min-height: 0 !important; height: 32px !
 /* Holdings rows: the ⋮ and its action chips, as the old list had them. */
 .nl-hrow { border-bottom: 1px solid var(--nl-line); }
 .nl-hrow:last-child { border-bottom: 0; }
+/* Holdings split by category (NlHoldings). */
+.nl-group + .nl-group { margin-top: 0.35rem; }
+.nl-ghead { width: 100%; display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 0.1rem 0.5rem; border: 0; border-bottom: 1px solid var(--nl-line); background: none; font: inherit; color: var(--nl-ink); cursor: pointer; text-align: start; }
+.nl-ghead-dot { flex: none; width: 9px; height: 9px; border-radius: 3px; }
+.nl-ghead b { font-size: 0.82rem; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; }
+.nl-ghead-n { min-width: 1.4rem; padding: 0.05rem 0.4rem; border-radius: 99px; background: var(--nl-soft, rgba(127, 127, 127, 0.12)); font-size: 0.7rem; font-weight: 800; color: var(--nl-sub); text-align: center; }
+.nl-ghead-v { margin-inline-start: auto; display: flex; align-items: baseline; gap: 0.4rem; font-size: 0.84rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.nl-ghead-v small { font-size: 0.72rem; font-weight: 700; color: var(--nl-sub); }
+.nl-ghead-chev { flex: none; width: 16px; height: 16px; fill: none; stroke: var(--nl-sub); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transform: rotate(-90deg); transition: transform 0.2s ease; }
+.nl-ghead-chev.open { transform: none; }
+.nl-group .nl-hrow:last-child { border-bottom: 0; }
+html.wl-v3 .nl-hold .nl-ghead { border-radius: 0 !important; box-shadow: none !important; background: none; }
 .nl-hold .nl-hrow .nl-row { border-bottom: 0; cursor: pointer; }
 .nl-hline { display: flex; align-items: center; gap: 0.65rem; }
 .nl-hline > .nl-row { flex: 1; min-width: 0; }

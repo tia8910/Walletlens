@@ -4115,7 +4115,7 @@ export default function Dashboard() {
         (b.value - a.value) ||
         String(a.coin_symbol || a.coin_id || '').localeCompare(String(b.coin_symbol || b.coin_id || '')))
       return {
-        cat, label: t(CATEGORY_LABELS[cat]),
+        cat, label: t(CATEGORY_LABELS[cat]), color: CATEGORY_COLOR[cat],
         value: totals[cat],
         pct: totalValue > 0 ? (totals[cat] / totalValue) * 100 : 0,
         invested, pnl, pnlPct, assets,

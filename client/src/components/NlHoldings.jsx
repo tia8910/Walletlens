@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
@@ -76,6 +76,81 @@ export default function NlHoldings({
     </button>
   )
 
+  const renderRow = (h) => {
+            const isSel = selected.has(h.coin_id)
+            const value = h.value > 0 ? h.value : h.total_invested
+            const be = h.amount > 0 ? h.total_invested / h.amount : 0
+            const beGap = h.price > 0 && be > 0 ? ((h.price - be) / be) * 100 : null
+            const ch = Number(h.pct24h) || 0
+            const sym = h.coin_symbol?.toUpperCase() || ''
+            const showsDay = !(sort === 'pnl_pct' || sort === 'invested')
+            return (
+              <div key={h.coin_id} className="nl-hrow">
+              {/* The row and its actions button sit side by side: a button
+                  inside a role="button" row is a control within a control,
+                  which screen readers cannot reach. */}
+              <div className="nl-hline">
+              <div role="button" tabIndex={0} aria-pressed={picking ? isSel : undefined} className={`nl-row${isSel ? ' sel' : ''}${picking ? ' picking' : ''}`}
+                onClick={() => (picking ? onToggleSelect(h) : onAsset(h))}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); picking ? onToggleSelect(h) : onAsset(h) } }} {...bindRow(h)}>
+                {picking && <span className={`nl-check${isSel ? ' on' : ''}`} aria-hidden="true">{isSel ? '✓' : ''}</span>}
+                <span className="nl-row-logo">
+                  <AssetLogo h={h} size={40} />
+                  {isSel && !picking && <i aria-hidden="true">✓</i>}
+                </span>
+                <div className="nl-row-n">
+                  <b>{h.coin_name || sym}</b>
+                  {breakEven && be > 0 && beGap != null
+                    ? <small>{t('dsBreakEvenAt')} {mask(cv(be))} <span className={beGap >= 0 ? 'up' : 'down'}>{beGap >= 0 ? '↑' : '↓'}{Math.abs(beGap).toFixed(1)}%</span></small>
+                    : <small>{mask(`${Number(h.amount || 0).toLocaleString('en-US', { maximumFractionDigits: 6 })} ${sym}`)}</small>}
+                </div>
+                <div className="nl-row-mid">
+                  <Spark values={hasDayLine(h) ? daySeries(daySparks[h.coin_id], h.price, marketSparks[h.coin_id]) : null} w={64} h={26} className="nl-row-spark"
+                    up={showsDay ? ch >= 0 : undefined} />
+                  {h.price > 0 && <small className="nl-row-px">{px(h.price)}</small>}
+                </div>
+                <div className="nl-row-v">
+                  <b>{mask(cv(value))}</b>
+                  {!showsDay
+                    ? <small className={h.pnl >= 0 ? 'up' : 'down'}>{pctTxt(h.pnlPct)}</small>
+                    : <small className={ch >= 0 ? 'up' : 'down'}>{pctTxt(ch)}</small>}
+                </div>
+              </div>
+                <button type="button" className={`nl-row-more${openRow === h.coin_id ? ' on' : ''}`} aria-label={t('atAssetActions')} aria-expanded={openRow === h.coin_id}
+                  onClick={e => { e.stopPropagation(); setOpenRow(r => r === h.coin_id ? null : h.coin_id) }}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" /></svg>
+                </button>
+              </div>
+              {openRow === h.coin_id && (
+                <div className="nl-row-actions">
+                  {actionsFor(h).map(a => (
+                    <button key={a.label} type="button" className={a.tone ? `nl-act-${a.tone}` : ''} onClick={() => { setOpenRow(null); a.onClick() }}>
+                      <Icon name={a.icon} size={14} />{a.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              </div>
+            )
+          }
+
+  // With every holding showing, the list is split by category, each under
+  // a header with its count, value and share, in the order of the chips.
+  // The chosen sort still applies inside each group. A header folds its
+  // group. Searching, a chosen chip or the selection shows one flat list.
+  const [folded, setFolded] = useState(() => new Set())
+  const toggleFold = (c) => setFolded(f => { const n = new Set(f); if (n.has(c)) n.delete(c); else n.add(c); return n })
+  const groups = useMemo(() => {
+    if (filtered || cats.length < 2) return null
+    const catOf = {}
+    for (const c of cats) for (const a of c.assets || []) catOf[a.coin_id] = c.cat
+    if (shown.some(h => !catOf[h.coin_id])) return null
+    const out = cats.map(c => ({ ...c, rows: shown.filter(h => catOf[h.coin_id] === c.cat) })).filter(g => g.rows.length)
+    // Sorted by value, the biggest class leads, as the biggest holding does.
+    if (sort === 'value') out.sort((a, b) => (dir === 'asc' ? 1 : -1) * ((a.value || 0) - (b.value || 0)))
+    return out
+  }, [filtered, cats, shown, sort, dir])
+
   return (
     <>
       <div className="nl-sec">
@@ -138,63 +213,21 @@ export default function NlHoldings({
         )}
 
         <div className="nl-list">
-          {shown.map(h => {
-            const isSel = selected.has(h.coin_id)
-            const value = h.value > 0 ? h.value : h.total_invested
-            const be = h.amount > 0 ? h.total_invested / h.amount : 0
-            const beGap = h.price > 0 && be > 0 ? ((h.price - be) / be) * 100 : null
-            const ch = Number(h.pct24h) || 0
-            const sym = h.coin_symbol?.toUpperCase() || ''
-            const showsDay = !(sort === 'pnl_pct' || sort === 'invested')
+          {groups ? groups.map(g => {
+            const open = !folded.has(g.cat)
             return (
-              <div key={h.coin_id} className="nl-hrow">
-              {/* The row and its actions button sit side by side: a button
-                  inside a role="button" row is a control within a control,
-                  which screen readers cannot reach. */}
-              <div className="nl-hline">
-              <div role="button" tabIndex={0} aria-pressed={picking ? isSel : undefined} className={`nl-row${isSel ? ' sel' : ''}${picking ? ' picking' : ''}`}
-                onClick={() => (picking ? onToggleSelect(h) : onAsset(h))}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); picking ? onToggleSelect(h) : onAsset(h) } }} {...bindRow(h)}>
-                {picking && <span className={`nl-check${isSel ? ' on' : ''}`} aria-hidden="true">{isSel ? '✓' : ''}</span>}
-                <span className="nl-row-logo">
-                  <AssetLogo h={h} size={40} />
-                  {isSel && !picking && <i aria-hidden="true">✓</i>}
-                </span>
-                <div className="nl-row-n">
-                  <b>{h.coin_name || sym}</b>
-                  {breakEven && be > 0 && beGap != null
-                    ? <small>{t('dsBreakEvenAt')} {mask(cv(be))} <span className={beGap >= 0 ? 'up' : 'down'}>{beGap >= 0 ? '↑' : '↓'}{Math.abs(beGap).toFixed(1)}%</span></small>
-                    : <small>{mask(`${Number(h.amount || 0).toLocaleString('en-US', { maximumFractionDigits: 6 })} ${sym}`)}</small>}
-                </div>
-                <div className="nl-row-mid">
-                  <Spark values={hasDayLine(h) ? daySeries(daySparks[h.coin_id], h.price, marketSparks[h.coin_id]) : null} w={64} h={26} className="nl-row-spark"
-                    up={showsDay ? ch >= 0 : undefined} />
-                  {h.price > 0 && <small className="nl-row-px">{px(h.price)}</small>}
-                </div>
-                <div className="nl-row-v">
-                  <b>{mask(cv(value))}</b>
-                  {!showsDay
-                    ? <small className={h.pnl >= 0 ? 'up' : 'down'}>{pctTxt(h.pnlPct)}</small>
-                    : <small className={ch >= 0 ? 'up' : 'down'}>{pctTxt(ch)}</small>}
-                </div>
-              </div>
-                <button type="button" className={`nl-row-more${openRow === h.coin_id ? ' on' : ''}`} aria-label={t('atAssetActions')} aria-expanded={openRow === h.coin_id}
-                  onClick={e => { e.stopPropagation(); setOpenRow(r => r === h.coin_id ? null : h.coin_id) }}>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" /></svg>
+              <section key={g.cat} className="nl-group" aria-label={g.label}>
+                <button type="button" className="nl-ghead" aria-expanded={open} onClick={() => toggleFold(g.cat)}>
+                  <i className="nl-ghead-dot" style={{ background: g.color || 'var(--g)' }} aria-hidden="true" />
+                  <b>{g.label}</b>
+                  <span className="nl-ghead-n">{g.rows.length}</span>
+                  <span className="nl-ghead-v">{mask(cv(g.value))}<small>{Math.round(g.pct)}%</small></span>
+                  <svg className={`nl-ghead-chev${open ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
                 </button>
-              </div>
-              {openRow === h.coin_id && (
-                <div className="nl-row-actions">
-                  {actionsFor(h).map(a => (
-                    <button key={a.label} type="button" className={a.tone ? `nl-act-${a.tone}` : ''} onClick={() => { setOpenRow(null); a.onClick() }}>
-                      <Icon name={a.icon} size={14} />{a.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              </div>
+                {open && g.rows.map(renderRow)}
+              </section>
             )
-          })}
+          }) : shown.map(renderRow)}
           {shown.length === 0 && <p className="nl-empty">{t('dsNothingYet')}</p>}
         </div>
       </div>
