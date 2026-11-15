@@ -63,6 +63,7 @@ export default {
     zkSharePortionHint: 'Langfristig gehaltene Aktien sind auf die zakatpflichtigen Vermögenswerte des Unternehmens zu versteuern, die ein Kursfeed nicht kennt. Dies ist eine Näherung — passen Sie sie an die Angabe Ihres Gelehrten an.',
     zkDisclaimer: 'Dies ist eine Schätzung auf Basis der obigen Annahmen, kein religiöses Gutachten. Lassen Sie das Ergebnis vor der Zahlung von einem qualifizierten Gelehrten bestätigen.',
     zkWhyCash: 'Bargeld — voll gezählt',
+    zkWhyBond: 'Anleihe: Geld, das dir zusteht, voll gezählt',
     zkWhyMetals: 'Gold oder Silber — voll gezählt',
     zkWhyStable: 'Stablecoin — Geld, voll gezählt',
     zkWhyCrypto: 'Krypto — zum Marktwert gezählt',

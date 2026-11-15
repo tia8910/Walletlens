@@ -63,6 +63,7 @@ export default {
     zkSharePortionHint: 'Long-term shares are zakatable on the company\u2019s own zakatable assets, which a price feed cannot see. This is an approximation — adjust it to the figure your scholar gives.',
     zkDisclaimer: 'This is an estimate produced from the assumptions above, not a religious ruling. Confirm the result with a qualified scholar before you pay.',
     zkWhyCash: 'Cash — counted in full',
+    zkWhyBond: 'Bond: money owed to you, counted in full',
     zkWhyMetals: 'Gold or silver — counted in full',
     zkWhyStable: 'Stablecoin — money, counted in full',
     zkWhyCrypto: 'Crypto — counted at market value',

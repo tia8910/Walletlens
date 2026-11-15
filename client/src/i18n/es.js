@@ -63,6 +63,7 @@ export default {
     zkSharePortionHint: 'Las acciones a largo plazo tributan sobre los activos zakatables de la empresa, que un precio de mercado no revela. Esto es una aproximación: ajústala a la cifra que te indique tu sabio.',
     zkDisclaimer: 'Esto es una estimación basada en los supuestos anteriores, no un dictamen religioso. Confirma el resultado con un sabio cualificado antes de pagar.',
     zkWhyCash: 'Efectivo — contado íntegro',
+    zkWhyBond: 'Bono: dinero que te deben, contado íntegro',
     zkWhyMetals: 'Oro o plata — contados íntegros',
     zkWhyStable: 'Stablecoin — dinero, contado íntegro',
     zkWhyCrypto: 'Cripto — contada a valor de mercado',

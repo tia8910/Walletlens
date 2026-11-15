@@ -82,6 +82,7 @@ export const REASONS = {
   shareLong: 'shareLong',
   homeOrRental: 'homeOrRental',
   resell: 'resell',
+  bond: 'bond',
 }
 
 /**
@@ -97,6 +98,8 @@ export function classifyHolding(h, settings = DEFAULT_SETTINGS, intents = {}) {
 
   if (cat === 'cash') return { portion: 1, reason: REASONS.cash }
   if (cat === 'metals') return { portion: 1, reason: REASONS.metals }
+  // A bond is money owed to its holder: counted in full, like cash.
+  if (cat === 'bonds') return { portion: 1, reason: REASONS.bond }
 
   if (cat === 'realestate') {
     // A home, or a property held to rent, is not itself zakatable. One bought

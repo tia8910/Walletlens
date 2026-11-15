@@ -195,7 +195,7 @@ function hasCryptoExposure(enriched) {
 function rebalBucket(h) {
   const cat = categorizeAsset(h)
   if (cat === 'cash') return 'cash'
-  if (cat === 'metals') return 'metal'
+  if (cat === 'metals' || cat === 'bonds') return 'metal'
   if (cat === 'stocks') return 'large'
   if (isStablecoin(h.coin_id, h.coin_symbol)) return 'stable'
   const tier = classifyMcTier(h.coin_id, h.market_cap || 0, h.coin_symbol).id
@@ -217,7 +217,7 @@ function getAssetCategoryBadge(h) {
   return null
 }
 
-const CATEGORY_ORDER = ['crypto', 'metals', 'stocks', 'realestate', 'cash']
+const CATEGORY_ORDER = ['crypto', 'metals', 'stocks', 'bonds', 'realestate', 'cash']
 // Keys, not words. These name the donut slices and the legend, so they are
 // read by the user, but the object is also indexed by category id all over
 // this file — keeping the id → key mapping here means callers just wrap the
@@ -226,12 +226,13 @@ const CATEGORY_LABELS = {
   crypto: 'catCrypto',
   metals: 'catMetals',
   stocks: 'catStocksEtfs',
+  bonds: 'catBonds',
   realestate: 'catRealEstate',
   cash: 'catCash',
 }
 // SVG icon per category (crypto keeps the elegant ₿ symbol). Premium, no emoji.
-const CATEGORY_ICON = { metals: 'diamond', stocks: 'trend-up', realestate: 'building', cash: 'banknote' }
-const CATEGORY_COLOR = { crypto: 'var(--g)', metals: '#e8b825', stocks: '#3b82f6', realestate: '#a78bfa', cash: '#64748b' }
+const CATEGORY_ICON = { metals: 'diamond', stocks: 'trend-up', bonds: 'bank', realestate: 'building', cash: 'banknote' }
+const CATEGORY_COLOR = { crypto: 'var(--g)', metals: '#e8b825', stocks: '#3b82f6', bonds: '#0284c7', realestate: '#a78bfa', cash: '#64748b' }
 
 function CatLabel({ cat, className, iconSize = 14 }) {
   const { t } = useLanguage()
@@ -1890,7 +1891,7 @@ const PortfolioHeatmap = memo(function PortfolioHeatmap({ enriched, prices, tota
 
 function getRiskLevel(h) {
   const cat = categorizeAsset(h)
-  if (cat === 'cash' || cat === 'metals' || cat === 'realestate') return 'low'
+  if (cat === 'cash' || cat === 'metals' || cat === 'realestate' || cat === 'bonds') return 'low'
   if (isStablecoin(h.coin_id, h.coin_symbol)) return 'low'
   const id = (h.coin_id || '').toLowerCase()
   if (cat === 'stocks') return 'medium'

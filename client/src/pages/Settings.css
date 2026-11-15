@@ -233,3 +233,11 @@
 .fb-done span { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-size: 26px; color: #fff; background: var(--nl-up, #16a874); }
 .fb-done p { margin: 0 0 6px; font-size: 15px; font-weight: 600; }
 .sx.sx-layer { padding: 0; margin: 0; max-width: none; }
+/* Above the keyboard while a field has focus (useKeyboardDock): pinned to the
+   bottom, the sheet sat behind it and what was typed could not be seen. */
+.sx-sheet.kb-dock {
+  top: calc(var(--kb-vvt, 0px) + 8px); bottom: auto; inset-inline: 8px;
+  max-height: calc(var(--kb-vvh, 100vh) - 16px); overflow-y: auto; overscroll-behavior: contain;
+  border-radius: 22px; padding-bottom: 14px;
+}
+.sx-sheet.kb-dock .fb-msg { min-height: 88px; }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
+import useKeyboardDock from '../hooks/useKeyboardDock'
 import { REPORT_ENDPOINT, REPORT_EMAIL, buildReport } from './AiReport'
 import '../pages/Settings.css'
 
@@ -48,6 +49,9 @@ export default function FeedbackSheet({ onClose, initialTopic = 'idea', source =
   const [message, setMessage] = useState('')
   const [email, setEmail] = useState('')
   const [state, setState] = useState('idle') // idle | sending | sent | failed
+  // Above the keyboard while typing: in the Android app the sheet sat behind
+  // it and what was typed could not be seen.
+  const dock = useKeyboardDock()
 
   const report = feedbackReport({ topic, message, email, lang, page })
   const mailto = `mailto:${REPORT_EMAIL}?subject=${encodeURIComponent('WalletLens feedback')}&body=${encodeURIComponent(`${t(TOPIC_KEY[topic])}\n\n${report.output}`)}`
@@ -76,7 +80,7 @@ export default function FeedbackSheet({ onClose, initialTopic = 'idea', source =
   return createPortal(
     <div className="sx sx-layer">
       <div className="sx-scrim" onClick={onClose} />
-      <div className="sx-sheet fb" role="dialog" aria-modal="true" aria-label={t('fbTitle')}>
+      <div className="sx-sheet fb" ref={dock.ref} onFocus={dock.onFocus} onBlur={dock.onBlur} role="dialog" aria-modal="true" aria-label={t('fbTitle')}>
         <div className="sx-grab" />
         <h3 className="sx-sheet-t">{t('fbTitle')}</h3>
         {state === 'sent' ? (

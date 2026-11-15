@@ -247,6 +247,9 @@ export function categorizeAsset(h) {
   if (id.startsWith('real:') || id.includes('appartment') || id.includes('apartment') || id.includes('property') || sym.includes('appartment') || sym.includes('property') || sym.includes('reit') || sym === 'real') return 'realestate'
   // Only actual fiat currencies go to cash — stablecoins (USDT, USDC, DAI…) are crypto
   if (id.startsWith('cash:') || id.startsWith('fiat:') || ['usd','eur','gbp','jpy','us'].includes(sym)) return 'cash'
+  // Bonds had no class of their own and fell through to crypto: a Treasury
+  // showed in the crypto group, its share and its risk (reported from the app).
+  if (id.startsWith('bond:')) return 'bonds'
   return 'crypto'
 }
 
