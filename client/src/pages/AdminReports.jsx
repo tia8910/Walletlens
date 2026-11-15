@@ -36,6 +36,15 @@ export default function AdminReports() {
     setReports(rs => rs.map(r => r.id === id ? { ...r, status } : r))
   }
 
+  // Screenshots load one at a time, on request, so the list stays light.
+  const [shots, setShots] = useState({})
+  async function loadShot(id) {
+    try {
+      const r = await fetch(`${ENDPOINT}/shot?id=${id}`, { headers: { Authorization: `Bearer ${token}` } })
+      const d = await r.json().catch(() => ({}))
+      setShots(s => ({ ...s, [id]: r.ok && d.ok && typeof d.shot === 'string' && d.shot.startsWith('data:image/') ? d.shot : false }))
+    } catch { setShots(s => ({ ...s, [id]: false })) }
+  }
   const shown = (reports || []).filter(r => showDone || r.status !== 'reviewed')
   return (
     <div style={{ minHeight: '100vh', background: '#0b0f14' }}>
@@ -58,12 +67,16 @@ export default function AdminReports() {
                 <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', fontSize: '0.8rem', color: '#9aa5b1' }}>
                   <b style={{ color: '#fca5a5' }}>{REASON[r.reason] || r.reason}</b>
                   <span>{r.surface}</span><span>{r.lang}</span><span>{new Date(r.at).toLocaleString()}</span>
+                  {r.has_shot && <span style={{ color: '#86efac' }}>with screenshot</span>}
                   <button style={{ ...btn, marginLeft: 'auto', padding: '0.35rem 0.7rem', fontSize: '0.78rem' }} onClick={() => mark(r.id, r.status === 'reviewed' ? 'new' : 'reviewed')}>
                     {r.status === 'reviewed' ? 'Reopen' : 'Mark reviewed'}
                   </button>
                 </div>
                 {r.note && <p style={{ margin: '0.6rem 0 0', color: '#fff' }}>“{r.note}”</p>}
                 <pre style={{ margin: '0.6rem 0 0', whiteSpace: 'pre-wrap', fontSize: '0.8rem', color: '#c8ced6', fontFamily: 'inherit' }}>{r.output}</pre>
+                {r.has_shot && (shots[r.id]
+                  ? <img src={shots[r.id]} alt="Screenshot sent with this report" style={{ display: 'block', marginTop: '0.7rem', maxWidth: '100%', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)' }} />
+                  : <button style={{ ...btn, marginTop: '0.7rem', padding: '0.45rem 0.8rem', fontSize: '0.8rem' }} onClick={() => loadShot(r.id)}>{shots[r.id] === false ? 'Could not load the screenshot. Try again' : 'Show screenshot'}</button>)}
               </div>
             ))}
           </>

@@ -11,6 +11,10 @@
 export const REASONS = new Set(['feedback', 'inaccurate', 'harmful', 'risky', 'other'])
 const MAX_BODY = 8192
 const PER_HOUR = 20
+// A screenshot may come with a report, shrunk by the app to a JPEG of at most
+// 1280px, so a data URL well under this. D1 allows 2 MB a row.
+export const MAX_SHOT = 700_000
+const SHOT_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/
 
 const clip = (v, n) => String(v ?? '').slice(0, n)
 
@@ -25,6 +29,24 @@ export function parseReport(body) {
     output,
     lang: clip(body.lang, 8),
   }
+}
+
+/** The screenshot sent with a report: an image data URL in bounds, else null. */
+export function parseShot(v) {
+  if (typeof v !== 'string' || !v || v.length > MAX_SHOT) return null
+  return SHOT_RE.test(v) ? v : null
+}
+
+// Screenshots live in their own table, created here on first use: the deploy
+// applies schema.sql only when asked, and a missing table must not lose a
+// report. Once per isolate.
+let shotsReady = null
+function ensureShots(env) {
+  if (!shotsReady) {
+    shotsReady = Promise.resolve(env.DB.prepare('CREATE TABLE IF NOT EXISTS ai_report_shots (report_id INTEGER PRIMARY KEY, shot TEXT NOT NULL)').run())
+      .catch((e) => { shotsReady = null; throw e })
+  }
+  return shotsReady
 }
 
 async function sourceHash(req) {
@@ -44,32 +66,63 @@ function authorized(req, env) {
 export async function handleReports(req, path, env, json, headers) {
   if (req.method === 'POST' && path === '/report') {
     const raw = await req.text()
-    if (raw.length > MAX_BODY) return json({ error: 'too_large' }, headers, 413)
+    if (raw.length > MAX_BODY + MAX_SHOT) return json({ error: 'too_large' }, headers, 413)
     let body = null
     try { body = JSON.parse(raw) } catch { /* fall through */ }
+    // The report itself keeps its small limit; only a screenshot may add to it.
+    const shotLen = typeof body?.shot === 'string' ? body.shot.length : 0
+    if (raw.length - shotLen > MAX_BODY) return json({ error: 'too_large' }, headers, 413)
     const report = parseReport(body)
     if (!report) return json({ error: 'invalid' }, headers, 400)
+    const shot = parseShot(body.shot)
 
     const src = await sourceHash(req)
     const since = Date.now() - 3600_000
     const recent = await env.DB.prepare('SELECT COUNT(*) AS n FROM ai_reports WHERE src = ? AND at > ?').bind(src, since).first()
     if ((recent?.n || 0) >= PER_HOUR) return json({ error: 'rate_limited' }, headers, 429)
 
-    await env.DB.prepare(
+    const ins = await env.DB.prepare(
       'INSERT INTO ai_reports (at, surface, reason, note, output, lang, src, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     ).bind(Date.now(), report.surface, report.reason, report.note, report.output, report.lang, src, 'new').run()
-    return json({ ok: true }, headers)
+    const id = ins?.meta?.last_row_id
+    let shotSaved = false
+    if (shot && id) {
+      // The report is already kept; a screenshot that fails to save does not
+      // undo it, and the answer says so.
+      try {
+        await ensureShots(env)
+        await env.DB.prepare('INSERT INTO ai_report_shots (report_id, shot) VALUES (?, ?)').bind(id, shot).run()
+        shotSaved = true
+      } catch { /* report kept without it */ }
+    }
+    return json({ ok: true, shot: shotSaved }, headers)
   }
 
-  if (path === '/reports' || path === '/reports/review') {
+  if (path === '/reports' || path === '/reports/review' || path === '/reports/shot') {
     if (!env.REPORTS_TOKEN) return json({ error: 'not_configured' }, headers, 503)
     if (!authorized(req, env)) return json({ error: 'unauthorized' }, headers, 401)
 
     if (req.method === 'GET' && path === '/reports') {
+      // Which reports have a screenshot, not the images: those load one at a
+      // time from /reports/shot, so the list stays light.
+      let withShot = new Set()
+      try {
+        await ensureShots(env)
+        const s = await env.DB.prepare('SELECT report_id FROM ai_report_shots').all()
+        withShot = new Set((s?.results || []).map(r => r.report_id))
+      } catch { /* no screenshots yet */ }
       const { results } = await env.DB.prepare(
         'SELECT id, at, surface, reason, note, output, lang, status FROM ai_reports ORDER BY at DESC LIMIT 200',
       ).all()
-      return json({ ok: true, reports: results || [] }, headers)
+      return json({ ok: true, reports: (results || []).map(r => ({ ...r, has_shot: withShot.has(r.id) })) }, headers)
+    }
+    if (req.method === 'GET' && path === '/reports/shot') {
+      const id = Number(new URL(req.url).searchParams.get('id'))
+      if (!Number.isInteger(id)) return json({ error: 'invalid' }, headers, 400)
+      await ensureShots(env)
+      const row = await env.DB.prepare('SELECT shot FROM ai_report_shots WHERE report_id = ?').bind(id).first()
+      if (!row?.shot) return json({ error: 'not_found' }, headers, 404)
+      return json({ ok: true, shot: row.shot }, headers)
     }
     if (req.method === 'POST' && path === '/reports/review') {
       let body = {}
