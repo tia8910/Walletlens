@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, memo, lazy, Suspense } from '
 import { noteMoment } from '../reviewPrompt'
 import Icon from '../components/Icon'
 import { useLocation } from 'react-router-dom'
+import { useIdleMount } from '../hooks/useIdleMount'
 import { api, ASSET_CATEGORIES, PRESET_ASSETS, POPULAR_TICKERS, POPULAR_FIAT, STOCK_PREFIX, FIAT_PREFIX, GOLD_ID, SILVER_ID } from '../api'
 import CoinLogo from '../components/CoinLogo'
 import { track, trackProfileCreated } from '../analytics'
@@ -206,6 +207,8 @@ export default function Transactions({ showAdd, onCloseAdd }) {
   const [showForm, setShowForm] = useState(false)
   // Premium trade sheet (same one used on the dashboard) for the + Add button.
   const [tradeOpen, setTradeOpen] = useState(false)
+  // TradeSheet is a 56 KB lazy chunk; mount it at idle, not on first paint.
+  const tradeMounted = useIdleMount(tradeOpen)
   const [tradeType, setTradeType] = useState('buy')
   const [tradePrefill, setTradePrefill] = useState(null)
   const [filterWallet, setFilterWallet] = useState('')
@@ -1081,7 +1084,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
         </div>
       )}
 
-      <Suspense fallback={null}>
+      {tradeMounted && <Suspense fallback={null}>
         <TradeSheet
           open={tradeOpen}
           type={tradeType}
@@ -1093,7 +1096,7 @@ export default function Transactions({ showAdd, onCloseAdd }) {
           prefillCategory={tradePrefill?.category}
           variant="page"
         />
-      </Suspense>
+      </Suspense>}
     </div>
   )
 }

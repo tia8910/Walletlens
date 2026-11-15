@@ -28,6 +28,9 @@ const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
 const AssistantChat = lazy(() => import('./components/AssistantChat'))
 const NotificationPrimer = lazy(() => import('./components/NotificationPrimer'))
 const WelcomeModal = lazy(() => import('./components/WelcomeModal'))
+// Returning visitors have already dismissed the welcome flow (WelcomeModal's
+// own 'wl_welcomed_v2' flag), so skip its ~34 KB JS + CSS for them entirely.
+const WELCOMED = (() => { try { return !!localStorage.getItem('wl_welcomed_v2') } catch { return false } })()
 const NativeOnboarding = lazy(() => import('./components/NativeOnboarding'))
 const HelpGuide = lazy(() => import('./components/HelpGuide'))
 const AddAssetTour = lazy(() => import('./components/AddAssetTour'))
@@ -1124,7 +1127,7 @@ export default function App() {
       {!isLanding && shellReady && (isStandalone || v2) && <BottomNav v2={v2} v3={v2 && newLook} />}
 
       {shellReady && isStandalone && isAndroid && !onboardDone && <Suspense fallback={null}><NativeOnboarding onDone={() => setOnboardDone(true)} /></Suspense>}
-      {shellReady && (!isStandalone || !isAndroid) && <Suspense fallback={null}><WelcomeModal /></Suspense>}
+      {shellReady && (!isStandalone || !isAndroid) && !WELCOMED && <Suspense fallback={null}><WelcomeModal /></Suspense>}
       {shellReady && <Suspense fallback={null}><AssistantChat /></Suspense>}
       {/* No Bybit popup: the offer lives only in its cards and strips, where
           the screen is about crypto, stocks or metals already. */}

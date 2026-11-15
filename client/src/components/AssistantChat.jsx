@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../LanguageContext'
 import {
@@ -7,7 +7,10 @@ import {
   createConversation, clearChatHistory,
 } from '../assistantAi'
 import { track } from '../analytics'
-import AiReport from './AiReport'
+
+// The report button only appears under assistant replies, i.e. once the panel
+// is open; loading it lazily keeps it (and its CSS) off every page load.
+const AiReport = lazy(() => import('./AiReport'))
 
 // Floating in-app assistant. A bottom-right launcher opens a chat panel where
 // the user describes what they want to do, and the AI points them to the right
@@ -428,7 +431,7 @@ export default function AssistantChat() {
                     ))}
                   </div>
                 )}
-                {m.role === 'assistant' && m.text && <AiReport surface="assistant" output={m.text} compact />}
+                {m.role === 'assistant' && m.text && <Suspense fallback={null}><AiReport surface="assistant" output={m.text} compact /></Suspense>}
               </div>
             ))}
 

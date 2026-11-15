@@ -8,6 +8,7 @@ import {
 } from 'recharts'
 import { api, getCachedCoinImage } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
+import { useIdleMount } from '../hooks/useIdleMount'
 import { isStablecoin } from '../stablecoins'
 import { observe, primeEffectAudio } from '../screenEffectsRuntime'
 import { EXPLODE, ROCKET, ATH, pickLeader } from '../screenEffects'
@@ -3232,6 +3233,8 @@ export default function Dashboard() {
   const [selectedAssets,  setSelectedAssets]  = useState(() => new Set())
   const [expandedActions, setExpandedActions] = useState(() => new Set())
   const [sheetOpen, setSheetOpen]         = useState(false)
+  // TradeSheet is a 56 KB lazy chunk; mount it at idle, not on first paint.
+  const sheetMounted = useIdleMount(sheetOpen)
   const [sheetType, setSheetType]         = useState('buy')
   const [sheetPrefill, setSheetPrefill]   = useState(null)
   const openSheet = useCallback((t, source = 'dashboard', prefill = null) => { setSheetType(t); setSheetPrefill(prefill); setSheetOpen(true); track('trade_sheet_open', { type: t, source }) }, [])
@@ -5936,7 +5939,7 @@ export default function Dashboard() {
       )}
 
       {/* ══ TRADE BOTTOM SHEET ══ */}
-      <Suspense fallback={null}>
+      {sheetMounted && <Suspense fallback={null}>
         <TradeSheet
           open={sheetOpen}
           type={sheetType}
@@ -5963,7 +5966,7 @@ export default function Dashboard() {
           prefillStockTicker={sheetPrefill?.stockTicker}
           variant="page"
         />
-      </Suspense>
+      </Suspense>}
 
       </div>{/* end tab-content transition wrapper */}
 
