@@ -228,6 +228,12 @@
 .fb-msg { font-family: inherit; font-size: 15px; min-height: 120px; }
 .fb-email { font-family: inherit; font-size: 15px; min-height: 0; resize: none; }
 .fb-note { margin: 0; font-size: 12px; color: var(--sx-sub); }
+.fb-shot-add { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 12px; border-radius: 12px; border: 1.5px dashed var(--sx-line); background: none; color: var(--sx-ink); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.fb-shot-add svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.fb-shot-add:disabled { opacity: .6; cursor: default; }
+.fb-shot { position: relative; align-self: flex-start; }
+.fb-shot img { display: block; max-height: 140px; max-width: 100%; border-radius: 12px; border: 1px solid var(--sx-line); }
+.fb-shot-x { position: absolute; top: -8px; inset-inline-end: -8px; width: 26px; height: 26px; border-radius: 50%; border: 0; background: var(--sx-ink); color: var(--sx-card); font-size: 12px; font-weight: 800; cursor: pointer; display: grid; place-items: center; }
 .fb-mail { text-align: center; font-size: 12.5px; color: var(--sx-sub); text-decoration: none; padding: 4px 0; }
 .fb-done { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 8px 4px; text-align: center; }
 .fb-done span { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-size: 26px; color: #fff; background: var(--nl-up, #16a874); }

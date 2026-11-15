@@ -35,3 +35,9 @@ CREATE TABLE IF NOT EXISTS ai_reports (
 );
 CREATE INDEX IF NOT EXISTS idx_ai_reports_at ON ai_reports (at);
 CREATE INDEX IF NOT EXISTS idx_ai_reports_src ON ai_reports (src, at);
+-- A screenshot sent with a report (an image data URL, shrunk by the app).
+-- The worker also creates this on first use.
+CREATE TABLE IF NOT EXISTS ai_report_shots (
+  report_id INTEGER PRIMARY KEY,
+  shot      TEXT NOT NULL
+);

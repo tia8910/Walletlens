@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 import useKeyboardDock from '../hooks/useKeyboardDock'
+import { shrinkShot } from '../shrinkShot'
 import { REPORT_ENDPOINT, REPORT_EMAIL, buildReport } from './AiReport'
 import '../pages/Settings.css'
 
@@ -49,6 +50,18 @@ export default function FeedbackSheet({ onClose, initialTopic = 'idea', source =
   const [message, setMessage] = useState('')
   const [email, setEmail] = useState('')
   const [state, setState] = useState('idle') // idle | sending | sent | failed
+  // An optional screenshot, shrunk on the device before it is ever sent.
+  const [shot, setShot] = useState(null)
+  const [shotState, setShotState] = useState('idle') // idle | reading | failed
+  const fileRef = useRef(null)
+  async function pickShot(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setShotState('reading')
+    try { setShot(await shrinkShot(file)); setShotState('idle'); track('feedback_shot_added', { source }) }
+    catch { setShotState('failed') }
+  }
   // Above the keyboard while typing: in the Android app the sheet sat behind
   // it and what was typed could not be seen.
   const dock = useKeyboardDock()
@@ -60,15 +73,20 @@ export default function FeedbackSheet({ onClose, initialTopic = 'idea', source =
     if (!report.output) return
     setState('sending')
     try {
-      const r = await fetch(REPORT_ENDPOINT, {
+      const post = (body, ms) => fetch(REPORT_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(report),
-        signal: AbortSignal.timeout(8000),
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(ms),
       })
+      // Longer with an image on a slow connection.
+      let r = await post(shot ? { ...report, shot } : report, shot ? 30000 : 8000)
+      // A report server too old to take an image refuses the whole body as
+      // too large: the words still go, without the screenshot.
+      if (shot && r.status === 413) r = await post(report, 8000)
       if (!r.ok) throw new Error(String(r.status))
       setState('sent')
-      track('feedback_sent', { topic, source })
+      track('feedback_sent', { topic, source, shot: !!shot })
     } catch {
       setState('failed')
       track('feedback_failed', { topic, source })
@@ -100,7 +118,20 @@ export default function FeedbackSheet({ onClose, initialTopic = 'idea', source =
               value={message} onChange={e => setMessage(e.target.value)} autoFocus />
             <input className="bk-paste fb-email" type="email" inputMode="email" autoComplete="email" placeholder={t('fbEmail')}
               value={email} onChange={e => setEmail(e.target.value)} />
-            <p className="fb-note">{t('fbPrivacy')}</p>
+            <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickShot} />
+            {shot ? (
+              <div className="fb-shot">
+                <img src={shot} alt={t('fbShotAlt')} />
+                <button type="button" className="fb-shot-x" onClick={() => setShot(null)} aria-label={t('fbShotRemove')}>✕</button>
+              </div>
+            ) : (
+              <button type="button" className="fb-shot-add" onClick={() => fileRef.current?.click()} disabled={shotState === 'reading'}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3" /><circle cx="9" cy="10" r="1.8" /><path d="m21 16-5-5-8 8" /></svg>
+                {shotState === 'reading' ? '…' : t('fbShotAdd')}
+              </button>
+            )}
+            {shotState === 'failed' && <p className="bk-msg" role="alert">{t('fbShotFail')}</p>}
+            <p className="fb-note">{shot ? t('fbShotPrivacy') : t('fbPrivacy')}</p>
             {state === 'failed' && <p className="bk-msg" role="alert">{t('fbFailed')} <a href={mailto}>{REPORT_EMAIL}</a></p>}
             <button className="bk-btn bk-pri" onClick={send} disabled={state === 'sending' || !report.output}>
               {state === 'sending' ? '…' : t('fbSend')}
