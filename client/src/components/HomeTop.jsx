@@ -211,7 +211,7 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
             </button>
           </div>
         </div>
-        {enriched.length > 0 && <HoldingsDrum holdings={enriched} label={t('nlHoldings')} />}
+        {enriched.length > 0 && <HoldingsDrum holdings={enriched} label={t('nlHoldings')} onAsset={onAsset} />}
       </section>
 
       {sentimentSlot && <div className="nl-sentiment">{sentimentSlot}</div>}
