@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { feedbackReport, TOPICS } from './components/FeedbackSheet'
+import { feedbackReport, TOPICS, dragOffset } from './components/FeedbackSheet'
 
 const SRC = dirname(fileURLToPath(import.meta.url))
 const read = (p) => readFileSync(join(SRC, p), 'utf8')
@@ -59,3 +59,24 @@ describe('the Home rate card', () => {
     expect(rate).not.toMatch(/FeedbackSheet|setReport/)
   })
 })
+
+describe('the feedback window', () => {
+  const r = { left: 100, top: 200, width: 400, height: 500 }
+  it('follows the pointer while dragged', () => {
+    expect(dragOffset({ x: 300, y: 220, off: { x: 0, y: 0 }, r }, 350, 180, 1200, 900)).toEqual({ x: 50, y: -40 })
+    expect(dragOffset({ x: 300, y: 220, off: { x: 20, y: 10 }, r }, 310, 230, 1200, 900)).toEqual({ x: 30, y: 20 })
+  })
+  it('never leaves the screen', () => {
+    expect(dragOffset({ x: 300, y: 220, off: { x: 0, y: 0 }, r }, -500, -500, 1200, 900)).toEqual({ x: -92, y: -192 })   // stops 8px from the top left
+    expect(dragOffset({ x: 300, y: 220, off: { x: 0, y: 0 }, r }, 5000, 5000, 1200, 900)).toEqual({ x: 692, y: 192 })    // and from the bottom right
+  })
+  it('has a title bar to drag, a close button, and closes on Escape', () => {
+    const src = read('components/FeedbackSheet.jsx')
+    expect(src).toMatch(/className="fb-head" onPointerDown=\{onDragStart\}/)
+    expect(src).toMatch(/className="fb-close" onClick=\{onClose\} aria-label=\{t\('close'\)\}/)
+    expect(src).toMatch(/e\.key === 'Escape'/)
+    // a tap outside does not throw away what was typed
+    expect(src).toMatch(/if \(!typed \|\| state === 'sent'\) onClose/)
+  })
+})
+

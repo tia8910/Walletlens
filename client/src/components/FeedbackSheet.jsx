@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
@@ -44,6 +44,18 @@ export function feedbackReport({ topic, message, email, lang, page, where = plat
   })
 }
 
+/**
+ * Where the window goes while dragged: the pointer's travel added to where it
+ * started, kept so the whole window stays on screen (8px in from each edge).
+ * `d` holds the pointer start (x, y), the offset then (off) and the window's
+ * rectangle then (r). Pure, for the test.
+ */
+export function dragOffset(d, px, py, vw, vh, pad = 8) {
+  const left = Math.min(Math.max(d.r.left + (px - d.x), pad), Math.max(pad, vw - d.r.width - pad))
+  const top = Math.min(Math.max(d.r.top + (py - d.y), pad), Math.max(pad, vh - d.r.height - pad))
+  return { x: Math.round(d.off.x + left - d.r.left), y: Math.round(d.off.y + top - d.r.top) }
+}
+
 export default function FeedbackSheet({ onClose, initialTopic = 'idea', source = 'settings', page }) {
   const { t, lang } = useLanguage()
   const [topic, setTopic] = useState(TOPICS.includes(initialTopic) ? initialTopic : 'idea')
@@ -65,6 +77,32 @@ export default function FeedbackSheet({ onClose, initialTopic = 'idea', source =
   // Above the keyboard while typing: in the Android app the sheet sat behind
   // it and what was typed could not be seen.
   const dock = useKeyboardDock()
+
+  // A window, not a sheet: it opens in the middle of the screen and its title
+  // bar drags it anywhere on screen (never off it), so what it covers can be
+  // looked at while writing about it. The ✕, Escape, or a tap outside when
+  // nothing has been typed yet closes it.
+  const [off, setOff] = useState({ x: 0, y: 0 })
+  const drag = useRef(null)
+  const onDragStart = (e) => {
+    if (e.button > 0 || e.target.closest('button')) return
+    const r = dock.ref.current?.getBoundingClientRect()
+    if (!r) return
+    drag.current = { x: e.clientX, y: e.clientY, off, r }
+    try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* not capturable */ }
+  }
+  const onDragMove = (e) => {
+    const d = drag.current
+    if (!d) return
+    setOff(dragOffset(d, e.clientX, e.clientY, window.innerWidth, window.innerHeight))
+  }
+  const onDragEnd = () => { drag.current = null }
+  const typed = !!(message.trim() || email.trim() || shot)
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose?.() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   const report = feedbackReport({ topic, message, email, lang, page })
   const mailto = `mailto:${REPORT_EMAIL}?subject=${encodeURIComponent('WalletLens feedback')}&body=${encodeURIComponent(`${t(TOPIC_KEY[topic])}\n\n${report.output}`)}`
@@ -97,10 +135,16 @@ export default function FeedbackSheet({ onClose, initialTopic = 'idea', source =
   // wherever it is opened from.
   return createPortal(
     <div className="sx sx-layer">
-      <div className="sx-scrim" onClick={onClose} />
-      <div className="sx-sheet fb" ref={dock.ref} onFocus={dock.onFocus} onBlur={dock.onBlur} role="dialog" aria-modal="true" aria-label={t('fbTitle')}>
-        <div className="sx-grab" />
-        <h3 className="sx-sheet-t">{t('fbTitle')}</h3>
+      <div className="sx-scrim" onClick={() => { if (!typed || state === 'sent') onClose?.() }} />
+      <div className="sx-sheet fb fb-win" ref={dock.ref} onFocus={dock.onFocus} onBlur={dock.onBlur} role="dialog" aria-modal="true" aria-label={t('fbTitle')}
+        style={{ '--fb-dx': `${off.x}px`, '--fb-dy': `${off.y}px` }}>
+        <div className="fb-head" onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}>
+          <svg className="fb-grip" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6" r="1.4" /><circle cx="15" cy="6" r="1.4" /><circle cx="9" cy="12" r="1.4" /><circle cx="15" cy="12" r="1.4" /><circle cx="9" cy="18" r="1.4" /><circle cx="15" cy="18" r="1.4" /></svg>
+          <h3 className="sx-sheet-t">{t('fbTitle')}</h3>
+          <button type="button" className="fb-close" onClick={onClose} aria-label={t('close')} title={t('close')}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+          </button>
+        </div>
         {state === 'sent' ? (
           <div className="fb-done">
             <span aria-hidden="true">✓</span>
