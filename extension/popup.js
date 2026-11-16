@@ -74,6 +74,8 @@ function icon(h, image) {
   if (!src.length) return letter(h)
   const img = el('img', 'ic'); img.alt = ''; img.referrerPolicy = 'no-referrer'
   if (/^logos\/assets\/(home|other|cash)\.svg$/.test(src[0])) img.classList.add('ic-full')
+  // Company logos sit on a white disc, as in the app: most are drawn for a light page.
+  if ((h.coin_id || '').startsWith('stock:')) img.classList.add('ic-stock')
   // A near-black mark (Arweave) on the dark popup gets a white plate, as in the app.
   const dark = new Set((state.appLogos[h.coin_id] || []).filter(l => l.dark).map(l => l.src))
   let i = 0

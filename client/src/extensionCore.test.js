@@ -143,6 +143,8 @@ describe('extension package and listing', () => {
     expect(popup).toMatch(/const out = \(state\.appLogos\[id\] \|\| \[\]\)\.map\(l => l\.src\)/)
     expect(popup).toContain('/api/icon?sym=')
     expect(popup).toContain('/api/icon?stock=')
+    expect(popup).toContain("img.classList.add('ic-stock')")
+    expect(ext('popup.css')).toMatch(/img\.ic\.ic-stock \{ background: #fff; \}/)
     // Bonds and metals: the app's own badges, not separate drawings.
     expect(ext('logos/assets/bond.svg')).toContain('M8.5 8.2h11.2l3.8 3.8')   // BondBadge's certificate
     for (const m of ['gold', 'silver', 'platinum', 'copper']) expect(ext(`logos/assets/${m}.svg`)).toContain('fill="#0f172a"')   // AssetIconBadge's plate
