@@ -26,7 +26,9 @@ export default function IndicatorChart({ coinId, symbol, name, price, source = '
   const { t, lang } = useLanguage()
   // Every visit opens on daily candles.
   const [tf, setTf] = useState(DEFAULT_TIMEFRAME)
-  const [candleData, setCandleData] = useState({ candles: [], visible: 0, closeOnly: false, loading: true })
+  // The chart saved last time draws at once; fresh candles replace it.
+  const saved = (frame) => api.peekCandles(coinId, symbol, frame, 200, CHART_TIMEFRAMES)
+  const [candleData, setCandleData] = useState(() => ({ candles: [], visible: 0, closeOnly: false, ...saved(DEFAULT_TIMEFRAME), loading: true }))
   const [chartParams, setChartParams] = useState(loadChartParams)
   const [paramsDraft, setParamsDraft] = useState(null)
   const [full, setFull] = useState(false)
@@ -41,7 +43,8 @@ export default function IndicatorChart({ coinId, symbol, name, price, source = '
   useEffect(() => {
     if (!coinId) return
     let alive = true
-    setCandleData(d => ({ ...d, loading: true }))
+    const now = saved(tf)
+    setCandleData(d => now ? { ...now, loading: true } : { ...d, loading: true })
     // The live price lets getCandles reject a same-ticker coin on Binance;
     // it can arrive after the first load, so its arrival loads once more.
     api.getCandles(coinId, symbol, tf, 200, price || 0)
