@@ -109,6 +109,17 @@ export const FEATURES = [
   { route: '/faq',                           label: 'FAQ',                  desc: 'Frequently asked questions about WalletLens' },
 ]
 
+/**
+ * What went wrong, from the server's status, so the chat can say so instead
+ * of one "could not reach" for every failure. Pure, for the test.
+ */
+export function assistantErrorCode(status) {
+  if (status === 429) return 'busy'          // too many questions in a short time
+  if (status === 503) return 'unavailable'   // the server has no AI key set
+  if (status === 502 || status === 529) return 'upstream' // the AI service refused or is overloaded
+  return 'failed'
+}
+
 // messages: [{ role: 'user'|'assistant', content: string }]
 // Returns the assistant reply string. Throws Error with a `code` on failure.
 export async function chatWithAssistant(messages, { lang = 'en' } = {}) {
@@ -124,11 +135,12 @@ export async function chatWithAssistant(messages, { lang = 'en' } = {}) {
       }),
     })
   } catch {
-    const err = new Error('network'); err.code = 'failed'; throw err
+    const err = new Error('network'); err.code = typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'network'; throw err
   }
   if (!res.ok) {
     const err = new Error('request_failed')
-    err.code = res.status === 503 ? 'unavailable' : 'failed'
+    err.code = assistantErrorCode(res.status)
+    err.status = res.status
     throw err
   }
   const data = await res.json()

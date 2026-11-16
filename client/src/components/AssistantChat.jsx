@@ -9,6 +9,16 @@ import {
 import { track } from '../analytics'
 import AiReport from './AiReport'
 
+// What the chat says when an answer does not come, by what went wrong.
+const ERROR_COPY = {
+  offline: ["You're offline. Connect to the internet and try again.", 'أنت غير متصل. اتصل بالإنترنت وحاول مرة أخرى.'],
+  network: ['Could not reach the assistant. Check your connection and try again.', 'تعذّر الوصول إلى المساعد. تحقق من الاتصال وحاول مرة أخرى.'],
+  busy: ['Too many questions in a short time. Wait a minute, then try again.', 'أسئلة كثيرة في وقت قصير. انتظر دقيقة ثم حاول مرة أخرى.'],
+  upstream: ['The AI service is busy right now. Try again in a moment.', 'خدمة الذكاء الاصطناعي مشغولة الآن. حاول بعد لحظات.'],
+  unavailable: ['The assistant is switched off on the server right now. Please try again later.', 'المساعد متوقف على الخادم حالياً. حاول لاحقاً.'],
+  failed: ['Something went wrong getting an answer. Please try again.', 'حدث خطأ أثناء جلب الإجابة. حاول مرة أخرى.'],
+}
+
 // Floating in-app assistant. A bottom-right launcher opens a chat panel where
 // the user describes what they want to do, and the AI points them to the right
 // feature with one-tap navigation buttons. Chat history persists across sessions.
@@ -238,11 +248,12 @@ export default function AssistantChat() {
   function onFabClick() { if (drag.current.moved) return }
 
   // ── Send message ───────────────────────────────────────────────────────
-  async function send(text) {
+  async function send(text, { retry = false } = {}) {
     const msg = (text || input).trim()
     if (!msg || loading) return
     setInput('')
     setError(null)
+    if (retry) return ask(messages)
 
     // Create conversation if needed
     let cid = convId
@@ -256,7 +267,12 @@ export default function AssistantChat() {
     const newMessages = [...messages, userMsg]
     setMessages(newMessages)
     addMessageToHistory(cid, { role: 'user', content: msg })
+    return ask(newMessages, cid)
+  }
 
+  // Ask the server about a conversation whose last message is the user's.
+  // Retry calls this directly, so the question is not added twice.
+  async function ask(newMessages, cid = convId) {
     setLoading(true)
     try {
       const apiMessages = newMessages.slice(-20).map(m => ({ role: m.role, content: m.text || m.content || '' }))
@@ -438,11 +454,15 @@ export default function AssistantChat() {
               </div>
             )}
 
-            {error === 'unavailable' && (
-              <div className="wlc-error">{isAr ? 'المساعد غير متاح حالياً. حاول لاحقاً.' : 'The assistant is temporarily unavailable. Please try again later.'}</div>
-            )}
-            {error === 'failed' && (
-              <div className="wlc-error">{isAr ? 'تعذّر الاتصال. حاول مرة أخرى.' : 'Could not reach the assistant. Please try again.'}</div>
+            {error && (
+              <div className="wlc-error" role="alert">
+                <span>{(ERROR_COPY[error] || ERROR_COPY.failed)[isAr ? 1 : 0]}</span>
+                {error !== 'unavailable' && messages[messages.length - 1]?.role === 'user' && (
+                  <button type="button" className="wlc-retry" onClick={() => send(messages[messages.length - 1].text, { retry: true })} disabled={loading}>
+                    {isAr ? 'إعادة المحاولة' : 'Try again'}
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
