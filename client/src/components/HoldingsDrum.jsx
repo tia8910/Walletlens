@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AssetLogo } from './HomeTop'
 
 // The balance card's right side: a drum that rolls through every holding,
@@ -11,6 +11,22 @@ import { AssetLogo } from './HomeTop'
 // background tab, and with reduced motion it only moves when moved.
 
 const FACE_H = 34
+// On a wide screen the drum is larger: taller faces, bigger type and logos.
+const WIDE = '(min-width: 700px)'
+const FACE_H_WIDE = 46
+export const WIDE_SCALE = 1.35
+
+function useWide() {
+  const mq = typeof window !== 'undefined' ? window.matchMedia?.(WIDE) : null
+  const [wide, setWide] = useState(() => !!mq?.matches)
+  useEffect(() => {
+    if (!mq) return undefined
+    const on = () => setWide(mq.matches)
+    mq.addEventListener?.('change', on)
+    return () => mq.removeEventListener?.('change', on)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  return wide
+}
 const SECONDS_PER_FACE = 1.9
 const RESUME_MS = 3000
 const DRAG_PX = 6
@@ -61,7 +77,9 @@ export default function HoldingsDrum({ holdings = [], label = 'Holdings', onAsse
   const drag = useRef(null)         // { y, a, moved }
   const reduced = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   const step = n ? 360 / n : 0
-  const R = n > 2 ? FACE_H / (2 * Math.tan(Math.PI / n)) + 3 : 0
+  const wide = useWide()
+  const faceH = wide ? FACE_H_WIDE : FACE_H
+  const R = n > 2 ? faceH / (2 * Math.tan(Math.PI / n)) + 3 : 0
 
   const paint = (a, ease) => {
     const c = cyl.current
@@ -90,11 +108,11 @@ export default function HoldingsDrum({ holdings = [], label = 'Holdings', onAsse
     }
     raf = requestAnimationFrame(tick)
     return () => { cancelAnimationFrame(raf); io?.disconnect() }
-  }, [n, reduced]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [n, reduced, faceH]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!n) return null
 
-  // Drag to spin: one face per FACE_H pixels, snapping on release.
+  // Drag to spin: one face per face height, snapping on release.
   const onPointerDown = (e) => {
     if (n < 3) return
     drag.current = { y: e.clientY, a: angle.current, moved: false, id: e.pointerId }
@@ -105,7 +123,7 @@ export default function HoldingsDrum({ holdings = [], label = 'Holdings', onAsse
     const dy = e.clientY - d.y
     if (!d.moved && Math.abs(dy) < DRAG_PX) return
     if (!d.moved) { d.moved = true; try { box.current?.setPointerCapture(d.id) } catch { /* not capturable */ } }
-    angle.current = d.a - (dy / FACE_H) * step
+    angle.current = d.a - (dy / faceH) * step
     paint(angle.current)
   }
   const endDrag = () => {
@@ -129,7 +147,7 @@ export default function HoldingsDrum({ holdings = [], label = 'Holdings', onAsse
       <button key={f.coin_id} type="button" className={`nl-drum-face${sym.length > 12 ? ' long' : ''}`} style={style}
         onClick={open(f)} onFocus={n > 2 ? bringFront(i) : undefined}
         aria-label={`${f.coin_name || sym} ${px} ${pctTxt(f.pct24h)}`.replace(/\s+/g, ' ').trim()}>
-        <AssetLogo h={f} size={18} />
+        <AssetLogo h={f} size={wide ? 24 : 18} />
         <span className="nl-drum-t">
           <b>{sym}</b>
           <span className="nl-drum-l2">
@@ -143,11 +161,11 @@ export default function HoldingsDrum({ holdings = [], label = 'Holdings', onAsse
 
   // One or two holdings: no drum to turn, just the faces.
   if (n < 3) {
-    return <div className="nl-drum flat" style={{ '--drum-w': `${drumWidth(faces, priceOf)}px` }} role="group" aria-label={label}>{faces.map((f, i) => face(f, i))}</div>
+    return <div className={`nl-drum flat${wide ? ' wide' : ''}`} style={{ '--drum-w': `${Math.round(drumWidth(faces, priceOf) * (wide ? WIDE_SCALE : 1))}px` }} role="group" aria-label={label}>{faces.map((f, i) => face(f, i))}</div>
   }
 
   return (
-    <div ref={box} className="nl-drum" style={{ '--drum-w': `${drumWidth(faces, priceOf)}px` }} role="group" aria-label={label}
+    <div ref={box} className={`nl-drum${wide ? ' wide' : ''}`} style={{ '--drum-w': `${Math.round(drumWidth(faces, priceOf) * (wide ? WIDE_SCALE : 1))}px` }} role="group" aria-label={label}
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag}
       onPointerEnter={(e) => { if (e.pointerType === 'mouse') hold.current = true }} onPointerLeave={(e) => { if (e.pointerType === 'mouse') { hold.current = false; if (!drag.current) snap() } }}
       onFocus={() => { hold.current = true }} onBlur={(e) => { if (!box.current?.contains(e.relatedTarget)) hold.current = false }}>

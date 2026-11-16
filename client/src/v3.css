@@ -276,7 +276,7 @@ html.wl-v3 .wlc-fab { bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !im
   mask-image: linear-gradient(180deg, transparent, #000 20%, #000 80%, transparent);
 }
 .nl-drum::after { content: ""; position: absolute; left: 5px; right: 5px; top: 50%; height: 36px; margin-top: -18px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2); pointer-events: none; }
-.nl-drum-cyl { position: relative; width: calc(var(--drum-w, 116px) - 10px); height: 34px; transform-style: preserve-3d; will-change: transform; }
+.nl-drum-cyl { position: relative; width: calc(var(--drum-w, 116px) - 10px); height: 34px; transform-style: preserve-3d; }
 .nl-drum-face {
   position: absolute; inset: 0; display: flex; align-items: center; gap: 5px; padding: 0 7px; margin: 0; border-radius: 11px; cursor: pointer;
   background: rgba(10, 14, 24, 0.55); border: 1px solid rgba(255, 255, 255, 0.12); color: #fff; font: inherit;
@@ -296,6 +296,16 @@ html.wl-v3 .wlc-fab { bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !im
 .nl-drum.flat { cursor: default; height: auto; padding: 8px 5px; display: flex; flex-direction: column; gap: 6px; -webkit-mask-image: none; mask-image: none; perspective: none; }
 .nl-drum.flat::after { display: none; }
 .nl-drum.flat .nl-drum-face { position: relative; inset: auto; height: 34px; width: calc(var(--drum-w, 116px) - 12px); }
+/* Wide screens: a larger drum, so its type is not shown at phone size. */
+.nl-drum.wide { height: 212px; border-radius: 26px; }
+.nl-drum.wide::after { height: 50px; margin-top: -25px; border-radius: 14px; }
+.nl-drum.wide .nl-drum-cyl { height: 46px; }
+.nl-drum.wide .nl-drum-face { gap: 8px; padding: 0 10px; border-radius: 13px; }
+.nl-drum.wide .nl-drum-face b { font-size: 0.86rem; }
+.nl-drum.wide .nl-drum-l2 small, .nl-drum.wide .nl-drum-face em { font-size: 0.72rem; }
+.nl-drum.wide .nl-drum-face.long b { font-size: 0.74rem; }
+.nl-drum.wide .nl-drum-face .coin-logo, .nl-drum.wide .nl-drum-face .nl-metal { width: 24px !important; height: 24px !important; }
+.nl-drum.wide.flat .nl-drum-face { height: 46px; }
 @media (max-width: 440px) { .nl-drum { width: min(var(--drum-w, 116px), 140px); } .nl-drum-cyl { width: calc(min(var(--drum-w, 116px), 140px) - 10px); } }
 @media (max-width: 360px) { .nl-drum-face { gap: 4px; padding: 0 5px; } }
 

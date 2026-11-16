@@ -31,7 +31,7 @@ describe('the holdings drum', () => {
   })
   it('spins by drag and does not open a holding at the end of a drag', () => {
     const src = read('components/HoldingsDrum.jsx')
-    expect(src).toMatch(/angle\.current = d\.a - \(dy \/ FACE_H\) \* step/)
+    expect(src).toMatch(/angle\.current = d\.a - \(dy \/ faceH\) \* step/)
     expect(src).toMatch(/if \(box\.current\?\.dataset\.dragged\)/)
   })
   it('knows which face is in front, to stop square on it', () => {
@@ -57,5 +57,13 @@ describe('the holdings drum', () => {
     // a long price widens the drum like a long ticker does
     expect(drumWidth([{ coin_symbol: 'ETH' }], () => '$12,345.67')).toBe(125)
     expect(drumWidth([{ coin_symbol: 'ETH' }], () => '')).toBe(112)
+  })
+  it('is larger and sharp on a wide screen', () => {
+    const src = read('components/HoldingsDrum.jsx')
+    expect(src).toMatch(/const faceH = wide \? FACE_H_WIDE : FACE_H/)
+    const css = read('v3.css')
+    expect(css).toMatch(/\.nl-drum\.wide \{ height: 212px;/)
+    // no will-change: it rasterised the turning faces and blurred the text
+    expect(css).not.toMatch(/\.nl-drum-cyl \{[^}]*will-change/)
   })
 })
