@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { noteMoment } from '../reviewPrompt'
 import Icon from './Icon'
 import { MetalBar } from '../data/assetIcons'
+import BondBadge from './BondBadge'
 
 // Category/payment icons come in three shapes: a line-icon name string
 // (e.g. 'trend-up'), a typographic currency glyph (₿, $, €, ₮, ⊘), or a
@@ -83,6 +84,7 @@ const POPULAR_COINS = [
 // Shared with the landing page's asset-class cards — see data/assetIcons.jsx.
 const IcoGoldBar   = <MetalBar metal="gold" />
 const IcoSilverBar = <MetalBar metal="silver" />
+const IcoBond = <BondBadge size={20} className="" />
 
 const IcoOther = (
   <Icon name="package" size={16} />
@@ -97,7 +99,7 @@ const CATEGORIES = [
   { key: 'gold',   label: 'Gold', labelKey: 'catGold',    icon: IcoGoldBar,     color: '#f59e0b' },
   { key: 'silver', label: 'Silver', labelKey: 'catSilver',  icon: IcoSilverBar,   color: '#94a3b8' },
   { key: 'fiat',   label: 'Fiat', labelKey: 'tcFiat',    icon: '$',            color: '#0ea5e9' },
-  { key: 'bond',   label: 'Bonds', labelKey: 'catBonds',   icon: 'building',           color: '#0284c7' },
+  { key: 'bond',   label: 'Bonds', labelKey: 'catBonds',   icon: IcoBond,            color: '#0284c7' },
   { key: 'other',  label: 'Other', labelKey: 'txOther',   icon: IcoOther,       color: '#a78bfa' },
 ]
 
