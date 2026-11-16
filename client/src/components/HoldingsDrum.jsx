@@ -32,10 +32,16 @@ export function drumTicker(h) {
   return String(h?.coin_symbol || h?.coin_name || '').toUpperCase()
 }
 
-/** The drum's width in px, wide enough for the longest ticker it holds. Pure, for the test. */
-export function drumWidth(faces) {
-  const longest = Math.max(0, ...(faces || []).map(f => Math.min(drumTicker(f).length, 12)))
-  return Math.max(116, Math.min(168, 64 + longest * 8))
+/**
+ * The drum's width in px: wide enough for the longest ticker (top line) and
+ * the longest price with its move (second line, set smaller). Pure, for the test.
+ */
+export function drumWidth(faces, priceOf) {
+  const need = Math.max(0, ...(faces || []).map(f => Math.max(
+    drumTicker(f).length * 6.8,
+    (String(priceOf?.(f) || '').length + 6) * 5.2,
+  )))
+  return Math.round(Math.max(112, Math.min(148, 42 + need)))
 }
 
 const pctTxt = (v) => {
@@ -44,7 +50,7 @@ const pctTxt = (v) => {
   return `${n > 0 ? '+' : ''}${n.toFixed(1)}%`
 }
 
-export default function HoldingsDrum({ holdings = [], label = 'Holdings', onAsset }) {
+export default function HoldingsDrum({ holdings = [], label = 'Holdings', onAsset, priceOf }) {
   const faces = drumFaces(holdings)
   const n = faces.length
   const box = useRef(null)
@@ -117,24 +123,31 @@ export default function HoldingsDrum({ holdings = [], label = 'Holdings', onAsse
   const face = (f, i, style) => {
     const pct = Number(f.pct24h)
     const sym = drumTicker(f)
+    // Today's price under the ticker, in the card's currency.
+    const px = priceOf?.(f) || ''
     return (
-      <button key={f.coin_id} type="button" className={`nl-drum-face${sym.length > 9 ? ' long' : ''}`} style={style}
+      <button key={f.coin_id} type="button" className={`nl-drum-face${sym.length > 12 ? ' long' : ''}`} style={style}
         onClick={open(f)} onFocus={n > 2 ? bringFront(i) : undefined}
-        aria-label={`${f.coin_name || sym} ${pctTxt(f.pct24h)}`.trim()}>
+        aria-label={`${f.coin_name || sym} ${px} ${pctTxt(f.pct24h)}`.replace(/\s+/g, ' ').trim()}>
         <AssetLogo h={f} size={18} />
-        <b>{sym}</b>
-        <em className={pct > 0 ? 'up' : pct < 0 ? 'down' : ''}>{pctTxt(f.pct24h)}</em>
+        <span className="nl-drum-t">
+          <b>{sym}</b>
+          <span className="nl-drum-l2">
+            {px && <small>{px}</small>}
+            <em className={pct > 0 ? 'up' : pct < 0 ? 'down' : ''}>{pctTxt(f.pct24h)}</em>
+          </span>
+        </span>
       </button>
     )
   }
 
   // One or two holdings: no drum to turn, just the faces.
   if (n < 3) {
-    return <div className="nl-drum flat" style={{ '--drum-w': `${drumWidth(faces)}px` }} role="group" aria-label={label}>{faces.map((f, i) => face(f, i))}</div>
+    return <div className="nl-drum flat" style={{ '--drum-w': `${drumWidth(faces, priceOf)}px` }} role="group" aria-label={label}>{faces.map((f, i) => face(f, i))}</div>
   }
 
   return (
-    <div ref={box} className="nl-drum" style={{ '--drum-w': `${drumWidth(faces)}px` }} role="group" aria-label={label}
+    <div ref={box} className="nl-drum" style={{ '--drum-w': `${drumWidth(faces, priceOf)}px` }} role="group" aria-label={label}
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag}
       onPointerEnter={(e) => { if (e.pointerType === 'mouse') hold.current = true }} onPointerLeave={(e) => { if (e.pointerType === 'mouse') { hold.current = false; if (!drag.current) snap() } }}
       onFocus={() => { hold.current = true }} onBlur={(e) => { if (!box.current?.contains(e.relatedTarget)) hold.current = false }}>
