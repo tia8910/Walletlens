@@ -2,11 +2,13 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../LanguageContext'
 import {
-  chatWithAssistant, parseAssistantReply,
+  parseAssistantReply,
   loadChatHistory, saveChatHistory, addMessageToHistory,
   createConversation, clearChatHistory,
 } from '../assistantAi'
 import { track } from '../analytics'
+import { api } from '../api'
+import { answerLocally } from '../localAssistant'
 import AiReport from './AiReport'
 
 // What the chat says when an answer does not come, by what went wrong.
@@ -275,12 +277,19 @@ export default function AssistantChat() {
   async function ask(newMessages, cid = convId) {
     setLoading(true)
     try {
-      const apiMessages = newMessages.slice(-20).map(m => ({ role: m.role, content: m.text || m.content || '' }))
-      const rawReply = await chatWithAssistant(apiMessages, { lang })
+      // Answered on the device from the portfolio, the app's pages, the
+      // glossary and the FAQ: no server, no AI model, works offline.
+      const question = newMessages[newMessages.length - 1]?.text || ''
+      const holdings = await Promise.resolve(api.getPortfolio()).catch(() => [])
+      const list = Array.isArray(holdings) ? holdings : []
+      const prices = api.getCachedPrices?.(list.map(h => h.coin_id).join(',')) || {}
+      await new Promise(r => setTimeout(r, 250)) // a beat, so the reply does not flash in
+      const rawReply = answerLocally(question, { lang, holdings: list, prices })
       const { text: replyText, navs } = parseAssistantReply(rawReply)
-      const assistantMsg = { role: 'assistant', text: replyText, navs }
+      // Answered on the device, not by an AI model: no AI label or report button.
+      const assistantMsg = { role: 'assistant', text: replyText, navs, local: true }
       setMessages(prev => [...prev, assistantMsg])
-      addMessageToHistory(cid, { role: 'assistant', content: replyText, navs })
+      addMessageToHistory(cid, { role: 'assistant', content: replyText, navs, local: true })
       track('assistant_reply', { msgLen: replyText.length, navCount: navs.length })
     } catch (err) {
       setError(err.code || 'failed')
@@ -444,7 +453,7 @@ export default function AssistantChat() {
                     ))}
                   </div>
                 )}
-                {m.role === 'assistant' && m.text && <AiReport surface="assistant" output={m.text} compact />}
+                {m.role === 'assistant' && m.text && !m.local && <AiReport surface="assistant" output={m.text} compact />}
               </div>
             ))}
 
