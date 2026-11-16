@@ -3,6 +3,7 @@ import { getCachedCoinImage, stockLogoFor, loadStockLogos } from '../api'
 // Shared with the landing page's asset-class cards so both render the same
 // metal badges. See client/src/data/assetIcons.js.
 import { ASSET_ICONS, AssetIconBadge } from '../data/assetIcons'
+import BondBadge from './BondBadge'
 import { voiceProxy, siteApi } from '../apiHosts.js'
 /**
  * Whether the page's load event has fired.
@@ -318,6 +319,11 @@ function NonCryptoLogo({ coinId, symbol, size = 32, className = 'coin-logo', bad
   // ingot Buy and Sell show.
   if (ASSET_ICONS[coinId]) {
     return <AssetIconBadge coinId={coinId} size={size} className={className} style={badgeStyle} />
+  }
+
+  // Bonds have no logo to fetch: their own mark, a certificate with a seal.
+  if (coinId?.startsWith('bond:')) {
+    return <BondBadge size={size} className={className} style={badgeStyle} />
   }
 
   // A company logo or a flag, trying the direct link and then the site proxy,
