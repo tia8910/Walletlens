@@ -8926,7 +8926,16 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .wlc-history-item.active { background: rgba(var(--g-rgb,16,185,129),0.12); }
 .wlc-history-preview { font-size: 0.78rem; color: var(--text, rgba(255,255,255,0.85)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wlc-history-time { font-size: 0.65rem; color: var(--text-muted, rgba(255,255,255,0.35)); margin-top: 0.15rem; }
-.wlc-history-clear { display: block; width: 100%; margin-top: 0.5rem; padding: 0.4rem; background: none; border: 1px solid rgba(248,113,113,0.25); border-radius: 8px; color: #f87171; font-size: 0.75rem; cursor: pointer; transition: background 0.15s; }
+.wlc-history-actions { display: flex; gap: 0.4rem; margin-bottom: 0.45rem; }
+.wlc-history-back, .wlc-history-new { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; padding: 0.5rem 0.6rem; border-radius: 10px; font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+.wlc-history-back { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: inherit; }
+.wlc-history-new { background: rgba(var(--g-rgb,16,185,129),0.16); border: 1px solid rgba(var(--g-rgb,16,185,129),0.35); color: var(--g, #10b981); }
+.wlc-history-clear { display: block; margin: 0.45rem auto 0; padding: 0.3rem 0.6rem; background: none; border: 0; border-radius: 8px; color: rgba(248,113,113,0.8); font-size: 0.72rem; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; transition: background 0.15s; }
+.wlc-history-clear.armed { color: #fff; background: #dc2626; text-decoration: none; font-weight: 700; padding: 0.4rem 0.8rem; }
+.wlc-quick { display: flex; gap: 0.4rem; overflow-x: auto; padding: 0.45rem 0.75rem 0.1rem; scrollbar-width: none; flex: none; }
+.wlc-quick::-webkit-scrollbar { display: none; }
+.wlc-quick-chip { flex: none; padding: 0.4rem 0.75rem; border-radius: 99px; border: 1px solid rgba(var(--g-rgb,16,185,129),0.3); background: rgba(var(--g-rgb,16,185,129),0.08); color: inherit; font: inherit; font-size: 0.76rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
+[data-wl-light] .wlc-history-back { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
 .wlc-history-clear:hover { background: rgba(248,113,113,0.1); }
 [data-wl-light] .wlc-history-btn, [data-wl-light] .wlc-new-chat-btn { color: rgba(0,0,0,0.45); }
 [data-wl-light] .wlc-history-btn:hover, [data-wl-light] .wlc-new-chat-btn:hover { color: var(--g); }

@@ -110,4 +110,22 @@ describe('the on-device assistant', () => {
     expect(ask('how do I add a price alert')).toMatch(/Price Alerts/)
     expect(ask('كيف أضيف عملة', 'ar')).toMatch(/^اضغط زر \+/)
   })
+  it('answers every question the chat suggests, in English and Arabic', () => {
+    const src = readFileSync(join(here, 'components/AssistantChat.jsx'), 'utf8')
+    const block = src.slice(src.indexOf('const SUGGESTIONS'), src.indexOf('// ── Minimal markdown'))
+    const [enPart, arPart] = block.split('ar: [')
+    for (const [lang, part] of [['en', enPart], ['ar', arPart]]) {
+      const qs = [...part.matchAll(/'([^']+)'/g)].map(m => m[1])
+      expect(qs.length).toBe(12)
+      for (const q of qs) expect(ask(q, lang), q).not.toMatch(/I'm not sure about that one|لست متأكداً من ذلك/)
+    }
+    expect(ask('How do I plan when to sell?')).toMatch(/Sell Targets/)
+  })
+  it('keeps the question menu and the way back without clearing history', () => {
+    const chat = readFileSync(join(here, 'components/AssistantChat.jsx'), 'utf8')
+    expect(chat).toMatch(/messages\.length > 0 && !showHistory && !loading && \(\s*<div className="wlc-quick"/)
+    expect(chat).toMatch(/className="wlc-history-back" onClick=\{\(\) => setShowHistory\(false\)\}/)
+    expect(chat).toMatch(/className="wlc-history-new" onClick=\{startNewChat\}/)
+    expect(chat).toMatch(/if \(!confirmClear\) \{ setConfirmClear\(true\); return \}/)
+  })
 })

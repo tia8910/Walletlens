@@ -44,7 +44,7 @@ const has = (ws, list) => list.some(k => ws.includes(k) || ws.some(w => w.starts
 // Words people use for each page, beyond its own label and description.
 const FEATURE_WORDS = {
   'Price Alerts': ['alert', 'notify', 'notification', 'remind', 'ping', 'تنبيه', 'اشعار'],
-  'Sell Targets': ['target', 'take', 'profit', 'exit', 'tp', 'هدف'],
+  'Sell Targets': ['target', 'take', 'profit', 'exit', 'tp', 'plan', 'sell', 'هدف', 'البيع'],
   'Rebalancing Tool': ['rebalance', 'rebalanc', 'target mix', 'weight', 'توازن', 'موازنة'],
   'Import from Excel': ['excel', 'csv', 'spreadsheet', 'sheet', 'xlsx', 'اكسل'],
   'Import by Voice': ['voice', 'speak', 'say', 'mic', 'صوت'],
@@ -110,17 +110,19 @@ const FAQ_SYNONYMS = { money: 'free', pay: 'free', paid: 'free', cost: 'free', p
   login: 'account', sign: 'account', register: 'account', email: 'account', mobile: 'phone', android: 'phone', iphone: 'phone',
   safe: 'see', secure: 'see', private: 'see', transfer: 'move', device: 'move', erase: 'delete', wipe: 'delete', bug: 'report', feedback: 'report' }
 
-function faqMatch(ws, lang) {
+function faqMatch(ws, lang, outLang = lang) {
   ws = [...new Set(ws.flatMap(w => (FAQ_SYNONYMS[w] ? [w, FAQ_SYNONYMS[w]] : [w])))]
   if (!ws.length) return null
   let best = null
-  for (const sec of faqSections(lang)) {
-    for (const { q, a } of sec.faqs) {
+  const out = faqSections(outLang)
+  for (const [si, sec] of faqSections(lang).entries()) {
+    for (const [fi, { q: q0, a: a0 }] of sec.faqs.entries()) {
+      const q = q0, a = a0
       const qw = words(q), aw = words(a)
       let s = 0
       for (const w of ws) { if (qw.includes(w)) s += 2; else if (aw.includes(w)) s += 0.5 }
       const score = s / Math.max(3, ws.length)
-      if (!best || score > best.score) best = { q, a, score }
+      if (!best || score > best.score) best = { q: out[si]?.faqs[fi]?.q || q, a: out[si]?.faqs[fi]?.a || a, score }
     }
   }
   return best && best.score >= 0.6 ? best : null
@@ -262,7 +264,7 @@ const HOWTOS = [
   { re: /\b(how (do|can|to)).*\b(sell|remove|delete|close)\b|^\W*(sell|remove|delete) (a |an |my )?\w+|كيف (ابيع|أبيع|احذف|أحذف)/i,
     en: 'To sell, tap Sell on your balance card, or the ⋮ next to a holding and then Sell, and enter how much you sold. To remove an entry made by mistake, delete it in Transactions.',
     ar: 'للبيع اضغط بيع في بطاقة الرصيد، أو ⋮ بجانب الأصل ثم بيع، وأدخل الكمية المباعة. لحذف إدخال خاطئ احذفه من المعاملات.',
-    not: /\b(data|everything|account|history|chat|alert|wallet)\b/i,
+    not: /\b(data|everything|account|history|chat|alert|wallet|plan|target|when|strategy)\b/i,
     nav: ['/transactions', 'Transactions', 'المعاملات'] },
   { re: /\b(export|download|print)\b|\b(pdf|excel|csv)\b.*\b(report|file|export)\b|تصدير/i,
     en: 'On Home, in your holdings list, tap the Excel or PDF button at the top of the list to export your holdings. A full backup of everything is in Wallets & Backup.',
@@ -274,6 +276,23 @@ const HOWTOS = [
     nav: ['/dashboard', 'Open Home', 'فتح الرئيسية'] },
 ]
 
+// The chat's own Arabic suggestions, matched through their English
+// counterparts (the page list and glossary are in English), answered in Arabic.
+const AR_SUGGESTED = {
+  'كيف أداء محفظتي؟': 'How is my portfolio doing?',
+  'هل محفظتي عالية المخاطر؟': 'Is my portfolio too risky?',
+  'كيف أضبط تنبيهات الأسعار؟': 'How do I set price alerts?',
+  'كيف أنسخ بياناتي؟': 'How do I back up my data?',
+  'ماذا يجب أن أشتري؟': 'What should I buy next?',
+  'اشرح لي التحليل الفني': 'Explain technical analysis',
+  'كيف أستورد من Excel؟': 'How do I import from Excel?',
+  'كيف أخطط لوقت البيع؟': 'How do I plan when to sell?',
+  'ما هي حركة الحيتان؟': 'What are whale movements?',
+  'كيف أستخدم الاستيراد الصوتي؟': 'How do I use voice import?',
+  'ما هو مؤشر الخوف والطمع؟': 'What is the Fear & Greed Index?',
+  'كيف أعيد توزيع محفظتي؟': 'How do I rebalance my portfolio?',
+}
+
 // ── The answer ───────────────────────────────────────────────────────────
 
 /**
@@ -284,7 +303,9 @@ const HOWTOS = [
 export function answerLocally(question, { lang = 'en', holdings = [], prices = {} } = {}) {
   const ar = lang === 'ar'
   const L = (en, a) => (ar ? a : en)
-  const text = String(question || '').trim()
+  const asked = String(question || '').trim()
+  const viaEn = ar ? AR_SUGGESTED[asked] : null
+  const text = viaEn || asked
   const ws = words(text)
 
   const valued = valueHoldings(holdings, prices)
@@ -317,7 +338,7 @@ export function answerLocally(question, { lang = 'en', holdings = [], prices = {
   if (cls) return `${cls.term}: ${ar ? cls.ar : cls.en}\n\n[[nav:/academy|${L('Learn more in the Academy', 'تعلم المزيد في الأكاديمية')}]]`
 
   // A question the FAQ asks almost word for word wins over a page.
-  const faqFirst = faqMatch(ws, ar ? 'ar' : 'en')
+  const faqFirst = faqMatch(ws, ar && !viaEn ? 'ar' : 'en', ar ? 'ar' : 'en')
   if (faqFirst && faqFirst.score >= 1.3) {
     const a = faqFirst.a.length > 650 ? `${faqFirst.a.slice(0, faqFirst.a.lastIndexOf(' ', 640))}…` : faqFirst.a
     const page = featureMatches(ws)[0]?.f
@@ -334,7 +355,7 @@ export function answerLocally(question, { lang = 'en', holdings = [], prices = {
       + `\n\n${top.map(x => `[[nav:${x.f.route}|${x.f.label}]]`).join(' ')}`
   }
 
-  const faq = faqMatch(ws, ar ? 'ar' : 'en')
+  const faq = faqMatch(ws, ar && !viaEn ? 'ar' : 'en', ar ? 'ar' : 'en')
   if (faq) {
     const a = faq.a.length > 650 ? `${faq.a.slice(0, faq.a.lastIndexOf(' ', 640))}…` : faq.a
     return `${a}\n\n[[nav:/faq|${L('More in the FAQ', 'المزيد في الأسئلة الشائعة')}]]`
