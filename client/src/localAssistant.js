@@ -52,7 +52,7 @@ const FEATURE_WORDS = {
   'Import Backup': ['restore', 'backup', 'file', 'استعادة'],
   'Wallets & Backup': ['wallet', 'backup', 'export', 'drive', 'google', 'محفظة', 'نسخ'],
   'Academy': ['learn', 'course', 'lesson', 'video', 'academy', 'teach', 'تعلم', 'درس', 'دروس'],
-  'Risk Scanner': ['risk', 'rug', 'scam', 'safe', 'contract', 'مخاطر', 'احتيال'],
+  'Risk Scanner': ['risk', 'rug', 'scam', 'contract', 'مخاطر', 'احتيال'],
   'Technical Analysis': ['rsi', 'macd', 'indicator', 'chart', 'technical', 'momentum', 'فني'],
   'Fear & Greed Index': ['fear', 'greed', 'sentiment', 'mood', 'خوف', 'طمع'],
   'Settings': ['setting', 'theme', 'dark', 'light', 'language', 'font', 'currency', 'اعدادات', 'لغة'],
@@ -79,6 +79,17 @@ function featureMatches(ws) {
   }).filter(x => x.score >= 3).sort((a, b) => b.score - a.score)
 }
 
+// Asset classes the app tracks that the glossary has no page for.
+const CLASS_TERMS = [
+  { term: 'Bond', keys: ['bond', 'bonds', 'treasury', 'treasuries', 'سند', 'سندات'], en: 'A bond is a loan you make to a government or company. It pays you interest on a schedule and returns your money at the end of its term. Bonds usually move far less than stocks or crypto.', ar: 'السند قرض تقدّمه لحكومة أو شركة، يدفع لك فائدة دورية ويعيد مالك في نهاية مدته. عادةً يتحرك أقل بكثير من الأسهم أو العملات الرقمية.' },
+  { term: 'Stock', keys: ['stock', 'stocks', 'share', 'shares', 'equity', 'سهم', 'أسهم', 'اسهم'], en: 'A stock is a share of ownership in a company. Its price moves with how the company is expected to do, and some stocks pay dividends.', ar: 'السهم حصة ملكية في شركة. يتحرك سعره مع توقعات أداء الشركة، وبعض الأسهم توزع أرباحاً.' },
+  { term: 'Gold', keys: ['gold', 'xau', 'ذهب'], en: 'Gold is a precious metal held as a store of value. It is priced per troy ounce (XAU) and often holds up when other markets fall.', ar: 'الذهب معدن ثمين يُحتفظ به كمخزن للقيمة، يُسعَّر بالأونصة (XAU) وغالباً يصمد عند هبوط الأسواق الأخرى.' },
+]
+function classTerm(text) {
+  const t = ` ${String(text || '').toLowerCase().replace(/[?.!,]/g, ' ')} `
+  return CLASS_TERMS.find(c => c.keys.some(k => t.includes(` ${k} `))) || null
+}
+
 function glossaryMatch(text) {
   const t = ` ${String(text || '').toLowerCase()} `
   let best = null
@@ -94,7 +105,13 @@ function glossaryMatch(text) {
   return best?.g || null
 }
 
+// Everyday words for what the FAQ calls something else.
+const FAQ_SYNONYMS = { money: 'free', pay: 'free', paid: 'free', cost: 'free', price: 'free', subscription: 'free', earn: 'free', revenue: 'free',
+  login: 'account', sign: 'account', register: 'account', email: 'account', mobile: 'phone', android: 'phone', iphone: 'phone',
+  safe: 'see', secure: 'see', private: 'see', transfer: 'move', device: 'move', erase: 'delete', wipe: 'delete', bug: 'report', feedback: 'report' }
+
 function faqMatch(ws, lang) {
+  ws = [...new Set(ws.flatMap(w => (FAQ_SYNONYMS[w] ? [w, FAQ_SYNONYMS[w]] : [w])))]
   if (!ws.length) return null
   let best = null
   for (const sec of faqSections(lang)) {
@@ -106,7 +123,7 @@ function faqMatch(ws, lang) {
       if (!best || score > best.score) best = { q, a, score }
     }
   }
-  return best && best.score >= 1 ? best : null
+  return best && best.score >= 0.6 ? best : null
 }
 
 // ── Portfolio ────────────────────────────────────────────────────────────
@@ -147,7 +164,10 @@ function portfolioAnswer(ws, text, hs, ar) {
 
   // One holding by name or ticker.
   const t = ` ${String(text || '').toLowerCase()} `
-  const one = hs.find(h => [h.sym, h.name].some(n => n && n.length >= 2 && t.includes(` ${n.toLowerCase()} `)) || t.includes(` ${h.sym.toLowerCase()}?`))
+  const ALIAS = { 'metal:xau': ['gold', 'ذهب'], 'metal:xag': ['silver', 'فضة'], 'metal:xpt': ['platinum'], 'metal:xcu': ['copper'], bitcoin: ['btc', 'bitcoin'], ethereum: ['eth', 'ether', 'ethereum'] }
+  const namesOf = (h) => [h.sym, h.name, String(h.name || '').split(/[\s(]/)[0], String(h.coin_id || '').replace(/^[a-z]+:/, ''), ...(ALIAS[h.coin_id] || [])]
+  const clean = t.replace(/[?.!,]/g, ' ')
+  const one = hs.find(h => namesOf(h).some(n => n && n.length >= 2 && clean.includes(` ${String(n).toLowerCase()} `)))
   if (one) {
     const share = total > 0 ? (one.value / total) * 100 : 0
     return `${one.name} (${one.sym}): ${Number(one.amount).toLocaleString('en-US', { maximumFractionDigits: 8 })} ${L('worth', 'بقيمة')} ${usd(one.value)}, ${share.toFixed(1)}% ${L('of your portfolio', 'من محفظتك')}.`
@@ -155,15 +175,41 @@ function portfolioAnswer(ws, text, hs, ar) {
       + `\n\n[[nav:/asset/${encodeURIComponent(one.coin_id)}|${L('Open', 'فتح')} ${one.sym}]]`
   }
 
+  const q = String(text || '').toLowerCase()
   const wantsWorth = has(ws, ['worth', 'value', 'total', 'balance', 'net', 'قيمة', 'رصيد', 'اجمالي'])
+  const wantsInvested = /how much (did|have) i (invest|put|spen|pay)|\b(total )?invested\b|money (i )?put in|كم استثمرت/.test(q)
+  const wantsBest = /\b(best|worst|winner|loser|top performer|performing|up the most|down the most|biggest (gain|loss|winner|loser|mover))\b|الأفضل|الأسوأ/.test(q)
+  const bestToday = wantsBest && /today|24 ?h|now|the most|moving|اليوم/.test(q)
+  const classAsk = /\b(percent|percentage|%|share|portion|how much)\b.*\b(crypto|stocks?|gold|metals?|bonds?|cash)\b|\b(crypto|stocks?|gold|metals?|bonds?|cash)\b.*\b(percent|percentage|%|share|portion)\b/.test(q)
   const wantsToday = has(ws, ['today', 'day', '24h', 'daily', 'mover', 'اليوم'])
   const wantsBig = has(ws, ['biggest', 'largest', 'top', 'main', 'اكبر', 'أكبر'])
-  const wantsMix = has(ws, ['allocation', 'mix', 'split', 'diversif', 'breakdown', 'categor', 'توزيع', 'تنويع'])
-  const wantsPnl = has(ws, ['profit', 'loss', 'pnl', 'p&l', 'gain', 'losing', 'winning', 'return', 'perform', 'ربح', 'خسارة', 'اداء', 'أداء'])
+  const wantsMix = has(ws, ['allocation', 'mix', 'split', 'diversif', 'breakdown', 'categor', 'توزيع', 'تنويع']) || classAsk
+  const wantsPnl = has(ws, ['profit', 'loss', 'pnl', 'p&l', 'gain', 'losing', 'winning', 'return', 'perform', 'ربح', 'خسارة', 'اداء', 'أداء']) || /making money|losing money|in the (green|red)|up or down|هل أربح|هل اربح/.test(q)
   const wantsCount = has(ws, ['many', 'count', 'number', 'عدد'])
+  // "How is my portfolio doing?", "how am I doing", "portfolio summary":
+  // the overview, value, today and the best and worst holding together.
+  const wantsOverview = /\bhow('?s| is| are| am)?\b.*\b(portfolio|holdings?|investments?|assets?|i)\b.*\b(doing|going|looking|performing|faring)\b|\b(portfolio|holdings?|investments?)\b.*\b(status|summary|overview|update|report|health|doing|performance)\b|\b(summary|overview|update)\b.*\b(portfolio|holdings?|investments?)\b|\bhow am i doing\b|^\W*(give me |show me )?(an? )?(overview|summary|recap|status)\W*$|كيف (حال|اداء|أداء)? ?محفظتي|ملخص المحفظة/i.test(String(text || ''))
   const about = has(ws, ['portfolio', 'holding', 'asset', 'coin', 'stock', 'own', 'invest', 'محفظ', 'اصول', 'أصول']) || wantsWorth || wantsToday || wantsMix || wantsPnl
-  if (!(about && (wantsWorth || wantsToday || wantsBig || wantsMix || wantsPnl || wantsCount))) return null
+  if (!wantsOverview && !wantsInvested && !wantsBest && !classAsk && !(about && (wantsWorth || wantsToday || wantsBig || wantsMix || wantsPnl || wantsCount))) return null
   if (!hs.length) return empty
+  if (wantsInvested && !wantsWorth) {
+    const inv = hs.reduce((s, h) => s + h.invested, 0)
+    return `${L('You have put in', 'إجمالي ما استثمرته')} ${usd(inv)} ${L('across', 'في')} ${hs.length} ${L(hs.length === 1 ? 'holding' : 'holdings', 'أصول')}.`
+      + `\n${L('Largest', 'الأكبر')}: ${[...hs].sort((a, b) => b.invested - a.invested).slice(0, 3).map(h => `${h.sym} ${usd(h.invested)}`).join(', ')}.\n\n[[nav:/transactions|${L('Transactions', 'المعاملات')}]]`
+  }
+  if (wantsBest) {
+    const priced = hs.filter(h => h.price > 0)
+    if (!priced.length) return L('Live prices have not loaded yet. Ask again in a moment.', 'لم يتم تحميل الأسعار بعد. اسأل بعد لحظات.')
+    const key = bestToday ? 'day' : 'pnlPct'
+    const sorted = [...priced].filter(h => bestToday || h.invested > 0).sort((a, b) => b[key] - a[key])
+    const b = sorted[0], w = sorted[sorted.length - 1]
+    const lbl = bestToday ? L('today', 'اليوم') : L('since you bought', 'منذ الشراء')
+    return `${L('Best', 'الأفضل')} ${lbl}: ${b.sym} ${pct(b[key])}.` + (w && w !== b ? `\n${L('Worst', 'الأسوأ')} ${lbl}: ${w.sym} ${pct(w[key])}.` : '')
+      + `\n\n[[nav:/asset/${encodeURIComponent(b.coin_id)}|${b.sym}]]` + (w && w !== b ? ` [[nav:/asset/${encodeURIComponent(w.coin_id)}|${w.sym}]]` : '')
+  }
+  if (wantsOverview && !wantsWorth && !wantsToday && !wantsBig && !wantsMix && !wantsPnl && !wantsCount) {
+    return portfolioAnswer(['worth', 'today', 'profit', 'portfolio'], '', hs, ar)
+  }
 
   const out = []
   const unpriced = !hs.some(h => h.price > 0)
@@ -206,6 +252,28 @@ function portfolioAnswer(ws, text, hs, ar) {
   return `${out.join('\n\n')}\n\n${navs.join(' ')}`
 }
 
+// ── How-tos: buttons and gestures, not pages ────────────────────────────
+const HOWTOS = [
+  { re: /\b(how (do|can|to)|where).*\b(add|buy|record|enter)\b|^\W*(add|buy) (a |an |some |my |new )?\w+|اضيف|أضيف|إضافة|اضافة|كيف اشتري|كيف أشتري/i,
+    en: 'Tap the + button in the middle of the bottom bar, or Buy on your balance card. Pick the asset, type how much you bought and the price, then confirm. You can also import many at once from a screenshot, your voice or an Excel file.',
+    ar: 'اضغط زر + في منتصف الشريط السفلي، أو شراء في بطاقة الرصيد. اختر الأصل واكتب الكمية والسعر ثم أكّد. يمكنك أيضاً استيراد عدة أصول دفعة واحدة من لقطة شاشة أو بالصوت أو من ملف إكسل.',
+    not: /\b(alert|wallet|widget|watchlist|extension|target|note)\b/i,
+    nav: ['/dashboard?tab=manage', 'Import holdings', 'استيراد الأصول'] },
+  { re: /\b(how (do|can|to)).*\b(sell|remove|delete|close)\b|^\W*(sell|remove|delete) (a |an |my )?\w+|كيف (ابيع|أبيع|احذف|أحذف)/i,
+    en: 'To sell, tap Sell on your balance card, or the ⋮ next to a holding and then Sell, and enter how much you sold. To remove an entry made by mistake, delete it in Transactions.',
+    ar: 'للبيع اضغط بيع في بطاقة الرصيد، أو ⋮ بجانب الأصل ثم بيع، وأدخل الكمية المباعة. لحذف إدخال خاطئ احذفه من المعاملات.',
+    not: /\b(data|everything|account|history|chat|alert|wallet)\b/i,
+    nav: ['/transactions', 'Transactions', 'المعاملات'] },
+  { re: /\b(export|download|print)\b|\b(pdf|excel|csv)\b.*\b(report|file|export)\b|تصدير/i,
+    en: 'On Home, in your holdings list, tap the Excel or PDF button at the top of the list to export your holdings. A full backup of everything is in Wallets & Backup.',
+    ar: 'في الرئيسية، اضغط زر إكسل أو PDF أعلى قائمة الأصول لتصديرها. النسخة الاحتياطية الكاملة في المحافظ والنسخ الاحتياطي.',
+    nav: ['/dashboard', 'Open Home', 'فتح الرئيسية'] },
+  { re: /\b(change|switch|set)\b.*\b(currency|eur|euro|gbp|egp|sar|aed|usd|dollar|pound)\b|العملة/i,
+    en: 'Tap the currency button (USD) at the top of your balance card and pick any currency, or Bitcoin. Every amount on Home follows it.',
+    ar: 'اضغط زر العملة (USD) أعلى بطاقة الرصيد واختر أي عملة أو بيتكوين، وتتبعها كل المبالغ في الرئيسية.',
+    nav: ['/dashboard', 'Open Home', 'فتح الرئيسية'] },
+]
+
 // ── The answer ───────────────────────────────────────────────────────────
 
 /**
@@ -219,39 +287,42 @@ export function answerLocally(question, { lang = 'en', holdings = [], prices = {
   const text = String(question || '').trim()
   const ws = words(text)
 
+  const valued = valueHoldings(holdings, prices)
+
+  // "Should I sell X?", "Is X a good investment?", "what should I do": no
+  // advice, but the tools that help decide, and the person's own position.
+  if (/\b(should i|good investment|worth buying|buy or sell|sell or hold|time to (buy|sell)|will .* (go up|go down|rise|fall|crash))\b|هل اشتري|هل أشتري|هل ابيع|هل أبيع|ماذا أفعل|ماذا افعل|استثمار جيد/i.test(text)) {
+    const t = ` ${text.toLowerCase().replace(/[?.!,]/g, ' ')} `
+    const held = valued.find(h => [h.sym, h.name, String(h.name || '').split(/[\s(]/)[0]].some(n => n && n.length >= 2 && t.includes(` ${n.toLowerCase()} `)))
+    return L("I can't tell you what to buy or sell, and nobody can promise where a price goes. These help you decide for yourself:", 'لا أستطيع أن أنصحك بالشراء أو البيع، ولا أحد يضمن اتجاه السعر. هذه الأدوات تساعدك على القرار بنفسك:')
+      + (held ? `\n${L('You hold', 'لديك')} ${held.sym} ${L('worth', 'بقيمة')} ${usd(held.value)} (${pct(held.pnlPct)}).` : '')
+      + `\n\n${held ? `[[nav:/asset/${encodeURIComponent(held.coin_id)}|${held.sym}]] ` : ''}[[nav:/dashboard?tab=tools&tool=ai|${L('Portfolio Analysis', 'تحليل المحفظة')}]] [[nav:/alpha|${L('Signals', 'الإشارات')}]] [[nav:/coach|${L('Coach', 'المدرب')}]]`
+  }
+
+  for (const h of HOWTOS) if (h.re.test(text) && !h.not?.test(text)) return (ar ? h.ar : h.en) + (h.nav ? `\n\n[[nav:${h.nav[0]}|${ar ? h.nav[2] : h.nav[1]}]]` : '')
+
   if (!ws.length || /^(hi|hello|hey|salam|مرحبا|اهلا|السلام)\b/i.test(text) && ws.length <= 2) {
     return L("Hi! I can tell you about your portfolio (value, today's move, biggest holdings, your mix), find any feature in the app, and explain investing terms. What would you like to know?",
       'مرحباً! يمكنني إخبارك عن محفظتك (القيمة، حركة اليوم، أكبر الأصول، التوزيع)، وإيجاد أي ميزة في التطبيق، وشرح مصطلحات الاستثمار. بماذا أساعدك؟')
   }
   if (/^(thanks|thank you|thx|شكرا|شكراً)/i.test(text)) return L("You're welcome! Ask me anything else.", 'على الرحب والسعة! اسألني أي شيء آخر.')
 
-  // Adding a holding is the most common question, and it is a button, not a page.
-  if (has(ws, ['add', 'buy', 'record', 'enter', 'اضف', 'أضف', 'اضافة', 'شراء']) && has(ws, ['coin', 'asset', 'holding', 'stock', 'crypto', 'gold', 'bond', 'position', 'purchase', 'trade', 'اصل', 'سهم', 'عملة', 'ذهب'])) {
-    return L('Tap the + button in the middle of the bottom bar, or Buy on your balance card. Pick the asset, type how much you bought and the price, then confirm. You can also import many at once from a screenshot, your voice or an Excel file.',
-      'اضغط زر + في منتصف الشريط السفلي، أو شراء في بطاقة الرصيد. اختر الأصل واكتب الكمية والسعر ثم أكّد. يمكنك أيضاً استيراد عدة أصول دفعة واحدة من لقطة شاشة أو بالصوت أو من ملف إكسل.')
-      + `\n\n[[nav:/dashboard?tab=manage|${L('Import holdings', 'استيراد الأصول')}]]`
-  }
-
-  const valued = valueHoldings(holdings, prices)
-
-  // "Should I sell X?", "Is X a good investment?": no advice, but the tools
-  // that help decide, and the person's own position when they hold it.
-  if (/\b(should i|good investment|worth buying|buy or sell|sell or hold|time to (buy|sell)|will .* (go up|go down|rise|fall|crash))\b|هل اشتري|هل أشتري|هل ابيع|هل أبيع|استثمار جيد/i.test(text)) {
-    const t = ` ${text.toLowerCase()} `
-    const held = valued.find(h => [h.sym, h.name].some(n => n && n.length >= 2 && t.includes(` ${n.toLowerCase()}`)))
-    return L("I can't tell you what to buy or sell, and nobody can promise where a price goes. These help you decide for yourself:", 'لا أستطيع أن أنصحك بالشراء أو البيع، ولا أحد يضمن اتجاه السعر. هذه الأدوات تساعدك على القرار بنفسك:')
-      + (held ? `
-${L('You hold', 'لديك')} ${held.sym} ${L('worth', 'بقيمة')} ${usd(held.value)} (${pct(held.pnlPct)}).` : '')
-      + `
-
-${held ? `[[nav:/asset/${encodeURIComponent(held.coin_id)}|${held.sym}]] ` : ''}[[nav:/dashboard?tab=tools&tool=ai|${L('Portfolio Analysis', 'تحليل المحفظة')}]] [[nav:/alpha|${L('Signals', 'الإشارات')}]] [[nav:/coach|${L('Coach', 'المدرب')}]]`
-  }
-
   const mine = portfolioAnswer(ws, text, valued, ar)
   if (mine) return mine
 
-  const term = /\b(what|define|meaning|mean|explain)\b|ما هو|ما هي|معنى|اشرح/i.test(text) || ws.length <= 3 ? glossaryMatch(text) : null
+  const asksWhat = /\b(what|define|meaning|mean|explain)\b|ما هو|ما هي|معنى|اشرح/i.test(text)
+  const term = asksWhat || ws.length <= 3 ? glossaryMatch(text) : null
   if (term) return `${term.term}: ${term.short}\n\n[[nav:/learn/${term.slug}|${L('Read more', 'اقرأ المزيد')}]]`
+  const cls = asksWhat ? classTerm(text) : null
+  if (cls) return `${cls.term}: ${ar ? cls.ar : cls.en}\n\n[[nav:/academy|${L('Learn more in the Academy', 'تعلم المزيد في الأكاديمية')}]]`
+
+  // A question the FAQ asks almost word for word wins over a page.
+  const faqFirst = faqMatch(ws, ar ? 'ar' : 'en')
+  if (faqFirst && faqFirst.score >= 1.3) {
+    const a = faqFirst.a.length > 650 ? `${faqFirst.a.slice(0, faqFirst.a.lastIndexOf(' ', 640))}…` : faqFirst.a
+    const page = featureMatches(ws)[0]?.f
+    return `${a}\n\n${page ? `[[nav:${page.route}|${page.label}]] ` : ''}[[nav:/faq|${L('More in the FAQ', 'المزيد في الأسئلة الشائعة')}]]`
+  }
 
   const feats = featureMatches(ws)
   if (feats.length) {
