@@ -1,7 +1,7 @@
-// ── Holdings export: Excel (.xlsx) and PDF (print) ───────────────────────
-// Excel uses the already-bundled `xlsx` package (dynamic import so it never
-// hits the main bundle on first load). PDF uses a print-friendly HTML page
-// opened in a new window — zero extra dependencies, works on mobile too.
+// ── Holdings export: Excel (.xlsx) and PDF ──────────────────────────────────
+// Both are built on the device (xlsx and jsPDF, each loaded only when its
+// button is tapped) and saved with fileOut's saveFile, which works in the
+// Android app as well as in a browser.
 
 import { saveFile } from './fileOut'
 
@@ -62,139 +62,107 @@ export async function exportToExcel(holdings, totalValue, currency = 'USD') {
   return saveFile(new Blob([bytes], { type: XLSX_MIME }), `walletlens-holdings-${date}.xlsx`)
 }
 
-// Brand mark — the WalletLens magnifier logo, inlined as SVG so it renders in
-// the print window with zero external requests. Mirrors client/src/components/Logo.jsx.
-const LOGO_SVG = `<svg width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="WalletLens">
-  <defs>
-    <linearGradient id="wl-pdf-g" x1="5" y1="5" x2="52" y2="52" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#4ade80"/>
-      <stop offset="50%" stop-color="#16a34a"/>
-      <stop offset="100%" stop-color="#14532d"/>
-    </linearGradient>
-  </defs>
-  <circle cx="27" cy="25" r="19" stroke="url(#wl-pdf-g)" stroke-width="5.5" fill="none"/>
-  <circle cx="40.5" cy="11.5" r="3.8" fill="#4ade80"/>
-  <rect x="14.5" y="26.5" width="5" height="7.5" rx="1.2" fill="url(#wl-pdf-g)"/>
-  <rect x="21.5" y="21" width="5" height="13" rx="1.2" fill="url(#wl-pdf-g)"/>
-  <rect x="28.5" y="15.5" width="5" height="18.5" rx="1.2" fill="url(#wl-pdf-g)"/>
-  <line x1="13.5" y1="39" x2="4" y2="55" stroke="url(#wl-pdf-g)" stroke-width="5.5" stroke-linecap="round"/>
-</svg>`
+// ── PDF ─────────────────────────────────────────────────────────────────────
+// A real PDF file, drawn with jsPDF and saved like the Excel file.
+//
+// It used to be an HTML page written into window.open('') and printed. The
+// Android app's WebView opens no windows and cannot print, so the PDF button
+// did nothing there. jsPDF is loaded only when someone taps PDF.
 
-export function exportToPDF(holdings, totalValue, totalPnL, totalPnLPct, currency = 'USD') {
-  const date = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
-  const fmt = (n, d = 2) => Number.isFinite(n) ? n.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d }) : '—'
-  const pnlColor = totalPnL >= 0 ? '#10b981' : '#f87171'
+export const PDF_MIME = 'application/pdf'
 
-  const tableRows = holdings.map((h, i) => `
-    <tr class="${i % 2 === 0 ? 'even' : ''}">
-      <td>${(h.coin_symbol || '').toUpperCase()}</td>
-      <td class="name">${h.coin_name || ''}</td>
-      <td class="num">${fmt(h.amount, 4)}</td>
-      <td class="num">${fmt(h.price)}</td>
-      <td class="num">${fmt(h.value)}</td>
-      <td class="num">${fmt(h.total_invested || 0)}</td>
-      <td class="num" style="color:${(h.pnl || 0) >= 0 ? '#10b981' : '#f87171'}">${(h.pnl || 0) >= 0 ? '+' : ''}${fmt(h.pnl || 0)}</td>
-      <td class="num" style="color:${(h.pnlPct || 0) >= 0 ? '#10b981' : '#f87171'}">${(h.pnlPct || 0) >= 0 ? '+' : ''}${fmt(h.pnlPct || 0)}%</td>
-      <td class="num">${totalValue > 0 ? fmt((h.value / totalValue) * 100) : '0.00'}%</td>
-    </tr>
-  `).join('')
+// The built-in PDF fonts cover Latin-1 only. Anything else (an Arabic coin
+// name, an emoji) would print as garbage, so it is dropped, and a name with
+// nothing left falls back to the ticker.
+export const pdfText = (v) => String(v ?? '').replace(/[^\x20-\x7E\xA0-\xFF]/g, '').replace(/\s+/g, ' ').trim()
 
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<title>WalletLens Holdings — ${date}</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 11px; color: #0f172a; background: #fff; padding: 24px; }
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #10b981; padding-bottom: 12px; }
-  .brand-row { display: flex; align-items: center; gap: 10px; }
-  .brand-logo { flex-shrink: 0; line-height: 0; }
-  .brand { font-size: 22px; font-weight: 800; color: #16a34a; letter-spacing: -0.03em; line-height: 1; }
-  .brand span { color: #0f172a; }
-  .tagline { color: #94a3b8; font-size: 9px; font-weight: 600; letter-spacing: 0.04em; margin-top: 2px; }
-  .date { color: #64748b; font-size: 10px; margin-top: 3px; }
-  .report-meta { text-align: right; color: #64748b; font-size: 9px; }
-  .report-meta .assets { font-size: 13px; font-weight: 800; color: #0f172a; }
-  .summary { display: flex; gap: 24px; margin-bottom: 20px; }
-  .stat { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 16px; }
-  .stat-label { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; margin-bottom: 3px; }
-  .stat-value { font-size: 18px; font-weight: 800; color: #0f172a; }
-  .stat-value.green { color: #10b981; }
-  .stat-value.red { color: #f87171; }
-  table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
-  th { background: #0f172a; color: #fff; padding: 7px 8px; text-align: left; font-weight: 700; font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase; }
-  th.num, td.num { text-align: right; }
-  td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; }
-  td.name { color: #64748b; font-size: 9.5px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  tr.even td { background: #f8fafc; }
-  tfoot td { font-weight: 800; background: #f1f5f9; border-top: 2px solid #0f172a; }
-  .footer { margin-top: 18px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; gap: 6px; color: #94a3b8; font-size: 9px; }
-  .footer .fbrand { font-weight: 800; color: #16a34a; }
-  .footer .fdot { color: #cbd5e1; }
-  @media print { body { padding: 0; } @page { margin: 12mm 10mm; } }
-</style>
-</head>
-<body>
-<div class="header">
-  <div class="brand-row">
-    <div class="brand-logo">${LOGO_SVG}</div>
-    <div>
-      <div class="brand">Wallet<span>Lens</span></div>
-      <div class="tagline">Private portfolio tracker</div>
-      <div class="date">Holdings report · ${date} · ${currency}</div>
-    </div>
-  </div>
-  <div class="report-meta">
-    <div class="assets">${holdings.length}</div>
-    <div>asset${holdings.length !== 1 ? 's' : ''}</div>
-  </div>
-</div>
-<div class="summary">
-  <div class="stat">
-    <div class="stat-label">Total Value</div>
-    <div class="stat-value">${currency} ${fmt(totalValue)}</div>
-  </div>
-  <div class="stat">
-    <div class="stat-label">All-Time P&L</div>
-    <div class="stat-value ${totalPnL >= 0 ? 'green' : 'red'}">${totalPnL >= 0 ? '+' : ''}${currency} ${fmt(totalPnL)} (${fmt(totalPnLPct)}%)</div>
-  </div>
-</div>
-<table>
-  <thead>
-    <tr>
-      <th>Symbol</th><th>Name</th><th class="num">Amount</th>
-      <th class="num">Price</th><th class="num">Value</th>
-      <th class="num">Invested</th><th class="num">P&L</th>
-      <th class="num">P&L %</th><th class="num">Alloc.</th>
-    </tr>
-  </thead>
-  <tbody>${tableRows}</tbody>
-  <tfoot>
-    <tr>
-      <td colspan="4"><strong>TOTAL</strong></td>
-      <td class="num">${fmt(totalValue)}</td>
-      <td class="num">${fmt(holdings.reduce((s, h) => s + (h.total_invested || 0), 0))}</td>
-      <td class="num" style="color:${pnlColor}">${totalPnL >= 0 ? '+' : ''}${fmt(totalPnL)}</td>
-      <td class="num" style="color:${pnlColor}">${totalPnL >= 0 ? '+' : ''}${fmt(totalPnLPct)}%</td>
-      <td class="num">100%</td>
-    </tr>
-  </tfoot>
-</table>
-<div class="footer">
-  <span class="fbrand">WalletLens</span>
-  <span class="fdot">·</span>
-  <span>walletlens.live</span>
-  <span class="fdot">·</span>
-  <span>Your data is private and stored locally on your device.</span>
-</div>
-</body>
-</html>`
+const GREEN = [22, 163, 74], RED = [220, 38, 38], INK = [15, 23, 42], SUB = [100, 116, 139], LINE = [226, 232, 240]
 
-  const win = window.open('', '_blank')
-  if (!win) return
-  win.document.write(html)
-  win.document.close()
-  win.focus()
-  setTimeout(() => win.print(), 400)
+// The WalletLens magnifier, drawn with the same geometry as Logo.jsx (64 unit box).
+function drawLogo(doc, x, y, size) {
+  const k = size / 64, P = (v) => v * k
+  doc.setDrawColor(...GREEN); doc.setFillColor(...GREEN)
+  doc.setLineWidth(P(5.5)); doc.setLineCap('round')
+  doc.circle(x + P(27), y + P(25), P(19), 'S')
+  doc.line(x + P(13.5), y + P(39), x + P(4), y + P(55))
+  doc.setFillColor(74, 222, 128); doc.circle(x + P(40.5), y + P(11.5), P(3.8), 'F')
+  doc.setFillColor(...GREEN)
+  for (const [bx, by, bh] of [[14.5, 26.5, 7.5], [21.5, 21, 13], [28.5, 15.5, 18.5]]) doc.roundedRect(x + P(bx), y + P(by), P(5), P(bh), P(1.2), P(1.2), 'F')
+}
+
+export async function buildHoldingsPdf(holdings, totalValue, totalPnL, totalPnLPct, currency = 'USD', when = new Date()) {
+  const [{ jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+  const W = doc.internal.pageSize.getWidth(), M = 12
+  const fmt = (n, d = 2) => Number.isFinite(n) ? n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }) : '-'
+  // A price under a dollar keeps its significant digits: 0.03954, not 0.04.
+  const price = (n) => !Number.isFinite(n) ? '-' : Math.abs(n) >= 1 || n === 0 ? fmt(n) : n.toLocaleString('en-US', { maximumSignificantDigits: 4 })
+  const signed = (n, d = 2, suffix = '') => `${(n || 0) >= 0 ? '+' : ''}${fmt(n || 0, d)}${suffix}`
+  const date = when.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
+  const invested = holdings.reduce((s, h) => s + (h.total_invested || 0), 0)
+
+  // Header: logo, name, date; the asset count on the right; a green rule.
+  drawLogo(doc, M, 10, 13)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(...GREEN); doc.text('Wallet', M + 16, 17)
+  doc.setTextColor(...INK); doc.text('Lens', M + 16 + doc.getTextWidth('Wallet'), 17)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...SUB)
+  doc.text(`Holdings report  ·  ${date}  ·  ${pdfText(currency)}`, M + 16, 22.5)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(...INK)
+  doc.text(String(holdings.length), W - M, 16, { align: 'right' })
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...SUB)
+  doc.text(holdings.length === 1 ? 'asset' : 'assets', W - M, 21, { align: 'right' })
+  doc.setDrawColor(16, 185, 129); doc.setLineWidth(0.6); doc.line(M, 27, W - M, 27)
+
+  // Summary: total value and all-time P&L.
+  const stat = (x, label, value, color) => {
+    doc.setFillColor(248, 250, 252); doc.setDrawColor(...LINE); doc.setLineWidth(0.3)
+    doc.roundedRect(x, 31, 80, 17, 2, 2, 'FD')
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(...SUB); doc.text(label.toUpperCase(), x + 4, 36.5)
+    doc.setFontSize(13); doc.setTextColor(...color); doc.text(value, x + 4, 44)
+  }
+  stat(M, 'Total value', `${pdfText(currency)} ${fmt(totalValue)}`, INK)
+  stat(M + 86, 'All-time P&L', `${signed(totalPnL)} (${signed(totalPnLPct, 2, '%')})`, (totalPnL || 0) >= 0 ? GREEN : RED)
+
+  const pnlCols = [6, 7]
+  autoTable(doc, {
+    startY: 53,
+    margin: { left: M, right: M },
+    head: [['Symbol', 'Name', 'Amount', 'Price', 'Value', 'Invested', 'P&L', 'P&L %', 'Alloc.']],
+    body: holdings.map(h => {
+      const sym = pdfText((h.coin_symbol || '').toUpperCase())
+      return [sym, pdfText(h.coin_name) || sym, fmt(h.amount, 4), price(h.price), fmt(h.value), fmt(h.total_invested || 0),
+        signed(h.pnl), signed(h.pnlPct, 2, '%'), `${totalValue > 0 ? fmt((h.value / totalValue) * 100) : '0.00'}%`]
+    }),
+    foot: [['TOTAL', '', '', '', fmt(totalValue), fmt(invested), signed(totalPnL), signed(totalPnLPct, 2, '%'), '100%']],
+    styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2, textColor: INK, lineColor: LINE },
+    headStyles: { fillColor: INK, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
+    footStyles: { fillColor: [241, 245, 249], textColor: INK, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    columnStyles: { 1: { textColor: SUB, cellWidth: 52 }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' } },
+    didParseCell: (c) => {
+      if (c.section === 'head' && c.column.index >= 2) c.cell.styles.halign = 'right'
+      if (c.section === 'foot' && c.column.index >= 2) c.cell.styles.halign = 'right'
+      if ((c.section === 'body' || c.section === 'foot') && pnlCols.includes(c.column.index)) {
+        c.cell.styles.textColor = String(c.cell.raw).startsWith('-') ? RED : GREEN
+      }
+    },
+    // Footer on every page.
+    didDrawPage: () => {
+      const H = doc.internal.pageSize.getHeight()
+      doc.setDrawColor(...LINE); doc.setLineWidth(0.3); doc.line(M, H - 12, W - M, H - 12)
+      doc.setFontSize(7.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...GREEN)
+      const tail = '  ·  walletlens.live  ·  Your data is private and stored locally on your device.'
+      const total = doc.getTextWidth('WalletLens') + (doc.setFont('helvetica', 'normal'), doc.getTextWidth(tail))
+      const x0 = (W - total) / 2
+      doc.setFont('helvetica', 'bold'); doc.text('WalletLens', x0, H - 7)
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(148, 163, 184); doc.text(tail, x0 + doc.getTextWidth('WalletLens') + 0.1, H - 7)
+    },
+  })
+  return doc.output('blob')
+}
+
+export async function exportToPDF(holdings, totalValue, totalPnL, totalPnLPct, currency = 'USD') {
+  const blob = await buildHoldingsPdf(holdings, totalValue, totalPnL, totalPnLPct, currency)
+  const date = new Date().toISOString().slice(0, 10)
+  return saveFile(blob, `walletlens-holdings-${date}.pdf`)
 }
