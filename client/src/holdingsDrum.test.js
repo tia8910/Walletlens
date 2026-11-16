@@ -24,10 +24,9 @@ describe('the holdings drum', () => {
     expect(drumTicker({ coin_symbol: 'COMI.CA' })).toBe('COMI.CA')
     expect(drumTicker({ coin_symbol: 'aapl' })).toBe('AAPL')
     expect(drumTicker({ coin_symbol: 'STONKBROKER' })).toBe('STONKBROKER')
-    expect(drumWidth([{ coin_symbol: 'ETH' }])).toBe(116)
-    expect(drumWidth([{ coin_symbol: 'COMI.CA' }])).toBe(120)
-    expect(drumWidth([{ coin_symbol: 'STONKBROKER' }])).toBe(152)
-    expect(drumWidth([{ coin_symbol: 'US TREASURY 10Y' }])).toBe(160)
+    expect(drumWidth([{ coin_symbol: 'ETH' }])).toBe(112)
+    expect(drumWidth([{ coin_symbol: 'STONKBROKER' }])).toBe(117)
+    expect(drumWidth([{ coin_symbol: 'US TREASURY 10Y' }])).toBe(144)
     expect(read('v3.css')).not.toMatch(/\.nl-drum-face b \{[^}]*text-overflow/)
   })
   it('spins by drag and does not open a holding at the end of a drag', () => {
@@ -43,12 +42,20 @@ describe('the holdings drum', () => {
   })
   it('replaces the old logo stack on the balance card', () => {
     const top = read('components/HomeTop.jsx')
-    expect(top).toMatch(/<HoldingsDrum holdings=\{enriched\} label=\{t\('nlHoldings'\)\} onAsset=\{onAsset\} \/>/)
+    expect(top).toMatch(/<HoldingsDrum holdings=\{enriched\} label=\{t\('nlHoldings'\)\} onAsset=\{onAsset\}/)
     expect(top).not.toMatch(/className="nl-stack"/)
   })
   it('rests off screen and respects reduced motion', () => {
     const src = read('components/HoldingsDrum.jsx')
     expect(src).toMatch(/visible && !document\.hidden && idle/)
     expect(src).toMatch(/prefers-reduced-motion: reduce/)
+  })
+  it('shows each holding\'s price under its ticker, in the card\'s currency', () => {
+    const src = read('components/HoldingsDrum.jsx')
+    expect(src).toMatch(/<span className="nl-drum-l2">\s*\{px && <small>\{px\}<\/small>\}/)
+    expect(read('components/HomeTop.jsx')).toMatch(/priceOf=\{\(h\) => \(h\.price > 0 \? price\(h\.price, cv\) : ''\)\}/)
+    // a long price widens the drum like a long ticker does
+    expect(drumWidth([{ coin_symbol: 'ETH' }], () => '$12,345.67')).toBe(125)
+    expect(drumWidth([{ coin_symbol: 'ETH' }], () => '')).toBe(112)
   })
 })

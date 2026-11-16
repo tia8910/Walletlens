@@ -284,17 +284,20 @@ html.wl-v3 .wlc-fab { bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !im
 }
 .nl-drum-face:active { background: rgba(255, 255, 255, 0.16); }
 .nl-drum-face:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
-.nl-drum-face b { flex: 1; font-weight: 800; letter-spacing: 0.01em; }
-.nl-drum-face.long { font-size: 0.56rem; gap: 4px; padding: 0 6px; }
-.nl-drum-face.long em { font-size: 0.54rem; }
-.nl-drum-face em { flex: none; font-style: normal; font-weight: 800; font-size: 0.6rem; font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.7); }
+.nl-drum-t { flex: 1; display: flex; flex-direction: column; gap: 1px; line-height: 1.05; min-width: 0; }
+.nl-drum-face b { font-weight: 800; letter-spacing: 0.01em; font-size: 0.64rem; }
+.nl-drum-l2 { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; }
+.nl-drum-l2 small { font-size: 0.54rem; font-weight: 600; color: rgba(255, 255, 255, 0.72); font-variant-numeric: tabular-nums; }
+.nl-drum-face.long b { font-size: 0.56rem; }
+.nl-drum-face em { flex: none; margin-left: auto; font-style: normal; font-weight: 800; font-size: 0.54rem; font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.7); }
 .nl-drum-face em.up { color: #6ee7b7; }
 .nl-drum-face em.down { color: #fca5a5; }
 .nl-drum-face .coin-logo, .nl-drum-face .nl-metal { flex: none; width: 18px !important; height: 18px !important; box-shadow: none; border: 0; }
 .nl-drum.flat { cursor: default; height: auto; padding: 8px 5px; display: flex; flex-direction: column; gap: 6px; -webkit-mask-image: none; mask-image: none; perspective: none; }
 .nl-drum.flat::after { display: none; }
 .nl-drum.flat .nl-drum-face { position: relative; inset: auto; height: 34px; width: calc(var(--drum-w, 116px) - 12px); }
-@media (max-width: 360px) { .nl-drum-face { font-size: 0.6rem; gap: 4px; padding: 0 5px; } }
+@media (max-width: 440px) { .nl-drum { width: min(var(--drum-w, 116px), 140px); } .nl-drum-cyl { width: calc(min(var(--drum-w, 116px), 140px) - 10px); } }
+@media (max-width: 360px) { .nl-drum-face { gap: 4px; padding: 0 5px; } }
 
 .nl-quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
 .nl-quick button {
