@@ -8726,7 +8726,10 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
   width: min(380px, calc(100vw - 2rem));
   height: min(560px, calc(100vh - 7.5rem));
   display: flex; flex-direction: column;
-  background: var(--card-bg, #0d1117);
+  /* The theme's card colour is partly transparent on some themes, and the
+     page showed through the chat (the balance card, the sentiment line).
+     It is laid over a solid base so the panel is always opaque. */
+  background: linear-gradient(var(--card-bg, #0d1117), var(--card-bg, #0d1117)), #0d1117;
   border: 1px solid rgba(var(--g-rgb),0.18);
   border-radius: 18px;
   box-shadow: 0 18px 50px rgba(0,0,0,0.5);
@@ -8800,6 +8803,8 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .wlc-typing-dot:nth-child(3) { animation-delay: 0.36s; }
 @keyframes wlc-bounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.45; } 30% { transform: translateY(-4px); opacity: 1; } }
 
+.wlc-retry { margin-inline-start: 0.6rem; padding: 0.25rem 0.7rem; border-radius: 99px; border: 1px solid currentColor; background: none; color: inherit; font: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+.wlc-retry:disabled { opacity: 0.5; cursor: default; }
 .wlc-error {
   align-self: stretch;
   background: rgba(239,68,68,0.1);

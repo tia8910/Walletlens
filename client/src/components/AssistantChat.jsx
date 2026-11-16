@@ -2,12 +2,24 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../LanguageContext'
 import {
-  chatWithAssistant, parseAssistantReply,
+  parseAssistantReply,
   loadChatHistory, saveChatHistory, addMessageToHistory,
   createConversation, clearChatHistory,
 } from '../assistantAi'
 import { track } from '../analytics'
+import { api } from '../api'
+import { answerLocally } from '../localAssistant'
 import AiReport from './AiReport'
+
+// What the chat says when an answer does not come, by what went wrong.
+const ERROR_COPY = {
+  offline: ["You're offline. Connect to the internet and try again.", 'أنت غير متصل. اتصل بالإنترنت وحاول مرة أخرى.'],
+  network: ['Could not reach the assistant. Check your connection and try again.', 'تعذّر الوصول إلى المساعد. تحقق من الاتصال وحاول مرة أخرى.'],
+  busy: ['Too many questions in a short time. Wait a minute, then try again.', 'أسئلة كثيرة في وقت قصير. انتظر دقيقة ثم حاول مرة أخرى.'],
+  upstream: ['The AI service is busy right now. Try again in a moment.', 'خدمة الذكاء الاصطناعي مشغولة الآن. حاول بعد لحظات.'],
+  unavailable: ['The assistant is switched off on the server right now. Please try again later.', 'المساعد متوقف على الخادم حالياً. حاول لاحقاً.'],
+  failed: ['Something went wrong getting an answer. Please try again.', 'حدث خطأ أثناء جلب الإجابة. حاول مرة أخرى.'],
+}
 
 // Floating in-app assistant. A bottom-right launcher opens a chat panel where
 // the user describes what they want to do, and the AI points them to the right
@@ -238,11 +250,12 @@ export default function AssistantChat() {
   function onFabClick() { if (drag.current.moved) return }
 
   // ── Send message ───────────────────────────────────────────────────────
-  async function send(text) {
+  async function send(text, { retry = false } = {}) {
     const msg = (text || input).trim()
     if (!msg || loading) return
     setInput('')
     setError(null)
+    if (retry) return ask(messages)
 
     // Create conversation if needed
     let cid = convId
@@ -256,15 +269,27 @@ export default function AssistantChat() {
     const newMessages = [...messages, userMsg]
     setMessages(newMessages)
     addMessageToHistory(cid, { role: 'user', content: msg })
+    return ask(newMessages, cid)
+  }
 
+  // Ask the server about a conversation whose last message is the user's.
+  // Retry calls this directly, so the question is not added twice.
+  async function ask(newMessages, cid = convId) {
     setLoading(true)
     try {
-      const apiMessages = newMessages.slice(-20).map(m => ({ role: m.role, content: m.text || m.content || '' }))
-      const rawReply = await chatWithAssistant(apiMessages, { lang })
+      // Answered on the device from the portfolio, the app's pages, the
+      // glossary and the FAQ: no server, no AI model, works offline.
+      const question = newMessages[newMessages.length - 1]?.text || ''
+      const holdings = await Promise.resolve(api.getPortfolio()).catch(() => [])
+      const list = Array.isArray(holdings) ? holdings : []
+      const prices = api.getCachedPrices?.(list.map(h => h.coin_id).join(',')) || {}
+      await new Promise(r => setTimeout(r, 250)) // a beat, so the reply does not flash in
+      const rawReply = answerLocally(question, { lang, holdings: list, prices })
       const { text: replyText, navs } = parseAssistantReply(rawReply)
-      const assistantMsg = { role: 'assistant', text: replyText, navs }
+      // Answered on the device, not by an AI model: no AI label or report button.
+      const assistantMsg = { role: 'assistant', text: replyText, navs, local: true }
       setMessages(prev => [...prev, assistantMsg])
-      addMessageToHistory(cid, { role: 'assistant', content: replyText, navs })
+      addMessageToHistory(cid, { role: 'assistant', content: replyText, navs, local: true })
       track('assistant_reply', { msgLen: replyText.length, navCount: navs.length })
     } catch (err) {
       setError(err.code || 'failed')
@@ -428,7 +453,7 @@ export default function AssistantChat() {
                     ))}
                   </div>
                 )}
-                {m.role === 'assistant' && m.text && <AiReport surface="assistant" output={m.text} compact />}
+                {m.role === 'assistant' && m.text && !m.local && <AiReport surface="assistant" output={m.text} compact />}
               </div>
             ))}
 
@@ -438,11 +463,15 @@ export default function AssistantChat() {
               </div>
             )}
 
-            {error === 'unavailable' && (
-              <div className="wlc-error">{isAr ? 'المساعد غير متاح حالياً. حاول لاحقاً.' : 'The assistant is temporarily unavailable. Please try again later.'}</div>
-            )}
-            {error === 'failed' && (
-              <div className="wlc-error">{isAr ? 'تعذّر الاتصال. حاول مرة أخرى.' : 'Could not reach the assistant. Please try again.'}</div>
+            {error && (
+              <div className="wlc-error" role="alert">
+                <span>{(ERROR_COPY[error] || ERROR_COPY.failed)[isAr ? 1 : 0]}</span>
+                {error !== 'unavailable' && messages[messages.length - 1]?.role === 'user' && (
+                  <button type="button" className="wlc-retry" onClick={() => send(messages[messages.length - 1].text, { retry: true })} disabled={loading}>
+                    {isAr ? 'إعادة المحاولة' : 'Try again'}
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
