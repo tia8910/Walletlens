@@ -54,4 +54,15 @@ describe('Technicals charts load fast', () => {
     const panel = readFileSync(join(here, 'components/TechChartPanel.jsx'), 'utf8')
     expect(panel).toMatch(/api\.prefetchCandles\(assets\.filter/)
   })
+
+  it('lets the page reach the mirror: every security policy allows it', () => {
+    // The first version raced the two hosts, but the CSP blocked the mirror
+    // before any request left the browser, so the chart still waited.
+    const here = dirname(fileURLToPath(import.meta.url))
+    for (const f of ['../index.html', '../public/_headers']) {
+      const csp = readFileSync(join(here, f), 'utf8').match(/connect-src[^;]*/)[0]
+      expect(csp).toContain('https://api.binance.com')
+      expect(csp).toContain('https://data-api.binance.vision')
+    }
+  })
 })
