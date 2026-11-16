@@ -162,6 +162,9 @@ export default function AssistantChat() {
   const [pos, setPos] = useState(loadPos)
   const [convId, setConvId] = useState(null)
   const [showHistory, setShowHistory] = useState(false)
+  // Clearing every conversation asks for a second tap; it cannot be undone.
+  const [confirmClear, setConfirmClear] = useState(false)
+  useEffect(() => { if (!showHistory) setConfirmClear(false) }, [showHistory])
   const [conversations, setConversations] = useState([])
   const scrollRef = useRef(null)
   const inputRef = useRef(null)
@@ -326,6 +329,8 @@ export default function AssistantChat() {
   }
 
   function handleClearHistory() {
+    if (!confirmClear) { setConfirmClear(true); return }
+    setConfirmClear(false)
     clearChatHistory()
     setConversations([])
     startNewChat()
@@ -399,6 +404,18 @@ export default function AssistantChat() {
           {/* ── History panel ── */}
           {showHistory && (
             <div className="wlc-history-panel">
+              {/* Back to the chat, or a fresh one with the question menu,
+                  without touching saved conversations. */}
+              <div className="wlc-history-actions">
+                <button type="button" className="wlc-history-back" onClick={() => setShowHistory(false)}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+                  {isAr ? 'العودة للمحادثة' : 'Back to chat'}
+                </button>
+                <button type="button" className="wlc-history-new" onClick={startNewChat}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                  {isAr ? 'محادثة جديدة' : 'New chat'}
+                </button>
+              </div>
               <div className="wlc-history-list">
                 {conversations.length === 0 && (
                   <div className="wlc-history-empty">{isAr ? 'لا توجد محادثات' : 'No conversations yet'}</div>
@@ -417,8 +434,10 @@ export default function AssistantChat() {
                 })}
               </div>
               {conversations.length > 0 && (
-                <button className="wlc-history-clear" onClick={handleClearHistory}>
-                  {isAr ? 'مسح السجل' : 'Clear History'}
+                <button type="button" className={`wlc-history-clear${confirmClear ? ' armed' : ''}`} onClick={handleClearHistory}>
+                  {confirmClear
+                    ? (isAr ? 'اضغط مرة أخرى لحذف كل المحادثات' : 'Tap again to delete all conversations')
+                    : (isAr ? 'مسح السجل' : 'Clear history')}
                 </button>
               )}
             </div>
@@ -476,6 +495,15 @@ export default function AssistantChat() {
           </div>
 
           {/* ── Input ── */}
+          {/* The question menu stays one tap away once a chat has started;
+              before, the only way back to it was clearing the history. */}
+          {messages.length > 0 && !showHistory && !loading && (
+            <div className="wlc-quick" role="group" aria-label={isAr ? 'أسئلة مقترحة' : 'Suggested questions'}>
+              {(SUGGESTIONS[lang] || SUGGESTIONS.en).map((s, i) => (
+                <button key={i} type="button" className="wlc-quick-chip" onClick={() => send(s)}>{s}</button>
+              ))}
+            </div>
+          )}
           <form className="wlc-input-row" onSubmit={e => { e.preventDefault(); send() }}>
             <input
               ref={inputRef}
