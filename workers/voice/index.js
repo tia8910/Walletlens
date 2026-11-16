@@ -104,6 +104,10 @@ const PROXY_ALLOWLIST = new Set([
     "api.binance.com",
     "api1.binance.com",
     "api-gcp.binance.com",
+    "data-api.binance.vision",
+    // Tokens only decentralized exchanges trade: the pool, then its candles.
+    "api.dexscreener.com",
+    "api.geckoterminal.com",
     "api.gold-api.com",
     "stooq.com",
     "query1.finance.yahoo.com",

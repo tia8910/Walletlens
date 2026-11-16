@@ -756,6 +756,50 @@ async function binanceKlines(sym, interval, limit, ms = 6000) {
   }));
 }
 
+// Candles for a token that trades only on decentralized exchanges
+// (StonkBroker and its kind): no exchange the app asks lists it, and
+// CoinGecko has no chart for it either, so the chart sat on "Fetching" and
+// then said there was no data. DexScreener, which the app already prices
+// these from, names the token's most liquid pool; GeckoTerminal gives that
+// pool's candles, every timeframe included. The pool is remembered for a week.
+const GT_NETWORK = { ethereum: 'eth', polygon: 'polygon_pos', avalanche: 'avax', fantom: 'ftm', sui: 'sui-network', sei: 'sei-evm', pulsechain: 'pulsechain' };
+const GT_FRAME = { '15m': ['minute', 15], '1h': ['hour', 1], '4h': ['hour', 4], '1d': ['day', 1], '1w': ['day', 1] };
+export function pickDexPool(pairs, symbol, refPrice) {
+  const sym = String(symbol || '').toUpperCase();
+  const ok = (Array.isArray(pairs) ? pairs : []).filter(p =>
+    String(p?.baseToken?.symbol || '').toUpperCase() === sym && p?.pairAddress && p?.chainId &&
+    Number(p?.priceUsd) > 0 && Number(p?.liquidity?.usd) >= 10000 &&
+    (!(refPrice > 0) || (Number(p.priceUsd) / refPrice < 1.5 && refPrice / Number(p.priceUsd) < 1.5)));
+  const best = ok.sort((a, b) => Number(b.liquidity.usd) - Number(a.liquidity.usd))[0];
+  return best ? { net: GT_NETWORK[best.chainId] || best.chainId, address: best.pairAddress } : null;
+}
+export function parseGeckoOhlcv(body) {
+  const rows = body?.data?.attributes?.ohlcv_list;
+  return (Array.isArray(rows) ? rows : [])
+    .map(k => ({ t: Number(k[0]) * 1000, o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] || 0 }))
+    .filter(k => k.t > 0 && k.c > 0 && k.h >= k.l)
+    .sort((a, b) => a.t - b.t);
+}
+async function dexCandles(id, symbol, tf, limit, refPrice) {
+  const sym = String(symbol || '').toUpperCase();
+  if (!id || !sym || !GT_FRAME[tf]) return [];
+  const poolKey = `dexpool::${id}`;
+  let pool = _chartCache[poolKey]?.t > Date.now() - 7 * 864e5 ? _chartCache[poolKey].v : null;
+  if (!pool) {
+    const url = `https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(sym)}`;
+    const res = await fetchFirstOk([url, DENO_PROXY(url)], 5000);
+    if (!res?.ok) return [];
+    pool = pickDexPool((await res.json())?.pairs, sym, refPrice || priceCache[id]?.usd);
+    if (!pool) return [];
+    try { _chartCache[poolKey] = { t: Date.now(), v: pool }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
+  }
+  const [unit, agg] = GT_FRAME[tf];
+  const url = `https://api.geckoterminal.com/api/v2/networks/${encodeURIComponent(pool.net)}/pools/${encodeURIComponent(pool.address)}/ohlcv/${unit}?aggregate=${agg}&limit=${Math.min(1000, limit)}&currency=usd`;
+  const res = await fetchFirstOk([url, DENO_PROXY(url)], 6000);
+  if (!res?.ok) return [];
+  return parseGeckoOhlcv(await res.json());
+}
+
 // The chart timeframes, kept once chartSignals has loaded (peekCandles is synchronous).
 let _chartPlans = null;
 
@@ -2803,6 +2847,8 @@ export const api = {
       const hit = _chartCache[`candles2::${ticker}::${tf}`];
       if (fresh(hit)) return { candles: hit.v, visible: Math.min(plan.visible, hit.v.length), closeOnly: false };
     }
+    const dex = _chartCache[`candles2::dex:${id}::${tf}`];
+    if (fresh(dex)) return { candles: dex.v, visible: Math.min(plan.visible, dex.v.length), closeOnly: false };
     return null;
   },
 
@@ -2878,6 +2924,20 @@ export const api = {
       }
       // The close-only fallback below asks the same upstreams again, slowly.
       return { candles: [], visible: 0, closeOnly: false };
+    }
+    // A token only decentralized exchanges trade: its pool's real candles.
+    if (api.hasLiveCandles(id, sym)) {
+      const dexKey = `candles2::dex:${id}::${tf}`;
+      const hit = _chartCache[dexKey];
+      if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length > 10) return { candles: hit.v, visible: Math.min(plan.visible, hit.v.length), closeOnly: false };
+      try {
+        let candles = await dexCandles(id, sym, tf, (tf === '1w' ? 7 : 1) * (plan.visible + warmup), livePrice);
+        if (tf === '1w') candles = weeklyFromDaily(candles);
+        if (candles.length > 10 && sameCoin(candles)) {
+          try { _chartCache[dexKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
+          return { candles, visible: Math.min(plan.visible, candles.length), closeOnly: false };
+        }
+      } catch {}
     }
     // Fallback: the classic close-only series over the timeframe's span.
     // Those are daily closes, so an intraday timeframe has nothing to show.
