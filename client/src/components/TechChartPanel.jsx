@@ -89,6 +89,14 @@ export default function TechChartPanel({ enriched, initialPick = null }) {
     return () => { alive = false; clearTimeout(timer.current) }
   }, [query])
 
+  // The other chips' daily charts load in the background once the one on
+  // screen has had a head start, so tapping a chip shows its chart at once.
+  const assetIds = assets.map(a => a.coin_id).join(',')
+  useEffect(() => {
+    const t = setTimeout(() => { api.prefetchCandles(assets.filter(a => a.coin_id !== picked)) }, 2500)
+    return () => clearTimeout(t)
+  }, [assetIds]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const choose = (a) => {
     setFound(a); setPicked(a.coin_id); setQuery(''); setResults([])
     track('technicals_search_pick', { coin_id: a.coin_id, kind: a.kind })

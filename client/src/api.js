@@ -739,6 +739,26 @@ function _symbolForId(id, holdings) {
 const _CHART_CACHE_KEY = 'crypto_tracker_chart_cache_v1';
 let _chartCache = (() => { try { return JSON.parse(localStorage.getItem(_CHART_CACHE_KEY) || '{}'); } catch { return {}; } })();
 
+// Binance klines from whichever host answers first. api.binance.com is
+// blocked on some networks and in some countries, where the request hangs
+// until it times out; data-api.binance.vision is Binance's own public
+// market-data mirror, with the same API. Both are asked at once and the
+// first usable answer wins, so a blocked host costs nothing.
+const BINANCE_HOSTS = ['https://api.binance.com', 'https://data-api.binance.vision'];
+async function binanceKlines(sym, interval, limit, ms = 6000) {
+  const path = `/api/v3/klines?symbol=${encodeURIComponent(sym + 'USDT')}&interval=${interval}&limit=${limit}`;
+  return Promise.any(BINANCE_HOSTS.map(async (h) => {
+    const res = await fetchWithTimeout(h + path, ms);
+    if (!res.ok) throw new Error(String(res.status));
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) throw new Error('empty');
+    return rows;
+  }));
+}
+
+// The chart timeframes, kept once chartSignals has loaded (peekCandles is synchronous).
+let _chartPlans = null;
+
 let metalCache = null;
 let metalCacheTime = 0;
 let stockCache = {};
@@ -2703,13 +2723,10 @@ export const api = {
     };
     if (api.hasLiveCandles(id, sym)) {
       try {
-        const res = await fetchWithTimeout(`https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(sym + 'USDT')}&interval=1h&limit=25`, 8000);
-        if (res.ok) {
-          const rows = await res.json();
-          const v = (Array.isArray(rows) ? rows : []).map(k => +k[4]).filter(n => n > 0);
-          const last = v[v.length - 1];
-          if (v.length > 12 && (!(livePrice > 0) || Math.abs(last / livePrice - 1) < 0.03)) return keep(v);
-        }
+        const rows = await binanceKlines(sym, '1h', 25);
+        const v = rows.map(k => +k[4]).filter(n => n > 0);
+        const last = v[v.length - 1];
+        if (v.length > 12 && (!(livePrice > 0) || Math.abs(last / livePrice - 1) < 0.03)) return keep(v);
       } catch {}
     }
     // Metals: the daily series is two or three points, too few to draw, so
@@ -2768,8 +2785,40 @@ export const api = {
   // there (a rebrand, a clash). A last close more than 5% away from the price
   // the app shows means it is not this coin, so its own price history is
   // used instead of a confident chart of something else.
+  // The candles saved last time for this chart, whatever their age (up to
+  // three days), so the chart draws at once and the fresh ones replace them.
+  // Synchronous: only the cache, no request. null when nothing is saved.
+  peekCandles: (id, symbol, tf = '1d', warmup = 200, plans = null) => {
+    const P = plans || _chartPlans;
+    if (!id || !P) return null;
+    const plan = P[tf] || P['1d'];
+    const sym = String(symbol || '').toUpperCase();
+    const fresh = (hit) => hit && Array.isArray(hit.v) && hit.v.length > 10 && Date.now() - hit.t < 3 * 864e5;
+    if (api.hasLiveCandles(id, sym)) {
+      const hit = _chartCache[`candles2::${sym}::${plan.interval}::${Math.min(1000, plan.visible + warmup)}`];
+      if (fresh(hit)) return { candles: hit.v, visible: plan.visible, closeOnly: false };
+    }
+    const ticker = api.candleTicker(id);
+    if (ticker) {
+      const hit = _chartCache[`candles2::${ticker}::${tf}`];
+      if (fresh(hit)) return { candles: hit.v, visible: Math.min(plan.visible, hit.v.length), closeOnly: false };
+    }
+    return null;
+  },
+
+  // Loads the daily charts of the given assets into the cache one at a time,
+  // in the background, so picking one shows its chart at once.
+  prefetchCandles: async (assets, tf = '1d') => {
+    for (const a of (assets || []).slice(0, 12)) {
+      if (!a?.coin_id || api.peekCandles(a.coin_id, a.coin_symbol, tf)?.candles) continue;
+      if (!api.hasLiveCandles(a.coin_id, a.coin_symbol) && !api.candleTicker(a.coin_id)) continue;
+      try { await api.getCandles(a.coin_id, a.coin_symbol, tf, 200, 0); } catch { /* next one */ }
+    }
+  },
+
   getCandles: async (id, symbol, tf = '1d', warmup = 200, livePrice = 0) => {
     const { candlesFromCloses, weeklyFromDaily, matchesLivePrice, CHART_TIMEFRAMES } = await import('./chartSignals');
+    _chartPlans = CHART_TIMEFRAMES;
     const sameCoin = (candles) => matchesLivePrice(candles, livePrice);
     const plan = CHART_TIMEFRAMES[tf] || CHART_TIMEFRAMES['1d'];
     const sym = String(symbol || '').toUpperCase();
@@ -2779,16 +2828,13 @@ export const api = {
       const hit = _chartCache[cacheKey];
       if (hit && Date.now() - hit.t < 5 * 60 * 1000 && Array.isArray(hit.v) && hit.v.length && sameCoin(hit.v)) return { candles: hit.v, visible: plan.visible, closeOnly: false };
       try {
-        const res = await fetchWithTimeout(`https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(sym + 'USDT')}&interval=${plan.interval}&limit=${limit}`, 8000);
-        if (res.ok) {
-          const rows = await res.json();
-          const candles = (Array.isArray(rows) ? rows : [])
-            .map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] || 0 }))
-            .filter(k => k.c > 0 && k.h >= k.l);
-          if (candles.length > 10 && sameCoin(candles)) {
-            try { _chartCache[cacheKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
-            return { candles, visible: plan.visible, closeOnly: false };
-          }
+        const rows = await binanceKlines(sym, plan.interval, limit);
+        const candles = rows
+          .map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] || 0 }))
+          .filter(k => k.c > 0 && k.h >= k.l);
+        if (candles.length > 10 && sameCoin(candles)) {
+          try { _chartCache[cacheKey] = { t: Date.now(), v: candles }; localStorage.setItem(_CHART_CACHE_KEY, JSON.stringify(_chartCache)); } catch {}
+          return { candles, visible: plan.visible, closeOnly: false };
         }
       } catch {}
     }
