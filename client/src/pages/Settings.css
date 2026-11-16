@@ -247,3 +247,33 @@
   border-radius: 22px; padding-bottom: 14px;
 }
 .sx-sheet.kb-dock .fb-msg { min-height: 88px; }
+/* Send feedback as a window: centred, dragged by its title bar (the offset
+   comes from FeedbackSheet), closed with its ✕. While the keyboard is up it
+   docks above it like the sheet did, wherever it had been dragged. */
+.sx-sheet.fb-win {
+  inset: auto; left: 50%; top: 50%; bottom: auto; margin: 0;
+  width: min(520px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain;
+  transform: translate(calc(-50% + var(--fb-dx, 0px)), calc(-50% + var(--fb-dy, 0px)));
+  padding: 0 16px 16px; border-radius: 22px; box-shadow: 0 24px 70px rgba(0, 0, 0, .45);
+  border: 1px solid var(--sx-line);
+}
+.sx-sheet.fb-win.kb-dock {
+  transform: none; left: 8px; right: 8px; width: auto; margin: 0 auto; max-width: 520px;
+  top: calc(var(--kb-vvt, 0px) + 8px); max-height: calc(var(--kb-vvh, 100vh) - 16px);
+}
+.fb-head {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px;
+  margin: 0 -16px 8px; padding: 12px 10px 10px 12px; background: var(--sx-card);
+  cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.fb-head:active { cursor: grabbing; }
+/* Nothing in the window is squeezed when it is short (docked above the keyboard): it scrolls instead. */
+.sx-sheet.fb-win > * { flex-shrink: 0; }
+.fb .fb-head .sx-sheet-t { flex: 1; margin: 0; }
+.fb-grip { width: 18px; height: 18px; flex-shrink: 0; fill: var(--sx-sub); opacity: .7; }
+.fb-close {
+  width: 36px; min-width: 36px; height: 36px; flex-shrink: 0; display: grid; place-items: center; border-radius: 50%; padding: 0;
+  border: 1px solid var(--sx-line); background: none; color: var(--sx-ink); cursor: pointer;
+}
+.fb-close:hover { background: var(--sx-line); }
+.fb-close svg { width: 18px; min-width: 18px; flex: none; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
