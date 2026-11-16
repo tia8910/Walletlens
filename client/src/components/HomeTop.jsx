@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import HoldingsDrum from './HoldingsDrum'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
 import { briefParts } from '../portfolioBrief'
@@ -121,7 +122,6 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
   const base = totalValue - todayPnL
   const dayPct = base > 0 ? (todayPnL / base) * 100 : 0
   const mood = moodOf(dayPct)
-  const stack = enriched.slice(0, 3)
   // The user's own watchlist when they keep one, otherwise their biggest
   // holdings, which is what they would put on it.
   // Stablecoins and cash are left out: a $1.00 card with a flat line says
@@ -211,12 +211,7 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
             </button>
           </div>
         </div>
-        {stack.length > 0 && (
-          <div className="nl-stack" aria-hidden="true">
-            {stack.map(h => <AssetLogo key={h.coin_id} h={h} size={30} />)}
-            {enriched.length > 3 && <em>+{enriched.length - 3}</em>}
-          </div>
-        )}
+        {enriched.length > 0 && <HoldingsDrum holdings={enriched} label={t('nlHoldings')} onAsset={onAsset} />}
       </section>
 
       {sentimentSlot && <div className="nl-sentiment">{sentimentSlot}</div>}
