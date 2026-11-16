@@ -14,6 +14,7 @@ export const HISTORY_KEY = 'wl_nw_history'      // [{ d: 'YYYY-MM-DD', v: usd }]
 export const INTRADAY_KEY = 'wl_nw_intraday'    // [{ t: ms, v: usd }] last 24h
 export const RATES_KEY = 'wl_fx_rates'
 export const PRICE_CACHE_KEY = 'wl_price_cache_v2'
+export const APP_LOGOS_KEY = 'wl_app_logos'       // { id: [{ src, dark }] }: the logos the app shows
 export const APP_PRICES_KEY = 'wl_app_prices'     // { prices: { id: { usd, chg } }, at } from walletlens.live
 export const APP_PRICES_TTL = 12 * 3600e3
 
@@ -80,7 +81,8 @@ export function assetClass(id) {
   if (id.startsWith('metal:')) return 'metals'
   if (id.startsWith('fiat:') || id.startsWith('cash:')) return 'cash'
   if (id.startsWith('real:')) return 'property'
-  if (id.startsWith('bond:') || id.startsWith('other:')) return 'other'
+  if (id.startsWith('bond:')) return 'bonds'
+  if (id.startsWith('other:')) return 'other'
   return 'crypto'
 }
 

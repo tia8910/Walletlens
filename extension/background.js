@@ -8,7 +8,7 @@
  */
 
 import {
-  ext, STORAGE_KEY, APP_PRICES_KEY, loadPortfolio, getSettings, saveSettings, recordSnapshot,
+  ext, STORAGE_KEY, APP_PRICES_KEY, APP_LOGOS_KEY, loadPortfolio, getSettings, saveSettings, recordSnapshot,
   evaluateAlerts, badgeFor, fxRates,
 } from './lib/core.js'
 
@@ -95,6 +95,7 @@ ext.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'SYNC_PRICES') {
     const d = message.data || {}
     if (d.prices && typeof d.prices === 'object') ext.storage.local.set({ [APP_PRICES_KEY]: { prices: d.prices, at: Number(d.at) || Date.now() } })
+    if (d.logos && typeof d.logos === 'object') ext.storage.local.set({ [APP_LOGOS_KEY]: d.logos })
     sendResponse({ ok: true })
     return false
   }

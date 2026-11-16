@@ -2,6 +2,7 @@
 import {
   ext, SITE, STORAGE_KEY, get, set, getSettings, saveSettings, loadPortfolio, fxRates, money, pct, amount,
   CURRENCIES, recordSnapshot, historyFor, ohlc, signalFrom, fearGreed, news, stockQuotes, metalPrice, stockLogos,
+  APP_LOGOS_KEY,
 } from './lib/core.js'
 
 const STORE_URL = 'https://chromewebstore.google.com/detail/walletlens-portfolio/ajmjdeobjjmabgonhaeaaehoepfafhbn'
@@ -12,17 +13,20 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 
 const CLASS_META = {
   crypto: ['Crypto', '#f7931a'], property: ['Property', '#94a3b8'], stocks: ['Stocks', '#a78bfa'],
-  metals: ['Metals', '#e8b825'], cash: ['Cash', '#60a5fa'], other: ['Other', '#22d3ee'],
+  metals: ['Metals', '#e8b825'], bonds: ['Bonds', '#0284c7'], cash: ['Cash', '#60a5fa'], other: ['Other', '#22d3ee'],
 }
 
-const state = { settings: null, rates: { USD: 1 }, p: null, tab: 'home', range: '1W', wallet: 'all', cls: 'all', sort: 'value', signals: null, marketLoaded: false, stockLogos: {} }
+const state = { settings: null, rates: { USD: 1 }, p: null, tab: 'home', range: '1W', wallet: 'all', cls: 'all', sort: 'value', signals: null, marketLoaded: false, stockLogos: {}, appLogos: {} }
 const m = (usd, o) => money(usd, state.settings.currency, state.rates, o)
 
 // ── Icons ─────────────────────────────────────────────────────────────────
-// Every asset gets a picture. Coins: a logo bundled with the extension for the
-// most held ones, then the live CoinGecko logo. Stocks: the company logo
-// CoinGecko carries for its tokenized share. Cash: the country's flag.
-// Metals, property, bonds and the rest: drawn icons bundled here.
+// Every asset gets the picture the app shows it with. Coins: the logo the app
+// found for it on this device (synced from walletlens.live), then a logo
+// bundled here, the live CoinGecko logo, and walletlens.live's own icon
+// service, which reaches the icon hosts a network may block. Stocks: the
+// company logo, then the same service. Cash: the country's flag. Metals and
+// bonds: the app's own badges, rendered to SVG. Property and the rest: drawn
+// icons bundled here.
 
 const BUNDLED_COINS = new Set(['1inch', 'aave', 'ada', 'algo', 'atom', 'avax', 'bat', 'bch', 'bnb', 'btc', 'chz', 'comp', 'crv', 'dai', 'dash', 'doge', 'dot', 'enj', 'eos', 'etc', 'eth', 'fil', 'grt', 'icp', 'leo', 'link', 'ltc', 'mana', 'matic', 'mkr', 'neo', 'qtum', 'sand', 'snx', 'sol', 'sushi', 'theta', 'trx', 'tusd', 'uni', 'usdc', 'usdt', 'vet', 'waves', 'xlm', 'xmr', 'xrp', 'xtz', 'yfi', 'zec', 'zil'])
 const FLAGS = new Set(['us', 'eu', 'gb', 'ae', 'sa', 'eg', 'kw', 'qa', 'tr', 'in', 'jp', 'ca', 'au', 'ch', 'ma', 'bh', 'om', 'jo', 'cn', 'kr', 'sg', 'hk', 'br', 'mx', 'za', 'ng', 'ru', 'se', 'no', 'dk', 'pl', 'id', 'my', 'th', 'ph', 'pk'])
@@ -42,16 +46,19 @@ function picturesFor(h, image) {
     return [cc && FLAGS.has(cc) && `logos/flags/${cc}.svg`, cc && `https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/flags/1x1/${cc}.svg`, 'logos/assets/cash.svg'].filter(Boolean)
   }
   if (id.startsWith('stock:')) {
-    const url = state.stockLogos[id.slice(6).toUpperCase()]
-    return url ? [url, PROXY(url)] : []
+    const t = id.slice(6).toUpperCase()
+    const url = state.stockLogos[t]
+    return [...(url ? [url, PROXY(url)] : []), `${SITE}/api/icon?stock=${encodeURIComponent(t)}`]
   }
   const sym = (h.coin_symbol || '').toLowerCase()
-  const out = []
+  const out = (state.appLogos[id] || []).map(l => l.src)
   if (BUNDLED_COINS.has(sym)) out.push(`logos/coins/${sym}.svg`)
   for (const u of [image, h.coin_image]) if (u && /^https?:\/\//.test(u) && !out.includes(u)) out.push(u)
+  if (sym) out.push(`${SITE}/api/icon?sym=${encodeURIComponent(sym)}`)
+  for (const u of [image, h.coin_image]) if (u && /^https?:\/\//.test(u)) out.push(`${SITE}/api/icon?url=${encodeURIComponent(u)}`)
   if (sym) out.push(`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${sym}.svg`, `https://assets.coincap.io/assets/icons/${sym}@2x.png`)
-  for (const u of out.slice()) if (/^https?:/.test(u)) out.push(PROXY(u))
-  return out
+  for (const u of out.slice()) if (/^https?:/.test(u) && !u.startsWith(SITE)) out.push(PROXY(u))
+  return [...new Set(out)]
 }
 function letter(h) {
   const id = h.coin_id || ''
@@ -66,9 +73,13 @@ function icon(h, image) {
   const src = picturesFor(h, image)
   if (!src.length) return letter(h)
   const img = el('img', 'ic'); img.alt = ''; img.referrerPolicy = 'no-referrer'
-  if (/^logos\/(assets|flags)\//.test(src[0])) img.classList.add('ic-full')
-  let i = 0; img.src = src[0]
-  img.addEventListener('error', () => { i++; if (i < src.length) img.src = src[i]; else img.replaceWith(letter(h)) })
+  if (/^logos\/assets\/(home|other|cash)\.svg$/.test(src[0])) img.classList.add('ic-full')
+  // A near-black mark (Arweave) on the dark popup gets a white plate, as in the app.
+  const dark = new Set((state.appLogos[h.coin_id] || []).filter(l => l.dark).map(l => l.src))
+  let i = 0
+  const load = () => { img.src = src[i]; img.classList.toggle('ic-plate', dark.has(src[i])) }
+  load()
+  img.addEventListener('error', () => { i++; if (i < src.length) load(); else img.replaceWith(letter(h)) })
   return img
 }
 
@@ -128,6 +139,8 @@ async function load({ quiet = false } = {}) {
   state.p = await loadPortfolio(state.wallet)
   if (!state.p || !state.p.rows.length) { hide('loading'); show('no-data'); return }
   if (state.wallet === 'all') await recordSnapshot(state.p.total)
+  // The logos the app shows, synced from walletlens.live.
+  state.appLogos = (await get(APP_LOGOS_KEY).catch(() => null)) || {}
   // Company logos for stocks: last cached table now, a fresh one when it lands.
   if (state.p.rows.some(r => r.cls === 'stocks')) {
     state.stockLogos = (await get('wl_stock_logos'))?.map || {}
@@ -276,7 +289,7 @@ function row(r, { withSpark = false } = {}) {
   const h = r.h
   const x = el('div', 'r click')
   x.appendChild(icon(h, r.image))
-  const sub = r.cls === 'property' || r.cls === 'other' ? (r.cls === 'property' ? 'Property' : 'Other asset') : `${amount(h.amount)} ${esc((h.coin_symbol || '').toUpperCase())}`
+  const sub = r.cls === 'property' ? 'Property' : r.cls === 'bonds' ? 'Bond' : r.cls === 'other' ? 'Other asset' : `${amount(h.amount)} ${esc((h.coin_symbol || '').toUpperCase())}`
   x.appendChild(el('span', 'nm', `${esc(h.coin_name || h.coin_symbol)}<small class="money">${sub}</small>`))
   if (withSpark) x.appendChild(spark(r.spark))
   // Assets without a market (property, bonds, other) are valued at cost, and
@@ -318,7 +331,7 @@ function renderHoldings() {
   const p = state.p
   $('sort').textContent = SORTS[state.sort] + ' ▾'
   let rows = p.rows.slice()
-  if (state.cls !== 'all') rows = rows.filter(r => state.cls === 'other' ? ['cash', 'property', 'other'].includes(r.cls) : r.cls === state.cls)
+  if (state.cls !== 'all') rows = rows.filter(r => state.cls === 'other' ? ['cash', 'property', 'bonds', 'other'].includes(r.cls) : r.cls === state.cls)
   if (state.sort === 'change') rows.sort((a, b) => (b.chg ?? -1e9) - (a.chg ?? -1e9))
   if (state.sort === 'pnl') rows.sort((a, b) => (b.pnl ?? -1e18) - (a.pnl ?? -1e18))
   $('h-count').textContent = rows.length

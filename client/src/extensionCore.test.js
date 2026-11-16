@@ -31,6 +31,8 @@ describe('extension core', () => {
     expect(s.pnl).toBe(20)
     expect(assetClass('real:home')).toBe('property')
     expect(assetClass('stock:aapl')).toBe('stocks')
+    expect(assetClass('bond:egypt-10y')).toBe('bonds')   // its own class, as in the app
+    expect(assetClass('other:art')).toBe('other')
   })
 
   it('reads a trend into buy, sell or hold with a stop below and targets above', () => {
@@ -128,5 +130,21 @@ describe('extension package and listing', () => {
     expect(content).toMatch(/type: 'SYNC_PRICES'/)
     expect(ext('background.js')).toMatch(/message\.type === 'SYNC_PRICES'/)
     expect(ext('lib/core.js')).toMatch(/fillFromApp\(out, ids, await get\(APP_PRICES_KEY\)/)
+  })
+
+  it('shows each holding with the logo the app shows', () => {
+    // The app's logos, for held coins, reach the popup first in line.
+    const content = ext('content.js')
+    expect(content).toMatch(/const LOGO_RESOLVED_KEY = 'wl_logo_resolved'/)
+    expect(content).toMatch(/const IMAGE_CACHE_KEY = 'crypto_tracker_image_cache_v2'/)
+    expect(content).toMatch(/data: \{ prices, logos, at/)
+    expect(ext('background.js')).toMatch(/\[APP_LOGOS_KEY\]: d\.logos/)
+    const popup = ext('popup.js')
+    expect(popup).toMatch(/const out = \(state\.appLogos\[id\] \|\| \[\]\)\.map\(l => l\.src\)/)
+    expect(popup).toContain('/api/icon?sym=')
+    expect(popup).toContain('/api/icon?stock=')
+    // Bonds and metals: the app's own badges, not separate drawings.
+    expect(ext('logos/assets/bond.svg')).toContain('M8.5 8.2h11.2l3.8 3.8')   // BondBadge's certificate
+    for (const m of ['gold', 'silver', 'platinum', 'copper']) expect(ext(`logos/assets/${m}.svg`)).toContain('fill="#0f172a"')   // AssetIconBadge's plate
   })
 })
