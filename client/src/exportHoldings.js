@@ -3,6 +3,10 @@
 // hits the main bundle on first load). PDF uses a print-friendly HTML page
 // opened in a new window — zero extra dependencies, works on mobile too.
 
+import { saveFile } from './fileOut'
+
+export const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
 function formatNum(n, decimals = 2) {
   if (!Number.isFinite(n)) return 0
   return Number(n.toFixed(decimals))
@@ -49,8 +53,13 @@ export async function exportToExcel(holdings, totalValue, currency = 'USD') {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Holdings')
 
+  // Saved through fileOut, not XLSX.writeFile: writeFile clicks a download
+  // link, which the Android app's WebView ignores without a word, so the
+  // Excel button did nothing there. saveFile hands the bytes to the app,
+  // which puts the file in Downloads; in a browser it downloads as before.
   const date = new Date().toISOString().slice(0, 10)
-  XLSX.writeFile(wb, `walletlens-holdings-${date}.xlsx`)
+  const bytes = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+  return saveFile(new Blob([bytes], { type: XLSX_MIME }), `walletlens-holdings-${date}.xlsx`)
 }
 
 // Brand mark — the WalletLens magnifier logo, inlined as SVG so it renders in
