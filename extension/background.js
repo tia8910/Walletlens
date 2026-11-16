@@ -8,7 +8,7 @@
  */
 
 import {
-  ext, STORAGE_KEY, loadPortfolio, getSettings, saveSettings, recordSnapshot,
+  ext, STORAGE_KEY, APP_PRICES_KEY, loadPortfolio, getSettings, saveSettings, recordSnapshot,
   evaluateAlerts, badgeFor, fxRates,
 } from './lib/core.js'
 
@@ -88,6 +88,13 @@ ext.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (!message) return false
   if (message.type === 'SYNC_PORTFOLIO') {
     handleSyncPortfolio(message.data)
+    sendResponse({ ok: true })
+    return false
+  }
+  // The app's own prices for the held coins, from walletlens.live.
+  if (message.type === 'SYNC_PRICES') {
+    const d = message.data || {}
+    if (d.prices && typeof d.prices === 'object') ext.storage.local.set({ [APP_PRICES_KEY]: { prices: d.prices, at: Number(d.at) || Date.now() } })
     sendResponse({ ok: true })
     return false
   }

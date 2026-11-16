@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  computeHoldings, summarize, signalFrom, evaluateAlerts, badgeFor, money, DEFAULT_SETTINGS, assetClass,
+  computeHoldings, summarize, signalFrom, evaluateAlerts, badgeFor, money, DEFAULT_SETTINGS, assetClass, fillFromApp, APP_PRICES_TTL,
 } from '../../extension/lib/core.js'
 
 // The browser extension's shared core (extension/lib/core.js) and its store
@@ -74,7 +74,7 @@ describe('extension package and listing', () => {
   const BRANDS = /binance|coinbase|kraken|robinhood|metamask|bybit|okx|ledger|trezor|etoro/i
 
   it('is version 2 with a name and summary inside the store limits', () => {
-    expect(manifest.version).toBe('2.0.2')
+    expect(manifest.version).toBe('2.0.3')
     expect(manifest.name.length).toBeLessThanOrEqual(75)
     expect(manifest.description.length).toBeLessThanOrEqual(132)
     expect(manifest.background).toEqual({ service_worker: 'background.js', type: 'module' })
@@ -105,5 +105,28 @@ describe('extension package and listing', () => {
 
   it('explains every permission it asks for', () => {
     for (const perm of manifest.permissions) expect(listing).toMatch(new RegExp(`\\*\\*${perm}\\*\\*:`))
+  })
+  it('prices from the app what its own sources could not, instead of at cost', () => {
+    const now = 1_000_000_000
+    const app = { at: now - 60_000, prices: { stonkbroker: { usd: 0.00366, chg: -3.5 }, 'metal:xau': { usd: 3876, chg: -0.28 }, bitcoin: { usd: 1, chg: 9 } } }
+    const out = { bitcoin: { usd: 64594, chg: -1 }, 'metal:xau': { usd: 3880, chg: null }, sui: { usd: 0.7, chg: 1, stale: true } }
+    fillFromApp(out, ['bitcoin', 'metal:xau', 'stonkbroker', 'sui'], app, now)
+    expect(out.stonkbroker).toEqual({ usd: 0.00366, chg: -3.5, fromApp: true })
+    expect(out['metal:xau']).toEqual({ usd: 3880, chg: -0.28 })   // live price kept, day change filled
+    expect(out.bitcoin).toEqual({ usd: 64594, chg: -1 })          // a live price is never replaced
+    const old = fillFromApp({}, ['stonkbroker'], { ...app, at: now - APP_PRICES_TTL - 1 }, now)
+    expect(old.stonkbroker).toBeUndefined()                         // a copy over 12 hours old is not used
+    // a held coin priced from the app is worth its price, not its cost
+    const m = computeHoldings([{ coin_id: 'stonkbroker', type: 'buy', amount: 26339, total_cost: 2000 }])
+    expect(summarize(m, { stonkbroker: out.stonkbroker }).total).toBeCloseTo(96.4, 0)
+  })
+
+  it('sends the app prices for held coins only, and stores them', () => {
+    const content = ext('content.js')
+    expect(content).toMatch(/const APP_PRICE_KEY = 'crypto_tracker_price_cache_v1'/)
+    expect(content).toMatch(/for \(const id of held\)/)
+    expect(content).toMatch(/type: 'SYNC_PRICES'/)
+    expect(ext('background.js')).toMatch(/message\.type === 'SYNC_PRICES'/)
+    expect(ext('lib/core.js')).toMatch(/fillFromApp\(out, ids, await get\(APP_PRICES_KEY\)/)
   })
 })

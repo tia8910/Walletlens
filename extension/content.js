@@ -95,8 +95,44 @@ function handleAppMessage(event) {
 
 window.addEventListener('message', handleAppMessage);
 
+/**
+ * The app's own latest prices, for the coins this portfolio holds only.
+ *
+ * The extension prices from CoinGecko, and when CoinGecko rate limits or is
+ * blocked, a coin outside the top 250 had no price and was counted at what was
+ * paid for it (a small coin bought for $2,000 and now worth $96 showed as
+ * $2,000), metals had no day change, and the total drifted far from the app.
+ * The app already prices everything (Binance, DexScreener, metals, stocks),
+ * so its prices are borrowed as a fallback.
+ */
+const APP_PRICE_KEY = 'crypto_tracker_price_cache_v1';
+let lastPriceHash = null;
+function syncPrices(force) {
+  try {
+    const raw = localStorage.getItem(APP_PRICE_KEY);
+    if (!raw) return;
+    let h = 2166136261; for (let i = 0; i < raw.length; i++) { h ^= raw.charCodeAt(i); h = (h * 16777619) >>> 0 }
+    const hash = h + ':' + raw.length;
+    if (!force && hash === lastPriceHash) return;
+    lastPriceHash = hash;
+    const cache = JSON.parse(raw) || {};
+    const held = new Set((JSON.parse(localStorage.getItem(TX_KEY) || '[]') || []).map(t => String(t && t.coin_id || '')));
+    const prices = {};
+    for (const id of held) {
+      const p = cache[id];
+      const usd = Number(p && p.usd);
+      if (!(usd > 0)) continue;
+      const chg = Number(p.usd_24h_change);
+      prices[id] = { usd, chg: Number.isFinite(chg) ? chg : null };
+    }
+    if (!Object.keys(prices).length) return;
+    ext.runtime.sendMessage({ type: 'SYNC_PRICES', data: { prices, at: Date.now() } }).catch(() => {});
+  } catch {}
+}
+
 // Initial sync when the content script loads
 syncPortfolio();
+setTimeout(() => syncPrices(true), 4000); // after the app's first price fetch
 
 // Re-sync whenever localStorage changes (same-tab writes)
 window.addEventListener('storage', (event) => {
@@ -117,7 +153,7 @@ ext.runtime.onMessage.addListener((message) => {
 });
 
 // Sync before the tab closes so trades added just before closing aren't lost.
-window.addEventListener('beforeunload', syncPortfolio);
+window.addEventListener('beforeunload', () => { syncPortfolio(); syncPrices(true); });
 
 // Also observe localStorage mutation from within the same tab via a
 // MutationObserver on storage isn't possible, but we can poll using
@@ -149,6 +185,8 @@ function pollLocalStorage() {
 
 // Poll every 10 seconds while the tab is active
 setInterval(pollLocalStorage, 10_000);
+// Prices change constantly: send them once a minute when they did.
+setInterval(() => { if (!document.hidden) syncPrices(false); }, 60_000);
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) pollLocalStorage();
 });

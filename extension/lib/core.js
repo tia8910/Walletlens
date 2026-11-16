@@ -14,6 +14,8 @@ export const HISTORY_KEY = 'wl_nw_history'      // [{ d: 'YYYY-MM-DD', v: usd }]
 export const INTRADAY_KEY = 'wl_nw_intraday'    // [{ t: ms, v: usd }] last 24h
 export const RATES_KEY = 'wl_fx_rates'
 export const PRICE_CACHE_KEY = 'wl_price_cache_v2'
+export const APP_PRICES_KEY = 'wl_app_prices'     // { prices: { id: { usd, chg } }, at } from walletlens.live
+export const APP_PRICES_TTL = 12 * 3600e3
 
 const CG = 'https://api.coingecko.com/api/v3'
 const PROXY = u => `https://walletlens-voice.tarek-abdelhameed.workers.dev/proxy?url=${encodeURIComponent(u)}`
@@ -145,7 +147,7 @@ async function cryptoPrices(ids) {
     missing = missing.filter(id => !(prices[id]?.usd > 0))
   }
   // Still nothing: the last price we had beats the cost.
-  for (const id of missing) if (cache?.prices?.[id]?.usd > 0) prices[id] = cache.prices[id]
+  for (const id of missing) if (cache?.prices?.[id]?.usd > 0) prices[id] = { ...cache.prices[id], stale: true }
   if (Object.keys(prices).length) await set(PRICE_CACHE_KEY, { key, prices, at: Date.now() })
   return prices
 }
@@ -221,9 +223,30 @@ export async function priceAll(map) {
   stocks.forEach(id => { if (sq[id]) out[id] = sq[id] })
   metals.forEach((id, i) => { if (mp[i]) out[id] = { usd: mp[i], chg: null } })
   fiats.forEach(id => { const r = rates[id.slice(5).toUpperCase()]; if (r > 0) out[id] = { usd: 1 / r, chg: 0 } })
+  // The app's own prices, synced when walletlens.live was last open, for
+  // anything the sources above could not price and for a missing day change.
+  // Before this, a coin outside the top 250 fell straight to its cost.
+  fillFromApp(out, ids, await get(APP_PRICES_KEY).catch(() => null))
   // Bonds, property and anything without a market are valued at cost, so they
   // still count toward the total instead of disappearing.
   for (const [id, h] of map) if (!out[id]?.usd && h.amount > 0 && h.totalCost > 0) out[id] = { usd: h.totalCost / h.amount, chg: null, estimated: true }
+  return out
+}
+
+/**
+ * Fill prices from the app's synced copy: a missing price, or a missing day
+ * change, when the copy is under 12 hours old. Never replaces a live price.
+ * Pure on its arguments, for the test.
+ */
+export function fillFromApp(out, ids, app, now = Date.now()) {
+  if (!app || !app.prices || !(now - (Number(app.at) || 0) < APP_PRICES_TTL)) return out
+  for (const id of ids) {
+    const a = app.prices[id]
+    if (!(Number(a?.usd) > 0)) continue
+    const chg = Number.isFinite(Number(a.chg)) && a.chg !== null ? Number(a.chg) : null
+    if (!(out[id]?.usd > 0) || out[id].stale) out[id] = { usd: Number(a.usd), chg, fromApp: true }
+    else if ((out[id].chg == null || out[id].estimated) && chg != null) out[id] = { ...out[id], chg }
+  }
   return out
 }
 
