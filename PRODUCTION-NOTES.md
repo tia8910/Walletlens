@@ -32,6 +32,9 @@
 - الـoutro الثابت: `assets/walletlens-academy-outro.mp4` (٢١ ثانية بالصوت). كارت المنصات فيه لوجو كل منصة واليوزرنيم من linktr.ee/Walletlens: YouTube @walletlensacademy و@walletlens، TikTok @walletlens.academ، Instagram @walletlensacademy، X @wlshorts، LinkedIn WalletLens Investment Academy. من غير فيسبوك.
 - لو أي منصة اتغيرت، الـoutro يتعمل تاني.
 
+## الووتر مارك (إلزامي)
+- `assets/walletlens-academy-watermark.png` فوق على الشمال (30,24)، عرض 260px، شفافية 85٪، على الحلقة كلها ما عدا كارت السلسلة والـoutro.
+
 ## الرفع
 - الفيديو مضغوط تحت ١٠٠ ميجا ومرفوع على برانش `academy-videos` (هنا)، مع الثامبنيل وملف بيانات يوتيوب.
 - الفولدر المؤقت بيتمسح أحيانًا: أي اسكربت أو ملف مهم يتنسخ هنا.
