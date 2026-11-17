@@ -88,6 +88,20 @@ describe('the critical path stays lean', () => {
     expect(graph.packages.has('react-router-dom')).toBe(true)
   })
 
+  it('lets the Dashboard paint before recharts arrives', () => {
+    // Dashboard used to import recharts statically, so the home screen could
+    // not show the balance or a single holding until the whole charts chunk
+    // (~440 KB, ~117 KB gzipped) had downloaded and evaluated — every chart
+    // on it sits below the balance. Charts now go through <LazyCharts>.
+    const dash = staticGraph(join(src, 'pages', 'Dashboard.jsx'))
+    expect(dash.packages.has('recharts')).toBe(false)
+    const lazy = readFileSync(join(src, 'components', 'LazyCharts.jsx'), 'utf8')
+    // Through the named re-exports, not import('recharts'): a namespace
+    // import defeats tree-shaking and grew the chunk by ~70 KB.
+    expect(lazy).toMatch(/import\('\.\.\/chartKit'\)/)
+    expect(lazy).not.toMatch(/import\('recharts'\)/)
+  })
+
   it('loads the Drive auto-backup dynamically', () => {
     const app = readFileSync(join(src, 'App.jsx'), 'utf8')
     expect(app).toMatch(/import\('\.\/driveAutoBackup'\)/)
