@@ -2,10 +2,8 @@ import { lazy, Suspense, memo, useEffect, useMemo, useRef, useState, useCallback
 import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { isV2Active } from '../v2Preview'
-import {
-  ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line,
-  PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
-} from 'recharts'
+// recharts loads beside the first render, not before it — see LazyCharts.
+import LazyCharts from '../components/LazyCharts'
 import { api, getCachedCoinImage } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
@@ -4957,7 +4955,8 @@ export default function Dashboard() {
               // Driven directly by the real perfSeries values (snapshots → transaction
               // replay → simulation), so the curve is accurate across all chart types.
               return (
-                <ResponsiveContainer key={perfTf + chartType} width="100%" height={180}>
+                <LazyCharts key={perfTf + chartType} height={180}>{({ ResponsiveContainer, ComposedChart, Area, Line, Bar, Tooltip, XAxis, YAxis, ReferenceLine }) => (
+                <ResponsiveContainer width="100%" height={180}>
                   <ComposedChart data={isCandles ? perfCandles : perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}>
                     <defs>
                       <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -5012,6 +5011,7 @@ export default function Dashboard() {
                     )}
                   </ComposedChart>
                 </ResponsiveContainer>
+                )}</LazyCharts>
               )
             })()}
             {!isDemo && totalValue > 0 && (
@@ -5122,6 +5122,7 @@ export default function Dashboard() {
               {cardVis.pnl_chart && pnlData.length > 0 && (
                 <div className="glass-card">
                   <h3 style={{ margin:'0 0 0.75rem' }}>{t('dsPnlByAsset')}</h3>
+                  <LazyCharts height={160}>{({ ResponsiveContainer, BarChart, Bar, Cell, CartesianGrid, XAxis, YAxis, ReferenceLine, Tooltip }) => (
                   <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={pnlData} margin={{ left:0, right:0, top:4, bottom:0 }}>
                       <defs>
@@ -5148,6 +5149,7 @@ export default function Dashboard() {
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
+                  )}</LazyCharts>
                 </div>
               )}
 
@@ -5555,6 +5557,7 @@ export default function Dashboard() {
                 {catAllocData.length === 0
                   ? <p className="muted">{t('noHoldings')}</p>
                   : <>
+                    <LazyCharts height={200}>{({ ResponsiveContainer, PieChart, Pie, Cell, Tooltip }) => (
                     <ResponsiveContainer width="100%" height={200}>
                       <PieChart>
                         <Pie data={catAllocData} dataKey="value" cx="50%" cy="50%"
@@ -5564,6 +5567,7 @@ export default function Dashboard() {
                         <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color:'var(--text)', fontWeight:700 }} labelStyle={{ color:'var(--text)', fontWeight:700 }} formatter={(v, n) => [cv(v), n]}/>
                       </PieChart>
                     </ResponsiveContainer>
+                    )}</LazyCharts>
                     <ul className="dvx-legend">
                       {catAllocData.map((d, i) => (
                         <li key={d.name} className="dvx-legend-item">
@@ -5585,49 +5589,6 @@ export default function Dashboard() {
                   </>
                 }
               </div>}
-
-              {/* Net Worth History — removed */}
-              {false && !isDemo && transactions.length > 0 && (() => {
-                const now = Date.now()
-                const days = 30
-                const points = Array.from({ length: days }, (_, i) => {
-                  const cutoff = now - (days - 1 - i) * 86400000
-                  const invested = transactions
-                    .filter(tx => new Date(tx.date).getTime() <= cutoff)
-                    .reduce((s, tx) => {
-                      const val = (tx.amount || 0) * (tx.price_per_unit || 0)
-                      return tx.type === 'buy' ? s + val : s - val
-                    }, 0)
-                  return { day: i + 1, v: Math.max(0, invested) }
-                })
-                const minV = Math.min(...points.map(p => p.v))
-                const maxV = Math.max(...points.map(p => p.v))
-                if (maxV === minV) return null
-                return (
-                  <div className="glass-card">
-                    <div style={CHART_HDR_STYLE}>
-                      <h3 style={{ margin:0, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="pulse" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('cardNetWorthHistory')}</h3>
-                      <span className="muted" style={{ fontSize:'0.72rem' }}>{t('dsInvestedCapital30d')}</span>
-                    </div>
-                    <ResponsiveContainer width="100%" height={175}>
-                      <AreaChart data={points} margin={{ left:0, right:8, top:10, bottom:0 }}>
-                        <defs>
-                          <linearGradient id="nwg" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="var(--g)" stopOpacity={0.22}/>
-                            <stop offset="75%" stopColor="var(--g)" stopOpacity={0.04}/>
-                            <stop offset="100%" stopColor="var(--g)" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} strokeDasharray="2 6"/>
-                        <YAxis tick={{ fill:'rgba(255,255,255,0.3)', fontSize:9 }} axisLine={false} tickLine={false}
-                          tickFormatter={v => cvN(v)} width={42}/>
-                        <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color:'var(--text)', fontWeight:700 }} labelStyle={{ color:'var(--text)', fontWeight:700 }} formatter={v => [cv(v), 'Invested']} labelFormatter={l => `Day ${l}`} cursor={{ stroke:'rgba(255,255,255,0.12)' }}/>
-                        <Area type="monotone" dataKey="v" stroke="var(--g)" strokeWidth={1.5} fill="url(#nwg)" dot={false} activeDot={{ r:4, fill:'var(--g)', stroke:'var(--bg)', strokeWidth:2 }}/>
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                )
-              })()}
 
               {/* Market Mood — sentiment from crypto headlines */}
               {cardVis.market_mood && (enriched.length > 0 || isDemo) && <MarketMood />}
