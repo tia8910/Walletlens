@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useLayoutEffect } from 'react'
 
 // The light card redesign ("new look") is the only look now. It is a layer on top of v2: html.wl-v3 scopes every rule
 // in v3.css and switches on the new Home sections.
@@ -39,9 +39,11 @@ export function useNewLook() {
   return on
 }
 
-/** Puts html.wl-v3 on while the new look is on, inside the app only. */
+/** Puts html.wl-v3 on while the new look is on, inside the app only.
+ *  A layout effect for the same reason as useV2Class: before first paint, so
+ *  the topbar is never drawn in one layout and then moved into another. */
 export function useNewLookClass(active) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.classList.toggle('wl-v3', !!active)
     return () => document.documentElement.classList.remove('wl-v3')
   }, [active])

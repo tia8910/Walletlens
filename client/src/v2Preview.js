@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useLayoutEffect } from 'react'
 
 // The v2 design is live: it is the app's only look, on /dashboard.
 //
@@ -23,9 +23,14 @@ export function isV2Active() {
 /** Where "Dashboard" goes. */
 export const homePath = () => V2_PATH
 
-/** Scopes every v2 style rule: they are all written under html.wl-v2. */
+/** Scopes every v2 style rule: they are all written under html.wl-v2.
+ *
+ *  A layout effect, so the class is on <html> before the first frame of the
+ *  app is painted. As a passive effect it landed one frame late: the topbar
+ *  was painted in the pre-v2 layout, then re-laid out — a layout shift on
+ *  every app load. */
 export function useV2Class(active) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.classList.toggle('wl-v2', active)
   }, [active])
 }
