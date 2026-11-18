@@ -253,6 +253,19 @@ const _idAliasCache = _loadCache(ID_ALIAS_CACHE_KEY);
 
 // Pre-warm Binance prices for the most-traded coins in the background
 // so the trade sheet gets an instant cache hit instead of waiting on fetch.
+// Whether a Binance /ticker/24hr row is a market that is trading now.
+//
+// A pair Binance has halted or delisted stays in that list with its last
+// trade frozen: the price it had that day and a 0% change, forever. A device
+// that can reach Binance took that as the price (Arweave at $3.10, 0.0%
+// today, while the phone, where Binance is blocked, showed CoinGecko's $2.52).
+// Now a row counts only with trades in the last 24 hours that ran into the
+// last two; anything else falls through to the next source.
+export function binanceRowLive(row, now = Date.now()) {
+  const close = Number(row?.closeTime);
+  return Number(row?.count) > 0 && Number.isFinite(close) && close > now - 2 * 3600e3;
+}
+
 const TOP_BINANCE_TICKERS = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT','ADAUSDT','DOGEUSDT','AVAXUSDT','DOTUSDT','LINKUSDT','LTCUSDT','BCHUSDT','NEARUSDT','ARBUSDT','OPUSDT','SUIUSDT'];
 const TOP_BINANCE_ID = {'BTC':'bitcoin','ETH':'ethereum','BNB':'binancecoin','SOL':'solana','XRP':'ripple','ADA':'cardano','DOGE':'dogecoin','AVAX':'avalanche-2','DOT':'polkadot','LINK':'chainlink','LTC':'litecoin','BCH':'bitcoin-cash','NEAR':'near','ARB':'arbitrum','OP':'optimism','SUI':'sui'};
 
@@ -570,7 +583,7 @@ async function binanceTickers() {
   const out = {};
   for (const r of list) {
     const sym = String(r.symbol || '');
-    if (!sym.endsWith('USDT')) continue;
+    if (!sym.endsWith('USDT') || !binanceRowLive(r)) continue;
     const usd = parseFloat(r.lastPrice);
     if (isFinite(usd) && usd > 0) out[sym.slice(0, -4)] = { usd, change: parseFloat(r.priceChangePercent) };
   }
@@ -984,7 +997,7 @@ async function fetchStockLive(coinId) {
           const data = await res.json();
           const price = parseFloat(data.lastPrice);
           const pct   = parseFloat(data.priceChangePercent);
-          if (isFinite(price) && price > 0) {
+          if (binanceRowLive(data) && isFinite(price) && price > 0) {
             const parsed = { usd: price, usd_24h_change: isFinite(pct) ? pct : 0, name: `${tickerUp} bStock` };
             stockCache[coinId] = parsed; stockCacheTime[coinId] = now;
             return parsed;
@@ -2250,6 +2263,7 @@ export const api = {
                       const tkr = sym.replace(/USDT$/, '');
                       const id = symToId[tkr];
                       if (!id) continue;
+                      if (!binanceRowLive(row)) continue;
                       const usd = parseFloat(row.lastPrice);
                       if (!isFinite(usd) || usd <= 0) continue;
                       priceCache[id] = {
