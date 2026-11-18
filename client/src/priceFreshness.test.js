@@ -41,8 +41,8 @@ describe('price freshness is decided per coin', () => {
         status: 200,
         async json() {
           return [
-            { symbol: 'BTCUSDT', lastPrice: String(btcPrice), priceChangePercent: '1' },
-            { symbol: 'ETHUSDT', lastPrice: String(ethPrice), priceChangePercent: '1' },
+            { symbol: 'BTCUSDT', lastPrice: String(btcPrice), priceChangePercent: '1', count: 1000, closeTime: Date.now() },
+            { symbol: 'ETHUSDT', lastPrice: String(ethPrice), priceChangePercent: '1', count: 1000, closeTime: Date.now() },
           ]
         },
         async text() { return '' },
@@ -74,7 +74,7 @@ describe('price freshness is decided per coin', () => {
     const calls = []
     vi.stubGlobal('fetch', vi.fn(async (url) => {
       calls.push(String(url))
-      return { ok: true, status: 200, async json() { return [{ symbol: 'BTCUSDT', lastPrice: '90000', priceChangePercent: '1' }] }, async text() { return '' } }
+      return { ok: true, status: 200, async json() { return [{ symbol: 'BTCUSDT', lastPrice: '90000', priceChangePercent: '1', count: 1000, closeTime: Date.now() }] }, async text() { return '' } }
     }))
     const { api } = await import('./api')
     await api.getPrices('bitcoin')
@@ -111,7 +111,7 @@ describe('price freshness is decided per coin', () => {
       calls.push(u)
       // Binance answers, and simply does not carry this token.
       if (u.includes('binance')) {
-        return { ok: true, status: 200, async json() { return [{ symbol: 'BTCUSDT', lastPrice: '90000', priceChangePercent: '1' }] }, async text() { return '' } }
+        return { ok: true, status: 200, async json() { return [{ symbol: 'BTCUSDT', lastPrice: '90000', priceChangePercent: '1', count: 1000, closeTime: Date.now() }] }, async text() { return '' } }
       }
       if (u.includes('coins/markets')) {
         return {
@@ -167,7 +167,7 @@ describe('price freshness is decided per coin', () => {
       calls.push(String(url))
       return {
         ok: true, status: 200,
-        async json() { return [{ symbol: 'BTCUSDT', lastPrice: '91234', priceChangePercent: '2' }] },
+        async json() { return [{ symbol: 'BTCUSDT', lastPrice: '91234', priceChangePercent: '2', count: 1000, closeTime: Date.now() }] },
         async text() { return '' },
       }
     }))
@@ -191,7 +191,7 @@ describe('price freshness is decided per coin', () => {
     ]))
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true, status: 200,
-      async json() { return [{ symbol: 'BTCUSDT', lastPrice: '91234', priceChangePercent: '2' }] },
+      async json() { return [{ symbol: 'BTCUSDT', lastPrice: '91234', priceChangePercent: '2', count: 1000, closeTime: Date.now() }] },
       async text() { return '' },
     })))
     const { api } = await import('./api')
