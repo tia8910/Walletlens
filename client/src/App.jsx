@@ -826,10 +826,15 @@ export default function App() {
   // likely navigation is instant. On the landing page we pre-warm all core app
   // pages; from within the app we prefetch the most common next destinations.
   useEffect(() => {
-    const schedule = requestIdleCallback
-      ? (fn, opts) => requestIdleCallback(fn, opts)
+    // Read off window, never as a bare identifier: where the API does not exist
+    // (Safari, older WebViews) a bare `requestIdleCallback` is a ReferenceError,
+    // thrown inside this effect, and the error boundary replaces the whole app
+    // with "Something went wrong".
+    const ric = typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback.bind(window) : null
+    const schedule = ric
+      ? (fn, opts) => ric(fn, opts)
       : (fn, opts) => setTimeout(fn, opts?.timeout ?? 2000)
-    const cancel = requestIdleCallback ? cancelIdleCallback : clearTimeout
+    const cancel = ric ? (id) => window.cancelIdleCallback(id) : clearTimeout
 
     const path = location.pathname
     const ids = []

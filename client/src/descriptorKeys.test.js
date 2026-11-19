@@ -91,7 +91,7 @@ describe('module-scope descriptors resolve to real copy', () => {
 
 describe('the import tree flips with the page', () => {
   const css = readFileSync(join(SRC, 'index.css'), 'utf8')
-  const block = css.slice(css.indexOf('.wl-import-tree {'), css.indexOf('/* ── Knowledge Wheel'))
+  const block = css.slice(css.indexOf('.wl-import-tree {'), css.indexOf('/* ── Onboarding Tour (v2)'))
 
   it('reads the right block', () => {
     expect(block).toContain('.wl-import-node-label')
