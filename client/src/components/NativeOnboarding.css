@@ -19,7 +19,12 @@
 .ocx-bar.done i { width: 100%; }
 .ocx-bar.now i { animation: ocx-fill 0.9s cubic-bezier(0.22,1,0.36,1) forwards; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 @keyframes ocx-fill { to { width: 100%; } }
-.ocx-top-row { display: flex; align-items: center; justify-content: space-between; margin-top: 0.55rem; }
+.ocx-top-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-top: 0.55rem; }
+.ocx-top-row > :last-child { justify-self: end; }
+/* Skip: quiet, in the top corner; it jumps to the last step. */
+.ocx-skip { min-height: 36px; padding: 0 0.9rem; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.78); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+.ocx-skip:active { transform: scale(0.96); }
 .ocx-ghost { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; padding: 0;
   background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: #fff; cursor: pointer; }
 .ocx-ghost-ph { width: 36px; }

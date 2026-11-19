@@ -43,8 +43,8 @@ const SLIDES = [
 
 // "Hello" in each language's own words, for the language drum.
 const HELLO = { en: 'Hello', ar: 'مرحبا', fr: 'Bonjour', es: 'Hola', de: 'Hallo', it: 'Ciao' }
-const FEATURE_KEYS = ['obFeatPrivate', 'obFeatLivePnl', 'obFeatInsights', 'obFeatFree']
-const FEATURE_ICONS = { obFeatPrivate: 'lock', obFeatLivePnl: 'pulse', obFeatInsights: 'sparkles', obFeatFree: 'gift' }
+const FEATURE_KEYS = ['obFeatPrivate', 'obFeatLivePnl', 'obFeatInsights', 'obFeatAlarms', 'obFeatFree']
+const FEATURE_ICONS = { obFeatPrivate: 'lock', obFeatLivePnl: 'pulse', obFeatInsights: 'sparkles', obFeatAlarms: 'bell', obFeatFree: 'gift' }
 
 /**
  * The slides this context can actually deliver.
@@ -170,6 +170,37 @@ export default function NativeOnboarding({ onDone }) {
       try { sfx.playRise(i > step) } catch {}
     }
   }, [step, total])
+
+  // The phone's Back button steps back through the story instead of leaving
+  // the app from the middle of it. The Android app's Back follows the page's
+  // history, so one entry is added while onboarding is open; Back on a later
+  // step goes one step back and puts the entry back. On the first step Back
+  // works as usual. The entry is taken away again when onboarding closes, so
+  // the first Back on the dashboard is not swallowed.
+  const stepRef = useRef(step)
+  stepRef.current = step
+  const goPrevRef = useRef(goPrev)
+  goPrevRef.current = goPrev
+  useEffect(() => {
+    try { window.history.pushState({ ...(window.history.state || {}), wlOnboard: true }, '') } catch { /* no history */ }
+    const onPop = () => {
+      if (stepRef.current > 0) {
+        goPrevRef.current()
+        try { window.history.pushState({ ...(window.history.state || {}), wlOnboard: true }, '') } catch { /* no history */ }
+      }
+    }
+    window.addEventListener('popstate', onPop)
+    return () => {
+      window.removeEventListener('popstate', onPop)
+      try { if (window.history.state?.wlOnboard) window.history.back() } catch { /* no history */ }
+    }
+  }, [])
+
+  /** Skip to the last step, so the launch still happens and onboarding is marked done. */
+  const skip = useCallback(() => {
+    try { track('onboarding_skip', { from: slides[step]?.id }) } catch {}
+    goTo(total - 1)
+  }, [goTo, step, total, slides])
 
   // Tapping the lens snaps the shutter closed and open again.
   function snap() {
@@ -478,7 +509,7 @@ export default function NativeOnboarding({ onDone }) {
         <div className="ocx-top-row">
           {step > 0 ? <button className="ocx-ghost" onClick={goPrev} aria-label={t('obBack')}><Icon name="arrow-down" size={18} /></button> : <span className="ocx-ghost-ph" />}
           <span className="ocx-count">{t('obStepOf')(step + 1, total)}</span>
-          <span className="ocx-ghost-ph" />
+          {!s.final ? <button className="ocx-skip" onClick={skip}>{t('obSkip')}</button> : <span className="ocx-ghost-ph" />}
         </div>
       </div>
 

@@ -367,6 +367,7 @@ export default {
     obFeatPrivate: 'Privato',
     obFeatLivePnl: 'U/P in tempo reale',
     obFeatInsights: 'Approfondimenti',
+    obFeatAlarms: "Allarmi",
     obFeatFree: 'Gratis',
     obThemeEyebrow: 'PERSONALIZZA',
     obThemeTitle: 'Rendilo tuo',

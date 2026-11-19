@@ -346,6 +346,7 @@ export default {
     obFeatPrivate: 'Privado',
     obFeatLivePnl: 'P&L en vivo',
     obFeatInsights: 'Información',
+    obFeatAlarms: "Alarmas",
     obFeatFree: 'Gratis',
     obThemeEyebrow: 'PERSONALIZACIÓN',
     obThemeTitle: 'Hazlo tuyo',

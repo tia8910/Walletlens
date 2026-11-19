@@ -367,6 +367,7 @@ export default {
     obFeatPrivate: 'خصوصية تامة',
     obFeatLivePnl: 'أرباح وخسائر مباشرة',
     obFeatInsights: 'رؤى تحليلية',
+    obFeatAlarms: "منبهات",
     obFeatFree: 'مجاني',
     obThemeEyebrow: 'التخصيص',
     obThemeTitle: 'اجعله على ذوقك',
