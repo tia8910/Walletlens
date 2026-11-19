@@ -3,10 +3,10 @@ import { api } from '../api'
 import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
 import { showLocalNotification } from '../localNotify'
-import { raiseAlarm } from '../alarm'
+import { deliverAlarm } from '../alarm'
 import { computeChartSignals, loadChartParams } from '../chartSignals'
 import {
-  loadProAlerts, saveProAlerts, evaluateSignal, evaluateGoal, portfolioSummary, alarmKind,
+  loadProAlerts, saveProAlerts, evaluateSignal, evaluateGoal, portfolioSummary, alarmKind, alarmTone,
 } from '../alertRules'
 
 // Checks every alert while the app is open, on any page, and rings the
@@ -53,7 +53,7 @@ export async function checkAlerts({ t, getPrices, getPortfolio, getCandles, now 
     priceChanged = true
     const sym = String(a.coin_symbol || a.coin_id).toUpperCase()
     fired.push({
-      id: `price:${a.id}`, kind: 'price',
+      id: `price:${a.id}`, kind: 'price', tone: alarmTone({ type: 'price', condition: a.condition }),
       title: `${t(a.condition === 'above' ? 'paHitAbove' : 'paHitBelow')} ${sym}`,
       body: t('paTargetBody')(sym, money(cur), money(a.targetPrice)),
       price: money(cur), url: `/asset/${encodeURIComponent(a.coin_id)}`,
@@ -77,7 +77,7 @@ export async function checkAlerts({ t, getPrices, getPortfolio, getCandles, now 
       proChanged = true
       const shown = r.kind.startsWith('value') ? money(res.value) : `${res.value >= 0 && r.kind.startsWith('pnl') ? '+' : ''}${res.value.toFixed(1)}%`
       fired.push({
-        id: `goal:${r.id}`, kind: 'goal',
+        id: `goal:${r.id}`, kind: 'goal', tone: alarmTone(r),
         title: t(`alGoalTitle_${r.kind}`)(r.kind === 'weight_above' ? String(r.symbol || '').toUpperCase() : null),
         body: t(`alGoalBody_${r.kind}`)(r.kind.startsWith('value') ? money(r.target) : `${Math.abs(Number(r.target))}%`, String(r.symbol || '').toUpperCase()),
         price: shown, url: '/dashboard',
@@ -100,7 +100,7 @@ export async function checkAlerts({ t, getPrices, getPortfolio, getCandles, now 
     proChanged = true
     const sym = String(r.symbol || r.coin_id).toUpperCase()
     fired.push({
-      id: `signal:${r.id}`, kind: alarmKind(r),
+      id: `signal:${r.id}`, kind: alarmKind(r), tone: alarmTone(r),
       title: t('alSigTitle')(sym, t(`alEv_${r.event}`)),
       body: t('alSigBody')(t(r.tf === '4h' ? 'alTf4h' : 'alTf1d'), res.rsi != null ? Math.round(res.rsi) : null),
       price: money(res.price), url: `/asset/${encodeURIComponent(r.coin_id)}`,
@@ -133,9 +133,12 @@ export default function AlertEngine() {
         })
         if (!alive) return
         for (const a of fired) {
-          raiseAlarm(a)
-          // Away from the tab: the system notification is how it is seen.
-          if (typeof document !== 'undefined' && document.hidden) showLocalNotification(a.title, { body: a.body, tag: a.id, data: { url: a.url, channel: 'alerts' } })
+          // As an alarm, if the user keeps alarms on (native in the Android
+          // app). Alarms off, or away from a browser tab: a plain notification.
+          const how = deliverAlarm(a)
+          if (how === 'off' || (how === 'page' && typeof document !== 'undefined' && document.hidden)) {
+            showLocalNotification(a.title, { body: a.body, tag: a.id, data: { url: a.url, channel: 'alerts' } })
+          }
           track('alert_triggered', { kind: a.kind })
         }
       } catch { /* the next tick tries again */ } finally { busy.current = false }

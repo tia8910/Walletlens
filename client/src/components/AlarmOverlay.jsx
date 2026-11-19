@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../LanguageContext'
 import { track } from '../analytics'
-import { subscribeAlarms, clearAlarm, raiseAlarm, playAlarmSound, vibrateAlarm, stopVibration } from '../alarm'
+import { subscribeAlarms, clearAlarm, deliverAlarm, dismissNative, playAlarmFile, stopAlarmFile, vibrateAlarm, stopVibration } from '../alarm'
 import './AlarmOverlay.css'
 
 // The alarm, full screen: when an alert fires while the app is open, this
@@ -41,12 +41,14 @@ export default function AlarmOverlay() {
   useEffect(() => {
     if (!alarm) return undefined
     const kind = alarm.kind || 'price'
-    const ring = () => { playAlarmSound(kind); vibrateAlarm(kind) }
+    dismissRef.current?.focus()
+    // The Android app's native alarm is already ringing: the card stays quiet.
+    if (alarm.native) return undefined
+    const ring = () => { if (alarm.sound !== false) playAlarmFile(alarm.tone); vibrateAlarm(kind) }
     ring()
     ringer.current = setInterval(ring, RING_EVERY_MS)
     const stop = setTimeout(() => clearInterval(ringer.current), RING_FOR_MS)
-    dismissRef.current?.focus()
-    return () => { clearInterval(ringer.current); clearTimeout(stop); stopVibration() }
+    return () => { clearInterval(ringer.current); clearTimeout(stop); stopVibration(); stopAlarmFile() }
   }, [alarm])
 
   useEffect(() => {
@@ -59,16 +61,18 @@ export default function AlarmOverlay() {
   if (!alarm) return null
   const kind = GLYPH[alarm.kind] ? alarm.kind : 'price'
 
-  function dismiss() { track('alarm_dismissed', { kind }); clearAlarm() }
+  function dismiss() { track('alarm_dismissed', { kind }); dismissNative(alarm); clearAlarm() }
   function snooze() {
     track('alarm_snoozed', { kind })
     const again = { ...alarm, snoozed: true }
+    dismissNative(alarm)
     clearAlarm()
-    setTimeout(() => raiseAlarm(again), SNOOZE_MS)
+    setTimeout(() => deliverAlarm(again), SNOOZE_MS)
   }
   function open() {
     track('alarm_opened', { kind })
     const url = alarm.url
+    dismissNative(alarm)
     clearAlarm()
     if (url) navigate(url)
   }

@@ -89,7 +89,12 @@ public class WalletLensMessagingService extends FirebaseMessagingService {
         try {
             NotificationHelper helper = new NotificationHelper(this);
             helper.createChannels();
-            if (isPriceChannel(channel)) {
+            if ("target".equals(channel) && NotificationHelper.alarmEnabled(this)) {
+                // A price target the user set, with alarms on: ring it as an
+                // alarm, rising or falling with the way the price went.
+                helper.showAlarm(title, body != null ? body : "", data.get("dir"), url,
+                        tag != null && !tag.isEmpty() ? tag : "price");
+            } else if (isPriceChannel(channel)) {
                 // The loud channel, for the things that are about a number and
                 // stale within the hour.
                 helper.showAlertNotification(title, body != null ? body : "", url, tag);

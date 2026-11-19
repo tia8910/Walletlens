@@ -2161,6 +2161,11 @@ export default {
     paTargetBody: (sym, now, target) => `${sym} الآن عند ${now} — والهدف كان ${target}`,
     // Alerts → Signals & goals, and the full-screen alarm (ProAlerts, AlertEngine, AlarmOverlay).
     alTab: "الإشارات والأهداف",
+    alSettings: "المنبه",
+    alFullscreen: "منبه بملء الشاشة",
+    alFullscreenSub: "كل تنبيه، وتنبيهات الأسعار أيضًا، يملأ الشاشة ويرن حتى تؤجله أو تغلقه. على أندرويد يرن مثل المنبه. عند الإيقاف: إشعار عادي.",
+    alSound: "صوت المنبه",
+    alSoundSub: "رنة WalletLens: عملات معدنية وصوت آلة نقود، ثم نغمة تصعد للأخبار الجيدة وتهبط للأخبار السيئة. عند الإيقاف: اهتزاز فقط.",
     alNewSignal: "إشارة الرسم البياني",
     alNewGoal: "هدف المحفظة",
     alAsset: "الأصل",

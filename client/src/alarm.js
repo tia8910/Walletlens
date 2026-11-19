@@ -1,14 +1,63 @@
-// The alarm: a sound of its own for each kind of alert, a vibration, and a
-// queue the full-screen AlarmOverlay rings from.
+// The alarm: the WalletLens alarm sound, a vibration, the user's settings,
+// and a queue the full-screen AlarmOverlay rings from.
 //
-// Sounds are synthesized with the Web Audio API, so there are no files to
-// download, and each kind is recognisable without looking:
-//   price  three rising tones (the sound price alerts always had)
-//   buy    a bright rising arpeggio
-//   sell   a falling minor line
-//   cross  a bell struck twice
-//   rsi    four quick pulses
-//   goal   a short fanfare
+// The sound is the app's own and is about money: two coins clinking, a cash
+// register's "ka-ching", then a short market motif that RISES for good news
+// (a Buy signal, a price above its target, a goal reached), FALLS for bad
+// news (a Sell signal, a price below, a loss limit) and holds for the rest.
+// The same three recordings ring on Android (res/raw/wl_alarm_*.ogg) and on
+// the web (public/sounds/alarm-*.mp3), so it sounds the same everywhere.
+//
+// In the Android app the alarm is native (the bridge's showAlarm): a
+// notification that pops up and keeps ringing until it is snoozed or
+// dismissed, even with the app in the background. The page shows its own
+// full-screen card on top while it is open, silently, so it does not ring
+// twice.
+
+export const TONES = ['up', 'down', 'neutral']
+export const ALARM_PREFS_KEY = 'wl_alarm_prefs'
+
+/** { fullscreen, sound }: both on unless the user turned them off. */
+export function getAlarmPrefs() {
+  try {
+    const p = JSON.parse(localStorage.getItem(ALARM_PREFS_KEY) || '{}') || {}
+    return { fullscreen: p.fullscreen !== false, sound: p.sound !== false }
+  } catch { return { fullscreen: true, sound: true } }
+}
+
+export function setAlarmPrefs(next) {
+  const p = { ...getAlarmPrefs(), ...next }
+  try { localStorage.setItem(ALARM_PREFS_KEY, JSON.stringify(p)) } catch { /* private mode */ }
+  // The app reads them too, for alarms that arrive while it is closed.
+  try { nativeBridge()?.setAlarmPrefs?.(!!p.fullscreen, !!p.sound) } catch { /* old app */ }
+  return p
+}
+
+/** The Android app's bridge, when it can ring native alarms. */
+export function nativeBridge() {
+  try {
+    const b = typeof window !== 'undefined' ? window.AndroidBridge : null
+    return b && typeof b.showAlarm === 'function' ? b : null
+  } catch { return null }
+}
+
+let clip = null
+/** Ring the WalletLens alarm sound once, in its rising, falling or neutral form. */
+export function playAlarmFile(tone = 'neutral') {
+  const t = TONES.includes(tone) ? tone : 'neutral'
+  try {
+    clip?.pause()
+    clip = new Audio(`/sounds/alarm-${t}.mp3`)
+    clip.volume = 0.9
+    const p = clip.play()
+    // Blocked (no tap on the page yet) or missing: the synthesized ring.
+    if (p?.catch) p.catch(() => playAlarmSound(t === 'up' ? 'buy' : t === 'down' ? 'sell' : 'price'))
+  } catch { playAlarmSound('price') }
+}
+
+export function stopAlarmFile() {
+  try { clip?.pause() } catch { /* nothing playing */ }
+}
 
 // [frequency Hz, start s, length s] for each note.
 const SOUNDS = {
@@ -61,6 +110,32 @@ export function vibrateAlarm(kind = 'price') {
 
 export function stopVibration() {
   try { navigator.vibrate?.(0) } catch { /* not supported */ }
+}
+
+// ── Delivering an alarm ─────────────────────────────────────────────────────
+
+/**
+ * Ring an alert as the user set alarms up: in the Android app, the native
+ * alarm plus the page's silent card; elsewhere, the page's card with sound.
+ * Returns how it went: 'native', 'page' or 'off' (alarms turned off, the
+ * caller shows a plain notification instead).
+ */
+export function deliverAlarm(alarm) {
+  const prefs = getAlarmPrefs()
+  if (!prefs.fullscreen) return 'off'
+  const b = nativeBridge()
+  let native = false
+  if (b) {
+    try { native = !!b.showAlarm(alarm.title || '', alarm.body || '', alarm.tone || 'neutral', alarm.url || '', alarm.id || 'alarm') } catch { native = false }
+  }
+  raiseAlarm({ ...alarm, native, sound: prefs.sound })
+  return native ? 'native' : 'page'
+}
+
+/** Take a native alarm down too, when the page's card is dismissed. */
+export function dismissNative(alarm) {
+  if (!alarm?.native) return
+  try { nativeBridge()?.dismissAlarm?.(alarm.id || 'alarm') } catch { /* old app */ }
 }
 
 // ── The queue ───────────────────────────────────────────────────────────────

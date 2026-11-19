@@ -1,11 +1,14 @@
 package live.walletlens.twa;
 
 import android.app.Notification;
+import android.app.AlarmManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
@@ -56,6 +59,32 @@ public final class NotificationHelper {
     /** Extra on the notification intent: the deep-link URL to open. */
     public static final String EXTRA_TARGET_URL = "notification_target_url";
 
+    // ── Alarms ────────────────────────────────────────────────────────────
+    //
+    // An alert the user asked to be an ALARM (Alerts → Signals & goals →
+    // "Full-screen alarm"): a high-priority notification that pops up, rings
+    // the WalletLens alarm sound and keeps ringing (FLAG_INSISTENT) until it
+    // is snoozed, dismissed, opened, or 90 seconds pass.
+    //
+    // One channel per sound, because on Android 8+ the sound belongs to the
+    // channel: rising for good news (a Buy signal, a price above, a goal
+    // reached), falling for bad news, neutral for the rest, and a silent one
+    // (vibration only) for people who turned the alarm sound off.
+    //
+    // Still CATEGORY_REMINDER, not CATEGORY_ALARM, and no full-screen intent:
+    // Play reserves both for alarm clocks and calls (see showNotification).
+    public static final String CHANNEL_ALARM_UP_ID      = "walletlens_alarm_up";
+    public static final String CHANNEL_ALARM_DOWN_ID    = "walletlens_alarm_down";
+    public static final String CHANNEL_ALARM_NEUTRAL_ID = "walletlens_alarm_neutral";
+    public static final String CHANNEL_ALARM_SILENT_ID  = "walletlens_alarm_silent";
+    public static final int ALARM_NOTIFICATION_ID = 1004;
+    public static final long ALARM_TIMEOUT_MS = 90_000L;
+    public static final long ALARM_SNOOZE_MS = 10 * 60_000L;
+    private static final long[] ALARM_VIBRATION = {0, 400, 180, 400, 180, 900};
+
+    /** The user's alarm settings, written by the web side through the bridge. */
+    public static final String ALARM_PREFS = "walletlens_alarm";
+
     private final Context context;
     private final NotificationManager notificationManager;
 
@@ -81,6 +110,10 @@ public final class NotificationHelper {
                 NotificationManager.IMPORTANCE_DEFAULT);
         createChannel(CHANNEL_QUIET_ID, CHANNEL_QUIET_NAME,
                 NotificationManager.IMPORTANCE_LOW);
+        createAlarmChannel(CHANNEL_ALARM_UP_ID, "Alarms: rising", R.raw.wl_alarm_up);
+        createAlarmChannel(CHANNEL_ALARM_DOWN_ID, "Alarms: falling", R.raw.wl_alarm_down);
+        createAlarmChannel(CHANNEL_ALARM_NEUTRAL_ID, "Alarms", R.raw.wl_alarm_neutral);
+        createAlarmChannel(CHANNEL_ALARM_SILENT_ID, "Alarms: vibrate only", 0);
 
         Log.d(TAG, "Notification channels created");
     }
@@ -95,6 +128,121 @@ public final class NotificationHelper {
         // for the quiet channel, or IMPORTANCE_LOW would still buzz.
         channel.enableVibration(importance >= NotificationManager.IMPORTANCE_DEFAULT);
         notificationManager.createNotificationChannel(channel);
+    }
+
+    private void createAlarmChannel(@NonNull String id, @NonNull String name, int soundRes) {
+        NotificationChannel channel = new NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH);
+        channel.setDescription("WalletLens alerts you chose to ring as an alarm");
+        channel.enableVibration(true);
+        channel.setVibrationPattern(ALARM_VIBRATION);
+        channel.setShowBadge(true);
+        if (soundRes != 0) {
+            Uri sound = Uri.parse("android.resource://" + context.getPackageName() + "/" + soundRes);
+            // The alarm stream, so it is heard like an alarm; it rings only
+            // for alerts the user set as alarms, and stops after 90 seconds.
+            channel.setSound(sound, new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build());
+        } else {
+            channel.setSound(null, null);
+        }
+        notificationManager.createNotificationChannel(channel);
+    }
+
+    // ── Alarm settings ────────────────────────────────────────────────────
+
+    public static boolean alarmEnabled(@NonNull Context c) {
+        return c.getSharedPreferences(ALARM_PREFS, Context.MODE_PRIVATE).getBoolean("enabled", true);
+    }
+
+    public static boolean alarmSound(@NonNull Context c) {
+        return c.getSharedPreferences(ALARM_PREFS, Context.MODE_PRIVATE).getBoolean("sound", true);
+    }
+
+    public static void saveAlarmPrefs(@NonNull Context c, boolean enabled, boolean sound) {
+        SharedPreferences.Editor e = c.getSharedPreferences(ALARM_PREFS, Context.MODE_PRIVATE).edit();
+        e.putBoolean("enabled", enabled).putBoolean("sound", sound).apply();
+    }
+
+    @NonNull
+    private static String alarmChannelFor(@Nullable String tone, boolean sound) {
+        if (!sound) return CHANNEL_ALARM_SILENT_ID;
+        if ("up".equals(tone)) return CHANNEL_ALARM_UP_ID;
+        if ("down".equals(tone)) return CHANNEL_ALARM_DOWN_ID;
+        return CHANNEL_ALARM_NEUTRAL_ID;
+    }
+
+    // ── Alarm ─────────────────────────────────────────────────────────────
+
+    /**
+     * Ring an alert as an alarm: it pops up, rings until acted on (at most 90
+     * seconds), and carries Snooze (10 minutes) and Dismiss.
+     *
+     * @param tone 'up', 'down' or anything else for neutral
+     * @param tag  identifies this alarm, so Dismiss and Snooze act on it alone
+     */
+    public void showAlarm(@NonNull String title, @NonNull String body, @Nullable String tone,
+                          @Nullable String targetUrl, @NonNull String tag) {
+        Intent tap = createTapIntent(targetUrl, null);
+        PendingIntent open = PendingIntent.getActivity(context, ("open:" + tag).hashCode(), tap,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        Notification n = new NotificationCompat.Builder(context, alarmChannelFor(tone, alarmSound(context)))
+                .setSmallIcon(R.drawable.ic_notification_logo)
+                .setColor("down".equals(tone) ? 0xFFDC2626 : "up".equals(tone) ? 0xFF16A34A : 0xFF071A0C)
+                .setColorized(true)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                .setContentIntent(open)
+                .setAutoCancel(true)
+                .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setVibrate(ALARM_VIBRATION)
+                .setTimeoutAfter(ALARM_TIMEOUT_MS)
+                .addAction(0, "Snooze 10 min", alarmAction(AlarmActionReceiver.ACTION_SNOOZE, title, body, tone, targetUrl, tag))
+                .addAction(0, "Dismiss", alarmAction(AlarmActionReceiver.ACTION_DISMISS, title, body, tone, targetUrl, tag))
+                .build();
+        // Keeps ringing until the user acts: that is what makes it an alarm.
+        n.flags |= Notification.FLAG_INSISTENT;
+        notificationManager.notify(tag, ALARM_NOTIFICATION_ID, n);
+    }
+
+    /** Take an alarm down (Dismiss, or dismissed in the app). */
+    public void cancelAlarm(@NonNull String tag) {
+        notificationManager.cancel(tag, ALARM_NOTIFICATION_ID);
+    }
+
+    /** Ring the same alarm again in ten minutes. */
+    public void snoozeAlarm(@NonNull String title, @NonNull String body, @Nullable String tone,
+                            @Nullable String targetUrl, @NonNull String tag) {
+        cancelAlarm(tag);
+        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (am == null) return;
+        PendingIntent again = alarmAction(AlarmActionReceiver.ACTION_REPOST, title, body, tone, targetUrl, tag);
+        long at = System.currentTimeMillis() + ALARM_SNOOZE_MS;
+        // Inexact on purpose: exact alarms need a permission Play reviews, and
+        // a snooze a minute late is still a snooze.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, again);
+        } else {
+            am.set(AlarmManager.RTC_WAKEUP, at, again);
+        }
+    }
+
+    private PendingIntent alarmAction(@NonNull String action, @NonNull String title, @NonNull String body,
+                                      @Nullable String tone, @Nullable String targetUrl, @NonNull String tag) {
+        Intent i = new Intent(context, AlarmActionReceiver.class)
+                .setAction(action)
+                .putExtra(AlarmActionReceiver.EXTRA_TITLE, title)
+                .putExtra(AlarmActionReceiver.EXTRA_BODY, body)
+                .putExtra(AlarmActionReceiver.EXTRA_TONE, tone)
+                .putExtra(AlarmActionReceiver.EXTRA_URL, targetUrl)
+                .putExtra(AlarmActionReceiver.EXTRA_TAG, tag);
+        return PendingIntent.getBroadcast(context, (action + ":" + tag).hashCode(), i,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
     // ── Display notifications ─────────────────────────────────────────────

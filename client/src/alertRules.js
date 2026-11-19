@@ -151,3 +151,16 @@ export function alarmKind(rule) {
   if (rule.event === 'golden' || rule.event === 'death') return 'cross'
   return 'rsi'
 }
+
+/**
+ * Which way the alarm sound goes: 'up' for good news, 'down' for bad, else
+ * 'neutral'. For a price alert, the way the price crossed its target.
+ */
+export function alarmTone(rule) {
+  if (rule.type === 'price') return rule.condition === 'below' ? 'down' : 'up'
+  if (rule.type === 'goal') return rule.kind === 'value_above' || rule.kind === 'pnl_above' ? 'up' : rule.kind === 'weight_above' ? 'neutral' : 'down'
+  if (rule.event === 'buy' || rule.event === 'golden' || rule.event === 'rsi_low') return 'up'
+  if (rule.event === 'sell' || rule.event === 'death' || rule.event === 'rsi_high') return 'down'
+  return 'neutral'
+}
+

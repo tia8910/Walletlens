@@ -2095,6 +2095,11 @@ export default {
     paTargetBody: (sym, now, target) => `${sym} è ora a ${now} — l’obiettivo era ${target}`,
     // Alerts → Signals & goals, and the full-screen alarm (ProAlerts, AlertEngine, AlarmOverlay).
     alTab: "Segnali e obiettivi",
+    alSettings: "Allarme",
+    alFullscreen: "Allarme a schermo intero",
+    alFullscreenSub: "Ogni avviso, anche quelli di prezzo, occupa lo schermo e suona finché non lo posticipi o lo chiudi. Su Android suona come una sveglia. Disattivato: una notifica normale.",
+    alSound: "Suono dell'allarme",
+    alSoundSub: "Il suono di WalletLens: monete, un registratore di cassa, poi una melodia che sale per le buone notizie e scende per quelle cattive. Disattivato: solo vibrazione.",
     alNewSignal: "Segnale del grafico",
     alNewGoal: "Obiettivo del portafoglio",
     alAsset: "Asset",

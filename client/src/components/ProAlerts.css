@@ -66,3 +66,22 @@
 
 @keyframes pra-live { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--k) 8%, transparent); } }
 @media (prefers-reduced-motion: reduce) { .pra-dot { animation: none; } }
+
+/* Alarm settings: two switches. */
+.pra-h { margin: 0; font-size: 15px; font-weight: 800; }
+.pra-set { display: flex; align-items: center; gap: 14px; padding: 6px 0; }
+.pra-set + .pra-set { border-top: 1px solid var(--border); padding-top: 12px; }
+.pra-set.off { opacity: .5; }
+.pra-set-t { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.pra-set-t b { font-size: 14px; }
+.pra-set-t small { font-size: 12.5px; line-height: 1.4; color: var(--text-muted, var(--text2)); }
+.pra-switch { position: relative; flex-shrink: 0; width: 50px; height: 30px; padding: 0; border-radius: 999px; border: 0; cursor: pointer;
+  background: var(--bg4, rgba(127, 127, 127, .35)); transition: background .2s; }
+.pra-switch span { position: absolute; top: 3px; inset-inline-start: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .3); transition: transform .2s; }
+.pra-switch.on { background: var(--g); }
+.pra-switch.on span { transform: translateX(20px); }
+[dir="rtl"] .pra-switch.on span { transform: translateX(-20px); }
+.pra-switch:disabled { cursor: default; }
+.pra-switch:focus-visible { outline: 3px solid color-mix(in srgb, var(--g) 50%, transparent); outline-offset: 2px; }
+.pra-test:disabled { opacity: .45; cursor: default; }
+

@@ -2156,6 +2156,11 @@ export default {
     paTargetBody: (sym, now, target) => `${sym} is now ${now} — target was ${target}`,
     // Alerts → Signals & goals, and the full-screen alarm (ProAlerts, AlertEngine, AlarmOverlay).
     alTab: "Signals & goals",
+    alSettings: "Alarm",
+    alFullscreen: "Full-screen alarm",
+    alFullscreenSub: "Every alert, price alerts too, takes the screen and rings until you snooze or dismiss it. On Android it rings like an alarm. Off: a normal notification.",
+    alSound: "Alarm sound",
+    alSoundSub: "The WalletLens ring: coins, a cash register, then a chime that rises for good news and falls for bad. Off: vibrate only.",
     alNewSignal: "Chart signal",
     alNewGoal: "Portfolio goal",
     alAsset: "Asset",

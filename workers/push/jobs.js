@@ -94,6 +94,7 @@ export function createJobs({ store, send }) {
               signedPct(quotes[a.coin_id]?.change24h)),
             tag: `price-${id}`,
             sym: a.coin_symbol,
+            dir: a.condition === "above" ? "up" : "down",
             // The asset, not the alerts list. The tap follows the sentence
             // the notification just read out.
             url: assetUrl({ id: a.coin_id }),
