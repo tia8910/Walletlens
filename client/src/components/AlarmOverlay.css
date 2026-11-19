@@ -1,0 +1,55 @@
+/* The full-screen alarm (AlarmOverlay). Each kind brings its own colour,
+   which the ring, the glow and the open button take. */
+.alm {
+  --alm: #60a5fa; --alm-2: #2563eb;
+  position: fixed; inset: 0; z-index: 6000; display: grid; place-items: center; padding: 16px;
+  background: radial-gradient(120% 90% at 50% 30%, color-mix(in srgb, var(--alm) 34%, #050814) 0%, rgba(4, 6, 14, .94) 62%);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  animation: alm-in .28s ease-out both;
+  font-family: inherit; color: #f8fafc;
+}
+.alm-buy   { --alm: #22c55e; --alm-2: #15803d; }
+.alm-sell  { --alm: #ef4444; --alm-2: #b91c1c; }
+.alm-cross { --alm: #f59e0b; --alm-2: #b45309; }
+.alm-rsi   { --alm: #a78bfa; --alm-2: #6d28d9; }
+.alm-goal  { --alm: #facc15; --alm-2: #ca8a04; }
+
+.alm-card {
+  width: min(420px, 100%); text-align: center; padding: 34px 24px 22px; border-radius: 28px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .03));
+  border: 1px solid color-mix(in srgb, var(--alm) 45%, transparent);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .55), 0 0 80px color-mix(in srgb, var(--alm) 30%, transparent);
+  animation: alm-shake 4s ease-in-out infinite;
+}
+.alm-ring { position: relative; width: 112px; height: 112px; margin: 0 auto 18px; display: grid; place-items: center; }
+.alm-ring svg {
+  position: relative; z-index: 1; width: 62px; height: 62px; padding: 14px; box-sizing: content-box; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--alm), var(--alm-2));
+  fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--alm) 25%, transparent), 0 12px 40px color-mix(in srgb, var(--alm) 55%, transparent);
+}
+.alm-wave { position: absolute; inset: 6px; border-radius: 50%; border: 2px solid var(--alm); opacity: 0; animation: alm-wave 2.4s ease-out infinite; }
+.alm-wave2 { animation-delay: .8s; }
+.alm-wave3 { animation-delay: 1.6s; }
+.alm-kind { margin: 0 0 6px; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--alm); }
+.alm-title { margin: 0 0 8px; font-size: 26px; line-height: 1.15; font-weight: 800; }
+.alm-body { margin: 0 auto 10px; max-width: 34ch; font-size: 15px; line-height: 1.45; color: rgba(248, 250, 252, .78); }
+.alm-price { margin: 4px 0 0; font-size: 34px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.alm-actions { display: grid; gap: 10px; margin-top: 24px; }
+.alm-btn { min-height: 50px; border-radius: 16px; font: inherit; font-size: 16px; font-weight: 800; cursor: pointer; border: 1px solid rgba(255, 255, 255, .16); }
+.alm-open { background: linear-gradient(180deg, var(--alm), var(--alm-2)); color: #fff; border-color: transparent; }
+.alm-goal .alm-open { color: #1c1400; }
+.alm-snooze { background: rgba(255, 255, 255, .08); color: #f8fafc; }
+.alm-dismiss { background: #f8fafc; color: #0b1020; border-color: transparent; }
+.alm-btn:focus-visible { outline: 3px solid var(--alm); outline-offset: 2px; }
+
+@keyframes alm-in { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: none; } }
+@keyframes alm-wave { 0% { transform: scale(.7); opacity: .85; } 100% { transform: scale(1.6); opacity: 0; } }
+@keyframes alm-shake {
+  0%, 88%, 100% { transform: none; }
+  90% { transform: rotate(-1.2deg); } 92% { transform: rotate(1.2deg); } 94% { transform: rotate(-.8deg); } 96% { transform: rotate(.6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .alm, .alm-card, .alm-wave { animation: none; }
+  .alm-wave { opacity: .35; }
+}

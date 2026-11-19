@@ -449,6 +449,12 @@
                 android:resource="@xml/widget_topmovers_info" />
         </receiver>
 
+        <!-- Snooze and Dismiss on an alarm notification. Only this app's own
+             PendingIntents reach it, so it is not exported. -->
+        <receiver
+            android:name=".AlarmActionReceiver"
+            android:exported="false" />
+
         <!-- Daily P&L widget -->
         <receiver
             android:name=".DailyPnlWidgetProvider"

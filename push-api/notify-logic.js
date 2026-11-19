@@ -2150,7 +2150,7 @@ export function pushTopic(tag) {
  * the client can attribute opens, and `url` is resolved from the channel
  * unless the caller overrides it.
  */
-export function buildPayload({ channel, title, body, tag, url, sym }) {
+export function buildPayload({ channel, title, body, tag, url, sym, dir }) {
   return {
     title,
     body,
@@ -2158,6 +2158,9 @@ export function buildPayload({ channel, title, body, tag, url, sym }) {
     url: url || CHANNEL_URL[channel] || '/',
     channel,
     ...(sym ? { sym } : {}),
+    // 'up' or 'down': which way a price alert went, so the Android app rings
+    // its rising or falling alarm sound.
+    ...(dir === 'up' || dir === 'down' ? { dir } : {}),
   }
 }
 

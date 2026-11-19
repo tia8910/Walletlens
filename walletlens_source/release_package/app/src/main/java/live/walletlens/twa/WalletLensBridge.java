@@ -549,6 +549,50 @@ public class WalletLensBridge {
     }
 
     /**
+     * Ring an alert as a native alarm (NotificationHelper.showAlarm): it pops
+     * up, plays the WalletLens alarm sound and keeps ringing until it is
+     * snoozed, dismissed or opened. Returns false when it could not, so the
+     * page can fall back to its own.
+     *
+     * @param tone 'up', 'down' or 'neutral', which picks the sound
+     */
+    @JavascriptInterface
+    public boolean showAlarm(String title, String body, String tone, String url, String tag) {
+        Activity a = activity();
+        if (a == null || title == null || title.isEmpty() || tag == null || tag.isEmpty()) return false;
+        if (!notificationsAllowed()) return false;
+        try {
+            NotificationHelper helper = new NotificationHelper(a);
+            helper.createChannels();
+            helper.showAlarm(title, body != null ? body : "", tone, AppEntry.isOurs(url) ? url : null, tag);
+            return true;
+        } catch (Throwable e) {
+            Log.w(TAG, "could not ring an alarm: " + e);
+            return false;
+        }
+    }
+
+    /** Take an alarm down: it was snoozed or dismissed in the app. */
+    @JavascriptInterface
+    public void dismissAlarm(String tag) {
+        Activity a = activity();
+        if (a == null || tag == null || tag.isEmpty()) return;
+        try { new NotificationHelper(a).cancelAlarm(tag); } catch (Throwable e) { Log.w(TAG, "could not dismiss an alarm: " + e); }
+    }
+
+    /**
+     * The user's alarm settings, so pushes that arrive with the app closed
+     * follow them too: enabled rings price alerts as alarms, sound picks the
+     * ringing or the vibrate-only channel.
+     */
+    @JavascriptInterface
+    public void setAlarmPrefs(boolean enabled, boolean sound) {
+        Activity a = activity();
+        if (a == null) return;
+        NotificationHelper.saveAlarmPrefs(a, enabled, sound);
+    }
+
+    /**
      * Whether Android will let this app post a notification.
      *
      * <p>Not the same question as the web {@code Notification.permission},

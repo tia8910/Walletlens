@@ -81,6 +81,7 @@ const SmartImport    = lazy(() => import('../components/SmartImport'))
 const DriveBackup    = lazy(() => import('../components/DriveBackup'))
 const ZakatCalculator = lazy(() => import('../components/ZakatCalculator'))
 const PriceAlerts    = lazy(() => import('../components/PriceAlerts'))
+const ProAlerts      = lazy(() => import('../components/ProAlerts'))
 const SmartAlerts    = lazy(() => import('../components/SmartAlerts'))
 const RiskScanner    = lazy(() => import('../components/RiskScanner'))
 const TechChartPanel = lazy(() => import('../components/TechChartPanel'))
@@ -3005,6 +3006,9 @@ function AlertsSection({ enriched, prices, isDemo }) {
         <button className={`sa-alert-tab ${alertTab === 'price' ? 'active' : ''}`} onClick={() => setAlertTab('price')}>
           <Icon name="bell" size={14} style={{ verticalAlign:'-2px', marginRight:'0.35em' }} />{t('priceAlerts')}
         </button>
+        <button className={`sa-alert-tab ${alertTab === 'pro' ? 'active' : ''}`} onClick={() => setAlertTab('pro')}>
+          <Icon name="siren" size={14} style={{ verticalAlign:'-2px', marginInlineEnd:'0.35em' }} />{t('alTab')}
+        </button>
       </div>
       {alertTab === 'smart' && (
         <Suspense fallback={<TabFallback />}>
@@ -3014,6 +3018,11 @@ function AlertsSection({ enriched, prices, isDemo }) {
       {alertTab === 'price' && (
         <Suspense fallback={<TabFallback />}>
           <PriceAlerts enriched={isDemo ? [] : enriched} prices={prices} />
+        </Suspense>
+      )}
+      {alertTab === 'pro' && (
+        <Suspense fallback={<TabFallback />}>
+          <ProAlerts enriched={isDemo ? [] : enriched} prices={prices} />
         </Suspense>
       )}
     </div>
