@@ -1,0 +1,68 @@
+/* Alerts → Signals & goals (ProAlerts). Built on the app's theme variables so
+   it follows every theme, light and dark; each alert kind has one colour,
+   the same as its full-screen alarm. */
+.pra { --pra-buy: #22c55e; --pra-sell: #ef4444; --pra-cross: #f59e0b; --pra-rsi: #a78bfa; --pra-goal: #eab308; --pra-price: #60a5fa;
+  display: grid; gap: 14px; color: var(--text); }
+.pra-k-buy { --k: var(--pra-buy); } .pra-k-sell { --k: var(--pra-sell); } .pra-k-cross { --k: var(--pra-cross); }
+.pra-k-rsi { --k: var(--pra-rsi); } .pra-k-goal { --k: var(--pra-goal); } .pra-k-price { --k: var(--pra-price); }
+
+.pra-form {
+  display: grid; gap: 10px; padding: 16px; border-radius: 20px;
+  background: var(--card-bg, var(--bg2)); border: 1px solid var(--border);
+}
+.pra-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--bg3, rgba(127, 127, 127, .12)); }
+.pra-seg button { min-height: 40px; border: 0; border-radius: 11px; background: none; color: var(--text-muted, var(--text2)); font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+.pra-seg button.on { background: var(--g); color: var(--g-ink, #fff); }
+
+.pra-l { margin: 6px 0 0; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted, var(--text2)); }
+.pra-l small { margin-inline-start: 6px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.pra-assets { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.pra-assets::-webkit-scrollbar { display: none; }
+.pra-asset {
+  display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; padding: 6px 12px 6px 6px; border-radius: 999px;
+  border: 1px solid var(--border); background: none; color: var(--text); font: inherit; font-size: 13px; font-weight: 800; cursor: pointer;
+}
+.pra-asset .coin-logo, .pra-asset img, .pra-asset svg { width: 22px !important; height: 22px !important; }
+.pra-asset.on { border-color: var(--g); box-shadow: 0 0 0 2px color-mix(in srgb, var(--g) 30%, transparent); }
+
+.pra-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pra-chip {
+  --k: var(--g);
+  padding: 9px 13px; border-radius: 12px; border: 1px solid var(--border); background: none;
+  color: var(--text); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
+}
+.pra-chip.on { background: color-mix(in srgb, var(--k) 18%, transparent); border-color: var(--k); color: var(--text); box-shadow: inset 0 0 0 1px var(--k); }
+
+.pra-target {
+  display: flex; align-items: center; gap: 6px; padding: 0 14px; min-height: 50px; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--bg3, transparent); font-size: 20px; font-weight: 800;
+}
+.pra-target span { color: var(--text-muted, var(--text2)); }
+.pra .pra-target input { flex: 1; min-width: 0; min-height: 0; height: auto; margin: 0; padding: 0; border: 0 !important; outline: 0; box-shadow: none !important; background: transparent !important; color: var(--text); font: inherit; font-variant-numeric: tabular-nums; }
+.pra-target:focus-within { border-color: var(--g); }
+.pra-now { margin: 0; font-size: 13px; color: var(--text-muted, var(--text2)); }
+
+.pra-actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 6px; }
+.pra-create, .pra-test { min-height: 48px; border-radius: 14px; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
+.pra-create { border: 0; background: var(--g); color: var(--g-ink, #fff); }
+.pra-create:disabled { opacity: .45; cursor: default; }
+.pra-test { padding: 0 16px; border: 1px solid var(--border); background: none; color: var(--text); }
+.pra-note { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--text-muted, var(--text2)); }
+
+.pra-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pra-rule {
+  display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 14px; border-radius: 16px;
+  background: var(--card-bg, var(--bg2)); border: 1px solid var(--border); border-inline-start: 3px solid var(--k);
+}
+.pra-dot { width: 10px; height: 10px; flex-shrink: 0; border-radius: 50%; background: var(--k); box-shadow: 0 0 0 4px color-mix(in srgb, var(--k) 22%, transparent); animation: pra-live 2s ease-in-out infinite; }
+.pra-rule.fired .pra-dot { animation: none; opacity: .5; }
+.pra-rule-t { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.pra-rule-t b { font-size: 14px; overflow-wrap: anywhere; }
+.pra-rule-t small { font-size: 12px; color: var(--text-muted, var(--text2)); }
+.pra-rule.fired .pra-rule-t small { color: var(--k); font-weight: 700; }
+.pra-mini { flex-shrink: 0; min-height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border); background: none; color: var(--text); font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; }
+.pra-del { width: 34px; padding: 0; }
+.pra-empty { margin: 0; padding: 18px; text-align: center; font-size: 13.5px; color: var(--text-muted, var(--text2)); border: 1px dashed var(--border); border-radius: 16px; }
+
+@keyframes pra-live { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--k) 8%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .pra-dot { animation: none; } }

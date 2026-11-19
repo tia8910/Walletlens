@@ -26,6 +26,8 @@ import PullToRefresh from './components/PullToRefresh'
 // Non-critical shell components — lazy-loaded after the app shell renders
 const QuickStatsPopup = lazy(() => import('./components/QuickStatsPopup'))
 const AssistantChat = lazy(() => import('./components/AssistantChat'))
+const AlertEngine = lazy(() => import('./components/AlertEngine'))
+const AlarmOverlay = lazy(() => import('./components/AlarmOverlay'))
 const NotificationPrimer = lazy(() => import('./components/NotificationPrimer'))
 const WelcomeModal = lazy(() => import('./components/WelcomeModal'))
 const NativeOnboarding = lazy(() => import('./components/NativeOnboarding'))
@@ -1126,6 +1128,8 @@ export default function App() {
       {shellReady && isStandalone && isAndroid && !onboardDone && <Suspense fallback={null}><NativeOnboarding onDone={() => setOnboardDone(true)} /></Suspense>}
       {shellReady && (!isStandalone || !isAndroid) && <Suspense fallback={null}><WelcomeModal /></Suspense>}
       {shellReady && <Suspense fallback={null}><AssistantChat /></Suspense>}
+      {/* Every alert is checked here, on any page, and rings full screen. */}
+      {shellReady && !isLanding && <Suspense fallback={null}><AlertEngine /><AlarmOverlay /></Suspense>}
       {/* No Bybit popup: the offer lives only in its cards and strips, where
           the screen is about crypto, stocks or metals already. */}
 

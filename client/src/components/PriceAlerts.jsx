@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { track } from '../analytics'
 import { syncAlerts } from '../push'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
-import { showLocalNotification, requestNotifyPermission, canNotify } from '../localNotify'
+import { requestNotifyPermission, canNotify } from '../localNotify'
 
 const STORAGE_KEY = 'walletlens_price_alerts'
 
@@ -22,34 +22,6 @@ function bumpId() {
 
 function requestNotificationPermission() {
   return requestNotifyPermission().then(ok => (ok ? 'granted' : 'denied'))
-}
-
-function fireNotification(title, body) {
-  showLocalNotification(title, { body, icon: '/icon-192.png', badge: '/badge-96.png' })
-}
-
-// Generate an alert beep using the Web Audio API — no file needed
-function playAlarm() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)()
-    // Three ascending tones
-    const notes = [880, 1100, 1320]
-    notes.forEach((freq, i) => {
-      const osc  = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.type = 'sine'
-      osc.frequency.value = freq
-      const start = ctx.currentTime + i * 0.18
-      gain.gain.setValueAtTime(0, start)
-      gain.gain.linearRampToValueAtTime(0.4, start + 0.04)
-      gain.gain.linearRampToValueAtTime(0, start + 0.16)
-      osc.start(start)
-      osc.stop(start + 0.18)
-    })
-    setTimeout(() => ctx.close(), 1200)
-  } catch {}
 }
 
 // Progress bar showing current price vs target
@@ -89,56 +61,31 @@ export default function PriceAlerts({ enriched, prices }) {
   const [condition, setCondition]   = useState('above')
   const [targetInput, setTargetInput] = useState('')
   const [notifPerm, setNotifPerm]   = useState(() => (canNotify() ? 'granted' : (typeof Notification !== 'undefined' ? Notification.permission : 'default')))
-  const [toasts, setToasts]         = useState([])
-  const prevPricesRef               = useRef({})
   const alertsRef                   = useRef(alerts)
   alertsRef.current = alerts
 
-  const addToast = useCallback((msg) => {
-    const id = Date.now()
-    setToasts(t => [...t, { id, msg }])
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 6000)
-  }, [])
 
   // Sync to localStorage whenever alerts change
   // Persist locally and mirror to the push server so these alerts also
   // fire when the app is closed (no-op when push is off).
-  useEffect(() => { saveAlerts(alerts); syncAlerts() }, [alerts])
-
-  // Check alerts on every price update
   useEffect(() => {
-    if (!prices || !Object.keys(prices).length) return
-    const prev = prevPricesRef.current
-    const updated = [...alertsRef.current]
-    let changed = false
+    const before = localStorage.getItem(STORAGE_KEY)
+    saveAlerts(alerts); syncAlerts()
+    // A new or reset alert is checked by the engine straight away.
+    if (before !== localStorage.getItem(STORAGE_KEY)) { try { window.dispatchEvent(new Event('wl-alerts-changed')) } catch { /* no window */ } }
+  }, [alerts])
 
-    for (let i = 0; i < updated.length; i++) {
-      const a = updated[i]
-      if (a.triggered || a.snoozed) continue
-      const cur = prices[a.coin_id]?.usd ?? prices[a.coin_id]?.price ?? 0
-      if (!cur) continue
-      const hit = a.condition === 'above' ? cur >= a.targetPrice : cur <= a.targetPrice
-      if (hit) {
-        updated[i] = { ...a, triggered: true, triggeredAt: new Date().toISOString(), triggeredPrice: cur }
-        changed = true
-        const dir = t(a.condition === 'above' ? 'paHitAbove' : 'paHitBelow')
-        const body = t('paTargetBody')(
-          a.coin_symbol,
-          `$${cur.toLocaleString(undefined, { maximumFractionDigits: 4 })}`,
-          `$${a.targetPrice.toLocaleString(undefined, { maximumFractionDigits: 4 })}`,
-        )
-        fireNotification(`${dir} ${a.coin_symbol}`, body)
-        playAlarm()
-        addToast(`${dir} ${a.coin_symbol?.toUpperCase()} — ${body}`)
-        // WAS: the coin, the user's own price target and the price it fired at
-        // — a holding and a trading intention, together, on every alert.
-        // Whether alerts fire at all is the signal worth keeping.
-        track('alert_triggered', { condition: a.condition })
-      }
+  // Whether an alert fired is decided by AlertEngine, on every page, which
+  // rings the full-screen alarm. This tab only shows the result: it reloads
+  // when the engine marks one, comparing first so its own saves do not loop.
+  useEffect(() => {
+    const onChange = () => {
+      const fresh = loadAlerts()
+      if (JSON.stringify(fresh) !== JSON.stringify(alertsRef.current)) setAlerts(fresh)
     }
-    if (changed) setAlerts(updated)
-    prevPricesRef.current = prices
-  }, [prices, addToast, t])
+    window.addEventListener('wl-alerts-changed', onChange)
+    return () => window.removeEventListener('wl-alerts-changed', onChange)
+  }, [])
 
   function addAlert(e) {
     e.preventDefault()
@@ -181,12 +128,6 @@ export default function PriceAlerts({ enriched, prices }) {
 
   return (
     <div className="pal-root">
-      {/* Toast stack */}
-      <div className="pal-toasts">
-        {toasts.map(t => (
-          <div key={t.id} className="pal-toast">{t.msg}</div>
-        ))}
-      </div>
 
       {/* Notification permission banner */}
       {notifPerm !== 'granted' && (
