@@ -11,7 +11,7 @@ import { readWatched, WATCHED_EVENT } from '../academyProgress'
 // text, which has no place in the first screen.
 
 export default function LatestLesson() {
-  const { lang } = useLanguage()
+  const { lang, t } = useLanguage()
   const c = academyCopy(lang)
   const navigate = useNavigate()
   const [mod, setMod] = useState(null)
@@ -35,6 +35,12 @@ export default function LatestLesson() {
   }
 
   return (
+    <>
+    {/* The category over the card, like Watchlist's: this is the Academy. */}
+    <div className="nl-sec nl-lesson-sec">
+      <h3>{c.title}</h3>
+      <button type="button" onClick={() => { track('home_academy_all'); navigate('/academy') }}>{t('nlSeeAll')}</button>
+    </div>
     <button type="button" className="nl-card nl-lesson" onClick={open}>
       <span className={`aw-poster p-${posterFor(video.key, video.poster)} nl-lesson-art`} aria-hidden="true">
         <i />
@@ -45,10 +51,11 @@ export default function LatestLesson() {
         <b dir="auto">{video.name}</b>
         {video.lesson && <span className="nl-lesson-line">{video.lesson.title}</span>}
         <span className="nl-lesson-foot">
-          <small>{c.title} · {video.kind === 'original' ? c.film : c.short}</small>
+          <small>{video.kind === 'original' ? c.film : c.short}</small>
           <span className="nl-lesson-btn">{c.watch}</span>
         </span>
       </span>
     </button>
+    </>
   )
 }

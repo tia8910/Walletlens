@@ -5,450 +5,128 @@
 // links:  catalog key → { youtube, added } for videos in academyVideos.js
 // extras: videos on the channel that match no catalog entry, shown as they are
 export default {
-  "channelId": "UCBy7WaxcZxHXudbj3oofEuA",
-  "links": {
-    "patience-pays": {
-      "youtube": "kjjOrmpSL9M",
-      "added": "2026-10-12"
-    },
-    "t-check-on-chain-data-before-trusting-charts": {
-      "youtube": "IvF_XW2lEe4",
-      "added": "2026-10-13"
-    },
-    "hack-take-profit": {
-      "youtube": "D4R6oOFWn9E",
-      "added": "2026-10-11"
-    },
-    "12-investing-hacks": {
-      "youtube": "xd76xMgdOZo",
-      "added": "2026-10-11"
-    },
-    "howto-decision": {
-      "youtube": "LUlMPZu-zTQ",
-      "added": "2026-10-08"
-    },
-    "t-never-bet-the-farm": {
-      "youtube": "nJOx0WJ2fWc",
-      "added": "2026-10-13"
-    },
-    "t-ready-when-the-dip-comes": {
-      "youtube": "Qk_eFotZh6Y",
-      "added": "2026-10-13"
-    },
-    "t-stop-watching-the-chart": {
-      "youtube": "RdoM68zv2AY",
-      "added": "2026-10-13"
-    },
-    "t-small-bets-long-life": {
-      "youtube": "4eWgxvCc7P4",
-      "added": "2026-10-14"
-    },
-    "t-sleep-on-it": {
-      "youtube": "O-Gvdr3d15c",
-      "added": "2026-10-15"
-    }
-  },
+  "channelId": "UCWb5dOGFEXN09969imdUBlg",
+  "links": {},
   "extras": [
     {
-      "key": "yt-H_iDx3npVMU",
+      "key": "yt-uPOszsmbVVs",
       "kind": "original",
-      "name": "The Market Opens Every Day. People Don't Wait.",
+      "name": "إزاي تحوّل التداول لمصدر دخل حقيقي؟ (استراتيجية كاملة بالأرقام)",
       "emoji": "🎬",
-      "lang": "en",
-      "youtube": "H_iDx3npVMU",
-      "added": "2026-10-12",
+      "lang": "ar",
+      "youtube": "uPOszsmbVVs",
+      "added": "2026-11-19",
       "wide": true
     },
     {
-      "key": "yt-BqFRJF6mkAY",
-      "kind": "story",
-      "name": "SET YOUR STOP BEFORE YOU BUY.",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "BqFRJF6mkAY",
-      "added": "2026-10-12"
-    },
-    {
-      "key": "yt-7jqSAafpUxY",
-      "kind": "story",
-      "name": "Volume confirms breakouts",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "7jqSAafpUxY",
-      "added": "2026-10-12"
-    },
-    {
-      "key": "yt-reZK4I1Ls2Y",
-      "kind": "story",
-      "name": "Follow the smart money, not the narrative",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "reZK4I1Ls2Y",
-      "added": "2026-10-11"
-    },
-    {
-      "key": "yt-eKoytPXoGkI",
-      "kind": "story",
-      "name": "\"Panic sell vs  48-hour rule 😱",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "eKoytPXoGkI",
-      "added": "2026-10-11"
-    },
-    {
-      "key": "yt-HLAtKzQJK-E",
-      "kind": "story",
-      "name": "patience Pays⏳️",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "HLAtKzQJK-E",
-      "added": "2026-10-11"
-    },
-    {
-      "key": "yt-AeUo8GjP9zU",
-      "kind": "story",
-      "name": "3 am pump  💀",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "AeUo8GjP9zU",
-      "added": "2026-10-10"
-    },
-    {
-      "key": "yt--bg4jz0Ki7s",
-      "kind": "story",
-      "name": "سؤال صعب لكن مهم: هل تعرف عائلتك أين كل شيء؟",
+      "key": "yt-JWt4uNDbZJc",
+      "kind": "original",
+      "name": "إزاي تقرا المؤشرات على TradingView صح؟ ٥ مؤشرات لازم تعرفها | TradingView ببساطة",
       "emoji": "🎬",
       "lang": "ar",
-      "youtube": "-bg4jz0Ki7s",
-      "added": "2026-10-10"
-    },
-    {
-      "key": "yt-llVaSHl2I20",
-      "kind": "story",
-      "name": "\"Sells on a plan. Sleeps at night.\"",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "llVaSHl2I20",
-      "added": "2026-10-10"
-    },
-    {
-      "key": "yt-qTuEgxESmvc",
-      "kind": "story",
-      "name": "Screenshot your broker, drop it in. WalletLens reads every holding for you.",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "qTuEgxESmvc",
-      "added": "2026-10-08"
-    },
-    {
-      "key": "yt-rzmtCADbNFU",
-      "kind": "original",
-      "name": "Walletlens.live networth Tracker built genuinely for crypto lovers",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "rzmtCADbNFU",
-      "added": "2026-10-13",
+      "youtube": "JWt4uNDbZJc",
+      "added": "2026-11-18",
       "wide": true
     },
     {
-      "key": "yt-ofOddmubj7M",
-      "kind": "story",
-      "name": "Never Bet the Farm",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "ofOddmubj7M",
-      "added": "2026-10-14"
-    },
-    {
-      "key": "yt-iapUIPJnE3Q",
+      "key": "yt-jngF68eR4EQ",
       "kind": "original",
-      "name": "The 10.10 Crypto Crash  ",
+      "name": "ازاي تنجح في التداول والاستثمار: ٥ مهارات لازم تعرفها ",
       "emoji": "🎬",
-      "lang": "en",
-      "youtube": "iapUIPJnE3Q",
-      "added": "2026-10-16",
+      "lang": "ar",
+      "youtube": "jngF68eR4EQ",
+      "added": "2026-11-17",
       "wide": true
     },
     {
-      "key": "yt-PLnBgt3oV6I",
+      "key": "yt-lXzj_dJoifY",
       "kind": "original",
-      "name": "Why DCA Beats Timing the Market",
+      "name": "نظريات التحليل الفني: داو، وإليوت، وفيبوناتشي، وويكوف ببساطة | التحليل الفني ببس",
       "emoji": "🎬",
-      "lang": "en",
-      "youtube": "PLnBgt3oV6I",
-      "added": "2026-10-16",
+      "lang": "ar",
+      "youtube": "lXzj_dJoifY",
+      "added": "2026-11-14",
       "wide": true
     },
     {
-      "key": "yt-YUWY19qzh44",
-      "kind": "story",
-      "name": "how your portfolio is split?",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "YUWY19qzh44",
-      "added": "2026-10-17"
-    },
-    {
-      "key": "yt-KeUeWct-bTA",
-      "kind": "story",
-      "name": "He lost $6,000 in ONE Night 💀",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "KeUeWct-bTA",
-      "added": "2026-10-18"
-    },
-    {
-      "key": "yt-ggiVpbzmC_U",
+      "key": "yt-2CgFzEbAdTM",
       "kind": "original",
-      "name": "\"Not Financial Advice\" Cost Me Everything",
+      "name": "اعمل ال ٧ خطوات دي و هتعرف تحلل اي شارت  | التحليل الفني ببساطة ٥",
       "emoji": "🎬",
-      "lang": "en",
-      "youtube": "ggiVpbzmC_U",
-      "added": "2026-10-18",
+      "lang": "ar",
+      "youtube": "2CgFzEbAdTM",
+      "added": "2026-11-13",
       "wide": true
     },
     {
-      "key": "yt-F0EDLDjqMYU",
-      "kind": "story",
-      "name": "Check Less live more",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "F0EDLDjqMYU",
-      "added": "2026-10-18"
-    },
-    {
-      "key": "yt-A2f3s4dd9SI",
-      "kind": "story",
-      "name": "check less",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "A2f3s4dd9SI",
-      "added": "2026-10-18"
-    },
-    {
-      "key": "yt-QBOTD9tsjLM",
-      "kind": "story",
-      "name": "Check less Live more",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "QBOTD9tsjLM",
-      "added": "2026-10-19"
-    },
-    {
-      "key": "yt-EIJujlDtwIs",
-      "kind": "story",
-      "name": "قبل ما تستثمر جنيه… اتفرج على الـ 10 غلطات دول",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "EIJujlDtwIs",
-      "added": "2026-10-19"
-    },
-    {
-      "key": "yt-KyA6vMsm0Vw",
+      "key": "yt-y3EAJ52TtDI",
       "kind": "original",
-      "name": "10 غلطات قاتلة في الاستثمار",
+      "name": "بعد الفيديو ده هتبقي محلل فني و تقدر ترسم و تحلل اي شارت",
       "emoji": "🎬",
       "lang": "ar",
-      "youtube": "KyA6vMsm0Vw",
-      "added": "2026-10-19",
+      "youtube": "y3EAJ52TtDI",
+      "added": "",
       "wide": true
     },
     {
-      "key": "yt-4SC5Vt8mN1g",
+      "key": "yt-bhUKq3hNJ-8",
       "kind": "original",
-      "name": "لو حد قالك «عائد مضمون  اتفرج على ده الأول",
+      "name": "TradingView من الصفر: أول مرة تفتحه خطوة بخطوة | TradingView ببساطة ١",
       "emoji": "🎬",
       "lang": "ar",
-      "youtube": "4SC5Vt8mN1g",
-      "added": "2026-10-20",
+      "youtube": "bhUKq3hNJ-8",
+      "added": "",
       "wide": true
     },
     {
-      "key": "yt-x905AGMygFY",
-      "kind": "story",
-      "name": "Cash is king",
-      "emoji": "🎬",
-      "lang": "en",
-      "youtube": "x905AGMygFY",
-      "added": "2026-10-20"
-    },
-    {
-      "key": "yt-aYvi3NlpYaM",
+      "key": "yt-RNqGOxVGn_w",
       "kind": "original",
-      "name": "الشارت بيحكي ١ | النماذج الفنية زي ما محدش شرحهالك: الرأس والكتفين، القمة المزدو",
+      "name": "إزاي تقرا الشموع اليابانية؟ ٥ شموع لازم تعرفها | التحليل الفني ببساطة ٤",
       "emoji": "🎬",
       "lang": "ar",
-      "youtube": "aYvi3NlpYaM",
-      "added": "2026-10-21",
+      "youtube": "RNqGOxVGn_w",
+      "added": "",
       "wide": true
     },
     {
-      "key": "yt-l02PfHJVZ3c",
+      "key": "yt-cJfhZAFLKsQ",
       "kind": "original",
-      "name": "إزاي تعرف السوق طالع ولا نازل؟ الترند والدعم والمقاومة ببساطة",
+      "name": "المؤشرات ببساطة: المتوسط المتحرك وRSI وMACD وحجم التداول | التحليل الفني ببساطة ",
       "emoji": "🎬",
       "lang": "ar",
-      "youtube": "l02PfHJVZ3c",
-      "added": "2026-10-22",
+      "youtube": "cJfhZAFLKsQ",
+      "added": "",
       "wide": true
     },
     {
-      "key": "yt-eZu-b04uraU",
-      "kind": "story",
-      "name": "الدعم والمقاومة: إمتى السقف يبقى أرضية؟",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "eZu-b04uraU",
-      "added": "2026-10-23"
-    },
-    {
-      "key": "yt-FpKaP4wllY4",
+      "key": "yt-3vkb9CsRFp8",
       "kind": "original",
-      "name": "٦ غلطات بتخسّرك فلوسك (وتعمل إيه بدالها) ",
+      "name": "النماذج الفنية اللي بتتكرر في كل شارت (شرح من الصفر) | التحليل الفني ببساطة ٢",
       "emoji": "🎬",
       "lang": "ar",
-      "youtube": "FpKaP4wllY4",
-      "added": "2026-10-24",
+      "youtube": "3vkb9CsRFp8",
+      "added": "",
       "wide": true
     },
     {
-      "key": "yt-41xprj5wfbg",
+      "key": "yt-vSmSm-zedlc",
       "kind": "original",
-      "name": "حتى نيوتن خسر فلوسه في البورصة! حكاية فقاعة بحر الجنوب | قصص من أسواق المال",
+      "name": "السوق رايح فين؟ اتعلم الترند والدعم والمقاومة من الصفر | التحليل الفني ببساطة ١",
       "emoji": "🎬",
       "lang": "ar",
-      "youtube": "41xprj5wfbg",
-      "added": "2026-10-26",
+      "youtube": "vSmSm-zedlc",
+      "added": "",
       "wide": true
     },
     {
-      "key": "yt-LNG6a5t3jN8",
-      "kind": "story",
-      "name": "حتى نيوتن خسر فلوسه في البورصة! 🍎 #shorts",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "LNG6a5t3jN8",
-      "added": "2026-10-27"
-    },
-    {
-      "key": "yt-U8UDqEIoLKI",
-      "kind": "story",
-      "name": "الأزمات بتصنع الثروات… بس لمين؟ #shorts",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "U8UDqEIoLKI",
-      "added": "2026-10-27"
-    },
-    {
-      "key": "yt-C8caGZm13Fo",
-      "kind": "story",
-      "name": "الغلطة اللي محدش يتوقعها | قصص من أسواق المال #shorts",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "C8caGZm13Fo",
-      "added": "2026-10-28"
-    },
-    {
-      "key": "yt-ezM7ozIfNh8",
-      "kind": "story",
-      "name": "أذكى راجل في أوروبا… والفلوس | قصص من أسواق المال #shorts",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "ezM7ozIfNh8",
-      "added": "2026-10-28"
-    },
-    {
-      "key": "yt-2f3R31KVuF8",
-      "kind": "story",
-      "name": "يعني إيه نظام بونزي؟ | أكبر عملية نصب في التاريخ #shorts",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "2f3R31KVuF8",
-      "added": "2026-10-30"
-    },
-    {
-      "key": "yt-Z16f2wechME",
-      "kind": "story",
-      "name": "رئيس بورصة وطلع نصّاب! | أكبر عملية نصب في التاريخ #shorts",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "Z16f2wechME",
-      "added": "2026-10-30"
-    },
-    {
-      "key": "yt-JMIZJuKZNXk",
-      "kind": "story",
-      "name": "«الموضوع كله كان كدبة» | أكبر عملية نصب في التاريخ #shorts #اكسبلور",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "JMIZJuKZNXk",
-      "added": "2026-10-30"
-    },
-    {
-      "key": "yt-8U42NxFYmec",
+      "key": "yt-TJQl0_GZEkw",
       "kind": "original",
-      "name": "مكسب ثابت كل شهر من غير خسارة؟ ده كان أكبر فخ في التاريخ",
+      "name": "٦ حاجات إوعى تعملها بفلوسك لو عايز تكسب ",
       "emoji": "🎬",
       "lang": "ar",
-      "youtube": "8U42NxFYmec",
-      "added": "2026-10-30",
+      "youtube": "TJQl0_GZEkw",
+      "added": "",
       "wide": true
-    },
-    {
-      "key": "yt-m066H47xbPI",
-      "kind": "story",
-      "name": "السر: مكسب ثابت كل شهر | أكبر عملية نصب في التاريخ #shorts",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "m066H47xbPI",
-      "added": "2026-10-31"
-    },
-    {
-      "key": "yt-lwkq56y5WE8",
-      "kind": "original",
-      "name": "راجل محدش يعرفه… خسر 20 مليار في 48 ساعة ووقّع بنوك عالمية",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "lwkq56y5WE8",
-      "added": "2026-11-01",
-      "wide": true
-    },
-    {
-      "key": "yt-mfNerHK6tf0",
-      "kind": "story",
-      "name": "«خسر 20 مليار دولار في يومين» | حكاية آركيجوس #shorts",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "mfNerHK6tf0",
-      "added": "2026-11-02"
-    },
-    {
-      "key": "yt-1N-MYXG8cLo",
-      "kind": "story",
-      "name": "كانت من أكبر 10 عملات في العالم… وماتت في 7 أيام #shorts",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "1N-MYXG8cLo",
-      "added": "2026-11-07"
-    },
-    {
-      "key": "yt-Z6pzTAKkquM",
-      "kind": "original",
-      "name": "عندما استيقظ الملايين ليجدوا أنفسهم مفلسين.. القصة المرعبة لـ لونا",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "Z6pzTAKkquM",
-      "added": "2026-11-07",
-      "wide": true
-    },
-    {
-      "key": "yt-RwSZ-6cQ11g",
-      "kind": "story",
-      "name": "قصة انهيار عملة لونا واحده من أكبر انهيارات سوق الكريبتو",
-      "emoji": "🎬",
-      "lang": "ar",
-      "youtube": "RwSZ-6cQ11g",
-      "added": "2026-11-14"
     }
   ]
 }
