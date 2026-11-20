@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
 import { academyCopy, posterFor } from '../data/academyCopy'
+import VideoThumb from './VideoThumb'
 import { readWatched, WATCHED_EVENT } from '../academyProgress'
 
 // Home's lesson card: the newest Academy lesson while it is unwatched, then
@@ -44,6 +45,7 @@ export default function LatestLesson() {
     <button type="button" className="nl-card nl-lesson" onClick={open}>
       <span className={`aw-poster p-${posterFor(video.key, video.poster)} nl-lesson-art`} aria-hidden="true">
         <i />
+        <VideoThumb video={video} />
         <span className="nl-lesson-play"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#0f1d2b" /></svg></span>
       </span>
       <span className="nl-lesson-txt">

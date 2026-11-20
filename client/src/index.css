@@ -13123,6 +13123,7 @@ html:not([data-wl-light]) .aw-link { color: #34d399; }
 
 /* Posters: banded sky, a sun, and ground; five palettes. */
 .aw-poster { position: relative; display: block; overflow: hidden; background: linear-gradient(var(--s1) 0 30%, var(--s2) 30% 48%, var(--s3) 48% 60%, var(--g1) 60% 100%); }
+.aw-thumb { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .aw-poster i { position: absolute; left: 50%; top: 60%; width: 34%; aspect-ratio: 2 / 1; transform: translate(-50%, -100%); border-radius: 999px 999px 0 0; background: var(--sun); }
 .aw-poster.p-sunset { --s1: #4c2a7a; --s2: #a2386f; --s3: #f2804a; --g1: #1f3a86; --sun: #ffd56b; }
 .aw-poster.p-day { --s1: #2f80cf; --s2: #6cb8ea; --s3: #a9dcf5; --g1: #2f7d4f; --sun: #ffe08a; }
