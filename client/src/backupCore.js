@@ -408,6 +408,9 @@ export async function mergeBackupCode(raw) {
   return { added, removed: txs.length - kept.length }
 }
 
+/** Portfolio data a restore clears when the backup has none of it. */
+export const REPLACE_WHEN_MISSING = ['ct', 'cn', 'mp', 'ex', 'td', 'zh', 'zi', 'gl', 'vb', 'rb', 'pb', 'wt', 'wa']
+
 export async function applyBackupCode(raw) {
   const code = (raw || '').trim().replace(/\s+/g, '')
   if (!code) throw new Error('Paste a backup code first.')
@@ -441,6 +444,11 @@ export async function applyBackupCode(raw) {
         const v = parsed[alias]
         localStorage.setItem(key, typeof v === 'string' ? v : JSON.stringify(v))
         restored++
+      } else if (REPLACE_WHEN_MISSING.includes(alias)) {
+        // A restore REPLACES this device's data: portfolio data the backup
+        // does not have is cleared, so nothing from before the restore stays
+        // mixed in. Preferences (language, theme, settings) are left alone.
+        localStorage.removeItem(key)
       }
     }
     return { restored, when: parsed.ts ? new Date(parsed.ts) : null }
