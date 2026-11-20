@@ -80,13 +80,22 @@ const CORS_PROXIES = [
 // pre-warm from bursting hundreds of parallel requests at free proxy hosts
 // if the upstream batch sources are down.
 const YAHOO_FALLBACK_CONCURRENCY = 6;
-async function mapWithConcurrency(items, limit, fn) {
+//
+// `giveUpAfter` is a circuit breaker for fallback fan-outs: once that many
+// items have finished and not one produced a result (`ok`), the remaining
+// items are skipped (left undefined). When every source is down, item 7 of a
+// 130-ticker list fails exactly like items 1–6 did; without the breaker a
+// full outage cost ~1,500 doomed requests on a single page load.
+async function mapWithConcurrency(items, limit, fn, { giveUpAfter = Infinity, ok = Boolean } = {}) {
   const results = new Array(items.length);
-  let next = 0;
+  let next = 0, done = 0, hits = 0;
   async function worker() {
     while (next < items.length) {
+      if (done >= giveUpAfter && hits === 0) return;
       const i = next++;
       results[i] = await fn(items[i], i);
+      done++;
+      if (ok(results[i])) hits++;
     }
   }
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
@@ -450,7 +459,7 @@ setTimeout(() => {
   try {
     const tickers = (POPULAR_TICKERS || []).map(t => t.ticker.toUpperCase()).filter(Boolean);
     if (!tickers.length) return;
-    const warm = tickers.every(t => batchStockCache[t]) && Date.now() - batchStockCacheTime < STOCK_CACHE_DURATION;
+    const warm = tickers.every(t => batchStockCache[t] || recentlyUnpriceable(t)) && Date.now() - batchStockCacheTime < STOCK_CACHE_DURATION;
     if (!warm) fetchBatchStocks(tickers).catch(() => {});
   } catch {}
   // Warm tokenized-stock (xStock) prices too so the Tokenized tab is instant.
@@ -967,6 +976,30 @@ function parseStooqRow(csv) {
   return { usd: close, usd_24h_change: change, name: row.Name || '' };
 }
 
+// One Binance bStock quote, or null. Routed through the Deno proxy first
+// (bypasses CORS + regional Binance geo-blocks), then direct as fallback.
+// Stooq and Yahoo do not list bStocks, so this is the only source that can
+// price one; the batch path uses it instead of the stock fallback chain.
+async function fetchBStockQuote(ticker) {
+  const binanceSymbol = BSTOCK_SYMBOLS[String(ticker).toLowerCase()];
+  if (!binanceSymbol) return null;
+  const binanceUrl = `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`;
+  for (const url of [DENO_PROXY(binanceUrl), binanceUrl]) {
+    try {
+      const res = await fetchWithTimeout(url, 6000);
+      if (res.ok) {
+        const data = await res.json();
+        const price = parseFloat(data.lastPrice);
+        const pct   = parseFloat(data.priceChangePercent);
+        if (binanceRowLive(data) && isFinite(price) && price > 0) {
+          return { usd: price, usd_24h_change: isFinite(pct) ? pct : 0, name: `${String(ticker).toUpperCase()} bStock` };
+        }
+      }
+    } catch { /* try next */ }
+  }
+  return null;
+}
+
 async function fetchStockLive(coinId) {
   const ticker = coinId.startsWith(STOCK_PREFIX) ? coinId.slice(STOCK_PREFIX.length) : coinId;
   const now = Date.now();
@@ -985,26 +1018,9 @@ async function fetchStockLive(coinId) {
   }
 
   // ── 0a. Binance bStock API — live 24/7 tokenized securities ──
-  // Route through Deno proxy first (bypasses CORS + regional Binance geo-blocks),
-  // then try direct as fallback.
-  const binanceSymbol = BSTOCK_SYMBOLS[ticker.toLowerCase()];
-  if (binanceSymbol) {
-    const binanceUrl = `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`;
-    for (const url of [DENO_PROXY(binanceUrl), binanceUrl]) {
-      try {
-        const res = await fetchWithTimeout(url, 6000);
-        if (res.ok) {
-          const data = await res.json();
-          const price = parseFloat(data.lastPrice);
-          const pct   = parseFloat(data.priceChangePercent);
-          if (binanceRowLive(data) && isFinite(price) && price > 0) {
-            const parsed = { usd: price, usd_24h_change: isFinite(pct) ? pct : 0, name: `${tickerUp} bStock` };
-            stockCache[coinId] = parsed; stockCacheTime[coinId] = now;
-            return parsed;
-          }
-        }
-      } catch { /* try next */ }
-    }
+  if (BSTOCK_SYMBOLS[ticker.toLowerCase()]) {
+    const parsed = await fetchBStockQuote(ticker);
+    if (parsed) { stockCache[coinId] = parsed; stockCacheTime[coinId] = now; return parsed; }
   }
 
   // ── 0b. Static prices file served from same origin (no CORS, always works) ──
@@ -1450,7 +1466,7 @@ async function _fetchStocksRemote(tickers) {
         } catch {}
       }
       return null;
-    });
+    }, { giveUpAfter: YAHOO_FALLBACK_CONCURRENCY });
     const out = {};
     for (const r of results) {
       if (r) out[r.sym] = { usd: r.usd, usd_24h_change: r.usd_24h_change, name: r.name, source: 'yahoo-proxy' };
@@ -1501,9 +1517,25 @@ async function fetchOneTicker(sym) {
   return null;
 }
 
+// Tickers that every batch source failed to price, and when. They are left
+// out of the batch refresh for UNPRICEABLE_TTL instead of being retried on
+// every call: a symbol no source lists (a delisted ticker, a bStock before
+// it routed to Binance) used to cost ~16 doomed third-party requests per
+// refresh, and the popular-ticker pre-warm below ran that on every page load.
+// Persisted so a reload does not start the fan-out over.
+const STOCK_MISS_KEY = 'wl_stock_miss_v1';
+const UNPRICEABLE_TTL = 30 * 60_000;
+let stockMissAt = (() => { try { return JSON.parse(localStorage.getItem(STOCK_MISS_KEY) || '{}') || {}; } catch { return {}; } })();
+const recentlyUnpriceable = (t, now = Date.now()) => now - (stockMissAt[t] || 0) < UNPRICEABLE_TTL;
+function _persistStockMisses() {
+  try { localStorage.setItem(STOCK_MISS_KEY, JSON.stringify(stockMissAt)); } catch {}
+}
+
 async function _refreshBatchStocks(tickers) {
   const now = Date.now();
-  const missing = tickers.filter(t => !batchStockCache[t] || now - batchStockCacheTime > STOCK_CACHE_DURATION || intlStale(t, now));
+  const missing = tickers.filter(t =>
+    (!batchStockCache[t] || now - batchStockCacheTime > STOCK_CACHE_DURATION || intlStale(t, now))
+    && !(!batchStockCache[t] && recentlyUnpriceable(t, now)));
   if (missing.length === 0) return batchStockCache;
 
   // Foreign listings first, on their own path; the US sources cannot price them.
@@ -1512,7 +1544,13 @@ async function _refreshBatchStocks(tickers) {
     const intl = await fetchIntlQuotes(intlMissing);
     for (const [sym, data] of Object.entries(intl)) { batchStockCache[sym] = data; intlFetchedAt[sym] = Date.now(); }
   }
-  const usMissing = missing.filter(t => !isIntlTicker(t));
+  // bStocks trade only on Binance; the Stooq/Yahoo chain below cannot price them.
+  const bMissing = missing.filter(t => BSTOCK_SYMBOLS[t.toLowerCase()]);
+  if (bMissing.length > 0) {
+    const quotes = await Promise.all(bMissing.map(async t => ({ t, q: await fetchBStockQuote(t) })));
+    for (const { t, q } of quotes) if (q) batchStockCache[t] = q;
+  }
+  const usMissing = missing.filter(t => !isIntlTicker(t) && !BSTOCK_SYMBOLS[t.toLowerCase()]);
 
   // Primary: Twelve Data → Stooq batch → Yahoo proxy
   const batchResult = usMissing.length ? await fetchTwelveDataBatch(usMissing) : null;
@@ -1522,14 +1560,28 @@ async function _refreshBatchStocks(tickers) {
     }
   }
 
-  // For any tickers FMP missed, fire individual Yahoo/Stooq fetches in parallel
+  // For any tickers the batch missed, fall back to individual Yahoo/Stooq
+  // fetches — capped like the proxy fallback above, so a full outage on a
+  // ~130-ticker list does not open 130 request chains at once.
   const stillMissing = usMissing.filter(t => !batchStockCache[t]);
   if (stillMissing.length > 0) {
-    const results = await Promise.all(stillMissing.map(async t => ({ t, data: await fetchOneTicker(t) })));
-    for (const { t, data } of results) {
-      if (data) batchStockCache[t] = data;
+    const results = await mapWithConcurrency(stillMissing, YAHOO_FALLBACK_CONCURRENCY, async t => ({ t, data: await fetchOneTicker(t) }),
+      { giveUpAfter: YAHOO_FALLBACK_CONCURRENCY, ok: r => !!r.data });
+    for (const r of results) {
+      if (r?.data) batchStockCache[r.t] = r.data;
     }
   }
+
+  // Remember what nothing could price, and forget what something now did.
+  // Only when some source answered at all: a run where everything failed is
+  // a network problem (offline, outage), not proof the symbols are unpriceable.
+  let missChanged = false;
+  const anyPriced = missing.some(t => batchStockCache[t]);
+  for (const t of missing) {
+    if (batchStockCache[t]) { if (stockMissAt[t]) { delete stockMissAt[t]; missChanged = true; } }
+    else if (anyPriced) { stockMissAt[t] = now; missChanged = true; }
+  }
+  if (missChanged) _persistStockMisses();
 
   // Mark fresh only if we actually have data; a fully-failed poll must retry.
   if (Object.keys(batchStockCache).length > 0) { batchStockCacheTime = now; _persistStockCache(); }
