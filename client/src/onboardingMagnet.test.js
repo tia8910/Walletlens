@@ -45,3 +45,10 @@ describe('welcome magnet', () => {
     expect(css).toMatch(/prefers-reduced-motion[\s\S]*\.ocx-mg-orbit/)
   })
 })
+
+describe('welcome net worth', () => {
+  it('lands on one solid figure and does not tick afterwards', () => {
+    expect(src).not.toMatch(/setCount\(v => v \+/)
+    expect(src).toMatch(/<em className="ocx-chg is-up">▲ 2\.27%<\/em>/)
+  })
+})

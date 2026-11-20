@@ -128,7 +128,6 @@ export default function NativeOnboarding({ onDone }) {
   const [paint, setPaint] = useState(null)
   const [featIdx, setFeatIdx] = useState(0)
   const [count, setCount] = useState(0)
-  const [move, setMove] = useState('up')
   // The lens: 'idle' (assets orbit it), 'pull' (they fly in), 'done'.
   const [phase, setPhase] = useState('idle')
   const { theme, setTheme, mode, setMode } = useTheme()
@@ -149,7 +148,7 @@ export default function NativeOnboarding({ onDone }) {
   // Intro: the assets orbit the lens until it is tapped (or after a few
   // seconds on its own), then fly in one by one, each landing with a coin
   // clink, and the figure rolls up like an odometer to the full net worth
-  // with a cash register. From then it ticks like a live price.
+  // with a cash register. Then it holds still: one solid figure.
   const pullTimers = useRef([])
   const pull = useCallback(() => {
     if (phase !== 'idle') return
@@ -159,7 +158,7 @@ export default function NativeOnboarding({ onDone }) {
     MAGNET_ASSETS.forEach((_, i) => T.push(setTimeout(() => {
       try { sfx.playCoin(i); sfx.haptic(6) } catch {}
     }, 520 + i * 120)))
-    T.push(setTimeout(() => { setMove('up'); setCount(MAGNET_TARGET) }, 300))
+    T.push(setTimeout(() => setCount(MAGNET_TARGET), 300))
     T.push(setTimeout(() => {
       setPhase('done')
       try { sfx.playCashIn(); sfx.haptic([12, 30, 18]) } catch {}
@@ -172,16 +171,6 @@ export default function NativeOnboarding({ onDone }) {
     const auto = setTimeout(pull, 4200)
     return () => clearTimeout(auto)
   }, [s.id, phase, pull])
-
-  useEffect(() => {
-    if (s.id !== 'welcome' || phase !== 'done') return
-    const live = setInterval(() => {
-      const d = Math.round((Math.random() - 0.38) * 900)
-      setCount(v => v + d)
-      setMove(d >= 0 ? 'up' : 'down')
-    }, 2300)
-    return () => clearInterval(live)
-  }, [s.id, phase])
 
   useEffect(() => {
     if (s.id !== 'welcome') return
@@ -368,9 +357,9 @@ export default function NativeOnboarding({ onDone }) {
           <button className="ocx-mg-lens" onClick={pull}
             aria-label={phase === 'idle' ? t('obMagnetAria') : `${t('obPreviewLabel')}, $${Math.round(count).toLocaleString('en-US')}`}>
             <small>{phase === 'idle' ? t('obMagnetTap') : phase === 'pull' ? t('obMagnetPulling') : t('obPreviewLabel')}</small>
-            <Odometer value={count} move={move} />
+            <Odometer value={count} move="up" />
             {phase === 'done'
-              ? <em className={`ocx-chg is-${move}`}>{move === 'up' ? '▲' : '▼'} {Math.abs((count - 125440) / 1254.4).toFixed(2)}%</em>
+              ? <em className="ocx-chg is-up">▲ 2.27%</em>
               : <em className="ocx-mg-sub">{t('obMagnetKinds')}</em>}
           </button>
           {phase === 'done' && (
