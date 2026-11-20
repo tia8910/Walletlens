@@ -6,6 +6,15 @@ import { AssetLogo, Spark } from './HomeTop'
 import { api } from '../api'
 import { daySeries, hasDayLine } from '../daySpark'
 
+// The amount under the ticker, short enough to stay on one line: fewer
+// decimals as the number grows (the full amount is in the tooltip and on the
+// asset page).
+export function fmtAmt(n) {
+  const v = Math.abs(Number(n) || 0)
+  const d = v >= 100 ? 2 : v >= 1 ? 4 : 6
+  return Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: d })
+}
+
 /**
  * The last 24 hours per holding, a few at a time so a long list does not
  * hit the price sources all at once. Rows keep their previous line while a
@@ -99,10 +108,10 @@ export default function NlHoldings({
                   {isSel && !picking && <i aria-hidden="true">✓</i>}
                 </span>
                 <div className="nl-row-n">
-                  <b>{h.coin_name || sym}</b>
+                  <b title={h.coin_name || sym}>{sym || h.coin_name}</b>
                   {breakEven && be > 0 && beGap != null
                     ? <small>{t('dsBreakEvenAt')} {mask(cv(be))} <span className={beGap >= 0 ? 'up' : 'down'}>{beGap >= 0 ? '↑' : '↓'}{Math.abs(beGap).toFixed(1)}%</span></small>
-                    : <small>{mask(`${Number(h.amount || 0).toLocaleString('en-US', { maximumFractionDigits: 6 })} ${sym}`)}</small>}
+                    : <small className="nl-row-amt" title={`${Number(h.amount || 0).toLocaleString('en-US', { maximumFractionDigits: 8 })} ${sym}`}>{mask(fmtAmt(h.amount))}</small>}
                 </div>
                 <div className="nl-row-mid">
                   <Spark values={hasDayLine(h) ? daySeries(daySparks[h.coin_id], h.price, marketSparks[h.coin_id]) : null} w={64} h={26} className="nl-row-spark"

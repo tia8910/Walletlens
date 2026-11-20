@@ -339,7 +339,11 @@ html.wl-v3:not([data-wl-light]) .nl-wc { filter: saturate(0.9) brightness(0.96);
 .nl-row { width: 100%; display: flex; align-items: center; gap: 0.65rem; padding: 0.7rem 0; border: 0; border-bottom: 1px solid var(--nl-line); background: none; font: inherit; color: var(--nl-ink); text-align: start; cursor: pointer; }
 .nl-row:last-child { border-bottom: 0; }
 .nl-row-n { flex: 1; min-width: 0; }
-.nl-row-n b, .nl-row-v b { display: block; font-size: 0.9rem; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nl-row-v b { display: block; font-size: 0.9rem; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* An asset's name is shown whole: it wraps to a second line instead of being cut off. */
+/* The ticker heads the row: short enough to show whole on any screen. A
+   rare very long one wraps rather than being cut off. */
+.nl-row-n b { display: block; font-size: 0.9rem; letter-spacing: -0.01em; white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
 .nl-row-n small, .nl-row-v small { font-size: 0.75rem; font-weight: 700; color: var(--nl-sub); }
 .nl-row-v { text-align: end; font-variant-numeric: tabular-nums; }
 .nl-row-np small { font-weight: 600; white-space: nowrap; }
@@ -956,3 +960,4 @@ html.wl-v3:not([data-wl-light]) .nl-check { border-color: rgba(255, 255, 255, 0.
   html.wl-v3:not([data-wl-light]) .nl-wc:hover { filter: saturate(0.95) brightness(1); }
   html.wl-v3 .wl-nav-fab:hover { filter: none; transform: translateY(-2px) scale(1.04); box-shadow: 0 14px 28px -6px rgba(var(--g-rgb), 0.75), 0 0 0 6px var(--nl-bg); }
 }
+.nl-row-n small.nl-row-amt { white-space: nowrap; }

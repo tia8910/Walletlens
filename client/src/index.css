@@ -4325,7 +4325,7 @@ tr:last-child td { border-bottom: none; }
 .bs-market-row.active { background: rgba(var(--g-rgb),0.12); box-shadow: inset 0 0 0 1.5px rgba(var(--g-rgb),0.45); }
 .bs-market-row .bs-coin-info { min-width: 0; }
 .bs-market-row .bs-coin-info strong,
-.bs-market-row .bs-coin-info .muted { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.bs-market-row .bs-coin-info .muted { white-space: normal; overflow-wrap: anywhere; line-height: 1.2; max-width: 100%; }
 .bs-market-px { margin-left: auto; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; padding-left: 0.5rem; }
 .bs-market-price { font-weight: 700; font-size: 0.92rem; color: var(--text); white-space: nowrap; }
 .bs-market-chg { font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
@@ -7970,7 +7970,7 @@ button.wl-topbar-x { background: none; border: none; cursor: pointer; font: inhe
 .sa-card-coin { display: flex; align-items: center; gap: 0.6rem; flex: 1 1 auto; min-width: 0; }
 .sa-card-coin > div { min-width: 0; }
 .sa-card-symbol { font-weight: 800; font-size: 0.9rem; color: #fff; display: block; white-space: nowrap; }
-.sa-card-name   { font-size: 0.7rem; color: rgba(255,255,255,0.75); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sa-card-name   { font-size: 0.7rem; color: rgba(255,255,255,0.75); display: block; white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
 .sa-card-price  { font-size: 0.82rem; font-weight: 700; color: var(--g-ink); margin-left: auto; white-space: nowrap; flex-shrink: 0; }
 .sa-card-meta   { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; margin-left: auto; }
 .sa-signal-count { font-size: 0.68rem; font-weight: 800; background: rgba(var(--g-rgb),0.15); color: var(--g-ink); font-weight: 700; border-radius: 20px; padding: 0.15rem 0.5rem; }
@@ -10074,7 +10074,7 @@ button:not(:disabled):active,
 .vp-card-head { display: flex; align-items: flex-start; gap: .6rem; margin-bottom: .6rem; }
 .vp-type-icon  { font-size: 1.3rem; line-height: 1; flex-shrink: 0; margin-top: 1px; }
 .vp-card-title { flex: 1; min-width: 0; }
-.vp-card-title strong { display: block; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vp-card-title strong { display: block; font-size: .95rem; white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
 .vp-type-label { font-size: .72rem; opacity: .5; }
 .vp-card-actions { display: flex; gap: .3rem; flex-shrink: 0; }
 .vp-btn-icon {
@@ -10701,7 +10701,7 @@ button:not(:disabled):active,
   color: var(--text-muted);
   white-space: nowrap; flex-shrink: 0;
 }
-.wlw-item-name { font-size: 0.75rem; margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wlw-item-name { font-size: 0.75rem; margin-top: 0.1rem; white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
 
 .wlw-item-price { text-align: right; flex-shrink: 0; min-width: 80px; }
 .wlw-price-usd  { font-size: 0.95rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
