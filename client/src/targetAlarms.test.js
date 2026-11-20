@@ -45,8 +45,9 @@ describe('Targets add form: two taps per target', () => {
     expect(src).toMatch(/\[1\.5, 2, 3, 5, 8\]\.map\(m => \(\{ m, p: nice\(currentPrice \* m\) \}\)\)/)
     expect(src).toMatch(/t\('tgMyPrice'\)/)
   })
-  it('keeps the form open after saving so the next target is quick', () => {
-    const save = src.slice(src.indexOf('async function saveTarget'), src.indexOf('async function removeTarget'))
-    expect(save).not.toMatch(/setAddFor\(null\)/)
+  it('lines targets up as new tiles and saves them only on confirm', () => {
+    expect(src).toMatch(/async function saveDrafts\(h\)/)
+    expect(src).toMatch(/t\('tgConfirmSave'\)\(lined\.length\)/)
+    expect(src).toMatch(/className="tg6-tile is-new"/)
   })
 })
