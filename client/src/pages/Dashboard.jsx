@@ -11,7 +11,7 @@ import { api, getCachedCoinImage } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
 import { observe, primeEffectAudio } from '../screenEffectsRuntime'
-import { EXPLODE, ROCKET, ATH, pickLeader } from '../screenEffects'
+import { EXPLODE, SUNRISE, ROCKET, ATH, pickLeader, dayKey } from '../screenEffects'
 import ScreenEffect from '../components/ScreenEffect'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset, GOLD_ID, SILVER_ID } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
@@ -26,7 +26,9 @@ import { setTargetAlarm, targetAlarmKeys } from '../targetAlarms'
 import EmptyVault from '../components/EmptyVault'
 import MilestonePopup, { detectMilestone, dismissMilestone } from '../components/MilestonePopup'
 import { applyMood } from '../moodEngine'
-import { getSoulGreeting } from '../soulGreeting'
+import { getSoulGreeting, dayDrivers } from '../soulGreeting'
+import { pulseReading, pulseLevel, recordPulse, loadPulseHistory } from '../portfolioPulse'
+import PortfolioPulse from '../components/PortfolioPulse'
 import { exportToExcel, exportToPDF } from '../exportHoldings'
 import { noteFeatureUse } from '../featureUse'
 import { LongPressMenu, bindLongPress, consumeLongPress } from '../components/LongPressMenu'
@@ -3160,8 +3162,9 @@ export default function Dashboard() {
   // volatilityLevel: 0=calm, 1=normal, 2=elevated, 3=high
   // mood: 'up' | 'down' | 'flat' — drives the mood-ring color
   const [volatilityLevel, setVolatilityLevel] = useState(0)
+  const [pulse, setPulse] = useState(null) // { reading, level } for the pulse card
+  const [btcDayPct, setBtcDayPct] = useState(null)
   const [mood, setMood] = useState('flat')
-  const recentPctChgRef = useRef([])
   const [refreshing, setRefreshing] = useState(false)
   const [displayCurrency, setDisplayCurrency] = useState(() => {
     try { return JSON.parse(localStorage.getItem('wl_settings') || '{}').displayCurrency || 'USD' } catch { return 'USD' }
@@ -3630,6 +3633,8 @@ export default function Dashboard() {
     () => enriched.reduce((s, h) => s + (h.value * (h.pct24h || 0) / 100), 0),
     [enriched],
   )
+  const drivers = useMemo(() => dayDrivers(enriched), [enriched])
+  const onlyBtc = enriched.length > 0 && enriched.every(h => h.coin_id === 'bitcoin')
 
   const [effect, setEffect] = useState(null)
   // Screen effects — three occasions and no others.
@@ -3649,7 +3654,11 @@ export default function Dashboard() {
     // of "up today" that could disagree with what is on screen.
     const dayBase = totalValue - todayPnLVal
     const changePct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
-    const fired = observe({ totalValue, changePct, holdings: enriched })
+    // Nothing celebrates numbers that cannot be trusted or are not on screen.
+    const blocked = hidden || isDemo || pricesFailed || unpriced.length > 0
+    let line = null
+    try { line = getSoulGreeting({ dayChangePct: changePct, lang, drivers, btcPct: btcDayPct, onlyBtc }).line } catch { /* no line */ }
+    const fired = observe({ totalValue, invested: totalInvested, changePct, holdings: enriched, blocked, extra: { line } })
     if (fired) setEffect(fired)
   }, [loaded, enriched, totalValue])
 
@@ -3665,11 +3674,15 @@ export default function Dashboard() {
   // gesture, and an animation in silence looks like the sound is broken.
   useEffect(() => {
     const want = new URLSearchParams(location.search).get('fx')
-    if (![EXPLODE, ROCKET, ATH].includes(want)) return undefined
+    if (![EXPLODE, SUNRISE, ROCKET, ATH].includes(want)) return undefined
     const once = () => {
       primeEffectAudio()
       const leader = pickLeader(enriched)
-      setEffect({ effect: want, payload: { leader, changePct: 7.4, totalValue } })
+      const dayBase = totalValue - todayPnLVal
+      const changePct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
+      let line = null
+      try { line = getSoulGreeting({ dayChangePct: changePct, lang, drivers, btcPct: btcDayPct, onlyBtc }).line } catch { /* none */ }
+      setEffect({ effect: want, payload: { leader, changePct: 7.4, totalValue, line, beats: 27, of: 30, gain: totalValue * 0.012, since: Date.now() - 12 * 86_400_000 } })
     }
     document.addEventListener('click', once, { once: true })
     return () => document.removeEventListener('click', once)
@@ -3726,28 +3739,33 @@ export default function Dashboard() {
     return () => clearTimeout(id)
   }, [loaded, totalValue])
 
-  // ── Live Heartbeat: compute volatility from recent price ticks ───────
-  // Every time enriched changes (price poll), compute a weighted RMS of
-  // individual asset 24h changes. Large moves = high volatility = fast beat.
+  // ── Portfolio pulse: how hard your money moves, against your own normal ──
+  // The typical move a dollar of yours is making today (weighted RMS of the
+  // holdings' 24h moves), judged against the median of your last 30 days once
+  // there are five. It drives the hero's heartbeat and the pulse card.
   useEffect(() => {
     if (!loaded || !enriched.length || totalValue <= 0) return
-    // Weighted RMS of individual asset pct changes, by portfolio weight
-    const rms = Math.sqrt(
-      enriched.reduce((s, h) => {
-        const w = totalValue > 0 ? h.value / totalValue : 1 / enriched.length
-        const chg = Math.abs(h.pct24h || 0)
-        return s + w * chg * chg
-      }, 0)
-    )
-    // Track the last 8 readings for a rolling average (smooth transitions)
-    const hist = recentPctChgRef.current
-    hist.push(rms)
-    if (hist.length > 8) hist.splice(0, hist.length - 8)
-    const avg = hist.reduce((a, b) => a + b, 0) / hist.length
-    // Map average RMS to volatility level: <3 calm, <8 normal, <15 elevated, else high
-    const level = avg < 3 ? 0 : avg < 8 ? 1 : avg < 15 ? 2 : 3
-    setVolatilityLevel(level)
-  }, [loaded, enriched, totalValue])
+    const reading = pulseReading(enriched, totalValue)
+    if (!(reading.rms > 0)) return
+    let today = ''
+    try { today = dayKey(Date.now(), -new Date().getTimezoneOffset()) } catch { /* keep '' */ }
+    const history = isDemo ? loadPulseHistory() : recordPulse(reading.rms, today)
+    const level = pulseLevel(reading.rms, history, today)
+    setVolatilityLevel(level.level)
+    setPulse({ reading, level })
+  }, [loaded, enriched, totalValue, isDemo])
+
+  // BTC's own day, so the soul line can say whether the market moved with you.
+  useEffect(() => {
+    const own = prices?.bitcoin?.usd_24h_change
+    if (Number.isFinite(own)) { setBtcDayPct(own); return undefined }
+    let alive = true
+    api.getPrices('bitcoin').then(p => {
+      const c = p?.bitcoin?.usd_24h_change
+      if (alive && Number.isFinite(c)) setBtcDayPct(c)
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [prices])
 
   // ── Mood ring: derive portfolio direction from day P&L ───────────────
   useEffect(() => {
@@ -4256,7 +4274,7 @@ export default function Dashboard() {
           refresh, spend the day's effect, hear the held sound on their next
           tap, and never see the animation — it was unreachable from five of
           the six tabs. */}
-      <ScreenEffect effect={effect?.effect} payload={effect?.payload} onDone={() => setEffect(null)} />
+      <ScreenEffect effect={effect?.effect} payload={effect?.payload} onDone={() => setEffect(null)} money={cv} />
 
       {/* Tab nav — labeled tile grid on the web. Inside the native app the tile
           grid is redundant with the native bottom nav, so we replace it with the
@@ -4288,6 +4306,17 @@ export default function Dashboard() {
           // An empty portfolio gets one job, adding assets: no headlines or mood until there is something to read them against.
           newsSlot={enriched.length > 0 || isDemo ? <NewsTicker variant="card" /> : null}
           sentimentSlot={enriched.length > 0 || isDemo ? <SentimentTicker holdings={enriched} totalValue={totalValue} totalPnLPct={totalPnLPct} /> : null}
+          pulseSlot={pulse && !isDemo ? <PortfolioPulse reading={pulse.reading} level={pulse.level} swingUsd={todayPnLVal} hidden={hidden} leftOut={unpriced.length} money={cv} /> : null}
+          soulSub={(() => {
+            if (isDemo || !(lang === 'en' || lang === 'ar')) return null
+            const base = totalValue - todayPnLVal
+            const pct = base > 0 ? (todayPnLVal / base) * 100 : 0
+            const line = getSoulGreeting({ dayChangePct: pct, lang, drivers, btcPct: btcDayPct, onlyBtc }).line
+            // The banner title already carries the day's figure, so keep what
+            // follows the first sentence: who did it, and the market.
+            const m = /^.*?\.\s+(.+)$/s.exec(String(line || ''))
+            return m ? m[1].trim() : null
+          })()}
           onAsset={(h) => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}
           conv={curConv} currency={displayCurrency} onCurrency={() => setHomeCurPicker(true)}
         />
@@ -4505,7 +4534,7 @@ export default function Dashboard() {
             {!hidden && !isDemo && (() => {
               const dayBase = totalValue - todayPnLVal
               const dayChangePct = dayBase > 0 ? (todayPnLVal / dayBase) * 100 : 0
-              const soul = getSoulGreeting({ dayChangePct, lang })
+              const soul = getSoulGreeting({ dayChangePct, lang, drivers, btcPct: btcDayPct, onlyBtc })
               return (
                 <p className="dvx-soul" data-tone={soul.tone}>
                   <span className="dvx-soul-emoji" aria-hidden="true"><Icon name={soul.emoji} size={16} /></span>
@@ -4868,6 +4897,12 @@ export default function Dashboard() {
               </button>
             )}
           </div>}
+
+          {/* Portfolio pulse: how hard the money moves, against your own normal */}
+          {enriched.length > 0 && !nlHomeView && pulse && !isDemo && (
+            <PortfolioPulse reading={pulse.reading} level={pulse.level} swingUsd={todayPnLVal}
+              hidden={hidden} leftOut={unpriced.length} money={cv} />
+          )}
 
           {/* Stats row */}
           {enriched.length > 0 && !nlHomeView && (

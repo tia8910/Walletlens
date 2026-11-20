@@ -12835,6 +12835,55 @@ input, select, textarea, .dvx-input {
   .wl-trend--strong .wl-trend-chev--lead { animation: none; }
 }
 
+/* Sunrise: the calm welcome on a flat or red morning, and the line that says why. */
+.fx-sun { position: absolute; inset-inline: -20%; bottom: -35vh; height: 75vh; border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, rgba(251,146,60,0.45), rgba(245,158,11,0.16) 45%, transparent 70%); }
+.fx-caption { position: absolute; inset-inline: 1.5rem; bottom: 22vh; margin: 0 auto; max-width: 26rem; text-align: center;
+  padding: 0.85rem 1.1rem; border-radius: 16px; background: rgba(8,12,24,0.78); color: #f1f5f9;
+  font-size: 0.98rem; font-weight: 700; line-height: 1.45; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+.fx-caption-calm { bottom: 40vh; color: #fde68a; }
+.fx-ath-badge { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; }
+.fx-ath-sub { font-size: 0.8rem; font-weight: 800; color: #3b2a00; white-space: nowrap; }
+
+/* Portfolio pulse card */
+.pp-card { display: flex; flex-direction: column; gap: 0.7rem; margin: 0.9rem 0; padding: 1rem; border-radius: 20px;
+  background: var(--surface); border: 1px solid rgba(127,127,127,0.18); --pp: #34d399; }
+.pp-card.pp-normal { --pp: #60a5fa; }
+.pp-card.pp-elevated { --pp: #fb923c; border-color: rgba(251,146,60,0.4); }
+.pp-card.pp-wild { --pp: #ef4444; border-color: rgba(239,68,68,0.45); }
+.pp-head { display: flex; align-items: center; gap: 0.55rem; }
+.pp-head b { font-size: 0.98rem; }
+.pp-level { margin-inline-start: auto; font-size: 0.78rem; font-weight: 800; color: var(--pp); padding: 0.15rem 0.6rem; border-radius: 999px; background: color-mix(in srgb, var(--pp) 14%, transparent); }
+.pp-dot { position: relative; width: 11px; height: 11px; }
+.pp-dot i { position: absolute; inset: 0; border-radius: 50%; background: var(--pp); }
+.pp-ecg { width: 100%; height: 54px; }
+.pp-ecg path { fill: none; stroke: var(--pp); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 200 200; }
+.pp-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.pp-stats span { display: flex; flex-direction: column; min-width: 0; }
+.pp-stats small, .pp-eyebrow { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.pp-stats b { font-size: 0.95rem; }
+.pp-card .up { color: var(--g-ink, var(--g)); }
+.pp-card .down { color: #ef4444; }
+.pp-scale { display: flex; gap: 4px; }
+.pp-scale i { flex: 1; height: 6px; border-radius: 4px; opacity: 0.35; }
+.pp-scale i.on { opacity: 1; outline: 2px solid var(--text); outline-offset: 1px; }
+.pp-s0 { background: #34d399; } .pp-s1 { background: #60a5fa; } .pp-s2 { background: #fb923c; } .pp-s3 { background: #ef4444; }
+.pp-drivers { display: flex; flex-direction: column; gap: 0.35rem; }
+.pp-drv { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.7rem; border-radius: 12px; background: var(--surface-2); font-size: 0.8rem; }
+.pp-drv > b:first-child { width: 3.2rem; }
+.pp-drv span { flex: 1; min-width: 0; color: var(--text-muted); }
+.pp-note { font-size: 0.72rem; color: var(--text-muted); line-height: 1.4; }
+@media (prefers-reduced-motion: no-preference) {
+  .pp-dot i:last-child { animation: pp-ping var(--pp-speed, 1.7s) ease-out infinite; }
+  .pp-ecg path { animation: pp-run var(--pp-speed, 1.7s) linear infinite; }
+  @keyframes pp-ping { 0% { transform: scale(1); opacity: 0.7; } 100% { transform: scale(2.6); opacity: 0; } }
+  @keyframes pp-run { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -400; } }
+  .fx-sun { animation: fx-sun-rise 3.2s ease-out forwards; }
+  @keyframes fx-sun-rise { 0% { transform: translateY(30%); opacity: 0; } 30% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(0); opacity: 0; } }
+  .fx-caption { animation: fx-caption-in 3s ease-out both; }
+  @keyframes fx-caption-in { 0%, 20% { opacity: 0; transform: translateY(8px); } 32% { opacity: 1; transform: none; } 88% { opacity: 1; } 100% { opacity: 0; } }
+}
+
 /* Reduced motion keeps the moment and drops the travel: the component renders
    no logo, rocket or debris at all, so only the badge and the glow remain and
    they simply fade. */

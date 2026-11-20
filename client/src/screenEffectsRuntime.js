@@ -6,7 +6,8 @@
 // is why this file has almost no logic of its own — if something here starts
 // deciding anything, it belongs next door.
 
-import { decideEffect, pickLeader, EMPTY_STATE } from './screenEffects'
+import { decideEffect, pickLeader, dailyReturnsFromSnapshots, EMPTY_STATE } from './screenEffects'
+import { loadSnapshots } from './snapshots'
 import { unlock, resetEffectAudio } from './screenEffectsAudio'
 
 const STATE_KEY = 'wl_fx_state'
@@ -43,7 +44,7 @@ export function setEffectSettings(patch) {
  *
  * @returns {{ effect: string, payload: object }|null}
  */
-export function observe({ totalValue, changePct, holdings, now = Date.now() } = {}) {
+export function observe({ totalValue, invested = null, changePct, holdings, blocked = false, extra = null, now = Date.now() } = {}) {
   const settings = effectSettings()
   if (!settings.enabled) return null
 
@@ -54,11 +55,14 @@ export function observe({ totalValue, changePct, holdings, now = Date.now() } = 
     try { return -new Date().getTimezoneOffset() } catch { return 0 }
   })()
 
-  const { effect, payload, nextState } = decideEffect({
+  const { effect, payload: decided, nextState } = decideEffect({
     now,
     tzOffsetMin,
     totalValue,
+    invested,
     changePct,
+    blocked,
+    dailyReturns: (() => { try { return dailyReturnsFromSnapshots(loadSnapshots(), tzOffsetMin, now) } catch { return [] } })(),
     leader: pickLeader(holdings),
     state: stored,
   })
@@ -69,6 +73,8 @@ export function observe({ totalValue, changePct, holdings, now = Date.now() } = 
   writeJson(STATE_KEY, nextState)
 
   if (!effect) return null
+  // The soul line rides along so the overlay can say why it is playing.
+  const payload = extra ? { ...decided, ...extra } : decided
   return { effect, payload: settings.sound ? payload : { ...payload, muted: true } }
 }
 
