@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLanguage } from '../LanguageContext'
 import CoinLogo from './CoinLogo'
-import { EXPLODE, ROCKET, ATH } from '../screenEffects'
+import { EXPLODE, SUNRISE, ROCKET, ATH } from '../screenEffects'
 import { playEffectSound, SOUND_MS } from '../screenEffectsAudio'
 
 // The three full-screen effects.
@@ -25,6 +25,7 @@ export const DURATION_MS = {
   [EXPLODE]: SOUND_MS[EXPLODE],
   [ROCKET]: SOUND_MS[ROCKET],
   [ATH]: 2600,
+  [SUNRISE]: 3200,
 }
 
 /** Particle count for the ATH confetti. Fixed, not random — see below. */
@@ -150,8 +151,10 @@ function AssetMark({ leader, className }) {
   )
 }
 
-export default function ScreenEffect({ effect, payload, onDone }) {
+export default function ScreenEffect({ effect, payload, onDone, money }) {
   const { t } = useLanguage()
+  const fmtMoney = money || ((v) => `$${Math.round(v).toLocaleString()}`)
+  const fmtDate = (ts) => { try { return ts ? new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '' } catch { return '' } }
   const doneRef = useRef(onDone)
   doneRef.current = onDone
 
@@ -218,6 +221,19 @@ export default function ScreenEffect({ effect, payload, onDone }) {
         </>
       )}
 
+      {effect === SUNRISE && (
+        <>
+          {!reduced && <span className="fx-sun" />}
+          {payload?.line && <div className="fx-caption fx-caption-calm">{payload.line}</div>}
+        </>
+      )}
+
+      {effect === EXPLODE && payload?.line && <div className="fx-caption">{payload.line}</div>}
+
+      {effect === ROCKET && Number.isFinite(payload?.beats) && Number.isFinite(payload?.of) && (
+        <div className="fx-caption">{t('fxBetterThan')(payload.beats, payload.of)}</div>
+      )}
+
       {effect === ROCKET && !reduced && (
         <div className="fx-rocket-track">
           <div className="fx-rocket">
@@ -241,6 +257,9 @@ export default function ScreenEffect({ effect, payload, onDone }) {
       {effect === ATH && (
         <div className="fx-ath-badge">
           <span className="fx-ath-title">{t('fxAllTimeHigh')}</span>
+          {Number.isFinite(payload?.gain) && payload.gain > 0 && (
+            <span className="fx-ath-sub">{t('fxAboveHigh')(fmtMoney(payload.gain), fmtDate(payload.since))}</span>
+          )}
         </div>
       )}
     </div>

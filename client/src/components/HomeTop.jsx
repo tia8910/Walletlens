@@ -112,7 +112,7 @@ export function Spark({ values, w = 120, h = 34, className, up: upAs }) {
 /** Worth a watchlist card: a priced asset that moves, not cash or a stablecoin. */
 export const isWatchable = (h) => h?.price > 0 && h.category !== 'fiat' && !/^fiat:/.test(h.coin_id || '') && !isStablecoin(h.coin_id, h.coin_symbol)
 
-export default function HomeTop({ enriched = [], watch = [], totalValue = 0, todayPnL = 0, totalPnLPct = 0, cats = [], wallets = [], walletId = 'all', onWallet, newsSlot, sentimentSlot,
+export default function HomeTop({ enriched = [], watch = [], totalValue = 0, todayPnL = 0, totalPnLPct = 0, cats = [], wallets = [], walletId = 'all', onWallet, newsSlot, sentimentSlot, pulseSlot, soulSub,
   onBuy, onSell, onHistory, onImport, onWatchAll, onAsset, conv, currency = 'USD', onCurrency }) {
   // Until a rate is known the card stays in dollars rather than mislabel them.
   const cv = conv?.rate ? conv : USD
@@ -131,11 +131,14 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
 
   // Who moved: "2 winners and 1 loser. BTC leads at +3.7%."
   const movers = useMemo(() => briefParts(enriched, totalValue, dayPct, t)?.rest || '', [enriched, totalValue, dayPct, t])
+  // The soul's explanation (who did it, and whether BTC moved the same way)
+  // replaces the count of winners and losers when the dashboard has one.
+  const why = soulSub || movers
   const banner = {
-    big:  { icon: '🚀', title: t('nlMoodBig')(signed(dayPct)), sub: movers },
-    up:   { icon: '✨', title: t('nlMoodUp')(signed(dayPct)), sub: movers },
-    down: { icon: '🌙', title: t('nlMoodDown'), sub: [t('nlMoodDownSub')(signed(dayPct), signed(totalPnLPct)), movers].filter(Boolean).join(' ') },
-    flat: { icon: '☁️', title: t('nlMoodFlat'), sub: movers },
+    big:  { icon: '🚀', title: t('nlMoodBig')(signed(dayPct)), sub: why },
+    up:   { icon: '✨', title: t('nlMoodUp')(signed(dayPct)), sub: why },
+    down: { icon: '🌙', title: t('nlMoodDown'), sub: [t('nlMoodDownSub')(signed(dayPct), signed(totalPnLPct)), why].filter(Boolean).join(' ') },
+    flat: { icon: '☁️', title: t('nlMoodFlat'), sub: why },
   }[mood]
 
   const [whole, cents] = splitMoney(totalValue, cv)
@@ -213,6 +216,8 @@ export default function HomeTop({ enriched = [], watch = [], totalValue = 0, tod
         </div>
         {enriched.length > 0 && <HoldingsDrum holdings={enriched} label={t('nlHoldings')} onAsset={onAsset} priceOf={(h) => (h.price > 0 ? price(h.price, cv) : '')} />}
       </section>
+
+      {pulseSlot}
 
       {sentimentSlot && <div className="nl-sentiment">{sentimentSlot}</div>}
 

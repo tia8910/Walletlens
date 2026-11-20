@@ -40,14 +40,14 @@ describe('Targets page layout', () => {
 })
 
 describe('Targets add form: two taps per target', () => {
-  const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'pages/Dashboard.jsx'), 'utf8')
+  const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'components/TargetCard.jsx'), 'utf8')
   it('offers price multiples of today plus the user\'s own price', () => {
-    expect(src).toMatch(/\[1\.5, 2, 3, 5, 8\]\.map\(m => \(\{ m, p: nice\(currentPrice \* m\) \}\)\)/)
+    expect(src).toMatch(/\[1\.5, 2, 3, 5, 8\]\.map\(m => \(\{ m, p: nice\(cur \* m\) \}\)\)/)
     expect(src).toMatch(/t\('tgMyPrice'\)/)
   })
   it('lines targets up as new tiles and saves them only on confirm', () => {
-    expect(src).toMatch(/async function saveDrafts\(h\)/)
-    expect(src).toMatch(/t\('tgConfirmSave'\)\(lined\.length\)/)
+    expect(src).toMatch(/async function save\(\)/)
+    expect(src).toMatch(/t\('tgConfirmSave'\)\(drafts\.length\)/)
     expect(src).toMatch(/className="tg6-tile is-new"/)
   })
 })

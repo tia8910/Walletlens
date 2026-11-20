@@ -5,6 +5,7 @@ import { getAnnualDividend, getDividendYield } from '../data/assets'
 import { track } from '../analytics'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import CoinLogo from '../components/CoinLogo'
+import TargetCard from '../components/TargetCard'
 import Icon from '../components/Icon'
 import TradeSheet from '../components/TradeSheet'
 import { useLanguage } from '../LanguageContext'
@@ -505,7 +506,19 @@ export default function AssetDetail() {
         )}
       </div>
 
-      {/* Sell plan / targets */}
+      {/* Sell plan / targets: the same tile grid and two-tap add as the
+          Targets tab when you hold this asset; the simple form otherwise. */}
+      {amount > 0 && (
+        <div className="ad-targets">
+          <h3 className="ad-targets-h">{t('adSellPlan')}</h3>
+          <TargetCard
+            h={{ coin_id: coinId, coin_symbol: holdings?.coin_symbol || coin?.symbol, coin_name: holdings?.coin_name || coin?.name,
+              coin_image: holdings?.coin_image || coin?.image, amount, price }}
+            plan={targets} linkToAsset={false}
+            onChange={() => api.getCoinTargets().then(all => setTargets(all?.[coinId]?.targets || [])).catch(() => {})} />
+        </div>
+      )}
+      {!(amount > 0) && (
       <div className="sell-plan-card">
         <div className="sell-plan-head">
           <h3>{t('adSellPlan')}</h3>
@@ -578,6 +591,7 @@ export default function AssetDetail() {
           </div>
         )}
       </div>
+      )}
 
       {/* Buy/Sell actions */}
       <div className="detail-actions">

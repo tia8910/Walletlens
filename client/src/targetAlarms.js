@@ -27,8 +27,8 @@ function nextId() {
   return n
 }
 
-const same = (a, coinId, price) =>
-  a.coin_id === coinId && a.condition === 'above' && !a.triggered && Math.abs(Number(a.targetPrice) - price) <= price * 1e-9
+const same = (a, coinId, price, condition = 'above') =>
+  a.coin_id === coinId && a.condition === condition && !a.triggered && Math.abs(Number(a.targetPrice) - price) <= price * 1e-9
 
 /** Whether an armed "rises above" alert exists for this target. */
 export function hasTargetAlarm(coinId, price, list = load()) {
@@ -53,4 +53,24 @@ export function setTargetAlarm({ coinId, symbol, price }, on) {
 export function targetAlarmKeys() {
   const list = load()
   return new Set(list.filter(a => a.condition === 'above' && !a.triggered).map(a => `${a.coin_id}@${Number(a.targetPrice)}`))
+}
+
+/** A stop-loss alarm: "falls below <price>", same list and engine. */
+export function setStopAlarm({ coinId, symbol, price }, on) {
+  const p = Number(price)
+  const list = load()
+  const has = list.some(a => same(a, coinId, p, 'below'))
+  if (on && !has) {
+    list.unshift({ id: nextId(), coin_id: coinId, coin_symbol: symbol || coinId, condition: 'below', targetPrice: p, triggered: false, createdAt: new Date().toISOString(), source: 'sell-plan' })
+    save(list)
+  } else if (!on && has) {
+    save(list.filter(a => !same(a, coinId, p, 'below')))
+  }
+  return on
+}
+
+/** The set of `${coinId}@${price}` keys with an armed "falls below" alarm. */
+export function stopAlarmKeys() {
+  const list = load()
+  return new Set(list.filter(a => a.condition === 'below' && !a.triggered).map(a => `${a.coin_id}@${Number(a.targetPrice)}`))
 }
