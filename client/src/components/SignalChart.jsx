@@ -94,7 +94,7 @@ const toDate = (t) => {
 
 export default function SignalChart({ candles, visible, calc, height = 260, closeOnly = false, ariaLabel }) {
   // Dates read in the app's language, not the phone's.
-  const { lang } = useLanguage()
+  const { lang, t } = useLanguage()
   const loc = lang || undefined
   const boxRef = useRef(null)
   const [w, setW] = useState(340)
@@ -221,6 +221,23 @@ export default function SignalChart({ candles, visible, calc, height = 260, clos
     return { k, big, bad, at, label, lw, X, Y }
   }) : []
 
+  // ── Patterns ────────────────────────────────────────────────────────────
+  // Candlestick patterns: a small triangle under (bullish) or over (bearish)
+  // the candle. Chart patterns: a line through their swing points, the
+  // neckline dashed, and their name, when the whole pattern is on screen.
+  const patOn = !!calc?.params?.patterns?.on && !!calc?.patterns
+  const candleMarks = patOn ? calc.patterns.candle.filter(p => p.i >= from) : []
+  const chartPats = patOn ? calc.patterns.chart.filter(p => p.points[0].i >= from).map(p => {
+    const label = t(`pt_${p.kind}`)
+    const lw = Math.min(150, label.length * 5.1 + 12)
+    const top = p.side === 'bear'
+    const peak = top ? p.points.reduce((a, b) => (b.v > a.v ? b : a)) : p.points.reduce((a, b) => (b.v < a.v ? b : a))
+    const X = Math.min(plotW - lw / 2, Math.max(lw / 2, x(peak.i)))
+    const Y = place(X, y(peak.v) + (top ? -16 : 16), lw, LBL_H, top ? -1 : 1)
+    const endI = p.breakI >= 0 ? p.breakI : candles.length - 1
+    return { p, label, lw, X, Y, endI }
+  }) : []
+
   // ── Dates along the bottom ──────────────────────────────────────────────
   const d0 = toDate(seg[0].t), d1 = toDate(lastC.t)
   const spanDays = d0 && d1 ? (d1 - d0) / 86400000 : 0
@@ -319,6 +336,25 @@ export default function SignalChart({ candles, visible, calc, height = 260, clos
             ))}
           </>
         )}
+
+        {/* patterns */}
+        {chartPats.map(({ p, label, lw, X, Y, endI }) => (
+          <g key={`${p.kind}-${p.points[0].i}`} className={`sc-pat is-${p.side}${p.confirmed ? ' is-done' : ''}`}>
+            <polyline className="sc-pat-line" points={p.points.map(q => `${x(q.i).toFixed(1)},${y(q.v).toFixed(1)}`).join(' ')} />
+            <line className="sc-pat-neck" x1={x(p.points[0].i)} x2={x(endI)} y1={y(p.neckline)} y2={y(p.neckline)} />
+            <rect x={X - lw / 2} y={Y - LBL_H / 2} width={lw} height={LBL_H} rx="4" />
+            <text x={X} y={Y + 3} textAnchor="middle">{label}</text>
+          </g>
+        ))}
+        {candleMarks.map(p => {
+          const X = x(p.i), bull = p.side === 'bull'
+          const Y = bull ? y(candles[p.i].l) + 7 : y(candles[p.i].h) - 7
+          return (
+            <path key={`cm-${p.i}`} className={`sc-cmark is-${p.side}`} d={bull ? `M${X} ${Y - 3.5}L${X + 4} ${Y + 3}L${X - 4} ${Y + 3}Z` : `M${X} ${Y + 3.5}L${X + 4} ${Y - 3}L${X - 4} ${Y - 3}Z`}>
+              <title>{t(`pt_${p.kind}`)}</title>
+            </path>
+          )
+        })}
 
         {/* signal levels */}
         {last && sigOn && tagged.filter(t => !t.now).map(t => (
