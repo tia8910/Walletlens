@@ -195,6 +195,21 @@ export const SESSIONS = {
 }
 const WEEKDAY = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
 
+// The US regular session (NYSE and Nasdaq), 9:30 to 16:00 New York time,
+// Monday to Friday, with ten minutes after the bell so the closing price lands.
+// While it is open, US stocks and ETFs are quoted live rather than from the
+// snapshot file, which is only rebuilt three times a day.
+export const US_SESSION = ['America/New_York', [1, 2, 3, 4, 5], 570, 970]
+export function usSessionOpen(now = Date.now()) {
+  try {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+      timeZone: US_SESSION[0], weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(new Date(now)).map(p => [p.type, p.value]))
+    const mins = Number(parts.hour) * 60 + Number(parts.minute)
+    return US_SESSION[1].includes(WEEKDAY[parts.weekday]) && mins >= US_SESSION[2] && mins < US_SESSION[3]
+  } catch { return false }
+}
+
 /** Whether the exchange a suffixed ticker (ETEL.CA) trades on is in session now. */
 export function sessionOpen(ticker, now = Date.now()) {
   const m = String(ticker || '').toUpperCase().match(/\.([A-Z]{1,2})$/)

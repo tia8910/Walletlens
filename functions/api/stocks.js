@@ -5,7 +5,7 @@
  */
 
 // The trading sessions, shared with the app so both agree on when a market is open.
-import { sessionOpen } from '../../client/src/data/markets.js'
+import { sessionOpen, usSessionOpen } from '../../client/src/data/markets.js'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -211,7 +211,8 @@ export async function onRequestGet(context) {
     }))
   }
 
-  const live = intl.some(sym => sessionOpen(sym))
+  // Short-lived while any market asked about is trading, US included.
+  const live = intl.some(sym => sessionOpen(sym)) || (us.length > 0 && usSessionOpen())
   const response = new Response(JSON.stringify(result), {
     headers: { ...CORS, 'Cache-Control': `public, max-age=${live ? LIVE_CACHE_SECONDS : CACHE_SECONDS}` },
   })

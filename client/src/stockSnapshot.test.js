@@ -56,12 +56,19 @@ describe('the snapshot covers what the picker shows', () => {
 })
 
 describe('the batch path reads the file first', () => {
-  it('asks the snapshot before anything remote', () => {
+  // Out of hours the snapshot holds the last close, so it is read first. While
+  // the US market is open it is hours behind (rebuilt three times a day), so
+  // every ticker is quoted live and the snapshot only fills gaps.
+  it('asks the snapshot first only while the US market is closed', () => {
     const body = api.slice(api.indexOf('async function fetchTwelveDataBatch'))
-    const snap = body.indexOf('fetchStaticStockPrices()')
-    const remote = body.indexOf('_fetchStocksRemote(')
-    expect(snap).toBeGreaterThan(-1)
-    expect(snap, 'the remote call happens before the file is consulted').toBeLessThan(remote)
+    const open = body.indexOf('if (usSessionOpen()) {')
+    const liveFirst = body.indexOf('_fetchStocksRemote(tickers, { fanout: false })')
+    const closedSnap = body.indexOf('const staticPrices = await fetchStaticStockPrices();')
+    const closedRemote = body.indexOf('_fetchStocksRemote(remaining)')
+    expect(open).toBeGreaterThan(-1)
+    expect(liveFirst).toBeGreaterThan(open)
+    expect(closedSnap, 'out of hours the file comes first').toBeGreaterThan(liveFirst)
+    expect(closedSnap).toBeLessThan(closedRemote)
   })
 
   it('skips the network entirely when the file covers everything', () => {

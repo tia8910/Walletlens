@@ -6,6 +6,7 @@ import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line,
   PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
 } from 'recharts'
+import { usSessionOpen } from '../data/markets'
 import { api, getCachedCoinImage } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
 import { isStablecoin } from '../stablecoins'
@@ -3633,6 +3634,13 @@ export default function Dashboard() {
   // latest refresh logic without re-binding.
   const refreshPricesRef = useRef(refreshPrices)
   refreshPricesRef.current = refreshPrices
+  // A background stock refresh just brought fresh quotes: show them now.
+  useEffect(() => {
+    const onStocks = () => { refreshPricesRef.current?.() }
+    window.addEventListener('wl-stock-prices', onStocks)
+    return () => window.removeEventListener('wl-stock-prices', onStocks)
+  }, [])
+
   useEffect(() => {
     let busy = false
     const onPull = async () => {
@@ -3656,9 +3664,11 @@ export default function Dashboard() {
     let priceInterval = null
     let dataInterval  = null
     let lastLoadAll = 0
+    let lastPricePoll = 0
 
     function startPolling() {
-      if (!priceInterval) priceInterval = setInterval(refreshPrices, 60_000)
+      // 30 s while the US market is open (stocks and ETFs move), 60 s otherwise.
+      if (!priceInterval) priceInterval = setInterval(() => { if (usSessionOpen() || Date.now() - lastPricePoll >= 60_000) { lastPricePoll = Date.now(); refreshPrices() } }, 30_000)
       if (!dataInterval)  dataInterval  = setInterval(() => { lastLoadAll = Date.now(); loadAll() }, 5 * 60_000)
     }
 
