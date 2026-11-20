@@ -18,7 +18,8 @@ describe('Home holdings split by category', () => {
   it('gives each group a header with its name, count, value and share, that folds', () => {
     expect(src).toMatch(/className="nl-ghead" aria-expanded=\{open\} onClick=\{\(\) => toggleFold\(g\.cat\)\}/)
     expect(src).toMatch(/<span className="nl-ghead-n">\{g\.rows\.length\}<\/span>/)
-    expect(src).toMatch(/\{mask\(cv\(g\.value\)\)\}<small>\{Math\.round\(g\.pct\)\}%<\/small>/)
+    // Value, then today's move for the group, then its share.
+    expect(src).toMatch(/\{mask\(cv\(g\.value\)\)\}[\s\S]{0,300}<small>\{Math\.round\(g\.pct\)\}%<\/small>/)
     expect(css).toMatch(/\.nl-ghead \{/)
   })
   it('puts the biggest class first when sorted by value', () => {

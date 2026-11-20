@@ -4102,10 +4102,18 @@ export default function Dashboard() {
   const catBreakdown = useMemo(() => {
     if (!enriched.length) return []
     const totals = {}; const investeds = {}; const pnls = {}; const assetsByCat = {}
+    // Today's move per category, from each priced holding's 24 h change, so a
+    // group header moves with its rows instead of only showing its share.
+    const dayNow = {}; const dayBefore = {}
     enriched.forEach(h => {
       const cat = categorizeAsset(h)
       const val = h.value > 0 ? h.value : h.total_invested
       totals[cat] = (totals[cat] || 0) + val
+      const ch = Number(h.pct24h)
+      if (h.value > 0 && Number.isFinite(ch) && ch > -100) {
+        dayNow[cat] = (dayNow[cat] || 0) + h.value
+        dayBefore[cat] = (dayBefore[cat] || 0) + h.value / (1 + ch / 100)
+      }
       ;(assetsByCat[cat] = assetsByCat[cat] || []).push({ symbol: h.coin_symbol?.toUpperCase() || '?', value: val, coin_id: h.coin_id, image: h.coin_image })
       if (cat !== 'cash') {
         investeds[cat] = (investeds[cat] || 0) + h.total_invested
@@ -4133,6 +4141,7 @@ export default function Dashboard() {
         value: totals[cat],
         pct: totalValue > 0 ? (totals[cat] / totalValue) * 100 : 0,
         invested, pnl, pnlPct, assets,
+        dayPct: dayBefore[cat] > 0 ? ((dayNow[cat] - dayBefore[cat]) / dayBefore[cat]) * 100 : null,
       }
     })
   }, [enriched, totalValue, t])
