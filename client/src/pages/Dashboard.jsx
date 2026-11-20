@@ -2577,9 +2577,8 @@ function TargetRealityCheck({ coinId, coinSymbol, coinName, currentPrice, target
     // Inline: the verdict as a pill beside the other facts, with its timeframe
     // when there is one. It used to sit alone in a full-width box.
     return (
-      <span className="tg2-trc" style={{ '--trc': analysis.color }} title={analysis.context || ''}>
+      <span className="tg2-trc" style={{ '--trc': analysis.color }} title={[analysis.timeframe, analysis.context].filter(Boolean).join('. ')}>
         <span className="tg2-trc-badge">{analysis.label}</span>
-        {analysis.timeframe && <span className="tg2-trc-tf">{analysis.timeframe}</span>}
       </span>
     )
   }
@@ -2652,7 +2651,7 @@ export function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onT
   const navigate = useNavigate()
   const [adding, setAdding] = useState({}) // coinId → { price, mode, pct, qty }
   const [addFor, setAddFor] = useState(null) // the asset the + New target form is open for
-  const [sort, setSort] = useState('closest') // closest | payout | asset
+  const [sort, setSort] = useState('asset') // asset | closest | payout
   const [alarmKeys, setAlarmKeys] = useState(() => targetAlarmKeys())
   useEffect(() => {
     const onChange = () => setAlarmKeys(targetAlarmKeys())
@@ -2908,51 +2907,132 @@ export function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onT
       {all.length > 0 && (
         <>
           <div className="tg3-sort" role="tablist" aria-label={t('tgSortBy')}>
-            {[['closest', t('tgSortClosest')], ['payout', t('tgSortPayout')], ['asset', t('tgSortAsset')]].map(([k, label]) => (
+            {[['asset', t('tgSortAsset')], ['closest', t('tgSortClosest')], ['payout', t('tgSortPayout')]].map(([k, label]) => (
               <button key={k} type="button" role="tab" aria-selected={sort === k} className={sort === k ? 'on' : ''} onClick={() => setSort(k)}>{label}</button>
             ))}
           </div>
+          {sort === 'asset' ? (
+            <div className="tg4-groups">
+              {targetable.filter(h => (coinTargets[h.coin_id]?.targets || []).length).map(h => {
+                const items = all.filter(x => x.h.coin_id === h.coin_id).sort((p1, p2) => p1.tg.price - p2.tg.price)
+                const sym = h.coin_symbol?.toUpperCase()
+                const plannedQty = items.reduce((s2, x) => s2 + x.sellQty, 0)
+                const plannedPct = h.amount > 0 ? Math.min(100, (plannedQty / h.amount) * 100) : 0
+                const left = Math.max(0, h.amount - plannedQty)
+                const sum = items.reduce((s2, x) => s2 + x.proceeds, 0)
+                // One axis from 0 to just past the highest target: today's
+                // price and every target sit on it, so the gaps read at a glance.
+                const top = Math.max(h.price || 0, ...items.map(x => x.tg.price)) * 1.06
+                const pos = (v) => (top > 0 ? Math.min(100, (v / top) * 100) : 0)
+                return (
+                  <section key={h.coin_id} className="tg4-card" aria-label={sym}>
+                    <div className="tg4-head">
+                      <button type="button" className="tg4-asset" onClick={() => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}>
+                        <CoinLogo coinId={h.coin_id} symbol={h.coin_symbol} image={h.coin_image} size={38} className="dvx-holding-icon" />
+                        <span className="tg4-asset-n">
+                          <b>{sym}</b>
+                          <small>{t('tgNow')} {h.price > 0 ? money(h.price) : '-'} · {t('stHeld')(Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 }))}</small>
+                        </span>
+                      </button>
+                      <span className="tg4-sum"><small>{t('tgIfAllHit')}</small><b>{money(sum)}</b></span>
+                    </div>
+
+                    <div className="tg4-axis" aria-hidden="true">
+                      <span className="tg4-axis-rail" />
+                      <span className="tg4-axis-fill" style={{ width: `${pos(h.price)}%` }} />
+                      {items.map((x, k) => (
+                        <span key={x.tg.id} className={`tg4-mark${x.reached ? ' is-hit' : ''}`} style={{ left: `${pos(x.tg.price)}%` }}>
+                          <i />
+                          <em>T{k + 1}</em>
+                        </span>
+                      ))}
+                      <span className="tg4-now" style={{ left: `${pos(h.price)}%` }} />
+                    </div>
+
+                    <ol className="tg4-rows">
+                      {items.map((x, k) => {
+                        const alarmOn = alarmKeys.has(`${x.h.coin_id}@${Number(x.tg.price)}`)
+                        return (
+                          <li key={x.tg.id} className={`tg4-row${x.reached ? ' is-reached' : ''}`}>
+                            <span className="tg4-t">T{k + 1}</span>
+                            <span className="tg4-main">
+                              <b>{money(x.tg.price)} <span className={`tg4-away${x.reached ? ' is-hit' : ''}`}>{x.reached ? `✓ ${t('tgReached')}` : `${x.away >= 0 ? '+' : ''}${x.away.toFixed(1)}%`}</span></b>
+                              <small>{t('tgSellGet')(`${x.tg.quantity == null ? t('tgAll') : fmtQty(x.sellQty)} ${sym}`, `${x.sellPct.toFixed(0)}%`)} <b className="tg2-up">{money(x.proceeds)}</b></small>
+                              {!x.reached && (
+                                <TargetRealityCheck compact coinId={x.h.coin_id} coinSymbol={x.h.coin_symbol} coinName={x.h.coin_name}
+                                  currentPrice={x.h.price} targetPrice={x.tg.price} assetClass={categorizeAsset(x.h)} />
+                              )}
+                            </span>
+                            {!x.reached && (
+                              <label className="tg3-alarm">
+                                <input type="checkbox" checked={alarmOn} onChange={() => toggleAlarm(x)} aria-label={t('tgAlarmFor')(sym, money(x.tg.price))} />
+                                <span>{t('tgAlarm')}</span>
+                              </label>
+                            )}
+                            <button type="button" className="tg2-del" onClick={() => removeTarget(x.h.coin_id, x.tg.id)} aria-label={t('atRemoveTarget')} title={t('atRemoveTarget')}>
+                              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></svg>
+                            </button>
+                          </li>
+                        )
+                      })}
+                    </ol>
+
+                    <div className="tg4-foot">
+                      <div className="tg2-plan-bar"><i style={{ width: `${plannedPct}%` }} /></div>
+                      <div className="tg4-foot-row">
+                        <span>{t('tgPlanned')(plannedPct.toFixed(0), parseFloat(left.toFixed(6)), sym)}</span>
+                        {left > 0
+                          ? <button type="button" className="tg4-add" onClick={() => openAdd(h)}>+ {t('stAddTarget').replace(/^\+\s*/, '')}</button>
+                          : <span className="tg2-full">{t('tgFullyPlanned')}</span>}
+                      </div>
+                    </div>
+                  </section>
+                )
+              })}
+            </div>
+          ) : (
           <ol className="tg3-list">
-            {list.map((x, i) => {
-              const sym = x.h.coin_symbol?.toUpperCase()
-              const alarmOn = alarmKeys.has(`${x.h.coin_id}@${Number(x.tg.price)}`)
-              return (
-                <li key={x.tg.id} className={`tg3-item${x.reached ? ' is-reached' : ''}`}>
-                  {x.reached && <div className="tg2-banner"><Icon name="target" size={13} />{t('tgReachedBanner')(sym)}</div>}
-                  <div className="tg3-row">
-                    <span className={`tg3-rank${i === 0 && sort === 'closest' ? ' is-first' : ''}`}>{i + 1}</span>
-                    <button type="button" className="tg3-what" onClick={() => navigate(`/asset/${encodeURIComponent(x.h.coin_id)}`)}>
-                      <b>{t('tgAt')(sym, money(x.tg.price))}</b>
-                      <small>{t('tgSellGet')(`${x.tg.quantity == null ? t('tgAll') : fmtQty(x.sellQty)} ${sym}`, `${x.sellPct.toFixed(0)}%`)} <b className="tg2-up">{money(x.proceeds)}</b></small>
-                    </button>
-                    {!x.reached && (
-                      <label className="tg3-alarm">
-                        <input type="checkbox" checked={alarmOn} onChange={() => toggleAlarm(x)} aria-label={t('tgAlarmFor')(sym, money(x.tg.price))} />
-                        <span>{t('tgAlarm')}</span>
-                      </label>
-                    )}
-                    <button type="button" className="tg2-del" onClick={() => removeTarget(x.h.coin_id, x.tg.id)} aria-label={t('atRemoveTarget')} title={t('atRemoveTarget')}>
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></svg>
-                    </button>
-                  </div>
-                  <div className="tg3-track" aria-hidden="true">
-                    <span className="tg3-rail" />
-                    <span className="tg3-fill" style={{ width: `${x.progress}%` }} />
-                    <span className="tg3-dot" style={{ left: `calc(${x.progress}% - 7px)` }} />
-                    <span className="tg3-goal" />
-                  </div>
-                  <div className="tg3-foot">
-                    <span>{t('tgNow')} {x.h.price > 0 ? money(x.h.price) : '-'}</span>
-                    <b>{x.reached ? `✓ ${t('tgReached')}` : `${x.away >= 0 ? '+' : ''}${x.away.toFixed(1)}%`}</b>
-                    {!x.reached
-                      ? <TargetRealityCheck compact coinId={x.h.coin_id} coinSymbol={x.h.coin_symbol} coinName={x.h.coin_name}
-                          currentPrice={x.h.price} targetPrice={x.tg.price} assetClass={categorizeAsset(x.h)} />
-                      : <span />}
-                  </div>
-                </li>
-              )
-            })}
-          </ol>
+              {list.map((x, i) => {
+                const sym = x.h.coin_symbol?.toUpperCase()
+                const alarmOn = alarmKeys.has(`${x.h.coin_id}@${Number(x.tg.price)}`)
+                return (
+                  <li key={x.tg.id} className={`tg3-item${x.reached ? ' is-reached' : ''}`}>
+                    {x.reached && <div className="tg2-banner"><Icon name="target" size={13} />{t('tgReachedBanner')(sym)}</div>}
+                    <div className="tg3-row">
+                      <span className={`tg3-rank${i === 0 && sort === 'closest' ? ' is-first' : ''}`}>{i + 1}</span>
+                      <button type="button" className="tg3-what" onClick={() => navigate(`/asset/${encodeURIComponent(x.h.coin_id)}`)}>
+                        <b>{t('tgAt')(sym, money(x.tg.price))}</b>
+                        <small>{t('tgSellGet')(`${x.tg.quantity == null ? t('tgAll') : fmtQty(x.sellQty)} ${sym}`, `${x.sellPct.toFixed(0)}%`)} <b className="tg2-up">{money(x.proceeds)}</b></small>
+                      </button>
+                      {!x.reached && (
+                        <label className="tg3-alarm">
+                          <input type="checkbox" checked={alarmOn} onChange={() => toggleAlarm(x)} aria-label={t('tgAlarmFor')(sym, money(x.tg.price))} />
+                          <span>{t('tgAlarm')}</span>
+                        </label>
+                      )}
+                      <button type="button" className="tg2-del" onClick={() => removeTarget(x.h.coin_id, x.tg.id)} aria-label={t('atRemoveTarget')} title={t('atRemoveTarget')}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></svg>
+                      </button>
+                    </div>
+                    <div className="tg3-track" aria-hidden="true">
+                      <span className="tg3-rail" />
+                      <span className="tg3-fill" style={{ width: `${x.progress}%` }} />
+                      <span className="tg3-dot" style={{ left: `calc(${x.progress}% - 7px)` }} />
+                      <span className="tg3-goal" />
+                    </div>
+                    <div className="tg3-foot">
+                      <span>{t('tgNow')} {x.h.price > 0 ? money(x.h.price) : '-'}</span>
+                      <b>{x.reached ? `✓ ${t('tgReached')}` : `${x.away >= 0 ? '+' : ''}${x.away.toFixed(1)}%`}</b>
+                      {!x.reached
+                        ? <TargetRealityCheck compact coinId={x.h.coin_id} coinSymbol={x.h.coin_symbol} coinName={x.h.coin_name}
+                            currentPrice={x.h.price} targetPrice={x.tg.price} assetClass={categorizeAsset(x.h)} />
+                        : <span />}
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
+          )}
         </>
       )}
 

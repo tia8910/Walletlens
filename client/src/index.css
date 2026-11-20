@@ -13386,3 +13386,43 @@ html.wl-aw-open .wlc-fab { opacity: 0; pointer-events: none; }
   color: var(--g-ink, var(--g)); font: inherit; font-size: 0.82rem; font-weight: 800; cursor: pointer; }
 .tg3-chip.on { border-style: solid; background: rgba(var(--g-rgb),0.12); }
 .tg3-more { appearance: auto; }
+
+/* ── Targets by asset: one card per asset, every target on one axis ─────── */
+.tg4-groups { display: flex; flex-direction: column; gap: 0.75rem; }
+.tg4-card { display: flex; flex-direction: column; gap: 0.75rem; padding: 0.95rem; border-radius: 20px;
+  background: var(--card-bg, rgba(127,127,127,0.06)); border: 1px solid rgba(127,127,127,0.18); }
+.tg4-head { display: flex; align-items: center; gap: 0.6rem; }
+.tg4-asset { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.6rem; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer; min-height: 0 !important; }
+.tg4-asset-n { display: flex; flex-direction: column; min-width: 0; }
+.tg4-asset-n b { font-size: 1rem; color: var(--text); }
+.tg4-asset-n small { font-size: 0.72rem; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+.tg4-sum { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+.tg4-sum small { font-size: 0.62rem; color: var(--text-sub); }
+.tg4-sum b { font-size: 1rem; font-weight: 900; color: var(--g-ink, var(--g)); font-variant-numeric: tabular-nums; }
+
+.tg4-axis { position: relative; height: 34px; margin: 0 10px; }
+.tg4-axis-rail { position: absolute; left: 0; right: 0; top: 9px; height: 4px; border-radius: 4px; background: rgba(127,127,127,0.22); }
+.tg4-axis-fill { position: absolute; left: 0; top: 9px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, #3b82f6, var(--g)); }
+.tg4-now { position: absolute; top: 4px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.25); }
+.tg4-mark { position: absolute; top: 0; display: flex; flex-direction: column; align-items: center; transform: translateX(-50%); }
+.tg4-mark i { width: 4px; height: 22px; border-radius: 3px; background: var(--g); }
+.tg4-mark em { font-style: normal; font-size: 0.6rem; font-weight: 900; color: var(--text-sub); margin-top: 1px; }
+.tg4-mark.is-hit i { background: var(--g-ink, var(--g)); }
+
+.tg4-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.tg4-row { display: flex; align-items: center; gap: 0.55rem; padding: 0.6rem 0; border-top: 1px solid rgba(127,127,127,0.15); }
+.tg4-row:first-child { border-top: 0; padding-top: 0.1rem; }
+.tg4-row.is-reached { background: rgba(var(--g-rgb),0.07); border-radius: 12px; padding-inline: 0.5rem; }
+.tg4-t { width: 30px; height: 30px; flex-shrink: 0; border-radius: 10px; display: grid; place-items: center; font-size: 0.72rem; font-weight: 900;
+  background: rgba(var(--g-rgb),0.14); color: var(--g-ink, var(--g)); }
+.tg4-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; align-items: flex-start; }
+.tg4-main > b { font-size: 0.95rem; color: var(--text); font-variant-numeric: tabular-nums; }
+.tg4-main small { font-size: 0.72rem; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+.tg4-away { font-size: 0.72rem; font-weight: 800; color: #60a5fa; margin-inline-start: 0.25rem; }
+[data-wl-light] .tg4-away { color: #1d4ed8; }
+.tg4-away.is-hit { color: var(--g-ink, var(--g)); }
+
+.tg4-foot { display: flex; flex-direction: column; gap: 0.4rem; }
+.tg4-foot-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.72rem; color: var(--text-sub); }
+.tg4-add { min-height: 34px; padding: 0 0.85rem; border-radius: 999px; border: 1.5px dashed rgba(var(--g-rgb),0.55); background: none;
+  color: var(--g-ink, var(--g)); font: inherit; font-size: 0.78rem; font-weight: 800; cursor: pointer; flex-shrink: 0; }
