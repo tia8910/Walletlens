@@ -32,9 +32,12 @@ export const ROCKET_MIN_DAYS = 10
 export const ATH_MARGIN = 0.005
 /** ...on this many price updates in a row. */
 export const ATH_CONFIRM = 2
+/** ...the second at least this long after the first, so two renders of the
+ *  same numbers a moment apart never count as two updates. */
+export const ATH_CONFIRM_MS = 2 * 60 * 1000
 
 /** The shape stored between sessions. */
-export const EMPTY_STATE = { day: '', athP: null, athTs: 0, athPending: 0, rocketDay: '' }
+export const EMPTY_STATE = { day: '', athP: null, athTs: 0, athPending: 0, athPendingTs: 0, rocketDay: '' }
 
 /**
  * The user's calendar day, not UTC's.
@@ -58,6 +61,7 @@ function normalize(state) {
     athP,
     athTs: Number.isFinite(Number(s.athTs)) ? Number(s.athTs) : 0,
     athPending: Number.isFinite(Number(s.athPending)) ? Number(s.athPending) : 0,
+    athPendingTs: Number.isFinite(Number(s.athPendingTs)) ? Number(s.athPendingTs) : 0,
     rocketDay: typeof s.rocketDay === 'string' ? s.rocketDay : '',
   }
 }
@@ -143,9 +147,12 @@ export function decideEffect({
 
   // The record: clear the old high by a margin, and hold it for two updates.
   if (prev.athP != null && profit > prev.athP + totalValue * ATH_MARGIN) {
-    const pending = prev.athPending + 1
+    // The first sighting starts the clock; only a later update, far enough
+    // apart to be a fresh price, can confirm it.
+    const held = prev.athPending >= 1 && now - prev.athPendingTs >= ATH_CONFIRM_MS
+    const pending = prev.athPending >= 1 ? (held ? prev.athPending + 1 : prev.athPending) : 1
     if (pending >= ATH_CONFIRM) {
-      next.athP = profit; next.athTs = now; next.athPending = 0
+      next.athP = profit; next.athTs = now; next.athPending = 0; next.athPendingTs = 0
       return {
         effect: ATH,
         payload: { totalValue, gain: profit - prev.athP, since: prev.athTs || null },
@@ -153,8 +160,10 @@ export function decideEffect({
       }
     }
     next.athPending = pending
+    next.athPendingTs = prev.athPending >= 1 ? prev.athPendingTs : now
   } else {
     next.athPending = 0
+    next.athPendingTs = 0
   }
 
   // The rocket, once a day: a top day measured against your own history.

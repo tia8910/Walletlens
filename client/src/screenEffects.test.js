@@ -114,11 +114,14 @@ describe('the rocket', () => {
 describe('the all-time high', () => {
   const seen = { ...EMPTY_STATE, athP: 200, athTs: noon - 10 * DAY, day: dayKey(noon, 0) }
 
-  it('needs two updates in a row above the old high', () => {
+  it('needs two updates in a row above the old high, minutes apart', () => {
     const one = decide({ totalValue: 1300, invested: 1000, state: seen })
     expect(one.effect).toBeNull()
     expect(one.nextState.athPending).toBe(1)
-    const two = decide({ totalValue: 1300, invested: 1000, state: one.nextState })
+    // The same numbers rendered again a moment later are not a second update.
+    const again = decide({ now: noon + 1000, totalValue: 1300, invested: 1000, state: one.nextState })
+    expect(again.effect).toBeNull()
+    const two = decide({ now: noon + 3 * 60_000, totalValue: 1300, invested: 1000, state: again.nextState })
     expect(two.effect).toBe(ATH)
     expect(two.payload.gain).toBe(100)
     expect(two.payload.since).toBe(noon - 10 * DAY)
@@ -127,20 +130,20 @@ describe('the all-time high', () => {
 
   it('starts again when the value drops back between updates', () => {
     const one = decide({ totalValue: 1300, invested: 1000, state: seen })
-    const dip = decide({ totalValue: 1100, invested: 1000, state: one.nextState })
+    const dip = decide({ now: noon + 60_000, totalValue: 1100, invested: 1000, state: one.nextState })
     expect(dip.nextState.athPending).toBe(0)
-    expect(decide({ totalValue: 1300, invested: 1000, state: dip.nextState }).effect).toBeNull()
+    expect(decide({ now: noon + 5 * 60_000, totalValue: 1300, invested: 1000, state: dip.nextState }).effect).toBeNull()
   })
 
   it('ignores a rise smaller than 0.5% of the portfolio', () => {
     const one = decide({ totalValue: 1204, invested: 1000, state: seen })
-    expect(decide({ totalValue: 1204, invested: 1000, state: one.nextState }).effect).toBeNull()
+    expect(decide({ now: noon + 5 * 60_000, totalValue: 1204, invested: 1000, state: one.nextState }).effect).toBeNull()
   })
 
   it('does not count money you added', () => {
     // Value jumps by a deposit; profit stays at the old high.
     const one = decide({ totalValue: 5200, invested: 5000, state: seen })
-    expect(decide({ totalValue: 5200, invested: 5000, state: one.nextState }).effect).toBeNull()
+    expect(decide({ now: noon + 5 * 60_000, totalValue: 5200, invested: 5000, state: one.nextState }).effect).toBeNull()
   })
 
   it('arms quietly on a device that has never stored a high', () => {
@@ -211,5 +214,15 @@ describe('pickLeader', () => {
 
   it('picks the least-bad day when everything is down', () => {
     expect(pickLeader([h('btc', -9), h('eth', -2)]).symbol).toBe('ETH')
+  })
+})
+
+describe('only the whole portfolio decides', () => {
+  it('blocks the effects while one wallet is selected', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join, dirname } = await import('node:path')
+    const { fileURLToPath } = await import('node:url')
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'pages/Dashboard.jsx'), 'utf8')
+    expect(src).toMatch(/const blocked = [^\n]*selectedWalletId !== 'all'/)
   })
 })
