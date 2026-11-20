@@ -41,7 +41,9 @@ describe('the fresher path', () => {
 
   it('keeps the edge cache short while a requested market is open', () => {
     const fn = read('../../functions/api/stocks.js')
-    expect(fn).toMatch(/import \{ sessionOpen \} from '\.\.\/\.\.\/client\/src\/data\/markets\.js'/)
+    expect(fn).toMatch(/import \{ sessionOpen, usSessionOpen \} from '\.\.\/\.\.\/client\/src\/data\/markets\.js'/)
+    // The US session counts too, so a US quote is not held for a minute.
+    expect(fn).toMatch(/\|\| \(us\.length > 0 && usSessionOpen\(\)\)/)
     expect(fn).toMatch(/live \? LIVE_CACHE_SECONDS : CACHE_SECONDS/)
     expect(fn).toMatch(/as_of: q\.asOf/)
   })

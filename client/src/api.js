@@ -46,7 +46,7 @@ import {
 } from './data/storage';
 import { foldBalances as _foldBalancesPure, diffHoldings } from './data/portfolio';
 import { analyzeTechnicals } from './technicals';
-import { isIntlTicker, toMajorUnit, countryFromDevice, sessionOpen } from './data/markets';
+import { isIntlTicker, toMajorUnit, countryFromDevice, sessionOpen, usSessionOpen } from './data/markets';
 import { dataUrl, voiceProxy, siteApi } from './apiHosts.js'
 
 export {
@@ -450,7 +450,7 @@ setTimeout(() => {
   try {
     const tickers = (POPULAR_TICKERS || []).map(t => t.ticker.toUpperCase()).filter(Boolean);
     if (!tickers.length) return;
-    const warm = tickers.every(t => batchStockCache[t]) && Date.now() - batchStockCacheTime < STOCK_CACHE_DURATION;
+    const warm = tickers.every(t => batchStockCache[t]) && Date.now() - batchStockCacheTime < stockTtl();
     if (!warm) fetchBatchStocks(tickers).catch(() => {});
   } catch {}
   // Warm tokenized-stock (xStock) prices too so the Tokenized tab is instant.
@@ -825,6 +825,10 @@ let fiatRatesCacheTime = 0;
 const CACHE_DURATION = 60_000;
 const METAL_CACHE_DURATION = 5 * 60_000;   // 5 min — metals update slowly
 const STOCK_CACHE_DURATION = 2 * 60_000;   // 2 min
+// While the US market is open a stock or ETF quote is asked for again after 30
+// seconds, so the portfolio follows the market; out of hours two minutes is plenty.
+const LIVE_US_MS = 30_000;
+const stockTtl = (now = Date.now()) => (usSessionOpen(now) ? LIVE_US_MS : STOCK_CACHE_DURATION);
 // A local listing (ETEL.CA, 2222.SR) whose exchange is in session is asked for
 // again after this long, instead of the two minutes above. The free source is
 // itself delayed, so this is about not adding our own delay on top of it.
@@ -970,7 +974,7 @@ function parseStooqRow(csv) {
 async function fetchStockLive(coinId) {
   const ticker = coinId.startsWith(STOCK_PREFIX) ? coinId.slice(STOCK_PREFIX.length) : coinId;
   const now = Date.now();
-  if (stockCache[coinId] && now - (stockCacheTime[coinId] || 0) < STOCK_CACHE_DURATION) {
+  if (stockCache[coinId] && now - (stockCacheTime[coinId] || 0) < stockTtl(now)) {
     return stockCache[coinId];
   }
 
@@ -1361,6 +1365,25 @@ function parseStooqBatchCsv(text) {
  * common path that is nothing, and no third-party request happens at all.
  */
 async function fetchTwelveDataBatch(tickers) {
+  // While the US market is open, every ticker is quoted live: the snapshot is
+  // rebuilt only three times a day, so reading it first left popular stocks
+  // and ETFs hours behind the market (a user saw totals "not updating"). The
+  // snapshot still fills any ticker the live sources missed. Out of hours the
+  // snapshot holds the last close, so it is read first and the network skipped.
+  if (usSessionOpen()) {
+    // No per-ticker proxy fan-out here: it is for outages, and every 30 s it
+    // would hammer free proxies. The snapshot covers a gap instead.
+    const live = (await _fetchStocksRemote(tickers, { fanout: false })) || {};
+    const gaps = tickers.filter(t => !live[String(t).toUpperCase()]);
+    if (gaps.length) {
+      const snap = await fetchStaticStockPrices();
+      for (const t of gaps) {
+        const p = snap?.[`${STOCK_PREFIX}${String(t).toLowerCase()}`];
+        if (p && p.usd > 0) live[String(t).toUpperCase()] = { usd: p.usd, usd_24h_change: p.usd_24h_change || 0, name: '', source: 'snapshot' };
+      }
+    }
+    return live;
+  }
   const out = {};
   const staticPrices = await fetchStaticStockPrices();
   if (staticPrices) {
@@ -1385,7 +1408,7 @@ async function fetchTwelveDataBatch(tickers) {
 }
 
 /** The live paths, for the few tickers the snapshot does not carry. */
-async function _fetchStocksRemote(tickers) {
+async function _fetchStocksRemote(tickers, { fanout = true } = {}) {
   // ── 0. Same-origin /api/stocks Pages Function — runs server-side, no CORS ──
   try {
     // Headroom over the function's own 4.5s budget. At 6s this raced the
@@ -1436,6 +1459,7 @@ async function _fetchStocksRemote(tickers) {
   // proxies — would burst hundreds of simultaneous cross-origin requests at
   // free proxy services, tanking the page and likely getting the client
   // rate-limited. Cap in-flight ticker fetches instead.
+  if (!fanout) return null;
   try {
     const results = await mapWithConcurrency(tickers, YAHOO_FALLBACK_CONCURRENCY, async sym => {
       for (const wrap of CORS_PROXIES) {
@@ -1503,7 +1527,7 @@ async function fetchOneTicker(sym) {
 
 async function _refreshBatchStocks(tickers) {
   const now = Date.now();
-  const missing = tickers.filter(t => !batchStockCache[t] || now - batchStockCacheTime > STOCK_CACHE_DURATION || intlStale(t, now));
+  const missing = tickers.filter(t => !batchStockCache[t] || now - batchStockCacheTime > stockTtl(now) || intlStale(t, now));
   if (missing.length === 0) return batchStockCache;
 
   // Foreign listings first, on their own path; the US sources cannot price them.
@@ -1541,7 +1565,18 @@ async function _refreshBatchStocks(tickers) {
 let _stockRefreshInFlight = null;
 function _refreshBatchStocksInBackground(tickers) {
   if (_stockRefreshInFlight) return _stockRefreshInFlight;
-  _stockRefreshInFlight = _refreshBatchStocks(tickers).finally(() => { _stockRefreshInFlight = null; });
+  const before = batchStockCacheTime;
+  _stockRefreshInFlight = _refreshBatchStocks(tickers)
+    .then(r => {
+      // The dashboard asks again at once instead of waiting for its next poll,
+      // but only when quotes really arrived: a failed refresh leaves the cache
+      // stale, and announcing it would set off another refresh straight away.
+      if (batchStockCacheTime !== before) {
+        try { if (typeof window !== 'undefined') window.dispatchEvent(new Event('wl-stock-prices')) } catch { /* no window */ }
+      }
+      return r;
+    })
+    .finally(() => { _stockRefreshInFlight = null; });
   return _stockRefreshInFlight;
 }
 
@@ -1553,7 +1588,7 @@ async function fetchBatchStocks(tickers) {
   // background refresh when it's gone stale. We block on the network only when
   // some ticker has never been fetched — there's nothing to show otherwise.
   if (haveAll) {
-    if (now - batchStockCacheTime > STOCK_CACHE_DURATION || tickers.some(t => intlStale(t, now))) _refreshBatchStocksInBackground(tickers);
+    if (now - batchStockCacheTime > stockTtl(now) || tickers.some(t => intlStale(t, now))) _refreshBatchStocksInBackground(tickers);
     return batchStockCache;
   }
   return _refreshBatchStocks(tickers);

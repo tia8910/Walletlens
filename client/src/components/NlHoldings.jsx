@@ -227,7 +227,12 @@ export default function NlHoldings({
                   <i className="nl-ghead-dot" style={{ background: g.color || 'var(--g)' }} aria-hidden="true" />
                   <b>{g.label}</b>
                   <span className="nl-ghead-n">{g.rows.length}</span>
-                  <span className="nl-ghead-v">{mask(cv(g.value))}<small>{Math.round(g.pct)}%</small></span>
+                  <span className="nl-ghead-v">
+                    {mask(cv(g.value))}
+                    {/* Today's move for the whole group, coloured like the rows, then its share. */}
+                    {g.dayPct != null && !pricesFailed && <em className={g.dayPct >= 0 ? 'up' : 'down'}>{pctTxt(g.dayPct)}</em>}
+                    <small>{Math.round(g.pct)}%</small>
+                  </span>
                   <svg className={`nl-ghead-chev${open ? ' open' : ''}`} viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
                 </button>
                 {open && g.rows.map(renderRow)}

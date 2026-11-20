@@ -835,6 +835,8 @@ html.wl-v3 .nl-sheet .nl-chips button { min-height: 0 !important; height: 32px !
 .nl-ghead-n { min-width: 1.4rem; padding: 0.05rem 0.4rem; border-radius: 99px; background: var(--nl-soft, rgba(127, 127, 127, 0.12)); font-size: 0.7rem; font-weight: 800; color: var(--nl-sub); text-align: center; }
 .nl-ghead-v { margin-inline-start: auto; display: flex; align-items: baseline; gap: 0.4rem; font-size: 0.84rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .nl-ghead-v small { font-size: 0.72rem; font-weight: 700; color: var(--nl-sub); }
+.nl-ghead-v em { font-style: normal; font-size: 0.72rem; font-weight: 800; }
+.nl-ghead-v em.up { color: var(--nl-up, #16a34a); } .nl-ghead-v em.down { color: var(--nl-down, #dc2626); }
 .nl-ghead-chev { flex: none; width: 16px; height: 16px; fill: none; stroke: var(--nl-sub); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transform: rotate(-90deg); transition: transform 0.2s ease; }
 .nl-ghead-chev.open { transform: none; }
 .nl-group .nl-hrow:last-child { border-bottom: 0; }
