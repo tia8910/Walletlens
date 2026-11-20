@@ -250,41 +250,107 @@ function holdAmbient() {
 }
 
 // ── Onboarding story sounds ──────────────────────────────────────────────
-// The first-run story has its own sound, matched to its pictures: a deep
-// space drone under the particle field, an airy rise between scenes, a
+// The first-run story has its own sound, matched to its pictures: a warm
+// money score under the particle field (startDrone), coins landing and a
+// cash register as the lens pulls everything in, an airy rise between scenes, a
 // wooden tick as the language drum turns, a bell bloom for each colour, a
 // charge that climbs while the launch ring is held, and a warp on launch.
 
+// The onboarding's own score, about money rather than space: a warm major
+// pad (D, A, D, F#, E: open and confident) breathing under a slow filter,
+// and over it a soft "ticker", mallet notes from a D major pentatonic that
+// land every so often like prices updating, each with a short echo. Quiet
+// by design; it sits under the coin clinks and the cash register.
 let drone = null
+const TICKER = [587.33, 659.25, 739.99, 880, 987.77, 1174.66]
 function startDrone() {
   if (!enabled) return
   const c = ensure(); if (!c || !master || drone) return
   const now = c.currentTime
   const out = c.createGain()
   out.gain.setValueAtTime(0.0001, now)
-  out.gain.exponentialRampToValueAtTime(0.28, now + 3)
-  const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420; lp.Q.value = 3
+  out.gain.exponentialRampToValueAtTime(0.3, now + 2.5)
+  out.connect(master)
+
+  // The pad
+  const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; lp.Q.value = 0.7
   const sweep = c.createOscillator(); const sg = c.createGain()
-  sweep.frequency.value = 0.05; sg.gain.value = 260
+  sweep.frequency.value = 0.06; sg.gain.value = 380
   sweep.connect(sg); sg.connect(lp.frequency); sweep.start()
-  lp.connect(out); out.connect(master)
-  // A low D with a fifth and a soft ninth: open, calm, a little cosmic.
-  const parts = [[73.42, 'sine', 0.5], [110, 'sawtooth', 0.06], [146.83, 'sawtooth', 0.05], [164.81, 'triangle', 0.08], [220, 'sine', 0.05]]
+  lp.connect(out)
+  const parts = [[73.42, 'sine', 0.42], [146.83, 'triangle', 0.1], [220, 'triangle', 0.08], [293.66, 'sine', 0.07], [369.99, 'sine', 0.06], [659.25, 'sine', 0.025]]
   const oscs = parts.map(([f, type, gain], i) => {
     const o = c.createOscillator(); const g = c.createGain()
-    o.type = type; o.frequency.value = f; o.detune.value = (i % 2 ? 6 : -6)
+    o.type = type; o.frequency.value = f; o.detune.value = (i % 2 ? 5 : -5)
     g.gain.value = gain
     o.connect(g); g.connect(lp); o.start()
     return o
   })
-  drone = { out, lp, sweep, oscs }
+
+  // The ticker, through a short echo
+  const echo = c.createDelay(1); echo.delayTime.value = 0.32
+  const fb = c.createGain(); fb.gain.value = 0.28
+  const wet = c.createGain(); wet.gain.value = 0.35
+  echo.connect(fb); fb.connect(echo); echo.connect(wet); wet.connect(out)
+  const tick = () => {
+    if (!drone || !ctx) return
+    const t = ctx.currentTime + 0.02
+    const f = TICKER[Math.floor(Math.random() * TICKER.length)]
+    const o = ctx.createOscillator(); const g = ctx.createGain()
+    o.type = 'sine'; o.frequency.value = f
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.exponentialRampToValueAtTime(0.06, t + 0.01)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7)
+    o.connect(g); g.connect(out); g.connect(echo)
+    o.start(t); o.stop(t + 0.75)
+  }
+  const timer = setInterval(() => { if (Math.random() < 0.7) tick() }, 900)
+  drone = { out, lp, sweep, oscs, timer, echo }
 }
 function stopDrone() {
   const c = ctx; if (!c || !drone) return
   const d = drone; drone = null
+  clearInterval(d.timer)
   const now = c.currentTime
   try { d.out.gain.cancelScheduledValues(now); d.out.gain.setValueAtTime(Math.max(0.0001, d.out.gain.value), now); d.out.gain.exponentialRampToValueAtTime(0.0001, now + 1.2) } catch {}
   setTimeout(() => { try { d.oscs.forEach(o => o.stop()); d.sweep.stop(); d.out.disconnect() } catch {} }, 1400)
+}
+
+// A coin landing: inharmonic metallic partials with a fast decay, a little
+// higher for each coin, so a run of them climbs.
+function playCoin(n = 0) {
+  if (!enabled) return
+  const c = ensure(); if (!c || !master) return
+  const t = c.currentTime + 0.01
+  const f = 2300 + (n % 8) * 140
+  for (const [r, a] of [[1, 0.09], [2.76, 0.05], [5.4, 0.025]]) {
+    const o = c.createOscillator(); const g = c.createGain()
+    o.type = 'sine'; o.frequency.value = f * r
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.exponentialRampToValueAtTime(a, t + 0.004)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18)
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.2)
+  }
+}
+
+// A cash register: the drawer's "ka" (a burst of filtered noise), then a
+// bright bell "ching" ringing out.
+function playCashIn() {
+  if (!enabled) return
+  const c = ensure(); if (!c || !master) return
+  const t = c.currentTime + 0.01
+  const n = c.createBufferSource(); n.buffer = noiseBuffer(c, 0.06)
+  const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 1.2
+  const ng = c.createGain(); ng.gain.setValueAtTime(0.25, t); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.06)
+  n.connect(bp); bp.connect(ng); ng.connect(master); n.start(t)
+  for (const [r, a] of [[1, 0.14], [2, 0.06], [2.76, 0.05], [4.07, 0.025]]) {
+    const o = c.createOscillator(); const g = c.createGain()
+    o.type = 'sine'; o.frequency.value = 1568 * r
+    g.gain.setValueAtTime(0.0001, t + 0.05)
+    g.gain.exponentialRampToValueAtTime(a, t + 0.06)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1)
+    o.connect(g); g.connect(master); o.start(t + 0.05); o.stop(t + 1.15)
+  }
 }
 
 function noiseBuffer(c, secs) {
@@ -407,6 +473,8 @@ const sfx = {
   holdAmbient,
   startDrone,
   stopDrone,
+  playCoin,
+  playCashIn,
   playRise,
   playTick,
   playBloom,

@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import Icon from './Icon'
+import CoinLogo from './CoinLogo'
 import './NativeOnboarding.css'
 import OnboardFx from './OnboardFx'
 import { track } from '../analytics'
@@ -44,6 +45,9 @@ const SLIDES = [
 // "Hello" in each language's own words, for the language drum.
 const HELLO = { en: 'Hello', ar: 'مرحبا', fr: 'Bonjour', es: 'Hola', de: 'Hallo', it: 'Ciao' }
 const FEATURE_KEYS = ['obFeatPrivate', 'obFeatLivePnl', 'obFeatInsights', 'obFeatAlarms', 'obFeatFree']
+// The welcome lens pulls these in: the same logos the app shows for them.
+export const MAGNET_ASSETS = ['bitcoin', 'metal:xau', 'ethereum', 'stock:AAPL', 'fiat:USD', 'solana']
+const MAGNET_TARGET = 128307
 const FEATURE_ICONS = { obFeatPrivate: 'lock', obFeatLivePnl: 'pulse', obFeatInsights: 'sparkles', obFeatAlarms: 'bell', obFeatFree: 'gift' }
 
 /**
@@ -125,7 +129,8 @@ export default function NativeOnboarding({ onDone }) {
   const [featIdx, setFeatIdx] = useState(0)
   const [count, setCount] = useState(0)
   const [move, setMove] = useState('up')
-  const [shutter, setShutter] = useState(false)
+  // The lens: 'idle' (assets orbit it), 'pull' (they fly in), 'done'.
+  const [phase, setPhase] = useState('idle')
   const { theme, setTheme, mode, setMode } = useTheme()
   const { lang, setLang, t } = useLanguage()
   const touch = useRef({ x: 0, y: 0, on: false })
@@ -141,18 +146,47 @@ export default function NativeOnboarding({ onDone }) {
     try { localStorage.setItem(ONBOARD_STEP_KEY, String(step)) } catch {}
   }, [step])
 
-  // Intro: the figure rolls in like an odometer, then keeps ticking like a
-  // live price, and the feature words take turns.
+  // Intro: the assets orbit the lens until it is tapped (or after a few
+  // seconds on its own), then fly in one by one, each landing with a coin
+  // clink, and the figure rolls up like an odometer to the full net worth
+  // with a cash register. From then it ticks like a live price.
+  const pullTimers = useRef([])
+  const pull = useCallback(() => {
+    if (phase !== 'idle') return
+    setPhase('pull')
+    try { sfx.haptic(10) } catch {}
+    const T = pullTimers.current
+    MAGNET_ASSETS.forEach((_, i) => T.push(setTimeout(() => {
+      try { sfx.playCoin(i); sfx.haptic(6) } catch {}
+    }, 520 + i * 120)))
+    T.push(setTimeout(() => { setMove('up'); setCount(MAGNET_TARGET) }, 300))
+    T.push(setTimeout(() => {
+      setPhase('done')
+      try { sfx.playCashIn(); sfx.haptic([12, 30, 18]) } catch {}
+    }, 1500))
+  }, [phase])
+  useEffect(() => () => pullTimers.current.forEach(clearTimeout), [])
+
   useEffect(() => {
-    if (s.id !== 'welcome') return
-    const t0 = setTimeout(() => setCount(128450), 450)
+    if (s.id !== 'welcome' || phase !== 'idle') return
+    const auto = setTimeout(pull, 4200)
+    return () => clearTimeout(auto)
+  }, [s.id, phase, pull])
+
+  useEffect(() => {
+    if (s.id !== 'welcome' || phase !== 'done') return
     const live = setInterval(() => {
       const d = Math.round((Math.random() - 0.38) * 900)
       setCount(v => v + d)
       setMove(d >= 0 ? 'up' : 'down')
     }, 2300)
+    return () => clearInterval(live)
+  }, [s.id, phase])
+
+  useEffect(() => {
+    if (s.id !== 'welcome') return
     const iv = setInterval(() => setFeatIdx(i => (i + 1) % FEATURE_KEYS.length), 1400)
-    return () => { clearTimeout(t0); clearInterval(live); clearInterval(iv) }
+    return () => clearInterval(iv)
   }, [s.id])
 
   const goNext = useCallback(() => {
@@ -201,14 +235,6 @@ export default function NativeOnboarding({ onDone }) {
     try { track('onboarding_skip', { from: slides[step]?.id }) } catch {}
     goTo(total - 1)
   }, [goTo, step, total, slides])
-
-  // Tapping the lens snaps the shutter closed and open again.
-  function snap() {
-    if (shutter) return
-    setShutter(true)
-    try { sfx.playTick(5); sfx.haptic(12) } catch {}
-    setTimeout(() => setShutter(false), 420)
-  }
 
   // ── language drum ─────────────────────────────────────────────────────
   const langIdx = Math.max(0, LANGUAGES.findIndex(l => l.code === lang))
@@ -323,39 +349,39 @@ export default function NativeOnboarding({ onDone }) {
   if (s.id === 'welcome') {
     scene = (
       <>
-        <button className={`ocx-aperture${shutter ? ' is-snap' : ''}`} onClick={snap} aria-label="WalletLens">
-          <span className="ocx-ap-halo" />
-          <span className="ocx-ap-rim" />
-          <span className="ocx-ap-glass">
-            <small>{t('obPreviewLabel')}</small>
+        <div className={`ocx-magnet is-${phase}`}>
+          <span className="ocx-mg-ring" />
+          <span className="ocx-mg-ring ocx-mg-ring2" />
+          <span className="ocx-mg-sweep" />
+          <div className="ocx-mg-orbit" aria-hidden="true">
+            {MAGNET_ASSETS.map((id, i) => {
+              const a = (i / MAGNET_ASSETS.length) * Math.PI * 2
+              const x = Math.round(Math.cos(a) * 130), y = Math.round(Math.sin(a) * 130)
+              return (
+                <span key={id} className="ocx-mg-asset" style={{ '--x': `${x}px`, '--y': `${y}px`, '--d': `${i * 0.12}s` }}>
+                  <span className="ocx-mg-face"><CoinLogo coinId={id} size={40} className="ocx-mg-logo" /></span>
+                </span>
+              )
+            })}
+          </div>
+          {phase !== 'idle' && <span key={phase} className="ocx-mg-shock" />}
+          <button className="ocx-mg-lens" onClick={pull}
+            aria-label={phase === 'idle' ? t('obMagnetAria') : `${t('obPreviewLabel')}, $${Math.round(count).toLocaleString('en-US')}`}>
+            <small>{phase === 'idle' ? t('obMagnetTap') : phase === 'pull' ? t('obMagnetPulling') : t('obPreviewLabel')}</small>
             <Odometer value={count} move={move} />
-            <svg className="ocx-ap-chart" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true">
-              <g className="ocx-ap-scroll">
-                <path d="M0 30 C10 28 16 33 26 26 S42 20 52 23 S68 14 78 17 S94 8 104 11 S116 6 120 8 C130 10 136 5 146 9 S162 14 172 6 S190 10 200 4 S216 12 226 7 S236 9 240 8" />
-              </g>
-            </svg>
-            <em className={`ocx-chg is-${move}`}>{move === 'up' ? '▲' : '▼'} {((count - 125440) / 1254.4).toFixed(2)}%</em>
-          </span>
-          <svg className="ocx-ap-iris" viewBox="0 0 200 200" aria-hidden="true">
-            <defs>
-              <linearGradient id="ocxBlade" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stopColor="#3a4a42" /><stop offset="0.5" stopColor="#141c18" /><stop offset="1" stopColor="#060a08" />
-              </linearGradient>
-              <clipPath id="ocxClip"><circle cx="100" cy="100" r="78" /></clipPath>
-            </defs>
-            <g clipPath="url(#ocxClip)">
-              {Array.from({ length: 8 }, (_, i) => (
-                <g key={i} transform={`rotate(${i * 45} 100 100)`}>
-                  <path className="ocx-blade" d="M100 14 L176 62 L112 112 L86 100 Z" />
-                </g>
-              ))}
-            </g>
-          </svg>
-          <span className="ocx-ap-flare" />
-        </button>
+            {phase === 'done'
+              ? <em className={`ocx-chg is-${move}`}>{move === 'up' ? '▲' : '▼'} {Math.abs((count - 125440) / 1254.4).toFixed(2)}%</em>
+              : <em className="ocx-mg-sub">{t('obMagnetKinds')}</em>}
+          </button>
+          {phase === 'done' && (
+            <span className="ocx-mg-sparks" aria-hidden="true">
+              {Array.from({ length: 10 }, (_, i) => <i key={i} style={{ '--i': i }} />)}
+            </span>
+          )}
+        </div>
         <div className="ocx-copy">
           <div className="ocx-eyebrow">{t('obWelcomeEyebrow')}</div>
-          <h1 className="ocx-title ocx-brand">{words('WalletLens')}</h1>
+          <h1 className="ocx-title ocx-brand" key={phase === 'done' ? 'one' : 'wl'}>{phase === 'done' ? words(t('obMagnetTitle')) : words('WalletLens')}</h1>
           <div className="ocx-chips">
             {FEATURE_KEYS.map((k, i) => (
               <span key={k} className={`ocx-chip${i === featIdx ? ' on' : ''}`} style={{ animationDelay: `${0.5 + i * 0.1}s` }}>
