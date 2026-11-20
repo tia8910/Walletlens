@@ -1118,6 +1118,7 @@ export default {
     paNoAlerts: 'Aucune alerte pour le moment',
     paSetAlert: 'Définir l\'alerte',
     paSetPriceAlert: 'Créer une alerte de prix',
+    alertShort: "Alerte",
     paResetAlert: 'Réinitialiser l\'alerte',
     paTargetPrice: 'Prix cible (USD)',
     paEnable: 'Activer',

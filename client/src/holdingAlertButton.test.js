@@ -25,3 +25,14 @@ describe('set alert from a holding', () => {
     expect(pa).toMatch(/setShowForm\(true\)/)
   })
 })
+
+describe('set alert from the asset page', () => {
+  it('offers an Alert button beside Buy and Sell for a held asset', () => {
+    const src = read('pages/AssetDetail.jsx')
+    expect(src).toMatch(/className="action-btn alert-btn detail-act"/)
+    expect(src).toMatch(/navigate\('\/dashboard', \{ state: \{ tab: 'alerts', alertCoin: coinId \} \}\)/)
+  })
+  it('opens Price Alerts with that asset chosen', () => {
+    expect(read('pages/Dashboard.jsx')).toMatch(/if \(location\.state\?\.alertCoin\) setAlertPreset\(\{ coinId: location\.state\.alertCoin/)
+  })
+})

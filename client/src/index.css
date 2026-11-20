@@ -1900,6 +1900,8 @@ tr:last-child td { border-bottom: none; }
 /* ─── Detail Actions ─── */
 .detail-actions { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
 .detail-act { flex: 1; padding: 0.85rem; font-size: 0.95rem; border-radius: 14px; }
+/* The price alert button beside Buy and Sell: smaller, outlined, in the accent. */
+.detail-act.alert-btn { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; padding-inline: 1rem; background: transparent; color: var(--g); border: 1.5px solid color-mix(in srgb, var(--g) 55%, transparent); }
 
 /* ─── Sell Plan / Targets ─── */
 .sell-plan-card {

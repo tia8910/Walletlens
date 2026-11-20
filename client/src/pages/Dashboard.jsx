@@ -3515,6 +3515,8 @@ export default function Dashboard() {
   // couldn't return you to the overview tab if state.tab was already 'overview'.
   useEffect(() => {
     if (location.state?.tab) setActiveTab(normalizeTab(location.state.tab))
+    // The asset page's alert button: Price Alerts with that asset chosen.
+    if (location.state?.alertCoin) setAlertPreset({ coinId: location.state.alertCoin, nonce: Date.now() })
     // The bottom bar's long-press "Quick add trade" asks for the Buy sheet.
     // Nothing read this flag before, so that item only switched tabs.
     if (location.state?.quickAdd) openSheet('buy', 'longpress_nav')

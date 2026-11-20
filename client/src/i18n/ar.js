@@ -1144,6 +1144,7 @@ export default {
     paNoAlerts: 'لا توجد تنبيهات بعد',
     paSetAlert: 'ضبط التنبيه',
     paSetPriceAlert: 'اضبط تنبيه سعر',
+    alertShort: "تنبيه",
     paResetAlert: 'إعادة ضبط التنبيه',
     paTargetPrice: 'السعر المستهدف (دولار)',
     paEnable: 'تفعيل',
