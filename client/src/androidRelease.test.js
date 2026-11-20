@@ -337,3 +337,11 @@ describe('the Android release is uploadable', () => {
     expect(java('WalletLensMessagingService.java')).toMatch(/showNotification/)
   })
 })
+
+describe('Play automatic protection', () => {
+  it('builds for Android 7.0 (SDK 24) or newer, the minimum Play accepts', () => {
+    const gradle = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../walletlens_source/release_package/app/build.gradle'), 'utf8')
+    const min = Number(/^\s*minSdk (\d+)/m.exec(gradle)?.[1])
+    expect(min).toBeGreaterThanOrEqual(24)
+  })
+})

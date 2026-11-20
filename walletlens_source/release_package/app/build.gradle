@@ -133,7 +133,8 @@ android {
     namespace "live.walletlens.twa"
     defaultConfig {
         applicationId "live.walletlens.twa"
-        minSdk 23
+        // 24 (Android 7.0): Play automatic protection refuses bundles below it.
+        minSdk 24
         targetSdk 36
         // 73 is in production — the code Play accepted at the last upload,
         // read from the Console. Play never accepts a duplicate or a lower
@@ -266,7 +267,7 @@ android {
                 storePassword wlKeystorePassword
                 keyAlias wlKeyAlias
                 keyPassword wlKeyPassword
-                // v1 as well as v2/v3. minSdk is 23, so v2 alone would be
+                // v1 as well as v2/v3. minSdk is 24, so v2 alone would be
                 // enough for Android itself, but several third-party store
                 // validators still read only the v1 JAR signature and report
                 // a v2-only APK as unsigned.
