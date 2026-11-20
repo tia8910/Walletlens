@@ -7,6 +7,7 @@ import { academyVideos, lessonOrder, newestLesson, watchUrl, isLesson, COURSES, 
 import { academyCopy, posterFor } from '../data/academyCopy'
 import { readWatched, markWatched, WATCHED_EVENT } from '../academyProgress'
 import { inAppShell, shellVersion } from '../nativeShell'
+import VideoThumb from './VideoThumb'
 import LessonPlayer, { inProgress } from './LessonPlayer'
 
 // The Academy, built around the video lessons on the WalletLens channel:
@@ -24,9 +25,9 @@ const Chevron = () => (
 const YT_PLAY = <svg width="18" height="13" viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#e00030" /><path d="M11 5.5v9l8-4.5z" fill="#fff" /></svg>
 const YT_ICON = <svg width="20" height="14" viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#e00030" /><path d="M11 5.5v9l8-4.5z" fill="#fff" /></svg>
 
-/** A painted scene standing in for a thumbnail: no image is fetched from YouTube until play. */
+/** The video's thumbnail, over a painted scene that shows while it loads or if it cannot. */
 export function Poster({ video, className = '' }) {
-  return <span className={`aw-poster p-${posterFor(video.key, video.poster)} ${className}`} aria-hidden="true"><i /></span>
+  return <span className={`aw-poster p-${posterFor(video.key, video.poster)} ${className}`} aria-hidden="true"><i /><VideoThumb video={video} /></span>
 }
 
 function useWatched() {
