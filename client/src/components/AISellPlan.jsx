@@ -316,6 +316,7 @@ export default function AISellPlan({ enriched = [], prices = {}, coinTargets = {
   }
 
   if (!enriched.length) return null
+  const investableCount = enriched.filter(h => !isStablecoin(h.coin_id, h.coin_symbol)).length
 
   return (
     <div className="glass-card sp2" style={{ marginTop: '1rem' }}>
@@ -324,16 +325,23 @@ export default function AISellPlan({ enriched = [], prices = {}, coinTargets = {
           <h3><Icon name="target" size={17} style={{ color: 'var(--g-ink)' }} />{t('spTitle')}</h3>
           <p className="muted">{t('spDesc')}</p>
         </div>
-        {!open ? (
-          <button type="button" className="sp2-go" onClick={generate} disabled={loading}>
-            {loading
-              ? <><Icon name="hourglass" size={14} />{t('spAnalyzing')}</>
-              : <><Icon name="sparkles" size={14} />{t('spGenerate')}</>}
-          </button>
-        ) : (
+        {open && (
           <button type="button" className="sp2-close" onClick={() => setOpen(false)}>✕ {t('spClose')}</button>
         )}
       </div>
+
+      {!open && (
+        <button type="button" className={`sp2-cta${loading ? ' is-loading' : ''}`} onClick={generate} disabled={loading} aria-busy={loading}>
+          <span className="sp2-cta-ic" aria-hidden="true">
+            {loading ? <span className="sp2-spin" /> : <Icon name="sparkles" size={20} />}
+          </span>
+          <span className="sp2-cta-txt">
+            <b>{loading ? t('spAnalyzing') : t('spGenerateMine')}</b>
+            <small>{loading ? t('spReading') : t('spCtaSub')(investableCount)}</small>
+          </span>
+          {!loading && <span className="sp2-cta-go" aria-hidden="true">→</span>}
+        </button>
+      )}
 
       {open && plan && smart && (
         <div className="sp2-body">

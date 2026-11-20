@@ -15,6 +15,8 @@ import { EXPLODE, ROCKET, ATH, pickLeader } from '../screenEffects'
 import ScreenEffect from '../components/ScreenEffect'
 import { POPULAR_FIAT, getCryptoCategory, getStockSector, CRYPTO_CATEGORY_COLORS, STOCK_SECTOR_COLORS, POPULAR_TICKERS, assetClass, categorizeAsset, GOLD_ID, SILVER_ID } from '../data/assets'
 import CoinLogo from '../components/CoinLogo'
+import TargetRealityCheck from '../components/TargetRealityCheck'
+import TargetCard from '../components/TargetCard'
 import CurrencyPicker from '../components/CurrencyPicker'
 import RateCard from '../components/RateCard'
 import { currencySymbol } from '../data/currencies'
@@ -37,7 +39,6 @@ import { saveSnapshot, getSnapshotsForDays, hasRealData, getGenesisTs } from '..
 // fresh for people who already subscribed, so the weekly email carries current
 // numbers rather than whatever was true on the day they signed up.
 import { isWeeklySubscribed, refreshWeekly, buildWeeklyPayload } from '../weeklyEmail'
-import { analyzeTarget, fetchTargetData } from '../targetAnalysis'
 import { checkPortfolioMove, setPortfolioBaseline, notifyTargetsReached } from '../portfolioNotify'
 import NewsTicker from '../components/NewsTicker'
 import SentimentTicker from '../components/SentimentTicker'
@@ -2538,74 +2539,6 @@ function fmtQty(n) {
   return n.toFixed(4).replace(/\.?0+$/, '') || '0'
 }
 
-// Sell-target reality check — "is this target reasonable, and how long might it
-// take?" Local heuristic (ATH + past-year pace + trend) with an optional AI take.
-const VOICE_ENDPOINT = VOICE_API
-function TargetRealityCheck({ coinId, coinSymbol, coinName, currentPrice, targetPrice, assetClass, compact = false }) {
-  const { t } = useLanguage()
-  const [data, setData] = useState(null)
-  const [ai, setAi] = useState({ state: 'idle' })
-
-  useEffect(() => {
-    let alive = true
-    fetchTargetData(coinId).then(d => { if (alive) setData(d) }).catch(() => {})
-    return () => { alive = false }
-  }, [coinId])
-
-  const analysis = useMemo(
-    () => (targetPrice > 0 ? analyzeTarget({ symbol: coinSymbol, currentPrice, targetPrice, ath: data?.ath, change30d: data?.change30d, oneYearReturnPct: data?.oneYearReturnPct }) : null),
-    [coinSymbol, currentPrice, targetPrice, data]
-  )
-  if (!analysis) return null
-
-  async function askAi() {
-    setAi({ state: 'loading' })
-    track('target_ai_analysis', { coin_id: coinId })
-    try {
-      const resp = await fetch(VOICE_ENDPOINT, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'target_analysis', symbol: coinSymbol, name: coinName, current: currentPrice, target: targetPrice, ath: data?.ath, oneYearReturnPct: data?.oneYearReturnPct, volatilityPct: data?.volatilityPct, assetClass }),
-      })
-      const j = await resp.json().catch(() => ({}))
-      if (resp.ok && j.ok && j.analysis) setAi({ state: 'done', ...j.analysis })
-      else setAi({ state: 'error' })
-    } catch { setAi({ state: 'error' }) }
-  }
-
-  if (compact) {
-    // Inline: the verdict as a pill beside the other facts, with its timeframe
-    // when there is one. It used to sit alone in a full-width box.
-    return (
-      <span className="tg2-trc" style={{ '--trc': analysis.color }} title={[analysis.timeframe, analysis.context].filter(Boolean).join('. ')}>
-        <span className="tg2-trc-badge">{analysis.label}</span>
-      </span>
-    )
-  }
-
-  return (
-    <div className="dvx-trc" style={{ '--trc': analysis.color }}>
-      <div className="dvx-trc-head">
-        <span className="dvx-trc-badge">{analysis.label}</span>
-        <span className="dvx-trc-req">{analysis.requiredPct >= 0 ? '+' : ''}{analysis.requiredPct.toFixed(0)}% away</span>
-      </div>
-      <div className="dvx-trc-line">{analysis.context}</div>
-      {analysis.timeframe && <div className="dvx-trc-line"><Icon name="clock" size={12} style={{ verticalAlign:'-1px', marginRight:'0.3em' }} />{analysis.timeframe}</div>}
-      {analysis.trend && <div className="dvx-trc-line dvx-trc-sub">{analysis.trend}</div>}
-      {ai.state === 'done' && ai.reasoning && (
-        <div className="dvx-trc-ai"><Icon name="sparkles" size={12} style={{ verticalAlign:'-1px', marginRight:'0.3em' }} /><strong>{ai.verdict || 'AI'}{ai.timeframe ? ` · ${ai.timeframe}` : ''}</strong><br />{ai.reasoning}</div>
-      )}
-      <div className="dvx-trc-foot">
-        {ai.state !== 'done' && (
-          <button type="button" className="dvx-trc-ai-btn" onClick={askAi} disabled={ai.state === 'loading'}>
-            {ai.state === 'loading' ? 'Analyzing…' : ai.state === 'error' ? 'Retry AI take' : '✨ Ask AI for a deeper take'}
-          </button>
-        )}
-        <span className="dvx-trc-disclaimer">{t('dsRoughEstimate')}</span>
-      </div>
-    </div>
-  )
-}
-
 // Sell targets per holding, with progress and proceeds. Shared by the
 // dashboard's Targets tab and the Targets section of Analyze.
 export function computeTargetsAnalysis(enriched, coinTargets) {
@@ -2648,12 +2581,8 @@ export function computeTargetsAnalysis(enriched, coinTargets) {
 export function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onTargetsChange }) {
   const { t } = useLanguage()
   const navigate = useNavigate()
-  const [adding, setAdding] = useState({}) // coinId → { price, mode, pct, qty }
   const [addFor, setAddFor] = useState(null) // the asset the + New target form is open for
   const [sort, setSort] = useState('asset') // asset | closest | payout
-  const [drafts, setDrafts] = useState({}) // coinId → [{ key, p, q }] lined up, not saved yet
-  const [pick, setPick] = useState(null) // `${coinId}:${targetId}`: the tile opened below its row
-  const [saving, setSaving] = useState(false)
   const [alarmKeys, setAlarmKeys] = useState(() => targetAlarmKeys())
   useEffect(() => {
     const onChange = () => setAlarmKeys(targetAlarmKeys())
@@ -2666,28 +2595,7 @@ export function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onT
     () => enriched.filter(h => categorizeAsset(h) !== 'cash' && !isStablecoin(h.coin_id, h.coin_symbol)),
     [enriched])
 
-  // Confirm and save: every target lined up for this asset goes in at once.
-  async function saveDrafts(h) {
-    const list = (drafts[h.coin_id] || []).filter(d => d.p > 0 && d.q > 0 && !(h.price > 0 && d.p <= h.price))
-    if (!list.length || saving) return
-    setSaving(true)
-    try {
-      for (const d of list) await api.addCoinTarget(h.coin_id, { price: d.p, quantity: d.q })
-      track('goal_set', { coin_id: h.coin_id, count: list.length })
-      setDrafts(prev => { const n = { ...prev }; delete n[h.coin_id]; return n })
-      setAdding(prev => ({ ...prev, [h.coin_id]: { amt: prev[h.coin_id]?.amt ?? 1 } }))
-      setAddFor(null)
-      onTargetsChange()
-    } finally { setSaving(false) }
-  }
-
-  function cancelAdd(h) {
-    setDrafts(prev => { const n = { ...prev }; delete n[h.coin_id]; return n })
-    setAddFor(null)
-  }
-
   async function removeTarget(coinId, targetId) {
-    setPick(null)
     await api.removeCoinTargetItem(coinId, targetId)
     track('target_deleted', { coin_id: coinId })
     onTargetsChange()
@@ -2755,109 +2663,9 @@ export function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onT
     track('target_alarm', { on })
   }
 
-  // The add form, for one asset: two taps per target. Pick how much of what
-  // is left, then tap a price (a multiple of today's, or your own). Each one
-  // lines up as a new tile in the grid; Confirm and save stores them all.
-  function renderAddForm(h) {
-    const plan = coinTargets[h.coin_id]?.targets || []
-    const currentPrice = h.price
-    const sym = h.coin_symbol?.toUpperCase()
-    const st = adding[h.coin_id] || {}
-    const set = (patch) => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], ...patch } }))
-    const lined = drafts[h.coin_id] || []
-    const plannedQty = plan.reduce((s2, tg) => s2 + (tg.quantity == null ? h.amount : Math.min(tg.quantity, h.amount)), 0)
-      + lined.reduce((s2, d) => s2 + d.q, 0)
-    const available = Math.max(0, h.amount - plannedQty)
-    const amt = st.amt ?? 1 // share of what is left: 0.25 | 0.5 | 1 | 'qty'
-    const addQty = amt === 'qty'
-      ? Math.max(0, Math.min(parseFloat(st.qty) || 0, available))
-      : available * amt
-    const nice = (v) => Number(v.toPrecision(v >= 1 ? 4 : 3))
-    const chips = currentPrice > 0 ? [1.5, 2, 3, 5, 8].map(m => ({ m, p: nice(currentPrice * m) })) : []
-    const myPrice = parseFloat(st.price)
-    const priceTooLow = myPrice > 0 && currentPrice > 0 && myPrice <= currentPrice
-    const canAdd = addQty > 0
-    const lineUp = (p) => {
-      if (!canAdd || !(p > 0) || (currentPrice > 0 && p <= currentPrice)) return
-      setDrafts(prev => ({ ...prev, [h.coin_id]: [...(prev[h.coin_id] || []), { key: `${Date.now()}-${Math.random()}`, p, q: addQty }] }))
-      set({ price: '', qty: '', custom: false })
-    }
-    return (
-      <div className="tg5-form">
-        {available > 0 ? (
-          <>
-            <div className="tg5-step">
-              <span className="tg5-lbl">{t('tgStepAmount')(`${parseFloat(available.toFixed(6)).toLocaleString()} ${sym}`)}</span>
-              <div className="tg5-chips">
-                {[[0.25, '25%'], [0.5, '50%'], [1, t('tgAllLeft')], ['qty', t('stQuantity')]].map(([k, label]) => (
-                  <button key={k} type="button" className={`tg5-chip${amt === k ? ' on' : ''}`} aria-pressed={amt === k} onClick={() => set({ amt: k })}>{label}</button>
-                ))}
-              </div>
-              {amt === 'qty' && (
-                <div className="tg5-inline">
-                  <input type="number" min="0" step="any" inputMode="decimal" className="tg5-input"
-                    placeholder={`0 – ${parseFloat(available.toFixed(6))}`} value={st.qty || ''}
-                    onChange={e => set({ qty: e.target.value })} aria-label={t('stQuantity')} />
-                  <button type="button" className="tg5-chip" onClick={() => set({ qty: String(parseFloat(available.toFixed(8))) })}>{t('stMax')}</button>
-                </div>
-              )}
-              <small className="tg5-hint">{t('stSellQty')(parseFloat(addQty.toFixed(6)), sym)}</small>
-            </div>
-
-            <div className="tg5-step">
-              <span className="tg5-lbl">{t('tgStepPrice')}</span>
-              <div className="tg5-chips">
-                {chips.map(c => (
-                  <button key={c.m} type="button" className="tg5-chip tg5-price" disabled={!canAdd}
-                    onClick={() => lineUp(c.p)} aria-label={t('tgAddAt')(money(c.p))}>
-                    <b>{c.m}x</b><small>{money(c.p)}</small>
-                  </button>
-                ))}
-                <button type="button" className={`tg5-chip tg5-price${st.custom ? ' on' : ''}`} aria-pressed={!!st.custom} onClick={() => set({ custom: !st.custom })}>
-                  <b>{t('tgMyPrice')}</b><small>$</small>
-                </button>
-              </div>
-              {st.custom && (
-                <>
-                  <div className="tg5-inline">
-                    <input type="number" min="0" step="any" inputMode="decimal" autoFocus
-                      className={`tg5-input${priceTooLow ? ' bad' : ''}`} placeholder={t('stEgPrice')}
-                      value={st.price || ''} onChange={e => set({ price: e.target.value })} aria-label={t('dsTargetPriceUsd')} />
-                    <button type="button" className="dvx-btn" disabled={!(myPrice > 0) || priceTooLow || !canAdd} onClick={() => lineUp(myPrice)}>
-                      {t('tgAdd')}
-                    </button>
-                  </div>
-                  {priceTooLow && <small className="tg5-err">{t('stTooLow')(money(currentPrice))}</small>}
-                  {myPrice > currentPrice && (
-                    <>
-                      <small className="tg5-hint">{t('stSellQty')(parseFloat(addQty.toFixed(6)), sym)}{t('stProceedsPart')(money(addQty * myPrice))}</small>
-                      <TargetRealityCheck coinId={h.coin_id} coinSymbol={h.coin_symbol} coinName={h.coin_name}
-                        currentPrice={currentPrice} targetPrice={myPrice} assetClass={categorizeAsset(h)} />
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-          </>
-        ) : (
-          <p className="tg3-note">{t('tgFullyPlanned')}</p>
-        )}
-
-        <div className="tg6-confirm">
-          <button type="button" className="dvx-btn" onClick={() => cancelAdd(h)}>{t('cancel')}</button>
-          <button type="button" className="dvx-btn dvx-btn-primary" disabled={!lined.length || saving} onClick={() => saveDrafts(h)}>
-            {lined.length ? t('tgConfirmSave')(lined.length) : t('tgLineUpFirst')}
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   function openAdd(h) {
     setAddFor(h.coin_id)
     setSort('asset')
-    setPick(null)
-    setAdding(prev => prev[h.coin_id] ? prev : { ...prev, [h.coin_id]: { price: '', amt: 1 } })
     track('target_add_open', { planned: (coinTargets[h.coin_id]?.targets || []).length > 0 })
   }
   if (targetable.length === 0) {
@@ -2909,105 +2717,10 @@ export function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onT
           </div>
           {sort === 'asset' ? (
             <div className="tg6-groups">
-              {targetable.filter(h => (coinTargets[h.coin_id]?.targets || []).length || addFor === h.coin_id).map(h => {
-                const items = all.filter(x => x.h.coin_id === h.coin_id).sort((p1, p2) => p1.tg.price - p2.tg.price)
-                const lined = drafts[h.coin_id] || []
-                const sym = h.coin_symbol?.toUpperCase()
-                const plannedQty = items.reduce((s2, x) => s2 + x.sellQty, 0)
-                const plannedPct = h.amount > 0 ? Math.min(100, (plannedQty / h.amount) * 100) : 0
-                const left = Math.max(0, h.amount - plannedQty)
-                const roomLeft = left > h.amount * 0.005
-                const sum = items.reduce((s2, x) => s2 + x.proceeds, 0) + lined.reduce((s2, d) => s2 + d.p * d.q, 0)
-                const editing = addFor === h.coin_id
-                const open = items.find(x => pick === `${h.coin_id}:${x.tg.id}`)
-                const openIdx = open ? items.indexOf(open) : -1
-                return (
-                  <section key={h.coin_id} className={`tg6-card${editing ? ' is-editing' : ''}`} aria-label={sym}>
-                    <div className="tg4-head">
-                      <button type="button" className="tg4-asset" onClick={() => navigate(`/asset/${encodeURIComponent(h.coin_id)}`)}>
-                        <CoinLogo coinId={h.coin_id} symbol={h.coin_symbol} image={h.coin_image} size={38} className="dvx-holding-icon" />
-                        <span className="tg4-asset-n">
-                          <b>{sym}</b>
-                          <small>{t('tgNow')} {h.price > 0 ? money(h.price) : '-'} · {t('stHeld')(Number(h.amount).toLocaleString(undefined, { maximumFractionDigits: 6 }))}</small>
-                        </span>
-                      </button>
-                      <span className="tg4-sum"><small>{t('tgIfAllHit')}</small><b>{money(sum)}</b></span>
-                    </div>
-
-                    <div className="tg6-grid">
-                      {[...items.map((x, k) => ({ x, k, p: x.tg.price })), ...lined.map(d => ({ d, p: d.p }))].sort((u, v) => u.p - v.p).map(({ x, k, d }) => {
-                        if (d) return (
-                          <button key={d.key} type="button" className="tg6-tile is-new" title={t('tgTapToRemove')}
-                            aria-label={`${t('tgNew')} ${money(d.p)}. ${t('tgTapToRemove')}`}
-                            onClick={() => setDrafts(prev => ({ ...prev, [h.coin_id]: (prev[h.coin_id] || []).filter(y => y.key !== d.key) }))}>
-                            <em>{t('tgNew')} ✕</em>
-                            <b>{money(d.p)}</b>
-                            <span className="tg6-away">{h.price > 0 ? `+${(((d.p - h.price) / h.price) * 100).toFixed(0)}%` : ''}</span>
-                            <small>{money(d.p * d.q)}</small>
-                          </button>
-                        )
-                        const key = `${h.coin_id}:${x.tg.id}`
-                        const on = pick === key
-                        return (
-                          <button key={x.tg.id} type="button" aria-pressed={on} aria-label={t('tgAt')(sym, money(x.tg.price))}
-                            className={`tg6-tile${on ? ' on' : ''}${x.reached ? ' is-hit' : ''}`}
-                            style={{ '--heat': (0.1 + (x.progress / 100) * 0.5).toFixed(2) }}
-                            onClick={() => setPick(on ? null : key)}>
-                            <em>T{k + 1}</em>
-                            <b>{money(x.tg.price)}</b>
-                            <span className="tg6-away">{x.reached ? `✓ ${t('tgReached')}` : `+${x.away.toFixed(0)}%`}</span>
-                            <small>{money(x.proceeds)}</small>
-                          </button>
-                        )
-                      })}
-                      {!editing && roomLeft && (
-                        <button type="button" className="tg6-tile is-add" onClick={() => openAdd(h)}>
-                          <b>+</b><small>{t('stAddTarget').replace(/^\+\s*/, '')}</small>
-                        </button>
-                      )}
-                    </div>
-
-                    {open && !editing && (
-                      <div className="tg6-detail">
-                        <div className="tg6-detail-h">
-                          <b>{sym} · T{openIdx + 1} · {money(open.tg.price)}</b>
-                          {!open.reached && (
-                            <TargetRealityCheck compact coinId={h.coin_id} coinSymbol={h.coin_symbol} coinName={h.coin_name}
-                              currentPrice={h.price} targetPrice={open.tg.price} assetClass={categorizeAsset(h)} />
-                          )}
-                        </div>
-                        <div className="tg2-plan-bar"><i style={{ width: `${open.progress}%` }} /></div>
-                        <div className="tg6-stats">
-                          <span><small>{t('tgSellL')}</small><b>{open.tg.quantity == null ? t('tgAll') : fmtQty(open.sellQty)} {sym} ({open.sellPct.toFixed(0)}%)</b></span>
-                          <span><small>{t('tgGetL')}</small><b className="tg2-up">{money(open.proceeds)}</b></span>
-                          <span><small>{t('tgAwayL')}</small><b>{open.reached ? `✓ ${t('tgReached')}` : `+${open.away.toFixed(1)}%`}</b></span>
-                        </div>
-                        <div className="tg6-actions">
-                          {!open.reached && (() => {
-                            const alarmOn = alarmKeys.has(`${h.coin_id}@${Number(open.tg.price)}`)
-                            return (
-                              <button type="button" className={`tg6-act${alarmOn ? ' on' : ''}`} aria-pressed={alarmOn} onClick={() => toggleAlarm(open)}>
-                                {alarmOn ? `✓ ${t('tgAlarm')}` : `+ ${t('tgAlarm')}`}
-                              </button>
-                            )
-                          })()}
-                          <button type="button" className="tg6-act is-del" onClick={() => removeTarget(h.coin_id, open.tg.id)}>{t('atRemoveTarget')}</button>
-                        </div>
-                      </div>
-                    )}
-
-                    {editing ? renderAddForm(h) : (
-                      <div className="tg4-foot">
-                        <div className="tg2-plan-bar"><i style={{ width: `${plannedPct}%` }} /></div>
-                        <div className="tg4-foot-row">
-                          <span>{t('tgPlanned')(plannedPct.toFixed(0), parseFloat(left.toFixed(6)), sym)}</span>
-                          {!roomLeft && <span className="tg2-full">{t('tgFullyPlanned')}</span>}
-                        </div>
-                      </div>
-                    )}
-                  </section>
-                )
-              })}
+              {targetable.filter(h => (coinTargets[h.coin_id]?.targets || []).length || addFor === h.coin_id).map(h => (
+                <TargetCard key={h.coin_id} h={h} plan={coinTargets[h.coin_id]?.targets || []} onChange={onTargetsChange}
+                  editing={addFor === h.coin_id} onEditingChange={(on) => setAddFor(on ? h.coin_id : (addFor === h.coin_id ? null : addFor))} />
+              ))}
             </div>
           ) : (
           <ol className="tg3-list">
@@ -3056,25 +2769,20 @@ export function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onT
       )}
 
       {/* New target, for any asset; unplanned ones as chips (T3) */}
+      {unplanned.length > 0 && (
       <div className="tg3-new">
         {all.length > 0 && <div className="tg3-sub">{t('tgAddAnother')}</div>}
         <div className="tg3-chips">
-          {(unplanned.length ? unplanned : targetable).map(h => (
-            <button key={h.coin_id} type="button" className={`tg3-chip${addFor === h.coin_id ? ' on' : ''}`} onClick={() => openAdd(h)}>
-              + {h.coin_symbol?.toUpperCase()}
+          {unplanned.map(h => (
+            <button key={h.coin_id} type="button" className={`tg3-chip tg3-chip-logo${addFor === h.coin_id ? ' on' : ''}`} onClick={() => openAdd(h)}>
+              <span aria-hidden="true">+</span>
+              <CoinLogo coinId={h.coin_id} symbol={h.coin_symbol} image={h.coin_image} size={22} className="tg3-chip-ic" />
+              <span>{h.coin_symbol?.toUpperCase()}</span>
             </button>
           ))}
-          {unplanned.length > 0 && unplanned.length < targetable.length && (
-            <select className="tg3-chip tg3-more" value="" aria-label={t('tgAddToPlanned')}
-              onChange={e => { const h = targetable.find(x => x.coin_id === e.target.value); if (h) openAdd(h) }}>
-              <option value="">{t('tgAddToPlanned')}</option>
-              {targetable.filter(h => (coinTargets[h.coin_id]?.targets || []).length).map(h => (
-                <option key={h.coin_id} value={h.coin_id}>{h.coin_symbol?.toUpperCase()}</option>
-              ))}
-            </select>
-          )}
         </div>
       </div>
+      )}
 
     </div>
   )
