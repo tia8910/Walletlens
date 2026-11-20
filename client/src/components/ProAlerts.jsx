@@ -3,7 +3,8 @@ import { api } from '../api'
 import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
 import CoinLogo from './CoinLogo'
-import { deliverAlarm, getAlarmPrefs, setAlarmPrefs } from '../alarm'
+import { deliverAlarm, getAlarmPrefs } from '../alarm'
+import AlarmSettings from './AlarmSettings'
 import {
   loadProAlerts, saveProAlerts, makeRule, rearm, portfolioSummary, alarmKind, alarmTone,
   SIGNAL_EVENTS, GOAL_KINDS, SIGNAL_FRAMES, MAX_PRO_ALERTS,
@@ -39,8 +40,7 @@ export default function ProAlerts({ enriched = [], prices = {} }) {
   const [kind, setKind] = useState('value_above')
   const [weightCoin, setWeightCoin] = useState('')
   const [target, setTarget] = useState('')
-  const [prefs, setPrefs] = useState(getAlarmPrefs)
-  const setPref = (k, v) => { setPrefs(setAlarmPrefs({ [k]: v })); track('alarm_pref', { [k]: v }) }
+  const [alarmOn, setAlarmOn] = useState(() => getAlarmPrefs().fullscreen)
 
   useEffect(() => {
     const onChange = () => setRules(loadProAlerts())
@@ -80,14 +80,6 @@ export default function ProAlerts({ enriched = [], prices = {} }) {
     track('pro_alert_test', { kind: k })
   }
 
-  const toggle = (k, label, sub, disabled) => (
-    <div className={`pra-set${disabled ? ' off' : ''}`}>
-      <div className="pra-set-t"><b>{label}</b><small>{sub}</small></div>
-      <button type="button" role="switch" aria-checked={!!prefs[k]} aria-label={label} disabled={disabled}
-        className={`pra-switch${prefs[k] ? ' on' : ''}`} onClick={() => setPref(k, !prefs[k])}><span /></button>
-    </div>
-  )
-
   const nowHint = (() => {
     if (mode !== 'goal' || !summary.complete) return null
     if (kind.startsWith('value')) return money(summary.total)
@@ -98,11 +90,7 @@ export default function ProAlerts({ enriched = [], prices = {} }) {
 
   return (
     <div className="pra">
-      <section className="pra-form pra-settings" aria-label={t('alSettings')}>
-        <h4 className="pra-h">{t('alSettings')}</h4>
-        {toggle('fullscreen', t('alFullscreen'), t('alFullscreenSub'))}
-        {toggle('sound', t('alSound'), t('alSoundSub'), !prefs.fullscreen)}
-      </section>
+      <AlarmSettings onChange={p => setAlarmOn(p.fullscreen)} />
 
       <form className="pra-form" onSubmit={create}>
         <div className="pra-seg" role="tablist" aria-label={t('alTab')}>
@@ -169,7 +157,7 @@ export default function ProAlerts({ enriched = [], prices = {} }) {
 
         <div className="pra-actions">
           <button type="submit" className="pra-create" disabled={full || (mode === 'signal' && !assets.length) || (mode === 'goal' && !(parseFloat(target) > 0))}>{t('alCreate')}</button>
-          <button type="button" className="pra-test" onClick={test} disabled={!prefs.fullscreen}>{t('alTest')}</button>
+          <button type="button" className="pra-test" onClick={test} disabled={!alarmOn}>{t('alTest')}</button>
         </div>
         {full && <p className="pra-note">{t('alLimit')}</p>}
         <p className="pra-note">{t('alHowItWorks')}</p>

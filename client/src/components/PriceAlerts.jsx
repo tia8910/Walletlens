@@ -4,6 +4,8 @@ import { syncAlerts } from '../push'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
 import { requestNotifyPermission, canNotify } from '../localNotify'
+import AlarmSettings from './AlarmSettings'
+import { deliverAlarm } from '../alarm'
 
 const STORAGE_KEY = 'walletlens_price_alerts'
 
@@ -155,6 +157,12 @@ export default function PriceAlerts({ enriched, prices }) {
           {showForm ? '✕ Cancel' : '+ New Alert'}
         </button>
       </div>
+
+      {/* Price alerts ring the WalletLens alarm, like signal and goal alerts */}
+      <AlarmSettings onTest={() => {
+        deliverAlarm({ id: `test-${Date.now()}`, kind: 'price', tone: 'up', title: t('alTestTitle'), body: t('alTestBody') })
+        track('price_alert_test')
+      }} />
 
       {/* Add alert form */}
       {showForm && (
