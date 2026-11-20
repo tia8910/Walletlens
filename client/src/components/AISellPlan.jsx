@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Icon from './Icon'
 import { track, trackAI } from '../analytics'
 import { api } from '../api'
 import { buildTASellPlan } from '../technicals'
 import { isStablecoin } from '../stablecoins'
 import { useLanguage } from '../LanguageContext'
+import { setStopAlarm, stopAlarmKeys } from '../targetAlarms'
 
 // Fallback rule-based plan (P&L + concentration + 24h momentum) — used when no
 // technical analysis is available for the holding (non-crypto, or too little
@@ -111,7 +112,7 @@ function generateSellPlan(enriched, prices, technicals = {}) {
     if (isNonCryptoAsset && price === 0) {
       const investedVal = h.total_invested || 0
       return {
-        sym, pnlPct: 0, weight: totalValue > 0 ? (investedVal / totalValue) * 100 : 0,
+        sym, coinId: h.coin_id, amount: h.amount, pnlPct: 0, weight: totalValue > 0 ? (investedVal / totalValue) * 100 : 0,
         value: investedVal, price: 0,
         action: 'MANUALLY TRACKED', urgency: 'low', ta: null,
         reason: `${sym} is a non-crypto asset without live price feed. Value reflects your recorded cost basis.`,
@@ -129,7 +130,7 @@ function generateSellPlan(enriched, prices, technicals = {}) {
       ? buildTASellPlan(ta, { currentPrice: price, avgCost, pnlPct, weight })
       : ruleBasedPlan(h, price, value, pnlPct, weight, chg24)
 
-    return { sym, pnlPct, weight, value, price, ta, ...plan }
+    return { sym, coinId: h.coin_id, amount: h.amount, pnlPct, weight, value, price, ta, ...plan }
   }).sort((a, b) => {
     const order = { 'high': 0, 'medium': 1, 'low': 2, 'manually tracked': 3 }
     return order[a.urgency] - order[b.urgency]
@@ -182,33 +183,101 @@ function TAStrip({ ta }) {
   )
 }
 
-export default function AISellPlan({ enriched = [], prices = {} }) {
+// Turns a plan row into sized, actionable levels: how much to sell at each
+// price and what it brings in, whether it is already one of your targets,
+// how your own targets sit against the mapped resistance, and how many of
+// the sell signals agree. Everything here is computed from the row itself,
+// the holding and your saved targets: nothing is guessed.
+export function smartRow(row, plan = []) {
+  const cur = row.price
+  const plannedQty = plan.reduce((s, tg) => s + (tg.quantity == null ? row.amount : Math.min(tg.quantity, row.amount)), 0)
+  const left = Math.max(0, (row.amount || 0) - plannedQty)
+  const near = (a, b) => a > 0 && b > 0 && Math.abs(a - b) / b <= 0.03
+  const levels = (row.targets || []).map((tg) => {
+    const pct = Number((/Sell (\d+)%/.exec(tg.label) || [])[1]) || null
+    const kind = /stop/i.test(tg.label) ? 'stop' : pct ? 'sell' : /^Add|DCA/i.test(tg.label) ? 'buy' : 'info'
+    const price = tg.price != null ? Number(tg.price) : null
+    const qty = kind === 'sell' && pct ? (row.amount || 0) * pct / 100 : null
+    const r = Number((/R(\d)/.exec(tg.label) || [])[1]) || null
+    const mine = price ? plan.find(x => near(Number(x.price), price)) : null
+    return {
+      ...tg, kind, pct, price, qty, r,
+      proceeds: qty != null && price ? qty * price : null,
+      // A target has to sit above today's price to be one.
+      addable: kind === 'sell' && price > 0 && cur > 0 && price > cur * 1.005 && !mine,
+      mine: !!mine,
+      // A stop already above today's price has been broken: say so instead
+      // of offering an alarm that would ring at once.
+      broken: kind === 'stop' && price > 0 && cur > 0 && price >= cur,
+    }
+  })
+  const res = levels.filter(l => l.r && l.price).sort((a, b) => a.price - b.price)
+  const yours = plan.slice().sort((a, b) => a.price - b.price).map(tg => {
+    const p = Number(tg.price)
+    let where = 'free'
+    if (res.length) {
+      const hit = res.find(l => near(l.price, p))
+      if (hit) where = `R${hit.r}`
+      else if (p > res[res.length - 1].price * 1.03) where = 'above'
+      else if (p < res[0].price) where = 'below'
+      else where = 'between'
+    }
+    return { price: p, quantity: tg.quantity, where }
+  })
+  const ta = row.ta
+  const signals = ta ? [
+    ['rsi', ta.rsiState === 'overbought'],
+    ['bb', !!(ta.bb && ta.bb.pctB > 1)],
+    ['macd', !!(ta.macd && ta.macd.hist < 0)],
+    ['trend', ta.trend === 'downtrend'],
+  ] : null
+  const sells = levels.filter(l => l.kind === 'sell' && l.proceeds)
+  return {
+    levels, left, yours, signals,
+    sellCount: signals ? signals.filter(([, on]) => on).length : null,
+    planQty: sells.reduce((s, l) => s + l.qty, 0),
+    planValue: sells.reduce((s, l) => s + l.proceeds, 0),
+  }
+}
+
+const money = (v) => '$' + (v >= 1000 ? Math.round(v).toLocaleString() : v >= 1 ? v.toFixed(2) : (+v.toPrecision(3)).toString())
+const qtyFmt = (v) => (+v.toPrecision(6)).toLocaleString(undefined, { maximumFractionDigits: 6 })
+
+export default function AISellPlan({ enriched = [], prices = {}, coinTargets = {}, onTargetsChange }) {
   const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [technicals, setTechnicals] = useState({})
   const [loading, setLoading] = useState(false)
+  const [confirmFor, setConfirmFor] = useState(null) // the asset whose "add all" is waiting for confirm
+  const [busy, setBusy] = useState(false)
+  const [stops, setStops] = useState(() => stopAlarmKeys())
+  useEffect(() => {
+    const on = () => setStops(stopAlarmKeys())
+    window.addEventListener('wl-alerts-changed', on)
+    return () => window.removeEventListener('wl-alerts-changed', on)
+  }, [])
 
   const plan = useMemo(
     () => open ? generateSellPlan(enriched, prices, technicals) : null,
     [open, enriched, prices, technicals]
   )
+  const smart = useMemo(() => {
+    if (!plan) return null
+    const rows = plan.rows.map(row => ({ row, s: smartRow(row, coinTargets[row.coinId]?.targets || []) }))
+    const moves = rows.filter(({ row }) => row.urgency === 'high' || row.urgency === 'medium').slice(0, 3)
+    const value = rows.reduce((s, { s: x }) => s + x.planValue, 0)
+    return { rows, moves, value, assets: rows.filter(({ s: x }) => x.planValue > 0).length }
+  }, [plan, coinTargets])
 
   async function generate() {
     if (!enriched.length || loading) return
     track('ai_sell_plan_generate')
-    // assetCount removed. trackAI never forwarded it — the helper destructures
-    // only action and planGenerated — so this was a call site that read as if
-    // it sent the portfolio size while sending nothing. Harmless, and exactly
-    // the kind of thing someone later "fixes" by widening the helper.
     trackAI({ action: 'sell_plan_generate', planGenerated: true })
     setLoading(true)
     try {
       const ids = enriched.map(h => h.coin_id).filter(Boolean)
       const ta = await api.getBulkTechnicals(ids)
       setTechnicals(ta || {})
-      const withTA = Object.values(ta || {}).filter(Boolean).length
-      // assetCount and taCovered are both portfolio sizes; neither was
-      // forwarded, and both are removed rather than left looking live.
       trackAI({ action: 'sell_plan_technicals' })
     } catch {
       setTechnicals({})
@@ -218,119 +287,161 @@ export default function AISellPlan({ enriched = [], prices = {} }) {
     }
   }
 
+  // Adds sell levels as targets, never more than what is not planned yet.
+  async function addLevels(row, s, levels) {
+    if (busy) return
+    setBusy(true)
+    try {
+      let left = s.left
+      let added = 0
+      for (const l of levels) {
+        const q = Math.min(l.qty, left)
+        if (!(q > 0)) break
+        await api.addCoinTarget(row.coinId, { price: l.price, quantity: +q.toPrecision(10) })
+        left -= q
+        added++
+      }
+      if (added) track('sell_plan_to_targets', { count: added })
+      setConfirmFor(null)
+      onTargetsChange?.()
+    } finally { setBusy(false) }
+  }
+
+  function toggleStop(row, l) {
+    const key = `${row.coinId}@${Number(l.price)}`
+    const on = !stops.has(key)
+    setStopAlarm({ coinId: row.coinId, symbol: row.sym, price: l.price }, on)
+    setStops(stopAlarmKeys())
+    track('sell_plan_stop_alarm', { on })
+  }
+
   if (!enriched.length) return null
 
   return (
-    <div className="glass-card" style={{ marginTop: '1rem' }}>
-      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'1rem' }}>
+    <div className="glass-card sp2" style={{ marginTop: '1rem' }}>
+      <div className="sp2-head">
         <div>
-          <h3 style={{ margin:0, fontSize:'1rem', display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="target" size={17} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('spTitle')}</h3>
-          <p className="muted" style={{ margin:'0.25rem 0 0', fontSize:'0.8rem' }}>{t('spDesc')}</p>
+          <h3><Icon name="target" size={17} style={{ color: 'var(--g-ink)' }} />{t('spTitle')}</h3>
+          <p className="muted">{t('spDesc')}</p>
         </div>
-        {!open && (
-          <button
-            onClick={generate}
-            disabled={loading}
-            onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)'; e.currentTarget.style.filter = 'brightness(1.12)' } }}
-            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.filter = '' }}
-            style={{
-              flexShrink:0, position:'relative', overflow:'hidden',
-              display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'0.45rem',
-              padding:'0.55rem 1.15rem', borderRadius:10,
-              fontWeight:800, fontSize:'0.85rem', whiteSpace:'nowrap',
-              cursor: loading ? 'wait' : 'pointer',
-              color:'#ffffff',
-              background:'linear-gradient(135deg, rgba(4,120,87,0.85), rgba(16,185,129,1))',
-              border:'1.5px solid rgba(4,120,87,0.9)',
-              boxShadow:'0 4px 14px rgba(16,185,129,0.5), 0 0 10px rgba(16,185,129,0.35)',
-              transition:'transform 0.18s ease, filter 0.18s ease',
-              animation: loading ? 'none' : 'sp-btn-glow 2.4s ease-in-out infinite',
-              opacity: loading ? 0.75 : 1,
-            }}
-          >
-            <style>{`
-              @keyframes sp-btn-glow {
-                0%,100% { box-shadow: 0 4px 12px rgba(16,185,129,0.4), 0 0 8px rgba(16,185,129,0.3); }
-                50%     { box-shadow: 0 4px 20px rgba(16,185,129,0.7), 0 0 18px rgba(16,185,129,0.6); }
-              }
-              @keyframes sp-btn-shimmer {
-                0%,55%  { transform: translateX(-130%) skewX(-15deg); opacity:0; }
-                60%     { opacity:1; }
-                80%,100% { transform: translateX(230%) skewX(-15deg); opacity:0; }
-              }
-            `}</style>
-            {!loading && (
-              <span aria-hidden style={{
-                position:'absolute', inset:0, pointerEvents:'none',
-                background:'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.32) 50%, transparent 70%)',
-                animation:'sp-btn-shimmer 3.5s ease-in-out infinite',
-              }} />
-            )}
-            <span style={{ position:'relative' }}>{loading ? <><Icon name="hourglass" size={14} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('spAnalyzing')}</> : <><Icon name="sparkles" size={14} style={{ verticalAlign:'-2px', marginRight:'0.3em' }} />{t('spGenerate')}</>}</span>
+        {!open ? (
+          <button type="button" className="sp2-go" onClick={generate} disabled={loading}>
+            {loading
+              ? <><Icon name="hourglass" size={14} />{t('spAnalyzing')}</>
+              : <><Icon name="sparkles" size={14} />{t('spGenerate')}</>}
           </button>
-        )}
-        {open && (
-          <button onClick={() => setOpen(false)} style={{
-            background:'var(--surface-1)', color:'var(--text-muted)',
-            border:'none', borderRadius:8, padding:'0.4rem 0.8rem',
-            fontSize:'0.8rem', cursor:'pointer', flexShrink:0,
-          }}>✕ Close</button>
+        ) : (
+          <button type="button" className="sp2-close" onClick={() => setOpen(false)}>✕ {t('spClose')}</button>
         )}
       </div>
 
-      {open && plan && (
-        <div style={{ marginTop:'1rem' }}>
-          {/* Summary */}
-          <div style={{
-            background:'rgba(var(--g-rgb),0.06)', border:'1px solid rgba(var(--g-rgb),0.2)',
-            borderRadius:10, padding:'0.75rem 1rem', marginBottom:'1rem',
-            fontSize:'0.85rem', color:'var(--text)', lineHeight:1.6,
-          }}>
-            <Icon name="bar-chart" size={14} style={{ verticalAlign:'-2px', marginRight:'0.4em', color:'var(--text-muted)' }} />{plan.summary}
+      {open && plan && smart && (
+        <div className="sp2-body">
+          <div className="sp2-sum">
+            {smart.value > 0 && (
+              <div className="sp2-total"><b>{money(smart.value)}</b><span>{t('spIfLevelsFill')(smart.assets)}</span></div>
+            )}
+            <p>{plan.summary}</p>
+            {smart.moves.length > 0 && (
+              <div className="sp2-moves">
+                <span className="sp2-eyebrow">{t('spTopMoves')}</span>
+                <ol>
+                  {smart.moves.map(({ row, s }) => {
+                    const first = s.levels.find(l => l.kind === 'sell' && l.price) || s.levels.find(l => l.price)
+                    return (
+                      <li key={row.coinId}>
+                        <b>{row.sym}</b> <span className={`sp2-act u-${row.urgency}`}>{row.action}</span>
+                        {first && <span className="muted"> · {first.label} {first.price ? `@ ${money(first.price)}` : ''}</span>}
+                      </li>
+                    )
+                  })}
+                </ol>
+              </div>
+            )}
           </div>
 
-          {/* Per-coin rows */}
-          <div style={{ display:'flex', flexDirection:'column', gap:'0.75rem' }}>
-            {plan.rows.map(row => (
-              <div key={row.sym} style={{
-                background: URGENCY_BG[row.urgency],
-                border: `1px solid ${URGENCY_COLOR[row.urgency]}30`,
-                borderLeft: `3px solid ${URGENCY_COLOR[row.urgency]}`,
-                borderRadius:10, padding:'0.75rem 1rem',
-              }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.4rem' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
-                    <span style={{ fontWeight:700, fontSize:'0.95rem', color:'var(--text)' }}>{row.sym}</span>
-                    <span style={{
-                      background: URGENCY_COLOR[row.urgency] + '25',
-                      color: URGENCY_COLOR[row.urgency],
-                      borderRadius:6, padding:'0.1rem 0.5rem',
-                      fontSize:'0.72rem', fontWeight:700,
-                    }}>{row.action}</span>
-                  </div>
-                  <div style={{ textAlign:'right', fontSize:'0.8rem' }}>
-                    <span style={{ color: row.pnlPct >= 0 ? 'var(--g-ink)' : '#f87171', fontWeight:600 }}>
-                      {row.pnlPct >= 0 ? '+' : ''}{row.pnlPct.toFixed(1)}%
+          <div className="sp2-rows">
+            {smart.rows.map(({ row, s }) => {
+              const addable = s.levels.filter(l => l.addable)
+              return (
+                <section key={row.coinId || row.sym} className={`sp2-row u-${row.urgency.replace(' ', '-')}`}>
+                  <div className="sp2-row-h">
+                    <b>{row.sym}</b>
+                    <span className={`sp2-act u-${row.urgency.replace(' ', '-')}`}>{row.action}</span>
+                    <span className="sp2-pnl">
+                      <b className={row.pnlPct >= 0 ? 'up' : 'down'}>{row.pnlPct >= 0 ? '+' : ''}{row.pnlPct.toFixed(1)}%</b>
+                      <small className="muted">{t('spOfPortfolio')(row.weight.toFixed(1))}</small>
                     </span>
-                    <span className="muted" style={{ marginLeft:'0.4rem' }}>{row.weight.toFixed(1)}% portfolio</span>
                   </div>
-                </div>
-                {row.ta && <TAStrip ta={row.ta} />}
-                <p style={{ margin:'0 0 0.5rem', fontSize:'0.82rem', color:'var(--text-muted)' }}>{row.reason}</p>
-                <div style={{ display:'flex', flexDirection:'column', gap:'0.3rem' }}>
-                  {row.targets.map((t, i) => (
-                    <div key={i} style={{ display:'flex', alignItems:'baseline', gap:'0.5rem', fontSize:'0.8rem' }}>
-                      <span style={{ color: URGENCY_COLOR[row.urgency], fontWeight:700, flexShrink:0 }}>
-                        {['①','②','③','④','⑤'][i] || '•'}
+
+                  {row.ta && <TAStrip ta={row.ta} />}
+                  {s.signals && (
+                    <div className="sp2-signals" title={t('spSignalsHint')}>
+                      <span className="sp2-dots" aria-hidden="true">
+                        {s.signals.map(([k, on]) => <i key={k} className={on ? 'on' : ''} />)}
                       </span>
-                      <span style={{ color:'var(--text)', fontWeight:600 }}>{t.label}</span>
-                      {t.price && <span className="muted">@ ${t.price > 1 ? t.price.toLocaleString() : t.price}</span>}
-                      <span className="muted" style={{ marginLeft:'auto', fontSize:'0.75rem', textAlign:'right' }}>{t.note}</span>
+                      <span>{t('spSignals')(s.sellCount)}</span>
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+                  )}
+                  <p className="sp2-reason">{row.reason}</p>
+
+                  <ol className="sp2-levels">
+                    {s.levels.map((l, i) => {
+                      const stopOn = l.kind === 'stop' && stops.has(`${row.coinId}@${Number(l.price)}`)
+                      return (
+                        <li key={i} className={`sp2-lvl k-${l.kind}`}>
+                          <span className="sp2-n">{i + 1}</span>
+                          <span className="sp2-lvl-main">
+                            <b>{l.label}{l.price ? <span className="muted"> @ {money(l.price)}</span> : null}</b>
+                            <small className="muted">
+                              {l.qty != null && l.price ? <>{t('spSellGet')(`${qtyFmt(l.qty)} ${row.sym}`)} <b className="up">{money(l.proceeds)}</b> · </> : null}
+                              {l.broken ? <b className="down">{t('spBroken')}</b> : l.note}
+                            </small>
+                          </span>
+                          {l.mine && <span className="sp2-tag">✓ {t('spInTargets')}</span>}
+                          {l.addable && s.left > 0 && (
+                            <button type="button" className="sp2-btn" disabled={busy} onClick={() => addLevels(row, s, [l])}>+ {t('spTarget')}</button>
+                          )}
+                          {l.kind === 'stop' && l.price > 0 && l.price < row.price && (
+                            <button type="button" className={`sp2-btn${stopOn ? ' on' : ''}`} aria-pressed={stopOn} onClick={() => toggleStop(row, l)}>
+                              {stopOn ? `✓ ${t('spAlarm')}` : `+ ${t('spAlarm')}`}
+                            </button>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ol>
+
+                  {s.yours.length > 0 && (
+                    <div className="sp2-yours">
+                      <span className="sp2-eyebrow">{t('spYourTargets')}</span>
+                      {s.yours.map((y, i) => (
+                        <span key={i} className={`sp2-y w-${y.where.startsWith('R') ? 'r' : y.where}`}>
+                          {money(y.price)} · {y.where.startsWith('R') ? t('spMatches')(y.where) : t(`spWhere_${y.where}`)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {s.planValue > 0 && (
+                    <div className="sp2-foot">
+                      <span>{t('spPlanFor')(`${qtyFmt(s.planQty)} ${row.sym}`)} <b className="up">{money(s.planValue)}</b></span>
+                      {addable.length > 1 && s.left > 0 && (confirmFor === row.coinId ? (
+                        <span className="sp2-confirm">
+                          <button type="button" className="dvx-btn" onClick={() => setConfirmFor(null)}>{t('cancel')}</button>
+                          <button type="button" className="dvx-btn dvx-btn-primary" disabled={busy} onClick={() => addLevels(row, s, addable)}>
+                            {t('tgConfirmSave')(addable.length)}
+                          </button>
+                        </span>
+                      ) : (
+                        <button type="button" className="sp2-btn" onClick={() => setConfirmFor(row.coinId)}>{t('spAddAll')(addable.length)}</button>
+                      ))}
+                    </div>
+                  )}
+                  {s.left <= 0 && addable.length > 0 && <small className="muted">{t('spFullyPlanned')}</small>}
+                </section>
+              )
+            })}
           </div>
         </div>
       )}

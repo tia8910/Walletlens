@@ -10,6 +10,8 @@ import { useLanguage } from '../LanguageContext'
 // The alarm settings and the chart signal and portfolio goal alerts, the same
 // panel as Alerts > Signals & goals, so a signal can be set up where it is read.
 const ProAlerts = lazy(() => import('../components/ProAlerts'))
+// The Smart Sell Plan reads the same charts, so it lives here with them.
+const AISellPlan = lazy(() => import('../components/AISellPlan'))
 
 export default function Technicals() {
   // Records the discovery, so the feature tip for this page stops being
@@ -22,6 +24,8 @@ export default function Technicals() {
   const [portfolio, setPortfolio] = useState([])
   const [prices, setPrices] = useState({})
   const [loaded, setLoaded] = useState(false)
+  const [coinTargets, setCoinTargets] = useState({})
+  const loadTargets = () => api.getCoinTargets().then(ct => setCoinTargets(ct || {})).catch(() => {})
 
   useEffect(() => {
     track('technicals_page_view')
@@ -31,6 +35,7 @@ export default function Technicals() {
       try { p = (await api.getPortfolio()) || [] } catch {}
       if (!alive) return
       setPortfolio(p)
+      loadTargets()
       if (p.length) {
         const ids = p.map(h => h.coin_id).join(',')
         api.getPrices(ids).then(px => alive && setPrices(px || {})).catch(() => {})
@@ -78,6 +83,9 @@ export default function Technicals() {
         <p className="magic-hero-sub">{t('acSignalsDesc')}</p>
       </div>
       <TechChartPanel enriched={enriched} initialPick={location.state?.coinId || null} />
+      <Suspense fallback={null}>
+        <AISellPlan enriched={enriched} prices={prices} coinTargets={coinTargets} onTargetsChange={loadTargets} />
+      </Suspense>
       <section className="tn-signal-alerts" aria-labelledby="tn-signal-alerts-h" style={{ marginTop: '1.25rem' }}>
         <h2 id="tn-signal-alerts-h" style={{ display:'flex', alignItems:'center', gap:'0.4rem', fontSize:'1.05rem', margin:'0 0 0.75rem' }}>
           <Icon name="siren" size={18} /> <span>{t('alTab')}</span>

@@ -88,7 +88,6 @@ const SmartAlerts    = lazy(() => import('../components/SmartAlerts'))
 const RiskScanner    = lazy(() => import('../components/RiskScanner'))
 const TechChartPanel = lazy(() => import('../components/TechChartPanel'))
 const AIDecisionEngine = lazy(() => import('../components/AIDecisionEngine'))
-const AISellPlan     = lazy(() => import('../components/AISellPlan'))
 const WeeklyReport   = lazy(() => import('../components/WeeklyReport'))
 const Watchlist      = lazy(() => import('../components/Watchlist'))
 const InstallExtension = lazy(() => import('../components/InstallExtension'))
@@ -451,7 +450,7 @@ function computeAI(enriched, prices, transactions, totalValue, t) {
 
 // ── Portfolio Analysis panel ─────────────────────────────────────────────────────
 function AIPanel({ enriched, prices, transactions, totalValue, isDemo, pricesLoading }) {
-  // Smart Sell Plan (AISellPlan) now lives in the Targets tab.
+  // Smart Sell Plan (AISellPlan) now lives on the Signals page.
   const { t } = useLanguage()
   const ai = useMemo(
     () => computeAI(enriched, prices, transactions, totalValue, t),
@@ -3077,10 +3076,6 @@ export function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onT
         </div>
       </div>
 
-      {/* Smart Sell Plan: technical-analysis exit strategy */}
-      <Suspense fallback={<TabFallback />}>
-        <AISellPlan enriched={enriched} prices={prices} />
-      </Suspense>
     </div>
   )
 }
