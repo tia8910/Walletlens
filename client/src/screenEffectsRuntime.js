@@ -44,12 +44,23 @@ export function setEffectSettings(patch) {
  *
  * @returns {{ effect: string, payload: object }|null}
  */
-export function observe({ totalValue, invested = null, changePct, holdings, blocked = false, extra = null, now = Date.now() } = {}) {
+// The all-time high is each wallet's own: its profit against its own best
+// profit. "all" is the whole portfolio. The day's markers (first open, the
+// rocket) belong to the whole portfolio only.
+const ATH_KEYS = ['athP', 'athTs', 'athPending', 'athPendingTs']
+const pickAth = (o) => Object.fromEntries(ATH_KEYS.map(k => [k, o?.[k]]))
+
+export function observe({ totalValue, invested = null, changePct, holdings, blocked = false, extra = null, walletId = 'all', now = Date.now() } = {}) {
   const settings = effectSettings()
   if (!settings.enabled) return null
 
-  let stored
-  try { stored = readJson(STATE_KEY, EMPTY_STATE) } catch { stored = { ...EMPTY_STATE } }
+  let saved
+  try { saved = readJson(STATE_KEY, EMPTY_STATE) } catch { saved = { ...EMPTY_STATE } }
+  const wallet = String(walletId || 'all')
+  const highs = { ...(saved.highs || {}) }
+  // Before highs were kept per wallet, the one high was the whole portfolio's.
+  if (!highs.all && saved.athP != null) highs.all = pickAth(saved)
+  const stored = { ...saved, ...pickAth(highs[wallet] || { athP: null, athTs: 0, athPending: 0, athPendingTs: 0 }) }
 
   const tzOffsetMin = (() => {
     try { return -new Date().getTimezoneOffset() } catch { return 0 }
@@ -62,6 +73,7 @@ export function observe({ totalValue, invested = null, changePct, holdings, bloc
     invested,
     changePct,
     blocked,
+    athOnly: wallet !== 'all',
     dailyReturns: (() => { try { return dailyReturnsFromSnapshots(loadSnapshots(), tzOffsetMin, now) } catch { return [] } })(),
     leader: pickLeader(holdings),
     state: stored,
@@ -70,7 +82,9 @@ export function observe({ totalValue, invested = null, changePct, holdings, bloc
   // Written whether or not anything fired. The day marker and the running high
   // are what stop the same occasion being celebrated twice, so they have to
   // persist on the quiet path too.
-  writeJson(STATE_KEY, nextState)
+  highs[wallet] = pickAth(nextState)
+  const { athP, athTs, athPending, athPendingTs, ...dayState } = nextState
+  writeJson(STATE_KEY, { ...dayState, highs })
 
   if (!effect) return null
   // The soul line rides along so the overlay can say why it is playing.

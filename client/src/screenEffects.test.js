@@ -114,11 +114,14 @@ describe('the rocket', () => {
 describe('the all-time high', () => {
   const seen = { ...EMPTY_STATE, athP: 200, athTs: noon - 10 * DAY, day: dayKey(noon, 0) }
 
-  it('needs two updates in a row above the old high', () => {
+  it('needs two updates in a row above the old high, minutes apart', () => {
     const one = decide({ totalValue: 1300, invested: 1000, state: seen })
     expect(one.effect).toBeNull()
     expect(one.nextState.athPending).toBe(1)
-    const two = decide({ totalValue: 1300, invested: 1000, state: one.nextState })
+    // The same numbers rendered again a moment later are not a second update.
+    const again = decide({ now: noon + 1000, totalValue: 1300, invested: 1000, state: one.nextState })
+    expect(again.effect).toBeNull()
+    const two = decide({ now: noon + 3 * 60_000, totalValue: 1300, invested: 1000, state: again.nextState })
     expect(two.effect).toBe(ATH)
     expect(two.payload.gain).toBe(100)
     expect(two.payload.since).toBe(noon - 10 * DAY)
@@ -127,20 +130,20 @@ describe('the all-time high', () => {
 
   it('starts again when the value drops back between updates', () => {
     const one = decide({ totalValue: 1300, invested: 1000, state: seen })
-    const dip = decide({ totalValue: 1100, invested: 1000, state: one.nextState })
+    const dip = decide({ now: noon + 60_000, totalValue: 1100, invested: 1000, state: one.nextState })
     expect(dip.nextState.athPending).toBe(0)
-    expect(decide({ totalValue: 1300, invested: 1000, state: dip.nextState }).effect).toBeNull()
+    expect(decide({ now: noon + 5 * 60_000, totalValue: 1300, invested: 1000, state: dip.nextState }).effect).toBeNull()
   })
 
   it('ignores a rise smaller than 0.5% of the portfolio', () => {
     const one = decide({ totalValue: 1204, invested: 1000, state: seen })
-    expect(decide({ totalValue: 1204, invested: 1000, state: one.nextState }).effect).toBeNull()
+    expect(decide({ now: noon + 5 * 60_000, totalValue: 1204, invested: 1000, state: one.nextState }).effect).toBeNull()
   })
 
   it('does not count money you added', () => {
     // Value jumps by a deposit; profit stays at the old high.
     const one = decide({ totalValue: 5200, invested: 5000, state: seen })
-    expect(decide({ totalValue: 5200, invested: 5000, state: one.nextState }).effect).toBeNull()
+    expect(decide({ now: noon + 5 * 60_000, totalValue: 5200, invested: 5000, state: one.nextState }).effect).toBeNull()
   })
 
   it('arms quietly on a device that has never stored a high', () => {
@@ -211,5 +214,45 @@ describe('pickLeader', () => {
 
   it('picks the least-bad day when everything is down', () => {
     expect(pickLeader([h('btc', -9), h('eth', -2)]).symbol).toBe('ETH')
+  })
+})
+
+describe('each wallet has its own profit high', () => {
+  it('a wallet on screen only checks its own high, and leaves the day alone', () => {
+    const state = { ...EMPTY_STATE, athP: 100, athTs: noon - DAY, day: '' }
+    const r = decide({ athOnly: true, totalValue: 1300, invested: 1000, changePct: 9, state })
+    expect(r.effect).toBeNull()                 // no burst, no rocket for one wallet
+    expect(r.nextState.day).toBe('')            // the day's first open is not spent
+    expect(r.nextState.athPending).toBe(1)
+    const two = decide({ now: noon + 3 * 60_000, athOnly: true, totalValue: 1300, invested: 1000, state: r.nextState })
+    expect(two.effect).toBe(ATH)
+    expect(two.payload.gain).toBe(200)
+  })
+
+  it('the runtime keeps a separate high per wallet', async () => {
+    const mem = {}
+    globalThis.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v) }, removeItem: k => { delete mem[k] } }
+    const { observe } = await import('./screenEffectsRuntime.js')
+    const t0 = noon
+    observe({ now: t0, totalValue: 2000, invested: 1000, changePct: 1, holdings: [], walletId: 'all' })
+    observe({ now: t0 + 1000, totalValue: 300, invested: 250, changePct: 1, holdings: [], walletId: 'w1' })
+    const st = JSON.parse(mem.wl_fx_state)
+    expect(st.highs.all.athP).toBe(1000)
+    expect(st.highs.w1.athP).toBe(50)
+    // w1 at its own new high does not touch the whole portfolio's
+    observe({ now: t0 + 2000, totalValue: 400, invested: 250, changePct: 1, holdings: [], walletId: 'w1' })
+    const r = observe({ now: t0 + 5 * 60_000, totalValue: 400, invested: 250, changePct: 1, holdings: [], walletId: 'w1' })
+    expect(r?.effect).toBe(ATH)
+    expect(JSON.parse(mem.wl_fx_state).highs.all.athP).toBe(1000)
+  })
+})
+
+describe('the dashboard says which wallet is on screen', () => {
+  it('passes the selected wallet to the effects', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join, dirname } = await import('node:path')
+    const { fileURLToPath } = await import('node:url')
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'pages/Dashboard.jsx'), 'utf8')
+    expect(src).toMatch(/observe\(\{[^\n]*walletId: selectedWalletId/)
   })
 })

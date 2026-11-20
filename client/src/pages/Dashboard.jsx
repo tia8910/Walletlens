@@ -3658,7 +3658,9 @@ export default function Dashboard() {
     const blocked = hidden || isDemo || pricesFailed || unpriced.length > 0
     let line = null
     try { line = getSoulGreeting({ dayChangePct: changePct, lang, drivers, btcPct: btcDayPct, onlyBtc }).line } catch { /* no line */ }
-    const fired = observe({ totalValue, invested: totalInvested, changePct, holdings: enriched, blocked, extra: { line } })
+    // Each wallet's all-time high is its own profit's; the day's effects are
+    // the whole portfolio's (observe keeps them apart).
+    const fired = observe({ totalValue, invested: totalInvested, changePct, holdings: enriched, blocked, walletId: selectedWalletId, extra: { line } })
     if (fired) setEffect(fired)
   }, [loaded, enriched, totalValue])
 
