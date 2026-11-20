@@ -259,6 +259,10 @@ export function flagCodeFor(currency) {
 // Served from the app first (public/flags, flag-icons 7.2.3, MIT), so a flag
 // shows even where the CDN is slow or blocked; the CDN and the proxy after it.
 const flagLocal = cc => `/flags/${cc}.svg`
+// Company logos shipped with the app, tried before any network source so the
+// same mark shows everywhere (the Stocks list, holdings, the onboarding lens)
+// even on a first launch with no logo table yet.
+export const BUNDLED_STOCK_LOGOS = new Set(['AAPL'])
 const flagUrl = cc => `https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/flags/1x1/${cc}.svg`
 
 /** A country's flag in a circle (cc is ISO 3166, e.g. 'sa'); the code as text if it fails. */
@@ -297,8 +301,10 @@ function nonCryptoPictures(coinId, stockUrl) {
     // The tokenized-stock list only covers a few US names; everything else
     // (ETFs, Cairo, Riyadh, Dubai listings) asks our origin, which looks the
     // ticker up at the edge and caches the answer, logo or not.
-    const own = siteApi(`/api/icon?stock=${encodeURIComponent(coinId.slice(6).toUpperCase())}`)
-    return stockUrl ? [stockUrl, voiceProxy(stockUrl), own] : [own]
+    const tk = coinId.slice(6).toUpperCase()
+    const own = siteApi(`/api/icon?stock=${encodeURIComponent(tk)}`)
+    const net = stockUrl ? [stockUrl, voiceProxy(stockUrl), own] : [own]
+    return BUNDLED_STOCK_LOGOS.has(tk) ? [`/logos/stocks/${tk}.svg`, ...net] : net
   }
   return []
 }

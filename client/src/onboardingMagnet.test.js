@@ -52,3 +52,12 @@ describe('welcome net worth', () => {
     expect(src).toMatch(/<em className="ocx-chg is-up">▲ 2\.27%<\/em>/)
   })
 })
+
+describe('stock logo on the lens', () => {
+  const logo = readFileSync(join(here, 'components/CoinLogo.jsx'), 'utf8')
+  it('ships the Apple mark with the app and tries it before the network, everywhere', () => {
+    expect(logo).toMatch(/BUNDLED_STOCK_LOGOS = new Set\(\['AAPL'\]\)/)
+    expect(logo).toMatch(/\[`\/logos\/stocks\/\$\{tk\}\.svg`, \.\.\.net\]/)
+    expect(readFileSync(join(here, '../public/logos/stocks/AAPL.svg'), 'utf8')).toMatch(/^<svg/)
+  })
+})
