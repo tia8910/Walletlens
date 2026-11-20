@@ -1,6 +1,6 @@
 name: Update Videos
 
-# Links new videos on youtube.com/@walletlens to the Academy, so a video goes
+# Links new long videos on youtube.com/@walletlensacademy to the Academy, so a video goes
 # from upload to the app, the bell and a push with nobody pasting a link.
 #
 # Reads the channel's public feed (no API key), writes

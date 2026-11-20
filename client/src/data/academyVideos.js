@@ -9,7 +9,7 @@ import { hacks } from './academyContent.js'
 import synced from './academyVideoLinks.js'
 import { TITLE_BANK } from './academyTitles.js'
 
-export const YT_CHANNEL = 'https://www.youtube.com/@walletlens'
+export const YT_CHANNEL = 'https://www.youtube.com/@walletlensacademy'
 export const YT_SUBSCRIBE = `${YT_CHANNEL}?sub_confirmation=1`
 
 /** The 11 character id from a YouTube link of any shape, or from a bare id. */

@@ -12,7 +12,10 @@ import { BASE_VIDEOS } from '../src/data/academyVideos.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const FILE = resolve(here, '../src/data/academyVideoLinks.js')
-const HANDLE = 'https://www.youtube.com/@walletlens'
+const HANDLE = 'https://www.youtube.com/@walletlensacademy'
+// The Academy's channel. Links saved for any other channel are dropped on the
+// next run, so the Academy shows this channel's videos and only those.
+export const CHANNEL_ID = 'UCWb5dOGFEXN09969imdUBlg'
 
 /** Lowercase letters and digits only, Arabic kept, so "The Crash Sale!" finds "the crash sale". */
 export const norm = (s) => String(s || '').toLowerCase().normalize('NFKC').replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
@@ -104,7 +107,6 @@ export function videoIdsFrom(page) {
   return [...new Set([...String(page).matchAll(/"videoId":"([\w-]{11})"/g)].map(m => m[1]))]
 }
 
-const today = () => new Date().toISOString().slice(0, 10)
 
 /**
  * The newest videos when the feed is down: the ids on the channel's Shorts and
@@ -112,16 +114,18 @@ const today = () => new Date().toISOString().slice(0, 10)
  */
 async function fromChannelPages() {
   const out = []
-  for (const tab of ['shorts', 'videos']) {
+  for (const tab of ['videos']) {
     const res = await fetch(`${HANDLE}/${tab}`, { headers: HEADERS })
     if (!res.ok) continue
-    for (const id of videoIdsFrom(await res.text()).slice(0, 15)) {
+    for (const id of videoIdsFrom(await res.text())) {
       if (out.some(e => e.id === id)) continue
       const o = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/${tab === 'shorts' ? 'shorts/' : 'watch?v='}${id}`)}`)
       if (!o.ok) continue
       const meta = await o.json()
-      if (!/@walletlens\b/i.test(meta.author_url || '')) continue
-      out.push({ id, title: meta.title || '', description: '', added: today(), short: tab === 'shorts' })
+      if (!/@walletlensacademy\b/i.test(meta.author_url || '')) continue
+      // No publish day on these pages: left blank rather than stamped today,
+      // which would announce an old video as new in the bell and by push.
+      out.push({ id, title: meta.title || '', description: '', added: '', short: tab === 'shorts' })
     }
   }
   return out
@@ -139,19 +143,18 @@ async function fromFeed(channelId) {
 }
 
 async function main() {
-  const { default: state } = await import(`${FILE}?t=${Date.now()}`)
-  let channelId = state.channelId
-  if (!channelId) {
-    const page = await (await fetch(HANDLE, { headers: HEADERS })).text()
-    channelId = channelIdFrom(page)
-    console.log(`channel id: ${channelId || 'not found'}`)
-  }
-  let entries = await fromFeed(channelId)
-  if (!entries) {
-    entries = await fromChannelPages()
-    console.log(`read the channel pages instead: ${entries.length} videos`)
-    if (!entries.length) throw new Error('found no videos on ' + HANDLE)
-  }
+  const { default: saved } = await import(`${FILE}?t=${Date.now()}`)
+  // Another channel's links are not this Academy's: start over from this one.
+  const state = saved.channelId === CHANNEL_ID ? saved : { channelId: CHANNEL_ID, links: {}, extras: [] }
+  const channelId = CHANNEL_ID
+  // The feed has the newest 15 with their real publish days; the channel's
+  // Shorts and Videos tabs reach further back, so every video gets in.
+  const feed = (await fromFeed(channelId)) || []
+  const pages = await fromChannelPages().catch(() => [])
+  // Long videos only: the Academy shows the channel's lessons, not its Shorts.
+  const entries = [...feed, ...pages.filter(p => !feed.some(f => f.id === p.id))].filter(e => !e.short)
+  console.log(`feed: ${feed.length}, channel pages: ${pages.length}, together: ${entries.length}`)
+  if (!entries.length) throw new Error('found no videos on ' + HANDLE)
   const { next, added } = merge({ ...state, channelId }, entries)
   if (!added.length && state.channelId === channelId) { console.log(`No new videos (${entries.length} found).`); return }
   writeFileSync(FILE, render(next), 'utf8')

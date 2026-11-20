@@ -73,7 +73,7 @@ describe('the catalog', () => {
   it('plays from the privacy enhanced player, the one extra frame source the CSP allows', () => {
     expect(embedUrl('AAAAAAAAAAA')).toMatch(/^https:\/\/www\.youtube-nocookie\.com\/embed\/AAAAAAAAAAA\?/)
     expect(read('../public/_headers')).toContain('https://www.youtube-nocookie.com')
-    expect(YT_CHANNEL).toBe('https://www.youtube.com/@walletlens')
+    expect(YT_CHANNEL).toBe('https://www.youtube.com/@walletlensacademy')
   })
 
   it('loads in plain Node, which the build step that publishes it runs in', () => {
