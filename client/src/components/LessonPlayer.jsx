@@ -192,6 +192,14 @@ export default function LessonPlayer({ video, lang, c, nextVideo, onNext, onWatc
           </div>
         )}
       </div>
+      {/* The lesson is spoken in another language: say where YouTube's
+          dubbed audio is, since the app cannot switch it from outside. */}
+      {c.dubNote && video.lang && video.lang !== 'all' && video.lang !== lang && (
+        <p className="aw-dub" role="note">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z" /></svg>
+          <span>{c.dubNote}</span>
+        </p>
+      )}
       {mode === 'api' && (
         <div className="aw-rates" role="group" aria-label={c.speed}>
           <span>{c.speed}</span>
