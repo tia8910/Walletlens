@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, lazy, Suspense } from 'react'
 import { noteFeatureUse } from '../featureUse'
 import Icon from '../components/Icon'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -6,6 +6,10 @@ import { api } from '../api'
 import { track } from '../analytics'
 import TechChartPanel from '../components/TechChartPanel'
 import { useLanguage } from '../LanguageContext'
+
+// The alarm settings and the chart signal and portfolio goal alerts, the same
+// panel as Alerts > Signals & goals, so a signal can be set up where it is read.
+const ProAlerts = lazy(() => import('../components/ProAlerts'))
 
 export default function Technicals() {
   // Records the discovery, so the feature tip for this page stops being
@@ -74,6 +78,14 @@ export default function Technicals() {
         <p className="magic-hero-sub">{t('acSignalsDesc')}</p>
       </div>
       <TechChartPanel enriched={enriched} initialPick={location.state?.coinId || null} />
+      <section className="tn-signal-alerts" aria-labelledby="tn-signal-alerts-h" style={{ marginTop: '1.25rem' }}>
+        <h2 id="tn-signal-alerts-h" style={{ display:'flex', alignItems:'center', gap:'0.4rem', fontSize:'1.05rem', margin:'0 0 0.75rem' }}>
+          <Icon name="siren" size={18} /> <span>{t('alTab')}</span>
+        </h2>
+        <Suspense fallback={<div className="glass-card" style={{ textAlign: 'center', padding: '1.5rem' }}>{t('tnLoading')}</div>}>
+          <ProAlerts enriched={enriched} prices={prices} />
+        </Suspense>
+      </section>
     </div>
   )
 }

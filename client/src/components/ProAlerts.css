@@ -1,3 +1,4 @@
+/* Filled green buttons carry white text: --g-ink is the green TEXT colour, which is dark green on green in the light theme. */
 /* Alerts → Signals & goals (ProAlerts). Built on the app's theme variables so
    it follows every theme, light and dark; each alert kind has one colour,
    the same as its full-screen alarm. */
@@ -12,7 +13,7 @@
 }
 .pra-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--bg3, rgba(127, 127, 127, .12)); }
 .pra-seg button { min-height: 40px; border: 0; border-radius: 11px; background: none; color: var(--text-muted, var(--text2)); font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
-.pra-seg button.on { background: var(--g); color: var(--g-ink, #fff); }
+.pra-seg button.on { background: var(--g); color: #fff; }
 
 .pra-l { margin: 6px 0 0; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted, var(--text2)); }
 .pra-l small { margin-inline-start: 6px; font-weight: 600; text-transform: none; letter-spacing: 0; }
@@ -44,7 +45,7 @@
 
 .pra-actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 6px; }
 .pra-create, .pra-test { min-height: 48px; border-radius: 14px; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
-.pra-create { border: 0; background: var(--g); color: var(--g-ink, #fff); }
+.pra-create { border: 0; background: var(--g); color: #fff; }
 .pra-create:disabled { opacity: .45; cursor: default; }
 .pra-test { padding: 0 16px; border: 1px solid var(--border); background: none; color: var(--text); }
 .pra-note { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--text-muted, var(--text2)); }
