@@ -53,7 +53,7 @@ export default function NlHoldings({
   rows, total, cats, cat, setCat, search, setSearch, sort, setSort, dir, setDir,
   breakEven, setBreakEven, onExcel, onPdf, selected, onClearSelected, selectedStats, filteredStats,
   hidden, cv, px = cv, marketSparks = {}, onAsset, bindRow, showAll, setShowAll, pricesFailed,
-  badges = null, badge = 'all', setBadge = () => {}, actionsFor = () => [], onToggleSelect = () => {},
+  badges = null, badge = 'all', setBadge = () => {}, actionsFor = () => [], onToggleSelect = () => {}, onAlert = null,
 }) {
   const { t } = useLanguage()
   const [searching, setSearching] = useState(!!search)
@@ -116,6 +116,12 @@ export default function NlHoldings({
                     : <small className={ch >= 0 ? 'up' : 'down'}>{pctTxt(ch)}</small>}
                 </div>
               </div>
+                {onAlert && !picking && (
+                  <button type="button" className="nl-row-more nl-row-alert" aria-label={`${t('paSetPriceAlert')}: ${sym}`} title={t('paSetPriceAlert')}
+                    onClick={e => { e.stopPropagation(); track('holding_alert_click'); onAlert(h) }}>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9" /><path d="M10.3 20a1.9 1.9 0 0 0 3.4 0" /></svg>
+                  </button>
+                )}
                 <button type="button" className={`nl-row-more${openRow === h.coin_id ? ' on' : ''}`} aria-label={t('atAssetActions')} aria-expanded={openRow === h.coin_id}
                   onClick={e => { e.stopPropagation(); setOpenRow(r => r === h.coin_id ? null : h.coin_id) }}>
                   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" /></svg>

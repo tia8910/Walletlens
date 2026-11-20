@@ -1078,6 +1078,7 @@ export default {
     paNoAlerts: 'Noch keine Alarme',
     paSetAlert: 'Alarm setzen',
     paSetPriceAlert: 'Kursalarm setzen',
+    alertShort: "Alarm",
     paResetAlert: 'Alarm zurücksetzen',
     paTargetPrice: 'Zielkurs (USD)',
     paEnable: 'Aktivieren',

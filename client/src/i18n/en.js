@@ -1139,6 +1139,7 @@ export default {
     paNoAlerts: 'No alerts yet',
     paSetAlert: 'Set Alert',
     paSetPriceAlert: 'Set a Price Alert',
+    alertShort: "Alert",
     paResetAlert: 'Reset alert',
     paTargetPrice: 'Target Price (USD)',
     paEnable: 'Enable',

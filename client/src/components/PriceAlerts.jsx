@@ -4,6 +4,8 @@ import { syncAlerts } from '../push'
 import Icon from './Icon'
 import { useLanguage } from '../LanguageContext'
 import { requestNotifyPermission, canNotify } from '../localNotify'
+import AlarmSettings from './AlarmSettings'
+import { deliverAlarm } from '../alarm'
 
 const STORAGE_KEY = 'walletlens_price_alerts'
 
@@ -53,7 +55,7 @@ function AlertProgress({ currentPrice, alert }) {
   )
 }
 
-export default function PriceAlerts({ enriched, prices }) {
+export default function PriceAlerts({ enriched, prices, preset = null }) {
   const { t } = useLanguage()
   const [alerts, setAlerts]         = useState(loadAlerts)
   const [showForm, setShowForm]     = useState(false)
@@ -63,6 +65,20 @@ export default function PriceAlerts({ enriched, prices }) {
   const [notifPerm, setNotifPerm]   = useState(() => (canNotify() ? 'granted' : (typeof Notification !== 'undefined' ? Notification.permission : 'default')))
   const alertsRef                   = useRef(alerts)
   alertsRef.current = alerts
+
+  // Opened from the bell beside a holding: the form, with that asset chosen
+  // and the target starting at today's price.
+  useEffect(() => {
+    if (!preset?.coinId) return
+    setCoinId(preset.coinId)
+    setCondition('above')
+    const px = Number(prices?.[preset.coinId]?.usd ?? enriched?.find(h => h.coin_id === preset.coinId)?.price ?? 0)
+    setTargetInput(px > 0 ? String(+px.toPrecision(6)) : '')
+    setShowForm(true)
+    // Down to the form, once it has rendered.
+    const id = setTimeout(() => { try { document.querySelector('.pal-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) } catch { /* old browser */ } }, 120)
+    return () => clearTimeout(id)
+  }, [preset?.nonce]) // eslint-disable-line react-hooks/exhaustive-deps
 
 
   // Sync to localStorage whenever alerts change
@@ -155,6 +171,12 @@ export default function PriceAlerts({ enriched, prices }) {
           {showForm ? '✕ Cancel' : '+ New Alert'}
         </button>
       </div>
+
+      {/* Price alerts ring the WalletLens alarm, like signal and goal alerts */}
+      <AlarmSettings onTest={() => {
+        deliverAlarm({ id: `test-${Date.now()}`, kind: 'price', tone: 'up', title: t('alTestTitle'), body: t('alTestBody') })
+        track('price_alert_test')
+      }} />
 
       {/* Add alert form */}
       {showForm && (

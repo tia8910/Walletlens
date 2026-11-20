@@ -1078,6 +1078,7 @@ export default {
     paNoAlerts: 'Ancora nessun avviso',
     paSetAlert: 'Imposta avviso',
     paSetPriceAlert: 'Imposta un avviso di prezzo',
+    alertShort: "Avviso",
     paResetAlert: 'Reimposta avviso',
     paTargetPrice: 'Prezzo obiettivo (USD)',
     paEnable: 'Attiva',

@@ -950,6 +950,7 @@ html.wl-v2 .ac-page .detail-actions {
 }
 html.wl-v2[data-wl-light] .ac-page .detail-actions { background: linear-gradient(180deg, transparent, rgba(255,255,255,0.9) 35%); }
 html.wl-v2 .ac-page .detail-act { border-radius: 16px; min-height: 50px; font-weight: 800; }
+html.wl-v2 .ac-page .detail-act.alert-btn { flex: 0 0 auto; padding-inline: 1rem; background: var(--card-bg, rgba(127,127,127,.08)); color: var(--g); border: 1.5px solid color-mix(in srgb, var(--g) 55%, transparent); box-shadow: none; }
 html.wl-v2 .ac-page .buy-btn { background: linear-gradient(135deg, #10b981, #047857); color: #fff; border: 0; box-shadow: 0 12px 24px -12px #10b981; }
 html.wl-v2 .ac-page .sell-btn { background: linear-gradient(135deg, #f43f5e, #be123c); color: #fff; border: 0; box-shadow: 0 12px 24px -12px #f43f5e; }
 @media (min-width: 900px) {

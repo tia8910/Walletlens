@@ -2994,9 +2994,10 @@ const CARD_CONFIG = [
 const DEFAULT_VIS = Object.fromEntries(CARD_CONFIG.map(c => [c.id, true]))
 
 // ── Main Dashboard ────────────────────────────────────────────────────────
-function AlertsSection({ enriched, prices, isDemo }) {
+function AlertsSection({ enriched, prices, isDemo, preset = null }) {
   const { t } = useLanguage()
-  const [alertTab, setAlertTab] = useState('smart')
+  const [alertTab, setAlertTab] = useState(preset ? 'price' : 'smart')
+  useEffect(() => { if (preset) setAlertTab('price') }, [preset?.nonce]) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div>
       <div className="sa-alert-tabs">
@@ -3017,7 +3018,7 @@ function AlertsSection({ enriched, prices, isDemo }) {
       )}
       {alertTab === 'price' && (
         <Suspense fallback={<TabFallback />}>
-          <PriceAlerts enriched={isDemo ? [] : enriched} prices={prices} />
+          <PriceAlerts enriched={isDemo ? [] : enriched} prices={prices} preset={isDemo ? null : preset} />
         </Suspense>
       )}
       {alertTab === 'pro' && (
@@ -3169,6 +3170,8 @@ export default function Dashboard() {
       .catch(() => {})
     return () => { cancelled = true }
   }, [])
+  // The bell beside a holding opens Price Alerts with that asset chosen.
+  const [alertPreset, setAlertPreset]     = useState(null)
   const [activeTab, setActiveTab]         = useState(() => {
     // If a QR deep-link import is waiting in sessionStorage, open the manage tab
     // so DataPanel mounts and its auto-import effect fires immediately.
@@ -3512,6 +3515,8 @@ export default function Dashboard() {
   // couldn't return you to the overview tab if state.tab was already 'overview'.
   useEffect(() => {
     if (location.state?.tab) setActiveTab(normalizeTab(location.state.tab))
+    // The asset page's alert button: Price Alerts with that asset chosen.
+    if (location.state?.alertCoin) setAlertPreset({ coinId: location.state.alertCoin, nonce: Date.now() })
     // The bottom bar's long-press "Quick add trade" asks for the Buy sheet.
     // Nothing read this flag before, so that item only switched tabs.
     if (location.state?.quickAdd) openSheet('buy', 'longpress_nav')
@@ -4636,6 +4641,7 @@ export default function Dashboard() {
                 badges={holdingsCat !== 'all' && badgesByCategory[holdingsCat]?.length > 1 ? badgesByCategory[holdingsCat] : null}
                 badge={holdingsBadge} setBadge={setHoldingsBadge}
                 actionsFor={holdingActions}
+                onAlert={isDemo ? null : (h) => { setAlertPreset({ coinId: h.coin_id, nonce: Date.now() }); setActiveTab('alerts') }}
                 onAsset={(h) => { if (consumeLongPress()) return; track('asset_click'); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) }}
                 bindRow={(h) => bindLongPress((x, y) => showLp(x, y, holdingMenu(h), { title: (h.coin_symbol || '').toUpperCase(), subtitle: hidden ? VALUE_MASK : cv(h.value), area: 'holding' }))}
               />
@@ -5799,7 +5805,7 @@ export default function Dashboard() {
 
       {/* ══ ALERTS (Price + Smart) ══ */}
       {activeTab === 'alerts' && (
-        <AlertsSection enriched={enriched} prices={prices} isDemo={isDemo} />
+        <AlertsSection enriched={enriched} prices={prices} isDemo={isDemo} preset={alertPreset} />
       )}
 
       {/* ══ MANAGE (Wallets + Backup) ══ */}
