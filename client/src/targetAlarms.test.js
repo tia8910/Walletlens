@@ -38,3 +38,15 @@ describe('Targets page layout', () => {
     expect(src).toMatch(/onChange=\{\(\) => toggleAlarm\(x\)\}/)
   })
 })
+
+describe('Targets add form: two taps per target', () => {
+  const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'pages/Dashboard.jsx'), 'utf8')
+  it('offers price multiples of today plus the user\'s own price', () => {
+    expect(src).toMatch(/\[1\.5, 2, 3, 5, 8\]\.map\(m => \(\{ m, p: nice\(currentPrice \* m\) \}\)\)/)
+    expect(src).toMatch(/t\('tgMyPrice'\)/)
+  })
+  it('keeps the form open after saving so the next target is quick', () => {
+    const save = src.slice(src.indexOf('async function saveTarget'), src.indexOf('async function removeTarget'))
+    expect(save).not.toMatch(/setAddFor\(null\)/)
+  })
+})

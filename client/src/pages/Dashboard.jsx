@@ -2674,8 +2674,7 @@ export function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onT
     if (currentPrice > 0 && p <= currentPrice) return
     await api.addCoinTarget(coinId, { price: p, quantity: q })
     track('goal_set', { coin_id: coinId, target_price: p, qty: q })
-    setAdding(prev => { const n = { ...prev }; delete n[coinId]; return n })
-    setAddFor(null)
+    setAdding(prev => ({ ...prev, [coinId]: { ...prev[coinId], price: '', qty: '', custom: false } }))
     onTargetsChange()
   }
 
@@ -2747,101 +2746,96 @@ export function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onT
     track('target_alarm', { on })
   }
 
-  // The add form, for one asset: unchanged from before, now opened from
-  // "+ New target" or an unplanned asset's chip.
+  // The add form, for one asset: two taps per target. Pick how much of what
+  // is left, then tap a price (a multiple of today's, or your own). The row
+  // lands in the list and the form stays open for the next one.
   function renderAddForm(h) {
     const plan = coinTargets[h.coin_id]?.targets || []
     const currentPrice = h.price
-    const addState = adding[h.coin_id] || {}
+    const sym = h.coin_symbol?.toUpperCase()
+    const st = adding[h.coin_id] || {}
+    const set = (patch) => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], ...patch } }))
     const plannedQty = plan.reduce((s2, tg) => s2 + (tg.quantity == null ? h.amount : Math.min(tg.quantity, h.amount)), 0)
-    const available  = Math.max(0, h.amount - plannedQty)
-    const addMode = addState.mode || 'pct'
-    const addQty  = addMode === 'pct'
-      ? available * (Number(addState.pct ?? 100)) / 100
-      : Math.max(0, Math.min(parseFloat(addState.qty) || 0, available))
-    const remainingAfter = Math.max(0, available - addQty)
-    const addPriceNum = parseFloat(addState.price)
-    const priceTooLow = addPriceNum > 0 && currentPrice > 0 && addPriceNum <= currentPrice
+    const available = Math.max(0, h.amount - plannedQty)
+    const amt = st.amt ?? 1 // share of what is left: 0.25 | 0.5 | 1 | 'qty'
+    const addQty = amt === 'qty'
+      ? Math.max(0, Math.min(parseFloat(st.qty) || 0, available))
+      : available * amt
+    const plannedPct = h.amount > 0 ? Math.min(100, (plannedQty / h.amount) * 100) : 0
+    const nice = (v) => Number(v.toPrecision(v >= 1 ? 4 : 3))
+    const chips = currentPrice > 0 ? [1.5, 2, 3, 5, 8].map(m => ({ m, p: nice(currentPrice * m) })) : []
+    const myPrice = parseFloat(st.price)
+    const priceTooLow = myPrice > 0 && currentPrice > 0 && myPrice <= currentPrice
+    const canAdd = addQty > 0
     return (
-                <div className="dvx-tgt-form">
-                  <div className="dvx-tgt-form-row">
-                    <div style={{ flex:'1 1 120px' }}>
-                      <div className="dvx-tgt-form-lbl">{t('dsTargetPriceUsd')}</div>
-                      <input
-                        type="number" placeholder={t('stEgPrice')} min="0" step="any"
-                        value={addState.price || ''}
-                        onChange={e => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], price: e.target.value } }))}
-                        style={{ width:'100%', background:'var(--surface-2)', border:`1px solid ${priceTooLow ? 'rgba(239,68,68,0.6)' : 'rgba(var(--g-rgb),0.3)'}`, borderRadius:8, padding:'0.5rem 0.6rem', color:'var(--text)', fontSize:'0.9rem' }}
-                      />
-                      {priceTooLow && (
-                        <div style={{ fontSize:'0.72rem', color:'#ef4444', marginTop:'0.35rem' }}>
-                          {t('stTooLow')(`$${fmt(currentPrice)}`)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="dvx-tgt-form-lbl">{t('dsHowMuchAtTarget')}</div>
-                    {/* Mode toggle: percentage or exact quantity */}
-                    <div className="dvx-tgt-mode-row">
-                      <button type="button" className={`dvx-tgt-mode-btn ${addMode === 'pct' ? 'active' : ''}`}
-                        onClick={() => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], mode:'pct', pct: prev[h.coin_id]?.pct ?? 100 } }))}>
-                        {t('stPercentage')}
-                      </button>
-                      <button type="button" className={`dvx-tgt-mode-btn ${addMode === 'qty' ? 'active' : ''}`}
-                        onClick={() => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], mode:'qty' } }))}>
-                        {t('stQuantity')}
-                      </button>
-                    </div>
-                    {addMode === 'pct' ? (
-                      <div className="dvx-tgt-pct-row">
-                        {[25, 50, 75, 100].map(p => (
-                          <button key={p} type="button"
-                            className={`dvx-tgt-pct-btn ${Number(addState.pct ?? 100) === p ? 'active' : ''}`}
-                            onClick={() => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], pct: p } }))}>
-                            {p}%
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{ display:'flex', gap:'0.4rem', alignItems:'center' }}>
-                        <input
-                          type="number" min="0" step="any"
-                          placeholder={`0 – ${parseFloat(available.toFixed(6))}`}
-                          value={addState.qty || ''}
-                          onChange={e => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], qty: e.target.value } }))}
-                          style={{ flex:1, background:'var(--surface-2)', border:'1px solid rgba(var(--g-rgb),0.3)', borderRadius:8, padding:'0.5rem 0.6rem', color:'var(--text)', fontSize:'0.9rem' }}
-                        />
-                        <button type="button" className="dvx-tgt-pct-btn"
-                          onClick={() => setAdding(prev => ({ ...prev, [h.coin_id]: { ...prev[h.coin_id], qty: String(parseFloat(available.toFixed(8))) } }))}>
-                          {t('stMax')}
-                        </button>
-                      </div>
-                    )}
-                    <div className="dvx-tgt-form-hint">
-                      {t('stSellQty')(parseFloat(addQty.toFixed(6)), h.coin_symbol?.toUpperCase())}
-                      {addState.price && parseFloat(addState.price) > 0 && t('stProceedsPart')(`$${fmt(addQty * parseFloat(addState.price))}`)}
-                      {' · '}<strong style={{ color:'var(--text)' }}>{t('stLeftAfter')(parseFloat(remainingAfter.toFixed(6)), h.coin_symbol?.toUpperCase())}</strong>
-                    </div>
-                  </div>
-                  {addPriceNum > currentPrice && (
-                    <TargetRealityCheck
-                      coinId={h.coin_id} coinSymbol={h.coin_symbol} coinName={h.coin_name}
-                      currentPrice={currentPrice} targetPrice={addPriceNum} assetClass={categorizeAsset(h)} />
-                  )}
-                  <button
-                    className="dvx-btn dvx-btn-primary dvx-tgt-save"
-                    disabled={!(addState.price && parseFloat(addState.price) > 0) || addQty <= 0 || priceTooLow}
-                    onClick={() => saveTarget(h.coin_id, addState.price, addQty, currentPrice)}>
-                    {t('stSaveTarget')}
-                  </button>
-                </div>
+      <div className="tg5-form">
+        <div className="tg5-step">
+          <span className="tg5-lbl">{t('tgStepAmount')(`${parseFloat(available.toFixed(6)).toLocaleString()} ${sym}`)}</span>
+          <div className="tg5-chips">
+            {[[0.25, '25%'], [0.5, '50%'], [1, t('tgAllLeft')], ['qty', t('stQuantity')]].map(([k, label]) => (
+              <button key={k} type="button" className={`tg5-chip${amt === k ? ' on' : ''}`} aria-pressed={amt === k} onClick={() => set({ amt: k })}>{label}</button>
+            ))}
+          </div>
+          {amt === 'qty' && (
+            <div className="tg5-inline">
+              <input type="number" min="0" step="any" inputMode="decimal" className="tg5-input"
+                placeholder={`0 – ${parseFloat(available.toFixed(6))}`} value={st.qty || ''}
+                onChange={e => set({ qty: e.target.value })} aria-label={t('stQuantity')} />
+              <button type="button" className="tg5-chip" onClick={() => set({ qty: String(parseFloat(available.toFixed(8))) })}>{t('stMax')}</button>
+            </div>
+          )}
+          <small className="tg5-hint">{t('stSellQty')(parseFloat(addQty.toFixed(6)), sym)}</small>
+        </div>
+
+        <div className="tg5-step">
+          <span className="tg5-lbl">{t('tgStepPrice')}</span>
+          <div className="tg5-chips">
+            {chips.map(c => (
+              <button key={c.m} type="button" className="tg5-chip tg5-price" disabled={!canAdd}
+                onClick={() => saveTarget(h.coin_id, c.p, addQty, currentPrice)}
+                aria-label={t('tgAddAt')(money(c.p))}>
+                <b>{c.m}x</b><small>{money(c.p)}</small>
+              </button>
+            ))}
+            <button type="button" className={`tg5-chip tg5-price${st.custom ? ' on' : ''}`} aria-pressed={!!st.custom} onClick={() => set({ custom: !st.custom })}>
+              <b>{t('tgMyPrice')}</b><small>$</small>
+            </button>
+          </div>
+          {st.custom && (
+            <>
+              <div className="tg5-inline">
+                <input type="number" min="0" step="any" inputMode="decimal" autoFocus
+                  className={`tg5-input${priceTooLow ? ' bad' : ''}`} placeholder={t('stEgPrice')}
+                  value={st.price || ''} onChange={e => set({ price: e.target.value })} aria-label={t('dsTargetPriceUsd')} />
+                <button type="button" className="dvx-btn dvx-btn-primary"
+                  disabled={!(myPrice > 0) || priceTooLow || !canAdd}
+                  onClick={() => saveTarget(h.coin_id, myPrice, addQty, currentPrice)}>
+                  {t('tgAdd')}
+                </button>
+              </div>
+              {priceTooLow && <small className="tg5-err">{t('stTooLow')(money(currentPrice))}</small>}
+              {myPrice > currentPrice && (
+                <>
+                  <small className="tg5-hint">{t('stSellQty')(parseFloat(addQty.toFixed(6)), sym)}{t('stProceedsPart')(money(addQty * myPrice))}</small>
+                  <TargetRealityCheck coinId={h.coin_id} coinSymbol={h.coin_symbol} coinName={h.coin_name}
+                    currentPrice={currentPrice} targetPrice={myPrice} assetClass={categorizeAsset(h)} />
+                </>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="tg5-planned">
+          <div className="tg2-plan-bar"><i style={{ width: `${plannedPct}%` }} /></div>
+          <small>{t('tgPlanned')(plannedPct.toFixed(0), parseFloat(available.toFixed(6)), sym)}</small>
+        </div>
+      </div>
     )
   }
 
   function openAdd(h) {
     setAddFor(h.coin_id)
-    setAdding(prev => prev[h.coin_id] ? prev : { ...prev, [h.coin_id]: { price: '', mode: 'pct', pct: 100 } })
+    setAdding(prev => prev[h.coin_id] ? prev : { ...prev, [h.coin_id]: { price: '', amt: 1 } })
     track('target_add_open', { planned: (coinTargets[h.coin_id]?.targets || []).length > 0 })
   }
   const addHolding = addFor ? targetable.find(h => h.coin_id === addFor) : null
@@ -2897,7 +2891,7 @@ export function TargetsTab({ enriched, targetsAnalysis, coinTargets, prices, onT
               <b>{addHolding.coin_symbol?.toUpperCase()}</b>
               <small>{addHolding.price > 0 ? money(addHolding.price) : '-'} · {t('stHeld')(Number(addHolding.amount).toLocaleString(undefined, { maximumFractionDigits:6 }))}</small>
             </div>
-            <button type="button" className="dvx-btn" onClick={() => setAddFor(null)}>{t('cancel')}</button>
+            <button type="button" className="dvx-btn" onClick={() => setAddFor(null)}>{t('tgDone')}</button>
           </div>
           {addAvailable > 0 ? renderAddForm(addHolding) : <p className="tg3-note">{t('tgFullyPlanned')}</p>}
         </section>

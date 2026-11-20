@@ -13426,3 +13426,22 @@ html.wl-aw-open .wlc-fab { opacity: 0; pointer-events: none; }
 .tg4-foot-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.72rem; color: var(--text-sub); }
 .tg4-add { min-height: 34px; padding: 0 0.85rem; border-radius: 999px; border: 1.5px dashed rgba(var(--g-rgb),0.55); background: none;
   color: var(--g-ink, var(--g)); font: inherit; font-size: 0.78rem; font-weight: 800; cursor: pointer; flex-shrink: 0; }
+
+/* Targets add form, two taps per target: amount, then price. */
+.tg5-form { display: flex; flex-direction: column; gap: 0.9rem; }
+.tg5-step { display: flex; flex-direction: column; gap: 0.45rem; }
+.tg5-lbl { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.tg5-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.tg5-chip { min-height: 40px; padding: 0.45rem 0.8rem; border-radius: 12px; border: 1px solid var(--border, rgba(127,127,127,0.25)); background: var(--surface-2); color: var(--text); font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+.tg5-chip.on { border-color: var(--g); background: rgba(var(--g-rgb), 0.16); color: var(--g); }
+.tg5-chip:disabled { opacity: 0.45; cursor: not-allowed; }
+.tg5-price { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; min-width: 62px; }
+.tg5-price small { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); }
+.tg5-price:not(:disabled):hover { border-color: var(--g); }
+.tg5-inline { display: flex; gap: 0.4rem; align-items: center; }
+.tg5-input { flex: 1; min-width: 0; background: var(--surface-2); border: 1px solid rgba(var(--g-rgb), 0.3); border-radius: 10px; padding: 0.55rem 0.65rem; color: var(--text); font-size: 0.95rem; }
+.tg5-input.bad { border-color: rgba(239, 68, 68, 0.6); }
+.tg5-hint { font-size: 0.75rem; color: var(--text-muted); }
+.tg5-err { font-size: 0.72rem; color: #ef4444; }
+.tg5-planned { display: flex; flex-direction: column; gap: 0.3rem; }
+.tg5-planned small { font-size: 0.75rem; color: var(--text-muted); }
