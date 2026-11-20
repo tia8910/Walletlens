@@ -8,6 +8,7 @@
 import { hacks } from './academyContent.js'
 import synced from './academyVideoLinks.js'
 import { TITLE_BANK } from './academyTitles.js'
+import { translatedTitle } from './academyTitleI18n.js'
 
 export const YT_CHANNEL = 'https://www.youtube.com/@walletlensacademy'
 export const YT_SUBSCRIBE = `${YT_CHANNEL}?sub_confirmation=1`
@@ -129,7 +130,9 @@ export function cleanTitle(raw) {
     if (t.split(o).length !== t.split(c).length) t = t.split(o).join('').split(c).join('').trim()
   }
   if ((t.match(/"/g) || []).length % 2) t = t.replace(/"/g, '').trim()
-  if (/[A-Z]{4}/.test(t) && t === t.toUpperCase()) t = t.charAt(0) + t.slice(1).toLowerCase()
+  // Only an all-capitals Latin title is shouting; Arabic has no case, and
+  // "RSI" inside an Arabic title must stay as it is.
+  if (/[A-Z]{4}/.test(t) && t === t.toUpperCase() && !/[^\x00-\x7F]/.test(t)) t = t.charAt(0) + t.slice(1).toLowerCase()
   t = t.replace(/^\p{Ll}/u, ch => ch.toUpperCase())
   return t || src
 }
@@ -142,7 +145,8 @@ export function academyVideos(lang = 'en', list = VIDEOS) {
     .filter(v => v.id)
     // Arabic tutorials are for Arabic readers; everyone else gets English ones.
     .filter(v => v.kind !== 'howto' || v.lang === lang || (v.lang === 'en' && lang !== 'ar') || v.lang === 'all')
-    .map(v => ({ ...v, name: cleanTitle(v.name), lesson: v.hack != null ? hk[v.hack] : null }))
+    // The channel's Arabic titles, translated into the reader's language.
+    .map(v => ({ ...v, name: cleanTitle(translatedTitle(v.id, lang) || v.name), lesson: v.hack != null ? hk[v.hack] : null }))
     .sort((a, b) => rank(a) - rank(b))
 }
 
