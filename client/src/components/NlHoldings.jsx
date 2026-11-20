@@ -18,7 +18,7 @@ export function haloOf(h) {
   const m = Math.min(Math.abs(p) / 10, 1)
   return {
     cls: p > 0 ? 'is-up' : 'is-down',
-    style: { '--halo-s': `${(4 + 10 * m).toFixed(1)}px`, '--halo-d': `${(2.8 - 1.9 * m).toFixed(2)}s` },
+    style: { '--halo-s': `${(4 + 10 * m).toFixed(1)}px`, '--halo-d': `${(2.8 - 1.9 * m).toFixed(2)}s`, '--halo-a': (0.4 + 0.6 * m).toFixed(2) },
   }
 }
 

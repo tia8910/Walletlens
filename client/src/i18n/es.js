@@ -509,6 +509,7 @@ export default {
     dbSynced: (n) => `Sincronizado con Drive: ${n} transacciones añadidas desde tu copia. Abriendo tu cartera…`,
     dbSyncedNone: "Sincronizado con Drive. Abriendo tu cartera…",
     dbFoundMerge: "Copia encontrada. Introduce tu frase para añadirla a este dispositivo. No se reemplaza nada.",
+    dbFoundReplace: "Copia encontrada. Introduce tu frase de contraseña para restaurarla. Sustituye los datos de este dispositivo.",
     dbUpToDate: "Conectado. Tu copia está al día.",
     dbBackedUpN: (n) => `Se guardaron ${n} transacciones.`,
     dbBackInSync: (n) => `Sincronizado de nuevo. ${n} transacciones de todos tus dispositivos están aquí y en Drive.`,

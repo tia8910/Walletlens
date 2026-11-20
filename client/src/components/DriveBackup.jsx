@@ -230,18 +230,19 @@ export default function DriveBackup({ embedded = false }) {
         }
       }
       else if (next === 'ask') {
-        // A portfolio here AND a backup in Drive. Merge, never replace: both
-        // sides' trades are kept, then the dashboard opens on the result.
+        // A portfolio here AND a backup in Drive. Restoring REPLACES this
+        // device's data with the backup's: the account restored is exactly
+        // the one that was backed up, nothing from this device mixed in.
         if (autoBackupEnabled() && !syncPaused()) {
           try {
-            const { added } = await mergeFromDrive()
-            track('drive_merge', { auto: true, added })
-            toDashboard(added ? t('dbSynced')(added) : t('dbSyncedNone'))
+            const { restored } = await restoreNow()
+            track('drive_restore', { auto: true, replaced: true })
+            toDashboard(t('dbRestoredDrive')(restored))
             return
           } catch (e) { if (e?.message !== KEY_MISMATCH) throw e; setPaused(true) }
         }
-        ask('merge')
-        say('ok', t('dbFoundMerge'))
+        ask('restore')
+        say('ok', t('dbFoundReplace'))
       }
       else say('ok', t('dbUpToDate'))
     } catch (e) {

@@ -509,6 +509,7 @@ export default {
     dbSynced: (n) => `Synchronisé avec Drive : ${n} transactions ajoutées depuis votre sauvegarde. Ouverture de votre portefeuille…`,
     dbSyncedNone: "Synchronisé avec Drive. Ouverture de votre portefeuille…",
     dbFoundMerge: "Sauvegarde trouvée. Saisissez votre phrase secrète pour l'ajouter à cet appareil. Rien n'est remplacé.",
+    dbFoundReplace: "Sauvegarde trouvée. Saisissez votre phrase secrète pour la restaurer. Elle remplace les données de cet appareil.",
     dbUpToDate: "Connecté. Votre sauvegarde est à jour.",
     dbBackedUpN: (n) => `${n} transactions sauvegardées.`,
     dbBackInSync: (n) => `Resynchronisé. ${n} transactions de tous vos appareils sont ici et dans Drive.`,

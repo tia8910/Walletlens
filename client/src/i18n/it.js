@@ -530,6 +530,7 @@ export default {
     dbSynced: (n) => `Sincronizzato con Drive: ${n} transazioni aggiunte dal backup. Apertura del portafoglio…`,
     dbSyncedNone: "Sincronizzato con Drive. Apertura del portafoglio…",
     dbFoundMerge: "Backup trovato. Inserisci la passphrase per aggiungerlo a questo dispositivo. Nulla viene sostituito.",
+    dbFoundReplace: "Backup trovato. Inserisci la passphrase per ripristinarlo. Sostituisce i dati su questo dispositivo.",
     dbUpToDate: "Connesso. Il backup è aggiornato.",
     dbBackedUpN: (n) => `Salvate ${n} transazioni.`,
     dbBackInSync: (n) => `Di nuovo sincronizzato. ${n} transazioni di tutti i tuoi dispositivi sono qui e su Drive.`,

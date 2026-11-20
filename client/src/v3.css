@@ -964,15 +964,36 @@ html.wl-v3:not([data-wl-light]) .nl-check { border-color: rgba(255, 255, 255, 0.
 }
 .nl-row-n small.nl-row-amt { white-space: nowrap; }
 
-/* The breathing halo around a holding's logo (haloOf in NlHoldings). */
-.nl-halo::before { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
-.nl-halo.is-up { --halo-c: rgba(34, 197, 94, 0.55); }
-.nl-halo.is-down { --halo-c: rgba(239, 68, 68, 0.55); }
-.nl-halo.is-up::before, .nl-halo.is-down::before { box-shadow: 0 0 var(--halo-s, 6px) 0 var(--halo-c); opacity: 0.6; }
+/* The halo around a holding's logo (haloOf in NlHoldings): a fine gradient
+   ring that turns slowly with a sheen running along it, over a soft two-layer
+   bloom that breathes. Green up, red down; brighter, quicker and stronger as
+   the day's move grows. */
+.nl-halo { isolation: isolate; }
+.nl-halo.is-up { --h1: #34d399; --h2: #a7f3d0; --hb: rgba(16, 185, 129, 0.5); }
+.nl-halo.is-down { --h1: #f43f5e; --h2: #fdba74; --hb: rgba(244, 63, 94, 0.45); }
+.nl-halo.is-up::before, .nl-halo.is-down::before,
+.nl-halo.is-up::after, .nl-halo.is-down::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; }
+/* Bloom: two soft layers, the outer one wide and faint. */
+.nl-halo.is-up::before, .nl-halo.is-down::before {
+  inset: 0; z-index: -1; opacity: calc(var(--halo-a, 0.6) * 0.9);
+  box-shadow: 0 0 calc(var(--halo-s, 6px) * 0.9) calc(var(--halo-s, 6px) * 0.15) var(--hb),
+              0 0 calc(var(--halo-s, 6px) * 2.4) calc(var(--halo-s, 6px) * 0.4) color-mix(in srgb, var(--hb) 45%, transparent);
+}
+/* Ring: a conic gradient cut to a 2px band, a bright head fading to nothing. */
+.nl-halo.is-up::after, .nl-halo.is-down::after {
+  inset: -4px; z-index: 1; opacity: var(--halo-a, 0.6);
+  background: conic-gradient(from 0deg, transparent 0deg, var(--h1) 110deg, var(--h2) 170deg, #fff 182deg, var(--h1) 196deg, transparent 300deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+  filter: drop-shadow(0 0 3px var(--h1));
+}
 @media (prefers-reduced-motion: no-preference) {
-  .nl-halo.is-up::before, .nl-halo.is-down::before { opacity: 1; animation: nl-halo var(--halo-d, 2s) ease-in-out infinite; }
-  @keyframes nl-halo {
-    0%, 100% { box-shadow: 0 0 0 0 var(--halo-c); }
-    50% { box-shadow: 0 0 calc(var(--halo-s, 6px) * 1.6) calc(var(--halo-s, 6px) * 0.4) var(--halo-c); }
+  .nl-halo.is-up::before, .nl-halo.is-down::before { animation: nl-bloom var(--halo-d, 2s) cubic-bezier(.45, 0, .55, 1) infinite; }
+  .nl-halo.is-up::after { animation: nl-ring calc(var(--halo-d, 2s) * 2.2) linear infinite; }
+  .nl-halo.is-down::after { animation: nl-ring calc(var(--halo-d, 2s) * 2.2) linear infinite reverse; }
+  @keyframes nl-bloom {
+    0%, 100% { transform: scale(0.96); opacity: calc(var(--halo-a, 0.6) * 0.45); }
+    50% { transform: scale(1.08); opacity: calc(var(--halo-a, 0.6) * 0.95); }
   }
+  @keyframes nl-ring { to { transform: rotate(360deg); } }
 }

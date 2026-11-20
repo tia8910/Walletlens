@@ -530,6 +530,7 @@ export default {
     dbSynced: (n) => `Mit Drive synchronisiert: ${n} Transaktionen aus deiner Sicherung hinzugefügt. Dein Portfolio wird geöffnet…`,
     dbSyncedNone: "Mit Drive synchronisiert. Dein Portfolio wird geöffnet…",
     dbFoundMerge: "Sicherung gefunden. Gib deine Passphrase ein, um sie zu diesem Gerät hinzuzufügen. Nichts wird ersetzt.",
+    dbFoundReplace: "Sicherung gefunden. Gib deine Passphrase ein, um sie wiederherzustellen. Sie ersetzt die Daten auf diesem Gerät.",
     dbUpToDate: "Verbunden. Deine Sicherung ist aktuell.",
     dbBackedUpN: (n) => `${n} Transaktionen gesichert.`,
     dbBackInSync: (n) => `Wieder synchron. ${n} Transaktionen von all deinen Geräten sind hier und in Drive.`,
