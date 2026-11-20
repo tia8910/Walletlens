@@ -108,7 +108,7 @@ export default function NlHoldings({
                   {isSel && !picking && <i aria-hidden="true">✓</i>}
                 </span>
                 <div className="nl-row-n">
-                  <b title={h.coin_name || sym}>{sym || h.coin_name}</b>
+                  <b title={h.coin_name || sym} className={(sym || '').length > 7 ? 'nl-long' : undefined}>{sym || h.coin_name}</b>
                   {breakEven && be > 0 && beGap != null
                     ? <small>{t('dsBreakEvenAt')} {mask(cv(be))} <span className={beGap >= 0 ? 'up' : 'down'}>{beGap >= 0 ? '↑' : '↓'}{Math.abs(beGap).toFixed(1)}%</span></small>
                     : <small className="nl-row-amt" title={`${Number(h.amount || 0).toLocaleString('en-US', { maximumFractionDigits: 8 })} ${sym}`}>{mask(fmtAmt(h.amount))}</small>}
