@@ -9,6 +9,19 @@ import { daySeries, hasDayLine } from '../daySpark'
 // The amount under the ticker, short enough to stay on one line: fewer
 // decimals as the number grows (the full amount is in the tooltip and on the
 // asset page).
+// The breathing halo around a logo: green on an up day, red on a down one,
+// brighter and quicker as the day's move grows (full strength at 10%). A flat
+// or unpriced asset stays still.
+export function haloOf(h) {
+  const p = Number(h?.pct24h)
+  if (!(h?.price > 0) || !Number.isFinite(p) || Math.abs(p) < 0.05) return { cls: 'is-flat', style: undefined }
+  const m = Math.min(Math.abs(p) / 10, 1)
+  return {
+    cls: p > 0 ? 'is-up' : 'is-down',
+    style: { '--halo-s': `${(4 + 10 * m).toFixed(1)}px`, '--halo-d': `${(2.8 - 1.9 * m).toFixed(2)}s` },
+  }
+}
+
 export function fmtAmt(n) {
   const v = Math.abs(Number(n) || 0)
   const d = v >= 100 ? 2 : v >= 1 ? 4 : 6
@@ -103,7 +116,7 @@ export default function NlHoldings({
                 onClick={() => (picking ? onToggleSelect(h) : onAsset(h))}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); picking ? onToggleSelect(h) : onAsset(h) } }} {...bindRow(h)}>
                 {picking && <span className={`nl-check${isSel ? ' on' : ''}`} aria-hidden="true">{isSel ? '✓' : ''}</span>}
-                <span className="nl-row-logo">
+                <span className={`nl-row-logo nl-halo ${haloOf(h).cls}`} style={haloOf(h).style}>
                   <AssetLogo h={h} size={40} />
                   {isSel && !picking && <i aria-hidden="true">✓</i>}
                 </span>
