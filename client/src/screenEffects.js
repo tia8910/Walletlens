@@ -104,6 +104,9 @@ export function dailyReturnsFromSnapshots(snaps = [], tzOffsetMin = 0, now = Dat
  * @param {number}  o.changePct       portfolio change on the day, percent
  * @param {number[]} o.dailyReturns   your own recent daily returns, percent
  * @param {boolean} o.blocked         hidden, demo, prices offline or missing
+ * @param {boolean} o.athOnly         one wallet on screen: only its own profit
+ *                                    high counts; the day's effects are the
+ *                                    whole portfolio's and are left alone
  * @param {object}  o.leader          best-performing holding: { symbol, image, pct }
  * @param {object}  o.state           previous return's `nextState`
  * @returns {{ effect: string|null, payload: object|null, nextState: object }}
@@ -116,6 +119,7 @@ export function decideEffect({
   changePct = 0,
   dailyReturns = [],
   blocked = false,
+  athOnly = false,
   leader = null,
   state,
 } = {}) {
@@ -125,8 +129,8 @@ export function decideEffect({
   if (blocked) return { effect: null, payload: null, nextState: prev }
 
   const today = dayKey(now, tzOffsetMin)
-  const firstOpenToday = prev.day !== today
-  const next = { ...prev, day: today }
+  const firstOpenToday = !athOnly && prev.day !== today
+  const next = { ...prev, day: athOnly ? prev.day : today }
 
   // Before prices land the total is briefly 0; no comparison means anything.
   if (!(totalValue > 0)) return { effect: null, payload: null, nextState: next }
@@ -167,7 +171,7 @@ export function decideEffect({
   }
 
   // The rocket, once a day: a top day measured against your own history.
-  if (prev.rocketDay !== today && changePct >= ROCKET_MIN_PCT) {
+  if (!athOnly && prev.rocketDay !== today && changePct >= ROCKET_MIN_PCT) {
     const hist = (Array.isArray(dailyReturns) ? dailyReturns : []).filter(Number.isFinite)
     let fire = false
     let beats = null
