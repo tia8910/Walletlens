@@ -720,7 +720,7 @@ html.wl-v2 .ac-chg.is-dn { color: var(--sc-dn); background: color-mix(in srgb, v
 html.wl-v2 .ac-hold { text-align: end; display: flex; flex-direction: column; font-size: 0.68rem; color: var(--text-sub); font-variant-numeric: tabular-nums; }
 html.wl-v2 .ac-hold b { font-size: 0.9rem; color: var(--text); }
 
-html.wl-v2 .ac-chart, html.wl-v2 .ac-sig {
+html.wl-v2 .ac-chart, html.wl-v2 .ac-sig, html.wl-v2 .ac-pat {
   border-radius: 22px; background: var(--v2-glass); border: 1px solid var(--v2-glass-border); box-shadow: var(--v2-glass-shadow);
 }
 html.wl-v2 .ac-chart { padding: 0.65rem 0.5rem 0.6rem; display: flex; flex-direction: column; gap: 0.5rem; }
@@ -811,6 +811,7 @@ html.wl-v2 .ac-chip.on { color: var(--text); border-color: rgba(var(--g-rgb),0.5
 html.wl-v2 .ac-dot { width: 8px; height: 8px; border-radius: 50%; }
 html.wl-v2 .ac-dot.is-sig { background: var(--sc-up); }
 html.wl-v2 .ac-dot.is-gc { background: var(--sc-gold); }
+html.wl-v2 .ac-dot.is-pat { background: #a78bfa; }
 html.wl-v2 .ac-note { margin: 0; padding: 0 0.4rem; font-size: 0.7rem; color: var(--text-sub); line-height: 1.45; }
 
 /* the chart */
@@ -839,6 +840,18 @@ html.wl-v2 .sc-cross rect { fill: var(--sc-tag-up); }
 html.wl-v2 .sc-cross.is-big circle { fill: var(--sc-gold); } html.wl-v2 .sc-cross.is-big rect { fill: var(--sc-tag-gold); }
 html.wl-v2 .sc-cross.is-bad circle { fill: var(--sc-dn); } html.wl-v2 .sc-cross.is-bad rect { fill: var(--sc-tag-dn); }
 html.wl-v2 .sc-cross text { fill: #fff; font-size: 8.5px; font-weight: 800; }
+/* Patterns: a line through a chart pattern's swing points, its neckline
+   dashed, its name in a violet tag; small triangles for candlestick ones. */
+html.wl-v2 .sc-pat-line { fill: none; stroke: #a78bfa; stroke-width: 1.4; stroke-linejoin: round; stroke-opacity: 0.9; }
+html.wl-v2 .sc-pat-neck { stroke: #a78bfa; stroke-width: 1; stroke-dasharray: 4 3; }
+html.wl-v2 .sc-pat rect { fill: #7c3aed; }
+html.wl-v2 .sc-pat.is-bull .sc-pat-line, html.wl-v2 .sc-pat.is-bull .sc-pat-neck { stroke: #34d399; }
+html.wl-v2 .sc-pat.is-bull rect { fill: #059669; }
+html.wl-v2 .sc-pat.is-bear .sc-pat-line, html.wl-v2 .sc-pat.is-bear .sc-pat-neck { stroke: #fb7185; }
+html.wl-v2 .sc-pat.is-bear rect { fill: #e11d48; }
+html.wl-v2 .sc-pat text { fill: #fff; font-size: 8.5px; font-weight: 800; }
+html.wl-v2 .sc-cmark.is-bull { fill: #10b981; } html.wl-v2 .sc-cmark.is-bear { fill: #f43f5e; }
+html.wl-v2 .sc-cmark { stroke: rgba(0,0,0,0.35); stroke-width: 0.6; }
 html.wl-v2 .sc-sig.is-buy path, html.wl-v2 .sc-sig.is-buy rect { fill: var(--sc-tag-up); }
 html.wl-v2 .sc-sig.is-sell path, html.wl-v2 .sc-sig.is-sell rect { fill: var(--sc-tag-dn); }
 html.wl-v2 .sc-sig text { fill: #fff; font-size: 8.5px; font-weight: 800; }
@@ -882,6 +895,16 @@ html.wl-v2 .ac-sig-top b { flex: 1; font-size: 0.86rem; color: var(--text); }
 html.wl-v2 .ac-sig-top small { font-size: 0.7rem; color: var(--text-sub); font-variant-numeric: tabular-nums; }
 html.wl-v2 .ac-pill { font-size: 0.66rem; font-weight: 800; padding: 0.25rem 0.55rem; border-radius: 999px; color: #fff; }
 html.wl-v2 .ac-pill.is-buy { background: #10b981; } html.wl-v2 .ac-pill.is-sell { background: #f43f5e; }
+html.wl-v2 .ac-pat { padding: 0.8rem 0.85rem; display: flex; flex-direction: column; gap: 0.55rem; }
+html.wl-v2 .ac-pat-h { display: flex; flex-direction: column; gap: 0.1rem; }
+html.wl-v2 .ac-pat-h b { font-size: 0.86rem; color: var(--text); }
+html.wl-v2 .ac-pat-h small { font-size: 0.7rem; color: var(--text-sub); }
+html.wl-v2 .ac-pat-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+html.wl-v2 .ac-pat-row { display: flex; align-items: center; gap: 0.55rem; }
+html.wl-v2 .ac-pat-row .ac-pill { min-width: 4.6rem; text-align: center; }
+html.wl-v2 .ac-pat-n { display: flex; flex-direction: column; min-width: 0; }
+html.wl-v2 .ac-pat-n b { font-size: 0.8rem; color: var(--text); }
+html.wl-v2 .ac-pat-n small { font-size: 0.68rem; color: var(--text-sub); font-variant-numeric: tabular-nums; }
 html.wl-v2 .ac-levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); gap: 0.4rem; }
 html.wl-v2 .ac-lv { padding: 0.45rem 0.3rem; border-radius: 12px; text-align: center; background: rgba(127,127,127,0.08); border: 1px solid var(--v2-glass-border); font-variant-numeric: tabular-nums; }
 html.wl-v2 .ac-lv small { display: block; font-size: 0.56rem; font-weight: 800; letter-spacing: 0.08em; color: var(--text-sub); }

@@ -21,6 +21,8 @@ import { emaSeries } from './technicals'
 export const DEFAULT_CHART_PARAMS = {
   signals: { on: true, fast: 5, slow: 13, rsi: 14, atrMult: 0.5, targets: 3, atrPeriod: 3, swing: 5 },
   cross:   { on: true, fast: 21, mid: 55, slow: 200 },
+  // Candlestick and chart patterns (chartPatterns.js), drawn on the chart.
+  patterns: { on: true },
 }
 
 const PARAMS_KEY = 'wl_chart_indicators_v1'
@@ -37,7 +39,7 @@ const clampNum = (v, lo, hi, d) => {
 /** Merges stored settings over the defaults and keeps every number in range. */
 export function normalizeParams(raw) {
   const d = DEFAULT_CHART_PARAMS
-  const s = raw?.signals || {}, x = raw?.cross || {}
+  const s = raw?.signals || {}, x = raw?.cross || {}, pt = raw?.patterns || {}
   return {
     signals: {
       on: s.on ?? d.signals.on,
@@ -55,6 +57,7 @@ export function normalizeParams(raw) {
       mid: clampInt(x.mid, 3, 400, d.cross.mid),
       slow: clampInt(x.slow, 5, 400, d.cross.slow),
     },
+    patterns: { on: pt.on ?? d.patterns.on },
   }
 }
 

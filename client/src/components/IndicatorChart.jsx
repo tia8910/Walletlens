@@ -7,6 +7,7 @@ import {
   computeChartSignals, loadChartParams, saveChartParams, normalizeParams,
   DEFAULT_CHART_PARAMS, CHART_TIMEFRAMES, DEFAULT_TIMEFRAME,
 } from '../chartSignals'
+import { detectPatterns } from '../chartPatterns'
 
 // The indicator chart: timeframes, the candlestick chart with the on-device
 // Buy/Sell signals and golden cross, the latest signal's levels, the
@@ -56,6 +57,11 @@ export default function IndicatorChart({ coinId, symbol, name, price, source = '
   const calc = useMemo(
     () => (candleData.candles.length ? computeChartSignals(candleData.candles, chartParams) : null),
     [candleData.candles, chartParams])
+  // Candlestick and chart patterns, on the same candles.
+  const patterns = useMemo(
+    () => (candleData.candles.length && chartParams.patterns?.on ? detectPatterns(candleData.candles, { closeOnly: candleData.closeOnly }) : null),
+    [candleData.candles, candleData.closeOnly, chartParams.patterns?.on])
+  const chartCalc = useMemo(() => (calc ? { ...calc, patterns } : null), [calc, patterns])
 
   // Full screen: the page behind stops scrolling, Escape and Back close it.
   useEffect(() => {
@@ -124,7 +130,7 @@ export default function IndicatorChart({ coinId, symbol, name, price, source = '
     candleData.loading && !cs.length
       ? <div className="sc-empty">{t('tkFetching')}</div>
       : cs.length
-        ? <SignalChart candles={cs} visible={candleData.visible} calc={calc} closeOnly={candleData.closeOnly} height={height}
+        ? <SignalChart candles={cs} visible={candleData.visible} calc={chartCalc} closeOnly={candleData.closeOnly} height={height}
             ariaLabel={`${name || symbol || ''} price chart with indicators`} />
         : <div className="sc-empty">{t('adNoChartData')}</div>
   )
@@ -136,6 +142,9 @@ export default function IndicatorChart({ coinId, symbol, name, price, source = '
       </button>
       <button className={`ac-chip${P.cross.on ? ' on' : ''}`} aria-pressed={P.cross.on} onClick={() => toggle('cross')}>
         <i className="ac-dot is-gc" />{t('acGoldenCross')} {P.cross.fast}·{P.cross.mid}·{P.cross.slow}
+      </button>
+      <button className={`ac-chip${P.patterns?.on ? ' on' : ''}`} aria-pressed={!!P.patterns?.on} onClick={() => toggle('patterns')}>
+        <i className="ac-dot is-pat" />{t('acPatterns')}{P.patterns?.on && patterns ? ` · ${patterns.recent.length}` : ''}
       </button>
       <button className="ac-chip" onClick={() => setParamsDraft(JSON.parse(JSON.stringify(chartParams)))}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
@@ -201,6 +210,29 @@ export default function IndicatorChart({ coinId, symbol, name, price, source = '
         </div>
       )}
 
+      {P.patterns?.on && patterns && (
+        <div className="ac-pat" aria-label={t('acPatterns')}>
+          <div className="ac-pat-h"><b>{t('acPatterns')}</b><small>{t('acPatternsDesc')}</small></div>
+          {patterns.recent.length ? (
+            <ul className="ac-pat-list">
+              {patterns.recent.slice(0, 5).map(p => (
+                <li key={`${p.kind}-${p.i}`} className={`ac-pat-row is-${p.side}`}>
+                  <span className={`ac-pill ${p.side === 'bull' ? 'is-buy' : 'is-sell'}`}>{p.side === 'bull' ? t('acPatBull') : t('acPatBear')}</span>
+                  <span className="ac-pat-n">
+                    <b>{t(`pt_${p.kind}`)}</b>
+                    <small>
+                      {cs[p.i] ? rel(cs[p.i].t) : ''}
+                      {p.family === 'chart' && <> · {p.confirmed ? t('acPatConfirmed') : t('acPatForming')} · {t('acPatNeck')} ${fmtPrice(p.neckline)}</>}
+                    </small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="ac-note">{t('acNoPatterns')}</p>}
+          <p className="ac-note">{t('acPatNote')}</p>
+        </div>
+      )}
+
       {full && (
         <div className="ic-full" role="dialog" aria-modal="true" aria-label={`${name || symbol || ''} ${t('acFullScreen')}`}>
           <div className="ic-full-h">
@@ -238,11 +270,15 @@ export default function IndicatorChart({ coinId, symbol, name, price, source = '
                 {num('cross', 'fast', 'EMA')}{num('cross', 'mid', 'EMA')}{num('cross', 'slow', 'EMA')}
               </div>
             </div>
+            <div className="ac-ind">
+              <label className="ac-ind-top"><span><b>{t('acPatterns')}</b><small>{t('acPatternsDesc')}</small></span>
+                <input type="checkbox" className="ac-tog" checked={!!draft.patterns?.on} onChange={e => setD('patterns', 'on', e.target.checked)} /></label>
+            </div>
             <div className="ac-sheet-btns">
               <button className="ac-btn" onClick={() => setParamsDraft(JSON.parse(JSON.stringify(DEFAULT_CHART_PARAMS)))}>{t('acReset')}</button>
               <button className="ac-btn is-main" onClick={() => {
                 const n = normalizeParams(draft); setChartParams(n); saveChartParams(n); setParamsDraft(null)
-                track('chart_indicators_saved', { signals: n.signals.on, cross: n.cross.on, source })
+                track('chart_indicators_saved', { signals: n.signals.on, cross: n.cross.on, patterns: n.patterns.on, source })
               }}>{t('acSave')}</button>
             </div>
           </div>
