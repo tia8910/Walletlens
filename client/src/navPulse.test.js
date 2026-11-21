@@ -34,3 +34,10 @@ describe('living pulse in the bottom bar', () => {
     for (const l of ['0', '1', '2', '3']) expect(block).toContain(`html.wl-v3[data-wl-pulse="${l}"]`)
   })
 })
+
+describe('the add button', () => {
+  it('keeps its own animation, untouched by the pulse', () => {
+    const css = read('v3.css')
+    expect(css.slice(css.indexOf('/* Living pulse'))).not.toMatch(/wl-ss|wl-nav-fab/)
+  })
+})

@@ -1046,5 +1046,4 @@ html.wl-v3[data-wl-day="down"] { --pv-c: #ef4444; --pv-cf: rgba(239, 68, 68, .4)
   html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-bar:nth-child(2) { animation-delay: calc(var(--pv-t) * .1); }
   html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-bar:nth-child(3) { animation-delay: calc(var(--pv-t) * .2); }
   html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-dots { transform-origin: center; animation: pv-turn var(--pv-t) cubic-bezier(.5, 0, .3, 1.4) infinite; }
-  html.wl-v3[data-wl-pulse] .wl-ss-rings { animation-duration: calc(var(--pv-t) * 1.6); }
 }

@@ -125,6 +125,7 @@ const V2_NAV_ITEMS = [
 // Living icons: each part has a class the pulse animates (v3.css, under
 // html[data-wl-pulse]). Home's tiles fill in, Signals' candles trade places,
 // Analyze's bars measure and More's tiles turn; still without a pulse.
+// The add button keeps its own animation.
 const V3_NAV_ITEMS = [
   {
     ...byId('dashboard'), labelKey: 'nlHome',
