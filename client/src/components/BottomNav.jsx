@@ -4,6 +4,7 @@ import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
 import { homePath } from '../v2Preview'
 import { LongPressMenu } from './LongPressMenu'
+import { initNavPulse } from '../navPulse'
 
 
 // The add button's shape-shifter phases, in the order they play.
@@ -192,6 +193,9 @@ const BottomNav = memo(function BottomNav({ v2 = false, v3 = false }) {
   const closeLp = React.useCallback(() => setLpMenu(null), [])
   const { t } = useLanguage()
   const lpTimer = React.useRef(null)
+
+  // The living icons: today's pulse, or a ?pulse= preview, from the start.
+  useEffect(() => { if (v3) initNavPulse() }, [v3])
 
   useEffect(() => {
     const stateTab = location.state?.tab

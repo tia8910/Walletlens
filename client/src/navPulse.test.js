@@ -41,3 +41,33 @@ describe('the add button', () => {
     expect(css.slice(css.indexOf('/* Living pulse'))).not.toMatch(/wl-ss|wl-nav-fab/)
   })
 })
+
+describe('the bar moves from the start', () => {
+  const mem = () => { const m = {}; return { getItem: k => m[k] ?? null, setItem: (k, v) => { m[k] = v }, removeItem: k => { delete m[k] } } }
+  const el = () => document.createElement('div')
+  it('remembers today\'s reading for the next start', async () => {
+    const { setNavPulse: set, initNavPulse: init } = await import('./navPulse?remember')
+    const store = mem()
+    set({ level: 2, up: true }, el(), store)
+    const root = el()
+    init('', root, store)
+    expect(root.getAttribute('data-wl-pulse')).toBe('2')
+    expect(root.getAttribute('data-wl-day')).toBe('up')
+  })
+  it('forgets a reading from another day', async () => {
+    const { initNavPulse: init } = await import('./navPulse?stale')
+    const store = mem()
+    store.setItem('wl_nav_pulse', JSON.stringify({ level: 3, up: false, day: 'Mon Jan 01 2001' }))
+    const root = el()
+    init('', root, store)
+    expect(root.hasAttribute('data-wl-pulse')).toBe(false)
+  })
+  it('?pulse=3&day=down previews a level, and Home does not overwrite it', async () => {
+    const { setNavPulse: set, initNavPulse: init } = await import('./navPulse?preview')
+    const root = el()
+    init('?pulse=3&day=down', root, mem())
+    set(null, root, mem())
+    expect(root.getAttribute('data-wl-pulse')).toBe('3')
+    expect(root.getAttribute('data-wl-day')).toBe('down')
+  })
+})
