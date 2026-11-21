@@ -776,7 +776,7 @@ export default {
     moreQLearn: "أتعلم",
     moreSLearn: "طوّر مهارتك",
     moreQData: "أدير بياناتي",
-    moreSData: "النسخ الاحتياطي والملفات والتطبيق",
+    moreSData: "النسخ الاحتياطي والملفات",
     nlAboutGroup: "عن WalletLens",
     nlGrow: "نمِّ ثروتي",
     nlMarketIndex: "مؤشر السوق",

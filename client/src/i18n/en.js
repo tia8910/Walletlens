@@ -771,7 +771,7 @@ export default {
     moreQLearn: "Learn",
     moreSLearn: "Get better at it",
     moreQData: "Manage my data",
-    moreSData: "Backups, files and the app",
+    moreSData: "Backups and files",
     nlAboutGroup: "About WalletLens",
     nlGrow: "Grow my net worth",
     nlMarketIndex: "Market index",

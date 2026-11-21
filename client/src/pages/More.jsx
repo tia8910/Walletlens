@@ -7,8 +7,6 @@ import { useTheme, THEMES } from '../ThemeContext'
 import { useZakatOn } from '../zakatSwitch'
 import { homePath } from '../v2Preview'
 import { track } from '../analytics'
-import { useCanInstall, promptInstall } from '../pwaInstall'
-import { SUPPORT_URL } from '../components/CoffeeButton'
 import { EXTENSION_PAGE } from '../components/InstallExtension'
 import { isMsStore } from '../msStore'
 
@@ -32,7 +30,6 @@ export default function More() {
   const { t } = useLanguage()
   const { theme, setTheme, mode, setMode } = useTheme()
   const zakatOn = useZakatOn()
-  const canInstall = useCanInstall()
   const home = homePath(true)
   const [q, setQ] = useState('')
 
@@ -68,14 +65,9 @@ export default function More() {
       { icon: 'graduation', label: t('academy'), on: () => go('/academy') },
       { icon: 'info', label: t('howItWorks'), on: () => { track('help_guide_open', { source: 'more' }); window.dispatchEvent(new Event('wl:open-help')) } },
     ] },
-    // What the menu and the top bar held beyond pages (install, the support
-    // link) sits with the data tools, so hiding them in the new look loses nothing.
     { id: 'data', hue: '#64748b', icon: 'download', q: t('moreQData'), sub: t('moreSData'), items: [
       { icon: 'download', label: t('backupRestore'), on: () => go(home, { tab: 'manage' }) },
       { icon: 'upload', label: t('importExport'), on: () => go(home, { tab: 'data' }) },
-      { icon: 'grid', label: t('tools'), on: () => go(home, { tab: 'tools' }) },
-      ...(canInstall ? [{ icon: 'download', label: t('installApp'), on: () => { track('pwa_menu_install_click', { source: 'more' }); promptInstall('more') } }] : []),
-      { icon: 'gift', label: t('coffeeSupport'), on: () => { track('coffee_support_click', { source: 'more' }); window.open(SUPPORT_URL, '_blank', 'noopener') } },
     ] },
   ]
   const links = [

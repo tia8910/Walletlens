@@ -710,7 +710,7 @@ export default {
     moreQLearn: "Imparare",
     moreSLearn: "Migliora ogni giorno",
     moreQData: "Gestire i miei dati",
-    moreSData: "Backup, file e l’app",
+    moreSData: "Backup e file",
     nlAboutGroup: "Informazioni su WalletLens",
     nlGrow: "Fai crescere il mio patrimonio",
     nlMarketIndex: "Indice di mercato",
