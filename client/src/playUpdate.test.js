@@ -117,3 +117,31 @@ describe('the in-app update check', () => {
     expect(check.slice(0, check.indexOf('\n    }'))).toMatch(/catch \(Throwable/)
   })
 })
+
+describe('the daily background update check', () => {
+  const worker = read('UpdateCheckWorker.java')
+
+  it('is queued once a day, online only, and kept across app starts', () => {
+    expect(worker).toMatch(/PeriodicWorkRequest\.Builder\(\s*UpdateCheckWorker\.class, 1, TimeUnit\.DAYS\)/)
+    expect(worker).toMatch(/NetworkType\.CONNECTED/)
+    expect(worker).toMatch(/ExistingPeriodicWorkPolicy\.KEEP/)
+    expect(read('WalletLensApp.java')).toMatch(/UpdateCheckWorker\.schedule\(this\)/)
+  })
+
+  it('asks Play and posts one quiet notification per new version', () => {
+    expect(worker).toMatch(/getAppUpdateInfo\(\)/)
+    expect(worker).toMatch(/UpdateAvailability\.UPDATE_AVAILABLE/)
+    expect(worker).toMatch(/NotificationHelper\.CHANNEL_QUIET_ID/)
+    expect(worker).toMatch(/KEY_NOTIFIED_VC, 0\) == vc\) return Result\.success\(\)/)
+  })
+
+  it('opens the app straight into Play\'s update flow when tapped', () => {
+    expect(worker).toMatch(/PlayUpdate\.forceNextCheck\(ctx\)/)
+    expect(worker).toMatch(/new Intent\(ctx, AppShellActivity\.class\)/)
+    expect(read('PlayUpdate.java')).toMatch(/static void forceNextCheck\(@NonNull Context context\)/)
+  })
+
+  it('never retries in a loop or uses an exact alarm', () => {
+    expect(worker).not.toMatch(/Result\.retry\(\)|AlarmManager|setExact/)
+  })
+})

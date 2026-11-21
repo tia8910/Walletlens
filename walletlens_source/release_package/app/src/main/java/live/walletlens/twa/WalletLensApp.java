@@ -45,6 +45,10 @@ public class WalletLensApp extends android.app.Application {
             Log.e(TAG, "Notification init failed: " + e.getMessage());
         }
 
+        // Ask Play once a day, in the background, whether a newer version is
+        // out; the app only checks while it is open (see UpdateCheckWorker).
+        UpdateCheckWorker.schedule(this);
+
         try {
             registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
                 @Override

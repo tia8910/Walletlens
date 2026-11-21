@@ -1,6 +1,7 @@
 package live.walletlens.twa;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 import android.widget.Toast;
@@ -48,7 +49,7 @@ final class PlayUpdate {
 
     private static final String TAG = "WalletLensUpdate";
 
-    private static final String PREFS = "walletlens_update";
+    static final String PREFS = "walletlens_update";
     private static final String KEY_LAST_CHECK = "last_check_ms";
 
     /**
@@ -67,9 +68,9 @@ final class PlayUpdate {
      * Called after an install completes so the user sees the update
      * dialog immediately rather than waiting for the next 6-hour window.
      */
-    static void forceNextCheck(@NonNull Activity activity) {
+    static void forceNextCheck(@NonNull Context context) {
         try {
-            activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                     .edit().putLong(KEY_LAST_CHECK, 0L).apply();
         } catch (Throwable ignored) {}
     }
