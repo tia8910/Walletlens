@@ -55,6 +55,7 @@ import { isDriveConfigured } from '../googleDrive'
 import Tip from '../components/Tip'
 import { syncWidgets } from '../nativeWidgets'
 import { noteAppOpen, setReviewSnapshot, noteMoment } from '../reviewPrompt'
+import { reportInstallReferrer } from '../installReferrer'
 import { noteSupportOpen } from '../supportNudge'
 import SupportNudge from '../components/SupportNudge'
 import { VOICE_API, voiceProxy } from '../apiHosts.js'
@@ -3706,6 +3707,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (!loaded) return
     noteAppOpen()
+    // Which link brought this Android install, once (Play Install Referrer).
+    reportInstallReferrer()
     // Counted on every launch, not only Android ones: the support card shows
     // wherever the site runs, so its own open count cannot ride on the review
     // prompt's, which no-ops outside the installed app.

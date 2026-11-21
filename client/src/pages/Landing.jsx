@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import LandingBackground from '../components/LandingBackground'
 import InstallExtension, { EXTENSION_URL, ChromeIcon } from '../components/InstallExtension'
-import StoreBadges, { PLAY_STORE_URL, PlayMark } from '../components/StoreBadges'
+import StoreBadges, { playLink, PlayMark } from '../components/StoreBadges'
 import { isAndroidTWA, isInstalledApp } from '../nativeBridge'
 import EmailOptIn from '../components/EmailOptIn'
 import { MetalBar } from '../data/assetIcons'
@@ -187,7 +187,7 @@ export default function Landing() {
           {!isApp && (
             <a
               className="lp-launch-pill"
-              href={PLAY_STORE_URL}
+              href={playLink('landing_pill')}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('launch_pill_click', { store: 'google_play' })}
@@ -669,7 +669,7 @@ export default function Landing() {
             </ul>
             <a
               className="lp-plat-cta"
-              href={PLAY_STORE_URL}
+              href={playLink('landing_platforms')}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('platform_cta_click', { platform: 'android' })}
@@ -881,7 +881,7 @@ export default function Landing() {
         <div className="lp-footer-products">
           <span className="lp-footer-products-label">Get WalletLens</span>
           <a
-            href={PLAY_STORE_URL}
+            href={playLink('landing_footer')}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => track('landing_footer_nav', { to: 'google_play' })}

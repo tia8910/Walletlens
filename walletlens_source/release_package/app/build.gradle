@@ -465,6 +465,11 @@ dependencies {
     // version code is live and, if it is, says so in the app.
     implementation 'com.google.android.play:app-update:2.1.0'
 
+    // Play Install Referrer: which link or campaign brought this install
+    // (utm_source / utm_medium / utm_campaign on the Play link). Read once,
+    // on the first launch; see InstallReferrer.java.
+    implementation 'com.android.installreferrer:installreferrer:2.2'
+
     // Firebase Cloud Messaging.
     //
     // The transport the notification channels need once the app renders itself
