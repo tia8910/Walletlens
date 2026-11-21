@@ -63,7 +63,6 @@ export default function More() {
     ] },
     { id: 'learn', hue: '#ec4899', icon: 'graduation', q: t('moreQLearn'), sub: t('moreSLearn'), items: [
       { icon: 'graduation', label: t('academy'), on: () => go('/academy') },
-      { icon: 'info', label: t('howItWorks'), on: () => { track('help_guide_open', { source: 'more' }); window.dispatchEvent(new Event('wl:open-help')) } },
     ] },
     { id: 'data', hue: '#64748b', icon: 'download', q: t('moreQData'), sub: t('moreSData'), items: [
       { icon: 'download', label: t('backupRestore'), on: () => go(home, { tab: 'manage' }) },
