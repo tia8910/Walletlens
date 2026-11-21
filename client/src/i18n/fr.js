@@ -1311,6 +1311,7 @@ export default {
     ppLeftOut: (n) => `${n} actifs sans prix exclus.`,
     fxBetterThan: (b, of) => `Mieux que ${b} de vos ${of} derniers jours`,
     fxAboveHigh: (amt, when) => when ? `${amt} au-dessus de votre sommet du ${when}` : `${amt} au-dessus de votre sommet précédent`,
+    fxAboveInvested: (amt) => `${amt} de plus que votre mise`,
     spGenerateMine: 'Générer mon plan de vente',
     spCtaSub: (n) => `Lit les graphiques de vos ${n} actifs : support, résistance, RSI, MACD, tendance`,
     spReading: 'Lecture des supports, résistances et du momentum…',

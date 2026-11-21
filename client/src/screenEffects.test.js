@@ -256,3 +256,52 @@ describe('the dashboard says which wallet is on screen', () => {
     expect(src).toMatch(/observe\(\{[^\n]*walletId: selectedWalletId/)
   })
 })
+
+describe('the all-time high is a profit record only', () => {
+  const opened = { ...EMPTY_STATE, day: dayKey(noon, 0) }
+  // Plays out a run of price updates three minutes apart; returns every effect.
+  const run = (state, points, invested = 1000) => {
+    const fx = []
+    let st = state
+    points.forEach((v, i) => {
+      const r = decide({ now: noon + i * 3 * 60_000, totalValue: v, invested, changePct: 0, state: st })
+      if (r.effect) fx.push(r.effect)
+      st = r.nextState
+    })
+    return { fx, st }
+  }
+
+  it('never plays at a 50% loss, however much the loss shrinks', () => {
+    // Invested 1000; worth 400, then 450, 500, 520: a loss getting smaller.
+    const { fx, st } = run({ ...opened, athP: -600 }, [400, 450, 500, 520, 520])
+    expect(fx).toEqual([])
+    expect(st.athP).toBe(-480) // the high follows quietly
+  })
+
+  it('stays quiet up to break-even', () => {
+    const { fx } = run({ ...opened, athP: -500 }, [900, 1000, 1000])
+    expect(fx).toEqual([])
+  })
+
+  it('plays when the portfolio is first worth more than was put in', () => {
+    const { fx, st } = run({ ...opened, athP: -500 }, [900, 1100, 1100])
+    expect(fx).toEqual([ATH])
+    expect(st.athP).toBe(100)
+    const r = decide({ totalValue: 1100, invested: 1000, changePct: 0,
+      state: { ...opened, athP: -500, athPending: 1, athPendingTs: noon - 3 * 60_000 } })
+    expect(r.payload).toMatchObject({ gain: 100, firstProfit: true, since: null })
+  })
+
+  it('then plays again only for a bigger profit', () => {
+    const { st } = run({ ...opened, athP: -500 }, [1100, 1100])
+    expect(run(st, [1080, 1100, 1100]).fx).toEqual([])
+    const { fx } = run(st, [1300, 1300])
+    expect(fx).toEqual([ATH])
+  })
+
+  it('has no profit to judge without a known amount invested', () => {
+    const { fx, st } = run({ ...opened, athP: 50 }, [5000, 6000, 7000], 0)
+    expect(fx).toEqual([])
+    expect(st.athP).toBe(50)
+  })
+})

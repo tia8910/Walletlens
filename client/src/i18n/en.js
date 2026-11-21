@@ -1332,6 +1332,7 @@ export default {
     ppLeftOut: (n) => `${n} asset${n === 1 ? '' : 's'} without a price left out.`,
     fxBetterThan: (b, of) => `Better than ${b} of your last ${of} days`,
     fxAboveHigh: (amt, when) => when ? `${amt} above your high from ${when}` : `${amt} above your previous high`,
+    fxAboveInvested: (amt) => `${amt} more than you put in`,
     spGenerateMine: 'Generate my sell plan',
     spCtaSub: (n) => `Reads the charts of your ${n} asset${n === 1 ? '' : 's'}: support, resistance, RSI, MACD, trend`,
     spReading: 'Reading support, resistance and momentum…',
