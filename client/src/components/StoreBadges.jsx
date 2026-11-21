@@ -6,6 +6,14 @@ import { isMsStore } from '../msStore'
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=live.walletlens.twa'
 
 /**
+ * The Play link tagged with where it was tapped. Play passes the referrer
+ * text to the app after install (Play Install Referrer), so installs can be
+ * counted by the page and button that sent them.
+ */
+export const playLink = (campaign = 'site') =>
+  `${PLAY_STORE_URL}&referrer=${encodeURIComponent(`utm_source=walletlens.live&utm_medium=website&utm_campaign=${campaign}`)}`
+
+/**
  * Google Play "folded triangle" mark.
  *
  * Drawn from explicit geometry rather than copied path data so the four faces
@@ -48,7 +56,7 @@ export default function StoreBadges({ source = 'unknown', hidePlay = false, comp
       {!hidePlay && (
         <a
           className="lp-store-badge"
-          href={PLAY_STORE_URL}
+          href={playLink(source)}
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => track('store_badge_click', { store: 'google_play', source })}

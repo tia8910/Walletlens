@@ -8,9 +8,27 @@ on:
         required: true
         type: string
       version_code:
-        description: 'Version code (integer, must be higher than the last Play upload)'
+        description: 'Version code. Leave empty to use the next free one from Google Play.'
+        required: false
+        type: string
+        default: ''
+      play_track:
+        description: 'Publish to Google Play (none = only build the files)'
         required: true
-        type: number
+        type: choice
+        options: [internal, alpha, beta, production, none]
+        default: internal
+      release_status:
+        description: 'Release status on that track (draft = upload, then roll out by hand in Play Console)'
+        required: true
+        type: choice
+        options: [completed, draft]
+        default: completed
+      release_notes:
+        description: 'What is new (English, up to 500 characters; optional)'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   build:
@@ -89,6 +107,34 @@ jobs:
           printf '%s' "$GOOGLE_SERVICES_JSON" > walletlens_source/release_package/app/google-services.json
           python3 -c "import json; d=json.load(open('walletlens_source/release_package/app/google-services.json')); pkg=d['client'][0]['client_info']['android_client_info']['package_name']; assert pkg=='live.walletlens.twa', 'wrong package: '+pkg; print('firebase config ok:', d['project_info']['project_id'], pkg)"
 
+      # The Play Developer API. googleapis is installed next to the script for
+      # this run only, so it stays out of the repo's dependencies.
+      - name: Set up the Play publishing script
+        if: github.event.inputs.play_track != 'none' || github.event.inputs.version_code == ''
+        run: |
+          mkdir -p .play && cp scripts/play-publish.mjs .play/
+          cd .play && npm init -y > /dev/null && npm install --no-audit --no-fund googleapis@144.0.0 > /dev/null
+
+      # An empty version code means: ask Play for the next free one. Asked of
+      # Play itself, so it is right even when the last upload was by hand.
+      - name: Resolve version code
+        id: vc
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          INPUT_VC: ${{ github.event.inputs.version_code }}
+        run: |
+          if [ -n "$INPUT_VC" ]; then
+            case "$INPUT_VC" in (*[!0-9]*) echo "::error::version_code must be a whole number"; exit 1;; esac
+            echo "code=$INPUT_VC" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::No version_code given, and PLAY_SERVICE_ACCOUNT_JSON is not set to ask Google Play for the next one."
+            exit 1
+          fi
+          CODE=$(node .play/play-publish.mjs next-version)
+          echo "Next free version code from Google Play: $CODE"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+
       - name: Create local.properties
         run: |
           echo "sdk.dir=$ANDROID_HOME" > walletlens_source/release_package/local.properties
@@ -96,9 +142,9 @@ jobs:
       - name: Update version in build.gradle
         working-directory: walletlens_source/release_package
         run: |
-          sed -i "s/versionCode [0-9]*/versionCode ${{ github.event.inputs.version_code }}/" app/build.gradle
+          sed -i "s/versionCode [0-9]*/versionCode ${{ steps.vc.outputs.code }}/" app/build.gradle
           sed -i "s/versionName \"[^\"]*\"/versionName \"${{ github.event.inputs.version_name }}\"/" app/build.gradle
-          echo "Updated to versionCode=${{ github.event.inputs.version_code }}, versionName=${{ github.event.inputs.version_name }}"
+          echo "Updated to versionCode=${{ steps.vc.outputs.code }}, versionName=${{ github.event.inputs.version_name }}"
 
       - name: Grant execute permission for gradlew
         working-directory: walletlens_source/release_package
@@ -170,3 +216,23 @@ jobs:
           name: WalletLens-v${{ github.event.inputs.version_name }}-mapping.txt
           path: walletlens_source/release_package/app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: ignore
+
+      # Straight to Google Play: upload the signed bundle and release it on the
+      # chosen track. Runs last, after the files are saved above, so a Play
+      # refusal never costs the build.
+      - name: Publish to Google Play
+        if: github.event.inputs.play_track != 'none'
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          TRACK: ${{ github.event.inputs.play_track }}
+          STATUS: ${{ github.event.inputs.release_status }}
+          VERSION_NAME: ${{ github.event.inputs.version_name }}
+          NOTES: ${{ github.event.inputs.release_notes }}
+        run: |
+          if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON secret is not set. The AAB was built and saved above; upload it by hand, or add the secret (see scripts/play-publish.mjs)."
+            exit 1
+          fi
+          node .play/play-publish.mjs upload \
+            walletlens_source/release_package/app/build/outputs/bundle/release/app-release.aab \
+            "$TRACK" "$STATUS" "$VERSION_NAME" "$NOTES"

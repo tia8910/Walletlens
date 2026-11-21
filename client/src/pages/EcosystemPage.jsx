@@ -14,7 +14,7 @@ import './EcosystemPage.css'
 // the structured data is a rich-results violation.
 
 const WEB = 'https://walletlens.live'
-const PLAY = 'https://play.google.com/store/apps/details?id=live.walletlens.twa'
+const PLAY = 'https://play.google.com/store/apps/details?id=live.walletlens.twa&referrer=' + encodeURIComponent('utm_source=walletlens.live&utm_medium=website&utm_campaign=ecosystem')
 const CWS = 'https://chromewebstore.google.com/detail/ajmjdeobjjmabgonhaeaaehoepfafhbn'
 
 const TITLE = 'WalletLens — Private Investment Management App'

@@ -49,6 +49,9 @@ public class WalletLensApp extends android.app.Application {
         // out; the app only checks while it is open (see UpdateCheckWorker).
         UpdateCheckWorker.schedule(this);
 
+        // Which link brought this install; read once from Play.
+        InstallReferrer.fetchOnce(this);
+
         try {
             registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
                 @Override

@@ -60,7 +60,7 @@ describe('the tour page', () => {
 
   it('puts Google Play, Microsoft, the Chrome extension and YouTube in the top bar', () => {
     const bar = markup.match(/<nav class="stores" aria-label="Get the apps">([\s\S]*?)<\/nav>/)[1]
-    expect(bar).toContain('href="https://play.google.com/store/apps/details?id=live.walletlens.twa" data-cta="nav_play"')
+    expect(bar).toContain('href="https://play.google.com/store/apps/details?id=live.walletlens.twa&amp;referrer=utm_source%3Dwalletlens.live%26utm_medium%3Dwebsite%26utm_campaign%3Dtour" data-cta="nav_play"')
     expect(bar).toContain('href="https://apps.microsoft.com/detail/9pkvkn0p9dx2" data-cta="nav_msstore"')
     expect(bar).toContain('href="/chrome-extension/" data-cta="nav_chrome"')
     expect(bar).toContain('href="/youtube/" data-cta="nav_youtube"')

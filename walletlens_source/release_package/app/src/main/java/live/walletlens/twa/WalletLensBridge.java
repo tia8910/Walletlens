@@ -116,6 +116,18 @@ public class WalletLensBridge {
         return "webview-2";
     }
 
+    /**
+     * Which link brought this install: the Play Install Referrer, as JSON
+     * {@code {"referrer": "utm_source=...", "clickTs": s, "installTs": s}}, or
+     * an empty string when Play has not answered (or never will, off Play).
+     */
+    @JavascriptInterface
+    public String installReferrer() {
+        Activity a = activity();
+        if (a == null) return "";
+        return InstallReferrer.json(a);
+    }
+
     // ── Storage ──────────────────────────────────────────────────────────
 
     /**
