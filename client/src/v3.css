@@ -997,3 +997,25 @@ html.wl-v3:not([data-wl-light]) .nl-check { border-color: rgba(255, 255, 255, 0.
   }
   @keyframes nl-ring { to { transform: rotate(360deg); } }
 }
+
+/* More: search, then a card per goal with its tools as pills. */
+.nl-more-find { display: flex; align-items: center; gap: 0.6rem; min-height: 50px; margin: 0 0 1rem; padding: 0 0.95rem; border-radius: 18px; background: var(--nl-card, var(--card-bg)); box-shadow: var(--nl-shadow, none); color: var(--nl-sub, #5f6b78); }
+.nl-more-find:focus-within { box-shadow: 0 0 0 2px rgba(var(--g-rgb), 0.45), var(--nl-shadow, none); }
+.nl-more-find input { flex: 1; min-width: 0; height: 48px; border: 0 !important; outline: none; background: none !important; box-shadow: none !important; padding: 0 !important; font: inherit; font-size: 0.95rem; color: var(--nl-ink, inherit); }
+.nl-more-find input::-webkit-search-cancel-button { display: none; }
+.nl-more-find-x { display: grid; place-items: center; width: 32px; height: 32px; min-height: 0 !important; padding: 0 !important; border: 0; border-radius: 50%; background: rgba(var(--g-rgb), 0.1); color: inherit; cursor: pointer; }
+.nl-more-ask { margin: 0 0.15rem 0.7rem; font-size: 1.05rem; font-weight: 800; letter-spacing: -0.02em; }
+.nl-more-goal { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 0.7rem; padding: 0.85rem 0.9rem 0.95rem; border-radius: 22px; background: var(--nl-card, var(--card-bg)); box-shadow: var(--nl-shadow, none); border-inline-start: 4px solid var(--j); }
+.nl-more-goal-h { display: flex; align-items: center; gap: 0.7rem; }
+.nl-more-goal-h > span { flex: none; width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center; color: var(--j); background: color-mix(in srgb, var(--j) 14%, transparent); }
+.nl-more-goal-h b { display: block; font-size: 0.98rem; letter-spacing: -0.01em; }
+.nl-more-goal-h small { display: block; font-size: 0.74rem; color: var(--nl-sub, #5f6b78); }
+.nl-more-pills { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.nl-more-pill { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 38px !important; padding: 0 0.8rem !important; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--j) 28%, transparent); background: color-mix(in srgb, var(--j) 8%, transparent); color: inherit; font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+.nl-more-pill svg { color: var(--j); flex: none; }
+.nl-more-none { margin: 1.5rem 0; text-align: center; font-size: 0.88rem; color: var(--nl-sub, #5f6b78); }
+@media (prefers-reduced-motion: no-preference) {
+  .nl-more-pill { transition: transform .15s ease, background .15s ease; }
+  .nl-more-pill:hover { background: color-mix(in srgb, var(--j) 16%, transparent); }
+  .nl-more-pill:active { transform: scale(0.96); }
+}
