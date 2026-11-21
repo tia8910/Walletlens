@@ -278,15 +278,23 @@ describe('the all-time high is a profit record only', () => {
     expect(st.athP).toBe(-480) // the high follows quietly
   })
 
-  it('stays quiet climbing back to the first profit', () => {
-    const { fx } = run({ ...opened, athP: -500 }, [900, 1000, 1050, 1050])
+  it('stays quiet up to break-even', () => {
+    const { fx } = run({ ...opened, athP: -500 }, [900, 1000, 1000])
     expect(fx).toEqual([])
   })
 
-  it('plays only once a profit beats an earlier profit', () => {
-    const { fx: quiet, st } = run({ ...opened, athP: -500 }, [1100, 1100])
-    expect(quiet).toEqual([])
+  it('plays when the portfolio is first worth more than was put in', () => {
+    const { fx, st } = run({ ...opened, athP: -500 }, [900, 1100, 1100])
+    expect(fx).toEqual([ATH])
     expect(st.athP).toBe(100)
+    const r = decide({ totalValue: 1100, invested: 1000, changePct: 0,
+      state: { ...opened, athP: -500, athPending: 1, athPendingTs: noon - 3 * 60_000 } })
+    expect(r.payload).toMatchObject({ gain: 100, firstProfit: true, since: null })
+  })
+
+  it('then plays again only for a bigger profit', () => {
+    const { st } = run({ ...opened, athP: -500 }, [1100, 1100])
+    expect(run(st, [1080, 1100, 1100]).fx).toEqual([])
     const { fx } = run(st, [1300, 1300])
     expect(fx).toEqual([ATH])
   })

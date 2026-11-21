@@ -1271,6 +1271,7 @@ export default {
     ppLeftOut: (n) => `${n} Werte ohne Kurs ausgelassen.`,
     fxBetterThan: (b, of) => `Besser als ${b} deiner letzten ${of} Tage`,
     fxAboveHigh: (amt, when) => when ? `${amt} über deinem Hoch vom ${when}` : `${amt} über deinem bisherigen Hoch`,
+    fxAboveInvested: (amt) => `${amt} mehr, als du eingezahlt hast`,
     spGenerateMine: 'Meinen Verkaufsplan erstellen',
     spCtaSub: (n) => `Liest die Charts deiner ${n} Werte: Unterstützung, Widerstand, RSI, MACD, Trend`,
     spReading: 'Lese Unterstützung, Widerstand und Momentum…',

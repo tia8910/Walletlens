@@ -1337,6 +1337,7 @@ export default {
     ppLeftOut: (n) => `تم استبعاد ${n} من الأصول بلا سعر.`,
     fxBetterThan: (b, of) => `أفضل من ${b} من آخر ${of} يوماً لك`,
     fxAboveHigh: (amt, when) => when ? `${amt} فوق أعلى مستوى لك منذ ${when}` : `${amt} فوق أعلى مستوى سابق`,
+    fxAboveInvested: (amt) => `${amt} أكثر مما استثمرت`,
     spGenerateMine: 'أنشئ خطة البيع الخاصة بي',
     spCtaSub: (n) => `يقرأ رسوم ${n} من أصولك: الدعم والمقاومة وRSI وMACD والاتجاه`,
     spReading: 'جارٍ قراءة الدعم والمقاومة والزخم…',

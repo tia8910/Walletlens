@@ -258,7 +258,7 @@ export default function ScreenEffect({ effect, payload, onDone, money }) {
         <div className="fx-ath-badge">
           <span className="fx-ath-title">{t('fxAllTimeHigh')}</span>
           {Number.isFinite(payload?.gain) && payload.gain > 0 && (
-            <span className="fx-ath-sub">{t('fxAboveHigh')(fmtMoney(payload.gain), fmtDate(payload.since))}</span>
+            <span className="fx-ath-sub">{payload.firstProfit ? t('fxAboveInvested')(fmtMoney(payload.gain)) : t('fxAboveHigh')(fmtMoney(payload.gain), fmtDate(payload.since))}</span>
           )}
         </div>
       )}
