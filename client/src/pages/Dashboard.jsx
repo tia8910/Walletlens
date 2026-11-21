@@ -2044,6 +2044,21 @@ const FeatureSlideshow = memo(function FeatureSlideshow() {
   const [dir, setDir]         = useState(1)
   const [animKey, setAnimKey] = useState(0)
   const [paused, setPaused]   = useState(false)
+  // Off screen, nothing here is worth a frame. The slideshow lives below the
+  // fold of the empty dashboard, and its aurora, orb and shimmer loops (two
+  // of them under a blur filter) used to restyle every frame while nobody
+  // could see them. Scrolled away, the slides stop advancing and the loops
+  // pause; scrolled back, both resume.
+  const [offscreen, setOffscreen] = useState(false)
+  const rootRef = useRef(null)
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el || typeof IntersectionObserver !== 'function') return
+    const io = new IntersectionObserver(([e]) => setOffscreen(!e.isIntersecting))
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  const halted = paused || offscreen
   const touchX = useRef(null)
 
   const goTo = useCallback((newIdx, direction) => {
@@ -2054,16 +2069,17 @@ const FeatureSlideshow = memo(function FeatureSlideshow() {
   const prev = useCallback(() => goTo((idx - 1 + FEATURE_SLIDES.length) % FEATURE_SLIDES.length, -1), [idx, goTo])
 
   useEffect(() => {
-    if (paused) return
+    if (halted) return
     const id = setInterval(() => {
       setDir(1); setIdx(i => (i + 1) % FEATURE_SLIDES.length); setAnimKey(k => k + 1)
     }, FS_SLIDE_MS)
     return () => clearInterval(id)
-  }, [paused])
+  }, [halted])
 
   const slide = FEATURE_SLIDES[idx]
   return (
-    <div style={{ margin:'0 auto 1.25rem', width:'100%', userSelect:'none' }}
+    <div ref={rootRef} className="fs-root" data-off={offscreen ? '' : undefined}
+      style={{ margin:'0 auto 1.25rem', width:'100%', userSelect:'none' }}
       onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
       onTouchStart={e => { touchX.current = e.touches[0].clientX; setPaused(true) }}
       onTouchEnd={e => {
@@ -2114,7 +2130,7 @@ const FeatureSlideshow = memo(function FeatureSlideshow() {
           </div>
 
           {/* Tag with shimmer sweep */}
-          <span style={{
+          <span className="fs-tag" style={{
             position:'relative', fontSize:'0.58rem', fontWeight:800, letterSpacing:'0.12em',
             textTransform:'uppercase', color:slide.color, borderRadius:5,
             padding:'0.2rem 0.55rem', marginBottom:'0.55rem', display:'inline-block',
@@ -2128,10 +2144,10 @@ const FeatureSlideshow = memo(function FeatureSlideshow() {
 
           {/* Auto-advance progress bar */}
           <div style={{ position:'absolute', bottom:0, left:0, right:0, height:3, background:`${slide.color}18` }}>
-            <div className="fs-bar" key={`bar-${animKey}-${paused}`} style={{
+            <div className="fs-bar" key={`bar-${animKey}-${halted}`} style={{
               height:'100%', background:slide.color, borderRadius:'0 2px 2px 0',
               boxShadow:`0 0 8px ${slide.color}`,
-              animation: paused ? 'none' : `fs-bar ${FS_SLIDE_MS}ms linear both`,
+              animation: halted ? 'none' : `fs-bar ${FS_SLIDE_MS}ms linear both`,
             }} />
           </div>
         </div>
