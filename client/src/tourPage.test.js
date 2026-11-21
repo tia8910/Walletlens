@@ -104,7 +104,7 @@ describe('the tour page', () => {
     expect(html).toMatch(/sessionStorage\.removeItem\('wl_home_hop'\)/)
     const app = readFileSync(join(here, 'App.jsx'), 'utf8')
     expect(app).toMatch(/<Route path="\/" element=\{<StaticHome \/>\} \/>/)
-    expect(app).toMatch(/const HOME_HOP = 'wl_home_hop'/)
+    expect(readFileSync(join(here, 'homeHop.js'), 'utf8')).toMatch(/const HOME_HOP = 'wl_home_hop'/)
   })
 })
 
