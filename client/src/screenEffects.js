@@ -6,9 +6,11 @@
 //   sunrise  the first open of the day on a flat or red morning: calm, honest
 //   rocket   a day better than 9 in 10 of your own last 30 days (and +2%);
 //            with too little history, the old fixed +5% day
-//   ath      your profit is 0.5% (of the portfolio) above its previous high,
-//            on two price updates in a row, so a deposit or one stray tick
-//            never counts as a record
+//   ath      you are in profit, and that profit is 0.5% (of the portfolio)
+//            above its previous high, itself a profit, on two price updates
+//            in a row, so a deposit or one stray tick never counts as a
+//            record. A loss that shrinks is never a "high", and without a
+//            known amount invested there is no profit to judge
 //
 // Nothing plays while values are hidden, in the demo, or while prices are
 // offline or partly missing (`blocked`), and nothing is spent then either.
@@ -135,10 +137,11 @@ export function decideEffect({
   // Before prices land the total is briefly 0; no comparison means anything.
   if (!(totalValue > 0)) return { effect: null, payload: null, nextState: next }
 
-  const profit = invested != null && invested > 0 ? totalValue - invested : totalValue
+  // Profit only: what it is worth over what went in. Unknown cost, no profit.
+  const profit = invested != null && invested > 0 ? totalValue - invested : null
   // A device that has never stored a high arms one quietly: the first number
   // anyone sees is never a "record".
-  if (next.athP == null) { next.athP = profit; next.athTs = now; next.athPending = 0 }
+  if (next.athP == null && profit != null) { next.athP = profit; next.athTs = now; next.athPending = 0 }
 
   if (firstOpenToday) {
     const up = changePct > 0
@@ -149,8 +152,15 @@ export function decideEffect({
     }
   }
 
+  // While in a loss, or climbing back to the first profit, the high just
+  // follows along quietly: getting back toward even is not a record.
+  const recordable = profit != null && profit > 0 && prev.athP != null && prev.athP > 0
+  if (profit != null && !recordable && next.athP != null && profit > next.athP) {
+    next.athP = profit; next.athTs = now
+  }
+
   // The record: clear the old high by a margin, and hold it for two updates.
-  if (prev.athP != null && profit > prev.athP + totalValue * ATH_MARGIN) {
+  if (recordable && profit > prev.athP + totalValue * ATH_MARGIN) {
     // The first sighting starts the clock; only a later update, far enough
     // apart to be a fresh price, can confirm it.
     const held = prev.athPending >= 1 && now - prev.athPendingTs >= ATH_CONFIRM_MS
