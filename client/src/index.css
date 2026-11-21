@@ -1328,12 +1328,22 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -0.02em; }
 /* Dark emerald radial wash — promoted to its own GPU layer so DOM changes
    elsewhere don't trigger a repaint of this expensive blur. */
 body::before {
-  content: ''; position: fixed; inset: -20%; z-index: -2; pointer-events: none;
+  /* The 20% bleed past each viewport edge (so the blur never shows a hard
+     edge) is a scale, not `inset: -20%`. Same box: 140% of the viewport,
+     centred. The difference is that a transform is not layout. html.wl-v2,
+     added by React at mount, puts this layer back at `inset: 0`; with the
+     bleed in `inset` that moved a full-screen box by 172px on an 860px
+     phone, and Chrome scored it as a 0.2 layout shift on every app load —
+     twice the "good" CLS budget, from a decoration nobody sees move. A
+     transform change is not a layout shift. blur(43px) under scale(1.4)
+     renders as the 60px it was. */
+  content: ''; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  transform: scale(1.4);
   /* Bottom-right ambient wash only. The top-left green radial was removed — at
      20% 10% it sat directly behind the topbar logo and read as a green circle. */
   background:
     radial-gradient(40% 35% at 80% 90%, rgba(var(--gd-rgb),0.06) 0%, transparent 70%);
-  filter: blur(60px);
+  filter: blur(43px);
   opacity: 1;
   will-change: transform;
 }

@@ -54,6 +54,10 @@ html.wl-v2 body::before {
   content: '';
   position: fixed;
   inset: 0;
+  /* index.css bleeds the base layer with scale(1.4) and blur(43px); this one
+     is drawn at viewport size with the 60px blur it has always had. */
+  transform: none;
+  filter: blur(60px);
   z-index: -4;
   pointer-events: none;
   background:
