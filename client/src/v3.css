@@ -1019,3 +1019,32 @@ html.wl-v3:not([data-wl-light]) .nl-check { border-color: rgba(255, 255, 255, 0.
   .nl-more-pill:hover { background: color-mix(in srgb, var(--j) 16%, transparent); }
   .nl-more-pill:active { transform: scale(0.96); }
 }
+
+/* Living pulse: the bar's icons move with the portfolio pulse (navPulse.js
+   marks it on <html>). Speed and size follow the level; colour, the day. No
+   pulse, reduced motion, hidden or demo numbers: the icons stay still. */
+html.wl-v3[data-wl-pulse="0"] { --pv-t: 4.2s; --pv-a: .4; --pv-s: .9; --pv-k: .95; }
+html.wl-v3[data-wl-pulse="1"] { --pv-t: 2.6s; --pv-a: 1.2; --pv-s: .7; --pv-k: .85; }
+html.wl-v3[data-wl-pulse="2"] { --pv-t: 1.6s; --pv-a: 2; --pv-s: .5; --pv-k: .75; }
+html.wl-v3[data-wl-pulse="3"] { --pv-t: .95s; --pv-a: 3; --pv-s: .3; --pv-k: .62; }
+html.wl-v3[data-wl-day="up"] { --pv-c: #10b981; --pv-cf: rgba(16, 185, 129, .4); }
+html.wl-v3[data-wl-day="down"] { --pv-c: #ef4444; --pv-cf: rgba(239, 68, 68, .4); }
+@keyframes pv-tile { 0%, 60%, 100% { transform: scale(1); fill: transparent; } 20% { transform: scale(var(--pv-k)); fill: var(--pv-cf); } }
+@keyframes pv-up { 0%, 100% { transform: translateY(calc(var(--pv-a) * 1px)); } 50% { transform: translateY(calc(var(--pv-a) * -1px)); } }
+@keyframes pv-dn { 0%, 100% { transform: translateY(calc(var(--pv-a) * -1px)); } 50% { transform: translateY(calc(var(--pv-a) * 1px)); } }
+@keyframes pv-bar { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(var(--pv-s)); } }
+@keyframes pv-turn { 0%, 55% { transform: rotate(0); } 80%, 100% { transform: rotate(90deg); } }
+@media (prefers-reduced-motion: no-preference) {
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv * { transform-box: fill-box; }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-tile { transform-origin: center; animation: pv-tile var(--pv-t) ease-in-out infinite; }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-tile:nth-child(2) { animation-delay: calc(var(--pv-t) * .12); }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-tile:nth-child(3) { animation-delay: calc(var(--pv-t) * .36); }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-tile:nth-child(4) { animation-delay: calc(var(--pv-t) * .24); }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-c1 { animation: pv-up calc(var(--pv-t) * .7) ease-in-out infinite; }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-c2 { animation: pv-dn calc(var(--pv-t) * .7) ease-in-out infinite; }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-bar { transform-origin: bottom; animation: pv-bar calc(var(--pv-t) * .8) ease-in-out infinite; }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-bar:nth-child(2) { animation-delay: calc(var(--pv-t) * .1); }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-bar:nth-child(3) { animation-delay: calc(var(--pv-t) * .2); }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-dots { transform-origin: center; animation: pv-turn var(--pv-t) cubic-bezier(.5, 0, .3, 1.4) infinite; }
+  html.wl-v3[data-wl-pulse] .wl-ss-rings { animation-duration: calc(var(--pv-t) * 1.6); }
+}

@@ -28,6 +28,7 @@ import MilestonePopup, { detectMilestone, dismissMilestone } from '../components
 import { applyMood } from '../moodEngine'
 import { getSoulGreeting, dayDrivers } from '../soulGreeting'
 import { pulseReading, pulseLevel, recordPulse, loadPulseHistory } from '../portfolioPulse'
+import { setNavPulse } from '../navPulse'
 import PortfolioPulse from '../components/PortfolioPulse'
 import { exportToExcel, exportToPDF } from '../exportHoldings'
 import { noteFeatureUse } from '../featureUse'
@@ -3756,6 +3757,14 @@ export default function Dashboard() {
     setVolatilityLevel(level.level)
     setPulse({ reading, level })
   }, [loaded, enriched, totalValue, isDemo])
+
+  // The bottom bar's icons move with the pulse, coloured by the day. Like the
+  // screen effects, they stay plain when the numbers are hidden, a demo, or
+  // not all priced.
+  useEffect(() => {
+    const blocked = hidden || isDemo || pricesFailed || unpriced.length > 0
+    setNavPulse(pulse && !blocked ? { level: pulse.level.level, up: todayPnLVal >= 0 } : null)
+  }, [pulse, todayPnLVal, hidden, isDemo, pricesFailed, unpriced.length])
 
   // BTC's own day, so the soul line can say whether the market moved with you.
   useEffect(() => {
