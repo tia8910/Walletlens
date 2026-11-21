@@ -94,7 +94,7 @@ final class ReviewGate {
      * simply shows nothing once it is spent, so asking inside a short window
      * achieves nothing except spending a launch on a card nobody sees.
      */
-    private static final int REASK_AFTER_DAYS = 60;
+    private static final int REASK_AFTER_DAYS = 30;
 
     /**
      * After this many asks the cadence slows down. It does NOT stop.
@@ -123,7 +123,7 @@ final class ReviewGate {
     private static final int SETTLED_ASKS = 4;
 
     /** The gap once settled. Longer, but never infinite. */
-    private static final int SETTLED_REASK_DAYS = 180;
+    private static final int SETTLED_REASK_DAYS = 90;
 
     /**
      * Total time the app must have been in front of the user, ACROSS launches,
@@ -137,7 +137,7 @@ final class ReviewGate {
      * seconds of accumulated attention is two or three quick checks or one
      * unhurried session, whichever comes first.
      */
-    static final long MIN_FOREGROUND_MS = 90_000L;
+    static final long MIN_FOREGROUND_MS = 60_000L;
 
     private ReviewGate() {}
 

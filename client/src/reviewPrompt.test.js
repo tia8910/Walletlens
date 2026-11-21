@@ -175,16 +175,16 @@ describe('maybeAskForReview', () => {
     expect(maybeAskForReview(READY)).toBe(true)
   })
 
-  it('gives a session a full minute before considering it', async () => {
+  it('gives a session 45 seconds before considering it', async () => {
     // Was fifteen seconds, which on a slow phone could land the card while the
     // dashboard was still settling.
     const { maybeAskForReview } = await loadModule()
     seed()
 
-    vi.setSystemTime(T0 + 45 * 1000)
+    vi.setSystemTime(T0 + 30 * 1000)
     expect(maybeAskForReview(READY)).toBe(false)
 
-    vi.setSystemTime(T0 + 61 * 1000)
+    vi.setSystemTime(T0 + 46 * 1000)
     expect(maybeAskForReview(READY)).toBe(true)
   })
 
@@ -196,14 +196,14 @@ describe('maybeAskForReview', () => {
     expect(maybeAskForReview(READY)).toBe(true)
     expect(maybeAskForReview(READY)).toBe(false)
 
-    // Inside the 30-day re-ask window — Play's own quota would swallow an ask
+    // Inside the 21-day re-ask window — Play's own quota would swallow an ask
     // here anyway, so firing one only burns an intent.
-    vi.setSystemTime(T0 + 15 * DAY)
+    vi.setSystemTime(T0 + 10 * DAY)
     expect(maybeAskForReview(READY)).toBe(false)
-    vi.setSystemTime(T0 + 29 * DAY)
+    vi.setSystemTime(T0 + 20 * DAY)
     expect(maybeAskForReview(READY)).toBe(false)
 
-    vi.setSystemTime(T0 + 31 * DAY)
+    vi.setSystemTime(T0 + 22 * DAY)
     expect(maybeAskForReview(READY)).toBe(true)
     expect(readState().askCount).toBe(2)
 
@@ -229,13 +229,13 @@ describe('maybeAskForReview', () => {
     vi.setSystemTime(T0 + 60 * 1000)
 
     // Still inside the slower window: quiet, but not retired.
-    vi.setSystemTime(T0 + 45 * DAY)
+    vi.setSystemTime(T0 + 30 * DAY)
     expect(maybeAskForReview(READY)).toBe(false)
-    vi.setSystemTime(T0 + 89 * DAY)
+    vi.setSystemTime(T0 + 59 * DAY)
     expect(maybeAskForReview(READY)).toBe(false)
 
     // The fifth ask, which the old cap made impossible.
-    vi.setSystemTime(T0 + 91 * DAY)
+    vi.setSystemTime(T0 + 61 * DAY)
     expect(maybeAskForReview(READY)).toBe(true)
     expect(readState().askCount).toBe(5)
 
@@ -749,14 +749,14 @@ describe('asking right after the user did something', () => {
     expect(maybeAskForReview(READY)).toBe(false)
   })
 
-  it('offers again sooner after a fresh action, but never within two weeks', async () => {
+  it('offers again sooner after a fresh action, but never within ten days', async () => {
     const { noteMoment, maybeAskForReview } = await loadModule()
-    seed({ first: T0 - 60 * DAY, opens: 20, activeMs: 60 * MIN, asked: T0 - 10 * DAY, askCount: 1 })
+    seed({ first: T0 - 60 * DAY, opens: 20, activeMs: 60 * MIN, asked: T0 - 9 * DAY, askCount: 1 })
     vi.setSystemTime(T0 + 60 * 1000)
     noteMoment('feature_used')
     expect(maybeAskForReview(READY)).toBe(false)
 
-    seed({ first: T0 - 60 * DAY, opens: 20, activeMs: 60 * MIN, asked: T0 - 15 * DAY, askCount: 1 })
+    seed({ first: T0 - 60 * DAY, opens: 20, activeMs: 60 * MIN, asked: T0 - 11 * DAY, askCount: 1 })
     noteMoment('feature_used')
     expect(maybeAskForReview(READY)).toBe(true)
   })
@@ -776,5 +776,27 @@ describe('asking right after the user did something', () => {
     expect(featureVisitEnded('/coach', T0, '/dashboard', T0 + 10 * 1000)).toBe(false)
     expect(featureVisitEnded('/settings', T0, '/dashboard', T0 + 5 * 60 * 1000)).toBe(false)
     expect(featureVisitEnded('/coach', T0, '/coach', T0 + 5 * 60 * 1000)).toBe(false)
+  })
+})
+
+describe('the all-time high as a rating moment', () => {
+  it('is a known moment, and Home notes it when the effect fires', async () => {
+    const { MOMENTS } = await loadModule()
+    expect(MOMENTS.has('all_time_high')).toBe(true)
+    const dash = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'pages/Dashboard.jsx'), 'utf8')
+    expect(dash).toMatch(/if \(fired\?\.effect === ATH\) noteMoment\('all_time_high'\)/)
+  })
+
+  it('waits for a full-screen effect to finish before asking', async () => {
+    const { maybeAskForReview } = await loadModule()
+    seed()
+    vi.setSystemTime(T0 + 60 * 1000)
+    const fx = document.createElement('div')
+    fx.className = 'fx-layer fx-ath'
+    fx.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(fx)
+    expect(maybeAskForReview(READY)).toBe(false)
+    fx.remove()
+    expect(maybeAskForReview(READY)).toBe(true)
   })
 })

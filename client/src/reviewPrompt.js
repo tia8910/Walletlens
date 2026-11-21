@@ -79,13 +79,13 @@ const MIN_DAYS = 0
 // session for days, so a daily user could sit at "1 launch" indefinitely, and
 // an hour of real use counted for nothing. Five minutes of the app on screen,
 // across at least two visits, is someone who has formed an opinion.
-const ENGAGED_MS = 5 * 60 * 1000
+const ENGAGED_MS = 3 * 60 * 1000
 const ENGAGED_OPENS = 2
 // Coming back after this long away counts as a new launch, even though the
 // app never restarted.
 const NEW_VISIT_AFTER_MS = 30 * 60 * 1000
 const MIN_HOLDINGS = 1
-const MIN_DWELL_MS = 60 * 1000
+const MIN_DWELL_MS = 45 * 1000
 
 // A moment shortens the dwell: someone who just watched a price target hit is
 // already looking at good news, and making them wait another minute only risks
@@ -107,7 +107,7 @@ const FRICTION_QUIET_MS = 36 * 60 * 60 * 1000
 // is our own cooldown on top of that: a month before the same person is
 // considered again. It was two, which with the other gates meant most people
 // were offered the card once a season at best.
-const REASK_AFTER_DAYS = 30
+const REASK_AFTER_DAYS = 21
 
 // After this many asks the cadence slows down. It does NOT stop.
 //
@@ -129,7 +129,7 @@ const REASK_AFTER_DAYS = 30
 // often a card may appear. Our job is to keep offering on a cadence that is
 // not rude — which is what the longer gap below is for.
 const SETTLED_ASKS = 4
-const SETTLED_REASK_DAYS = 90
+const SETTLED_REASK_DAYS = 60
 
 // Right after the user did something that worked (a buy or sell, a backup,
 // time in a feature), the launch-count and days gates give way to a lighter
@@ -141,8 +141,8 @@ const SETTLED_REASK_DAYS = 90
 const MOMENT_MIN_ACTIVE_MS = 2 * 60 * 1000
 // Someone who has not rated yet is offered again sooner after a fresh action
 // than on the passive path. Play still caps what is actually shown.
-const MOMENT_REASK_DAYS = 14
-const MOMENT_SETTLED_REASK_DAYS = 45
+const MOMENT_REASK_DAYS = 10
+const MOMENT_SETTLED_REASK_DAYS = 30
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -192,6 +192,8 @@ export const MOMENTS = new Set([
   'first_holding',     // added their very first asset
   'trade_saved',       // a buy or a sell went in
   'feature_used',      // spent real time in a feature (Coach, Signals, Grow…)
+  'all_time_high',     // the all-time high played: first time worth more than
+                       // was put in, or a profit beating its previous high
 ])
 
 /** App failures. Not market losses — see the header. */
@@ -499,6 +501,9 @@ function readSnapshot() {
 // Hidden dialogs kept mounted in the page do not count.
 function dialogOnScreen() {
   try {
+    // A full-screen effect (green morning, all-time high) is still playing:
+    // the card waits for it to finish rather than landing on top of it.
+    if (document.querySelector('.fx-layer')) return true
     return [...document.querySelectorAll('[role="dialog"], [aria-modal="true"], .ms-overlay, .share-overlay, .qs-overlay')].some(el => {
       if (el.closest('[aria-hidden="true"]') || !el.getClientRects().length) return false
       const cs = getComputedStyle(el)
