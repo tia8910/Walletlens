@@ -3663,6 +3663,9 @@ export default function Dashboard() {
     // the whole portfolio's (observe keeps them apart).
     const fired = observe({ totalValue, invested: totalInvested, changePct, holdings: enriched, blocked, walletId: selectedWalletId, extra: { line } })
     if (fired) setEffect(fired)
+    // A record the app just celebrated is a good moment to ask for a rating
+    // (asked once the effect has finished; see reviewPrompt).
+    if (fired?.effect === ATH) noteMoment('all_time_high')
   }, [loaded, enriched, totalValue])
 
   // ?fx=explode|rocket|ath — play one on demand.

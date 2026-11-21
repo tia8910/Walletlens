@@ -195,7 +195,7 @@ describe('the native rating gate is actually called by something', () => {
     // The most common session in a portfolio app is a twenty-second price
     // check, and the people who do that daily are exactly the users worth
     // asking. A per-session minute — the first design — could never ask them.
-    expect(gate).toMatch(/MIN_FOREGROUND_MS = 90_000L/)
+    expect(gate).toMatch(/MIN_FOREGROUND_MS = 60_000L/)
     expect(gate).toMatch(/KEY_FG_MS, 0\) < MIN_FOREGROUND_MS\) return false/)
     // Every ended stretch reaches the lifetime total…
     const pause = /protected void onPause\(\) \{[\s\S]*?\n    \}/.exec(shell)[0]
