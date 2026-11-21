@@ -17,7 +17,6 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const PriceTicker = lazy(() => import('./components/PriceTicker'))
 const SmartMoneyTicker = lazy(() => import('./components/SmartMoneyTicker'))
 import ErrorBoundary from './components/ErrorBoundary'
-import DynamicBackground from './components/DynamicBackground'
 import Logo from './components/Logo'
 import Icon from './components/Icon'
 import BottomNav from './components/BottomNav'
@@ -828,43 +827,78 @@ export default function App() {
   // likely navigation is instant. On the landing page we pre-warm all core app
   // pages; from within the app we prefetch the most common next destinations.
   useEffect(() => {
-    const schedule = requestIdleCallback
-      ? (fn, opts) => requestIdleCallback(fn, opts)
-      : (fn, opts) => setTimeout(fn, opts?.timeout ?? 2000)
-    const cancel = requestIdleCallback ? cancelIdleCallback : clearTimeout
+    // Prefetching is a nicety for the next tap; it must never compete with
+    // the page being opened. Two rules keep it out of the way:
+    //
+    //  - Nothing starts before the window `load` event. An import() does not
+    //    just download a chunk, it parses and runs it, and a 2 s idle
+    //    `timeout` used to force that onto the main thread while Dashboard
+    //    was still hydrating, on exactly the slow phones where it hurts.
+    //  - No `timeout`: requestIdleCallback without one waits for real idle
+    //    time, however long that takes. Safari (no rIC) gets a late setTimeout.
+    //
+    // On a metered or 2G connection (Save-Data / effectiveType) nothing is
+    // prefetched at all: the user pays for the bytes and may never navigate.
+    const conn = typeof navigator !== 'undefined' ? navigator.connection : null
+    if (conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || ''))) return undefined
 
+    const hasRic = typeof requestIdleCallback === 'function'
+    const timers = []
+    const idles = []
+    let cancelled = false
+    // A failed prefetch is harmless (the real navigation retries), so it
+    // must not surface as an unhandled rejection.
+    const fire = (fn) => { if (!cancelled) Promise.resolve().then(fn).catch(() => {}) }
+    const schedule = (fn, delay) => {
+      timers.push(setTimeout(() => {
+        if (cancelled) return
+        if (hasRic) idles.push(requestIdleCallback(() => fire(fn)))
+        else timers.push(setTimeout(() => fire(fn), 1500))
+      }, delay))
+    }
+    const tasks = []
     const path = location.pathname
-    const ids = []
 
     if (path === '/') {
       // Landing: prime all primary app chunks in priority order.
-      ids.push(
-        schedule(() => import('./pages/Dashboard'),    { timeout: 3000 }),
-        schedule(() => import('./pages/Transactions'), { timeout: 5000 }),
-        schedule(() => import('./pages/Coach'),        { timeout: 7000 }),
-        schedule(() => import('./pages/Blog'),         { timeout: 9000 }),
-        schedule(() => import('./pages/Academy'),      { timeout: 11000 }),
+      tasks.push(
+        () => import('./pages/Dashboard'),
+        () => import('./pages/Transactions'),
+        () => import('./pages/Coach'),
+        () => import('./pages/Blog'),
+        () => import('./pages/Academy'),
       )
     } else if (path === '/dashboard' || isV2Path(path)) {
-      ids.push(
-        schedule(() => import('./pages/Transactions'), { timeout: 2000 }),
-        schedule(() => import('./pages/Coach'),        { timeout: 4000 }),
-        schedule(() => import('./pages/Technicals'),   { timeout: 6000 }),
-        schedule(() => import('./pages/Alpha'),        { timeout: 8000 }),
+      tasks.push(
+        () => import('./pages/Transactions'),
+        () => import('./pages/Coach'),
+        () => import('./pages/Technicals'),
+        () => import('./pages/Alpha'),
       )
     } else if (path === '/transactions') {
-      ids.push(
-        schedule(() => import('./pages/Dashboard'),    { timeout: 2000 }),
-        schedule(() => import('./pages/Coach'),        { timeout: 4000 }),
+      tasks.push(
+        () => import('./pages/Dashboard'),
+        () => import('./pages/Coach'),
       )
     } else if (path === '/coach') {
-      ids.push(
-        schedule(() => import('./pages/Dashboard'),    { timeout: 2000 }),
-        schedule(() => import('./pages/Technicals'),   { timeout: 4000 }),
+      tasks.push(
+        () => import('./pages/Dashboard'),
+        () => import('./pages/Technicals'),
       )
     }
 
-    return () => ids.forEach(id => cancel(id))
+    // Staggered so each chunk is parsed in its own idle slot, not all at once.
+    const start = () => tasks.forEach((load, i) => schedule(load, i * 1200))
+    let onLoad = null
+    if (document.readyState === 'complete') start()
+    else { onLoad = start; window.addEventListener('load', onLoad, { once: true }) }
+
+    return () => {
+      cancelled = true
+      if (onLoad) window.removeEventListener('load', onLoad)
+      timers.forEach(clearTimeout)
+      idles.forEach(id => cancelIdleCallback(id))
+    }
   }, [location.pathname])
 
   // Fire GA page_view on every SPA route change so every page in the sitemap
@@ -953,7 +987,11 @@ export default function App() {
 
   return (
     <div className="wl-app">
-      <DynamicBackground />
+      {/* No DynamicBackground here any more. Its particle canvas sat at
+          z-index -3, under the body's background, which ThemeContext always
+          paints opaque, so not one of its pixels ever reached the screen;
+          it still redrew ~40-100 particles and their links on every frame of
+          every app page, for as long as the app stayed open. */}
       <ExtensionToolbar />
       <OfflineNotice />
       <div className="wl-mood-aura" aria-hidden="true" />

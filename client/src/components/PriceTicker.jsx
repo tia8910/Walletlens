@@ -331,35 +331,98 @@ function PriceTicker({ v3 = false }) {
   useEffect(() => {
     const el = stripRef.current
     if (!v3 || !el) return
+    // This strip sits in the header of every page, so the drift below runs
+    // for as long as the app is open. It used to cost a quarter of the main
+    // thread on a mid-range phone, at idle: every frame read scrollLeft,
+    // wrote it back, and the scroll event that followed read scrollWidth and
+    // clientWidth again, each read forcing a layout whenever anything else on
+    // the page had changed. Now the hot path touches no geometry:
+    //
+    //  - `pos` is the source of truth while drifting; scrollLeft is written,
+    //    never read, and only when the value lands on a new device pixel.
+    //  - The row's width is measured on resize, on a change of items, and
+    //    once a second (price text changes widths), not on every frame.
+    //  - The drift does not start until the page has loaded, and stops while
+    //    the strip is off screen or hidden (the "hide ticker" setting), or
+    //    when everything already fits and there is nothing to drift.
+    let half = 0, width = 0
+    const measure = () => { half = el.scrollWidth / 2; width = el.clientWidth }
+    measure()
     // The row is drawn twice, so either edge can wrap to the same place in
     // the other copy: a swipe or ‹ › goes on in both directions forever.
-    const wrap = () => {
-      const half = el.scrollWidth / 2
-      if (half <= el.clientWidth) return
-      if (el.scrollLeft < 2) el.scrollLeft += half
-      else if (el.scrollLeft >= half * 2 - el.clientWidth - 2) el.scrollLeft -= half
+    const wrapAt = (left) => {
+      if (half <= width) return left
+      if (left < 2) return left + half
+      if (left >= half * 2 - width - 2) return left - half
+      return left
     }
-    if (el.scrollLeft < 2) el.scrollLeft = el.scrollWidth / 2
+    if (el.scrollLeft < 2) el.scrollLeft = half
+    let pos = el.scrollLeft, written = pos, selfScroll = false
+    // A scroll we caused needs nothing; a finger's scroll gets a fresh read.
+    const onScroll = () => {
+      if (selfScroll) { selfScroll = false; return }
+      const left = el.scrollLeft
+      const next = wrapAt(left)
+      if (next !== left) el.scrollLeft = next
+      pos = written = el.scrollLeft
+    }
     const opts = { passive: true }
-    const hold = () => pause()
-    el.addEventListener('scroll', wrap, opts)
+    const hold = () => { selfScroll = false; pause() }
+    el.addEventListener('scroll', onScroll, opts)
     for (const ev of ['pointerdown', 'touchstart', 'touchmove', 'wheel']) el.addEventListener(ev, hold, opts)
-    // The drift: slow, and never while a hand is on the row or just left it.
-    let raf = 0, pos = el.scrollLeft
+
     const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    let raf = 0, recheck = 0, frames = 0, visible = true, loaded = false, holding = false
+    const px = 1 / (window.devicePixelRatio || 1)
+    // The drift: slow, and never while a hand is on the row or just left it.
     const step = () => {
+      raf = 0
+      if (!visible || still) return
+      if (++frames % 60 === 0) measure()
+      if (half <= width) {
+        // Nothing to drift yet. Prices arriving widen the chips without
+        // resizing the strip itself, so look again in a second.
+        recheck = setTimeout(() => { measure(); run() }, 1000)
+        return
+      }
       if (Date.now() > pausedUntil.current && !document.hidden) {
-        // Sub-pixel steps accumulate in `pos`; scrollLeft rounds them away.
-        if (Math.abs(pos - el.scrollLeft) > 2) pos = el.scrollLeft
-        pos += 0.45
-        el.scrollLeft = pos
-      } else pos = el.scrollLeft
+        if (holding) { pos = written = el.scrollLeft; holding = false }
+        // Sub-pixel steps accumulate in `pos`; only whole device pixels are
+        // worth a write, since scrollLeft rounds the rest away.
+        pos = wrapAt(pos + 0.45)
+        const target = Math.round(pos / px) * px
+        if (target !== written) {
+          written = target
+          selfScroll = true
+          el.scrollLeft = target
+        }
+      } else holding = true
       raf = requestAnimationFrame(step)
     }
-    if (!still) raf = requestAnimationFrame(step)
+    const run = () => { clearTimeout(recheck); if (!raf && loaded && visible && !still) raf = requestAnimationFrame(step) }
+
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => { measure(); run() }) : null
+    ro?.observe(el)
+    const io = typeof IntersectionObserver === 'function'
+      ? new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) run() })
+      : null
+    io?.observe(el)
+
+    // Start once the page has loaded and had a moment, so the drift is not
+    // competing with the first render for the main thread.
+    let startTimer = 0
+    const begin = () => { startTimer = setTimeout(() => { loaded = true; run() }, 1200) }
+    if (document.readyState === 'complete') begin()
+    else window.addEventListener('load', begin, { once: true })
+
     return () => {
       cancelAnimationFrame(raf)
-      el.removeEventListener('scroll', wrap)
+      clearTimeout(startTimer)
+      clearTimeout(recheck)
+      window.removeEventListener('load', begin)
+      ro?.disconnect()
+      io?.disconnect()
+      el.removeEventListener('scroll', onScroll)
       for (const ev of ['pointerdown', 'touchstart', 'touchmove', 'wheel']) el.removeEventListener(ev, hold)
     }
   }, [v3, displayItems.length])

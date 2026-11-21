@@ -58,6 +58,17 @@ const SCENES = [
 const VOICE_LINE = '3 ETH, 1200 USDT, 10 AAPL'
 const VOICE_BREAK = VOICE_LINE.indexOf(' 10')  // the second line starts at "10 AAPL"
 
+// Each frame is a React render of the whole stage plus an SVG relayout. On a
+// mid-range phone that is most of a 16 ms frame, every frame, for as long as
+// Home is open with nothing in it, so taps on the very buttons this scene is
+// selling arrive late. Phones with few cores or little memory draw it at
+// 30 fps instead: the motion is slow (the orbit moves well under a pixel a
+// frame) and reads the same, at half the cost. Everything else keeps 60.
+const LOW_END = typeof navigator !== 'undefined' &&
+  ((navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4) ||
+   (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4))
+const FRAME_MS = LOW_END ? 1000 / 30 : 0
+
 const clamp = x => Math.max(0, Math.min(1, x))
 const ease = x => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2)
 const easeOut = x => 1 - Math.pow(1 - x, 3)
@@ -131,7 +142,7 @@ export default function EmptyVault({ onScreenshot, onVoice, onManual, onQuickAdd
   // visible, so a phone in a pocket is not animating a page nobody sees.
   useEffect(() => {
     if (reduce) return
-    let raf = 0, onScreen = true
+    let raf = 0, onScreen = true, drawn = 0
     const st = clockRef.current
     const tick = now => {
       if (!st.last) st.last = now
@@ -140,7 +151,10 @@ export default function EmptyVault({ onScreenshot, onVoice, onManual, onQuickAdd
       st.c += dt
       if (!st.held) st.u += dt
       if (st.u >= LOOP) { st.u -= LOOP; st.k = (st.k + 1) % SCENES.length; setK(st.k) }
-      setU(st.u); setClock(st.c)
+      // The clock runs every frame; the scene is redrawn only as often as the
+      // device can afford (see FRAME_MS). The 1 ms slack keeps a 60 Hz screen
+      // from skipping alternate 30 fps frames on timing jitter.
+      if (now - drawn >= FRAME_MS - 1) { drawn = now; setU(st.u); setClock(st.c) }
       raf = requestAnimationFrame(tick)
     }
     const start = () => { if (!raf && onScreen && !document.hidden) { st.last = 0; raf = requestAnimationFrame(tick) } }
