@@ -4,6 +4,7 @@ import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
 import { homePath } from '../v2Preview'
 import { LongPressMenu } from './LongPressMenu'
+import { initNavPulse } from '../navPulse'
 
 
 // The add button's shape-shifter phases, in the order they play.
@@ -122,15 +123,30 @@ const V2_NAV_ITEMS = [
 // The new look: Home, Signals, a centre button that adds a trade, Coach, and
 // More, which lists every feature (Goals, Targets, Alerts, Backup and the
 // rest), so nothing that left the bar is more than one tap away.
+// Living icons: each part has a class the pulse animates (v3.css, under
+// html[data-wl-pulse]). Home's tiles fill in, Signals' candles trade places,
+// Analyze's bars measure and More's tiles turn; still without a pulse.
+// The add button keeps its own animation.
 const V3_NAV_ITEMS = [
-  { ...byId('dashboard'), labelKey: 'nlHome' },
+  {
+    ...byId('dashboard'), labelKey: 'nlHome',
+    icon: (
+      <svg className="pv" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect className="pv-tile" x="3" y="3" width="7" height="7" rx="1.5"/>
+        <rect className="pv-tile" x="14" y="3" width="7" height="7" rx="1.5"/>
+        <rect className="pv-tile" x="3" y="14" width="7" height="7" rx="1.5"/>
+        <rect className="pv-tile" x="14" y="14" width="7" height="7" rx="1.5"/>
+      </svg>
+    ),
+  },
   {
     id: 'signals',
     labelKey: 'nlSignals',
     route: '/technicals',
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M7 3v4m0 10v4M17 3v6m0 8v4"/><rect x="4.5" y="7" width="5" height="10" rx="1"/><rect x="14.5" y="9" width="5" height="8" rx="1"/>
+      <svg className="pv" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <g className="pv-c1"><path d="M7 3v4m0 10v4"/><rect x="4.5" y="7" width="5" height="10" rx="1"/></g>
+        <g className="pv-c2"><path d="M17 3v6m0 8v4"/><rect x="14.5" y="9" width="5" height="8" rx="1"/></g>
       </svg>
     ),
   },
@@ -142,8 +158,8 @@ const V3_NAV_ITEMS = [
     labelKey: 'navAnalyze',
     route: '/coach',
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 20V10M9.5 20V4M15 20v-7"/><circle cx="18.5" cy="8.5" r="3"/><path d="M20.7 10.7L22 12"/>
+      <svg className="pv" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path className="pv-bar" d="M4 20V10"/><path className="pv-bar" d="M9.5 20V4"/><path className="pv-bar" d="M15 20v-7"/><circle cx="18.5" cy="8.5" r="3"/><path d="M20.7 10.7L22 12"/>
       </svg>
     ),
   },
@@ -152,9 +168,9 @@ const V3_NAV_ITEMS = [
     labelKey: 'nlMore',
     route: '/more',
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/>
-        <rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>
+      <svg className="pv" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <g className="pv-dots"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/>
+        <rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></g>
       </svg>
     ),
   },
@@ -177,6 +193,9 @@ const BottomNav = memo(function BottomNav({ v2 = false, v3 = false }) {
   const closeLp = React.useCallback(() => setLpMenu(null), [])
   const { t } = useLanguage()
   const lpTimer = React.useRef(null)
+
+  // The living icons: today's pulse, or a ?pulse= preview, from the start.
+  useEffect(() => { if (v3) initNavPulse() }, [v3])
 
   useEffect(() => {
     const stateTab = location.state?.tab

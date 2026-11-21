@@ -428,34 +428,21 @@ html.wl-v3 .ticker-strip .tick {
 html.wl-v3 .ticker-strip .tick-name { color: var(--nl-ink) !important; font-weight: 800 !important; }
 html.wl-v3 .news-ticker-label { background: transparent !important; font-size: 0.72rem !important; letter-spacing: 0.02em !important; }
 
-/* Bottom bar: Candle rally. Every tab stands on a flat candle; the one you
-   are on rallies into a tall green candle with a wick, the way a breakout
-   candle prints, and its icon turns white inside it. CSS only: the body and
-   the wick are the icon box's own pseudo-elements. */
+/* Bottom bar: Lifted bubble. The tab you are on rises out of the bar into a
+   round bubble ringed in the theme colour; the others sit flat in it. */
 html.wl-v3 .wl-nav-item .wl-nav-icon {
-  position: relative; isolation: isolate; overflow: visible !important; width: 30px !important; height: 40px !important; margin: -8px 0 1px; border-radius: 9px !important;
+  position: relative; width: 40px !important; height: 40px !important; margin: -6px 0 0; border-radius: 50% !important;
+  display: grid; place-items: center; overflow: visible !important;
   background: transparent !important; box-shadow: none !important;
+  transition: transform .45s cubic-bezier(.3, 1.6, .5, 1), background .3s, box-shadow .3s, color .3s;
 }
-html.wl-v3 .wl-nav-item .wl-nav-icon svg { position: relative; z-index: 1; }
-html.wl-v3 .wl-nav-item .wl-nav-icon::before {
-  content: ''; position: absolute; left: 6px; right: 6px; bottom: 0; height: 4px; border-radius: 9px;
-  background: currentColor; opacity: 0.2;
-  transition: height .6s cubic-bezier(.3, 1.55, .45, 1), left .4s, right .4s, opacity .3s, box-shadow .4s;
+html.wl-v3 .wl-nav-item.active .wl-nav-icon {
+  transform: translateY(-16px);
+  background: var(--nl-card, #fff) !important; color: var(--g-ink, var(--g)) !important;
+  box-shadow: 0 0 0 2px rgb(var(--g-rgb)), 0 10px 18px -6px rgba(var(--g-rgb), 0.55) !important;
 }
-html.wl-v3 .wl-nav-item .wl-nav-icon::after {
-  content: ''; position: absolute; left: calc(50% - 1px); top: -8px; bottom: -4px; width: 2px; border-radius: 1px;
-  background: rgb(var(--g-rgb)); transform-origin: bottom; transform: scaleY(0.1); opacity: 0;
-  transition: transform .6s cubic-bezier(.3, 1.55, .45, 1), opacity .3s;
-}
-html.wl-v3 .wl-nav-item.active .wl-nav-icon { color: #fff !important; }
-html.wl-v3 .wl-nav-item.active .wl-nav-icon::before {
-  left: 0; right: 0; height: 100%; opacity: 1;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, 0.22) 100%), rgb(var(--g-rgb));
-  box-shadow: 0 10px 18px -8px rgba(var(--g-rgb), 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-}
-html.wl-v3 .wl-nav-item.active .wl-nav-icon::after { transform: none; opacity: 1; z-index: -1; }
 @media (prefers-reduced-motion: reduce) {
-  html.wl-v3 .wl-nav-item .wl-nav-icon::before, html.wl-v3 .wl-nav-item .wl-nav-icon::after { transition: none; }
+  html.wl-v3 .wl-nav-item .wl-nav-icon { transition: none; }
 }
 html.wl-v3 .wl-nav-item .wl-nav-label { font-size: 0.66rem !important; font-weight: 700; }
 
@@ -1018,4 +1005,32 @@ html.wl-v3:not([data-wl-light]) .nl-check { border-color: rgba(255, 255, 255, 0.
   .nl-more-pill { transition: transform .15s ease, background .15s ease; }
   .nl-more-pill:hover { background: color-mix(in srgb, var(--j) 16%, transparent); }
   .nl-more-pill:active { transform: scale(0.96); }
+}
+
+/* Living pulse: the bar's icons move with the portfolio pulse (navPulse.js
+   marks it on <html>). Speed and size follow the level; colour, the day. No
+   pulse, reduced motion, hidden or demo numbers: the icons stay still. */
+html.wl-v3[data-wl-pulse="0"] { --pv-t: 4.2s; --pv-a: .4; --pv-s: .9; --pv-k: .95; }
+html.wl-v3[data-wl-pulse="1"] { --pv-t: 2.6s; --pv-a: 1.2; --pv-s: .7; --pv-k: .85; }
+html.wl-v3[data-wl-pulse="2"] { --pv-t: 1.6s; --pv-a: 2; --pv-s: .5; --pv-k: .75; }
+html.wl-v3[data-wl-pulse="3"] { --pv-t: .95s; --pv-a: 3; --pv-s: .3; --pv-k: .62; }
+html.wl-v3[data-wl-day="up"] { --pv-c: #10b981; --pv-cf: rgba(16, 185, 129, .4); }
+html.wl-v3[data-wl-day="down"] { --pv-c: #ef4444; --pv-cf: rgba(239, 68, 68, .4); }
+@keyframes pv-tile { 0%, 60%, 100% { transform: scale(1); fill: transparent; } 20% { transform: scale(var(--pv-k)); fill: var(--pv-cf); } }
+@keyframes pv-up { 0%, 100% { transform: translateY(calc(var(--pv-a) * 1px)); } 50% { transform: translateY(calc(var(--pv-a) * -1px)); } }
+@keyframes pv-dn { 0%, 100% { transform: translateY(calc(var(--pv-a) * -1px)); } 50% { transform: translateY(calc(var(--pv-a) * 1px)); } }
+@keyframes pv-bar { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(var(--pv-s)); } }
+@keyframes pv-turn { 0%, 55% { transform: rotate(0); } 80%, 100% { transform: rotate(90deg); } }
+@media (prefers-reduced-motion: no-preference) {
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv * { transform-box: fill-box; }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-tile { transform-origin: center; animation: pv-tile var(--pv-t) ease-in-out infinite; }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-tile:nth-child(2) { animation-delay: calc(var(--pv-t) * .12); }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-tile:nth-child(3) { animation-delay: calc(var(--pv-t) * .36); }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-tile:nth-child(4) { animation-delay: calc(var(--pv-t) * .24); }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-c1 { animation: pv-up calc(var(--pv-t) * .7) ease-in-out infinite; }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-c2 { animation: pv-dn calc(var(--pv-t) * .7) ease-in-out infinite; }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-bar { transform-origin: bottom; animation: pv-bar calc(var(--pv-t) * .8) ease-in-out infinite; }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-bar:nth-child(2) { animation-delay: calc(var(--pv-t) * .1); }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-bar:nth-child(3) { animation-delay: calc(var(--pv-t) * .2); }
+  html.wl-v3[data-wl-pulse] .wl-bottom-nav .pv-dots { transform-origin: center; animation: pv-turn var(--pv-t) cubic-bezier(.5, 0, .3, 1.4) infinite; }
 }
