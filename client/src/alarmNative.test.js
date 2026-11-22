@@ -104,7 +104,8 @@ describe('the native Android alarm', () => {
     expect(bridge).toMatch(/@JavascriptInterface\s+public boolean showAlarm\(String title, String body, String tone, String url, String tag\)/)
     expect(bridge).toMatch(/@JavascriptInterface\s+public void dismissAlarm\(String tag\)/)
     expect(bridge).toMatch(/@JavascriptInterface\s+public void setAlarmPrefs\(boolean enabled, boolean sound\)/)
-    expect(fcm).toMatch(/"target"\.equals\(channel\) && NotificationHelper\.alarmEnabled\(this\)/)
+    // Price targets and chart signals ring as alarms.
+    expect(fcm).toMatch(/\("target"\.equals\(channel\) \|\| "signal"\.equals\(channel\)\) && NotificationHelper\.alarmEnabled\(this\)/)
     expect(fcm).toMatch(/data\.get\("dir"\)/)
   })
 

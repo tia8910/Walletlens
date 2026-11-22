@@ -89,9 +89,11 @@ public class WalletLensMessagingService extends FirebaseMessagingService {
         try {
             NotificationHelper helper = new NotificationHelper(this);
             helper.createChannels();
-            if ("target".equals(channel) && NotificationHelper.alarmEnabled(this)) {
-                // A price target the user set, with alarms on: ring it as an
-                // alarm, rising or falling with the way the price went.
+            if (("target".equals(channel) || "signal".equals(channel)) && NotificationHelper.alarmEnabled(this)) {
+                // A price target or a chart signal the user set, with alarms
+                // on: ring it as an alarm, rising or falling with its direction.
+                // This is how a signal alarm rings with the app closed: the
+                // push server checks the chart and sends it here.
                 helper.showAlarm(title, body != null ? body : "", data.get("dir"), url,
                         tag != null && !tag.isEmpty() ? tag : "price");
             } else if (isPriceChannel(channel)) {
@@ -120,6 +122,8 @@ public class WalletLensMessagingService extends FirebaseMessagingService {
         if (channel == null) return false;
         switch (channel) {
             case "target":
+            // A chart signal (Buy, Sell, a cross, RSI) the user set an alert for.
+            case "signal":
             case "move":
             case "level":
             case "zakat":

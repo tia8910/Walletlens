@@ -118,6 +118,8 @@ export async function registerNativePush(opts = {}) {
       // paid — and the server honours it, so it is not filtered out.
       zakatDue: opts.zakatDue,
       guardianDue: opts.guardianDue,
+      signals: opts.signals,
+      signalParams: opts.signalParams,
       lang: opts.lang,
       tz: opts.tz,
     })

@@ -19,7 +19,7 @@
 import {
   asLang, assetUrl, bumpSent, copy, DEFAULT_PREFS, deliveryFor, localDayKey,
   pushTopic, sanitizeAlerts, sanitizePrefs, sanitizeSetup, sanitizeTz,
-  sanitizeWatch, sanitizeZakatDue, trimZakatSent, sanitizeGuardianDue,
+  sanitizeWatch, sanitizeZakatDue, trimZakatSent, sanitizeGuardianDue, sanitizeSignals, pruneSignalFired,
   normalizeSub as normalize,
 } from '../../push-api/notify-logic.js'
 import { accessToken, buildMessage, isDeadToken, FCM_ENDPOINT } from './fcm.js'
@@ -28,6 +28,9 @@ import { createJobs } from './jobs.js'
 import { SITE_ORIGIN } from './site.js'
 import { encryptPayload, vapidHeader } from './webpush.js'
 import { handleReports } from './reports.js'
+// The chart engine's own settings check, so a stored row can only hold values
+// the chart itself would accept.
+import { normalizeParams } from '../../client/src/chartSignals.js'
 
 // ── CORS ────────────────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = new Set([
@@ -387,7 +390,7 @@ async function handle(req, env, store) {
       // What each cron is responsible for. A channel present above but absent
       // here is defined and never scheduled, which is its own failure mode.
       schedules: {
-        '*/5 * * * *': ['targets', 'moves', 'news'],
+        '*/5 * * * *': ['targets', 'signals (every 15 min)', 'moves', 'news'],
         '5 * * * *': ['daily (digest, retention, zakat, portfolio, academy, hacks, features)', 'trend'],
       },
     }, headers)
@@ -431,6 +434,10 @@ async function handle(req, env, store) {
       createdAt: sub.createdAt,
       sentToday: sub.sent?.day === day ? (sub.sent.n ?? 0) : 0,
       lastError: sub.lastError,
+      // Signal rules this server has already rung, so the app does not ring
+      // the same one again when it is next opened.
+      signals: sub.signals.length,
+      signalFired: Object.keys(sub.signalFired || {}),
     }, headers)
   }
 
@@ -481,6 +488,10 @@ async function handle(req, env, store) {
       guardianDue: body.guardianDue !== undefined ? sanitizeGuardianDue(body.guardianDue) : existing?.guardianDue,
       guardianSent: body.guardianDue !== undefined && sanitizeGuardianDue(body.guardianDue) !== existing?.guardianDue ? [] : existing?.guardianSent,
       tz: body.tz !== undefined ? sanitizeTz(body.tz) : existing?.tz,
+      signals: body.signals !== undefined ? sanitizeSignals(body.signals) : existing?.signals,
+      signalParams: body.signalParams !== undefined ? normalizeParams(body.signalParams) : existing?.signalParams,
+      signalFired: body.signals !== undefined
+        ? pruneSignalFired(existing?.signalFired, sanitizeSignals(body.signals)) : existing?.signalFired,
       createdAt: existing?.createdAt ?? now,
       lastSeen: now,   // subscribing happens in the app, so it is a visit
       retention: [],
@@ -532,6 +543,11 @@ async function handle(req, env, store) {
       if (next !== sub.guardianDue) sub.guardianSent = []
       sub.guardianDue = next
     }
+    if (body.signals !== undefined) {
+      sub.signals = sanitizeSignals(body.signals)
+      sub.signalFired = pruneSignalFired(sub.signalFired, sub.signals)
+    }
+    if (body.signalParams !== undefined) sub.signalParams = normalizeParams(body.signalParams)
     if (body.tz !== undefined) sub.tz = sanitizeTz(body.tz)
     sub.lang = asLang(body.lang) ?? sub.lang
     sub.lastSeen = Date.now()   // reaching this endpoint means the app is open
@@ -607,6 +623,9 @@ export async function runSchedule(cron, jobs, env) {
     // sends, and it used to have a minute of its own until the CPU ceiling made
     // that unaffordable — see the comment on `crons` in wrangler.toml.
     await run('targets', () => jobs.checkTargets())
+    // Chart signals, every third pass (15 minutes): a 4 hour candle is late
+    // by at most that, and a daily one hardly at all.
+    if (Math.floor(Date.now() / 300_000) % 3 === 0) await run('signals', () => jobs.checkSignals())
     // All kinds, which already covers the crypto the minute pass used to do on
     // its own. Stocks cost one request per symbol, which is why this never ran
     // more often than every five minutes.

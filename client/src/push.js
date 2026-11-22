@@ -21,6 +21,9 @@ import { guardianDueDay } from './guardianModel'
 import { usedFeature } from './featureUse'
 import { isAndroidTWA, fireNativeIntent } from './nativeBridge'
 import { PUSH_API, SIMPLE_JSON } from './apiHosts.js'
+import { loadProAlerts } from './alertRules'
+import { GOLD_ID, SILVER_ID, COPPER_ID, PLATINUM_ID, STOCK_PREFIX, XSTOCK_PREFIX } from './data/assets'
+import { isIntlTicker } from './data/markets'
 
 
 // The server builds the notification text, so it has to be told which language
@@ -492,6 +495,8 @@ function registrationFields() {
     prefs: safe(getPushPrefs, DEFAULT_PUSH_PREFS),
     zakatDue: safe(loadZakatDue, null),
     guardianDue: safe(guardianDueFromStorage, null),
+    signals: safe(signalRulesForServer, []),
+    signalParams: safe(signalParamsForServer, null),
     lang: safe(currentLang, 'en'),
     tz: safe(currentTz, 0),
   }
@@ -1197,6 +1202,101 @@ export async function syncAlerts() {
  * re-send the cached list after a preferences change. Always caches the list
  * locally first, so enabling push later can arm the channels straight away.
  */
+// ── Chart signal alerts, rung by the server while the app is closed ─────────
+
+const SIGNALS_SENT_KEY = 'wl_signals_sent'
+const CHART_PARAMS_KEY = 'wl_chart_indicators_v1'
+const METAL_TICKERS = { [GOLD_ID]: 'GC=F', [SILVER_ID]: 'SI=F', [COPPER_ID]: 'HG=F', [PLATINUM_ID]: 'PL=F' }
+
+/**
+ * Where the server reads one asset's chart: a Yahoo ticker for stocks and
+ * metals, the exchange symbol (no ticker) for crypto, or null when the server
+ * cannot chart it (cash, bonds, custom assets, foreign listings priced in
+ * another currency). Those rules still ring while the app is open.
+ */
+export function serverChartFor(coinId) {
+  const id = String(coinId || '')
+  if (METAL_TICKERS[id]) return { ticker: METAL_TICKERS[id] }
+  for (const pre of [STOCK_PREFIX, XSTOCK_PREFIX]) {
+    if (id.startsWith(pre)) {
+      const t = id.slice(pre.length).toUpperCase()
+      return isIntlTicker(t) ? null : { ticker: t.replace(/\./g, '-') }
+    }
+  }
+  if (/^(fiat:|bond:|other:|metal:|bstock:)/.test(id)) return null
+  return {}
+}
+
+/** The armed signal rules, in the shape the push server stores. */
+export function signalRulesForServer(rules = loadProAlerts()) {
+  const out = []
+  for (const r of rules) {
+    if (r?.type !== 'signal' || r.triggered) continue
+    const chart = serverChartFor(r.coin_id)
+    if (!chart) continue
+    out.push({ id: r.id, coin_id: r.coin_id, symbol: String(r.symbol || '').toUpperCase(), tf: r.tf || '1d', event: r.event, armedAt: r.armedAt || r.createdAt, ...chart })
+  }
+  return out
+}
+
+function signalParamsForServer() {
+  try { return JSON.parse(localStorage.getItem(CHART_PARAMS_KEY) || 'null') } catch { return null }
+}
+
+/**
+ * Send the signal rules to the push server when they change, so a Buy or Sell
+ * alarm rings even with the app closed.
+ */
+export async function syncSignals({ force = false } = {}) {
+  const signals = signalRulesForServer()
+  const signalParams = signalParamsForServer()
+  const stamp = JSON.stringify([signals, signalParams])
+  try { if (!force && localStorage.getItem(SIGNALS_SENT_KEY) === stamp) return } catch { /* send */ }
+  let sent = false
+  try {
+    const native = await import('./nativePush.js')
+    if (native.usesNativePush()) {
+      const r = await native.registerNativePush({ force: true, ...registrationFields() })
+      sent = r?.ok !== false
+    } else {
+      const sub = await getSubscription()
+      if (sub) {
+        const res = await fetch(`${PUSH_API}/watch`, {
+          method: 'POST',
+          headers: { 'Content-Type': SIMPLE_JSON },
+          body: JSON.stringify({ endpoint: sub.endpoint, signals, signalParams, lang: currentLang(), tz: currentTz() }),
+        })
+        sent = res.ok
+      }
+    }
+  } catch { /* best-effort; tried again on the next change or open */ }
+  if (sent) { try { localStorage.setItem(SIGNALS_SENT_KEY, stamp) } catch {} }
+}
+
+/**
+ * The signal rules the server has already rung, as "id:armedAt" keys, so the
+ * app does not ring the same alarm again when it is opened. Empty when push
+ * is off or the server cannot be reached.
+ */
+export async function serverFiredSignals() {
+  try {
+    let query = ''
+    const native = await import('./nativePush.js')
+    if (native.usesNativePush()) {
+      const token = native.nativePushToken()
+      if (token) query = `fcmToken=${encodeURIComponent(token)}`
+    } else {
+      const sub = await getSubscription()
+      if (sub) query = `endpoint=${encodeURIComponent(sub.endpoint)}`
+    }
+    if (!query) return new Set()
+    const res = await fetch(`${PUSH_API}/status?${query}`)
+    if (!res.ok) return new Set()
+    const body = await res.json()
+    return new Set(Array.isArray(body?.signalFired) ? body.signalFired.map(String) : [])
+  } catch { return new Set() }
+}
+
 /** The Guardian deadline day, from what is saved on this device. */
 function guardianDueFromStorage() {
   try { return guardianDueDay(JSON.parse(localStorage.getItem('wl_guardian') || 'null')) } catch { return null }

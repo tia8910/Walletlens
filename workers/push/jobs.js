@@ -25,7 +25,7 @@ import {
   fmtPct, fmtPrice, signedPct, dueZakatReminder, trimZakatSent, dueGuardianReminder,
   isMarketStory, pickHack, portfolioPulse, assetUrl,
   HACK_GAP_MS, HACK_HOUR, PORTFOLIO_HOUR, VIDEO_HOUR, PULSE_MIN_PCT, isStablecoin,
-  trendSwitched,
+  trendSwitched, signalFiredKey, pruneSignalFired, signalDir,
 } from '../../push-api/notify-logic.js'
 import { assetKey, fetchCryptoQuotes, fetchNews, fetchQuotes, fetchSevenDay, quoteFor } from '../../push-api/markets.js'
 // The same rule the dashboard draws with, imported rather than restated. A
@@ -42,6 +42,40 @@ import { hacks } from '../../client/src/data/academyContent.js'
 // videos are new, and on what the announcement says, because it is one file.
 import { newVideos, videoPush } from '../../client/src/data/academyVideos.js'
 import { SITE_ORIGIN } from './site.js'
+// The chart engine and the rule check the app itself uses, so a signal the
+// server rings is exactly the one the chart draws.
+import { computeChartSignals, matchesLivePrice, normalizeParams } from '../../client/src/chartSignals.js'
+import { evaluateSignal } from '../../client/src/alertRules.js'
+
+const BINANCE_HOSTS = ['https://data-api.binance.vision', 'https://api.binance.com']
+// The same depth the app asks for: 120 candles on screen and 200 of warm-up,
+// so the averages behind the signals have settled exactly as they have there.
+const SIGNAL_CANDLES = 320
+// A cap on charts fetched per pass, so one run stays well inside its budget.
+const MAX_SIGNAL_CHARTS = 60
+
+async function fetchJson(url, ms = 8000) {
+  const r = await fetch(url, { signal: AbortSignal.timeout(ms) })
+  if (!r.ok) throw new Error(String(r.status))
+  return r.json()
+}
+
+/** Candles for one rule: Binance for crypto, the site's own function for stocks and metals. */
+export async function fetchSignalCandles(rule) {
+  if (rule.ticker) {
+    const body = await fetchJson(`${SITE_ORIGIN}/api/candles?symbol=${encodeURIComponent(rule.ticker)}&interval=${rule.tf}`)
+    return (Array.isArray(body?.candles) ? body.candles : [])
+      .map(k => ({ t: +k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c }))
+      .filter(k => k.c > 0 && k.h >= k.l)
+  }
+  const path = `/api/v3/klines?symbol=${encodeURIComponent(rule.symbol + 'USDT')}&interval=${rule.tf}&limit=${SIGNAL_CANDLES}`
+  const rows = await Promise.any(BINANCE_HOSTS.map(h => fetchJson(h + path).then(r => {
+    if (!Array.isArray(r) || !r.length) throw new Error('empty')
+    return r
+  })))
+  return rows.map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4] }))
+    .filter(k => k.c > 0 && k.h >= k.l)
+}
 
 // Local clock slots, carried over from the Deno service. The brief goes out at
 // 09:00 on the user's own clock; zakat gets its own slot so the two do not
@@ -672,5 +706,61 @@ export function createJobs({ store, send }) {
     }
   }
 
-  return { checkTargets, checkMoves, checkNews, checkDaily, checkTrend }
+  /**
+   * Chart signal rules, rung while the app is closed.
+   *
+   * Each chart (asset and timeframe) is fetched once per pass however many
+   * devices watch it. A rule rings once per arming; the app reads which ones
+   * rang (from /status) so it does not ring them a second time when opened.
+   */
+  async function checkSignals({ fetchCandles = fetchSignalCandles, now = Date.now() } = {}) {
+    const subs = (await store.all()).filter(({ sub }) => sub.signals?.length)
+    if (!subs.length) return
+
+    // Live prices, to be sure the exchange's ticker is the same coin.
+    const cryptoIds = new Set()
+    for (const { sub } of subs) for (const r of sub.signals) if (!r.ticker) cryptoIds.add(r.coin_id)
+    let quotes = {}
+    try { if (cryptoIds.size) quotes = await fetchCryptoQuotes([...cryptoIds]) } catch { quotes = {} }
+
+    const charts = new Map()
+    const candlesFor = (rule) => {
+      const k = `${rule.ticker || rule.symbol}|${rule.tf}`
+      if (!charts.has(k)) {
+        charts.set(k, charts.size >= MAX_SIGNAL_CHARTS ? Promise.resolve([]) : fetchCandles(rule).catch(() => []))
+      }
+      return charts.get(k)
+    }
+
+    for (const { key, sub } of subs) {
+      let changed = false
+      const fired = pruneSignalFired(sub.signalFired, sub.signals)
+      if (Object.keys(fired).length !== Object.keys(sub.signalFired || {}).length) changed = true
+      const params = normalizeParams(sub.signalParams)
+
+      for (const rule of sub.signals) {
+        const fk = signalFiredKey(rule)
+        if (fired[fk]) continue
+        const candles = await candlesFor(rule)
+        if (candles.length < 30) continue
+        if (!rule.ticker && !matchesLivePrice(candles, Number(quotes[rule.coin_id]?.price) || 0)) continue
+        const res = evaluateSignal(rule, candles, computeChartSignals(candles, params))
+        if (!res.hit) continue
+        const sent = await send(sub, buildPayload({
+          channel: 'signal',
+          title: copy('signalTitle', sub.lang)(rule.symbol, rule.event),
+          body: copy('signalBody', sub.lang)(rule.tf, fmtPrice(res.price), res.rsi != null ? Math.round(res.rsi) : null),
+          // The id the app gives the same alarm, so the two replace each other.
+          tag: `signal:${rule.id}`,
+          sym: rule.symbol,
+          dir: signalDir(rule.event),
+          url: assetUrl({ id: rule.coin_id }),
+        }), { now })
+        if (sent) { fired[fk] = now; changed = true }
+      }
+      if (changed) { sub.signalFired = fired; await store.save(key, sub) }
+    }
+  }
+
+  return { checkTargets, checkSignals, checkMoves, checkNews, checkDaily, checkTrend }
 }

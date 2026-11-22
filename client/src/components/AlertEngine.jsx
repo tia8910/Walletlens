@@ -4,6 +4,7 @@ import { track } from '../analytics'
 import { useLanguage } from '../LanguageContext'
 import { showLocalNotification } from '../localNotify'
 import { deliverAlarm } from '../alarm'
+import { syncSignals, serverFiredSignals } from '../push'
 import { computeChartSignals, loadChartParams } from '../chartSignals'
 import {
   loadProAlerts, saveProAlerts, evaluateSignal, evaluateGoal, portfolioSummary, alarmKind, alarmTone,
@@ -14,8 +15,9 @@ import {
 //
 // Price alerts used to be checked inside the Alerts tab, so they only went
 // off while that tab was on screen. They are checked here now, with the
-// signal and goal alerts. When the app is closed, price alerts still arrive
-// as push notifications from the server; signal and goal alerts need the
+// signal and goal alerts. When the app is closed, price alerts and chart
+// signal alerts arrive as alarm pushes from the server (the signal rules are
+// sent there, since they hold nothing private). Goal alerts need the
 // portfolio, which never leaves the device, so they fire while it is open.
 
 export const PRICE_ALERTS_KEY = 'walletlens_price_alerts'
@@ -29,7 +31,7 @@ const money = (n) => `$${Number(n).toLocaleString('en-US', { maximumFractionDigi
  * One pass over every alert. Returns the alarms to ring (already saved as
  * fired). Everything it needs comes in, so the test drives it directly.
  */
-export async function checkAlerts({ t, getPrices, getPortfolio, getCandles, now = Date.now(), lastSignalCheck = {}, chartParams }) {
+export async function checkAlerts({ t, getPrices, getPortfolio, getCandles, now = Date.now(), lastSignalCheck = {}, chartParams, getServerFired }) {
   const fired = []
   const priceAlerts = readJson(PRICE_ALERTS_KEY)
   let pro = loadProAlerts()
@@ -88,7 +90,16 @@ export async function checkAlerts({ t, getPrices, getPortfolio, getCandles, now 
 
   // ── Signals: each chart at most every 15 minutes ──
   const params = chartParams || loadChartParams()
+  // Rules the push server already rang while the app was closed: marked as
+  // fired here without ringing the same alarm a second time.
+  let serverFired = new Set()
+  if (signals.length && getServerFired) { try { serverFired = await getServerFired() } catch { serverFired = new Set() } }
   for (const r of signals) {
+    if (serverFired.has(`${r.id}:${r.armedAt}`)) {
+      proChanged = true
+      pro = pro.map(x => x.id === r.id ? { ...x, triggered: true, triggeredAt: now } : x)
+      continue
+    }
     const key = `${r.coin_id}|${r.tf}`
     if (now - (lastSignalCheck[key] || 0) < SIGNAL_EVERY_MS) continue
     lastSignalCheck[key] = now
@@ -120,6 +131,14 @@ export default function AlertEngine() {
 
   useEffect(() => {
     let alive = true
+    // What the server already rang, asked at most every 5 minutes.
+    let firedAt = 0, fired = new Set()
+    const firedFromServer = async () => {
+      if (Date.now() - firedAt > 5 * 60_000) { fired = await serverFiredSignals(); firedAt = Date.now() }
+      return fired
+    }
+    // The rules go to the push server, so they ring with the app closed too.
+    const sync = () => { syncSignals().catch(() => {}) }
     const tick = async () => {
       if (busy.current) return
       busy.current = true
@@ -130,6 +149,7 @@ export default function AlertEngine() {
           getPortfolio: () => Promise.resolve(api.getPortfolio()),
           getCandles: (...a) => api.getCandles(...a),
           lastSignalCheck: lastSignalCheck.current,
+          getServerFired: firedFromServer,
         })
         if (!alive) return
         for (const a of fired) {
@@ -143,10 +163,10 @@ export default function AlertEngine() {
         }
       } catch { /* the next tick tries again */ } finally { busy.current = false }
     }
-    const first = setTimeout(tick, 4000)
+    const first = setTimeout(() => { tick(); sync() }, 4000)
     const every = setInterval(tick, TICK_MS)
     // A new or re-armed alert is checked straight away.
-    const onChange = () => setTimeout(tick, 300)
+    const onChange = () => { setTimeout(tick, 300); setTimeout(sync, 1500) }
     window.addEventListener('wl-alerts-changed', onChange)
     return () => { alive = false; clearTimeout(first); clearInterval(every); window.removeEventListener('wl-alerts-changed', onChange) }
   }, [])

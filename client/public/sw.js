@@ -380,7 +380,7 @@ self.addEventListener('fetch', e => {
 // no sound, no buzz, nothing until the phone was picked up and unlocked. A
 // price alert nobody hears is not a price alert. notificationSound.test.js
 // now derives the set from CHANNEL_DELIVERY so the two cannot drift again.
-const LOUD_CHANNELS = new Set(['target', 'move', 'level', 'zakat', 'guardian', 'test'])
+const LOUD_CHANNELS = new Set(['target', 'signal', 'move', 'level', 'zakat', 'guardian', 'test'])
 
 // The bell's inbox. A worker has no localStorage, so a push is kept in
 // IndexedDB until a window drains it (notifyInbox.js), and any open window is
@@ -428,6 +428,8 @@ self.addEventListener('push', e => {
       renotify: true,
       silent: !loud,
       vibrate: loud ? [80, 40, 80] : undefined,
+      // An alarm the user set (a price target, a chart signal) stays until seen.
+      requireInteraction: channel === 'target' || channel === 'signal',
       timestamp: Date.now(),
       data: { url: data.url || '/', channel, sym: data.sym || '' },
     })])

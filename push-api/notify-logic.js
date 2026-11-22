@@ -138,6 +138,24 @@ export const COPY = {
     it: (days) => `Apri WalletLens per mostrare che stai bene. Mancano ${days} giorni al passo successivo.`,
   },
 
+  // — A chart signal the user asked to be told about (Buy, Sell, crosses, RSI) —
+  signalTitle: {
+    en: (sym, ev) => `${sym}: ${({ buy: 'Buy signal', sell: 'Sell signal', golden: 'Golden cross', death: 'Death cross', rsi_high: 'RSI above 70', rsi_low: 'RSI below 30' })[ev] || ev}`,
+    ar: (sym, ev) => `${sym}: ${({ buy: 'إشارة شراء', sell: 'إشارة بيع', golden: 'التقاطع الذهبي', death: 'تقاطع الموت', rsi_high: 'RSI فوق 70', rsi_low: 'RSI تحت 30' })[ev] || ev}`,
+    fr: (sym, ev) => `${sym} : ${({ buy: "Signal d'achat", sell: 'Signal de vente', golden: 'Croisement doré', death: 'Croisement de la mort', rsi_high: 'RSI au dessus de 70', rsi_low: 'RSI sous 30' })[ev] || ev}`,
+    es: (sym, ev) => `${sym}: ${({ buy: 'Señal de compra', sell: 'Señal de venta', golden: 'Cruce dorado', death: 'Cruce de la muerte', rsi_high: 'RSI sobre 70', rsi_low: 'RSI bajo 30' })[ev] || ev}`,
+    de: (sym, ev) => `${sym}: ${({ buy: 'Kaufsignal', sell: 'Verkaufssignal', golden: 'Golden Cross', death: 'Death Cross', rsi_high: 'RSI über 70', rsi_low: 'RSI unter 30' })[ev] || ev}`,
+    it: (sym, ev) => `${sym}: ${({ buy: 'Segnale di acquisto', sell: 'Segnale di vendita', golden: 'Golden cross', death: 'Death cross', rsi_high: 'RSI sopra 70', rsi_low: 'RSI sotto 30' })[ev] || ev}`,
+  },
+  signalBody: {
+    en: (tf, price, rsi) => `${tf === '4h' ? '4 hour chart' : 'Daily chart'} · ${price}${rsi != null ? ` · RSI ${rsi}` : ''} · at the close`,
+    ar: (tf, price, rsi) => `${tf === '4h' ? 'رسم 4 ساعات' : 'الرسم اليومي'} · ${price}${rsi != null ? ` · RSI ${rsi}` : ''} · عند الإغلاق`,
+    fr: (tf, price, rsi) => `${tf === '4h' ? 'Graphique 4 heures' : 'Graphique journalier'} · ${price}${rsi != null ? ` · RSI ${rsi}` : ''} · à la clôture`,
+    es: (tf, price, rsi) => `${tf === '4h' ? 'Gráfico de 4 horas' : 'Gráfico diario'} · ${price}${rsi != null ? ` · RSI ${rsi}` : ''} · al cierre`,
+    de: (tf, price, rsi) => `${tf === '4h' ? '4-Stunden-Chart' : 'Tageschart'} · ${price}${rsi != null ? ` · RSI ${rsi}` : ''} · zum Schlusskurs`,
+    it: (tf, price, rsi) => `${tf === '4h' ? 'Grafico a 4 ore' : 'Grafico giornaliero'} · ${price}${rsi != null ? ` · RSI ${rsi}` : ''} · alla chiusura`,
+  },
+
   // — Zakat year completing —
   zakatTitle: {
     en: (days) => days === 0 ? 'Your zakat is due today' : 'Your zakat year is nearly complete',
@@ -1386,6 +1404,11 @@ export function normalizeSub(s = {}) {
     zakatSent: trimZakatSent(s.zakatSent),
     guardianDue: sanitizeGuardianDue(s.guardianDue),
     guardianSent: trimZakatSent(s.guardianSent),
+    // Chart signal rules the app set, the chart settings they are read with,
+    // and which ones this server has already rung (key: id and arming time).
+    signals: sanitizeSignals(s.signals),
+    signalParams: s.signalParams && typeof s.signalParams === 'object' ? s.signalParams : null,
+    signalFired: s.signalFired && typeof s.signalFired === 'object' ? s.signalFired : {},
     seenRef: s.seenRef ?? null,
     newsSent: s.newsSent ?? {},
     lastNewsAt: s.lastNewsAt ?? 0,
@@ -1430,6 +1453,7 @@ export const USER_OWNED_FIELDS = [
   'subscription', 'transport', 'fcmToken',
   'alerts', 'watch', 'setup', 'prefs',
   'lang', 'tz', 'lastSeen', 'zakatDue', 'guardianDue',
+  'signals', 'signalParams',
 ]
 
 /**
@@ -1568,6 +1592,51 @@ export function dueZakatReminder({ dueDate, today, sent = [] }) {
 // week and three days ahead. Nothing else about Guardian reaches this server.
 // Every app open moves the date, so a reminder only fires for someone who has
 // really stopped opening the app.
+
+// ── Chart signal alerts ─────────────────────────────────────────────────────
+//
+// The rules the Alerts tab sets on one asset's chart: Buy or Sell, a golden or
+// death cross, RSI crossing 70 or 30. They used to be checked only while the
+// app was open, because the chart engine lives in the app. They need nothing
+// private (an asset, a timeframe and an event), so the server checks them too
+// and the alarm rings with the app closed.
+
+export const SIGNAL_RULE_EVENTS = ['buy', 'sell', 'golden', 'death', 'rsi_high', 'rsi_low']
+export const SIGNAL_RULE_FRAMES = ['1d', '4h']
+export const MAX_SIGNAL_RULES = 30
+
+export function sanitizeSignals(raw) {
+  if (!Array.isArray(raw)) return []
+  const out = []
+  for (const r of raw) {
+    if (!r || typeof r !== 'object') continue
+    const id = String(r.id ?? '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40)
+    const coin_id = String(r.coin_id ?? '').slice(0, 120)
+    const symbol = String(r.symbol ?? '').toUpperCase().replace(/[^A-Z0-9.\-]/g, '').slice(0, 20)
+    const armedAt = Number(r.armedAt)
+    if (!id || !coin_id || !symbol || !SIGNAL_RULE_EVENTS.includes(r.event) || !SIGNAL_RULE_FRAMES.includes(r.tf)) continue
+    if (!Number.isFinite(armedAt) || armedAt <= 0) continue
+    const ticker = String(r.ticker ?? '').replace(/[^A-Za-z0-9.=^\-]/g, '').slice(0, 24)
+    out.push({ id, coin_id, symbol, tf: r.tf, event: r.event, armedAt, ...(ticker ? { ticker } : {}) })
+    if (out.length >= MAX_SIGNAL_RULES) break
+  }
+  return out
+}
+
+/** One firing per arming: re-arming a rule in the app gives it a new key. */
+export const signalFiredKey = (rule) => `${rule.id}:${rule.armedAt}`
+
+/** Drop the record of rules that no longer exist or have been re-armed. */
+export function pruneSignalFired(fired = {}, rules = []) {
+  const live = new Set(rules.map(signalFiredKey))
+  const out = {}
+  for (const [k, v] of Object.entries(fired || {})) if (live.has(k)) out[k] = v
+  return out
+}
+
+/** Which way the alarm sounds: up for buy, golden cross, oversold; down otherwise. */
+export const signalDir = (event) =>
+  (event === 'buy' || event === 'golden' || event === 'rsi_low') ? 'up' : 'down'
 
 export const GUARDIAN_MILESTONES = [7, 3]
 
@@ -2041,6 +2110,8 @@ export const CHANNEL_URL = {
   zakat: '/dashboard?tab=zakat',
   // Opening the Guardian page is itself the check-in the reminder asks for.
   guardian: '/guardian',
+  // The payload carries the asset's own page; this is only the fallback.
+  signal: '/dashboard?tab=alerts',
   // The three scheduled channels each land on the page they are about, not on
   // the dashboard. A hack that opens a portfolio screen has thrown away the
   // one thing the tap was for.
@@ -2174,6 +2245,9 @@ export const CHANNEL_DELIVERY = {
   zakat:     { urgency: 'high',   ttl: 24 * 60 * 60 },
   // A safety reminder the owner asked for, twice per deadline at most.
   guardian:  { urgency: 'high',   ttl: 24 * 60 * 60 },
+  // A signal the user asked to be woken for. Still worth seeing for a few
+  // hours: the candle it came from stays the latest close until the next one.
+  signal:    { urgency: 'high',   ttl: 4 * 60 * 60 },
   test:      { urgency: 'high',   ttl: 60 },            // immediate or not at all
 }
 
