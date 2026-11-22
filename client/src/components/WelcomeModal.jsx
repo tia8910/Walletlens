@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { coverScreen } from '../screenCover'
 import { track } from '../analytics'
 import sfx from '../sfx'
 import Logo from './Logo'
@@ -244,7 +245,9 @@ export default function WelcomeModal() {
     if (!visible) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
+    // And the animations behind it can stop: nothing of the app shows through.
+    const uncover = coverScreen()
+    return () => { document.body.style.overflow = prev; uncover() }
   }, [visible])
 
   // Fade out the ambient pad when the welcome flow closes or unmounts.

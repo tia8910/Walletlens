@@ -14,12 +14,13 @@
 // One timeline drives everything from a single clock, so a frame is a pure
 // function of (scene, seconds). It pauses off screen and in a hidden tab, and
 // with reduced motion it shows one finished frame and no movement.
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../LanguageContext'
 import Icon from './Icon'
 import './EmptyVault.css'
 import { LOGO_PATHS } from './evLogos'
 import { THEMES } from '../ThemeContext'
+import { isScreenCovered, onScreenCover } from '../screenCover'
 
 const LOOP = 9          // seconds per scene
 const FLY = 1.0         // seconds a chip takes to reach the ring
@@ -118,6 +119,34 @@ export function frame(scene, u, clock) {
   }
 }
 
+const ORB_R = 17
+
+// The parts of an orb that never move relative to it, at unit scale. Memoised
+// on the orb and its label, so a frame re-renders none of it.
+const OrbFace = memo(function OrbFace({ o, label }) {
+  const r = ORB_R
+  return (
+    <>
+      <circle r={r} fill={o.bg} />
+      {o.cash
+        ? <g className="ev-cash">
+            <rect x={-r * 0.62} y={-r * 0.38} width={r * 1.24} height={r * 0.76} rx={r * 0.12} />
+            <text y={r * 0.25} textAnchor="middle" style={{ fontSize: `${r * 0.78}px` }}>$</text>
+          </g>
+        : o.gold
+        ? GOLD_BAR && <image href={GOLD_BAR} x={-r * 0.95} y={-r * 0.95} width={r * 1.9} height={r * 1.9} />
+        : <path d={LOGO_PATHS[o.sym]} fill={o.fg} transform={`translate(${-r * o.k} ${-r * o.k}) scale(${(2 * r * o.k / 24).toFixed(4)})`} />}
+      <circle r={r} fill="url(#ev-gloss)" />
+      <circle r={r} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="0.8" />
+      <text y={r + 9} textAnchor="middle" className="ev-orb-t" style={{ fontSize: '6.8px' }}>{label}</text>
+      <g transform={`translate(${r * 0.72} ${-r * 0.72})`}>
+        <circle r={5.2} fill="#fff" />
+        <text y={2.4} textAnchor="middle" className="ev-orb-plus" style={{ fontSize: '8px' }}>+</text>
+      </g>
+    </>
+  )
+})
+
 export default function EmptyVault({ onScreenshot, onVoice, onManual, onQuickAdd, quickAssets = [] }) {
   const { t } = useLanguage()
   const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -143,7 +172,8 @@ export default function EmptyVault({ onScreenshot, onVoice, onManual, onQuickAdd
       setU(st.u); setClock(st.c)
       raf = requestAnimationFrame(tick)
     }
-    const start = () => { if (!raf && onScreen && !document.hidden) { st.last = 0; raf = requestAnimationFrame(tick) } }
+    // Nor while a full-screen layer (the first-run welcome) hides it.
+    const start = () => { if (!raf && onScreen && !document.hidden && !isScreenCovered()) { st.last = 0; raf = requestAnimationFrame(tick) } }
     const stop = () => { cancelAnimationFrame(raf); raf = 0 }
     const io = typeof IntersectionObserver !== 'undefined'
       ? new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; onScreen ? start() : stop() })
@@ -151,8 +181,9 @@ export default function EmptyVault({ onScreenshot, onVoice, onManual, onQuickAdd
     if (io && rootRef.current) io.observe(rootRef.current)
     const vis = () => (document.hidden ? stop() : start())
     document.addEventListener('visibilitychange', vis)
+    const offCover = onScreenCover(covered => (covered ? stop() : start()))
     start()
-    return () => { stop(); io?.disconnect(); document.removeEventListener('visibilitychange', vis) }
+    return () => { stop(); io?.disconnect(); offCover(); document.removeEventListener('visibilitychange', vis) }
   }, [reduce])
 
   const pick = i => {
@@ -191,31 +222,23 @@ export default function EmptyVault({ onScreenshot, onVoice, onManual, onQuickAdd
     const ix = scene.id === 'tap' ? scene.items.findIndex(it => it.orb === o.i) : -1
     const L = ix >= 0 ? scene.launch[ix] : 0
     const ripple = ix >= 0 && u >= L - 0.5 && u < L + 0.2 ? clamp((u - (L - 0.5)) / 0.7) : -1
-    const r = 17 * o.s
+    const s = o.s
+    // The orb is drawn once at its unit size (OrbFace) and only this group's
+    // transform and opacity change from frame to frame. Every radius, offset
+    // and font size used to be multiplied by the depth scale in render, so
+    // each frame rewrote ~35 attributes per orb, font sizes included — and a
+    // new font size re-lays-out the text. That kept a phone's main thread
+    // busy for as long as the empty Home was on screen. The halo and the
+    // ripple keep fixed offsets from the disc, so they are divided back out.
     return (
-      <g key={o.sym} className="ev-orb" transform={`translate(${o.x.toFixed(1)} ${o.y.toFixed(1)})`} role="button" tabIndex={0}
+      <g key={o.sym} className="ev-orb" transform={`translate(${o.x.toFixed(1)} ${o.y.toFixed(1)}) scale(${s.toFixed(3)})`} role="button" tabIndex={0}
         aria-label={`${t('stManualTitle')}: ${o.cash ? t('evCash') : o.label}`}
         onClick={() => tapOrb(o)}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tapOrb(o) } }}
-        style={{ opacity: 0.55 + 0.45 * o.depth }}>
-        {ripple >= 0 && <circle r={r + 4 + 16 * ripple} fill="none" stroke={o.c} strokeWidth="2" opacity={0.8 * (1 - ripple)} />}
-        <circle r={r + 6} fill={o.c} opacity="0.16" />
-        <circle r={r} fill={o.bg} />
-        {o.cash
-          ? <g className="ev-cash">
-              <rect x={-r * 0.62} y={-r * 0.38} width={r * 1.24} height={r * 0.76} rx={r * 0.12} />
-              <text y={r * 0.25} textAnchor="middle" style={{ fontSize: `${r * 0.78}px` }}>$</text>
-            </g>
-          : o.gold
-          ? GOLD_BAR && <image href={GOLD_BAR} x={-r * 0.95} y={-r * 0.95} width={r * 1.9} height={r * 1.9} />
-          : <path d={LOGO_PATHS[o.sym]} fill={o.fg} transform={`translate(${-r * o.k} ${-r * o.k}) scale(${(2 * r * o.k / 24).toFixed(4)})`} />}
-        <circle r={r} fill="url(#ev-gloss)" />
-        <circle r={r} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="0.8" />
-        <text y={r + 9 * o.s} textAnchor="middle" className="ev-orb-t" style={{ fontSize: `${6.8 * o.s}px` }}>{o.cash ? t('evCash') : o.label}</text>
-        <g transform={`translate(${r * 0.72} ${-r * 0.72})`}>
-          <circle r={5.2 * o.s} fill="#fff" />
-          <text y={2.4 * o.s} textAnchor="middle" className="ev-orb-plus" style={{ fontSize: `${8 * o.s}px` }}>+</text>
-        </g>
+        style={{ opacity: (0.55 + 0.45 * o.depth).toFixed(3) }}>
+        {ripple >= 0 && <circle r={ORB_R + (4 + 16 * ripple) / s} fill="none" stroke={o.c} strokeWidth={2 / s} opacity={0.8 * (1 - ripple)} />}
+        <circle r={ORB_R + 6 / s} fill={o.c} opacity="0.16" />
+        <OrbFace o={ORBS[o.i]} label={o.cash ? t('evCash') : o.label} />
       </g>
     )
   }
