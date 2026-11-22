@@ -684,7 +684,7 @@ function GuardianHome({ config, c, lang, onOpen, onCheckin }) {
         </button>
       </div>
 
-      <button type="button" className="pg-reconfigure-link" onClick={() => onOpen('setup')}>{c('editSetup')}</button>
+      <button type="button" className="gd-ghost" onClick={() => onOpen('setup')}>{c('editSetup')}</button>
     </div>
   )
 }
@@ -778,7 +778,7 @@ function PlanView({ config, c, onBack, onSaved }) {
             })}
           </div>
           {status === 'error' && <p className="pg-error">{c('saveFailed')}</p>}
-          <button type="button" className="pg-submit" onClick={save} disabled={secret || status === 'saving'}>
+          <button type="button" className="gd-cta" onClick={save} disabled={secret || status === 'saving'}>
             {status === 'saving' ? c('saving') : status === 'saved' ? `✓ ${c('saved')}` : c('save')}
           </button>
         </>
@@ -847,8 +847,8 @@ function PreviewView({ config, c, onBack }) {
           <p className="gd-safe"><ShieldIcon size={16} /> {c('pvSafe')}</p>
         </div>
       </article>
-      <button type="button" className="pg-test-btn" onClick={emailMe} disabled={status === 'sending'}>
-        {status === 'sent' ? `✓ ${c('emailSent')}` : c('emailMe')}
+      <button type="button" className="gd-ghost" onClick={emailMe} disabled={status === 'sending'}>
+        <Icon name="mail" size={16} /> {status === 'sent' ? `✓ ${c('emailSent')}` : c('emailMe')}
       </button>
       {status === 'error' && <p className="pg-error">{c('saveFailed')}</p>}
     </div>
@@ -962,24 +962,19 @@ function SafetyView({ config, c, lang, onBack, onChange, onTurnOff }) {
 
 // ── One-time "it's on" popup ──────────────────────────────────────────────────
 
-function ActivatedModal({ intervalDays, onClose }) {
-  const { t } = useLanguage()
+function ActivatedModal({ intervalDays, c, onClose, onPlan }) {
   return (
-    <div className="pg-modal-overlay" role="dialog" aria-modal="true" aria-label={t('pgActivated')} onClick={onClose}>
-      <div className="pg-modal" onClick={e => e.stopPropagation()}>
-        <button className="wlm-close" onClick={onClose} aria-label={t('close')} title={t('close')}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+    <div className="gd-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="gd-on-title" onClick={onClose}>
+      <div className="gd-modal" onClick={e => e.stopPropagation()}>
+        <button type="button" className="gd-modal-x" onClick={onClose} aria-label={c('close')}>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
         </button>
-        <div className="pg-modal-icon"><ShieldIcon size={30} /></div>
-        <h3 className="pg-modal-title">{t('pgGuardianIsOn')} <Icon name="shield" size={16} style={{ verticalAlign: '-2px', marginInlineStart: '0.25em' }} /></h3>
-        <p className="pg-modal-text">{t('pgHowItProtects')}</p>
-        <ul className="pg-modal-list">
-          <li><b>{t('pgJustKeepUsing')}</b> {t('pgResetsAutomatically')}</li>
-          <li>{t('pgEmailHeirsAfter')(intervalDays)}</li>
-          <li>{t('pgShieldInHeader')}</li>
-          <li>{t('pgKeysNeverShared')}</li>
-        </ul>
-        <button className="pg-modal-cta" onClick={onClose}>{t('pgGotIt')}</button>
+        <div className="gd-modal-badge" aria-hidden="true"><ShieldIcon size={30} /></div>
+        <h3 id="gd-on-title">{c('onTitle')}</h3>
+        <p className="gd-muted">{c('onSub')}</p>
+        <div className="gd-modal-steps"><StepTimeline steps={stepsFor(intervalDays)} c={c} /></div>
+        <button type="button" className="gd-cta" onClick={onPlan}>{c('onPlan')}</button>
+        <button type="button" className="gd-link" onClick={onClose}>{c('onLater')}</button>
       </div>
     </div>
   )
@@ -1046,7 +1041,7 @@ export default function PortfolioGuardian() {
   return (
     <>
       {content}
-      {activated && <ActivatedModal intervalDays={activated.intervalDays} onClose={() => setActivated(null)} />}
+      {activated && <ActivatedModal intervalDays={activated.intervalDays} c={c} onClose={() => setActivated(null)} onPlan={() => { setActivated(null); go('plan') }} />}
     </>
   )
 }

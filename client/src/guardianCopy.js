@@ -376,6 +376,7 @@ const it = {
 
 // The welcome screen and the three-step setup.
 Object.assign(en, {
+  close: 'Close', onTitle: 'Guardian is on', onSub: 'Just keep using WalletLens. Every open resets the clock, and nothing is sent while you are around.', onPlan: 'Next: add your legacy plan', onLater: 'Later',
   welChip: 'Not set up',
   welTitle: 'Your portfolio, passed on safely',
   welSub: 'If you ever stop opening WalletLens, the people you choose are told, one careful step at a time.',
@@ -399,6 +400,7 @@ Object.assign(en, {
   errHeir: 'Add at least one heir email.', errHeirBad: (e) => `"${e}" is not a valid email.`,
 })
 Object.assign(ar, {
+  close: 'إغلاق', onTitle: 'الحارس مُفعَّل', onSub: 'استمر في استخدام WalletLens فقط. كل فتح يعيد ضبط العدّاد، ولا يُرسَل شيء ما دمت موجوداً.', onPlan: 'التالي: أضف خطة الإرث', onLater: 'لاحقاً',
   welChip: 'غير مُفعَّل',
   welTitle: 'محفظتك تنتقل بأمان',
   welSub: 'إذا توقفت يوماً عن فتح WalletLens، يُبلَّغ من تختارهم، خطوة حذرة تلو الأخرى.',
@@ -422,6 +424,7 @@ Object.assign(ar, {
   errHeir: 'أضف بريد وريث واحد على الأقل.', errHeirBad: (e) => `"${e}" ليس بريداً صحيحاً.`,
 })
 Object.assign(fr, {
+  close: 'Fermer', onTitle: 'Guardian est activé', onSub: 'Continuez simplement à utiliser WalletLens. Chaque ouverture remet le compteur à zéro, et rien n\'est envoyé tant que vous êtes là.', onPlan: 'Ensuite : ajoutez votre plan de succession', onLater: 'Plus tard',
   welChip: 'Non configuré',
   welTitle: 'Votre portefeuille, transmis en sécurité',
   welSub: 'Si vous cessez un jour d\'ouvrir WalletLens, les personnes choisies sont prévenues, une étape prudente à la fois.',
@@ -445,6 +448,7 @@ Object.assign(fr, {
   errHeir: 'Ajoutez au moins un e-mail d\'héritier.', errHeirBad: (e) => `« ${e} » n'est pas un e-mail valide.`,
 })
 Object.assign(es, {
+  close: 'Cerrar', onTitle: 'Guardian está activado', onSub: 'Sigue usando WalletLens. Cada apertura reinicia el reloj y no se envía nada mientras estés.', onPlan: 'Siguiente: añade tu plan de legado', onLater: 'Más tarde',
   welChip: 'Sin configurar',
   welTitle: 'Tu cartera, transmitida con seguridad',
   welSub: 'Si algún día dejas de abrir WalletLens, las personas que elijas reciben aviso, paso a paso y con cuidado.',
@@ -468,6 +472,7 @@ Object.assign(es, {
   errHeir: 'Añade al menos un correo de heredero.', errHeirBad: (e) => `"${e}" no es un correo válido.`,
 })
 Object.assign(de, {
+  close: 'Schließen', onTitle: 'Guardian ist aktiv', onSub: 'Nutze WalletLens einfach weiter. Jedes Öffnen setzt die Uhr zurück, und solange du da bist, wird nichts gesendet.', onPlan: 'Weiter: Nachlassplan anlegen', onLater: 'Später',
   welChip: 'Nicht eingerichtet',
   welTitle: 'Dein Portfolio, sicher weitergegeben',
   welSub: 'Wenn du WalletLens einmal nicht mehr öffnest, werden die Menschen deiner Wahl informiert, Schritt für Schritt.',
@@ -491,6 +496,7 @@ Object.assign(de, {
   errHeir: 'Füge mindestens eine Erben-E-Mail hinzu.', errHeirBad: (e) => `„${e}“ ist keine gültige E-Mail.`,
 })
 Object.assign(it, {
+  close: 'Chiudi', onTitle: 'Guardian è attivo', onSub: 'Continua a usare WalletLens. Ogni apertura azzera il conteggio e non viene inviato nulla finché ci sei.', onPlan: 'Avanti: aggiungi il piano di successione', onLater: 'Più tardi',
   welChip: 'Non configurato',
   welTitle: 'Il tuo portafoglio, tramandato in sicurezza',
   welSub: 'Se un giorno smetti di aprire WalletLens, le persone che scegli vengono avvisate, un passo prudente alla volta.',
