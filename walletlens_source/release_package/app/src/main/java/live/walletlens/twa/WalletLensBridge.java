@@ -145,6 +145,33 @@ public class WalletLensBridge {
         return true;
     }
 
+    /**
+     * Goal alerts with the app closed: the goal rules (text already in the
+     * user's language), the holdings and the last prices, kept on this phone
+     * and checked every 15 minutes by {@link GoalAlertWorker}. No goal left
+     * stops the check. Nothing here leaves the device; the worker asks the
+     * server for prices by asset only.
+     */
+    @JavascriptInterface
+    public boolean syncGoalAlerts(String json) {
+        Activity a = activity();
+        if (a == null || json == null || json.isEmpty()) return false;
+        try {
+            GoalAlertWorker.sync(a, json);
+            return true;
+        } catch (Throwable e) {
+            Log.w(TAG, "goal sync failed: " + e);
+            return false;
+        }
+    }
+
+    /** The goals rung while the app was closed, as a JSON array of "id:armedAt". */
+    @JavascriptInterface
+    public String goalAlertsFired() {
+        Activity a = activity();
+        return a == null ? "[]" : GoalAlertWorker.firedJson(a);
+    }
+
     // ── Storage ──────────────────────────────────────────────────────────
 
     /**
