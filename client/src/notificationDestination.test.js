@@ -149,7 +149,7 @@ describe('every channel lands on what it is about', () => {
   it('every channel default is a path this app serves', () => {
     // A destination is only as good as the route behind it. Anything outside
     // this set is a 404 wearing the app's icon.
-    const ROUTES = new Set(['/dashboard', '/academy', '/settings', '/market-index', '/'])
+    const ROUTES = new Set(['/dashboard', '/academy', '/settings', '/market-index', '/guardian', '/'])
     for (const [channel, url] of Object.entries(CHANNEL_URL)) {
       expect(url, `${channel} must be a path`).toMatch(/^\//)
       expect(ROUTES.has(url.split('?')[0]), `${channel} → ${url}`).toBe(true)

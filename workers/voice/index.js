@@ -260,11 +260,58 @@ function sanitizeHeirs(heirs) {
         // deno-lint-ignore no-explicit-any
         .filter((h) => h && typeof h.email === "string" && emailRe.test(h.email.trim()))
         // deno-lint-ignore no-explicit-any
-        .map((h) => ({
-        name: String(h.name || "").trim().slice(0, 80) || "Heir",
-        email: String(h.email).trim().toLowerCase(),
-    }));
+        .map((h) => {
+        const share = Number(h.share);
+        return {
+            name: String(h.name || "").trim().slice(0, 80) || "Heir",
+            email: String(h.email).trim().toLowerCase(),
+            role: String(h.role || "").trim().slice(0, 30),
+            share: Number.isFinite(share) && share > 0 ? Math.min(100, Math.round(share)) : null,
+        };
+    });
 }
+// The legacy plan: for each holding, where it is kept and how an heir reaches
+// it. Places and directions only; the app warns against writing secrets, and
+// nothing here is ever a password or seed words by design of the form.
+const GUARDIAN_PLAN_KINDS = ["exchange", "hardware", "bank", "broker", "paper", "other"];
+function sanitizePlan(plan) {
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return (Array.isArray(plan) ? plan : [])
+        .slice(0, 40)
+        .filter((p) => p && typeof p === "object" && String(p.sym || "").trim())
+        .map((p) => ({
+        sym: String(p.sym).trim().slice(0, 16),
+        kind: GUARDIAN_PLAN_KINDS.includes(p.kind) ? p.kind : "",
+        place: String(p.place || "").trim().slice(0, 80),
+        how: String(p.how || "").trim().slice(0, 300),
+        to: (Array.isArray(p.to) ? p.to : [])
+            .map((e) => String(e || "").trim().toLowerCase())
+            .filter((e) => emailRe.test(e)).slice(0, 3),
+    }))
+        .filter((p) => p.kind || p.place || p.how);
+}
+// The trusted person: asked, before any heir is told, whether the owner is OK.
+function sanitizeTrusted(t) {
+    if (!t || typeof t !== "object")
+        return null;
+    const email = String(t.email || "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254)
+        return null;
+    return { name: String(t.name || "").trim().slice(0, 80), email };
+}
+// What one heir is told about where things are: the plan rows that go to
+// everyone, plus the ones marked for them.
+function planForHeir(plan, heirEmail) {
+    return (Array.isArray(plan) ? plan : []).filter((p) => !p.to?.length || p.to.includes(heirEmail));
+}
+const GUARDIAN_KIND_LABEL = { exchange: "Exchange", hardware: "Hardware wallet", bank: "Bank", broker: "Broker", paper: "Paper / safe", other: "Other" };
+// Pausing for travel: at most this long, so a forgotten pause cannot switch
+// Guardian off for good.
+const GUARDIAN_MAX_PAUSE_DAYS = 60;
+// After the owner warning, the trusted person is asked on this day of the grace.
+const GUARDIAN_TRUSTED_AFTER_DAYS = 7;
+// A practice email to heirs, at most once a week.
+const GUARDIAN_DRILL_GAP_MS = 7 * 24 * 60 * 60 * 1000;
 // Branded HTML shell so every email looks consistent.
 function emailShell(bodyHtml) {
     return `<!DOCTYPE html><html><body style="margin:0;background:#0b0f14;font-family:'Plus Jakarta Sans',Segoe UI,system-ui,sans-serif;color:#e6edf3;padding:24px">
@@ -689,9 +736,21 @@ function backupEmailContent(opts) {
     return { subject: "Your WalletLens backup code", html };
 }
 function guardianContent(opts) {
-    const { message = "", valueStr, assetStr, lastSeen, isTest = false, hasQr = false } = opts;
+    const { message = "", valueStr, assetStr, lastSeen, isTest = false, hasQr = false, drill = false } = opts;
     const owner = (opts.ownerName || "").trim();
-    const testBanner = isTest ? `
+    const share = Number(opts.heirShare) > 0 ? Math.round(Number(opts.heirShare)) : 0;
+    const plan = Array.isArray(opts.plan) ? opts.plan : [];
+    const trustedName = String(opts.trustedName || "").trim();
+    const planHtml = plan.length ? `
+    <div style="background:#0f141a;border:1px solid #1f2730;border-radius:12px;padding:16px 20px;margin:0 0 24px">
+      <p style="margin:0 0 10px;font-size:11px;letter-spacing:.08em;color:#4ade80;font-weight:700;text-transform:uppercase">Where everything is</p>
+      ${plan.map((p) => `<p style="margin:0 0 10px;line-height:1.6;color:#c4cdd6;font-size:14px"><b style="color:#fff">${escapeHtml(p.sym)}</b>${p.kind ? ` · ${escapeHtml(GUARDIAN_KIND_LABEL[p.kind] || "")}` : ""}${p.place ? ` · ${escapeHtml(p.place)}` : ""}${p.how ? `<br><span style="color:#9aa5b1">${escapeHtml(p.how)}</span>` : ""}</p>`).join("")}
+    </div>` : "";
+    const testBanner = drill ? `
+    <div style="background:#3a2a0a;border:1px solid #a16207;border-radius:12px;padding:14px 18px;margin:0 0 22px">
+      <p style="margin:0;color:#fde68a;font-weight:800;font-size:15px">✅ Practice run: nothing has happened</p>
+      <p style="margin:6px 0 0;color:#e7d9b0;font-size:13px;line-height:1.6">${owner ? escapeHtml(owner) : "Someone who trusts you"} sent this so you know what this email looks like. They are fine. Keep it somewhere you can find it.</p>
+    </div>` : isTest ? `
     <div style="background:#3a2a0a;border:1px solid #a16207;border-radius:12px;padding:14px 18px;margin:0 0 22px">
       <p style="margin:0;color:#fde68a;font-weight:800;font-size:15px">✅ This is only a test</p>
       <p style="margin:6px 0 0;color:#e7d9b0;font-size:13px;line-height:1.6">This is a preview of exactly what your heirs will receive if Portfolio Guardian is ever triggered. Nothing has happened and no heirs were emailed — this test was sent only to you.</p>
@@ -717,6 +776,7 @@ function guardianContent(opts) {
     <h1 style="margin:0 0 18px;font-size:23px;line-height:1.3;color:#fff">${heading}</h1>
     <p style="margin:0 0 18px;line-height:1.7;color:#c4cdd6">${leadLine}</p>
     ${reachOutFirst}
+    ${!isTest && trustedName ? `<p style="margin:0 0 18px;line-height:1.7;color:#c4cdd6">They asked you to contact <b style="color:#e2e8f0">${escapeHtml(trustedName)}</b> first.</p>` : ""}
     ${message ? `
     <div style="background:#141b12;border-left:3px solid #4ade80;padding:16px 20px;border-radius:0 10px 10px 0;margin:0 0 24px">
       <p style="margin:0 0 6px;font-size:11px;letter-spacing:.08em;color:#4ade80;font-weight:700;text-transform:uppercase">Their message to you</p>
@@ -727,6 +787,10 @@ function guardianContent(opts) {
         <td style="padding:16px 20px;border-bottom:1px solid #1f2730;font-size:13px;color:#8a93a0">Portfolio value</td>
         <td style="padding:16px 20px;border-bottom:1px solid #1f2730;font-size:15px;color:#fff;font-weight:700;text-align:right">${valueStr}</td>
       </tr>
+      ${share ? `<tr>
+        <td style="padding:16px 20px;border-bottom:1px solid #1f2730;font-size:13px;color:#8a93a0">Your share</td>
+        <td style="padding:16px 20px;border-bottom:1px solid #1f2730;font-size:15px;color:#fff;font-weight:700;text-align:right">${share}%</td>
+      </tr>` : ""}
       <tr>
         <td style="padding:16px 20px;border-bottom:1px solid #1f2730;font-size:13px;color:#8a93a0">Assets held</td>
         <td style="padding:16px 20px;border-bottom:1px solid #1f2730;font-size:14px;color:#e2e8f0;text-align:right">${assetStr}</td>
@@ -736,6 +800,7 @@ function guardianContent(opts) {
         <td style="padding:16px 20px;font-size:14px;color:#e2e8f0;text-align:right">${lastSeen}</td>
       </tr>
     </table>
+    ${planHtml}
     <div style="background:#111827;border:1px solid #374151;border-radius:12px;padding:14px 18px;margin:0 0 24px">
       <p style="margin:0;color:#9ca3af;font-size:12.5px;line-height:1.7">
         🔒 <b style="color:#d1d5db">Protect yourself:</b> WalletLens will <b>never</b> ask you for
@@ -779,7 +844,9 @@ function guardianContent(opts) {
       Need a hand? Reach us at <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>.
     </p>`}
   `);
-    const subject = isTest
+    const subject = drill
+        ? `✅ Practice run from ${owner || "someone who trusts you"}: nothing has happened`
+        : isTest
         ? "✅ Test: you're set up as a WalletLens heir"
         : `${owner ? owner + " — " : ""}an important WalletLens Portfolio Guardian alert`;
     return { subject, html };
@@ -792,6 +859,7 @@ const SELF_ORIGIN = "https://walletlens-voice.tarek-abdelhameed.workers.dev";
 // given this long to respond to the warning email before heirs are contacted.
 const GUARDIAN_GRACE_DAYS = 14;
 const GUARDIAN_GRACE_MS = GUARDIAN_GRACE_DAYS * 24 * 60 * 60 * 1000;
+const DAY_MS_G = 24 * 60 * 60 * 1000;
 // Owner-facing warning email. Sent when the deadline first passes, BEFORE any
 // heir is contacted, so a lost phone / no backup can't trigger a false alarm:
 // the owner gets this at their own address with a one-click reset link that
@@ -824,10 +892,33 @@ function guardianOwnerWarning(opts) {
     const subject = `${name ? name + " — " : ""}⚠️ Open WalletLens or your heirs will be notified in ${graceDays} days`;
     return { subject, html };
 }
+// Trusted-person email: sent during the grace period, before any heir. They
+// can answer "they are fine" with the same reset the owner has, which is the
+// point: a long trip or a lost phone is settled by someone who knows.
+function guardianTrustedEmail(opts) {
+    const { ownerName = "", trustedName = "", lastSeen, resetUrl, daysLeft } = opts;
+    const owner = ownerName.trim() || "Someone who trusts you";
+    const html = emailShell(`
+    <h1 style="margin:0 0 18px;font-size:23px;line-height:1.3;color:#fff">${trustedName ? escapeHtml(trustedName) + ", have" : "Have"} you heard from ${escapeHtml(owner)}?</h1>
+    <p style="margin:0 0 18px;line-height:1.7;color:#c4cdd6">
+      ${escapeHtml(owner)} chose you as their trusted person in <b style="color:#4ade80">WalletLens Portfolio Guardian</b>. They have not opened WalletLens since <b>${lastSeen}</b> and have not answered our email.
+    </p>
+    <div style="text-align:center;margin:0 0 22px">
+      <a href="${resetUrl}" style="display:inline-block;background:#4ade80;color:#04210f;font-weight:800;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px">✅ They are fine, reset the countdown</a>
+    </div>
+    <div style="background:#2a1215;border:1px solid #7f1d1d;border-radius:12px;padding:14px 18px;margin:0 0 22px">
+      <p style="margin:0;color:#fecaca;font-size:13.5px;line-height:1.7">
+        If nobody answers, their heirs will be sent their message and where their portfolio is in <b>${daysLeft} days</b>. Please try to reach them first.
+      </p>
+    </div>
+    <p style="margin:0;line-height:1.7;color:#7d8794;font-size:13px">You only got this because ${escapeHtml(owner)} named you. Questions: <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>.</p>
+  `);
+    return { subject: `Have you heard from ${owner}? (WalletLens Guardian)`, html };
+}
 // Self-contained landing page for the reset link in the owner-warning email.
 // The button POSTs guardian_reset to this same origin (so no CORS), then shows
 // a success/failure state inline. Kept dependency-free so it renders in any browser.
-function guardianResetPage(deviceId) {
+function guardianResetPage(deviceId, trusted = false) {
     const invalid = !deviceId;
     return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -850,6 +941,10 @@ function guardianResetPage(deviceId) {
   <div id="view">
     ${invalid
         ? `<h1>Link expired or invalid</h1><p>This reset link is missing its device code. Open WalletLens on your own device to check in, or contact <a href="mailto:contact@walletlens.live" style="color:#4ade80">contact@walletlens.live</a>.</p>`
+        : trusted
+        ? `<h1>Are they OK?</h1>
+         <p>If you know they are fine, confirm below and Portfolio Guardian restarts their countdown. Their heirs will <b>not</b> be contacted.</p>
+         <button id="btn" onclick="reset()">✅ Yes, they are fine</button>`
         : `<h1>Reset your Guardian countdown?</h1>
          <p>Confirm you're still here and Portfolio Guardian will restart the countdown. Your heirs will <b>not</b> be contacted.</p>
          <button id="btn" onclick="reset()">✅ Yes, I'm still here</button>
@@ -888,7 +983,12 @@ async function runGuardianCron() {
         const rec = entry.value;
         if (!rec?.active || rec.notifiedAt)
             continue;
-        const lastCheckin = new Date(rec.lastCheckin).getTime();
+        // Paused for travel: nothing moves until the pause ends, and the clock
+        // then runs from the end of the pause.
+        const pausedUntil = rec.pausedUntil ? new Date(rec.pausedUntil).getTime() : 0;
+        if (pausedUntil > now)
+            continue;
+        const lastCheckin = Math.max(new Date(rec.lastCheckin).getTime(), pausedUntil || 0);
         const intervalMs = rec.intervalDays * 24 * 60 * 60 * 1000;
         if (now - lastCheckin < intervalMs)
             continue;
@@ -914,6 +1014,20 @@ async function runGuardianCron() {
                 warned++;
                 continue;
             }
+            // Midway through the grace, the trusted person is asked, once.
+            const trusted = sanitizeTrusted(rec.trusted);
+            const askedAt = rec.trustedAskedAt ? new Date(rec.trustedAskedAt).getTime() : 0;
+            if (trusted && askedAt <= lastCheckin && now - warnedAt >= GUARDIAN_TRUSTED_AFTER_DAYS * DAY_MS_G && now - warnedAt < GUARDIAN_GRACE_MS) {
+                const { subject, html } = guardianTrustedEmail({
+                    ownerName: rec.ownerName, trustedName: trusted.name,
+                    lastSeen: new Date(lastCheckin).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+                    resetUrl: `${SELF_ORIGIN}/guardian-reset?d=${encodeURIComponent(rec.deviceId)}&t=1`,
+                    daysLeft: Math.max(1, Math.ceil((GUARDIAN_GRACE_MS - (now - warnedAt)) / DAY_MS_G)),
+                });
+                await sendEmail(trusted.email, subject, html, GUARDIAN_FROM);
+                await kv.set(entry.key, { ...rec, trustedAskedAt: new Date().toISOString() });
+                continue;
+            }
             // Warned already — hold until the grace period elapses.
             if (now - warnedAt < GUARDIAN_GRACE_MS)
                 continue;
@@ -926,17 +1040,22 @@ async function runGuardianCron() {
         const lastSeen = new Date(rec.lastCheckin).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
         const qrPng = sanitizeQrPng(rec.qrPng);
         const attachments = qrPng ? [{ filename: QR_FILENAME, content: qrPng }] : undefined;
-        const { subject, html } = guardianContent({
-            ownerName: rec.ownerName,
-            message: rec.message || "",
-            valueStr, assetStr, lastSeen,
-            intervalDays: rec.intervalDays,
-            hasQr: !!qrPng,
-        });
+        // One email per heir: their share and the plan rows meant for them.
         const heirs = rec.heirs;
         for (const heir of heirs) {
-            if (heir.email)
-                await sendEmail(heir.email, subject, html, GUARDIAN_FROM, attachments);
+            if (!heir.email)
+                continue;
+            const { subject, html } = guardianContent({
+                ownerName: rec.ownerName,
+                message: rec.message || "",
+                valueStr, assetStr, lastSeen,
+                intervalDays: rec.intervalDays,
+                hasQr: !!qrPng,
+                heirShare: heir.share,
+                plan: planForHeir(rec.plan, heir.email),
+                trustedName: sanitizeTrusted(rec.trusted)?.name || "",
+            });
+            await sendEmail(heir.email, subject, html, GUARDIAN_FROM, attachments);
         }
         await kv.set(entry.key, { ...rec, notifiedAt: new Date().toISOString() });
         notified++;
@@ -1137,7 +1256,7 @@ function rateLimited(ip, bucket, max, windowMs = 60_000) {
     return b.n > max;
 }
 const AI_MODES = new Set(["vision", "analyze", "assistant", "vision_advice", "recap", "target_analysis"]);
-const EMAIL_MODES = new Set(["email", "guardian_setup", "guardian_test", "backup_email", "weekly_subscribe"]);
+const EMAIL_MODES = new Set(["email", "guardian_setup", "guardian_test", "guardian_drill", "backup_email", "weekly_subscribe"]);
 Deno.serve(async (req) => {
     const origin = req.headers.get("Origin");
     const headers = corsHeaders(origin);
@@ -1160,7 +1279,7 @@ Deno.serve(async (req) => {
         if (reqUrl.pathname === "/guardian-reset") {
             const d = reqUrl.searchParams.get("d") || "";
             const safeD = /^[a-zA-Z0-9_-]{8,64}$/.test(d) ? d : "";
-            return new Response(guardianResetPage(safeD), {
+            return new Response(guardianResetPage(safeD, reqUrl.searchParams.get("t") === "1"), {
                 status: 200,
                 headers: { "content-type": "text/html; charset=utf-8" },
             });
@@ -1659,6 +1778,12 @@ Deno.serve(async (req) => {
                 ownerName: cleanOwnerName,
                 ownerEmail: cleanOwnerEmail,
                 heirs: cleanHeirs,
+                // Optional: an older app sends neither, and an edit that does not
+                // touch them keeps what was there.
+                plan: body.plan !== undefined ? sanitizePlan(body.plan) : (prior.value?.plan || []),
+                trusted: body.trusted !== undefined ? sanitizeTrusted(body.trusted) : (prior.value?.trusted || null),
+                pausedUntil: prior.value?.pausedUntil || null,
+                drilledAt: prior.value?.drilledAt || null,
                 message: cleanMessage,
                 intervalDays: interval,
                 portfolioSummary: summary,
@@ -1701,6 +1826,7 @@ Deno.serve(async (req) => {
         const attachments = qrPng ? [{ filename: QR_FILENAME, content: qrPng }] : undefined;
         const { subject, html } = guardianContent({
             ownerName: cleanOwnerName, message: cleanMessage, valueStr, assetStr, lastSeen, isTest: true, hasQr: !!qrPng,
+            plan: sanitizePlan(body.plan), heirShare: Number(body.heirShare) || 0,
         });
         // Send the preview to the owner only.
         const r = await sendEmailResult(cleanOwnerEmail, subject, html, GUARDIAN_FROM, "contact@walletlens.live", attachments);
@@ -1721,7 +1847,7 @@ Deno.serve(async (req) => {
             if (!entry.value || !entry.value.active) {
                 return new Response(JSON.stringify({ ok: false, reason: "not_found" }), { status: 200, headers });
             }
-            const updated = { ...entry.value, lastCheckin: new Date().toISOString(), warnedAt: null, notifiedAt: null };
+            const updated = { ...entry.value, lastCheckin: new Date().toISOString(), warnedAt: null, notifiedAt: null, trustedAskedAt: null };
             // Optionally refresh the portfolio summary
             if (portfolioSummary && typeof portfolioSummary === "object") {
                 updated.portfolioSummary = {
@@ -1761,11 +1887,93 @@ Deno.serve(async (req) => {
                 return new Response(JSON.stringify({ ok: false, reason: "not_found" }), { status: 200, headers });
             }
             const nowIso = new Date().toISOString();
-            await kv.set(["guardian", deviceId], { ...entry.value, lastCheckin: nowIso, warnedAt: null, notifiedAt: null });
+            await kv.set(["guardian", deviceId], { ...entry.value, lastCheckin: nowIso, warnedAt: null, notifiedAt: null, trustedAskedAt: null });
             return new Response(JSON.stringify({ ok: true, lastCheckin: nowIso }), { status: 200, headers });
         }
         catch (e) {
             console.error("Guardian reset error:", e);
+            return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers });
+        }
+    }
+    if (body?.mode === "guardian_update") {
+        // POST { mode:"guardian_update", deviceId, plan?, trusted?, intervalDays?, pauseDays? }
+        // Small changes without re-sending the whole setup. pauseDays 0 ends a
+        // pause; 1..60 pauses from now.
+        const { deviceId } = body;
+        if (!deviceId || typeof deviceId !== "string" || !/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+            return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers });
+        }
+        try {
+            const kv = await Deno.openKv();
+            const entry = await kv.get(["guardian", deviceId]);
+            if (!entry.value || !entry.value.active) {
+                return new Response(JSON.stringify({ ok: false, reason: "not_found" }), { status: 200, headers });
+            }
+            const next = { ...entry.value };
+            if (body.plan !== undefined)
+                next.plan = sanitizePlan(body.plan);
+            if (body.trusted !== undefined)
+                next.trusted = sanitizeTrusted(body.trusted);
+            if (body.intervalDays !== undefined && [30, 60, 90, 180].includes(Number(body.intervalDays)))
+                next.intervalDays = Number(body.intervalDays);
+            if (body.pauseDays !== undefined) {
+                const d = Math.round(Number(body.pauseDays));
+                next.pausedUntil = d > 0 ? new Date(Date.now() + Math.min(d, GUARDIAN_MAX_PAUSE_DAYS) * DAY_MS_G).toISOString() : null;
+            }
+            // Any change made from the app is also a sign of life.
+            next.lastCheckin = new Date().toISOString();
+            next.warnedAt = null;
+            next.trustedAskedAt = null;
+            await kv.set(["guardian", deviceId], next);
+            return new Response(JSON.stringify({ ok: true, pausedUntil: next.pausedUntil, intervalDays: next.intervalDays, planCount: (next.plan || []).length, lastCheckin: next.lastCheckin }), { status: 200, headers });
+        }
+        catch (e) {
+            console.error("Guardian update error:", e);
+            return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers });
+        }
+    }
+    if (body?.mode === "guardian_drill") {
+        // POST { mode:"guardian_drill", deviceId }
+        // A practice run: every heir gets their real email, clearly marked as a
+        // test that means nothing has happened. At most once a week.
+        const { deviceId } = body;
+        if (!deviceId || typeof deviceId !== "string" || !/^[a-zA-Z0-9_-]{8,64}$/.test(deviceId)) {
+            return new Response(JSON.stringify({ error: "invalid_device_id" }), { status: 400, headers });
+        }
+        try {
+            const kv = await Deno.openKv();
+            const entry = await kv.get(["guardian", deviceId]);
+            const rec = entry.value;
+            if (!rec || !rec.active) {
+                return new Response(JSON.stringify({ ok: false, reason: "not_found" }), { status: 200, headers });
+            }
+            const last = rec.drilledAt ? new Date(rec.drilledAt).getTime() : 0;
+            if (Date.now() - last < GUARDIAN_DRILL_GAP_MS) {
+                return new Response(JSON.stringify({ ok: false, reason: "too_soon", drilledAt: rec.drilledAt }), { status: 200, headers });
+            }
+            const ps = rec.portfolioSummary || { totalUsd: 0, assetSymbols: [], currency: "USD" };
+            const valueStr = ps.totalUsd > 0 ? `approximately ${ps.currency} ${ps.totalUsd.toLocaleString()}` : "an undisclosed amount";
+            const assetStr = ps.assetSymbols?.length ? ps.assetSymbols.join(", ") : "various assets";
+            const lastSeen = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+            let sent = 0;
+            for (const heir of rec.heirs || []) {
+                if (!heir.email)
+                    continue;
+                const { subject, html } = guardianContent({
+                    ownerName: rec.ownerName, message: rec.message || "", valueStr, assetStr, lastSeen,
+                    isTest: true, drill: true, hasQr: false, heirShare: heir.share,
+                    plan: planForHeir(rec.plan, heir.email),
+                });
+                const r = await sendEmailResult(heir.email, subject, html, GUARDIAN_FROM, "contact@walletlens.live");
+                if (r.ok)
+                    sent++;
+            }
+            const drilledAt = new Date().toISOString();
+            await kv.set(["guardian", deviceId], { ...rec, drilledAt });
+            return new Response(JSON.stringify({ ok: sent > 0, sent, drilledAt }), { status: 200, headers });
+        }
+        catch (e) {
+            console.error("Guardian drill error:", e);
             return new Response(JSON.stringify({ error: "storage_error" }), { status: 500, headers });
         }
     }

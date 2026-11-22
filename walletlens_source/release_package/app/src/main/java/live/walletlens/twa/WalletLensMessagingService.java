@@ -123,6 +123,9 @@ public class WalletLensMessagingService extends FirebaseMessagingService {
             case "move":
             case "level":
             case "zakat":
+            // Portfolio Guardian: "open the app before the next step". The
+            // owner asked for it, and a reminder nobody hears is no reminder.
+            case "guardian":
             // The welcome notification, whose entire job is to demonstrate that
             // notifications work. sw.js has always treated it as loud; this
             // list did not, so on Android the one notification sent to prove

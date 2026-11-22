@@ -120,6 +120,24 @@ export const COPY = {
       `Obiettivo ${cond === 'above' ? 'sopra' : 'sotto'} ${target} · ${sym} nelle 24 h: ${day}`,
   },
 
+  // — Portfolio Guardian: the owner has not opened the app for a while —
+  guardianTitle: {
+    en: () => 'Portfolio Guardian',
+    ar: () => 'حارس المحفظة',
+    fr: () => 'Portfolio Guardian',
+    es: () => 'Portfolio Guardian',
+    de: () => 'Portfolio Guardian',
+    it: () => 'Portfolio Guardian',
+  },
+  guardianBody: {
+    en: (days) => `Open WalletLens to show you're OK. ${days} days left before the next step.`,
+    ar: (days) => `افتح WalletLens لتؤكد أنك بخير. بقي ${days} أيام قبل الخطوة التالية.`,
+    fr: (days) => `Ouvrez WalletLens pour montrer que tout va bien. Encore ${days} jours avant l’étape suivante.`,
+    es: (days) => `Abre WalletLens para mostrar que estás bien. Quedan ${days} días antes del siguiente paso.`,
+    de: (days) => `Öffne WalletLens, um zu zeigen, dass alles in Ordnung ist. Noch ${days} Tage bis zum nächsten Schritt.`,
+    it: (days) => `Apri WalletLens per mostrare che stai bene. Mancano ${days} giorni al passo successivo.`,
+  },
+
   // — Zakat year completing —
   zakatTitle: {
     en: (days) => days === 0 ? 'Your zakat is due today' : 'Your zakat year is nearly complete',
@@ -1366,6 +1384,8 @@ export function normalizeSub(s = {}) {
     zakatDue: sanitizeZakatDue(s.zakatDue),
     lastError: sanitizeLastError(s.lastError),
     zakatSent: trimZakatSent(s.zakatSent),
+    guardianDue: sanitizeGuardianDue(s.guardianDue),
+    guardianSent: trimZakatSent(s.guardianSent),
     seenRef: s.seenRef ?? null,
     newsSent: s.newsSent ?? {},
     lastNewsAt: s.lastNewsAt ?? 0,
@@ -1409,7 +1429,7 @@ export const USER_OWNED_FIELDS = [
   // device would go silent again with nothing to see.
   'subscription', 'transport', 'fcmToken',
   'alerts', 'watch', 'setup', 'prefs',
-  'lang', 'tz', 'lastSeen', 'zakatDue',
+  'lang', 'tz', 'lastSeen', 'zakatDue', 'guardianDue',
 ]
 
 /**
@@ -1433,6 +1453,10 @@ export function mergeSubForWrite(mutated, fresh) {
   // the old date, and the reset that came with the new one is what counts.
   if (fresh.zakatDue !== mutated.zakatDue) {
     merged.zakatSent = Array.isArray(fresh.zakatSent) ? fresh.zakatSent : []
+  }
+  // The same for the Guardian deadline, which moves on every app open.
+  if (fresh.guardianDue !== mutated.guardianDue) {
+    merged.guardianSent = Array.isArray(fresh.guardianSent) ? fresh.guardianSent : []
   }
 
   // retention is the one field both sides write: the win-back ladder APPENDS
@@ -1534,6 +1558,37 @@ export function dueZakatReminder({ dueDate, today, sent = [] }) {
   const hit = ZAKAT_MILESTONES.find(m => daysOut === m)
   if (hit === undefined) return null
 
+  const key = `${dueDate}:${hit}`
+  if (sent.includes(key)) return null
+  return { days: hit, key }
+}
+
+// ── Portfolio Guardian reminder ─────────────────────────────────────────────
+// The owner's Guardian deadline, as a local date, so the phone can be told a
+// week and three days ahead. Nothing else about Guardian reaches this server.
+// Every app open moves the date, so a reminder only fires for someone who has
+// really stopped opening the app.
+
+export const GUARDIAN_MILESTONES = [7, 3]
+
+export function sanitizeGuardianDue(raw) {
+  if (raw == null) return null
+  const t = parseDayKey(raw)
+  if (!Number.isFinite(t)) return null
+  // Intervals are 30 to 180 days, plus a pause of up to 60.
+  const now = Date.now()
+  if (t > now + 250 * DAY_MS || t < now - 30 * DAY_MS) return null
+  return raw
+}
+
+/** Which Guardian reminder, if any, is due today: { days, key } or null. */
+export function dueGuardianReminder({ dueDate, today, sent = [] }) {
+  const due = parseDayKey(dueDate)
+  const now = parseDayKey(today)
+  if (!Number.isFinite(due) || !Number.isFinite(now)) return null
+  const daysOut = Math.round((due - now) / DAY_MS)
+  const hit = GUARDIAN_MILESTONES.find(m => daysOut === m)
+  if (hit === undefined) return null
   const key = `${dueDate}:${hit}`
   if (sent.includes(key)) return null
   return { days: hit, key }
@@ -1984,6 +2039,8 @@ export const CHANNEL_URL = {
   // its own — a reminder that lands one tab away from the calculator it is
   // about makes the user go looking for what they were just told.
   zakat: '/dashboard?tab=zakat',
+  // Opening the Guardian page is itself the check-in the reminder asks for.
+  guardian: '/guardian',
   // The three scheduled channels each land on the page they are about, not on
   // the dashboard. A hack that opens a portfolio screen has thrown away the
   // one thing the tap was for.
@@ -2115,6 +2172,8 @@ export const CHANNEL_DELIVERY = {
   // invariant is that a channel which buzzes is one that wakes the device.
   // The long TTL is the other half: unlike a price, this stays true all day.
   zakat:     { urgency: 'high',   ttl: 24 * 60 * 60 },
+  // A safety reminder the owner asked for, twice per deadline at most.
+  guardian:  { urgency: 'high',   ttl: 24 * 60 * 60 },
   test:      { urgency: 'high',   ttl: 60 },            // immediate or not at all
 }
 
