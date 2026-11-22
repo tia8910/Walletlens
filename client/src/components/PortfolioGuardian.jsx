@@ -217,36 +217,127 @@ function cleanHeirList(heirs) {
 }
 
 function HeirRow({ idx, heir, onChange, onRemove, showRemove, c }) {
-  const { t } = useLanguage()
   return (
-    <div className="pg-heir-row gd-heir-row">
-      <div className="pg-heir-num">{idx + 1}</div>
-      <div className="pg-heir-inputs">
-        <input type="text" className="pg-input" placeholder={t('pgFullName')} value={heir.name} maxLength={80}
-          aria-label={t('pgFullName')} onChange={e => onChange(idx, { ...heir, name: e.target.value })} />
-        <input type="email" className="pg-input" placeholder="email@example.com" value={heir.email}
-          aria-label={c('email')} onChange={e => onChange(idx, { ...heir, email: e.target.value })} />
-        <div className="gd-heir-extra">
-          <input type="text" className="pg-input" placeholder={c('rolePh')} value={heir.role || ''} maxLength={30}
-            aria-label={c('role')} onChange={e => onChange(idx, { ...heir, role: e.target.value })} />
-          <label className="gd-share">
-            <input type="number" inputMode="numeric" min="0" max="100" className="pg-input" value={heir.share ?? ''}
-              aria-label={c('share')} onChange={e => onChange(idx, { ...heir, share: e.target.value === '' ? null : e.target.value })} />
-            <span>%</span>
-          </label>
-        </div>
+    <div className="gd-heir-card">
+      <div className="gd-heir-top">
+        <span className={`gd-avatar gd-av-${idx % 3}`} aria-hidden="true">{(heir.name || heir.email || String(idx + 1)).trim()[0]?.toUpperCase()}</span>
+        <b>{c('heirN')(idx + 1)}</b>
+        {showRemove && (
+          <button type="button" className="gd-x" onClick={() => onRemove(idx)} aria-label={c('remove')}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+        )}
       </div>
-      {showRemove && (
-        <button type="button" className="pg-heir-remove" onClick={() => onRemove(idx)} title={t('pgRemoveHeir')} aria-label={t('pgRemoveHeir')}>
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      )}
+      <input type="text" className="pg-input" placeholder={c('fullName')} value={heir.name} maxLength={80}
+        aria-label={c('fullName')} onChange={e => onChange(idx, { ...heir, name: e.target.value })} />
+      <input type="email" className="pg-input" placeholder="email@example.com" value={heir.email}
+        aria-label={c('email')} onChange={e => onChange(idx, { ...heir, email: e.target.value })} />
+      <div className="gd-heir-extra">
+        <input type="text" className="pg-input" placeholder={c('rolePh')} value={heir.role || ''} maxLength={30}
+          aria-label={c('role')} onChange={e => onChange(idx, { ...heir, role: e.target.value })} />
+        <label className="gd-share">
+          <input type="number" inputMode="numeric" min="0" max="100" className="pg-input" value={heir.share ?? ''}
+            placeholder={c('share')} aria-label={c('share')}
+            onChange={e => onChange(idx, { ...heir, share: e.target.value === '' ? null : e.target.value })} />
+          <span>%</span>
+        </label>
+      </div>
     </div>
   )
 }
 
-function SetupForm({ onSuccess, initial, c }) {
-  const { t } = useLanguage()
+const CheckIcon = ({ size = 14 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>
+)
+
+/** The timeline of steps, shared by the welcome screen, setup and Safety. */
+function StepTimeline({ steps, c, trustedName }) {
+  const text = (s) => ({
+    seen: [c('st_seen'), c('st_seen_b')],
+    reminder: [c('st_reminder'), c('st_reminder_b')],
+    email: [c('st_email'), c('st_email_b')],
+    trusted: [c('st_trusted')(trustedName), c('st_trusted_b')],
+    heirs: [c('st_heirs'), c('st_heirs_b')],
+  })[s.id]
+  return (
+    <ol className="gd-timeline">
+      {steps.map(s => {
+        const [title, body] = text(s)
+        return (
+          <li key={s.id} className={`gd-step gd-step-${s.id}`}>
+            <span className="gd-step-dot" aria-hidden="true" />
+            <div><small>{c('dayN')(s.day)}</small><b>{title}</b><span>{body}</span></div>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+// ── First visit ───────────────────────────────────────────────────────────────
+
+function GuardianWelcome({ c, onStart }) {
+  const portfolio = getPortfolioSnapshot()
+  return (
+    <div className="gd">
+      <section className="gd-hero gd-welcome is-off">
+        <span className="gd-hero-glow" aria-hidden="true" />
+        <div className="gd-ring" style={{ '--p': '0%' }}>
+          <div className="gd-ring-in"><ShieldIcon size={34} /></div>
+        </div>
+        <div className="gd-hero-txt">
+          <span className="gd-chip">{c('welChip')}</span>
+          <b>{c('welTitle')}</b>
+          <small>{c('welSub')}</small>
+        </div>
+      </section>
+
+      {portfolio.assetSymbols.length > 0 && (
+        <div className="gd-detected">
+          <span className="gd-syms" aria-hidden="true">
+            {portfolio.assetSymbols.slice(0, 4).map(s => <span key={s} className="gd-sym">{s.slice(0, 4)}</span>)}
+          </span>
+          <span>{portfolio.assetSymbols.length} · {portfolio.totalUsd > 0 ? `≈ $${portfolio.totalUsd.toLocaleString()}` : portfolio.assetSymbols.join(' · ')}</span>
+        </div>
+      )}
+
+      <section className="gd-card">
+        <b className="gd-card-title">{c('welHow')}</b>
+        <StepTimeline steps={stepsFor(90)} c={c} />
+      </section>
+
+      <div className="gd-split">
+        <section className="gd-card gd-get">
+          <b className="gd-card-title">{c('welGet')}</b>
+          <ul className="gd-ticks">
+            {['welGet1', 'welGet2', 'welGet3', 'welGet4'].map(k => <li key={k}><CheckIcon />{c(k)}</li>)}
+          </ul>
+        </section>
+        <section className="gd-card gd-never">
+          <b className="gd-card-title">{c('welNever')}</b>
+          <ul className="gd-ticks">
+            {['welNever1', 'welNever2'].map(k => (
+              <li key={k}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>{c(k)}</li>
+            ))}
+          </ul>
+        </section>
+      </div>
+
+      <p className="gd-safe gd-lost"><ShieldIcon size={16} /> {c('welLost')}</p>
+
+      <button type="button" className="gd-cta" onClick={onStart}>{c('welStart')}</button>
+      <small className="gd-muted gd-center">{c('welTime')}</small>
+    </div>
+  )
+}
+
+// ── Setup, in three steps ─────────────────────────────────────────────────────
+
+const SETUP_STEPS = ['s1', 's2', 's3']
+
+function SetupForm({ onSuccess, onCancel, initial, c }) {
+  const editing = !!initial?.active
+  const [step, setStep] = useState(0)
   const [ownerName, setOwnerName] = useState(initial?.ownerName || '')
   const [ownerEmail, setOwnerEmail] = useState(initial?.ownerEmail || '')
   const [heirs, setHeirs] = useState(initial?.heirs?.length
@@ -259,25 +350,34 @@ function SetupForm({ onSuccess, initial, c }) {
   const [testStatus, setTestStatus] = useState('idle')
   const [testErr, setTestErr] = useState('')
 
-  function validate() {
+  function errorsFor(i) {
     const errs = {}
-    if (!emailRe.test(ownerEmail.trim())) {
-      errs.ownerEmail = 'Enter your email — Guardian warns you here before ever contacting your heirs.'
+    if (i === 0 && !emailRe.test(ownerEmail.trim())) errs.ownerEmail = c('errEmail')
+    if (i === 1) {
+      const touched = heirs.filter(h => h.email.trim())
+      if (!touched.length) errs.heirs = c('errHeir')
+      else {
+        const bad = touched.find(h => !emailRe.test(h.email.trim()))
+        if (bad) errs.heirs = c('errHeirBad')(bad.email.trim())
+        else if (!sharesOk(cleanHeirList(heirs))) errs.heirs = c('sharesWarn')
+      }
     }
-    const touched = heirs.filter(h => h.email.trim())
-    if (touched.length === 0) { errs.heirs = 'Add at least one heir email.'; return errs }
-    for (const h of touched) {
-      if (!emailRe.test(h.email.trim())) { errs.heirs = `"${h.email.trim()}" is not a valid email.`; break }
-    }
-    if (!errs.heirs && !sharesOk(cleanHeirList(heirs))) errs.heirs = c('sharesWarn')
     return errs
   }
 
-  async function sendTestEmail() {
-    if (!emailRe.test(ownerEmail.trim())) {
-      setErrors(e => ({ ...e, ownerEmail: 'Enter your email to send yourself a preview.' })); return
+  function goTo(i) {
+    // Forward only past steps that are filled in; back is always fine.
+    for (let k = step; k < i; k++) {
+      const errs = errorsFor(k)
+      if (Object.keys(errs).length) { setErrors(errs); setStep(k); return }
     }
-    setErrors({}); setTestErr(''); setTestStatus('sending')
+    setErrors({}); setStep(i)
+    try { window.scrollTo({ top: 0 }) } catch { /* jsdom */ }
+  }
+
+  async function sendTestEmail() {
+    if (!emailRe.test(ownerEmail.trim())) { setErrors({ ownerEmail: c('errEmail') }); setStep(0); return }
+    setTestErr(''); setTestStatus('sending')
     try {
       const data = await apiCall({
         mode: 'guardian_test',
@@ -298,8 +398,11 @@ function SetupForm({ onSuccess, initial, c }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    const errs = validate()
-    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+    if (step < SETUP_STEPS.length - 1) { goTo(step + 1); return }
+    for (let k = 0; k < SETUP_STEPS.length; k++) {
+      const errs = errorsFor(k)
+      if (Object.keys(errs).length) { setErrors(errs); setStep(k); return }
+    }
     setErrors({}); setStatus('saving')
     const deviceId = getOrCreateDeviceId()
     const cleanHeirs = cleanHeirList(heirs)
@@ -322,14 +425,13 @@ function SetupForm({ onSuccess, initial, c }) {
         lastCheckin: new Date().toISOString(),
       }
       saveGuardianLocal(record)
-      track('guardian_setup', { heirs: cleanHeirs.length, intervalDays, edit: !!initial?.active })
+      track('guardian_setup', { heirs: cleanHeirs.length, intervalDays, edit: editing })
       onSuccess(record)
     } catch (err) {
       setStatus('error')
       const msg = String(err?.message || '')
-      setErrors(msg.includes('owner_email')
-        ? { ownerEmail: 'That email looks invalid — please double-check it.' }
-        : { submit: c('saveFailed') })
+      if (msg.includes('owner_email')) { setErrors({ ownerEmail: c('errEmail') }); setStep(0) }
+      else setErrors({ submit: c('saveFailed') })
     }
   }
 
@@ -339,74 +441,92 @@ function SetupForm({ onSuccess, initial, c }) {
   }
   const removeHeir = (idx) => setHeirs(h => h.filter((_, i) => i !== idx))
   const addHeir = () => { if (heirs.length < 3) setHeirs(h => [...h, { name: '', email: '', role: '', share: null }]) }
-  const portfolio = getPortfolioSnapshot()
+  const last = step === SETUP_STEPS.length - 1
+  const key = SETUP_STEPS[step]
 
   return (
-    <form className="pg-form" onSubmit={handleSubmit} noValidate>
-      <p className="pg-intro">{t('pgIntro')}</p>
-      <p className="pg-intro" style={{ marginTop: '-0.4rem' }}><b>{t('pgLostPhone')}</b> {t('pgLostPhoneBody')}</p>
+    <form className="gd gd-setup" onSubmit={handleSubmit} noValidate>
+      <SubHeader title={c(key)} sub={c(`${key}Sub`)} c={c}
+        onBack={() => (step > 0 ? goTo(step - 1) : onCancel())} />
 
-      {portfolio.assetSymbols.length > 0 && (
-        <div className="pg-portfolio-preview">
-          <span className="pg-portfolio-label">{t('pgPortfolioDetected')}</span>
-          <span className="pg-portfolio-assets">{portfolio.assetSymbols.join(' · ')}</span>
-          {portfolio.totalUsd > 0 && <span className="pg-portfolio-value">≈ ${portfolio.totalUsd.toLocaleString()}</span>}
-        </div>
+      <div className="gd-progress" role="group" aria-label={c('stepOf')(step + 1, SETUP_STEPS.length)}>
+        {SETUP_STEPS.map((k, i) => (
+          <button key={k} type="button" className={`${i < step ? 'is-done' : ''}${i === step ? ' is-on' : ''}`}
+            aria-current={i === step ? 'step' : undefined} onClick={() => goTo(i)}>
+            <span className="gd-progress-dot" aria-hidden="true">{i < step ? <CheckIcon size={12} /> : i + 1}</span>
+            <span className="gd-progress-txt">{c(k)}</span>
+          </button>
+        ))}
+      </div>
+
+      {step === 0 && (
+        <section className="gd-card">
+          <label className="gd-label">{c('yourName')} <i className="gd-opt">{c('optional')}</i>
+            <input type="text" className="pg-input" placeholder={c('yourNamePh')} value={ownerName} maxLength={80}
+              onChange={e => setOwnerName(e.target.value)} />
+          </label>
+          <small className="gd-muted">{c('yourNameHint')}</small>
+          <label className="gd-label">{c('yourEmail')}
+            <input type="email" className="pg-input" placeholder="you@example.com" value={ownerEmail} maxLength={254}
+              aria-invalid={!!errors.ownerEmail}
+              onChange={e => { setOwnerEmail(e.target.value); if (errors.ownerEmail) setErrors(er => ({ ...er, ownerEmail: undefined })) }} />
+          </label>
+          {errors.ownerEmail ? <p className="pg-error" role="alert">{errors.ownerEmail}</p> : <small className="gd-muted">{c('yourEmailHint')}</small>}
+        </section>
       )}
 
-      <Field label={t('pgYourName')} hint={t('pgYourNameHint')}>
-        <input type="text" className="pg-input" placeholder={t('pgNamePlaceholder')} value={ownerName} maxLength={80}
-          onChange={e => setOwnerName(e.target.value)} />
-      </Field>
-
-      <Field label={t('pgYourEmail')} hint={t('pgYourEmailHint')} error={errors.ownerEmail}>
-        <input type="email" className="pg-input" placeholder="you@example.com" value={ownerEmail} maxLength={254}
-          onChange={e => { setOwnerEmail(e.target.value); if (errors.ownerEmail) setErrors(er => ({ ...er, ownerEmail: undefined })) }} />
-      </Field>
-
-      <Field label={t('pgHeirs')} hint={t('pgHeirsHint')} error={errors.heirs}>
-        <div className="pg-heirs-list">
+      {step === 1 && (
+        <>
           {heirs.map((h, i) => (
             <HeirRow key={i} idx={i} heir={h} c={c} onChange={updateHeir} onRemove={removeHeir} showRemove={heirs.length > 1} />
           ))}
-        </div>
-        {heirs.length < 3 && (
-          <button type="button" className="pg-add-heir" onClick={addHeir}>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            {t('pgAddHeir')}
-          </button>
-        )}
-      </Field>
-
-      <Field label={t('pgPersonalMessage')} hint={t('pgPersonalMessageHint')}>
-        <textarea className="pg-input pg-textarea" placeholder={t('pgMessagePlaceholder')} value={message}
-          onChange={e => setMessage(e.target.value.slice(0, 500))} rows={3} />
-        <span className="pg-char-count">{message.length}/500</span>
-      </Field>
-
-      <Field label={t('pgCheckinInterval')}>
-        <div className="pg-interval-chips">
-          {INTERVALS.map(d => (
-            <button key={d} type="button" className={`pg-interval-chip ${intervalDays === d ? 'active' : ''}`}
-              aria-pressed={intervalDays === d} onClick={() => setIntervalDays(d)}>
-              {d >= 180 ? c('sixMonths') : c('nDays')(d)}
+          {heirs.length < 3 && (
+            <button type="button" className="gd-add" onClick={addHeir}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+              {c('addHeir')}
             </button>
-          ))}
-        </div>
-        <p className="pg-interval-hint">{t('pgHeirsNotifiedAfter')(intervalDays)}</p>
-      </Field>
+          )}
+          {errors.heirs && <p className="pg-error" role="alert">{errors.heirs}</p>}
+        </>
+      )}
 
-      {errors.submit && <p className="pg-error">{errors.submit}</p>}
+      {step === 2 && (
+        <>
+          <section className="gd-card">
+            <label className="gd-label">{c('message')} <i className="gd-opt">{c('optional')}</i>
+              <textarea className="pg-input pg-textarea" placeholder={c('messagePh')} value={message} rows={4}
+                onChange={e => setMessage(e.target.value.slice(0, 500))} />
+            </label>
+            <small className="gd-muted gd-end">{message.length}/500</small>
+          </section>
+          <section className="gd-card">
+            <b className="gd-card-title">{c('waitFor')}</b>
+            <div className="gd-seg">
+              {INTERVALS.map(d => (
+                <button key={d} type="button" className={intervalDays === d ? 'is-on' : ''} aria-pressed={intervalDays === d}
+                  onClick={() => setIntervalDays(d)}>
+                  {d >= 180 ? c('sixMonths') : c('nDays')(d)}
+                </button>
+              ))}
+            </div>
+            <StepTimeline steps={stepsFor(intervalDays, { trusted: !!initial?.trusted?.email })} c={c} trustedName={initial?.trusted?.name} />
+          </section>
+          <button type="button" className="gd-ghost" onClick={sendTestEmail} disabled={testStatus === 'sending'}>
+            <Icon name="mail" size={16} /> {testStatus === 'sending' ? c('sending') : c('testEmail')}
+          </button>
+          {testStatus === 'sent' && <p className="pg-test-ok" role="status">{c('testSent')}</p>}
+          {testStatus === 'error' && <p className="pg-error" role="alert">{testErr}</p>}
+        </>
+      )}
 
-      <button type="button" className="pg-test-btn" onClick={sendTestEmail} disabled={testStatus === 'sending'}>
-        {testStatus === 'sending' ? 'Sending test…' : <><Icon name="mail" size={14} style={{ verticalAlign: '-2px', marginRight: '0.35em' }} />{t('pgTestEmail')}</>}
-      </button>
-      {testStatus === 'sent' && <p className="pg-test-ok">✓ {t('pgTestSent')}</p>}
-      {testStatus === 'error' && <p className="pg-error">{testErr || 'Couldn\'t send the test email. Check your email address and try again.'}</p>}
+      {errors.submit && <p className="pg-error" role="alert">{errors.submit}</p>}
 
-      <button type="submit" className="pg-submit" disabled={status === 'saving'}>
-        {status === 'saving' ? c('saving') : initial?.active ? c('save') : 'Activate Portfolio Guardian'}
-      </button>
+      <div className="gd-nav">
+        {step > 0 && <button type="button" className="gd-ghost" onClick={() => goTo(step - 1)}>{c('prev')}</button>}
+        <button type="submit" className="gd-cta" disabled={status === 'saving'}>
+          {status === 'saving' ? c('saving') : !last ? c('next') : editing ? c('save') : c('activate')}
+        </button>
+      </div>
     </form>
   )
 }
@@ -774,14 +894,6 @@ function SafetyView({ config, c, lang, onBack, onChange, onTurnOff }) {
     }
   }
 
-  const stepText = (s) => ({
-    seen: [c('st_seen'), c('st_seen_b')],
-    reminder: [c('st_reminder'), c('st_reminder_b')],
-    email: [c('st_email'), c('st_email_b')],
-    trusted: [c('st_trusted')(config.trusted?.name), c('st_trusted_b')],
-    heirs: [c('st_heirs'), c('st_heirs_b')],
-  })[s.id]
-
   return (
     <div className="gd">
       <SubHeader title={c('safetyTitle')} sub={c('safetySub')} onBack={onBack} c={c} />
@@ -800,17 +912,7 @@ function SafetyView({ config, c, lang, onBack, onChange, onTurnOff }) {
 
       <section className="gd-card">
         <b className="gd-card-title">{c('inOrder')}</b>
-        <ol className="gd-timeline">
-          {steps.map(s => {
-            const [title, body] = stepText(s)
-            return (
-              <li key={s.id} className={`gd-step gd-step-${s.id}`}>
-                <span className="gd-step-dot" aria-hidden="true" />
-                <div><small>{c('dayN')(s.day)}</small><b>{title}</b><span>{body}</span></div>
-              </li>
-            )
-          })}
-        </ol>
+        <StepTimeline steps={steps} c={c} trustedName={config.trusted?.name} />
       </section>
 
       <section className="gd-card">
@@ -926,21 +1028,10 @@ export default function PortfolioGuardian() {
   let content
   if (!active) {
     content = view === 'setup'
-      ? <div className="pg-wrapper"><SetupForm c={c} onSuccess={handleSuccess} initial={null} /></div>
-      : (
-        <div className="pg-wrapper">
-          <button className="pg-activate-btn" onClick={() => setView('setup')}>
-            <ShieldIcon size={16} /> Set Up Portfolio Guardian
-          </button>
-        </div>
-      )
+      ? <SetupForm c={c} onSuccess={handleSuccess} onCancel={() => setView('home')} initial={null} />
+      : <GuardianWelcome c={c} onStart={() => { track('guardian_start'); go('setup') }} />
   } else if (view === 'setup') {
-    content = (
-      <div className="pg-wrapper">
-        <SubHeader title={c('editSetup')} onBack={() => setView('home')} c={c} />
-        <SetupForm c={c} onSuccess={handleSuccess} initial={config} />
-      </div>
-    )
+    content = <SetupForm c={c} onSuccess={handleSuccess} onCancel={() => setView('home')} initial={config} />
   } else if (view === 'plan') {
     content = <PlanView config={config} c={c} onBack={() => setView('home')} onSaved={setConfig} />
   } else if (view === 'preview') {

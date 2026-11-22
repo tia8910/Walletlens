@@ -27,12 +27,9 @@ export default function Guardian() {
         </h2>
       </div>
 
-      <div className="settings-section glass-card">
-        <p className="settings-hint" style={{ marginBottom: '0.85rem' }}>
-          {t('pgDeadMansSwitch')}
-        </p>
-        <LandingLink page="guardian" source="guardian_page" style={{ marginBottom: '1rem' }} />
+      <div className="gd-page">
         <PortfolioGuardian />
+        <LandingLink page="guardian" source="guardian_page" style={{ marginTop: '0.5rem' }} />
       </div>
     </div>
   )
