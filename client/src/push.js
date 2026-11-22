@@ -17,6 +17,7 @@
 import { foldBalances } from './data/portfolio'
 import { LANGUAGE_CODES } from './i18n'
 import { loadDueDate as loadZakatDue } from './zakat'
+import { guardianDueDay } from './guardianModel'
 import { usedFeature } from './featureUse'
 import { isAndroidTWA, fireNativeIntent } from './nativeBridge'
 import { PUSH_API, SIMPLE_JSON } from './apiHosts.js'
@@ -490,6 +491,7 @@ function registrationFields() {
     setup: safe(featureSetup, {}),
     prefs: safe(getPushPrefs, DEFAULT_PUSH_PREFS),
     zakatDue: safe(loadZakatDue, null),
+    guardianDue: safe(guardianDueFromStorage, null),
     lang: safe(currentLang, 'en'),
     tz: safe(currentTz, 0),
   }
@@ -1195,6 +1197,42 @@ export async function syncAlerts() {
  * re-send the cached list after a preferences change. Always caches the list
  * locally first, so enabling push later can arm the channels straight away.
  */
+/** The Guardian deadline day, from what is saved on this device. */
+function guardianDueFromStorage() {
+  try { return guardianDueDay(JSON.parse(localStorage.getItem('wl_guardian') || 'null')) } catch { return null }
+}
+
+const GUARDIAN_DUE_SENT_KEY = 'wl_guardian_due_sent'
+
+/**
+ * Tell the push server the Guardian deadline, so it can remind this phone a
+ * week and three days before. Sent only when the day changes, which is at
+ * most once a day however often the app is opened; null switches it off.
+ */
+export async function syncGuardianDue({ force = false } = {}) {
+  const due = guardianDueFromStorage()
+  try { if (!force && localStorage.getItem(GUARDIAN_DUE_SENT_KEY) === String(due)) return } catch { /* send */ }
+  let sent = false
+  try {
+    const native = await import('./nativePush.js')
+    if (native.usesNativePush()) {
+      const r = await native.registerNativePush({ force: true, ...registrationFields() })
+      sent = r?.ok !== false
+    } else {
+      const sub = await getSubscription()
+      if (sub) {
+        const res = await fetch(`${PUSH_API}/watch`, {
+          method: 'POST',
+          headers: { 'Content-Type': SIMPLE_JSON },
+          body: JSON.stringify({ endpoint: sub.endpoint, guardianDue: due, lang: currentLang(), tz: currentTz() }),
+        })
+        sent = res.ok
+      }
+    }
+  } catch { /* best-effort; tried again on the next open */ }
+  if (sent) { try { localStorage.setItem(GUARDIAN_DUE_SENT_KEY, String(due)) } catch {} }
+}
+
 export async function syncWatch(holdings) {
   const watch = resolveWatch(holdings)
   try { localStorage.setItem(WATCH_CACHE_KEY, JSON.stringify(watch)) } catch {}

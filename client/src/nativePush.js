@@ -117,6 +117,7 @@ export async function registerNativePush(opts = {}) {
       // An explicit null is meaningful here — the year lapsed, or zakat was
       // paid — and the server honours it, so it is not filtered out.
       zakatDue: opts.zakatDue,
+      guardianDue: opts.guardianDue,
       lang: opts.lang,
       tz: opts.tz,
     })

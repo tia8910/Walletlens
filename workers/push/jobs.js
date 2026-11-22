@@ -22,7 +22,7 @@ import {
   crossedLevel, MOVE_COOLDOWN_MS, NEWS_COOLDOWN_MS, pickHeadline, pruneSent,
   matchArticle, isBreaking, shortHash, dueRetentionStep, pickFeatureTip,
   FEATURE_TIP_GAP_MS, RETENTION_HOUR, RETENTION_MIN_PCT, DIGEST_MIN_PCT,
-  fmtPct, fmtPrice, signedPct, dueZakatReminder, trimZakatSent,
+  fmtPct, fmtPrice, signedPct, dueZakatReminder, trimZakatSent, dueGuardianReminder,
   isMarketStory, pickHack, portfolioPulse, assetUrl,
   HACK_GAP_MS, HACK_HOUR, PORTFOLIO_HOUR, VIDEO_HOUR, PULSE_MIN_PCT, isStablecoin,
   trendSwitched,
@@ -48,6 +48,8 @@ import { SITE_ORIGIN } from './site.js'
 // land together.
 const DIGEST_HOUR = 9
 const ZAKAT_HOUR = 11
+// Midday on the owner's own clock: awake, and never at night.
+const GUARDIAN_HOUR = 12
 
 /**
  * Bind the jobs to a storage adapter and a sender.
@@ -341,6 +343,7 @@ export function createJobs({ store, send }) {
       return (h === DIGEST_HOUR && sub.prefs.digest)
         || (h === RETENTION_HOUR && sub.prefs.retention)
         || (h === ZAKAT_HOUR && sub.prefs.zakat && !!sub.zakatDue)
+        || (h === GUARDIAN_HOUR && !!sub.guardianDue)
         || (h === PORTFOLIO_HOUR && sub.prefs.portfolio)
         || hackDue(sub)
         || videoDue(sub)
@@ -412,6 +415,27 @@ export function createJobs({ store, send }) {
             tag: "zakat",
           }), { now })
           sub.zakatSent = trimZakatSent([...sub.zakatSent, hit.key])
+          changed = true
+        }
+      }
+
+      // — Portfolio Guardian —
+      // Not behind a preference: the owner turned Guardian on and asked to be
+      // reminded before anyone else is told. A week and three days out.
+      if (hour === GUARDIAN_HOUR && sub.guardianDue) {
+        const hit = dueGuardianReminder({
+          dueDate: sub.guardianDue,
+          today: localDayKey(now, sub.tz),
+          sent: sub.guardianSent,
+        })
+        if (hit) {
+          await send(sub, buildPayload({
+            channel: "guardian",
+            title: copy("guardianTitle", sub.lang)(),
+            body: copy("guardianBody", sub.lang)(hit.days),
+            tag: "guardian",
+          }), { now })
+          sub.guardianSent = trimZakatSent([...(sub.guardianSent || []), hit.key])
           changed = true
         }
       }

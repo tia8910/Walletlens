@@ -380,7 +380,7 @@ self.addEventListener('fetch', e => {
 // no sound, no buzz, nothing until the phone was picked up and unlocked. A
 // price alert nobody hears is not a price alert. notificationSound.test.js
 // now derives the set from CHANNEL_DELIVERY so the two cannot drift again.
-const LOUD_CHANNELS = new Set(['target', 'move', 'level', 'zakat', 'test'])
+const LOUD_CHANNELS = new Set(['target', 'move', 'level', 'zakat', 'guardian', 'test'])
 
 // The bell's inbox. A worker has no localStorage, so a push is kept in
 // IndexedDB until a window drains it (notifyInbox.js), and any open window is

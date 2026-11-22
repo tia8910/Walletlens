@@ -19,7 +19,7 @@
 import {
   asLang, assetUrl, bumpSent, copy, DEFAULT_PREFS, deliveryFor, localDayKey,
   pushTopic, sanitizeAlerts, sanitizePrefs, sanitizeSetup, sanitizeTz,
-  sanitizeWatch, sanitizeZakatDue, trimZakatSent,
+  sanitizeWatch, sanitizeZakatDue, trimZakatSent, sanitizeGuardianDue,
   normalizeSub as normalize,
 } from '../../push-api/notify-logic.js'
 import { accessToken, buildMessage, isDeadToken, FCM_ENDPOINT } from './fcm.js'
@@ -478,6 +478,8 @@ async function handle(req, env, store) {
       // field does.
       zakatDue: body.zakatDue !== undefined ? sanitizeZakatDue(body.zakatDue) : existing?.zakatDue,
       zakatSent: existing?.zakatSent,
+      guardianDue: body.guardianDue !== undefined ? sanitizeGuardianDue(body.guardianDue) : existing?.guardianDue,
+      guardianSent: body.guardianDue !== undefined && sanitizeGuardianDue(body.guardianDue) !== existing?.guardianDue ? [] : existing?.guardianSent,
       tz: body.tz !== undefined ? sanitizeTz(body.tz) : existing?.tz,
       createdAt: existing?.createdAt ?? now,
       lastSeen: now,   // subscribing happens in the app, so it is a visit
@@ -524,6 +526,11 @@ async function handle(req, env, store) {
       // would silence the first reminder of the new year.
       if (next !== sub.zakatDue) sub.zakatSent = []
       sub.zakatDue = next
+    }
+    if (body.guardianDue !== undefined) {
+      const next = sanitizeGuardianDue(body.guardianDue)
+      if (next !== sub.guardianDue) sub.guardianSent = []
+      sub.guardianDue = next
     }
     if (body.tz !== undefined) sub.tz = sanitizeTz(body.tz)
     sub.lang = asLang(body.lang) ?? sub.lang

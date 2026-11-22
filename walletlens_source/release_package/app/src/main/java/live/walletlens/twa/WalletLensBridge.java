@@ -128,6 +128,23 @@ public class WalletLensBridge {
         return InstallReferrer.json(a);
     }
 
+    /**
+     * Portfolio Guardian: queue the on-phone reminders for this deadline (a
+     * week and three days before), replacing any queued earlier. Called on
+     * every check-in; 0 cancels. The text arrives already in the user's
+     * language. See {@link GuardianReminder}.
+     */
+    @JavascriptInterface
+    public boolean scheduleGuardianReminder(String deadlineMs, String title, String body7, String body3) {
+        Activity a = activity();
+        if (a == null) return false;
+        long at;
+        try { at = Long.parseLong(deadlineMs == null ? "0" : deadlineMs.trim()); }
+        catch (NumberFormatException e) { at = 0; }
+        GuardianReminder.schedule(a, at, title, body7, body3);
+        return true;
+    }
+
     // ── Storage ──────────────────────────────────────────────────────────
 
     /**
