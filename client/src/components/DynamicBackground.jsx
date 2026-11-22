@@ -1,4 +1,5 @@
 import { useEffect, useRef, useMemo, memo } from 'react'
+import { isScreenCovered, onScreenCover } from '../screenCover'
 
 // Detect low-power devices (mobile or < 4 logical CPUs) so we can throttle
 // the particle simulation before it affects frame rate.
@@ -144,9 +145,11 @@ const DynamicBackground = memo(function DynamicBackground({
       raf = requestAnimationFrame(step)
     }
 
-    // Stop the RAF loop entirely when the tab is hidden; restart when visible.
+    // Stop the RAF loop entirely when the tab is hidden, or while a
+    // full-screen layer (the first-run welcome) covers the canvas; restart
+    // when it can be seen again.
     function handleVisibility() {
-      if (document.hidden) {
+      if (document.hidden || isScreenCovered()) {
         cancelAnimationFrame(raf)
         raf = 0
       } else if (!raf) {
@@ -154,10 +157,14 @@ const DynamicBackground = memo(function DynamicBackground({
       }
     }
     document.addEventListener('visibilitychange', handleVisibility)
+    const offCover = onScreenCover(handleVisibility)
 
     resize()
     seed()
+    // One frame is drawn even when covered, so the canvas is not blank the
+    // moment the cover lifts; step() then schedules itself only if it may.
     step()
+    if (isScreenCovered()) { cancelAnimationFrame(raf); raf = 0 }
 
     let resizeTimer = null
     const ro = new ResizeObserver(() => {
@@ -172,6 +179,7 @@ const DynamicBackground = memo(function DynamicBackground({
       ro.disconnect()
       document.removeEventListener('wl-theme', readColors)
       document.removeEventListener('visibilitychange', handleVisibility)
+      offCover()
     }
   }, [effectiveCount, linkDistance, color, reduceMotion, useShadow])
 

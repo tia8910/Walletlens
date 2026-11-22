@@ -6,6 +6,7 @@ import { ASSET_CATEGORIES } from '../data/assets'
 import { THEMES } from '../ThemeContext'
 import { useLanguage } from '../LanguageContext'
 import { INTERESTS_EVENT } from '../data/interestsEvent'
+import { coverScreen } from '../screenCover'
 import './SetupScreens.css'
 
 // Metal bar logos ("Au" / "Ag") so gold & silver match the trade category.
@@ -41,6 +42,8 @@ const OPTIONS = [
 ]
 
 export default function InterestPicker({ onDone, onClose, editMode = false }) {
+  // A full-screen, opaque layer: the Home's animations behind it can rest.
+  useEffect(() => coverScreen(), [])
   const { t } = useLanguage()
   // Pre-load any existing choice so re-opening (e.g. from Settings) shows the
   // current selection. New users have nothing stored → empty, as before.

@@ -5,6 +5,7 @@ import {
   tickerIdsFor, tickerLabel, tickerPlaceholders, MAX_TICKER_IDS, MAX_LIVE_CRYPTO,
 } from '../data/tickerPicks'
 import { INTERESTS_EVENT } from '../data/interestsEvent'
+import { isScreenCovered, onScreenCover } from '../screenCover'
 
 const loadPricesSheet = () => import('./PricesSheet')
 const PricesSheet = lazy(loadPricesSheet)
@@ -333,32 +334,60 @@ function PriceTicker({ v3 = false }) {
     if (!v3 || !el) return
     // The row is drawn twice, so either edge can wrap to the same place in
     // the other copy: a swipe or ‹ › goes on in both directions forever.
+    //
+    // The sizes are cached, not read on every scroll. The drift scrolls the
+    // row every frame, and reading scrollWidth/clientWidth (or scrollLeft)
+    // there forced a synchronous layout per frame whenever anything else on
+    // the page had changed since the last one — and on the empty Home the
+    // vault animation changes something every frame. Measured on a 4x
+    // throttled CPU that was ~15% of the main thread, forever, for a strip
+    // whose size only changes when its items or the window do.
+    let half = 0, view = 0
+    const measure = () => { half = el.scrollWidth / 2; view = el.clientWidth }
+    measure()
+    // `seen` is where the row actually is: what the drift last wrote, or
+    // what a scroll event reported. The drift steps from it without reading
+    // the DOM back.
+    let seen = el.scrollLeft
     const wrap = () => {
-      const half = el.scrollWidth / 2
-      if (half <= el.clientWidth) return
-      if (el.scrollLeft < 2) el.scrollLeft += half
-      else if (el.scrollLeft >= half * 2 - el.clientWidth - 2) el.scrollLeft -= half
+      seen = el.scrollLeft
+      // Chips change width as prices load and digits change, so measure
+      // again on the way to an edge — rare, and the jump lands exactly.
+      if (seen < 2 || seen >= half * 2 - view - 40) measure()
+      if (half <= view) return
+      if (seen < 2) el.scrollLeft = seen += half
+      else if (seen >= half * 2 - view - 2) el.scrollLeft = seen -= half
     }
-    if (el.scrollLeft < 2) el.scrollLeft = el.scrollWidth / 2
+    if (seen < 2) el.scrollLeft = seen = half
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
+    ro?.observe(el)
     const opts = { passive: true }
     const hold = () => pause()
     el.addEventListener('scroll', wrap, opts)
     for (const ev of ['pointerdown', 'touchstart', 'touchmove', 'wheel']) el.addEventListener(ev, hold, opts)
     // The drift: slow, and never while a hand is on the row or just left it.
-    let raf = 0, pos = el.scrollLeft
+    let raf = 0, pos = seen
     const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    // No drift behind a full-screen layer (the first-run welcome): the frame
+    // loop stops outright rather than idling, and starts again when it goes.
+    const run = () => { if (!raf && !still && !isScreenCovered()) raf = requestAnimationFrame(step) }
+    const halt = () => { cancelAnimationFrame(raf); raf = 0 }
+    const offCover = onScreenCover(covered => (covered ? halt() : run()))
     const step = () => {
       if (Date.now() > pausedUntil.current && !document.hidden) {
         // Sub-pixel steps accumulate in `pos`; scrollLeft rounds them away.
-        if (Math.abs(pos - el.scrollLeft) > 2) pos = el.scrollLeft
+        if (Math.abs(pos - seen) > 2) pos = seen
         pos += 0.45
         el.scrollLeft = pos
-      } else pos = el.scrollLeft
+        seen = Math.round(pos)
+      } else pos = seen
       raf = requestAnimationFrame(step)
     }
-    if (!still) raf = requestAnimationFrame(step)
+    run()
     return () => {
-      cancelAnimationFrame(raf)
+      halt()
+      offCover()
+      ro?.disconnect()
       el.removeEventListener('scroll', wrap)
       for (const ev of ['pointerdown', 'touchstart', 'touchmove', 'wheel']) el.removeEventListener(ev, hold)
     }

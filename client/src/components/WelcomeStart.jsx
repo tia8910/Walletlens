@@ -9,6 +9,7 @@ import { THEMES } from '../ThemeContext'
 import { track, trackProfileCreated } from '../analytics'
 import { useLanguage } from '../LanguageContext'
 import { isDriveConfigured } from '../googleDrive'
+import { coverScreen } from '../screenCover'
 import './SetupScreens.css'
 
 // ── First-run "build your dashboard" ────────────────────────────────────────
@@ -324,6 +325,8 @@ export function DriveMark() {
 }
 
 export default function WelcomeStart({ onDone }) {
+  // A full-screen, opaque layer: the Home's animations behind it can rest.
+  useEffect(() => coverScreen(), [])
   const { t } = useLanguage()
   const [rows, setRows] = useState(() => {
     const cur = readCurrency()
