@@ -5,6 +5,7 @@ import { useLanguage } from '../LanguageContext'
 import { showLocalNotification } from '../localNotify'
 import { deliverAlarm } from '../alarm'
 import { syncSignals, serverFiredSignals } from '../push'
+import { hasNativeGoals, goalPayload, syncNativeGoals, nativeFiredGoals } from '../goalNative'
 import { computeChartSignals, loadChartParams } from '../chartSignals'
 import {
   loadProAlerts, saveProAlerts, evaluateSignal, evaluateGoal, portfolioSummary, alarmKind, alarmTone,
@@ -31,7 +32,7 @@ const money = (n) => `$${Number(n).toLocaleString('en-US', { maximumFractionDigi
  * One pass over every alert. Returns the alarms to ring (already saved as
  * fired). Everything it needs comes in, so the test drives it directly.
  */
-export async function checkAlerts({ t, getPrices, getPortfolio, getCandles, now = Date.now(), lastSignalCheck = {}, chartParams, getServerFired }) {
+export async function checkAlerts({ t, getPrices, getPortfolio, getCandles, now = Date.now(), lastSignalCheck = {}, chartParams, getServerFired, getNativeGoalFired, onGoals }) {
   const fired = []
   const priceAlerts = readJson(PRICE_ALERTS_KEY)
   let pro = loadProAlerts()
@@ -71,8 +72,11 @@ export async function checkAlerts({ t, getPrices, getPortfolio, getCandles, now 
   let proChanged = false
   if (goals.length) {
     const summary = portfolioSummary(holdings, prices)
+    // Goals the Android app already rang while closed: marked, not rung again.
+    const nativeFired = getNativeGoalFired ? getNativeGoalFired() : new Set()
     pro = pro.map(r => {
       if (r.type !== 'goal' || r.triggered) return r
+      if (nativeFired.has(`${r.id}:${r.armedAt}`)) { proChanged = true; return { ...r, triggered: true, triggeredAt: now } }
       const res = evaluateGoal(r, summary)
       if (res.wasTrue !== r.wasTrue) proChanged = true
       if (!res.hit) return res.wasTrue !== r.wasTrue ? { ...r, wasTrue: res.wasTrue } : r
@@ -86,6 +90,11 @@ export async function checkAlerts({ t, getPrices, getPortfolio, getCandles, now 
       })
       return { ...r, wasTrue: true, triggered: true, triggeredAt: now, triggeredValue: res.value }
     })
+  }
+
+  // The goals still armed, for the Android app's own check while closed.
+  if (onGoals && goals.length) {
+    try { onGoals({ goals: pro.filter(r => r.type === 'goal' && !r.triggered), holdings, prices }) } catch { /* best effort */ }
   }
 
   // ── Signals: each chart at most every 15 minutes ──
@@ -137,6 +146,16 @@ export default function AlertEngine() {
       if (Date.now() - firedAt > 5 * 60_000) { fired = await serverFiredSignals(); firedAt = Date.now() }
       return fired
     }
+    // Goals go to the Android app's own 15 minute check, when they or the
+    // holdings change and at least every 15 minutes for fresh prices.
+    let goalStamp = '', goalAt = 0
+    const handGoals = ({ goals, holdings, prices }) => {
+      if (!hasNativeGoals()) return
+      const payload = goalPayload({ goals, holdings, prices, t: tRef.current, alarmTone })
+      const stamp = JSON.stringify([payload.rules, payload.holdings])
+      if (stamp === goalStamp && Date.now() - goalAt < 15 * 60_000) return
+      if (syncNativeGoals(payload)) { goalStamp = stamp; goalAt = Date.now() }
+    }
     // The rules go to the push server, so they ring with the app closed too.
     const sync = () => { syncSignals().catch(() => {}) }
     const tick = async () => {
@@ -150,7 +169,11 @@ export default function AlertEngine() {
           getCandles: (...a) => api.getCandles(...a),
           lastSignalCheck: lastSignalCheck.current,
           getServerFired: firedFromServer,
+          getNativeGoalFired: nativeFiredGoals,
+          onGoals: handGoals,
         })
+        // No goals left: tell the Android check to stop.
+        if (hasNativeGoals() && !loadProAlerts().some(r => r.type === 'goal' && !r.triggered)) handGoals({ goals: [], holdings: [], prices: {} })
         if (!alive) return
         for (const a of fired) {
           // As an alarm, if the user keeps alarms on (native in the Android

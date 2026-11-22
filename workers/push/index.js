@@ -31,6 +31,7 @@ import { handleReports } from './reports.js'
 // The chart engine's own settings check, so a stored row can only hold values
 // the chart itself would accept.
 import { normalizeParams } from '../../client/src/chartSignals.js'
+import { fetchQuotes, quoteFor } from '../../push-api/markets.js'
 
 // ── CORS ────────────────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = new Set([
@@ -207,6 +208,23 @@ export function makeBudget(limit = SUBREQUEST_LIMIT - SUBREQUEST_RESERVE) {
       return true
     },
   }
+}
+
+/** "kind:id:symbol,..." into the asset shape fetchQuotes reads; at most 60. */
+export function parseQuoteList(raw) {
+  const out = []
+  const seen = new Set()
+  for (const part of String(raw || '').split(',')) {
+    const [kind, id, symbol] = part.split(':').map(x => String(x || '').trim())
+    if (!['crypto', 'stock', 'metal'].includes(kind) || !id || !symbol) continue
+    if (!/^[a-z0-9._\-]{1,80}$/i.test(id) || !/^[A-Z0-9.=^\-]{1,20}$/i.test(symbol)) continue
+    const key = `${kind}:${id}:${symbol}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ kind, id: id.toLowerCase(), symbol: symbol.toUpperCase(), key })
+    if (out.length >= 60) break
+  }
+  return out
 }
 
 export function makeSender(env, store, budget = null) {
@@ -394,6 +412,32 @@ async function handle(req, env, store) {
         '5 * * * *': ['daily (digest, retention, zakat, portfolio, academy, hacks, features)', 'trend'],
       },
     }, headers)
+  }
+
+  // Prices by asset, for the Android app's on-phone goal alert check. Asked by
+  // asset only ("kind:id:symbol", comma separated); amounts, costs and totals
+  // never leave the phone. Cached for five minutes per exact list.
+  if (path === '/quotes') {
+    const list = parseQuoteList(url.searchParams.get('a'))
+    if (!list.length) return json({ quotes: {} }, headers)
+    const cache = typeof caches !== 'undefined' ? caches.default : null
+    const cacheKey = new Request(`https://quotes.cache/${list.map(x => x.key).sort().join(',')}`)
+    try {
+      const hit = cache && await cache.match(cacheKey)
+      if (hit) return json(await hit.json(), headers)
+    } catch { /* fetch fresh */ }
+    let quotes = {}
+    try { quotes = await fetchQuotes(list) } catch { quotes = {} }
+    const out = {}
+    for (const a of list) {
+      const price = Number(quoteFor(quotes, a)?.price)
+      if (Number.isFinite(price) && price > 0) out[a.key] = price
+    }
+    const body = { quotes: out }
+    try {
+      if (cache) await cache.put(cacheKey, new Response(JSON.stringify(body), { headers: { 'Cache-Control': 'max-age=300' } }))
+    } catch { /* uncached is fine */ }
+    return json(body, headers)
   }
 
   if (path === '/status') {
