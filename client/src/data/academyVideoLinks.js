@@ -127,6 +127,16 @@ export default {
       "youtube": "TJQl0_GZEkw",
       "added": "",
       "wide": true
+    },
+    {
+      "key": "yt-rxuSPZdBRXU",
+      "kind": "original",
+      "name": "خسرت فلوسك في السوق؟ إزاي تحوّل الخسارة لفرصة ؟",
+      "emoji": "🎬",
+      "lang": "ar",
+      "youtube": "rxuSPZdBRXU",
+      "added": "2026-11-22",
+      "wide": true
     }
   ]
 }
