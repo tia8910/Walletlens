@@ -1,7 +1,10 @@
 import { Link, useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Logo from '../components/Logo'
-import { POSTS, relatedPosts } from '../data/blogPosts'
+// Metadata for every post plus a loader for one body at a time — see
+// scripts/blogSplitPlugin.mjs. Importing ../data/blogPosts here would ship all
+// sixty article bodies to show one.
+import { POSTS, relatedPosts, loadPostContent } from 'virtual:blog-index'
 
 const ORIGIN = 'https://walletlens.live'
 
@@ -80,6 +83,22 @@ function toArticleText(post, url) {
     }
   }
   return `${post.title}\n\n${out.join('\n').replace(/\n{3,}/g, '\n\n').trim()}\n\n— Read on WalletLens: ${url}`
+}
+
+// One article body, fetched by slug. The prerendered page modulepreloads it,
+// so on a cold arrival it is normally already in cache by the time this runs.
+function usePostContent(slug) {
+  const [state, setState] = useState({ slug: null, content: null })
+  useEffect(() => {
+    if (!slug) return
+    let live = true
+    loadPostContent(slug).then(
+      content => { if (live) setState({ slug, content }) },
+      () => { if (live) setState({ slug, content: '' }) },
+    )
+    return () => { live = false }
+  }, [slug])
+  return state.slug === slug ? state.content : null
 }
 
 function ShareBar({ post }) {
@@ -241,14 +260,32 @@ function renderMarkdown(text) {
 
 export default function Blog() {
   const { slug } = useParams()
-  const post = slug ? POSTS.find(p => p.slug === slug) : null
-  useBlogHead(post)
+  const meta = slug ? POSTS.find(p => p.slug === slug) : null
+  const content = usePostContent(meta ? meta.slug : null)
+  const post = meta && content != null ? { ...meta, content } : null
+  useBlogHead(meta)
 
-  if (slug && !post) {
+  if (slug && !meta) {
     return (
       <div className="doc-page">
         <header className="doc-header"><Link to="/" className="doc-brand"><Logo size={26} /> WalletLens</Link></header>
         <article className="doc-article"><h1>Post not found</h1><Link to="/blog/">← Back to Blog</Link></article>
+      </div>
+    )
+  }
+
+  if (meta && !post) {
+    // Body still arriving: hold the page shape so the article does not jump in.
+    return (
+      <div className="doc-page">
+        <header className="doc-header"><Link to="/" className="doc-brand"><Logo size={26} /> WalletLens</Link></header>
+        <article className="doc-article" aria-busy="true" style={{ minHeight: '100vh' }}>
+          <Link to="/blog/" className="blog-back">← All Articles</Link>
+          <p className="doc-meta">{meta.date} · {meta.readTime}</p>
+          <h1>{meta.title}</h1>
+          <p className="blog-summary">{meta.summary}</p>
+          <hr className="blog-divider" />
+        </article>
       </div>
     )
   }

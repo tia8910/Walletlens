@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync, copyFileSync, mkdirSync, existsSync } from
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { visualizer } from 'rollup-plugin-visualizer'
+import blogSplitPlugin from './scripts/blogSplitPlugin.mjs'
 import { execSync } from 'child_process'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -164,6 +165,7 @@ function pagesWorkerPlugin() {
 export default defineConfig({
   plugins: [
     react(),
+    blogSplitPlugin(__dirname),
     swVersionPlugin(),
     pagesWorkerPlugin(),
     ocrAssetsPlugin(),
@@ -241,10 +243,10 @@ export default defineConfig({
           if (id.includes('/src/i18n.')) {
             return 'i18n'
           }
-          // blogPosts: 136 KB of inline article content — split so Blog page
-          // JS stays lean and a content-only update re-downloads only this chunk.
-          if (id.includes('/src/data/blogPosts')) {
-            return 'blog-data'
+          // Blog articles: scripts/blogSplitPlugin.mjs gives each article body
+          // its own chunk; this names the small metadata index they share.
+          if (id === '\0virtual:blog-index') {
+            return 'blog-index'
           }
           // Static lookup tables (asset categories, sector colours, ticker lists)
           // that rarely change but are imported by Dashboard.  Caching them
