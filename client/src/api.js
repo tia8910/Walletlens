@@ -48,6 +48,7 @@ import { foldBalances as _foldBalancesPure, diffHoldings } from './data/portfoli
 import { analyzeTechnicals } from './technicals';
 import { isIntlTicker, toMajorUnit, countryFromDevice, sessionOpen, usSessionOpen } from './data/markets';
 import { dataUrl, voiceProxy, siteApi } from './apiHosts.js'
+import { estimatedPrices as realEstimates, RA_STORE } from './realAssets'
 
 export {
   ASSET_CATEGORIES, NON_CRYPTO_CATEGORIES,
@@ -2588,9 +2589,14 @@ export const api = {
       })());
     }
 
-    // Manual-only categories (bonds, other)
+    // Manual-only categories (bonds, other). A real asset the owner described
+    // (a flat, a car) is valued from its last real price and its yearly
+    // change, so it keeps up with time instead of freezing at the purchase.
+    let estimates = {};
+    try { if (manualFallbackIds.length) estimates = realEstimates(); } catch { estimates = {}; }
     for (const id of manualFallbackIds) {
-      if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
+      if (estimates[id] > 0) result[id] = { usd: estimates[id], usd_24h_change: 0, source: 'estimate' };
+      else if (manual[id]) result[id] = { ...manual[id], source: 'manual' };
     }
 
     const promise = Promise.all(tasks)
@@ -3503,6 +3509,7 @@ export const api = {
       t: loadData('transactions').map(stripTx),
       e: loadData('exchanges'),
       mp: loadData('manual_prices', {}),
+      ra: loadData(RA_STORE, {}),
       ct: (() => { try { return JSON.parse(localStorage.getItem('crypto_tracker_coin_targets') || '{}'); } catch { return {}; } })(),
       ids: {
         w: localStorage.getItem('crypto_tracker_next_wallet_id') || '1',
@@ -3764,7 +3771,7 @@ export const api = {
           changed,
           hasChanges: added.length + removed.length + changed.length > 0,
         },
-        _raw: { wallets, transactions, exchanges, targets, manualPrices, ids: data.ids || {} },
+        _raw: { wallets, transactions, exchanges, targets, manualPrices, realAssets: data.ra && typeof data.ra === 'object' ? data.ra : null, ids: data.ids || {} },
       };
     } catch (err) {
       return { success: false, error: err.message || 'Invalid backup code' };
@@ -3782,6 +3789,7 @@ export const api = {
         transactions: loadData('transactions'),
         exchanges: loadData('exchanges'),
         manual_prices: loadData('manual_prices', {}),
+        real_assets: loadData(RA_STORE, {}),
         coin_targets: (() => { try { return JSON.parse(localStorage.getItem('crypto_tracker_coin_targets') || '{}'); } catch { return {}; } })(),
         ids: {
           w: localStorage.getItem('crypto_tracker_next_wallet_id') || '1',
@@ -3792,7 +3800,7 @@ export const api = {
       localStorage.setItem('crypto_tracker_pre_import_snapshot', JSON.stringify(snapshot));
     } catch {}
 
-    const { wallets, exchanges, targets, manualPrices, ids } = preview._raw;
+    const { wallets, exchanges, targets, manualPrices, realAssets, ids } = preview._raw;
     // A backup from an old version or another tool can carry text for numbers
     // or a trade with no date; mend them once here, not on every screen.
     const transactions = (preview._raw.transactions || []).filter(t => t && typeof t === 'object').map(cleanTx);
@@ -3800,6 +3808,8 @@ export const api = {
     saveData('transactions', transactions);
     saveData('exchanges', exchanges);
     saveData('manual_prices', manualPrices);
+    // A backup from before real asset details existed leaves them as they are.
+    if (realAssets) saveData(RA_STORE, realAssets);
     localStorage.setItem('crypto_tracker_coin_targets', JSON.stringify(targets));
     const maxWId = Math.max(wallets.reduce((m, w) => Math.max(m, w.id || 0), 0) + 1, parseInt(ids.w) || 1);
     const maxTId = Math.max(transactions.reduce((m, t) => Math.max(m, t.id || 0), 0) + 1, parseInt(ids.t) || 1);
@@ -3828,6 +3838,7 @@ export const api = {
     saveData('transactions', snap.transactions || []);
     saveData('exchanges', snap.exchanges || []);
     saveData('manual_prices', snap.manual_prices || {});
+    if (snap.real_assets) saveData(RA_STORE, snap.real_assets);
     localStorage.setItem('crypto_tracker_coin_targets', JSON.stringify(snap.coin_targets || {}));
     if (snap.ids) {
       localStorage.setItem('crypto_tracker_next_wallet_id', String(snap.ids.w || 1));
