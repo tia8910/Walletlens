@@ -15,6 +15,7 @@ import { MoneyFlowCard } from '../components/MoneyFlow'
 import { BybitCard, BybitStockCard } from '../components/BybitOffer'
 import { isStablecoin } from '../stablecoins'
 import { isIntlTicker, sessionOpen } from '../data/markets'
+import RealAssetPanel from '../components/RealAssetPanel'
 
 // assetClass() is the shared id-prefix classifier (api.js); these wrap it
 // for the page's two flavours of "is it crypto" / "what category".
@@ -294,6 +295,7 @@ export default function AssetDetail() {
   const showStockOffer = !!tradFiKind
 
   // ── v2 asset page ───────────────────────────────────────────────────
+  const isRealAsset = String(coinId || '').startsWith('other:')
   const v2Hero = v2 && (() => {
     // The live quote can arrive after the chart; until then the last close stands in.
     const pNow = price || lastClose
@@ -315,7 +317,7 @@ export default function AssetDetail() {
             {/* No price yet (or none reachable): a dash, not "$0.00" and a green
                 0.00%, which read as the asset having crashed to nothing. */}
             <div className="ac-big">{pNow > 0 ? `$${fmtPrice(pNow)}` : '—'}</div>
-            {pNow > 0 && (
+            {pNow > 0 && !isRealAsset && (
               <span className={`ac-chg ${(coin?.change24 || 0) >= 0 ? 'is-up' : 'is-dn'}`}>
                 {(coin?.change24 || 0) >= 0 ? '▲' : '▼'} {Math.abs(coin?.change24 || 0).toFixed(2)}% · 24h
               </span>
@@ -334,7 +336,8 @@ export default function AssetDetail() {
           )}
         </div>
 
-        <IndicatorChart coinId={coinId} symbol={coin?.symbol} name={coin?.name} price={price} onLastClose={setLastClose} />
+        {/* A flat or a car has no market chart: its own panel follows instead. */}
+        {!isRealAsset && <IndicatorChart coinId={coinId} symbol={coin?.symbol} name={coin?.name} price={price} onLastClose={setLastClose} />}
         {showFlow && <MoneyFlowCard symbol={coin.symbol} />}
         {showFlow && <BybitCard symbol={coin.symbol} />}
         {showStockOffer && <BybitStockCard symbol={coin.symbol} kind={tradFiKind} placement={`${tradFiKind}_page`} />}
@@ -415,6 +418,14 @@ export default function AssetDetail() {
         )}
       </div>
       </>}
+
+      {/* A real asset (a flat, a car, a watch): its value, what is yours, its
+          yield, where it is heading and what to do, from what the owner told us. */}
+      {String(coinId || '').startsWith('other:') && (
+        <RealAssetPanel key={coinId} coinId={coinId} holding={holdings} unitPrice={price}
+          name={coin?.name || holdings?.coin_name} symbol={coin?.symbol || holdings?.coin_symbol}
+          onChanged={() => loadData()} />
+      )}
 
       {/* Market stats */}
       <div className="detail-stats-grid">

@@ -2535,6 +2535,9 @@ const APP_ROUTES = [
   // grow-net-worth tip links to /grow.
   { path: '/calendar',     title: 'Economic Calendar — WalletLens', description: 'Rate decisions, CPI prints and earnings that move what you hold.' },
   { path: '/grow',         title: 'Grow Your Net Worth — WalletLens', description: 'Where the gaps are in what you hold, and what to do about them.' },
+  // The real asset form (a flat, a car, a watch). Reached in the app, but a
+  // reload on it is a cold navigation like any other.
+  { path: '/real-assets/new', title: 'Add a real asset · WalletLens', description: 'A house, a car or a valuable, with a value that keeps up with time. Stays on your device.' },
   // Price alerts land here. /asset/:coinId cannot be prerendered — the id is
   // a holding — so assetUrl() links to /asset/?id=… and this shell is the
   // file that makes the cold navigation resolve.

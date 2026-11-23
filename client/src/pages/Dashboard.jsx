@@ -69,6 +69,7 @@ import HomeTop from '../components/HomeTop'
 import NlHoldings from '../components/NlHoldings'
 import { briefParts } from '../portfolioBrief'
 import { useNewLook } from '../newLook'
+import RealAssetsCard from '../components/RealAssetsCard'
 
 // Lazy-load qrBackup (pulls in jsqr + qrcode) only when the user opens the
 // backup panel — saves ~120 KB parsed JS on every normal Dashboard visit.
@@ -4526,6 +4527,7 @@ export default function Dashboard() {
                 onAsset={(h) => { if (consumeLongPress()) return; track('asset_click'); navigate(`/asset/${encodeURIComponent(h.coin_id)}`) }}
                 bindRow={(h) => bindLongPress((x, y) => showLp(x, y, holdingMenu(h), { title: (h.coin_symbol || '').toUpperCase(), subtitle: hidden ? VALUE_MASK : cv(h.value), area: 'holding' }))}
               />
+              {!isDemo && <RealAssetsCard rows={enriched} hidden={hidden} money={cv} />}
               <LatestLesson />
               {enriched.some(h => categorizeAsset(h) === 'crypto') && <BybitStrip />}
               <button type="button" className="nl-card nl-insights" onClick={openInsights}>
@@ -4960,6 +4962,7 @@ export default function Dashboard() {
           )}
 
           {/* Portfolio breakdown by asset category */}
+          {!nlHomeView && !isDemo && <RealAssetsCard rows={enriched} hidden={hidden} money={cv} />}
           {catBreakdown.length > 0 && !nlHomeView && (
             <div className="glass-card dvx-cat-breakdown">
               <h3 style={{ margin:'0 0 0.75rem', fontSize:'0.9rem', fontWeight:700 }}>{t('portfolioBreakdown')}</h3>

@@ -103,6 +103,7 @@ const Academy      = lazy(() => import('./pages/Academy'))
 const Coach        = lazy(() => import('./pages/Coach'))
 const Technicals   = lazy(() => import('./pages/Technicals'))
 const AssetDetail  = lazy(() => import('./pages/AssetDetail'))
+const RealAssetAdd = lazy(() => import('./pages/RealAssetAdd'))
 const Blog             = lazy(() => import('./pages/Blog'))
 const About            = lazy(() => import('./pages/About'))
 const YouTube          = lazy(() => import('./pages/YouTube'))
@@ -1089,6 +1090,7 @@ export default function App() {
               {/* /asset/?id=… is what notifications link to: it resolves to a
                   real prerendered file, which /asset/:coinId never can. */}
               <Route path="/asset" element={<AssetDetail />} />
+              <Route path="/real-assets/new" element={<RealAssetAdd />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<Blog />} />
               <Route path="/about" element={<About />} />
