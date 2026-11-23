@@ -154,7 +154,7 @@ export function valueHoldings(holdings, prices = {}) {
   }).sort((a, b) => b.value - a.value)
 }
 
-const CLASS = { crypto: ['Crypto', 'كريبتو'], metals: ['Precious metals', 'معادن ثمينة'], stocks: ['Stocks & ETFs', 'أسهم'], bonds: ['Bonds', 'سندات'], realestate: ['Real estate', 'عقارات'], cash: ['Cash', 'نقد'] }
+const CLASS = { crypto: ['Crypto', 'كريبتو'], metals: ['Precious metals', 'معادن ثمينة'], stocks: ['Stocks & ETFs', 'أسهم'], bonds: ['Bonds', 'سندات'], realestate: ['Real estate', 'عقارات'], other: ['Other', 'أخرى'], cash: ['Cash', 'نقد'] }
 
 function portfolioAnswer(ws, text, hs, ar) {
   const L = (en, a) => (ar ? a : en)

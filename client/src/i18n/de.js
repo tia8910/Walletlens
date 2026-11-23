@@ -71,6 +71,7 @@ export default {
     zkWhyShareTrade: 'Zum Handeln gehalten — voll gezählt',
     zkWhyShareLong: 'Langfristig gehalten — teilweise gezählt',
     zkWhyHome: 'Eigenheim oder Mietobjekt — nicht zakatpflichtig',
+    zkWhyPossession: 'Persönlicher Besitz: nicht zakatpflichtig, außer zum Weiterverkauf',
     zkWhyResell: 'Zum Weiterverkauf gekauft — voll gezählt',
     watchlist: 'Watchlist',
     analysis: 'Analyse',
@@ -359,6 +360,7 @@ export default {
     catSilver: 'Silber',
     catCash: 'Bargeld',
     catRealEstate: 'Immobilien',
+    catOther: 'Sonstiges',
     catBonds: 'Anleihen',
     catCommodities: 'Rohstoffe',
     // ── Onboarding — slides ─────────────────────────────────────

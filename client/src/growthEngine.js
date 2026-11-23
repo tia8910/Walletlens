@@ -22,6 +22,8 @@ export const CLASS_PARAMS = {
   metals:       { mu: 0.045, sig: 0.15, label: 'Precious metals' },
   bonds:        { mu: 0.04,  sig: 0.06, label: 'Bonds' },
   realestate:   { mu: 0.055, sig: 0.10, label: 'Real estate' },
+  // Possessions (a car, art): little growth on average, and some lose value.
+  other:        { mu: 0.02,  sig: 0.12, label: 'Other' },
   cash:         { mu: 0.035, sig: 0.01, label: 'Cash' },
 }
 

@@ -250,7 +250,22 @@ export function categorizeAsset(h) {
   // Bonds had no class of their own and fell through to crypto: a Treasury
   // showed in the crypto group, its share and its risk (reported from the app).
   if (id.startsWith('bond:')) return 'bonds'
+  // The "Other" category (a house, land, a car, art): its own group, never
+  // crypto. It fell through to crypto, so a property added as Other showed in
+  // the crypto slice of the overview (reported from the app). Ones named like
+  // property go to real estate, which is what the welcome flow's "Real estate"
+  // choice creates (other:real-estate).
+  if (id.startsWith('other:')) return isRealEstateName(id.slice(6), sym) ? 'realestate' : 'other'
   return 'crypto'
+}
+
+const REAL_ESTATE_WORDS = ['real-estate', 'real_estate', 'realestate', 'real estate', 'property', 'apartment', 'appartment',
+  'house', 'home', 'villa', 'flat', 'land', 'plot', 'building', 'condo', 'reit',
+  'عقار', 'شقة', 'منزل', 'بيت', 'فيلا', 'أرض', 'ارض',
+  'immobilier', 'maison', 'appartement', 'terrain', 'inmueble', 'casa', 'piso', 'terreno', 'immobilie', 'wohnung', 'grundstück', 'immobile', 'appartamento']
+function isRealEstateName(name, sym) {
+  const s = `${String(name || '')} ${String(sym || '')}`.toLowerCase()
+  return REAL_ESTATE_WORDS.some(w => s.includes(w))
 }
 
 export function assetClass(id) {

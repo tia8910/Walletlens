@@ -87,6 +87,13 @@ export const TITLE_I18N = {
     de: '6 Dinge, die du mit deinem Geld nie tun solltest, wenn du gewinnen willst',
     it: '6 cose da non fare mai con i tuoi soldi se vuoi vincere',
   },
+  rxuSPZdBRXU: {
+    en: 'Lost money in the market? How to turn the loss into an opportunity',
+    fr: 'Vous avez perdu de l\'argent en bourse ? Comment transformer la perte en opportunité',
+    es: '¿Perdiste dinero en el mercado? Cómo convertir la pérdida en una oportunidad',
+    de: 'Geld am Markt verloren? Wie du den Verlust in eine Chance verwandelst',
+    it: 'Hai perso soldi sul mercato? Come trasformare la perdita in un\'opportunità',
+  },
 }
 
 /** The title of video `id` in `lang`, or null when there is no translation. */
