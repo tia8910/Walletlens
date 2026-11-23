@@ -71,6 +71,7 @@ export default {
     zkWhyShareTrade: 'Detenuta per negoziare — conteggiata per intero',
     zkWhyShareLong: 'Detenuta a lungo termine — conteggiata in parte',
     zkWhyHome: 'Abitazione o immobile in affitto — non zakatabile',
+    zkWhyPossession: 'Bene personale: non zakatabile salvo se destinato alla rivendita',
     zkWhyResell: 'Acquistato per rivendere — conteggiato per intero',
     watchlist: 'Watchlist',
     analysis: 'Analisi',
@@ -359,6 +360,7 @@ export default {
     catSilver: 'Argento',
     catCash: 'Liquidità',
     catRealEstate: 'Immobili',
+    catOther: 'Altro',
     catBonds: 'Obbligazioni',
     catCommodities: 'Materie prime',
     // ── Onboarding — slides ─────────────────────────────────────

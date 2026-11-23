@@ -71,6 +71,7 @@ export default {
     zkWhyShareTrade: 'Détenue pour négocier — comptée en totalité',
     zkWhyShareLong: 'Détenue à long terme — comptée en partie',
     zkWhyHome: 'Résidence ou bien locatif — non imposable',
+    zkWhyPossession: "Bien personnel : non imposable sauf s'il est destiné à la revente",
     zkWhyResell: 'Acheté pour revendre — compté en totalité',
     watchlist: 'Liste de suivi',
     analysis: 'Analyse',
@@ -338,6 +339,7 @@ export default {
     catSilver: 'Argent',
     catCash: 'Liquidités',
     catRealEstate: 'Immobilier',
+    catOther: 'Autres',
     catBonds: 'Obligations',
     catCommodities: 'Matières premières',
     // ── Onboarding — slides ─────────────────────────────────────

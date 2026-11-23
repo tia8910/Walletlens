@@ -71,6 +71,7 @@ export default {
     zkWhyShareTrade: 'للتجارة — يُحتسب كاملاً',
     zkWhyShareLong: 'استثمار طويل — يُحتسب جزئياً',
     zkWhyHome: 'سكن أو عقار للإيجار — لا زكاة فيه',
+    zkWhyPossession: 'ممتلكات شخصية: لا زكاة فيها إلا إذا كانت للبيع',
     zkWhyResell: 'اشتُري للبيع — يُحتسب كاملاً',
     watchlist: 'قائمة المتابعة',
     analysis: 'التحليل',
@@ -359,6 +360,7 @@ export default {
     catSilver: 'الفضة',
     catCash: 'النقد',
     catRealEstate: 'العقارات',
+    catOther: 'أخرى',
     catBonds: 'السندات',
     catCommodities: 'السلع',
     // ── Onboarding — slides ─────────────────────────────────────

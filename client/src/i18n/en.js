@@ -71,6 +71,7 @@ export default {
     zkWhyShareTrade: 'Held to trade — counted in full',
     zkWhyShareLong: 'Held long-term — counted in part',
     zkWhyHome: 'Home or rental property — not zakatable',
+    zkWhyPossession: 'Personal possession: not zakatable unless held to resell',
     zkWhyResell: 'Bought to resell — counted in full',
     watchlist: 'Watchlist',
     analysis: 'Analysis',
@@ -359,6 +360,7 @@ export default {
     catSilver: 'Silver',
     catCash: 'Cash',
     catRealEstate: 'Real estate',
+    catOther: 'Other',
     catBonds: 'Bonds',
     catCommodities: 'Commodities',
     // ── Onboarding — slides ─────────────────────────────────────

@@ -81,6 +81,7 @@ export const REASONS = {
   shareTrade: 'shareTrade',
   shareLong: 'shareLong',
   homeOrRental: 'homeOrRental',
+  possession: 'possession',
   resell: 'resell',
   bond: 'bond',
 }
@@ -107,6 +108,14 @@ export function classifyHolding(h, settings = DEFAULT_SETTINGS, intents = {}) {
     return intents[id] === 'resell'
       ? { portion: 1, reason: REASONS.resell }
       : { portion: 0, reason: REASONS.homeOrRental }
+  }
+
+  if (cat === 'other') {
+    // A personal possession (a car, art) is not zakatable; one held to
+    // resell is trade goods, counted at market value.
+    return intents[id] === 'resell'
+      ? { portion: 1, reason: REASONS.resell }
+      : { portion: 0, reason: REASONS.possession }
   }
 
   if (cat === 'stocks') {

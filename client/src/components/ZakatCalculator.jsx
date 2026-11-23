@@ -31,6 +31,7 @@ const REASON_KEY = {
   [REASONS.shareTrade]: 'zkWhyShareTrade',
   [REASONS.shareLong]: 'zkWhyShareLong',
   [REASONS.homeOrRental]: 'zkWhyHome',
+  [REASONS.possession]: 'zkWhyPossession',
   [REASONS.bond]: 'zkWhyBond',
   [REASONS.resell]: 'zkWhyResell',
 }
@@ -160,7 +161,7 @@ export default function ZakatCalculator({ holdings = [], prices = {} }) {
     track('zakat_marked_paid')
   }
 
-  const classifiable = z.rows.filter(r => r.category === 'stocks' || r.category === 'realestate')
+  const classifiable = z.rows.filter(r => r.category === 'stocks' || r.category === 'realestate' || r.category === 'other')
 
   const statusTone = z.status === HAWL.DUE ? '#fbbf24'
     : z.status === HAWL.RUNNING ? '#10b981'

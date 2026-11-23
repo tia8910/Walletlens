@@ -71,6 +71,7 @@ export default {
     zkWhyShareTrade: 'Mantenida para operar — contada íntegra',
     zkWhyShareLong: 'Mantenida a largo plazo — contada en parte',
     zkWhyHome: 'Vivienda o inmueble en alquiler — no zakatable',
+    zkWhyPossession: 'Bien personal: no zakatable salvo si es para revender',
     zkWhyResell: 'Comprado para revender — contado íntegro',
     watchlist: 'Lista de seguimiento',
     analysis: 'Análisis',
@@ -338,6 +339,7 @@ export default {
     catSilver: 'Plata',
     catCash: 'Efectivo',
     catRealEstate: 'Inmuebles',
+    catOther: 'Otros',
     catBonds: 'Bonos',
     catCommodities: 'Materias primas',
     // ── Onboarding — slides ─────────────────────────────────────
