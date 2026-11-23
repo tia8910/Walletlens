@@ -151,6 +151,6 @@ describe('the copy', () => {
     expect(readFileSync(join(here, 'App.jsx'), 'utf8')).toMatch(/path="\/real-assets\/new" element=\{<RealAssetAdd \/>\}/)
     expect(readFileSync(join(here, 'pages/AssetDetail.jsx'), 'utf8')).toMatch(/startsWith\('other:'\) && \(\s+<RealAssetPanel/)
     expect(readFileSync(join(here, 'pages/Dashboard.jsx'), 'utf8')).toMatch(/<RealAssetsCard rows=\{enriched\}/)
-    expect(readFileSync(join(here, 'components/TradeSheet.jsx'), 'utf8')).toMatch(/navigate\('\/real-assets\/new'\)/)
+    expect(readFileSync(join(here, 'components/TradeSheet.jsx'), 'utf8')).toMatch(/navigate\(`\/real-assets\/new\?kind=\$\{k\}`\)/)
   })
 })

@@ -5,6 +5,7 @@
 const r1 = (n) => (Math.round(n * 10) / 10).toString()
 
 const en = {
+  pickTitle: 'What is it?', pickSub: 'Pick one. We ask only what matters, and keep its value up to date.', d_home: 'Flat, house, land', d_car: 'Car, motorbike', d_gem: 'Watch, gold, diamonds', d_art: 'Painting, coins, rare items', d_biz: 'A shop, or a share in one', d_owed: 'A loan you gave someone', d_other: 'Anything else of value', quickName: 'Or just type a name',
   addTitle: 'Add a real asset', addSub: 'Tell us what it is. We do the maths.', editTitle: 'Edit details',
   k_home: 'Real estate', k_car: 'Vehicle', k_gem: 'Watch or jewelry', k_art: 'Art or collectible', k_biz: 'A business', k_owed: 'Money owed to me', k_other: 'Something else',
   name: 'Name', namePh: 'e.g. Flat in the city, Family car', city: 'City', size: 'Size m²',
@@ -48,6 +49,7 @@ const en = {
 }
 
 const ar = {
+  pickTitle: 'ما هو؟', pickSub: 'اختر واحداً. نسأل فقط عما يهم، ونبقي قيمته محدّثة.', d_home: 'شقة، منزل، أرض', d_car: 'سيارة، دراجة نارية', d_gem: 'ساعة، ذهب، ألماس', d_art: 'لوحة، عملات، مقتنيات نادرة', d_biz: 'محل أو حصة فيه', d_owed: 'قرض أعطيته لشخص', d_other: 'أي شيء آخر ذي قيمة', quickName: 'أو اكتب اسماً فقط',
   addTitle: 'إضافة أصل حقيقي', addSub: 'قل لنا ما هو، ونحن نحسب الباقي.', editTitle: 'تعديل التفاصيل',
   k_home: 'عقار', k_car: 'مركبة', k_gem: 'ساعة أو مجوهرات', k_art: 'فن أو مقتنيات', k_biz: 'مشروع تجاري', k_owed: 'مال مستحق لي', k_other: 'شيء آخر',
   name: 'الاسم', namePh: 'مثلاً: شقة في المدينة، سيارة العائلة', city: 'المدينة', size: 'المساحة م²',
@@ -91,6 +93,7 @@ const ar = {
 }
 
 const fr = {
+  pickTitle: 'Qu\'est-ce que c\'est ?', pickSub: 'Choisissez. Nous ne demandons que l\'essentiel et tenons sa valeur à jour.', d_home: 'Appartement, maison, terrain', d_car: 'Voiture, moto', d_gem: 'Montre, or, diamants', d_art: 'Tableau, pièces, objets rares', d_biz: 'Un commerce, ou une part', d_owed: 'Un prêt que vous avez fait', d_other: 'Tout autre bien de valeur', quickName: 'Ou tapez simplement un nom',
   addTitle: 'Ajouter un bien réel', addSub: 'Dites-nous ce que c\'est. Nous faisons les calculs.', editTitle: 'Modifier les détails',
   k_home: 'Immobilier', k_car: 'Véhicule', k_gem: 'Montre ou bijou', k_art: 'Art ou collection', k_biz: 'Une entreprise', k_owed: 'Argent qu\'on me doit', k_other: 'Autre chose',
   name: 'Nom', namePh: 'ex. Appartement en ville, Voiture familiale', city: 'Ville', size: 'Surface m²',
@@ -134,6 +137,7 @@ const fr = {
 }
 
 const es = {
+  pickTitle: '¿Qué es?', pickSub: 'Elige uno. Solo preguntamos lo importante y mantenemos su valor al día.', d_home: 'Piso, casa, terreno', d_car: 'Coche, moto', d_gem: 'Reloj, oro, diamantes', d_art: 'Cuadro, monedas, piezas raras', d_biz: 'Una tienda, o una parte', d_owed: 'Un préstamo que hiciste', d_other: 'Cualquier otra cosa de valor', quickName: 'O escribe solo un nombre',
   addTitle: 'Añadir un bien real', addSub: 'Dinos qué es. Nosotros hacemos las cuentas.', editTitle: 'Editar detalles',
   k_home: 'Inmueble', k_car: 'Vehículo', k_gem: 'Reloj o joya', k_art: 'Arte o colección', k_biz: 'Un negocio', k_owed: 'Dinero que me deben', k_other: 'Otra cosa',
   name: 'Nombre', namePh: 'p. ej. Piso en la ciudad, Coche familiar', city: 'Ciudad', size: 'Superficie m²',
@@ -177,6 +181,7 @@ const es = {
 }
 
 const de = {
+  pickTitle: 'Was ist es?', pickSub: 'Wähle eins. Wir fragen nur das Nötige und halten den Wert aktuell.', d_home: 'Wohnung, Haus, Grundstück', d_car: 'Auto, Motorrad', d_gem: 'Uhr, Gold, Diamanten', d_art: 'Gemälde, Münzen, Raritäten', d_biz: 'Ein Geschäft oder ein Anteil', d_owed: 'Ein Darlehen, das du gegeben hast', d_other: 'Alles andere von Wert', quickName: 'Oder einfach einen Namen eingeben',
   addTitle: 'Sachwert hinzufügen', addSub: 'Sag uns, was es ist. Wir rechnen.', editTitle: 'Details bearbeiten',
   k_home: 'Immobilie', k_car: 'Fahrzeug', k_gem: 'Uhr oder Schmuck', k_art: 'Kunst oder Sammlung', k_biz: 'Ein Unternehmen', k_owed: 'Geld, das man mir schuldet', k_other: 'Etwas anderes',
   name: 'Name', namePh: 'z. B. Wohnung in der Stadt, Familienauto', city: 'Stadt', size: 'Fläche m²',
@@ -220,6 +225,7 @@ const de = {
 }
 
 const it = {
+  pickTitle: 'Che cos\'è?', pickSub: 'Scegline uno. Chiediamo solo l\'essenziale e teniamo il valore aggiornato.', d_home: 'Appartamento, casa, terreno', d_car: 'Auto, moto', d_gem: 'Orologio, oro, diamanti', d_art: 'Quadro, monete, pezzi rari', d_biz: 'Un negozio, o una quota', d_owed: 'Un prestito che hai fatto', d_other: 'Qualsiasi altra cosa di valore', quickName: 'O scrivi solo un nome',
   addTitle: 'Aggiungi un bene reale', addSub: 'Dicci cos\'è. Ai conti pensiamo noi.', editTitle: 'Modifica dettagli',
   k_home: 'Immobile', k_car: 'Veicolo', k_gem: 'Orologio o gioiello', k_art: 'Arte o collezione', k_biz: 'Un\'attività', k_owed: 'Soldi che mi devono', k_other: 'Altro',
   name: 'Nome', namePh: 'es. Appartamento in città, Auto di famiglia', city: 'Città', size: 'Superficie m²',
