@@ -24,6 +24,7 @@ import { AR_POSTS } from '../src/data/arabicBlog.js'
 import { buildLandings, LANDING_ROUTES } from './landings/build.mjs'
 import { publishedVideos } from '../src/data/academyVideos.js'
 import { videoHub, llmsVideoSection } from './videoSeo.mjs'
+import { BODY_MAP_PATH } from './blogSplitPlugin.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, '..', 'dist')
@@ -33,6 +34,15 @@ const OG_IMAGE = `${ORIGIN}/og-image.png`
 const TODAY = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
 
 const template = readFileSync(resolve(DIST, 'index.html'), 'utf8')
+
+// Each article's body is its own chunk (scripts/blogSplitPlugin.mjs). Its
+// page names that chunk up front, so the body downloads alongside the app
+// bundle instead of after the Blog page has mounted and asked for it.
+let BLOG_BODIES = {}
+try { BLOG_BODIES = JSON.parse(readFileSync(resolve(__dirname, '..', BODY_MAP_PATH), 'utf8')) } catch { /* prerender run without a build: no preloads */ }
+const bodyPreload = (html, slug) => BLOG_BODIES[slug]
+  ? html.replace('</head>', () => `  <link rel="modulepreload" crossorigin href="${BLOG_BODIES[slug]}" />\n  </head>`)
+  : html
 
 // ── helpers ────────────────────────────────────────────────────────────────
 const esc = (s = '') => String(s)
@@ -1787,7 +1797,7 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
     },
   ]
   const hasAr = AR_POSTS.some(a => a.slug === p.slug)
-  write('/blog/' + p.slug, buildPage({
+  write('/blog/' + p.slug, bodyPreload(buildPage({
     path: '/blog/' + p.slug,
     title: brandTitle(p.seoTitle || p.title),
     description: p.summary,
@@ -1797,7 +1807,7 @@ ${relatedPosts(p.slug, 3).map(r => `      <li><a href="/blog/${r.slug}">${esc(r.
     published: iso,
     modified: iso,
     alternates: hasAr ? hreflangPair('/blog/' + p.slug, '/ar/blog/' + p.slug) : undefined,
-  }))
+  }), p.slug))
 }
 
 // Arabic blog articles (/ar/blog/:slug) — net-worth guides translated to Arabic.
