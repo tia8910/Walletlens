@@ -51,7 +51,7 @@ describe('a screenshot with a report', () => {
   it('stores it beside the report, and the reviewer sees it on request', async () => {
     const env = { DB: db(), REPORTS_TOKEN: 'secret' }
     const res = await handleReports(post({ surface: 'feedback:bug', reason: 'feedback', output: 'Cannot see my text', shot: IMG }), '/report', env, json, {})
-    expect(await res.json()).toEqual({ ok: true, shot: true })
+    expect(await res.json()).toEqual({ ok: true, shot: true, emailed: false })
     const list = await (await handleReports(get('https://walletlens.live/api/push/reports'), '/reports', env, json, {})).json()
     expect(list.reports[0]).toMatchObject({ id: 1, has_shot: true })
     expect(list.reports[0].shot).toBeUndefined()
@@ -65,7 +65,7 @@ describe('a screenshot with a report', () => {
     const env = { DB: db() }
     expect((await handleReports(post({ output: 'x'.repeat(9000), shot: IMG }), '/report', env, json, {})).status).toBe(413)
     const bad = await handleReports(post({ output: 'ok', shot: 'data:text/html;base64,AAAA' }), '/report', env, json, {})
-    expect(await bad.json()).toEqual({ ok: true, shot: false })
+    expect(await bad.json()).toEqual({ ok: true, shot: false, emailed: false })
   })
 
   it('is shrunk on the device to fit', () => {
