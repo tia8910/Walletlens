@@ -132,8 +132,37 @@
 .ra-ladder-bar span { display: block; height: 100%; border-radius: 999px; }
 @media (max-width: 360px) { .ra-two, .ra-trio { grid-template-columns: 1fr; } .ra-kinds { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/* The trade sheet's way into the smart form */
-.bs-smart-link {
-  display: block; width: 100%; margin-top: 8px; min-height: 44px; padding: 10px 12px; border-radius: 12px; cursor: pointer; text-align: start;
-  border: 1px dashed rgba(var(--g-rgb), .5); background: rgba(var(--g-rgb), .06); color: var(--g); font: inherit; font-size: 0.82rem; font-weight: 700;
+/* The trade sheet's Other: pick what it is */
+.rk { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+.rk-head { display: flex; flex-direction: column; gap: 2px; }
+.rk-head b { font-size: 1.05rem; }
+.rk-head small { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
+.rk-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.rk-tile {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-height: 112px; padding: 14px;
+  border-radius: 20px; border: 1px solid var(--border); cursor: pointer; text-align: start; color: inherit; font: inherit;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 14%, transparent), transparent 60%),
+    var(--nl-card, var(--card-bg));
+  box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 6px 18px -12px color-mix(in srgb, var(--c) 60%, transparent);
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+}
+.rk-tile:hover, .rk-tile:focus-visible { border-color: color-mix(in srgb, var(--c) 55%, transparent); box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--c) 70%, transparent); }
+.rk-tile:active { transform: scale(.98); }
+.rk-tile.is-wide { grid-column: 1 / -1; flex-direction: row; align-items: center; min-height: 72px; }
+.rk-ic {
+  width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; flex: none; color: #fff;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--c) 85%, #fff), color-mix(in srgb, var(--c) 80%, #000));
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--c) 80%, transparent);
+}
+.rk-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding-inline-end: 14px; }
+.rk-txt b { font-size: 0.9rem; line-height: 1.2; }
+.rk-txt small { font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; }
+.rk-chev { position: absolute; top: 14px; inset-inline-end: 12px; color: var(--text-muted); }
+.rk-tile.is-wide .rk-chev { top: 50%; transform: translateY(-50%); }
+[dir="rtl"] .rk-chev { transform: scaleX(-1); }
+[dir="rtl"] .rk-tile.is-wide .rk-chev { transform: translateY(-50%) scaleX(-1); }
+.rk-quick {
+  align-self: center; min-height: 44px; padding: 0 14px; border: 0; background: none; cursor: pointer;
+  color: var(--text-muted); font: inherit; font-size: 0.82rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px;
 }

@@ -51,7 +51,7 @@ import CurrencyPicker, { CurFlag } from './CurrencyPicker'
 import { isFiatCode, currencyName, currencySymbol, fmtMoney } from '../data/currencies'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { isV2Active, homePath } from '../v2Preview'
-import { realAssetsCopy } from '../realAssetsCopy'
+import RealKindPicker from './RealKindPicker'
 import '../realAssets.css'
 
 
@@ -395,6 +395,8 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
   const [sellPct, setSellPct]           = useState(null)
   const [confirmNoneOpen, setConfirmNoneOpen] = useState(false)
   const [mode, setMode]                 = useState(type)
+  // Other: the kind picker, or a bare name typed in.
+  const [otherQuick, setOtherQuick]     = useState(false)
   // v2 ticket: 'asset' (choose what) then 'ticket' (how much, confirm).
   const [v2Step, setV2Step]             = useState('asset')
   const [assetChg, setAssetChg]         = useState(null)
@@ -1190,20 +1192,22 @@ export default function TradeSheet({ open, type, onClose, wallets, onDone, holdi
         </div>
       )}
 
+      {/* Buying something in Other: pick what it is from a list. Each kind
+          opens the smart form for it (a value that keeps up with time, its
+          yield, what is still owed, smart notes); typing a bare name is still
+          there for anything quick. */}
+      {category === 'other' && mode !== 'sell' && !otherQuick && (
+        <RealKindPicker lang={lang} onPick={(k) => { onClose(); navigate(`/real-assets/new?kind=${k}`) }} onQuick={() => setOtherQuick(true)} />
+      )}
+
       {/* Bond / Other: name input */}
-      {(category === 'bond' || category === 'other') && (
+      {(category === 'bond' || (category === 'other' && (mode === 'sell' || otherQuick))) && (
         <input className="bs-input"
           placeholder={category === 'bond' ? 'e.g. US Treasury 10Y, I-Bond' : 'e.g. Real estate, Art, Watch'}
           value={otherName}
           onChange={e => setOtherName(e.target.value)}
+          autoFocus={category === 'other' && otherQuick}
         />
-      )}
-      {/* A house, a car or a valuable gets a form of its own: a value that
-          keeps up with time, its yield, what is still owed and smart notes. */}
-      {category === 'other' && mode !== 'sell' && (
-        <button type="button" className="bs-smart-link" onClick={() => { onClose(); navigate('/real-assets/new') }}>
-          {realAssetsCopy(lang)('smartForm')} →
-        </button>
       )}
     </>
   )

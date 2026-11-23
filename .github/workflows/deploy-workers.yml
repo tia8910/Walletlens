@@ -21,7 +21,7 @@ name: Deploy Cloudflare Workers
 # secret exists (see the "Upload secrets" steps):
 #   voice: ANTHROPIC_API_KEY, RESEND_API_KEY, SIGNUP_EXPORT_TOKEN
 #   push:  VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT,
-#          FCM_SERVICE_ACCOUNT, REPORTS_TOKEN
+#          FCM_SERVICE_ACCOUNT, REPORTS_TOKEN, RESEND_API_KEY
 #
 # The VAPID pair MUST be the one the Deno push service used. A rotated pair is
 # rejected by subscriptionMatchesKey(), which silently invalidates every
@@ -157,6 +157,7 @@ jobs:
           VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
           FCM_SERVICE_ACCOUNT: ${{ secrets.FCM_SERVICE_ACCOUNT }}
           REPORTS_TOKEN: ${{ secrets.REPORTS_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
           # Unlike the voice keys, these are not optional: a push worker with
           # no VAPID pair accepts subscriptions and then fails to send to any
@@ -207,6 +208,16 @@ jobs:
             echo "set REPORTS_TOKEN"
           else
             echo "::warning::REPORTS_TOKEN is not set; reports are stored but /admin/reports cannot read them."
+          fi
+
+          # The same Resend key the voice worker sends mail with, so every
+          # new report is emailed to contact@walletlens.live. Optional: without
+          # it reports are still stored and readable at /admin/reports.
+          if [ -n "$RESEND_API_KEY" ]; then
+            printf '%s' "$RESEND_API_KEY" | npx --yes wrangler@4 secret put RESEND_API_KEY
+            echo "set RESEND_API_KEY"
+          else
+            echo "::warning::RESEND_API_KEY is not set; reports are stored but not emailed."
           fi
 
       - name: Deploy

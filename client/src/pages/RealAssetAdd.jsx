@@ -29,7 +29,8 @@ export default function RealAssetAdd() {
   const [holding, setHolding] = useState(null)
   const [f, setF] = useState(() => {
     const m = editing ? getRealAsset(editId) : null
-    const kind = m?.kind && m.kind !== 'other' ? m.kind : (editing ? kindFor(editId, m) : 'home')
+    const asked = new URLSearchParams(location.search).get('kind')
+    const kind = m?.kind && m.kind !== 'other' ? m.kind : (editing ? kindFor(editId, m) : (KINDS.includes(asked) ? asked : 'home'))
     return {
       kind, name: '', growth: String(m?.growth ?? DEFAULT_GROWTH[kind]),
       boughtFor: '', boughtAt: thisMonth(),
