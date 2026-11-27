@@ -8,8 +8,13 @@ import {
 } from '../assistantAi'
 import { track } from '../analytics'
 import { api } from '../api'
-import { answerLocally } from '../localAssistant'
 import AiReport from './AiReport'
+
+// The answering engine carries the whole glossary and FAQ (~45 KB gzipped).
+// The chat bubble mounts on every app page, but almost nobody opens it, so the
+// engine is fetched when the panel opens (or a question is asked), not with
+// the bubble. Importing it statically put both datasets on every dashboard load.
+const loadLocalAssistant = () => import('../localAssistant')
 
 // What the chat says when an answer does not come, by what went wrong.
 const ERROR_COPY = {
@@ -200,6 +205,10 @@ export default function AssistantChat() {
   const showHistoryRef = useRef(false)
   useEffect(() => { showHistoryRef.current = showHistory }, [showHistory])
 
+  // Fetch the answering engine as soon as the panel opens, so it is ready by
+  // the time a question is typed.
+  useEffect(() => { if (open) loadLocalAssistant().catch(() => {}) }, [open])
+
   // Hardware / browser Back button. Critical in the Android TWA: without this,
   // pressing Back while the chat is open navigates the WebView away (or exits
   // the app) instead of closing the panel. We push a history entry when the
@@ -286,7 +295,10 @@ export default function AssistantChat() {
       const holdings = await Promise.resolve(api.getPortfolio()).catch(() => [])
       const list = Array.isArray(holdings) ? holdings : []
       const prices = api.getCachedPrices?.(list.map(h => h.coin_id).join(',')) || {}
-      await new Promise(r => setTimeout(r, 250)) // a beat, so the reply does not flash in
+      const [{ answerLocally }] = await Promise.all([
+        loadLocalAssistant(),
+        new Promise(r => setTimeout(r, 250)), // a beat, so the reply does not flash in
+      ])
       const rawReply = answerLocally(question, { lang, holdings: list, prices })
       const { text: replyText, navs } = parseAssistantReply(rawReply)
       // Answered on the device, not by an AI model: no AI label or report button.

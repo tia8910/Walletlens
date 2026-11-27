@@ -76,6 +76,13 @@ describe('the on-device assistant', () => {
     expect(chat).not.toMatch(/chatWithAssistant\(/)
     expect(chat).toMatch(/!m\.local && <AiReport surface="assistant"/)
   })
+  it('is fetched by the chat on demand, not with the bubble on every page', () => {
+    // localAssistant pulls in the glossary and FAQ (~45 KB gzipped). A static
+    // import put both on every dashboard load, for a panel few people open.
+    const chat = readFileSync(join(here, 'components/AssistantChat.jsx'), 'utf8')
+    expect(chat).not.toMatch(/^import[^\n]*from '\.\.\/localAssistant'/m)
+    expect(chat).toMatch(/import\('\.\.\/localAssistant'\)/)
+  })
   it('gives no buy or sell advice, but points to the tools and the holding', () => {
     const r = ask('Should I sell ETH?')
     expect(r).toMatch(/^I can't tell you what to buy or sell/)
