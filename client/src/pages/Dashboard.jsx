@@ -2,10 +2,6 @@ import { lazy, Suspense, memo, useEffect, useMemo, useRef, useState, useCallback
 import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { isV2Active } from '../v2Preview'
-import {
-  ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line,
-  PieChart, Pie, Cell, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine,
-} from 'recharts'
 import { usSessionOpen } from '../data/markets'
 import { api, getCachedCoinImage } from '../api'
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss'
@@ -80,6 +76,13 @@ const _loadQrBackup = () => {
 }
 
 // Lazy-loaded: modals, tab-specific panels, and below-the-fold overview widgets
+// Recharts (~440 KB, ~117 KB gzipped) is only needed once a chart is on
+// screen. Importing it statically put it on the dashboard's critical path:
+// the page could not render, not even the empty first-visit state that draws
+// no chart at all, until the whole library had downloaded and parsed.
+const PerfChart      = lazy(() => import('../components/DashCharts').then(m => ({ default: m.PerfChart })))
+const PnlBarChart    = lazy(() => import('../components/DashCharts').then(m => ({ default: m.PnlBarChart })))
+const AllocationPie  = lazy(() => import('../components/DashCharts').then(m => ({ default: m.AllocationPie })))
 const VoiceImport    = lazy(() => import('../components/VoiceImport'))
 const TradeSheet     = lazy(() => import('../components/TradeSheet'))
 const ShareCard      = lazy(() => import('../components/ShareCard'))
@@ -4804,112 +4807,14 @@ export default function Dashboard() {
                 if (iv < 30 * DAY) return d.toLocaleDateString('en', { month: 'short', day: 'numeric' })
                 return d.toLocaleDateString('en', { month: 'short', year: 'numeric' })
               }
-              // Candlestick shape — recharts has no native candle, so we draw the
-              // wick (high→low) and body (open↔close) from the [low, high] range bar.
-              const Candle = ({ x, y, width, height, payload }) => {
-                if (!payload) return null
-                const { open, close, high, low } = payload
-                const color = close >= open ? 'var(--g)' : '#f87171'
-                const span = high - low
-                const pp = span > 0 ? height / span : 0
-                const bodyY = span > 0 ? y + (high - Math.max(open, close)) * pp : y
-                const bodyH = Math.max(3, span > 0 ? Math.abs(close - open) * pp : height)
-                const cx = x + width / 2
-                const bw = Math.min(Math.max(width * 0.82, 8), 26)
-                return (
-                  <g>
-                    <line x1={cx} y1={y} x2={cx} y2={y + height} stroke={color} strokeWidth={1.5} strokeOpacity={0.9} />
-                    <rect x={cx - bw / 2} y={bodyY} width={bw} height={bodyH} rx={1} fill={color} />
-                  </g>
-                )
-              }
-              // O/H/L/C tooltip for the candlestick view.
-              const candleTip = ({ active, payload }) => {
-                if (!active || !payload?.length) return null
-                const d = payload[0].payload
-                return (
-                  <div style={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.5rem 0.75rem', boxShadow:'var(--shadow)', fontSize:'0.72rem' }}>
-                    <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.3rem' }}>{fmtTs(d.ts)}</div>
-                    <div style={{ display:'grid', gridTemplateColumns:'auto auto', gap:'0.1rem 0.7rem', fontWeight:700, color:'var(--text)' }}>
-                      <span style={{ color:'var(--text-sub)' }}>O</span><span>{cv(d.open)}</span>
-                      <span style={{ color:'var(--text-sub)' }}>H</span><span>{cv(d.high)}</span>
-                      <span style={{ color:'var(--text-sub)' }}>L</span><span>{cv(d.low)}</span>
-                      <span style={{ color:'var(--text-sub)' }}>C</span><span style={{ color: d.close >= d.open ? 'var(--g)' : '#f87171' }}>{cv(d.close)}</span>
-                    </div>
-                  </div>
-                )
-              }
-              const isCandles = chartType === 'candles'
-              // Candles get their own y-domain fitted to the candle high/low range
-              // (with headroom) instead of being forced to include the far-away
-              // invested baseline — otherwise a small intraday range collapses every
-              // candle into a thin band at the top of the frame, all the same size.
-              let candleDomain = ['auto', 'auto']
-              if (isCandles && perfCandles.length) {
-                let lo = perfCandles[0].low, hi = perfCandles[0].high
-                for (const c of perfCandles) { if (c.low < lo) lo = c.low; if (c.high > hi) hi = c.high }
-                const span = hi - lo
-                const pad = span > 0 ? span * 0.18 : (hi * 0.004 || 1)
-                candleDomain = [lo - pad, hi + pad]
-              }
-              // Driven directly by the real perfSeries values (snapshots → transaction
-              // replay → simulation), so the curve is accurate across all chart types.
+              // Recharts lives in its own lazily-loaded chunk (DashCharts), so
+              // the dashboard paints without waiting for it. The fixed-height
+              // fallback keeps the layout from shifting when it arrives.
               return (
-                <ResponsiveContainer key={perfTf + chartType} width="100%" height={180}>
-                  <ComposedChart data={isCandles ? perfCandles : perfSeries} margin={{ left:0, right:0, top:8, bottom:0 }}>
-                    <defs>
-                      <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={strokeColor} stopOpacity={0.22}/>
-                        <stop offset="85%" stopColor={strokeColor} stopOpacity={0.02}/>
-                        <stop offset="100%" stopColor={strokeColor} stopOpacity={0}/>
-                      </linearGradient>
-                      {invStop != null && (
-                        <linearGradient id="pg-split" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="var(--g)" stopOpacity={0.26}/>
-                          <stop offset={invStop} stopColor="var(--g)" stopOpacity={0.03}/>
-                          <stop offset={invStop} stopColor="#f87171" stopOpacity={0.04}/>
-                          <stop offset="100%" stopColor="#f87171" stopOpacity={0.22}/>
-                        </linearGradient>
-                      )}
-                    </defs>
-                    <XAxis hide dataKey="i" />
-                    <YAxis hide domain={isCandles
-                      ? candleDomain
-                      : (inv > 0
-                        ? [dMin => Math.min(dMin, inv), dMax => Math.max(dMax, inv)]
-                        : ['auto', 'auto'])} />
-                    {isCandles ? (
-                      <Tooltip content={candleTip} cursor={{ stroke: 'var(--text-sub)', strokeWidth:1, strokeDasharray:'4 3', opacity:0.4 }} />
-                    ) : (
-                      <Tooltip
-                        contentStyle={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:10, padding:'0.5rem 0.85rem', boxShadow:'var(--shadow)' }}
-                        itemStyle={{ color:'var(--text)', fontWeight:700, fontSize:'0.9rem' }}
-                        labelStyle={{ color:'var(--text-muted)', fontWeight:600, fontSize:'0.72rem', marginBottom:'0.15rem' }}
-                        separator=""
-                        formatter={v => [cv(v), '']}
-                        labelFormatter={(_, payload) => fmtTs(payload?.[0]?.payload?.ts)}
-                        cursor={{ stroke: strokeColor, strokeWidth:1, strokeDasharray:'4 3', opacity:0.5 }}
-                      />
-                    )}
-                    {inv > 0 && (
-                      <ReferenceLine y={inv} stroke="var(--text-sub)" strokeDasharray="5 4" strokeOpacity={0.7}
-                        label={{ value: 'Invested', position: 'insideLeft', fill: 'var(--text-sub)', fontSize: 10, fontWeight: 700, dy: -7 }} />
-                    )}
-                    {chartType === 'area' && (
-                      <Area type="monotone" dataKey="v" stroke={strokeColor} strokeWidth={2.25}
-                        fill={invStop != null ? 'url(#pg-split)' : `url(#${gradId})`} dot={false} activeDot={{ r:5, fill:strokeColor, stroke:'#0d1f14', strokeWidth:2 }}
-                        isAnimationActive={true} animationDuration={900} animationEasing="ease-out"/>
-                    )}
-                    {chartType === 'line' && (
-                      <Line type="monotone" dataKey="v" stroke={strokeColor} strokeWidth={2.25}
-                        dot={false} activeDot={{ r:5, fill:strokeColor, stroke:'#0d1f14', strokeWidth:2 }}
-                        isAnimationActive={true} animationDuration={900} animationEasing="ease-out"/>
-                    )}
-                    {isCandles && (
-                      <Bar dataKey="range" shape={<Candle />} isAnimationActive={false} />
-                    )}
-                  </ComposedChart>
-                </ResponsiveContainer>
+                <Suspense fallback={<div style={{ height: 180 }} aria-hidden="true" />}>
+                  <PerfChart key={perfTf + chartType} chartType={chartType} candles={perfCandles} series={perfSeries}
+                    gradId={gradId} strokeColor={strokeColor} inv={inv} invStop={invStop} cv={cv} fmtTs={fmtTs} />
+                </Suspense>
               )
             })()}
             {!isDemo && totalValue > 0 && (
@@ -5027,32 +4932,9 @@ export default function Dashboard() {
               {cardVis.pnl_chart && pnlData.length > 0 && (
                 <div className="glass-card">
                   <h3 style={{ margin:'0 0 0.75rem' }}>{t('dsPnlByAsset')}</h3>
-                  <ResponsiveContainer width="100%" height={160}>
-                    <BarChart data={pnlData} margin={{ left:0, right:0, top:4, bottom:0 }}>
-                      <defs>
-                        <linearGradient id="dvxPnlPos" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#34d399" stopOpacity="0.98"/>
-                          <stop offset="100%" stopColor="#0f9d76" stopOpacity="0.85"/>
-                        </linearGradient>
-                        <linearGradient id="dvxPnlNeg" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#f98080" stopOpacity="0.95"/>
-                          <stop offset="100%" stopColor="#dc4646" stopOpacity="0.85"/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid stroke="rgba(148,163,184,0.10)" vertical={false}/>
-                      <XAxis dataKey="name" tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false}/>
-                      <YAxis tick={{ fill:'var(--text-sub)', fontSize:10 }} axisLine={false} tickLine={false}
-                        tickFormatter={v => cvN(v)} width={50}/>
-                      <ReferenceLine y={0} stroke="rgba(148,163,184,0.35)" strokeWidth={1}/>
-                      <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color:'var(--text)', fontWeight:700 }} cursor={false}
-                        formatter={v => [<span key="v" style={{ color: v >= 0 ? 'var(--g)' : '#f87171', fontWeight:700 }}>{cv(v)}</span>, 'P&L']}/>
-                      <Bar dataKey="pnl" radius={[6,6,0,0]} isAnimationActive animationDuration={800} animationEasing="ease-out">
-                        {pnlData.map((d, i) => (
-                          <Cell key={i} fill={d.pnl >= 0 ? 'url(#dvxPnlPos)' : 'url(#dvxPnlNeg)'}/>
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <Suspense fallback={<div style={{ height: 160 }} aria-hidden="true" />}>
+                    <PnlBarChart data={pnlData} tooltipStyle={TOOLTIP_STYLE} cv={cv} cvN={cvN} />
+                  </Suspense>
                 </div>
               )}
 
@@ -5460,15 +5342,9 @@ export default function Dashboard() {
                 {catAllocData.length === 0
                   ? <p className="muted">{t('noHoldings')}</p>
                   : <>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <PieChart>
-                        <Pie data={catAllocData} dataKey="value" cx="50%" cy="50%"
-                          innerRadius="60%" outerRadius="85%" stroke="none" paddingAngle={2}>
-                          {catAllocData.map((d, i) => <Cell key={i} fill={CATEGORY_COLOR[d.cat] || PALETTE[i % PALETTE.length]}/>)}
-                        </Pie>
-                        <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color:'var(--text)', fontWeight:700 }} labelStyle={{ color:'var(--text)', fontWeight:700 }} formatter={(v, n) => [cv(v), n]}/>
-                      </PieChart>
-                    </ResponsiveContainer>
+                    <Suspense fallback={<div style={{ height: 200 }} aria-hidden="true" />}>
+                      <AllocationPie data={catAllocData} colors={CATEGORY_COLOR} palette={PALETTE} tooltipStyle={TOOLTIP_STYLE} cv={cv} />
+                    </Suspense>
                     <ul className="dvx-legend">
                       {catAllocData.map((d, i) => (
                         <li key={d.name} className="dvx-legend-item">
@@ -5491,48 +5367,6 @@ export default function Dashboard() {
                 }
               </div>}
 
-              {/* Net Worth History — removed */}
-              {false && !isDemo && transactions.length > 0 && (() => {
-                const now = Date.now()
-                const days = 30
-                const points = Array.from({ length: days }, (_, i) => {
-                  const cutoff = now - (days - 1 - i) * 86400000
-                  const invested = transactions
-                    .filter(tx => new Date(tx.date).getTime() <= cutoff)
-                    .reduce((s, tx) => {
-                      const val = (tx.amount || 0) * (tx.price_per_unit || 0)
-                      return tx.type === 'buy' ? s + val : s - val
-                    }, 0)
-                  return { day: i + 1, v: Math.max(0, invested) }
-                })
-                const minV = Math.min(...points.map(p => p.v))
-                const maxV = Math.max(...points.map(p => p.v))
-                if (maxV === minV) return null
-                return (
-                  <div className="glass-card">
-                    <div style={CHART_HDR_STYLE}>
-                      <h3 style={{ margin:0, display:'inline-flex', alignItems:'center', gap:'0.4em' }}><Icon name="pulse" size={16} style={{ color: 'var(--g-ink)', fontWeight: 700 }} />{t('cardNetWorthHistory')}</h3>
-                      <span className="muted" style={{ fontSize:'0.72rem' }}>{t('dsInvestedCapital30d')}</span>
-                    </div>
-                    <ResponsiveContainer width="100%" height={175}>
-                      <AreaChart data={points} margin={{ left:0, right:8, top:10, bottom:0 }}>
-                        <defs>
-                          <linearGradient id="nwg" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="var(--g)" stopOpacity={0.22}/>
-                            <stop offset="75%" stopColor="var(--g)" stopOpacity={0.04}/>
-                            <stop offset="100%" stopColor="var(--g)" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} strokeDasharray="2 6"/>
-                        <YAxis tick={{ fill:'rgba(255,255,255,0.3)', fontSize:9 }} axisLine={false} tickLine={false}
-                          tickFormatter={v => cvN(v)} width={42}/>
-                        <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color:'var(--text)', fontWeight:700 }} labelStyle={{ color:'var(--text)', fontWeight:700 }} formatter={v => [cv(v), 'Invested']} labelFormatter={l => `Day ${l}`} cursor={{ stroke:'rgba(255,255,255,0.12)' }}/>
-                        <Area type="monotone" dataKey="v" stroke="var(--g)" strokeWidth={1.5} fill="url(#nwg)" dot={false} activeDot={{ r:4, fill:'var(--g)', stroke:'var(--bg)', strokeWidth:2 }}/>
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                )
-              })()}
 
               {/* Market Mood — sentiment from crypto headlines */}
               {cardVis.market_mood && (enriched.length > 0 || isDemo) && <MarketMood />}
