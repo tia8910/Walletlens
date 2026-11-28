@@ -88,6 +88,17 @@ describe('the critical path stays lean', () => {
     expect(graph.packages.has('react-router-dom')).toBe(true)
   })
 
+  it('keeps recharts off the dashboard route\'s static graph', () => {
+    // The dashboard is a lazy route, so the test above does not cover it. A
+    // static `from 'recharts'` in Dashboard.jsx made the page wait for the
+    // ~117 KB (gzipped) charts chunk before its first render, even for an
+    // empty portfolio that draws no chart. The charts live in DashCharts.jsx,
+    // which the page loads with React.lazy.
+    const dash = staticGraph(join(src, 'pages', 'Dashboard.jsx'))
+    expect(dash.files.size).toBeGreaterThan(15)
+    expect(dash.packages.has('recharts')).toBe(false)
+  })
+
   it('loads the Drive auto-backup dynamically', () => {
     const app = readFileSync(join(src, 'App.jsx'), 'utf8')
     expect(app).toMatch(/import\('\.\/driveAutoBackup'\)/)
